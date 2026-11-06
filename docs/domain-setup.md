@@ -24,7 +24,7 @@ See [README](../README.md) and [Worker routing documentation](../edge/README.md)
 - `sites/_apex/` → `https://dofinances.com/` and its paths.
 - `sites/_www/` → independent pages on `www`, where present; otherwise redirect same path to apex.
 - `sites/<label>/` → corresponding eligible first-level subdomain, e.g. `sites/portfolio/index.html` → `https://portfolio.dofinances.com/`.
-- `src/` and `public/` → React studio at `stu.dofinances.com`. CI also publishes its built HTML and assets at `dofinances.com/login` through the apex Worker; `stu.dofinances.com/login` is removed with a true 404.
+- `src/` and `public/` → React studio at `stu.dofinances.com`. CI also publishes its built HTML and assets at `dofinances.com/login` through the apex Worker; `stu.dofinances.com/login` and `/login/` return a true 404 via a narrowly scoped Pages Function.
 
 GitHub Actions [`site.yml`](../.github/workflows/site.yml) tests/builds and, with `DEPLOY_ENABLED=true`, publishes both the Pages project and the Worker with static assets. Adding, editing or deleting a site file and committing to `main` updates the hosted page. Undefined URLs return 404, apart from `www` redirecting to the apex where it has no independent page.
 

@@ -81,11 +81,20 @@ test("links and email form preserve original UI behavior without credential reco
   assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|fetch\s*\(|onClick=\{\(\) => previewAction/);
 });
 
-test("the old Studio /login entrypoint is deleted; a custom Pages 404 prevents SPA fallback", async () => {
+test("both retired Studio /login URLs return a scoped Pages Function 404", async () => {
   const { stat } = await import("node:fs/promises");
   await assert.rejects(stat(new URL("../login/index.html", import.meta.url)), { code: "ENOENT" });
   const notFound = await load("../public/404.html");
   assert.match(notFound, /404 Not Found/);
+  const routes = JSON.parse(await load("../public/_routes.json"));
+  assert.deepEqual(routes.include, ["/login", "/login/"]);
+  assert.deepEqual(routes.exclude, []);
+  const { onRequest } = await import("../functions/login.js");
+  for (const path of routes.include) {
+    const response = await onRequest({request: new Request("https://stu.dofinances.com"+path)});
+    assert.equal(response.status,404,path);
+    assert.equal(response.headers.get("Cache-Control"),"no-store");
+  }
 });
 
 test("short mobile viewports position the extra theme control outside the original card", async () => {

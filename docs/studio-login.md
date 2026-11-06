@@ -6,7 +6,7 @@
 - `https://dofinances.com/login` and `https://dofinances.com/login/` — the same Auth-3 preview, now published through the apex Worker.
 - `https://stu.dofinances.com/login` and `https://stu.dofinances.com/login/` — removed (HTTP 404).
 
-The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds Studio once, deploys it to Pages, and packages `dist/index.html` plus `dist/assets/` into the apex Worker assets for `/login`; no compiled assets are committed to the repository. A top-level `public/404.html` prevents Cloudflare Pages' default SPA fallback from serving the removed Studio login route. No DNS, GoDaddy, D1, or host-routing changes are required.
+The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds Studio once, deploys it to Pages, and packages `dist/index.html` plus `dist/assets/` into the apex Worker assets for `/login`; no compiled assets are committed to the repository. A top-level `public/404.html` provides generic missing-page behavior; Pages still served the retired `/login/` URL with HTTP 200 after the first rollout, so `functions/login.js` explicitly returns HTTP 404 for both `/login` forms. The Pages deployment checks out `functions/`, and `public/_routes.json` includes only the two retired paths to avoid Functions execution on the Studio homepage or other static resources. No DNS, GoDaddy, D1, or host-routing changes are required.
 
 ## Grounded source and current fidelity approach
 

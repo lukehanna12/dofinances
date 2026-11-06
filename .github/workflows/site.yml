@@ -34,6 +34,7 @@ jobs:
         run: |
           test -s dist/index.html
           test -s dist/404.html
+          test -s dist/_routes.json
           test ! -e dist/login/index.html
           grep -Fq 'Sign in · Dofinances' dist/index.html
           test -d dist/assets
@@ -61,6 +62,8 @@ jobs:
       group: dofinances-production
       cancel-in-progress: false
     steps:
+      - name: Checkout Pages route handler
+        uses: actions/checkout@v6
       - name: Download built site
         uses: actions/download-artifact@v4
         with:
