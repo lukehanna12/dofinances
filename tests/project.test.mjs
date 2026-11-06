@@ -19,5 +19,7 @@ test("CI deploys only when explicitly enabled", async () => {
   assert.match(yaml, /--project-name=dofinances-studio/);
   assert.match(yaml, /vars\.WILDCARD_DEPLOY_ENABLED\s*==\s*'true'/);
   assert.match(yaml, /CLOUDFLARE_WORKERS_API_TOKEN/);
+  assert.match(yaml, /deploy_wildcard/);
+  assert.match(yaml, /vars\.WILDCARD_DEPLOY_ENABLED\s*==\s*'true'/);
   assert.match(yaml, /github\.ref\s*==\s*'refs\/heads\/main'/);
 });
