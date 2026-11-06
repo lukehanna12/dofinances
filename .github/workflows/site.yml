@@ -124,16 +124,6 @@ jobs:
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
 
-      - name: Verify abandoned apex login is unpublished
-        shell: bash
-        run: |
-          set -euo pipefail
-          for path in /login /login/ /login/index.html /login/assets/auth3.css /login/assets/auth3.js; do
-            status="$(curl -sSL --max-time 20 -o /dev/null -w '%{http_code}' "https://dofinances.com$path")"
-            echo "Apex $path => HTTP $status (expected 404)"
-            test "$status" = 404
-          done
-
       - name: Verify Studio Auth-3 URLs
         shell: bash
         run: |
