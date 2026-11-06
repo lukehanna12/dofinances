@@ -67,6 +67,27 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=dofinances --branch=main
+          accountId: '7d0d4c74836717a4d23784bbf8d5ccd7'
+          command: pages deploy dist --project-name=dofinances-studio --branch=main
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-host-router:
+    name: Deploy wildcard subdomain router (separate opt-in)
+    needs: build
+    if: >-
+      ${{ github.event_name != 'pull_request' &&
+          github.ref == 'refs/heads/main' &&
+          vars.WILDCARD_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Publish routing Worker (no DNS routes configured)
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          accountId: '7d0d4c74836717a4d23784bbf8d5ccd7'
+          command: deploy --config edge/wrangler.jsonc

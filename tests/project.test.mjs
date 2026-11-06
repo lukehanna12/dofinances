@@ -16,6 +16,8 @@ test("CI deploys only when explicitly enabled", async () => {
   const yaml = await readFile(new URL("../.github/workflows/site.yml", import.meta.url), "utf8");
   assert.match(yaml, /vars\.DEPLOY_ENABLED\s*==\s*'true'/);
   assert.match(yaml, /cloudflare\/wrangler-action@v4/);
-  assert.match(yaml, /--project-name=dofinances/);
+  assert.match(yaml, /--project-name=dofinances-studio/);
+  assert.match(yaml, /vars\.WILDCARD_DEPLOY_ENABLED\s*==\s*'true'/);
+  assert.match(yaml, /CLOUDFLARE_WORKERS_API_TOKEN/);
   assert.match(yaml, /github\.ref\s*==\s*'refs\/heads\/main'/);
 });

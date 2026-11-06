@@ -1,16 +1,24 @@
 # Dofinances
 
-Public website source for **Dofinances**. This repository contains a small, responsive React + Vite starter. It is not yet a financial application, and no customer data or credentials belong in this repository.
+Public source for the Dofinances React + Vite website. This is a development placeholder, not a live financial service.
 
-- **Source:** https://github.com/lukehanna12/dofinances
-- **Intended deployment:** Cloudflare Pages project `dofinances` (`https://dofinances.pages.dev` after its first deployment)
-- **CI/CD:** **GitHub Actions** builds, tests and deploys; Cloudflare does **not** build this application.
-- **Domain:** `dofinances.com`, registered with GoDaddy. Apex DNS is **not yet connected**; see [domain setup](docs/domain-setup.md).
-- Existing `stu.dofinances.com` Cloudflare Pages project is **independent**, and must not be replaced without explicit approval.
+## Deployment topology
 
-## Getting started
+| Component | Destination | Status |
+| --- | --- | --- |
+| GitHub repository | [lukehanna12/dofinances](https://github.com/lukehanna12/dofinances) | Public source |
+| Site build and deployment | GitHub Actions | CI passing; production job gated |
+| **Sole Pages deployment project** | **`dofinances-studio`** | Direct Upload, existing project |
+| Existing studio hostname | `stu.dofinances.com` | Preserve until DNS inventory and verify |
+| Future apex | `dofinances.com` | Cloudflare DNS zone pending, not connected |
+| Future www | `www.dofinances.com` | Requires custom-domain setup |
+| Future arbitrary subdomains | `*.dofinances.com` | Separate optional Worker router; not live |
 
-Requires Node.js 22 or newer.
+The Cloudflare Pages project is **`dofinances-studio`**, serving `dofinances-studio.pages.dev` after deployment. We do **not** need an additional `dofinances` Pages project.
+
+## Working locally (optional)
+
+Node.js 22+:
 
 ```bash
 npm install
@@ -19,25 +27,24 @@ npm run dev
 npm run build
 ```
 
-The build produces `dist/`. It is disposable and ignored by Git.
+Generated `dist/` and dependency folders are ignored. CI builds on GitHub-hosted runners, not on the owner's Mac.
 
-## GitHub Actions: one-time activation
+## GitHub Actions deployment
 
-The workflow in [`.github/workflows/site.yml`](.github/workflows/site.yml) runs checks and a build on every push to `main` and on pull requests. It **does not deploy by default**, so creating this repository cannot overwrite an existing website.
+[The GitHub Actions workflow](.github/workflows/site.yml) builds and tests for every push to `main` and every pull request. The Pages production deployment is **disabled by default** until the repository variable `DEPLOY_ENABLED` is explicitly set to `true`.
 
-To activate deployments:
+[Production credential setup](docs/production-credentials.md) has exact instructions. The only credential the site deployment job needs is the GitHub Actions secret `CLOUDFLARE_API_TOKEN`, scoped to Cloudflare Pages Write for account `7d0d4c74836717a4d23784bbf8d5ccd7`. The nonsecret account ID is in the workflow.
 
-1. In Cloudflare, generate a scoped API token with **Account → Cloudflare Pages → Edit** for the account holding the `dofinances` Pages project.
-2. In GitHub, **Settings → Secrets and variables → Actions**, create a repository secret named `CLOUDFLARE_API_TOKEN`. Do not commit the token.
-3. Ensure the repository variable `CLOUDFLARE_ACCOUNT_ID` is set to the Cloudflare account ID, and `DEPLOY_ENABLED` is set to `true`.
-4. In **Actions**, manually run **Build and deploy Dofinances**, or push to `main`. The build runs in a GitHub-hosted runner and the prebuilt `dist/` is uploaded with `cloudflare/wrangler-action@v4`.
+The optional wildcard routing Worker is independently disabled by default via `WILDCARD_DEPLOY_ENABLED`; it uses the **separate** `CLOUDFLARE_WORKERS_API_TOKEN` secret. Its Wrangler configuration has `workers_dev: false` and no domain route; enabling its deployment alone will not attach it to production traffic.
 
-This performs **GitHub Actions CI/CD with Cloudflare Pages Direct Upload**. No build caches or generated files are created on the owner's Mac.
+**Do not enable the wildcard router or change DNS** until the production domain has been inventoried and the new DNS zone activated safely.
 
-`cloudflare-production` is a GitHub environment for deployment; configure environment approval rules if desired.
+## Routes and domains
 
-## Production-domain safety
+Cloudflare Pages automatically falls back to the React single-page app's `index.html` on unknown paths when no root `404.html` exists. This means arbitrary paths like `/app/budgets/2027` load the app, but implementing a distinct screen for a given path still requires frontend routing.
 
-Do **not** change GoDaddy nameservers or existing live records without first inventorying all active DNS, especially MX, TXT, SPF, DKIM, DMARC, `www`, and `stu`. See [domain setup](docs/domain-setup.md) before connecting `dofinances.com`.
+Pages does **not** accept wildcard custom domains. Use the explicitly gated Worker router under [`edge/`](edge/) when arbitrary subdomains are needed. Its matching hostname and paths proxy to the Pages site. Hosting different applications on different hostnames requires future dispatch logic.
 
-For the intended future React Native Web components, evaluate package compatibility and licensing before integrating them. This starter intentionally has no native-device dependencies.
+[DNS cutover and limitations](docs/domain-setup.md) explain GoDaddy, certificate coverage, reserved subdomains, and how to migrate safely. Never expose financial or customer data as public repository files.
+
+This setup uses **GitHub Actions**, not Cloudflare-native CI/CD, and does not use R2, D1, browser-run or local build artifacts on the Mac.
