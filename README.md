@@ -10,8 +10,8 @@ Public source for the Dofinances React + Vite website. This is a development pla
 | Site build and deployment | GitHub Actions | CI passing; production job gated |
 | **Sole Pages deployment project** | **`dofinances-studio`** | Direct Upload, existing project |
 | Existing studio hostname | `stu.dofinances.com` | Preserve until DNS inventory and verify |
-| Future apex | `dofinances.com` | Cloudflare DNS zone pending, not connected |
-| Future www | `www.dofinances.com` | Requires custom-domain setup |
+| Future apex | `dofinances.com` | Pages custom domain registered, initializing; DNS zone pending |
+| Future www | `www.dofinances.com` | Pages custom domain registered, initializing; DNS zone pending |
 | Future arbitrary subdomains | `*.dofinances.com` | Separate optional Worker router; not live |
 
 The Cloudflare Pages project is **`dofinances-studio`**, serving `dofinances-studio.pages.dev` after deployment. We do **not** need an additional `dofinances` Pages project.

@@ -8,6 +8,7 @@
 - Assigned Cloudflare nameservers: `austin.ns.cloudflare.com` and `kira.ns.cloudflare.com`.
 - On inspection the new Cloudflare zone had **zero DNS records**. **Do not switch GoDaddy nameservers while empty.**
 - **Only Pages application target**: `dofinances-studio`, with `dofinances-studio.pages.dev` and existing custom domain `stu.dofinances.com`. No successful Pages deployments verified during setup.
+- Pages custom domains registered for `dofinances.com` and `www.dofinances.com`: both `initializing`, not live/verified. Existing `stu.dofinances.com` is `active`. Cloudflare has not yet populated the pending zone with records.
 - Do not assume the pending DNS zone is already authoritative or that the apex is serving this project.
 
 ## 1. Inventory GoDaddy DNS before any cutover
@@ -24,7 +25,7 @@ Enable GitHub Actions credentials per [production-credentials.md](production-cre
 
 ## 3. Connect apex and www
 
-Cloudflare Pages requires a Cloudflare **DNS zone** for the apex `dofinances.com`. When the authoritative DNS migration is ready, add the apex to the `dofinances-studio` project's **Custom domains**, and arrange its DNS records as Cloudflare directs. Add `www.dofinances.com` as another explicit Pages custom domain and choose a canonical redirect policy.
+Cloudflare Pages requires a Cloudflare **DNS zone** for the apex `dofinances.com`. The apex and `www` have already been registered in the `dofinances-studio` project's **Custom domains**, but remain `initializing` pending DNS/SSL validation. When authoritative DNS migration is ready, arrange their Cloudflare DNS records as Pages directs and choose a canonical redirect policy. Recheck both associations before and after cutover.
 
 Cloudflare's assigned nameservers above are the values to enter at GoDaddy **only after** safely migrating records and checking that the Pages deployment is healthy. GoDaddy can remain the registrar; no domain transfer is required. Validate HTTP, HTTPS, mail and important subdomains after propagation.
 
@@ -53,7 +54,8 @@ On the Pages project, unknown paths are served via the React SPA fallback (no ro
 - [ ] Export and review GoDaddy authoritative DNS
 - [ ] Re-create all required DNS in pending Cloudflare zone
 - [ ] Verify first GitHub Actions deployment to existing Pages project
-- [ ] Prepare custom domain `dofinances.com` and `www` in Pages
+- [x] Register `dofinances.com` and `www` custom domains in Pages (currently **initializing**, not active)
+- [ ] Verify DNS and TLS validation of both custom domains
 - [ ] Validate nameserver and DNSSEC plan
 - [ ] Switch GoDaddy nameservers when safe, then verify DNS/TLS/mail
 - [ ] Separately enable wildcard Worker, wildcard DNS and route if requested
