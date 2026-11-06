@@ -4,7 +4,7 @@
 
 The apex `/login` form now submits real email/password sign-in and sign-up requests to same-origin Worker endpoints. Successful authentication issues a secure HTTP-only cookie and sends the browser to the server-protected `/app` dashboard. Account and session records are held in an independent SQLite-backed Durable Object, **not D1**. Authenticated account deletion is available.
 
-This is an initial authentication implementation, not a finished consumer identity platform. Email verification, password resets, MFA and third-party sign-in are not enabled. The original social-login buttons remain visible but disabled and explicitly labeled not connected; previously captured style utilities and source provenance are retained.
+Cloudflare's native PBKDF2 implementation is capped at 100,000 iterations; this first-stage system uses that limit and should migrate to a reviewed memory-hard KDF before holding sensitive financial information. This is an initial authentication implementation, not a finished consumer identity platform. Email verification, password resets, MFA and third-party sign-in are not enabled. The original social-login buttons remain visible but disabled and explicitly labeled not connected; previously captured style utilities and source provenance are retained.
 
 ## Live routes and scope
 

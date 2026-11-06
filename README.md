@@ -36,6 +36,8 @@ The Worker handles `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/a
 
 The public home page links to `/login`, `/login?mode=signup`, and `/app`. An unauthenticated `/app` visit redirects to `/login`. The Studio root still uses the same form design and directs visitors to the canonical apex authentication origin.
 
+**Password hashing compatibility:** Cloudflare currently caps native PBKDF2 iterations at 100,000. This initial system uses 100,000 individually salted PBKDF2-SHA256 iterations, below the stronger modern guidance; move to a reviewed, memory-hard password KDF before accepting sensitive financial data.
+
 **Current limitations:** email ownership verification, password resets, MFA, OAuth, and real financial data integrations are not implemented. Users should not treat the initial dashboard as a financial-data vault. Account deletion is available from the protected dashboard.
 
 ## CI/CD and verification

@@ -1,7 +1,7 @@
 // Shared Web Crypto and credential/session rules; deliberately no D1.
 export const SESSION_COOKIE = "__Host-dofinances_session";
 export const SESSION_SECONDS = 7 * 24 * 60 * 60;
-export const PASSWORD_ITERATIONS = 310000;
+export const PASSWORD_ITERATIONS = 100000;
 const encoder = new TextEncoder();
 
 export function normalizedEmail(value) {
