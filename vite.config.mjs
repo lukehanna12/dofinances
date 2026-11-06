@@ -12,10 +12,9 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
-      // Two real HTML entry points, one shared Auth-3 React implementation.
+      // Studio has one entrypoint. CI also packages this build at apex /login.
       input: {
         home: resolve(root, "index.html"),
-        login: resolve(root, "login/index.html"),
       },
     },
   },

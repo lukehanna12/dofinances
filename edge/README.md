@@ -2,7 +2,7 @@
 
 `edge/worker.mjs` maps each incoming hostname and URL pathname to a static file in `sites/`, using Cloudflare's `ASSETS` binding. `assets.run_worker_first=true` ensures host-based isolation and prevents unrelated static assets from being served across hostnames.
 
-- Apex `dofinances.com` uses `sites/_apex/`.
+- Apex `dofinances.com` uses `sites/_apex/`. Its `/login` page and compiled `/assets/` are packaged from the Studio Vite build by CI before Worker deployment (not committed as built files).
 - `www.dofinances.com` uses `sites/_www/` first; missing paths redirect to the corresponding apex path.
 - First-level wildcard hostnames use `sites/<hostname-label>/`.
 - `stu`, payment, mail, and other explicit service subdomains are excluded by routing and host checks.

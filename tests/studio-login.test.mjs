@@ -4,14 +4,16 @@ import { readFile } from "node:fs/promises";
 
 const load = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("Studio root and /login use the same React entrypoint", async () => {
+test("Studio root is the only React entrypoint; the apex /login reuses its build", async () => {
   const root = await load("../index.html");
-  const login = await load("../login/index.html");
-  assert.equal(root, login);
   assert.match(root, /<title>Sign in · Dofinances<\/title>/);
   assert.match(root, /auth3-studio-preview-v1/);
   const vite = await load("../vite.config.mjs");
-  assert.match(vite, /login: resolve\(root, "login\/index\.html"\)/);
+  assert.match(vite, /home: resolve\(root, "index\.html"\)/);
+  assert.doesNotMatch(vite, /login: resolve/);
+  const workflow = await load("../.github/workflows/site.yml");
+  assert.match(workflow, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
+  assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
 });
 
 test("all 28 CSS utility strings match recovered Webpack module 55010 exactly and in order", async () => {
@@ -79,9 +81,11 @@ test("links and email form preserve original UI behavior without credential reco
   assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|fetch\s*\(|onClick=\{\(\) => previewAction/);
 });
 
-test("the apex /login implementation stays deleted", async () => {
+test("the old Studio /login entrypoint is deleted; a custom Pages 404 prevents SPA fallback", async () => {
   const { stat } = await import("node:fs/promises");
-  await assert.rejects(stat(new URL("../sites/_apex/login/index.html", import.meta.url)), { code: "ENOENT" });
+  await assert.rejects(stat(new URL("../login/index.html", import.meta.url)), { code: "ENOENT" });
+  const notFound = await load("../public/404.html");
+  assert.match(notFound, /404 Not Found/);
 });
 
 test("short mobile viewports position the extra theme control outside the original card", async () => {

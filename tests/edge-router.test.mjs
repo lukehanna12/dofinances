@@ -8,6 +8,8 @@ const mock = {
     const path = new URL(request.url).pathname;
     const contents = {
       "/_apex/index.html":"<h1>Dofinances</h1>",
+      "/_apex/login/index.html":"<h1>Sign in · Dofinances</h1>",
+      "/_apex/assets/app-compiled.js":"compiled-preview",
       "/_apex/notes/2026/index.html":"<h1>Notes</h1>",
       "/_www/independent.html":"<h1>Independent www page</h1>",
       "/ci-probe/index.html":"<h1>Probe works</h1>",
@@ -41,6 +43,16 @@ test("apex and wildcard pages use the assets binding",async()=>{
     assert.equal(result.status,200,url);
     assert.match(await result.text(),new RegExp(text));
   }
+});
+test("apex /login resolves the built preview without changing hostname",async()=>{
+  for(const path of ["/login","/login/"]){
+    const response=await handleRequest(new Request("https://dofinances.com"+path),mock);
+    assert.equal(response.status,200,path);
+    assert.match(await response.text(),/Sign in · Dofinances/);
+  }
+  const asset=await handleRequest(new Request("https://dofinances.com/assets/app-compiled.js"),mock);
+  assert.equal(asset.status,200);
+  assert.equal(await asset.text(),"compiled-preview");
 });
 test("www can have independent files or redirect to apex",async()=>{
   const page=await handleRequest(new Request("https://www.dofinances.com/independent.html"),mock);

@@ -2,10 +2,11 @@
 
 ## Live routes and scope
 
-- `https://stu.dofinances.com/`
-- `https://stu.dofinances.com/login/`
+- `https://stu.dofinances.com/` — Studio homepage, unchanged.
+- `https://dofinances.com/login` and `https://dofinances.com/login/` — the same Auth-3 preview, now published through the apex Worker.
+- `https://stu.dofinances.com/login` and `https://stu.dofinances.com/login/` — removed (HTTP 404).
 
-Both routes use the same `src/components/Auth3.jsx` component and Tailwind 4 stylesheet. The abandoned `sites/_apex/login/` implementation remains absent. No change is made to apex, GoDaddy, DNS, D1, or Cloudflare Worker routing.
+The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds Studio once, deploys it to Pages, and packages `dist/index.html` plus `dist/assets/` into the apex Worker assets for `/login`; no compiled assets are committed to the repository. A top-level `public/404.html` prevents Cloudflare Pages' default SPA fallback from serving the removed Studio login route. No DNS, GoDaddy, D1, or host-routing changes are required.
 
 ## Grounded source and current fidelity approach
 
@@ -37,7 +38,7 @@ The page is still a **visual sign-in preview**. Theme toggling and user-requeste
 
 ## Verification
 
-Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, two entrypoints and absence of the old apex page. CI builds the app and performs live smoke checks on both Studio URLs. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
+Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, the one Studio entrypoint, and Worker packaging for apex /login. CI builds the app and smoke-tests the Studio root and both apex login paths, plus HTTP 404 for both removed Studio login paths. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
 
 For very short mobile viewports (up to 640px wide and 700px high), the additional theme toggle is placed after the card rather than overlapping the original help text. This is a user-toggle-only responsive exception; all 28 original source classes remain unchanged.
 

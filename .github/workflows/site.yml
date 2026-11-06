@@ -33,9 +33,9 @@ jobs:
       - name: Verify distribution
         run: |
           test -s dist/index.html
-          test -s dist/login/index.html
+          test -s dist/404.html
+          test ! -e dist/login/index.html
           grep -Fq 'Sign in · Dofinances' dist/index.html
-          grep -Fq 'Sign in · Dofinances' dist/login/index.html
           test -d dist/assets
       - name: Save built site for deployment
         uses: actions/upload-artifact@v4
@@ -88,6 +88,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Download built Studio for apex /login
+        uses: actions/download-artifact@v4
+        with:
+          name: dofinances-dist
+          path: dist
+      - name: Package the Studio preview at the apex /login path
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sites/_apex/login sites/_apex/assets
+          cp dist/index.html sites/_apex/login/index.html
+          cp -R dist/assets/. sites/_apex/assets/
+          test -s sites/_apex/login/index.html
+          grep -Fq 'auth3-studio-preview-v1' sites/_apex/login/index.html
       - name: Publish Git-managed Worker (routes managed separately)
         uses: cloudflare/wrangler-action@v4
         with:
@@ -124,11 +138,11 @@ jobs:
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
 
-      - name: Verify Studio Auth-3 URLs
+      - name: Verify Studio root, apex login, and deleted Studio login routes
         shell: bash
         run: |
           set -euo pipefail
-          for url in https://stu.dofinances.com/ https://stu.dofinances.com/login/; do
+          for url in https://stu.dofinances.com/ https://dofinances.com/login https://dofinances.com/login/; do
             body="$(mktemp)"
             code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
             echo "$url -> HTTP $code ($(wc -c < "$body") bytes)"
@@ -136,4 +150,9 @@ jobs:
             grep -Fq 'Sign in · Dofinances' "$body"
             grep -Fq 'auth3-studio-preview-v1' "$body"
             rm "$body"
+          done
+          for url in https://stu.dofinances.com/login https://stu.dofinances.com/login/; do
+            code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "$url")"
+            echo "$url -> HTTP $code (expected 404)"
+            test "$code" = 404
           done
