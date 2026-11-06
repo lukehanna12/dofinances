@@ -10,6 +10,6 @@ The icons, responsive layout, background photograph URL, card dimensions, and CS
 
 **Important:** This is a visual login preview only. No backend authentication is connected, and the email and identity-provider buttons do not submit data. The email field is cleared on preview continuation. Security and real authentication must be designed separately.
 
-The existing studio landing page is replaced by this reconstruction, as requested. The apex domain, its existing Worker static assets and routes, GoDaddy settings and DNS records remain unchanged.
+The existing studio landing page is replaced by this reconstruction, as requested. The separate Studio deployment does not require changes to DNS, GoDaddy, or the apex-domain Worker routes.
 
 The GitHub Actions build verifies both HTML outputs. The deployment smoke job fetches both Studio URLs and validates that they contain the new page marker.
