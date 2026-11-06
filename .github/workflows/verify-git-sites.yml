@@ -22,13 +22,13 @@ jobs:
         env:
           STAGE: ${{ inputs.stage }}
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           status() {
             curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$1"
           }
           contains() {
             local body
-            body="$(curl --fail --silent --show-error --max-time 25 "$1")"
+            body="$(curl --location --fail --silent --show-error --max-time 25 "$1")"
             [[ "$body" == *"$2"* ]]
           }
           if [[ "$STAGE" == "preview" || "$STAGE" == "production" ]]; then
