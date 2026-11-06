@@ -60,9 +60,17 @@ export class AuthStore extends DurableObject {
     this.hit(bucket,3600);
     if (this.sql.exec("SELECT id FROM users WHERE email=?",validEmail).toArray().length)
       return {status:409,error:"An account with that email already exists."};
-    const salt=randomSalt();
-    const hash=await passwordHash(password,salt);
-    const id=crypto.randomUUID();
+    let salt, hash, id;
+    let stage="salt";
+    try {
+      salt=randomSalt();
+      stage="hash";
+      hash=await passwordHash(password,salt);
+      stage="id";
+      id=crypto.randomUUID();
+    } catch (problem) {
+      return {status:503,error:"Account initialization unavailable ("+stage+", "+(problem?.name||"error")+")"};
+    }
     try {
       this.sql.exec("INSERT INTO users(id,email,salt,password_hash,iterations,created_at) VALUES(?,?,?,?,?,?)",
         id,validEmail,salt,hash,PASSWORD_ITERATIONS,Math.floor(Date.now()/1000));

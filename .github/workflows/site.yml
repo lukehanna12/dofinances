@@ -190,6 +190,7 @@ jobs:
             -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
             -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/signup")"
           echo "Sign-up -> $signup"
+          if test "$signup" != 201; then echo "Sign-up diagnostic response:"; cat "$body"; fi
           test "$signup" = 201
           test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 200
           curl -fsS --max-time 20 -b "$jar" "$base/api/auth/me" | grep -Fq "$email"
