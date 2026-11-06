@@ -33,6 +33,9 @@ jobs:
       - name: Verify distribution
         run: |
           test -s dist/index.html
+          test -s dist/login/index.html
+          grep -Fq 'Sign in · Dofinances' dist/index.html
+          grep -Fq 'Sign in · Dofinances' dist/login/index.html
           test -d dist/assets
       - name: Save built site for deployment
         uses: actions/upload-artifact@v4
@@ -147,4 +150,18 @@ jobs:
               grep -Fq 'sign-in' "$tmp"
             fi
             rm -f "$tmp"
+          done
+
+      - name: Verify Studio Auth-3 URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in https://stu.dofinances.com/ https://stu.dofinances.com/login/; do
+            body="$(mktemp)"
+            code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
+            echo "$url -> HTTP $code ($(wc -c < "$body") bytes)"
+            test "$code" = 200
+            grep -Fq 'Sign in · Dofinances' "$body"
+            grep -Fq 'auth3-studio-preview-v1' "$body"
+            rm "$body"
           done
