@@ -1,31 +1,11 @@
-# Production credentials (GitHub Actions)
+# Production GitHub Actions credentials
 
-The repository is public. **Never commit or paste API tokens, passwords, private keys, GitHub Actions secret values, or GoDaddy credentials in code or chat.**
+The existing `dofinances-github-actions` token was upgraded by the owner. Its secret is stored in GitHub as `CLOUDFLARE_API_TOKEN` with Cloudflare Pages Edit and Workers Admin permission, limited to the account holding `dofinances-studio`. The repository variable `DEPLOY_ENABLED=true` gates both production deployments.
 
-## Enable the existing Pages project
+The GitHub Actions workflow at [`site.yml`](../.github/workflows/site.yml) runs tests/builds then deploys studio Pages and the wildcard Worker automatically on pushes to `main`. It may be run manually with **Run workflow**. DNS and Worker routes are configured separately; CI/CD does not modify DNS.
 
-1. Open [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens) and create a *Custom Token* called `dofinances-github-actions`.
-2. Give it **Account → Cloudflare Pages → Edit** (shown as Pages Write in some UI variants). Limit the account resources to the Cloudflare account `7d0d4c74836717a4d23784bbf8d5ccd7`. Do **not** grant DNS/D1/R2/Workers permissions to this routine deployment token.
-3. In [GitHub Actions secrets](https://github.com/lukehanna12/dofinances/settings/secrets/actions), create a repository secret named exactly `CLOUDFLARE_API_TOKEN`, with the token value.
-4. Under the [GitHub Actions variables](https://github.com/lukehanna12/dofinances/settings/variables/actions), create repository variable `DEPLOY_ENABLED` = `true`. The workflow is fail-closed until this variable is set. The Cloudflare account ID is already stored in the workflow (not a secret).
-5. From [GitHub Actions](https://github.com/lukehanna12/dofinances/actions), run **Build and deploy Dofinances → Run workflow → main**, or push a commit. Check the `Test and build` and `Deploy to Cloudflare Pages` jobs. Verify `https://dofinances-studio.pages.dev` and the intended `stu.dofinances.com` before changing DNS.
+The token can be narrowed to Workers Editor for an existing Worker after initial creation. A per-Worker-scoped token is preferable, with a separate Pages token if separating permissions later. Do not paste or commit token values in this public repository.
 
-The GitHub environment `cloudflare-production` exists. Add required reviewers there if desired.
+The existing apex/www site is managed in GoDaddy Website Builder; that application's content is not part of the current GitHub deployment pipeline.
 
-## Future wildcard Worker (optional; separate credential)
-
-To enable later, make a **different** Cloudflare API token scoped to Workers script deployments, stored as GitHub secret `CLOUDFLARE_WORKERS_API_TOKEN`. If creating the Worker is necessary, the token requires Workers product-level Admin; after creation, use the least-privilege per-Worker Editor role where possible. Do not reuse the Pages token for this.
-
-The optional Worker can be deployed using the manual GitHub Actions `deploy_wildcard=true` input; you do **not** need to enable the recurring `WILDCARD_DEPLOY_ENABLED` repository variable. The existing Pages token does **not** have permission to deploy Workers; create `CLOUDFLARE_WORKERS_API_TOKEN`. Deploying the Worker does **not** activate the wildcard route until DNS and routes are configured separately.
-
-If you use a deployment agent for DNS or routing changes, grant that agent narrowly scoped zone permissions separate from the GitHub Actions credentials.
-
-## Troubleshooting
-
-- **Production job skipped**: `DEPLOY_ENABLED` is missing or not `true`.
-- **403 from Wrangler**: token lacks Pages Write access to the relevant account, or is expired.
-- **Target not found**: verify Pages project `dofinances-studio` in the connected Cloudflare account.
-- **Build fails**: inspect GitHub Actions run logs and dependencies; build artifacts are remote.
-- **Hostname not working**: custom domain, GoDaddy/Cloudflare authoritative DNS, SSL certificate, and deployed Pages content are separate checks.
-
-Official docs: https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/
+See https://developers.cloudflare.com/workers/authorization/workers/ for current roles.

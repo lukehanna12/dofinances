@@ -1,47 +1,32 @@
-# Dofinances DNS, TLS, and wildcard routing
+# Dofinances live domain architecture
 
-## Confirmed design
+Updated November 6, 2026.
 
-- Domain registrar: **GoDaddy**; registration remains there.
-- Authoritative DNS: Cloudflare account, active zone `82449992fdde32c2fedbc9fda8eb2d3c`.
-- `dofinances.com` and `www.dofinances.com`: original GoDaddy Websites + Marketing homepage, **not React Pages**.
-- `stu.dofinances.com`: React Pages project `dofinances-studio` deployed by GitHub Actions.
-- Wildcard `*.dofinances.com`: separately gated Worker router intended for eligible first-level application hostnames; not active until credential, DNS, route and TLS verification.
+- Domain registrar: GoDaddy, with the user's paid registration through January 2028 unaffected.
+- Authoritative DNS: Cloudflare active zone `82449992fdde32c2fedbc9fda8eb2d3c`; DNSSEC disabled.
+- Apex `dofinances.com`: GoDaddy Website Builder, DNS-only A `13.248.243.5`.
+- `www.dofinances.com`: DNS-only CNAME to apex, GoDaddy handles redirect.
+- `stu.dofinances.com`: DNS-only CNAME `dofinances-studio.pages.dev`; Pages custom-domain status active.
+- `*.dofinances.com`: proxied A `192.0.2.1` for Worker-only routing; Worker route `*.dofinances.com/*` uses `dofinances-host-router`.
+- Exact no-script route exceptions for `stu.dofinances.com/*` and `www.dofinances.com/*`.
+- Cloudflare Universal SSL wildcard certificate: active, covers apex and first-level subdomains. Deeper subdomains are not covered on Free Universal SSL.
+- Existing Zoho Mail MX/SPF/DKIM/DMARC, SendGrid CNAME, verification tokens, GoDaddy payment and Domain Connect preserved from exported GoDaddy zone.
+- `gd-origin.dofinances.com` alias and narrow apex Worker probe route were removed after testing.
 
-## Completed repairs, November 6, 2026
+## CI/CD
 
-The original GoDaddy export contained a provider-specific apex entry `WebsiteBuilder Site` (not a usable IP), and `www` as a CNAME to the apex. With Cloudflare nameservers now activated, the following web records have been configured in Cloudflare using GoDaddy's published external-DNS instructions:
+[`site.yml`](../.github/workflows/site.yml) automatically builds and deploys studio React Pages and the Git-controlled wildcard Worker after passing tests. Files on GitHub are public; credentials live in GitHub Secrets. No R2, D1, or Mac local build artifacts required.
 
-| Host | Type | Destination | Proxy |
-| --- | --- | --- | --- |
-| `dofinances.com` | A | `13.248.243.5` | DNS-only |
-| `www.dofinances.com` | CNAME | `dofinances.com` | DNS-only |
-| `stu.dofinances.com` | CNAME | `dofinances-studio.pages.dev` | DNS-only |
+Wildcard pages are declared in [`edge/pages.mjs`](../edge/pages.mjs); adding/removing an entry and committing changes the reachable page after CI. The staging page registry is empty after cleanup. The Worker always returns 404 for unconfigured wildcard paths.
 
-The pending Pages custom-domain associations for the **apex and `www`** have been explicitly deleted. The `stu` association is retained. The GoDaddy homepage is therefore not published from this GitHub repo.
+**Important limitation:** the original GoDaddy homepage cannot be edited through GitHub. We tested Cloudflare proxied apex and a Worker route on a narrow `/__ci_probe/*` path. The Worker page succeeded, but a subsequent origin request returned HTTP 522. We rolled back proxied apex to DNS-only and removed the temporary route. Full CI/CD control of apex/www needs a safe content migration away from GoDaddy Website Builder, or another validated supported integration, before attaching broad Workers routes.
 
-The other **14** provider records were populated using the exported baseline: Zoho MX/SPF/DKIM/DMARC, SendGrid CNAMEs, Google/Zoho verification, GoDaddy payment link, and GoDaddy Domain Connect. DNSSEC is disabled by owner preference. Never delete those records while changing wildcard routes.
+## Verification
 
-GoDaddy reference: https://www.godaddy.com/en/help/connect-an-external-domain-to-my-websites-marketing-or-version-7-site-40564
+- [Public apex, www, stu HTTPS checks](../.github/workflows/verify-sites.yml)
+- [Wildcard HTTPS and deletion check](../.github/workflows/verify-wildcard.yml)
 
-## Live verification
-
-Use [GitHub Actions: Verify live DNS and HTTPS](../.github/workflows/verify-sites.yml) to check TLS and actual publicly reachable webpages from a hosted runner. Do not infer successful HTTPS solely from DNS record existence. Pages and GoDaddy may require propagation after DNS updates.
-
-## Wildcard deployment and routing
-
-1. Create a separate Cloudflare Workers API token scoped to Workers product Admin if creating a new Worker. Later replace it with a token scoped to Editor for the single existing `dofinances-host-router` Worker.
-2. Save token as the GitHub Actions repository secret `CLOUDFLARE_WORKERS_API_TOKEN`.
-3. In [Build and deploy Dofinances](../.github/workflows/site.yml), use **Run workflow**, setting `deploy_wildcard` to true. The Worker deploys without routes or public workers.dev.
-4. Once successful, create Cloudflare-proxied wildcard DNS record `A *.dofinances.com → 192.0.2.1` for route-only fallback.
-5. Before attaching the `*.dofinances.com/*` Worker route, add **no-script** exemptions `stu.dofinances.com/*`, `www.dofinances.com/*` and any other existing application hostnames. Cloudflare chooses more-specific routes.
-6. Attach wildcard route to `dofinances-host-router`, verify one or more arbitrary hostnames and nested paths using the optional test in the HTTPS workflow, and clean up only temporary test records/routes.
-7. Explicit first-level subdomain records (including `stu` and `pay`) override wildcard DNS. The Worker itself also rejects reserved hostnames and deeper hostnames.
-8. Universal SSL on a Cloudflare full zone covers the apex and first-level subdomains; deeper hostnames require additional certificate coverage.
-
-**Important:** The wildcard Worker is a fixed-origin static Pages proxy, not a generalized code execution tool. It strips cookies and authorization and only supports GET/HEAD. Arbitrary URL paths load the SPA fallback; distinct app routes require future UI code.
-
-Cloudflare references:
+Official docs:
 - https://developers.cloudflare.com/workers/configuration/routing/routes/
-- https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/configuration/hostname-routing/
-- https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/
+- https://developers.cloudflare.com/workers/authorization/
+- https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/

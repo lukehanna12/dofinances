@@ -1,20 +1,5 @@
-// Git-managed public pages; keys are hostname followed by absolute URL path.
-// Adding/changing/removing entries is deployed by GitHub Actions.
-export const pages = Object.freeze({
-  "ci-probe.dofinances.com/": {
-    type:"text/html; charset=utf-8",
-    body:"<!doctype html><html><body><h1>Wildcard CI probe</h1></body></html>",
-  },
-  "ci-probe.dofinances.com/nested/hello": {
-    type:"text/html; charset=utf-8",
-    body:"<!doctype html><html><body><h1>Nested route works</h1></body></html>",
-  },
-  "dofinances.com/__ci_probe/test": {
-    type:"text/html; charset=utf-8",
-    body:"<!doctype html><html><body><h1>Apex CI overlay probe</h1></body></html>",
-  },
-  "www.dofinances.com/__ci_probe/test": {
-    type:"text/html; charset=utf-8",
-    body:"<!doctype html><html><body><h1>WWW CI overlay probe</h1></body></html>",
-  },
-});
+// Version-controlled public HTML pages for eligible first-level wildcard hosts.
+// Add a key such as "portfolio.dofinances.com/about" to publish that URL.
+// Remove the key and commit to delete its public page (HTTP 404).
+// The current registry is intentionally empty after end-to-end validation.
+export const pages = Object.freeze({});
