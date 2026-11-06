@@ -118,5 +118,5 @@ test("actual source typography: family, sizes, weights and spacing", async () =>
   assert.equal(matches("text-sm").length, 7, "Seven explicit 14px utilities; links inherit from regular paragraphs");
   assert.equal(matches("tracking-tight").length, 4, "Three social buttons and caption body");
   assert.equal(matches("tracking-tighter").length, 1);
-  assert.match(component, /className=`auth3-root font-sans antialiased/);
+  assert.ok(component.includes("className={`auth3-root font-sans antialiased "));
 });
