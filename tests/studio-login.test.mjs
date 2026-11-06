@@ -90,3 +90,9 @@ test("short mobile viewports position the extra theme control outside the origin
   assert.match(css, /\.auth3-theme-toggle\s*\{\s*position: relative;\s*align-self: flex-end;/);
   // Original utility classes must still be enforced by the source contract.
 });
+
+test("original iframe dark-mode base foreground propagates to the Auth-3 root", async () => {
+  const css = await load("../src/styles.css");
+  assert.match(css, /\.auth3-root\.dark \{ color-scheme: dark; color: #fff; \}/);
+  assert.match(css, /\.auth3-root:not\(\.dark\) \{ color-scheme: light; color: #0a0a0a; \}/);
+});

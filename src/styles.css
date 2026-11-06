@@ -28,8 +28,8 @@ html, body, #root {
   min-height: 100vh;
   background-color: #0a0a0a;
 }
-.auth3-root.dark { color-scheme: dark; }
-.auth3-root:not(.dark) { color-scheme: light; }
+.auth3-root.dark { color-scheme: dark; color: #fff; }
+.auth3-root:not(.dark) { color-scheme: light; color: #0a0a0a; }
 
 /* Only the user-requested bottom-right theme control is custom. */
 .auth3-theme-toggle {

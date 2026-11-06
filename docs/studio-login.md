@@ -40,3 +40,16 @@ The page is still a **visual sign-in preview**. Theme toggling and user-requeste
 Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, two entrypoints and absence of the old apex page. CI builds the app and performs live smoke checks on both Studio URLs. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
 
 For very short mobile viewports (up to 640px wide and 700px high), the additional theme toggle is placed after the card rather than overlapping the original help text. This is a user-toggle-only responsive exception; all 28 original source classes remain unchanged.
+
+## 2026-11-06 — 386 × 800 original iframe computed-style reference
+
+The user supplied a matching-state iframe HTML document and a 29-node computed-style/geometry capture measured on a Mac in Chrome (device pixel ratio 2), with the original `html.dark.disable-transitions` frame. Comparison against the locally built Studio version at the same CSS viewport found:
+
+- Identical major geometry: stage 386×800; row x=24, width=338; card x=24, width=338, padding=32, radius=16; input x=56, width=274, height=52, border=2, radius=12.8; primary height=48, border=0, radius=12.8; social height=46, border=1, radius=12.8, 12px gaps.
+- Identical sampled active colors: card/input `oklch(0.205 0 0)`, social background `oklch(0.269 0 0)`, neutral-700 borders `oklch(0.371 0 0)`, secondary text `oklch(0.708 0 0)`, primary white.
+- Original card height was **589px**, local Chromium card height **590px**. Original card y=105.5 and local Chromium y=105; most child y values differ by 0.5px. The original Chrome-on-Mac anchor fragment measured 120.617×16.5px whereas local Chromium-on-Linux measured 121.375×19px despite identical CSS font-family and 14px/20px/500 computed typography; this is strong evidence of a platform-font glyph-metric difference, not a CSS spacing-token mismatch. Do **not** compensate by shifting the layout 0.5px or hard-coding the card height; this would worsen fidelity on the user's Mac.
+- Verified discrepancy corrected: original outer/root foreground inherited white `rgb(255,255,255)`, while Studio root inherited black. The default dark root foreground now explicitly inherits white; light mode uses dark foreground. All previously explicit child colors remain unchanged.
+- The capture's `disable-transitions` class forces computed transition = `none` at capture time. The original source still includes 200ms hover/focus transitions; do not remove these based on that transitory root class.
+- The source's external Unsplash background has not been successfully fetched in the isolated browser/container network. Neither a local background image nor its successful display in the user's browser can be asserted from this capture. The URL and overlay match the supplied source. Verify a real image response in the user's environment before diagnosing its appearance.
+
+This is a source-based and computed-style comparison, not photographic proof of pixel parity. Pixel comparison at the same browser/operating system and a loaded original background remains the final validation step.
