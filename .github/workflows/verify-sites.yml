@@ -1,0 +1,58 @@
+name: Verify live DNS and HTTPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_wildcard:
+        description: 'Also check wildcard first-level hosts and nested paths (only after route activation)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Probe HTTPS and host boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate site HTTP, TLS and DNS using public network
+        env:
+          INCLUDE_WILDCARD: ${{ inputs.include_wildcard }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          failures=0
+          check() {
+            local url="$1"
+            echo "::group::$url"
+            local host="${url#https://}"
+            host="${host%%/*}"
+            echo "DNS:"
+            dig +short "$host" A || true
+            echo "HTTPS:"
+            local output
+            if output=$(curl --location --max-time 25 --connect-timeout 12 --silent --show-error --output /dev/null --write-out 'http=%{http_code} tls_verify=%{ssl_verify_result} remote_ip=%{remote_ip} final_url=%{url_effective}' "$url" 2>&1); then
+              echo "$output"
+              local code="${output#http=}"
+              code="${code%% *}"
+              if [[ ! "$code" =~ ^[23][0-9][0-9]$ ]]; then
+                echo "::error::Unexpected HTTP status for $url: $code"
+                failures=$((failures+1))
+              fi
+            else
+              echo "::error::$url: $output"
+              failures=$((failures+1))
+            fi
+            echo "::endgroup::"
+          }
+          check 'https://dofinances.com/'
+          check 'https://www.dofinances.com/'
+          check 'https://stu.dofinances.com/'
+          if [[ "$INCLUDE_WILDCARD" == 'true' ]]; then
+            check 'https://alpha.dofinances.com/ledger/a/b?sort=up'
+            check 'https://portfolio.dofinances.com/anything/hello%20world?x=1'
+          fi
+          echo "Failures: $failures"
+          if ((failures > 0)); then exit 1; fi

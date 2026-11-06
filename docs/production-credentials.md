@@ -16,7 +16,7 @@ The GitHub environment `cloudflare-production` exists. Add required reviewers th
 
 To enable later, make a **different** Cloudflare API token scoped to Workers script deployments, stored as GitHub secret `CLOUDFLARE_WORKERS_API_TOKEN`. If creating the Worker is necessary, the token requires Workers product-level Admin; after creation, use the least-privilege per-Worker Editor role where possible. Do not reuse the Pages token for this.
 
-Only after the DNS/SSL migration is verified, set `WILDCARD_DEPLOY_ENABLED` = `true`. The Worker deployment still does **not** activate domain routing: the wildcard DNS record and routes are separate, deliberate Cloudflare zone changes.
+The optional Worker can be deployed using the manual GitHub Actions `deploy_wildcard=true` input; you do **not** need to enable the recurring `WILDCARD_DEPLOY_ENABLED` repository variable. The existing Pages token does **not** have permission to deploy Workers; create `CLOUDFLARE_WORKERS_API_TOKEN`. Deploying the Worker does **not** activate the wildcard route until DNS and routes are configured separately.
 
 If you use a deployment agent for DNS or routing changes, grant that agent narrowly scoped zone permissions separate from the GitHub Actions credentials.
 

@@ -1,69 +1,47 @@
-# Production domain, wildcard subdomains and arbitrary paths
+# Dofinances DNS, TLS, and wildcard routing
 
-## Verified configuration (November 6, 2026)
+## Confirmed design
 
-- Domain registrar: **GoDaddy** (per owner).
-- Original nameservers reported by Cloudflare: `ns67.domaincontrol.com` and `ns68.domaincontrol.com`.
-- Pending Cloudflare Free zone for `dofinances.com`: `82449992fdde32c2fedbc9fda8eb2d3c`.
-- Assigned Cloudflare nameservers: `austin.ns.cloudflare.com` and `kira.ns.cloudflare.com`.
-- On inspection the new Cloudflare zone had **zero DNS records**. **Do not switch GoDaddy nameservers while empty.**
-- **Only Pages application target**: `dofinances-studio`, with `dofinances-studio.pages.dev` and existing custom domain `stu.dofinances.com`. No successful Pages deployments verified during setup.
-- Pages custom domains registered for `dofinances.com` and `www.dofinances.com`: both `initializing`, not live/verified. Existing `stu.dofinances.com` is `active`. Cloudflare has not yet populated the pending zone with records.
-- Do not assume the pending DNS zone is already authoritative or that the apex is serving this project.
+- Domain registrar: **GoDaddy**; registration remains there.
+- Authoritative DNS: Cloudflare account, active zone `82449992fdde32c2fedbc9fda8eb2d3c`.
+- `dofinances.com` and `www.dofinances.com`: original GoDaddy Websites + Marketing homepage, **not React Pages**.
+- `stu.dofinances.com`: React Pages project `dofinances-studio` deployed by GitHub Actions.
+- Wildcard `*.dofinances.com`: separately gated Worker router intended for eligible first-level application hostnames; not active until credential, DNS, route and TLS verification.
 
-## 1. Inventory GoDaddy DNS before any cutover
+## Completed repairs, November 6, 2026
 
-GoDaddy > My Products > Domains > `dofinances.com` > DNS.
+The original GoDaddy export contained a provider-specific apex entry `WebsiteBuilder Site` (not a usable IP), and `www` as a CNAME to the apex. With Cloudflare nameservers now activated, the following web records have been configured in Cloudflare using GoDaddy's published external-DNS instructions:
 
-Record all existing A/AAAA/CNAME/MX/TXT/CAA/SRV/NS/DS and subdomains, including mail routing, verification tokens, SPF/DKIM/DMARC, custom services, any active `www`, and `stu`. Check whether DNSSEC is active at GoDaddy.
+| Host | Type | Destination | Proxy |
+| --- | --- | --- | --- |
+| `dofinances.com` | A | `13.248.243.5` | DNS-only |
+| `www.dofinances.com` | CNAME | `dofinances.com` | DNS-only |
+| `stu.dofinances.com` | CNAME | `dofinances-studio.pages.dev` | DNS-only |
 
-Replicate legitimate records into the pending Cloudflare zone before changing authoritative nameservers. If DNSSEC is used, handle DS changes deliberately to avoid DNSSEC validation failures. Do not overwrite other services merely to enable wildcard hosts.
+The pending Pages custom-domain associations for the **apex and `www`** have been explicitly deleted. The `stu` association is retained. The GoDaddy homepage is therefore not published from this GitHub repo.
 
-## 2. Make the first Pages deployment
+The other **14** provider records were populated using the exported baseline: Zoho MX/SPF/DKIM/DMARC, SendGrid CNAMEs, Google/Zoho verification, GoDaddy payment link, and GoDaddy Domain Connect. DNSSEC is disabled by owner preference. Never delete those records while changing wildcard routes.
 
-Enable GitHub Actions credentials per [production-credentials.md](production-credentials.md). Verify that `https://dofinances-studio.pages.dev/` serves the new site. Deployments to the existing `stu.dofinances.com` custom domain may also change its site content—this is intentional only after approval.
+GoDaddy reference: https://www.godaddy.com/en/help/connect-an-external-domain-to-my-websites-marketing-or-version-7-site-40564
 
-## 3. Connect apex and www
+## Live verification
 
-Cloudflare Pages requires a Cloudflare **DNS zone** for the apex `dofinances.com`. The apex and `www` have already been registered in the `dofinances-studio` project's **Custom domains**, but remain `initializing` pending DNS/SSL validation. When authoritative DNS migration is ready, arrange their Cloudflare DNS records as Pages directs and choose a canonical redirect policy. Recheck both associations before and after cutover.
+Use [GitHub Actions: Verify live DNS and HTTPS](../.github/workflows/verify-sites.yml) to check TLS and actual publicly reachable webpages from a hosted runner. Do not infer successful HTTPS solely from DNS record existence. Pages and GoDaddy may require propagation after DNS updates.
 
-Cloudflare's assigned nameservers above are the values to enter at GoDaddy **only after** safely migrating records and checking that the Pages deployment is healthy. GoDaddy can remain the registrar; no domain transfer is required. Validate HTTP, HTTPS, mail and important subdomains after propagation.
+## Wildcard deployment and routing
 
-## 4. Arbitrary subdomains are not native to Pages
+1. Create a separate Cloudflare Workers API token scoped to Workers product Admin if creating a new Worker. Later replace it with a token scoped to Editor for the single existing `dofinances-host-router` Worker.
+2. Save token as the GitHub Actions repository secret `CLOUDFLARE_WORKERS_API_TOKEN`.
+3. In [Build and deploy Dofinances](../.github/workflows/site.yml), use **Run workflow**, setting `deploy_wildcard` to true. The Worker deploys without routes or public workers.dev.
+4. Once successful, create Cloudflare-proxied wildcard DNS record `A *.dofinances.com → 192.0.2.1` for route-only fallback.
+5. Before attaching the `*.dofinances.com/*` Worker route, add **no-script** exemptions `stu.dofinances.com/*`, `www.dofinances.com/*` and any other existing application hostnames. Cloudflare chooses more-specific routes.
+6. Attach wildcard route to `dofinances-host-router`, verify one or more arbitrary hostnames and nested paths using the optional test in the HTTPS workflow, and clean up only temporary test records/routes.
+7. Explicit first-level subdomain records (including `stu` and `pay`) override wildcard DNS. The Worker itself also rejects reserved hostnames and deeper hostnames.
+8. Universal SSL on a Cloudflare full zone covers the apex and first-level subdomains; deeper hostnames require additional certificate coverage.
 
-Cloudflare Pages currently **does not support** custom domain `*.dofinances.com`.
+**Important:** The wildcard Worker is a fixed-origin static Pages proxy, not a generalized code execution tool. It strips cookies and authorization and only supports GET/HEAD. Arbitrary URL paths load the SPA fallback; distinct app routes require future UI code.
 
-A future wildcard setup uses:
-
-1. Cloudflare becomes authoritative for `dofinances.com`.
-2. Add a Cloudflare-proxied wildcard DNS record `*.dofinances.com` (while preserving all explicit existing records). The origin value used for a route-only Worker can be a suitable dummy IP as documented by Cloudflare; do not expose an unprotected origin.
-3. Deploy the separately gated `dofinances-host-router` Worker from [edge/](../edge/). Its configuration does not automatically attach any routes.
-4. Register the route `*.dofinances.com/*` to that Worker. It forwards arbitrary hostnames and URL paths to `dofinances-studio.pages.dev` while retaining each public hostname.
-5. Preserve `stu.dofinances.com` and other separately configured applications via more-specific bypass routes or explicit handling. **Test before enabling the broad wildcard route.**
-
-This enables a common site for arbitrary first-level subdomains. Per-subdomain content/apps require explicit dispatch logic in the Worker. The wildcard Worker introduces Workers request/CPU quota usage.
-
-**TLS boundary:** Cloudflare Free Universal SSL covers the root and first-level subdomains (e.g. `anything.dofinances.com`) but not deeper hostnames (e.g. `x.y.dofinances.com`). Deeper HTTPS hosts may need paid certificate products such as Advanced Certificate Manager/Total TLS.
-
-## 5. Arbitrary URL paths
-
-On the Pages project, unknown paths are served via the React SPA fallback (no root `404.html`). This means `dofinances.com/any/arbitrary/path` can load the app after the apex is connected. Distinct page content, auth, API endpoints and redirects are application-level tasks to implement, not DNS entries.
-
-## Final readiness checklist
-
-- [ ] Export and review GoDaddy authoritative DNS
-- [ ] Re-create all required DNS in pending Cloudflare zone
-- [ ] Verify first GitHub Actions deployment to existing Pages project
-- [x] Register `dofinances.com` and `www` custom domains in Pages (currently **initializing**, not active)
-- [ ] Verify DNS and TLS validation of both custom domains
-- [ ] Validate nameserver and DNSSEC plan
-- [ ] Switch GoDaddy nameservers when safe, then verify DNS/TLS/mail
-- [ ] Separately enable wildcard Worker, wildcard DNS and route if requested
-- [ ] Verify representative hostnames and paths, plus existing `stu`
-
-References:
-- https://developers.cloudflare.com/pages/configuration/custom-domains/
-- https://developers.cloudflare.com/pages/platform/known-issues/
-- https://developers.cloudflare.com/pages/configuration/serving-pages/
+Cloudflare references:
 - https://developers.cloudflare.com/workers/configuration/routing/routes/
+- https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/configuration/hostname-routing/
 - https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/
