@@ -18,7 +18,7 @@ TOTP implements RFC 6238 with 30-second SHA-1 six-digit codes, a ±1 step tolera
 
 ## Selected outbound provider: Mailtrap Email Sending
 
-**Mailtrap is the chosen transactional provider; SendGrid is not used.** The integration calls
+**Mailtrap is the sole transactional-email provider.** The integration calls
 `POST https://send.api.mailtrap.io/api/send` with the `Api-Token` header, a single recipient,
 plain-text plus HTML content, and the `account-verification`/`password-recovery` category.
 It does **not** call Mailtrap's Sandbox or bulk-marketing API. On the free plan, the currently
@@ -31,9 +31,9 @@ domain**. This is a provider quota, not a D1 cost.
    Email Sandbox. Use the free plan; do not subscribe to a paid plan.
 2. Under **Sending Domains**, add **`dofinances.com`** and obtain Mailtrap's exact verification
    records. The domain's **authoritative DNS is Cloudflare**, even though GoDaddy is the registrar.
-   The site already has Zoho MX records, existing DKIM selectors and DMARC; preserve them.
+   The site already has Zoho MX records, its Zoho DKIM selector and DMARC; preserve them.
    Only add nonconflicting records that Mailtrap actually issues. If Mailtrap requests a conflicting
-   DMARC value, review it instead of blindly replacing the existing security policy.
+   DMARC or root SPF change, review it instead of blindly replacing the existing security policy.
 3. Complete Mailtrap's compliance/domain verification and confirm its status is **Verified**.
 4. In Mailtrap **Sending Domains → Integration → Transactional Stream → API** (or Settings →
    API Tokens), obtain a **send-only, domain-scoped API token**.
@@ -50,8 +50,7 @@ two separately purchased mailboxes or two sending domains. Mailtrap authenticate
 it does not receive/forward personal support mail as part of this Worker integration.
 
 **Incoming email remains separate:** existing `mx.zoho.com`, `mx2.zoho.com` and
-`mx3.zoho.com` MX records are left unchanged. No GoDaddy, Zoho, DNS, R2 or D1 mutations
-are needed just to commit this application-side Mailtrap API adapter.
+`mx3.zoho.com` MX records are left unchanged. No GoDaddy, Zoho, R2 or D1 mutations are needed to activate the API adapter. The old outbound-provider DNS records are retired separately; Mailtrap's verification DNS is still awaiting real provider-generated values.
 
 If mail credentials are missing, signup and email-dependent flows fail closed with HTTP 503;
 existing login and MFA continue. If email dispatch fails during signup, the pending account
@@ -62,7 +61,7 @@ is installed as a Cloudflare Worker secret. Keep it safe and do not rotate witho
 rotation plan: rotating it invalidates decryption of previously enrolled authenticators.
 Never log or commit secrets, verification links, codes or plaintext passwords.
 
-## Security boundaries and follow-up
+See [the activation checklist](mailtrap-activation.md) for the exact remaining handoff.\n\n## Security boundaries and follow-up
 
 All state-changing endpoints require the exact canonical apex Origin and JSON. Sessions use hashed server-side tokens in Secure, HttpOnly, SameSite=Lax `__Host-` cookies; protected dashboard HTML and assets are marked no-store. Cross-origin attempts are rejected. Only the apex Worker has account authority; the `stu` Pages host has no access to the session cookie.
 

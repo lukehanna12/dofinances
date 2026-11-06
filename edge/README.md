@@ -18,4 +18,9 @@ This is static website CI/CD. Dynamic server-side applications would require imp
 
 ## Authenticated dashboard
 
-The apex's `/app` and `/dashboard` paths require a valid server-side session; unauthenticated requests redirect to `/login`. The Worker owns an independent SQLite-backed Durable Object for accounts and sessions, configured as `AUTH_STORE`; it never reads or writes D1. The Studio login interface is built once in GitHub Actions, and CI's live auth smoke test signs up an ephemeral user, exercises login/logout/dashboard protection, and then deletes the test account.
+The apex's `/app` and `/dashboard` paths require a valid server-side session; unauthenticated requests redirect to `/login`. The Worker owns an independent SQLite-backed Durable Object for accounts and sessions, configured as `AUTH_STORE`; it never reads or writes D1. The Studio login interface is built once in GitHub Actions. CI tests authentication and mail provider behavior with controlled mocks and checks live route boundaries; it does not send real email or create live accounts until Mailtrap has been activated.
+
+
+## Transactional email readiness
+
+Account verification and password recovery use `edge/auth-mail.mjs` and the Mailtrap Email API. The Worker requires a valid `MAILTRAP_API_TOKEN` secret and `AUTH_EMAIL_FROM=noreply@dofinances.com` before opening email-dependent operations. Missing credentials fail closed (503) and do not issue a usable sign-in cookie. The Worker itself has no SMTP listener, inbound mail routing or D1 bindings. See [Mailtrap activation](../docs/mailtrap-activation.md).

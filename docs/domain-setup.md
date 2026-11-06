@@ -15,7 +15,7 @@ Cloudflare zone `82449992fdde32c2fedbc9fda8eb2d3c` is active. Nameservers: `aust
 
 The placeholder IP `192.0.2.1` is deliberately originless; incoming proxied requests are handled by the Worker route rather than a GoDaddy backend. Cloudflare Universal SSL (apex and first-level wildcard) is active. Deeper `a.b.dofinances.com` hostnames are not covered by the default certificate.
 
-All existing Zoho Mail, SendGrid, domain verification, Domain Connect and GoDaddy payment-link DNS entries were preserved. Do not proxy or overwrite those records when adding hostnames.
+Existing Zoho Mail delivery (three MX records and the `zmail._domainkey` DKIM TXT), Zoho domain verification, Domain Connect and GoDaddy payment-link DNS entries are preserved. **The three obsolete SendGrid CNAMEs and its SPF include were removed in November 2026**; do not restore them. Do not proxy or overwrite Zoho mail records.
 
 ## Git content locations
 
@@ -45,4 +45,9 @@ The apex Worker now also serves a protected `/app` dashboard and email/password 
 
 ## Email delivery for account security
 
-The deployed Worker now uses **Mailtrap transactional email API**, with `MAILTRAP_API_TOKEN` and `AUTH_EMAIL_FROM` Worker secrets (optional `AUTH_EMAIL_REPLY_TO`). Its Free tier provides 4,000/month and 150/day using one sending domain. To activate, verify `dofinances.com` in Mailtrap and add only the exact, nonconflicting verification records to authoritative **Cloudflare DNS**. Preserve the existing Zoho MX records and mail reception; historical SendGrid DNS records were intentionally not changed by this application-only migration. With no Mailtrap token/sender configured, signup, verification emails and password-reset messages fail closed; TOTP enrollment and authenticated legacy accounts remain available. The MFA encryption key remains a separate Worker secret. See `docs/account-security.md`.
+The deployed Worker now uses **Mailtrap transactional email API**, with `MAILTRAP_API_TOKEN` and `AUTH_EMAIL_FROM` Worker secrets (optional `AUTH_EMAIL_REPLY_TO`). Its Free tier provides 4,000/month and 150/day using one sending domain. To activate, verify `dofinances.com` in Mailtrap and add only the exact, nonconflicting verification records to authoritative **Cloudflare DNS**. Preserve the existing Zoho MX records and mail reception; old outbound-provider DNS records were removed after the Mailtrap transition; no Mailtrap verification records have been created before the owner establishes a Mailtrap sending domain. With no Mailtrap token/sender configured, signup, verification emails and password-reset messages fail closed; TOTP enrollment and authenticated legacy accounts remain available. The MFA encryption key remains a separate Worker secret. See `docs/account-security.md`.
+
+
+## Mailtrap migration DNS baseline (2026-11-06)
+
+The legacy provider's CNAMEs `em5386.dofinances.com`, `s1._domainkey.dofinances.com`, and `s2._domainkey.dofinances.com` were retired. The apex SPF TXT is `v=spf1 include:zoho.com ~all`, without the legacy outbound provider include. Keep the current Zoho root MX priorities of 10, 20, 50 and `zmail._domainkey` intact. Do not add Mailtrap DNS record values from examples: create them only when Mailtrap issues the exact records for this sending domain. See [Mailtrap activation](mailtrap-activation.md).

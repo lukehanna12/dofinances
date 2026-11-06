@@ -2,7 +2,7 @@
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
 const ROOT="dofinances.com";
-const RESERVED=new Set(["stu","pay","em5386","zb30895346","_domainconnect","_dmarc","s1","s2","zmail","gd-origin"]);
+const RESERVED=new Set(["stu","pay","zb30895346","_domainconnect","_dmarc","zmail","gd-origin"]);
 const LABEL=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const NO_STORE={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin"};
 
