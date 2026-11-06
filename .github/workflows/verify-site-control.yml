@@ -1,0 +1,46 @@
+name: Verify Git-controlled root and wildcard sites
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Which URLs to validate"
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate DNS, HTTPS, content, and routes
+        shell: bash
+        env:
+          STAGE: ${{ inputs.stage }}
+        run: |
+          set -euo pipefail
+          if [[ "$STAGE" == "preview" ]]; then
+            URL="https://preview-dofinances.dofinances.com/"
+          else
+            URL="https://dofinances.com/"
+          fi
+          echo "Checking Git-managed site at $URL"
+          text="$(curl --fail --silent --show-error --max-time 25 "$URL")"
+          grep -Fq 'The site is ready.' <<< "$text"
+          if [[ "$STAGE" == "production" ]]; then
+            echo "Checking apex path registration"
+            test "$(curl --fail --silent --show-error --max-time 25 'https://dofinances.com/__site_probe')" = "dofinances-apex-ci-probe"
+            echo "Checking www redirect to apex"
+            www="$(curl --location --fail --silent --show-error --max-time 25 'https://www.dofinances.com/')"
+            grep -Fq 'The site is ready.' <<< "$www"
+            echo "Checking independent stu React app"
+            curl --fail --silent --show-error --max-time 25 -o /dev/null 'https://stu.dofinances.com/'
+          fi
+          echo "Checking nonexistent path"
+          host="${URL#https://}"
+          host="${host%%/*}"
+          code="$(curl --silent --show-error --max-time 25 --output /dev/null --write-out '%{http_code}' "https://$host/path/not/published")"
+          test "$code" = 404
+          echo "HTTPS and content verified for stage=$STAGE"
