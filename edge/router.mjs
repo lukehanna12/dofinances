@@ -92,7 +92,7 @@ async function api(request,env,pathname) {
   }
   const ip=request.headers.get("CF-Connecting-IP")||"unknown";
   const ipKey=await sha256(ip);
-  const args={...body,ipKey,token};
+  const args={...body,ipKey};
   let result;
   switch(action){
     case "signup": result=await stub.signup(args); break;
@@ -102,11 +102,11 @@ async function api(request,env,pathname) {
     case "passwordRecoveryRequest": result=await stub.passwordRecoveryRequest(args); break;
     case "resetPassword": result=await stub.resetPassword(args); break;
     case "finishMfa": result=await stub.finishMfa(args); break;
-    case "mfaSetup": result=await stub.mfaSetup(args); break;
-    case "mfaConfirm": result=await stub.mfaConfirm(args); break;
+    case "mfaSetup": result=await stub.mfaSetup({...args,token}); break;
+    case "mfaConfirm": result=await stub.mfaConfirm({...args,token}); break;
     case "mfaStatus": result=await stub.mfaStatus(token); break;
-    case "mfaDisable": result=await stub.mfaDisable(args); break;
-    case "account": result=await stub.deleteAccount(args); break;
+    case "mfaDisable": result=await stub.mfaDisable({...args,token}); break;
+    case "account": result=await stub.deleteAccount({...args,token}); break;
   }
   if(result.delivery){
     try{await sendAccountEmail(env,result.delivery);}

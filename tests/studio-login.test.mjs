@@ -60,7 +60,7 @@ test("theme defaults to dark and can switch without persistence", async () => {
   assert.match(source, /className="auth3-theme-toggle"/);
   assert.match(source, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie/);
-  assert.match(source, /credentials: "same-origin"/);
+  assert.match(source, /credentials:\s*"same-origin"/);
 });
 
 test("Motion's parameters and responsive caption classes match the source", async () => {
