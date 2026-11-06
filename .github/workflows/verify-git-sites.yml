@@ -22,12 +22,14 @@ jobs:
         env:
           STAGE: ${{ inputs.stage }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           status() {
             curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$1"
           }
           contains() {
-            curl --fail --silent --show-error --max-time 25 "$1" | grep -Fq "$2"
+            local body
+            body="$(curl --fail --silent --show-error --max-time 25 "$1")"
+            [[ "$body" == *"$2"* ]]
           }
           if [[ "$STAGE" == "preview" || "$STAGE" == "production" ]]; then
             contains 'https://ci-probe.dofinances.com/' 'DOFINANCES_WILDCARD_CI_2026'
