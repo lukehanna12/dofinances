@@ -1,0 +1,11 @@
+name: Verify apex stage
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS https://dofinances.com/__ci_probe/test | grep 'Apex CI overlay probe'
+          curl -fsSI https://dofinances.com/
