@@ -31,13 +31,52 @@
         <section id="account" class="panel">
           <h2>Account settings</h2>
           <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
-          <p class="note">Email verification and password recovery are not available yet. Do not add sensitive financial information to this initial dashboard.</p>
+          <p class="note">Your account security settings are below. No banking connections or sensitive financial records are stored in this dashboard.</p>
+          <div id="security-controls" style="margin-top:24px;border-top:1px solid #304058;padding-top:18px">
+            <h3>Email verification</h3>
+            <p id="verification-state" role="status">Checking account…</p>
+            <button id="resend-verification" type="button" class="secondary" hidden style="margin-top:12px">Send verification email</button>
+            <p id="verification-feedback" role="alert"></p>
+            <h3 style="margin-top:27px">Two-factor authentication</h3>
+            <label for="enable-password" style="display:block;margin-top:16px;font-size:13px">Current password (required to enable MFA)</label>
+            <input id="enable-password" type="password" autocomplete="current-password" style="margin-top:8px">
+            <p id="mfa-state" role="status">Loading MFA status…</p>
+            <button id="start-mfa" type="button" class="secondary" style="margin-top:12px">Enable authenticator MFA</button>
+            <section id="mfa-setup" hidden class="security-setup">
+              <p>In your authenticator app, add an account manually using this secret (30-second codes, SHA-1, 6 digits):</p>
+              <p class="secret" id="mfa-secret"></p>
+              <p>Keep this secret private. It will not be displayed again after activation.</p>
+              <form id="mfa-confirm-form" class="security-form">
+                <label for="setup-code">Enter the code shown by your authenticator</label>
+                <input id="setup-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+                <button class="secondary" type="submit">Confirm and enable MFA</button>
+              </form>
+              <p id="mfa-setup-feedback" role="alert"></p>
+            </section>
+            <section id="mfa-recovery" hidden class="security-setup">
+              <h3>Save your recovery codes</h3>
+              <p>Store these codes somewhere safe. Each can be used once. They will not be displayed again.</p>
+              <pre id="recovery-codes" class="secret"></pre>
+              <p>Your active sessions were revoked. <a href="/login">Sign in again</a> using your authenticator.</p>
+            </section>
+            <form id="mfa-disable-form" class="security-form" hidden>
+              <h3>Disable two-factor authentication</h3>
+              <label for="disable-password">Current password</label>
+              <input id="disable-password" name="password" type="password" autocomplete="current-password" required>
+              <label for="disable-code">Authenticator or recovery code</label>
+              <input id="disable-code" name="code" type="text" autocomplete="one-time-code" maxlength="48" required>
+              <button class="destructive" type="submit">Disable MFA</button>
+              <p id="mfa-disable-feedback" role="alert"></p>
+            </form>
+          </div>
           <details class="danger">
             <summary>Delete my account</summary>
             <p>This permanently deletes your registered account and all sessions. This cannot be undone.</p>
             <form id="delete-form">
               <label for="delete-password">Enter your password to confirm deletion</label>
               <input id="delete-password" name="password" type="password" autocomplete="current-password" required>
+              <label for="delete-code">Authenticator or recovery code (if MFA enabled)</label>
+              <input id="delete-code" name="code" type="text" autocomplete="one-time-code" maxlength="48">
               <button type="submit" class="destructive">Permanently delete account</button>
               <p id="delete-feedback" role="alert" aria-live="polite"></p>
             </form>

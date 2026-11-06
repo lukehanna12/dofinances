@@ -32,13 +32,17 @@ For Studio, edit `src/` and `public/` and push `main`; Vite builds the React app
 
 ## Email/password authentication
 
-The Worker handles `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, and authenticated `DELETE /api/auth/account`. Accounts are stored in the Worker-bound `AuthStore` Durable Object with individually salted PBKDF2-SHA256 password hashes, hashed revocable session tokens, server-side rate limits, and seven-day `__Host-` HttpOnly Secure SameSite=Lax cookies. All state-changing requests require the exact apex Origin.
+The Worker handles account registration, email verification, password recovery, MFA enrollment/challenges, session logout, and account deletion under `/api/auth/*`. Accounts are stored in the Worker-bound `AuthStore` Durable Object with individually salted PBKDF2-SHA256 password hashes, hashed revocable session tokens, server-side rate limits, and seven-day `__Host-` HttpOnly Secure SameSite=Lax cookies. All state-changing requests require the exact apex Origin.
 
 The public home page links to `/login`, `/login?mode=signup`, and `/app`. An unauthenticated `/app` visit redirects to `/login`. The Studio root still uses the same form design and directs visitors to the canonical apex authentication origin.
 
 **Password hashing compatibility:** Cloudflare currently caps native PBKDF2 iterations at 100,000. This initial system uses 100,000 individually salted PBKDF2-SHA256 iterations, below the stronger modern guidance; move to a reviewed, memory-hard password KDF before accepting sensitive financial data.
 
-**Current limitations:** email ownership verification, password resets, MFA, OAuth, and real financial data integrations are not implemented. Users should not treat the initial dashboard as a financial-data vault. Account deletion is available from the protected dashboard.
+**Account security features:** New-account email confirmation, one-use password recovery, TOTP authenticator MFA, and one-time recovery codes are implemented. The Worker requires a verified transactional sender (`SENDGRID_API_KEY` and `AUTH_EMAIL_FROM` stored as Worker secrets) before enabling new sign-ups or sending recovery messages. These credentials are not currently configured, so email-dependent operations deliberately return an unavailable status rather than creating unverified accessible accounts. The account's `MFA_ENCRYPTION_KEY` is stored as a Worker secret and never appears in Git.
+
+**Legacy accounts:** Existing registrations created before email verification was introduced can still sign in. They show as unverified until a verification email is delivered. New registrations cannot use `/app` until confirmation. MFA is optional, but required on every new sign-in after enrollment. Password resets on MFA-enabled accounts require an authenticator or recovery code.
+
+**Further hardening:** MFA, email verification, and resets do not turn this into a regulated financial-data application. Security review, better password KDFs, abuse controls, and financial-data protections are necessary before storing private financial records. See [Account security](docs/account-security.md).
 
 ## CI/CD and verification
 

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Reset password · Dofinances</title><link rel="stylesheet" href="/app/assets/dashboard.css">
+<script type="module" src="/reset/assets/reset.js"></script>
+</head><body><main class="content" style="max-width:680px;margin:8vh auto">
+<div class="eyebrow">DOFINANCES ACCOUNT SECURITY</div><h1>Choose a new password.</h1>
+<p class="lead">Reset links expire after 30 minutes and can be used once. All existing sessions will be signed out.</p>
+<section class="panel"><form id="reset-form" style="display:grid;gap:14px">
+<label>New password (12–128 characters)<input name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label>
+<label>Confirm new password<input name="confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label>
+<label>Authenticator or recovery code (required when MFA is enabled)
+<input name="code" type="text" autocomplete="one-time-code" maxlength="48"></label>
+<button class="secondary" type="submit">Reset password</button>
+<p id="status" role="alert" aria-live="polite"></p>
+</form><p style="margin-top:16px"><a href="/login">Return to sign in</a></p></section></main></body></html>

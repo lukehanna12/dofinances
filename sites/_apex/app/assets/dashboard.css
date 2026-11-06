@@ -11,3 +11,14 @@ h1{font-size:clamp(31px,4vw,47px);letter-spacing:-.045em;line-height:1.15;margin
 .panel .note{font-size:13px;color:#9facbc;margin-top:14px}.danger{margin-top:24px;border-top:1px solid #304058;padding-top:16px}.danger summary{cursor:pointer;color:#e6a3a3;font-weight:650;font-size:13px}.danger p{margin:13px 0}.danger form{display:grid;gap:12px;max-width:420px}.danger label{font-size:12px;color:#c6ceda}
 .danger input{background:#0c1422;color:white;border:1px solid #394d67;border-radius:10px;min-height:43px;padding:10px}.destructive{background:#5d252a;border-color:#8c373a;justify-self:start}.destructive:hover{background:#743036}.footer{margin-top:42px;color:#71849d;font-size:12px}
 @media(max-width:930px){.tiles{grid-template-columns:1fr}.tile{min-height:190px}}@media(max-width:760px){.sidebar{display:none}.topbar{align-items:flex-start;flex-wrap:wrap}.top-actions{flex-wrap:wrap;gap:12px}.content{padding:35px 24px}}
+
+.security-setup{border:1px solid #30465a;background:#101c2b;border-radius:12px;margin:20px 0;padding:20px}
+.security-form{display:grid;gap:12px;margin-top:18px;max-width:440px}
+.security-form label{font-size:13px;color:#becce0}
+.security-form input,.panel input{background:#0b1525;color:#fff;border:1px solid #394f68;border-radius:9px;padding:11px;width:100%;max-width:440px}
+.security-form button{justify-self:start}
+.secret{background:#07101c;border:1px solid #38516a;padding:13px;color:#9bedc2;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;
+  overflow-wrap:anywhere;white-space:pre-wrap}
+.panel h3{font-size:15px;color:#f1f5ff}
+.panel a{color:#a1edcf;text-decoration:underline}

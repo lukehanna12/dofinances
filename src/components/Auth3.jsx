@@ -16,47 +16,70 @@ export function Auth3() {
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "login"
   );
   const [loading, setLoading] = useState(false);
+  const [challenge, setChallenge] = useState("");
+  const [code, setCode] = useState("");
+  const [notice, setNotice] = useState(
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("verified")
+      ? "Email verified. You can now sign in." : ""
+  );
   const [error, setError] = useState("");
   const inputClasses = "w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200";
   const [theme, setTheme] = useState("dark");
   const isDark = theme === "dark";
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-    if (mode === "signup" && password !== confirmPassword) {
-      setError("The passwords do not match.");
-      return;
+  async function submit(endpoint,payload) {
+    const response=await fetch("/api/auth/"+endpoint,{
+      method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",
+      body:JSON.stringify(payload)
+    });
+    const result=await response.json();
+    if(!response.ok){
+      if(result.verification_required) setMode("verify");
+      throw Error(result.error||"Request failed.");
     }
-    if (window.location.hostname !== "dofinances.com") {
-      window.location.assign("https://dofinances.com/login" + (mode === "signup" ? "?mode=signup" : ""));
-      return;
+    return result;
+  }
+  async function handleSubmit(event) {
+    event.preventDefault();setError("");setNotice("");
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("The passwords do not match.");return;
+    }
+    if(window.location.hostname!=="dofinances.com"){
+      window.location.assign("https://dofinances.com/login"+(mode==="signup"?"?mode=signup":""));return;
     }
     setLoading(true);
-    try {
-      const response = await fetch("/api/auth/" + (mode === "signup" ? "signup" : "login"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ email, password }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Authentication failed.");
-      setPassword("");
-      setConfirmPassword("");
-      window.location.assign("/app");
-    } catch (problem) {
-      setError(problem.message || "Authentication is currently unavailable.");
-    } finally {
-      setLoading(false);
-    }
+    try{
+      if(mode==="mfa"){
+        const result=await submit("mfa/finish",{challenge,code});
+        if(result.user){setCode("");window.location.assign("/app");}
+        return;
+      }
+      if(mode==="forgot"){
+        await submit("password/forgot",{email});
+        setMode("forgotSent");setNotice("If this account exists, a reset link has been sent.");
+        return;
+      }
+      if(mode==="verify"){
+        await submit("verification/request",{email});
+        setNotice("If this address needs verification, a new link has been sent.");
+        return;
+      }
+      const result=await submit(mode==="signup"?"signup":"login",{email,password});
+      setPassword("");setConfirmPassword("");
+      if(result.mfa_required){
+        setChallenge(result.challenge);setCode("");setMode("mfa");
+      }else if(result.pending){
+        setMode("verify");setNotice("Check your email for a verification link before signing in.");
+      }else if(result.user){
+        window.location.assign("/app");
+      }
+    }catch(problem){setError(problem.message||"Authentication is currently unavailable.");}
+    finally{setLoading(false);}
   }
   function switchMode(event) {
     event.preventDefault();
-    setMode(mode === "login" ? "signup" : "login");
-    setError("");
-    setPassword("");
-    setConfirmPassword("");
+    setMode(mode==="login"?"signup":"login");
+    setError("");setNotice("");setPassword("");setConfirmPassword("");setChallenge("");setCode("");
   }
 
   return (
@@ -77,21 +100,22 @@ export function Auth3() {
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
           >
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
-              {mode === "signup" ? "Create an account" : "Sign in"}
+              {mode === "signup" ? "Create an account" : mode === "forgot" ? "Reset your password" : mode === "mfa" ? "Authenticator code" : mode === "verify" ? "Check your email" : mode === "forgotSent" ? "Check your inbox" : "Sign in"}
             </h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-8">
-              {mode === "signup" ? "Already registered?" : "New user?"}{" "}
+              {mode === "signup" ? "Already registered?" : mode === "login" ? "New user?" : "Return to sign in?"}{" "}
               <a
                 href="#"
                 onClick={switchMode}
                 className="text-neutral-900 dark:text-white hover:text-neutral-700 dark:hover:text-neutral-300 font-medium no-underline"
               >
-                {mode === "signup" ? "Sign in" : "Create an account"}
+                {mode === "login" ? "Create an account" : "Sign in"}
               </a>
             </p>
 
+            {notice && <p role="status" className={isDark ? "mb-4 text-sm text-emerald-300" : "mb-4 text-sm text-emerald-800"}>{notice}</p>}
             <form onSubmit={handleSubmit} className="mb-6">
-              <input
+              {(mode === "login" || mode === "signup" || mode === "verify" || mode === "forgot") && <input
                 type="email"
                 autoComplete="email"
                 maxLength={254}
@@ -100,8 +124,8 @@ export function Auth3() {
                 placeholder="Email address"
                 required
                 className="w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200"
-              />
-              <input
+              />}
+              {(mode === "login" || mode === "signup") && <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -112,7 +136,10 @@ export function Auth3() {
                 maxLength={128}
                 required
                 className={inputClasses}
-              />
+              />}
+              {mode === "mfa" && <input type="text" inputMode="numeric" autoComplete="one-time-code" value={code}
+                onChange={event=>setCode(event.target.value)} placeholder="6-digit code or recovery code"
+                aria-label="Authenticator or recovery code" required maxLength={48} className={inputClasses}/>}
               {mode === "signup" && <input
                 type="password"
                 value={confirmPassword}
@@ -126,16 +153,16 @@ export function Auth3() {
                 className={inputClasses}
               />}
               {mode === "signup" && <p className={isDark ? "mb-4 text-sm text-neutral-400" : "mb-4 text-sm text-neutral-600"}>
-                Email verification and password recovery are not yet available.
+                We’ll email you a verification link. Your account remains locked until verification.
               </p>}
               {error && <p role="alert" className={isDark ? "mb-4 text-sm text-red-300" : "mb-4 text-sm text-red-700"}>{error}</p>}
-              <button
+              {(mode !== "forgotSent") && <button
                 type="submit"
                 disabled={loading}
                 className="w-full px-6 py-3 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors duration-200"
               >
-                {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
-              </button>
+                {loading ? "Please wait…" : mode === "signup" ? "Create account" : mode === "mfa" ? "Verify code" : mode === "verify" ? "Resend verification" : mode === "forgot" ? "Send reset link" : "Sign in"}
+              </button>}
             </form>
 
             <div className="flex items-center gap-4 mb-6">
@@ -169,10 +196,10 @@ export function Auth3() {
               Can't sign in?{" "}
               <a
                 href="#"
-                onClick={(event) => { event.preventDefault(); setError("Password recovery is not yet enabled. Contact the site operator."); }}
+                onClick={(event) => { event.preventDefault(); setMode("forgot"); setError(""); setNotice(""); }}
                 className="text-neutral-900 dark:text-white hover:text-neutral-700 dark:hover:text-neutral-300 font-medium no-underline"
               >
-                Get help
+                Reset password
               </a>
             </p>
           </motion.div>

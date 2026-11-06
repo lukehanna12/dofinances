@@ -163,51 +163,32 @@ jobs:
             test "$code" = 404
           done
 
-      - name: Verify real authenticated dashboard and account lifecycle
+      - name: Verify authentication boundaries and new account security routes
         shell: bash
         run: |
           set -euo pipefail
           base=https://dofinances.com
-          status="$(curl -sS -o /dev/null -w '%{http_code}' "$base/app")"
-          echo "Unauthenticated /app -> $status"
-          test "$status" = 302
-          test "$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/me")" = 401
-
-          email="ci-auth-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(openssl rand -hex 5)@example.invalid"
-          password="$(openssl rand -hex 18)"
-          payload="$(printf '{"email":"%s","password":"%s"}' "$email" "$password")"
-          jar="$(mktemp)"
-          body="$(mktemp)"
-          cleanup() {
-            curl -sS --max-time 20 -o /dev/null -b "$jar" -X DELETE \
-              -H 'Origin: https://dofinances.com' -H 'Content-Type: application/json' \
-              --data "$payload" "$base/api/auth/account" || true
-            rm -f "$jar" "$body"
+          check() {
+            local method="$1" path="$2" expected="$3"
+            local code
+            code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X "$method" "$base$path")"
+            echo "$method $path -> $code (expected $expected)"
+            test "$code" = "$expected"
           }
-          trap cleanup EXIT
-
-          signup="$(curl --silent --show-error --max-time 30 -o "$body" -w '%{http_code}' \
-            -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
-            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/signup")"
-          echo "Sign-up -> $signup"
-          if test "$signup" != 201; then echo "Sign-up diagnostic response:"; cat "$body"; fi
-          test "$signup" = 201
-          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 200
-          curl -fsS --max-time 20 -b "$jar" "$base/api/auth/me" | grep -Fq "$email"
-
-          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
-            -b "$jar" -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
-            -H 'Content-Type: application/json' --data '{}' "$base/api/auth/logout")" = 200
-          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 302
-
-          login="$(curl --silent --show-error --max-time 30 -o "$body" -w '%{http_code}' \
-            -b "$jar" -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
-            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/login")"
-          echo "Sign-in -> $login"
-          test "$login" = 200
-          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 200
-          test "$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' \
-            -b "$jar" -c "$jar" -X DELETE -H 'Origin: https://dofinances.com' \
-            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/account")" = 204
-          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 302
-          echo "Authenticated dashboard and account lifecycle verified"
+          check GET /app 302
+          check GET /api/auth/me 401
+          check GET /api/auth/mfa/status 401
+          check GET /verify 200
+          check GET /reset 200
+          configuration="$(curl -fsS --max-time 20 "$base/api/auth/config")"
+          echo "$configuration" | grep -Fq '"mfaAvailable":true'
+          echo "$configuration" | grep -Fq '"emailAvailable":'
+          code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -H 'Origin: https://evil.example' \
+            -d '{}' "$base/api/auth/password/forgot")"
+          test "$code" = 403
+          code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' -H 'Origin: https://dofinances.com' \
+            -d '{"token":"invalid"}' "$base/api/auth/verification/confirm")"
+          test "$code" = 400
+          echo "Authentication access boundaries verified; sending is tested separately after email provider activation"

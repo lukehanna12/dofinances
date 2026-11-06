@@ -42,3 +42,7 @@ Cloudflare reference: https://developers.cloudflare.com/workers/static-assets/bi
 ## Authentication architecture
 
 The apex Worker now also serves a protected `/app` dashboard and email/password authentication under `/api/auth/*`. The `AuthStore` Durable Object is declared in `edge/wrangler.jsonc` using a SQLite-backed class export, and is provisioned during the same GitHub Actions Wrangler deployment. This creates **no D1 bindings, D1 row reads or D1 row writes**. The Studio Pages project is not an account authority. `www` authentication URLs redirect to canonical apex. No Tailscale Funnel, Workers Builds, external OAuth providers or new DNS records are needed.
+
+## Email delivery for account security
+
+The deployed Worker supports SendGrid transactional email from a verified sender, configured entirely through `SENDGRID_API_KEY` and `AUTH_EMAIL_FROM` Worker secrets. Do not change the preserved Zoho/SendGrid DNS records unless the sender's verification procedure explicitly requires it. With no email sender configured, signup, verification emails and password-reset messages fail closed; TOTP enrollment and authenticated legacy accounts remain available. The MFA encryption key is a separate Worker secret and must not be placed in GitHub. See `docs/account-security.md`.

@@ -1,3 +1,7 @@
+## November 2026 — Email confirmation, recovery and MFA
+
+Email verification and one-use password recovery links are implemented under `/verify` and `/reset`, with TOTP authenticator MFA and single-use recovery codes configured from `/app`. Sender activation requires a separately provisioned SendGrid API credential and verified sender; without these, new registration and email delivery are disabled. See [Account security](account-security.md). Earlier historical notes below describe the original visual design before authentication.
+
 # Dofinances Studio — Auth-3 source-fidelity implementation
 
 ## November 6, 2026 — Live account authentication

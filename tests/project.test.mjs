@@ -31,3 +31,19 @@ test("auth backend uses SQLite Durable Objects without any D1 binding",async()=>
   assert.match(router,/getUser/);
   assert.match(router,/redirect\("\/login"\)/);
 });
+
+test("email verification, password reset and MFA are isolated from D1",async()=>{
+  const {stat}=await import("node:fs/promises");
+  for(const path of ["../edge/auth-store-secure.mjs","../edge/auth-mfa.mjs","../edge/auth-mail.mjs",
+    "../sites/_apex/verify/index.html","../sites/_apex/reset/index.html"]){
+    await stat(new URL(path,import.meta.url));
+  }
+  const auth=await readFile(new URL("../edge/auth-store-secure.mjs",import.meta.url),"utf8");
+  assert.match(auth,/mail_tokens/);
+  assert.match(auth,/mfa_challenges/);
+  assert.match(auth,/mfa_recovery/);
+  assert.match(auth,/verifyFactor/);
+  assert.doesNotMatch(auth,/\.D1\.|d1_databases/);
+  const worker=await readFile(new URL("../edge/worker.mjs",import.meta.url),"utf8");
+  assert.match(worker,/auth-store-secure/);
+});
