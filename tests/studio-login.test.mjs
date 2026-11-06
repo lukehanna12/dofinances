@@ -28,7 +28,7 @@ test("Studio Auth-3 uses exact icons and preserves visual dimensions", async () 
   assert.match(component, /preventDefault/);
   assert.match(component, /<svg/);
   assert.match(styles, /max-width:448px/);
-  assert.match(styles, /auth3-enter-left/);
+  assert.match(component, /<motion\.section/);
   assert.match(styles, /photo-1709562493281-03c47edcb046/);
   assert.match(styles, /prefers-reduced-motion/);
 });
