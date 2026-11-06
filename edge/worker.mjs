@@ -1,49 +1,36 @@
-// Deliberately small, stateless first-level wildcard-host router.
-// No automatic DNS routes. Keep existing GoDaddy apex/www and Pages stu untouched.
+import { pages } from "./pages.mjs";
+
 const ROOT = "dofinances.com";
 const SUFFIX = "." + ROOT;
-const UPSTREAM = "dofinances-studio.pages.dev";
-const RESERVED = new Set([
-  "stu", "www", "pay", "em5386", "zb30895346",
-  "_domainconnect", "_dmarc", "s1", "s2", "zmail",
-]);
-const VALID_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+const RESERVED = new Set(["stu","pay","em5386","zb30895346","s1","s2","zmail","gd-origin"]);
+const LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
-function eligibleHost(hostname) {
-  if (!hostname.endsWith(SUFFIX)) return false;
-  const label = hostname.slice(0, -SUFFIX.length);
-  return VALID_LABEL.test(label) && !RESERVED.has(label);
+export function allowedHost(host) {
+  if (host === ROOT || host === "www." + ROOT) return true;
+  if (!host.endsWith(SUFFIX)) return false;
+  const label=host.slice(0,-SUFFIX.length);
+  return LABEL.test(label) && !RESERVED.has(label);
 }
 
-export async function handleRequest(request, upstreamFetch = fetch) {
-  const incoming = new URL(request.url);
-  const hostname = incoming.hostname.toLowerCase();
-  if (!eligibleHost(hostname)) return new Response("Unconfigured hostname", { status: 404 });
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD" } });
+export async function handleRequest(request, originFetch = fetch) {
+  const url = new URL(request.url);
+  const host = url.hostname.toLowerCase();
+  if (!allowedHost(host)) return new Response("Unknown hostname", {status:404});
+  const page = Object.hasOwn(pages, host + url.pathname) ? pages[host + url.pathname] : null;
+  if (page && (request.method === "GET" || request.method === "HEAD")) {
+    return new Response(request.method === "HEAD" ? null : page.body, {
+      status:200, headers:{"Content-Type":page.type,"X-Content-Type-Options":"nosniff"},
+    });
   }
-  // Fixed origin prevents an open proxy. Never pass cookies or authorization to
-  // the shared static-site origin, even on an attacker-chosen subdomain.
-  const destination = new URL(incoming);
-  destination.protocol = "https:";
-  destination.hostname = UPSTREAM;
-  destination.port = "";
-  const headers = new Headers(request.headers);
-  headers.delete("Cookie");
-  headers.delete("Authorization");
-  headers.delete("Host");
-  const forwarded = new Request(destination, { method: request.method, headers, redirect: "manual" });
-  const response = await upstreamFetch(forwarded);
-  const outgoing = new Headers(response.headers);
-  const location = outgoing.get("Location");
-  if (location) {
-    const redirect = new URL(location, destination);
-    if (redirect.protocol === "https:" && redirect.hostname === UPSTREAM) {
-      redirect.hostname = hostname;
-      outgoing.set("Location", redirect.href);
-    }
+  if (host === "www." + ROOT) {
+    const target=new URL(url);
+    target.hostname=ROOT;
+    return Response.redirect(target.href,301);
   }
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: outgoing });
+  if (host === ROOT) {
+    return originFetch(request,{cf:{resolveOverride:"gd-origin.dofinances.com"}});
+  }
+  return new Response("Page not configured",{status:404,headers:{"Cache-Control":"no-store"}});
 }
 
-export default { fetch: (request) => handleRequest(request) };
+export default { fetch(request) {return handleRequest(request);} };
