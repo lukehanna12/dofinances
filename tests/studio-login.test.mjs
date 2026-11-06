@@ -120,3 +120,27 @@ test("actual source typography: family, sizes, weights and spacing", async () =>
   assert.equal(matches("tracking-tighter").length, 1);
   assert.ok(component.includes("className={`auth3-root font-sans antialiased "));
 });
+
+test("dark variant uses exact original Tailwind selector specificity", async () => {
+  const css = await load("../src/styles.css");
+  const component = await load("../src/components/Auth3.jsx");
+  assert.match(css, /@custom-variant dark \(&\:is\(\.dark \*\)\);/);
+  assert.doesNotMatch(css, /@custom-variant dark \(&\:where/);
+  assert.match(component, /dark:bg-neutral-800/);
+  assert.match(component, /hover:bg-neutral-50 dark:hover:bg-neutral-750/);
+  // The original shipped without a compiled neutral-750 declaration. The
+  // later dark:bg-neutral-800 selector must win over light:hover:bg-neutral-50.
+  assert.doesNotMatch(css, /--color-neutral-750:/);
+});
+
+test("resting base border and focus-ring tokens mirror original compiled CSS", async () => {
+  const css = await load("../src/styles.css");
+  assert.match(css, /--border: #1f1f1f;/);
+  assert.match(css, /--ring: #2a2a2a;/);
+  assert.match(css, /--border: oklch\(92\.2% 0 0\);/);
+  assert.match(css, /--ring: oklch\(70\.8% 0 0\);/);
+  assert.match(css, /border-color: var\(--border\)/);
+  assert.match(css, /outline-color: color-mix\(in oklab, var\(--ring\) 50%, transparent\)/);
+  assert.match(css, /body:has\(\.auth3-root:not\(\.dark\)\) \{ background-color: #fff; \}/);
+  assert.match(css, /background-color: transparent;/);
+});
