@@ -1,0 +1,72 @@
+name: Build and deploy Dofinances
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dofinances-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run tests
+        run: npm run check
+      - name: Build site
+        run: npm run build
+      - name: Verify distribution
+        run: |
+          test -s dist/index.html
+          test -d dist/assets
+      - name: Save built site for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: dofinances-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: build
+    if: >-
+      ${{ github.event_name != 'pull_request' &&
+          github.ref == 'refs/heads/main' &&
+          vars.DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: cloudflare-production
+    permissions:
+      contents: read
+      deployments: write
+    concurrency:
+      group: dofinances-production
+      cancel-in-progress: false
+    steps:
+      - name: Download built site
+        uses: actions/download-artifact@v4
+        with:
+          name: dofinances-dist
+          path: dist
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=dofinances --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

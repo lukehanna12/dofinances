@@ -1,0 +1,57 @@
+:root {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #14273b;
+  background: #f5f7f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; }
+a { color: inherit; }
+.site-shell { min-height: 100vh; max-width: 1540px; margin: auto; }
+.topbar { height: 100px; padding: 0 clamp(24px, 6.5vw, 110px); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dee6e7; }
+.wordmark { display: inline-flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 750; letter-spacing: -1.2px; text-decoration: none; }
+.wordmark-icon { width: 32px; height: 32px; border-radius: 10px; background: #142f41; color: #e7fcf3; display: grid; place-items: center; font-size: 17px; letter-spacing: 0; }
+.header-link { text-decoration: none; font-size: 13px; font-weight: 600; color: #46616e; }
+.header-link:hover { color: #14273b; }
+.hero { min-height: 625px; display: grid; grid-template-columns: 1.04fr .96fr; overflow: hidden; }
+.hero-copy { padding: clamp(70px, 8vw, 135px) 25px 65px clamp(24px, 6.5vw, 110px); position: relative; z-index: 2; }
+.eyebrow, .kicker { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 750; color: #478179; }
+.eyebrow { display: inline-flex; align-items: center; gap: 11px; }
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: #65a68e; box-shadow: 0 0 0 5px #dcefe8; }
+h1 { font-size: clamp(48px, 5.1vw, 84px); line-height: 1.07; max-width: 720px; letter-spacing: -4px; font-weight: 640; margin: 33px 0 22px; }
+h1 em { font-style: normal; color: #64a397; }
+.intro { font-size: clamp(17px, 1.6vw, 21px); line-height: 1.65; max-width: 480px; color: #5a707b; margin: 0 0 34px; }
+.primary-link { display: inline-flex; align-items: center; gap: 24px; border-radius: 8px; background: #183b45; color: white; font-weight: 650; font-size: 14px; padding: 17px 22px; text-decoration: none; }
+.primary-link:hover { background: #285961; }
+.disclaimer { margin-top: 26px; color: #809198; font-size: 11px; }
+.hero-art { position: relative; min-height: 530px; display: flex; justify-content: center; align-items: center; background: linear-gradient(145deg, #e1ece9 2%, #c6ddd5 90%); overflow: hidden; }
+.art-grid { position: absolute; inset: 0; opacity: .38; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 54px 54px; transform: perspective(500px) rotate(-10deg) scale(1.4); }
+.art-card { position: relative; width: min(68%, 360px); min-height: 350px; border: 1px solid #e4f1ed; box-shadow: 0 28px 65px #38605f38; border-radius: 16px; padding: 28px; background: #f7faf9ec; transform: rotate(-6deg); }
+.art-label { letter-spacing: 2px; font-size: 10px; color: #648781; font-weight: 800; }
+.art-line { height: 12px; border-radius: 10px; background: #d5e3df; margin-top: 20px; width: 72%; }
+.art-line-two { width: 43%; margin-top: 9px; }
+.art-bars { height: 138px; margin-top: 43px; display: flex; gap: 12px; align-items: end; border-bottom: 1px solid #cedbd7; padding-bottom: 1px; }
+.art-bars span { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #69ad9a, #b8d9cc); }
+.art-bottom { margin-top: 24px; display: flex; justify-content: space-between; font-size: 11px; color: #74918d; }
+.direction { border-top: 1px solid #dee6e7; padding: 78px clamp(24px, 6.5vw, 110px) 108px; }
+.direction h2 { font-size: clamp(30px, 3vw, 46px); letter-spacing: -1.8px; font-weight: 650; margin: 15px 0 45px; }
+.principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.principle { border-top: 2px solid #a8c5bd; padding-top: 24px; }
+.principle-number { font-size: 12px; color: #74a89a; }
+.principle h3 { font-size: 21px; margin: 22px 0 10px; }
+.principle p { font-size: 14px; line-height: 1.7; color: #6d7f88; max-width: 290px; }
+.footer { border-top: 1px solid #dee6e7; padding: 24px clamp(24px, 6.5vw, 110px); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: #839197; font-size: 12px; }
+@media (max-width: 820px) {
+  .topbar { height: 76px; }
+  .hero { grid-template-columns: 1fr; }
+  .hero-copy { padding-top: 75px; padding-bottom: 56px; }
+  .hero-art { min-height: 410px; }
+  .principles { grid-template-columns: 1fr; gap: 28px; }
+  h1 { letter-spacing: -2.4px; }
+  .header-link { font-size: 11px; }
+  .direction { padding-top: 70px; padding-bottom: 70px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
