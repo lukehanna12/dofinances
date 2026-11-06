@@ -1,57 +1,30 @@
 name: Verify Git-managed Dofinances sites
-on:
-  workflow_dispatch:
-    inputs:
-      stage:
-        description: "Choose the deployment verification stage"
-        required: true
-        type: choice
-        options:
-          - preview
-          - production
-          - cleanup
-        default: preview
+on: workflow_dispatch
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify public HTTPS, independent hosts and Git-controlled assets
+      - name: Verify site content, assets, redirects, and deleted test pages
         shell: bash
-        env:
-          STAGE: ${{ inputs.stage }}
         run: |
           set -euo pipefail
-          status() {
-            curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$1"
-          }
           contains() {
             local body
             body="$(curl --location --fail --silent --show-error --max-time 25 "$1")"
             [[ "$body" == *"$2"* ]]
           }
-          if [[ "$STAGE" == "preview" || "$STAGE" == "production" ]]; then
-            contains 'https://ci-probe.dofinances.com/' 'DOFINANCES_WILDCARD_CI_2026'
-            contains 'https://ci-probe.dofinances.com/nested/deep' 'DOFINANCES_NESTED_CI_2026'
-            contains 'https://ci-probe.dofinances.com/assets/status.txt' 'DOFINANCES_STATIC_ASSET_CI_2026'
-            test "$(status 'https://ci-probe.dofinances.com/missing')" = 404
-          fi
-          if [[ "$STAGE" == "production" ]]; then
-            contains 'https://dofinances.com/' 'managed in GitHub'
-            contains 'https://dofinances.com/assets/site.css' 'font-family'
-            contains 'https://dofinances.com/__ci_check.html' 'DOFINANCES_APEX_CI_2026'
-            contains 'https://www.dofinances.com/__ci_check.html' 'DOFINANCES_WWW_CI_2026'
-            contains 'https://www.dofinances.com/' 'managed in GitHub'
-            test "$(status 'https://dofinances.com/a/page/that/is/not/defined')" = 404
-            test "$(status 'https://stu.dofinances.com/')" = 200
-          fi
-          if [[ "$STAGE" == "cleanup" ]]; then
-            test "$(status 'https://ci-probe.dofinances.com/')" = 404
-            test "$(status 'https://ci-probe.dofinances.com/nested/deep')" = 404
-            test "$(status 'https://dofinances.com/__ci_check.html')" = 404
-            test "$(status 'https://www.dofinances.com/__ci_check.html')" = 301
-            test "$(status 'https://dofinances.com/')" = 200
-            test "$(status 'https://stu.dofinances.com/')" = 200
-          fi
-          echo "Git-controlled Dofinances verification passed for stage=$STAGE"
+          status() {
+            curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$1"
+          }
+          contains 'https://dofinances.com/' 'managed in GitHub'
+          contains 'https://dofinances.com/assets/site.css' 'font-family'
+          contains 'https://www.dofinances.com/' 'managed in GitHub'
+          test "$(status 'https://dofinances.com/__ci_check.html')" = 404
+          test "$(status 'https://www.dofinances.com/__ci_check.html')" = 301
+          test "$(status 'https://ci-probe.dofinances.com/')" = 404
+          test "$(status 'https://ci-probe.dofinances.com/nested/deep')" = 404
+          test "$(status 'https://dofinances.com/path/not/deployed')" = 404
+          test "$(status 'https://stu.dofinances.com/')" = 200
+          echo 'Live Git-managed sites and deleted pages verified'

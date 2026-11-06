@@ -1,32 +1,40 @@
-# Dofinances live domain architecture
+# Dofinances DNS, hosting and CI/CD
 
-Updated November 6, 2026.
+Updated November 6, 2026. **The website's code and pages are managed in GitHub.** GoDaddy remains the **domain registrar only**; the domain's January 2028 registration and renewal are unaffected.
 
-- Domain registrar: GoDaddy, with the user's paid registration through January 2028 unaffected.
-- Authoritative DNS: Cloudflare active zone `82449992fdde32c2fedbc9fda8eb2d3c`; DNSSEC disabled.
-- Apex `dofinances.com`: GoDaddy Website Builder, DNS-only A `13.248.243.5`.
-- `www.dofinances.com`: DNS-only CNAME to apex, GoDaddy handles redirect.
-- `stu.dofinances.com`: DNS-only CNAME `dofinances-studio.pages.dev`; Pages custom-domain status active.
-- `*.dofinances.com`: proxied A `192.0.2.1` for Worker-only routing; Worker route `*.dofinances.com/*` uses `dofinances-host-router`.
-- Exact no-script route exceptions for `stu.dofinances.com/*` and `www.dofinances.com/*`.
-- Cloudflare Universal SSL wildcard certificate: active, covers apex and first-level subdomains. Deeper subdomains are not covered on Free Universal SSL.
-- Existing Zoho Mail MX/SPF/DKIM/DMARC, SendGrid CNAME, verification tokens, GoDaddy payment and Domain Connect preserved from exported GoDaddy zone.
-- `gd-origin.dofinances.com` alias and narrow apex Worker probe route were removed after testing.
+## Authoritative DNS
 
-## CI/CD
+Cloudflare zone `82449992fdde32c2fedbc9fda8eb2d3c` is active. Nameservers: `austin.ns.cloudflare.com`, `kira.ns.cloudflare.com`. DNSSEC is disabled by choice.
 
-[`site.yml`](../.github/workflows/site.yml) automatically builds and deploys studio React Pages and the Git-controlled wildcard Worker after passing tests. Files on GitHub are public; credentials live in GitHub Secrets. No R2, D1, or Mac local build artifacts required.
+| DNS hostname | Record | Proxy | Routing |
+| --- | --- | --- | --- |
+| `dofinances.com` | `A 192.0.2.1` | Cloudflare proxied | Worker `dofinances-host-router` |
+| `www.dofinances.com` | `CNAME dofinances.com` | Cloudflare proxied | Same Worker, `www.dofinances.com/*` |
+| `stu.dofinances.com` | `CNAME dofinances-studio.pages.dev` | DNS-only | Existing Pages project `dofinances-studio`; no-script Worker exception |
+| `*.dofinances.com` | `A 192.0.2.1` | Cloudflare proxied | Same Worker, `*.dofinances.com/*` |
 
-Wildcard pages are declared in [`edge/pages.mjs`](../edge/pages.mjs); adding/removing an entry and committing changes the reachable page after CI. The staging page registry is empty after cleanup. The Worker always returns 404 for unconfigured wildcard paths.
+The placeholder IP `192.0.2.1` is deliberately originless; incoming proxied requests are handled by the Worker route rather than a GoDaddy backend. Cloudflare Universal SSL (apex and first-level wildcard) is active. Deeper `a.b.dofinances.com` hostnames are not covered by the default certificate.
 
-**Important limitation:** the original GoDaddy homepage cannot be edited through GitHub. We tested Cloudflare proxied apex and a Worker route on a narrow `/__ci_probe/*` path. The Worker page succeeded, but a subsequent origin request returned HTTP 522. We rolled back proxied apex to DNS-only and removed the temporary route. Full CI/CD control of apex/www needs a safe content migration away from GoDaddy Website Builder, or another validated supported integration, before attaching broad Workers routes.
+All existing Zoho Mail, SendGrid, domain verification, Domain Connect and GoDaddy payment-link DNS entries were preserved. Do not proxy or overwrite those records when adding hostnames.
+
+## Git content locations
+
+See [README](../README.md) and [Worker routing documentation](../edge/README.md) for examples.
+
+- `sites/_apex/` → `https://dofinances.com/` and its paths.
+- `sites/_www/` → independent pages on `www`, where present; otherwise redirect same path to apex.
+- `sites/<label>/` → corresponding eligible first-level subdomain, e.g. `sites/portfolio/index.html` → `https://portfolio.dofinances.com/`.
+- `src/` and `public/` → React studio at `stu.dofinances.com`.
+
+GitHub Actions [`site.yml`](../.github/workflows/site.yml) tests/builds and, with `DEPLOY_ENABLED=true`, publishes both the Pages project and the Worker with static assets. Adding, editing or deleting a site file and committing to `main` updates the hosted page. Undefined URLs return 404, apart from `www` redirecting to the apex where it has no independent page.
+
+Temporary verification pages were created and then deleted by Git commits; their public URLs were confirmed to return 404. The original GoDaddy Website Builder pages are intentionally not replicated; their content was temporary and is now replaced by a minimal, version-controlled homepage. The previous GoDaddy origin-proxy test returned 522, so **no Worker fallback to GoDaddy is used**.
 
 ## Verification
 
-- [Public apex, www, stu HTTPS checks](../.github/workflows/verify-sites.yml)
-- [Wildcard HTTPS and deletion check](../.github/workflows/verify-wildcard.yml)
+- [Automatic CI/CD](../.github/workflows/site.yml)
+- [Manual host/content HTTPS checks](../.github/workflows/verify-git-sites.yml)
+- [Basic HTTPS checks](../.github/workflows/verify-sites.yml)
+- [Wildcard removal/404 checks](../.github/workflows/verify-wildcard.yml)
 
-Official docs:
-- https://developers.cloudflare.com/workers/configuration/routing/routes/
-- https://developers.cloudflare.com/workers/authorization/
-- https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/
+Cloudflare reference: https://developers.cloudflare.com/workers/static-assets/binding/
