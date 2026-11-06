@@ -48,7 +48,7 @@ test("Studio login defaults to dark mode and provides an accessible bottom-right
   assert.match(component, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
   assert.match(component, /aria-pressed=\{isDark\}/);
   assert.match(component, /onClick=\{\(\) => setTheme\(isDark \? "light" : "dark"\)\}/);
-  assert.match(styles, /\.auth3__theme-toggle\{position:fixed;right:/);
+  assert.match(styles, /\.auth3__theme-toggle\{cursor:pointer;position:fixed;right:/);
   assert.match(styles, /bottom:max\(20px,env\(safe-area-inset-bottom\)\)/);
   assert.match(styles, /\.auth3--dark \.auth3__card\{background:#171717/);
   assert.match(styles, /\.auth3--light \.auth3__theme-toggle/);
