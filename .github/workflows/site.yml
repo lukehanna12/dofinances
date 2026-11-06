@@ -120,3 +120,31 @@ jobs:
           done
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
+
+      - name: Verify login page and static assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in /login /login/ /login/index.html /login/assets/auth3.css /login/assets/auth3.js; do
+            tmp="$(mktemp)"
+            http="$(curl -sSL --max-time 20 -o "$tmp" -w '%{http_code}' "https://dofinances.com$path" || true)"
+            echo "GET $path => HTTP $http; bytes=$(wc -c < "$tmp")"
+            if [ "$http" != "200" ]; then
+              head -c 350 "$tmp" || true
+              echo
+            fi
+            if [ "$path" = "/login" ]; then
+              test "$http" = "200"
+              grep -Fq 'Sign in' "$tmp"
+              grep -Fq '/login/assets/auth3.css' "$tmp"
+            fi
+            if [ "$path" = "/login/assets/auth3.css" ]; then
+              test "$http" = "200"
+              grep -Fq 'auth3__card' "$tmp"
+            fi
+            if [ "$path" = "/login/assets/auth3.js" ]; then
+              test "$http" = "200"
+              grep -Fq 'sign-in' "$tmp"
+            fi
+            rm -f "$tmp"
+          done
