@@ -96,3 +96,27 @@ test("original iframe dark-mode base foreground propagates to the Auth-3 root", 
   assert.match(css, /\.auth3-root\.dark \{ color-scheme: dark; color: #fff; \}/);
   assert.match(css, /\.auth3-root:not\(\.dark\) \{ color-scheme: light; color: #0a0a0a; \}/);
 });
+
+test("actual source typography: family, sizes, weights and spacing", async () => {
+  const css = await load("../src/styles.css");
+  const component = await load("../src/components/Auth3.jsx");
+  const contract = JSON.parse(await load("./fixtures/auth3-source-class-contract.json"));
+  const pkg = JSON.parse(await load("../package.json"));
+  assert.equal(pkg.devDependencies.tailwindcss, "4.2.2");
+  assert.match(css, /--font-sans: ui-sans-serif, system-ui, sans-serif/);
+  assert.match(css, /\.auth3-root\s*\{[^}]*font-family: var\(--font-sans\);[^}]*font-weight: 400;[^}]*font-kerning: auto;[^}]*font-optical-sizing: auto;/);
+  assert.match(css, /font-synthesis-weight: auto/);
+  assert.match(css, /-webkit-font-smoothing: antialiased/);
+  assert.doesNotMatch(css, /@font-face|fonts\.googleapis\.com/);
+  const values = contract.classes;
+  const matches = (term) => values.filter((x) => x.split(" ").includes(term));
+  assert.equal(matches("font-bold").length, 1, "Exactly one 700-weight heading");
+  assert.equal(matches("font-medium").length, 8, "Medium weights: links, Continue, social buttons, View more, caption heading");
+  assert.equal(matches("text-3xl").length, 1, "30px sign-in heading");
+  assert.equal(matches("text-4xl").length, 1, "36px caption heading");
+  assert.equal(matches("text-lg").length, 1, "18px caption body");
+  assert.equal(matches("text-sm").length, 7, "Seven explicit 14px utilities; links inherit from regular paragraphs");
+  assert.equal(matches("tracking-tight").length, 4, "Three social buttons and caption body");
+  assert.equal(matches("tracking-tighter").length, 1);
+  assert.match(component, /className=`auth3-root font-sans antialiased/);
+});

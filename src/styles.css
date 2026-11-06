@@ -24,6 +24,33 @@ html, body, #root {
   min-height: 100%;
 }
 
+/* Exact font environment measured in the original iframe (386 × 800).
+ * The original renders platform UI sans-serif—not an IBM Plex Sans, Inter,
+ * Geist or Google Fonts override. Keep the browser's native variable-font
+ * optical sizing and weight synthesis; avoid substitute weights.
+ *
+ * These declarations are in the base layer so original Tailwind utilities
+ * (font-bold / font-medium / text-sm / tracking-tight...) remain authoritative.
+ */
+@layer base {
+  .auth3-root {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    font-style: normal;
+    font-kerning: auto;
+    font-optical-sizing: auto;
+    font-feature-settings: normal;
+    font-variation-settings: normal;
+    font-synthesis-weight: auto;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+
 .auth3-root {
   min-height: 100vh;
   background-color: #0a0a0a;

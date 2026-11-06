@@ -53,3 +53,9 @@ The user supplied a matching-state iframe HTML document and a 29-node computed-s
 - The source's external Unsplash background has not been successfully fetched in the isolated browser/container network. Neither a local background image nor its successful display in the user's browser can be asserted from this capture. The URL and overlay match the supplied source. Verify a real image response in the user's environment before diagnosing its appearance.
 
 This is a source-based and computed-style comparison, not photographic proof of pixel parity. Pixel comparison at the same browser/operating system and a loaded original background remains the final validation step.
+
+## Typography environment verification (November 6, 2026)
+
+The original user's Chrome-on-Mac iframe capture at 386 × 800 reports `ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"` as computed font family, and explicit weights of 700 for the primary heading, 500 for interactive links/buttons, and 400 for regular descriptive text. The current Studio build's computed font family, size, line-height, weight and tracking already match these declarations in the isolated Chromium audit; changing these values without a contradictory Studio-on-Mac computed trace would reduce source fidelity.
+
+This change reinforces the original font environment at the app root, keeping the normal-weight 400 baseline, native system font stack, macOS antialiasing, default kerning/optical sizing, and automatic weight synthesis explicit in the base CSS layer. It deliberately does **not** alter any original 28 class strings or artificially increase or decrease font weight. A font-family string cannot prove the resolved native font face on the user's Mac: the last possible visible discrepancy needs actual platform rendered-font information (Chrome's Computed/Rendered Fonts panel) from both pages under the same browser/OS.
