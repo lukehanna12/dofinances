@@ -1,0 +1,5 @@
+:root{color-scheme:light;font-family:system-ui,-apple-system,sans-serif;background:#f5f7f9;color:#192d3a}
+*{box-sizing:border-box}body{margin:0}main{max-width:740px;padding:clamp(26px,6vw,60px);margin:12vh auto}
+.eyebrow{font-size:.76rem;letter-spacing:.18em;color:#386e72;font-weight:700}
+h1{font-size:clamp(2.8rem,8vw,5rem);line-height:1.04;letter-spacing:-.06em;margin:20px 0 25px}
+p{font-size:1.08rem;line-height:1.7;color:#465b69;max-width:560px}

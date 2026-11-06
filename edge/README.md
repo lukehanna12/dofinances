@@ -1,18 +1,17 @@
-# Git-controlled wildcard page registry
+# Dofinances Git-managed host routing
 
-The deployed Worker at `edge/worker.mjs` serves HTML defined in [`pages.mjs`](pages.mjs). It is automatically redeployed on every successful push to `main`, through GitHub Actions.
+`edge/worker.mjs` maps each incoming hostname and URL pathname to a static file in `sites/`, using Cloudflare's `ASSETS` binding. `assets.run_worker_first=true` ensures host-based isolation and prevents unrelated static assets from being served across hostnames.
 
-Example of a new entry (inside `Object.freeze({...})`):
+- Apex `dofinances.com` uses `sites/_apex/`.
+- `www.dofinances.com` uses `sites/_www/` first; missing paths redirect to the corresponding apex path.
+- First-level wildcard hostnames use `sites/<hostname-label>/`.
+- `stu`, payment, mail, and other explicit service subdomains are excluded by routing and host checks.
+- `/docs`, `/docs/`, and `/docs/index.html` can resolve to `sites/<host>/docs/index.html`.
+- HTML and static asset files are deployed together; deleting a file from Git removes it on the next deploy.
+- Unknown hosts or files return 404; no open proxy or GoDaddy fallback is used.
 
-```js
-"portfolio.dofinances.com/about": {
-  type: "text/html; charset=utf-8",
-  body: "<!doctype html><html><body><h1>About</h1></body></html>",
-},
-```
+Cloudflare Wrangler configuration: `edge/wrangler.jsonc`, with `assets.directory="../sites"`, `binding="ASSETS"`, `run_worker_first=true` and `html_handling="none"`. Note that Worker invocation on every request counts toward Worker usage limits.
 
-The public address is `https://portfolio.dofinances.com/about`. Remove the entry and commit to delete the page; all unconfigured wildcard paths return 404. Query strings are ignored when matching pathnames. First-level subdomain names are the supported target; deeper subdomains need separate TLS coverage. This inline HTML approach is appropriate for simple pages, not a large React or asset library.
+After editing files, push to `main`: GitHub Actions tests and deploys the Worker automatically. The existing React studio is a separate Pages deployment from the same workflow.
 
-**Do not route apex or www through this Worker.** Their live GoDaddy Website Builder origin returned 522 during a pass-through test. The Worker deliberately fails closed for both hosts, and Cloudflare DNS keeps them DNS-only. `stu.dofinances.com` is served separately by Cloudflare Pages, with its own GitHub Actions deployment. Other reserved DNS service hostnames are excluded.
-
-Wildcard DNS and the Cloudflare Worker route are persistent production infrastructure; temporary CI hostname pages were removed after verification.
+This is static website CI/CD. Dynamic server-side applications would require implementing additional Worker routes and dependencies; they are not implied by adding HTML files.

@@ -1,32 +1,36 @@
 # Dofinances
 
-Public GitHub source and GitHub Actions CI/CD for the Dofinances React studio and first-level wildcard hostname pages.
+GitHub-based development and automatic deployment for `dofinances.com`, `www.dofinances.com`, `stu.dofinances.com`, and eligible first-level subdomains.
 
-## Live architecture — November 6, 2026
+## Hosting
 
-| Hostname | Hosting and control |
+- **Apex and first-level wildcard subdomains:** Cloudflare Worker `dofinances-host-router` with Workers Static Assets in `sites/`.
+- **www:** same Worker; independent files in `sites/_www/` override paths, and otherwise the URL redirects to the apex.
+- **stu:** React and Vite project on Cloudflare Pages `dofinances-studio`, sourced from `src/`.
+- **Existing email and commerce records:** remain separate, DNS-only, and are not served by the Worker.
+
+## Add, update, or delete public pages
+
+Commit files to `main` in these directories:
+
+| GitHub source | Public URL |
 | --- | --- |
-| `dofinances.com` | Existing GoDaddy Websites + Marketing homepage, DNS-only via Cloudflare; **not editable by this repository** |
-| `www.dofinances.com` | GoDaddy homepage alias/redirect, DNS-only; **not editable by this repository** |
-| `stu.dofinances.com` | React + Vite, hosted on Cloudflare Pages `dofinances-studio`; automatic GitHub Actions CI/CD |
-| Eligible `*.dofinances.com/*` | Cloudflare Worker `dofinances-host-router`; automatic GitHub Actions CI/CD for HTML pages declared in `edge/pages.mjs` |
+| `sites/_apex/index.html` | `https://dofinances.com/` |
+| `sites/_apex/about.html` | `https://dofinances.com/about` |
+| `sites/_apex/assets/site.css` | `https://dofinances.com/assets/site.css` |
+| `sites/_www/example.html` | `https://www.dofinances.com/example` |
+| `sites/portfolio/index.html` | `https://portfolio.dofinances.com/` |
+| `sites/portfolio/notes/index.html` | `https://portfolio.dofinances.com/notes` |
+| `sites/portfolio/assets/photo.png` | `https://portfolio.dofinances.com/assets/photo.png` |
 
-The Cloudflare zone `dofinances.com` is active, and its wildcard Universal SSL certificate is active. GoDaddy remains the domain registrar.
+Removing a file and committing it makes that page return 404 (or, for `www`, fall back to its apex redirect). No DNS additions are required for new first-level subdomain names. Unknown paths/hosts return HTTP 404.
 
-### How to add and remove pages
+For studio, edit `src/` and `public/` and push `main`; Vite builds the React application.
 
-In [`edge/pages.mjs`](edge/pages.mjs), add a key such as `"portfolio.dofinances.com/briefing"` with a `type` and HTML `body`. Commit to `main`; GitHub Actions tests and deploys the Worker. Delete the key and commit to remove the route: it returns HTTP 404 after deployment. Unknown wildcard hostnames/paths return 404 by default.
+## CI/CD and verification
 
-The current page registry is intentionally empty: temporary staging pages were deleted after successful live tests. This is a small inline-HTML registry subject to the Worker script size limit; larger websites should use Workers Static Assets or a dedicated Pages build.
+[`site.yml`](.github/workflows/site.yml) builds and tests on pushes to `main`; with `DEPLOY_ENABLED=true`, it deploys **both** studio Pages and the Worker. Cloudflare Workers uploads site files directly from `sites/`, without D1, R2, or local Mac build artifacts.
 
-### CI/CD
+[`verify-git-sites.yml`](.github/workflows/verify-git-sites.yml) is a separate manual end-to-end verification workflow.
 
-[GitHub Actions](.github/workflows/site.yml) runs tests/builds on `main`, deploys React to Pages and deploys the routing Worker, gated by `DEPLOY_ENABLED=true`. Both jobs use the existing `CLOUDFLARE_API_TOKEN` with Pages and Workers permissions. Generated build files remain on GitHub-hosted runners, not on the owner's Mac.
-
-[Verify apex, www and studio HTTPS](.github/workflows/verify-sites.yml) · [Verify wildcard TLS/deleted pages](.github/workflows/verify-wildcard.yml)
-
-### Apex/www limitation
-
-An attempted Worker pass-through to the GoDaddy Website Builder origin returned HTTP 522. The experiment was rolled back and root/www remain DNS-only, with verified HTTPS. Full content CI/CD for apex/www requires a migration or an independently verified origin integration; routing existing GoDaddy pages through the Worker is not safe at present.
-
-See [domain and routing details](docs/domain-setup.md) and [production credentials](docs/production-credentials.md).
+The current apex homepage is deliberately minimal; it is a deployable placeholder, not an attempt to reproduce the former GoDaddy Website Builder content. GoDaddy remains the domain registrar. The Worker only handles first-level subdomains; deeper subdomains require separate TLS coverage.
