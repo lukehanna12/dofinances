@@ -24,8 +24,8 @@ test("Studio Auth-3 uses exact icons and preserves visual dimensions", async () 
     assert.ok(component.includes(copy), copy);
   }
   assert.match(component, /auth3__card/);
-  assert.match(component, /continueWithEmail/);
-  assert.match(component, /No authentication request was sent/);
+  assert.match(component, /handleSubmit/);
+  assert.match(component, /preventDefault/);
   assert.match(component, /<svg/);
   assert.match(styles, /max-width:448px/);
   assert.match(styles, /auth3-enter-left/);
@@ -36,7 +36,7 @@ test("Studio Auth-3 uses exact icons and preserves visual dimensions", async () 
 test("Studio login preview does not submit or log credentials", async () => {
   const component = await load("../src/components/Auth3.jsx");
   assert.doesNotMatch(component, /fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|console\.log/);
-  assert.doesNotMatch(component, /<form\b/);
+  assert.match(component, /<form className="auth3__email-group" onSubmit=\{handleSubmit\}>/);
   assert.doesNotMatch(component, /type="password"/);
 });
 
@@ -54,11 +54,54 @@ test("Studio login defaults to dark mode and provides an accessible bottom-right
   assert.match(styles, /\.auth3--light \.auth3__theme-toggle/);
 });
 
-test("registration and help prompts retain visual spacing", async () => {
+test("registration and help links preserve the literal space and anchor actions from the source", async () => {
   const component = await load("../src/components/Auth3.jsx");
   const styles = await load("../src/styles.css");
-  assert.match(component, /<p className="auth3__subtitle"><span>New user\?<\/span>/);
-  assert.match(component, /<p className="auth3__help"><span>Can't sign in\?<\/span>/);
-  assert.match(styles, /\.auth3__subtitle\{[^}]*column-gap:6px/);
-  assert.match(styles, /\.auth3__help\{[^}]*column-gap:6px/);
+  assert.match(component, /New user\?\{" "\}/);
+  assert.match(component, /Can't sign in\?\{" "\}/);
+  assert.match(component, /<a className="auth3__text-button" href="#">Create an account<\/a>/);
+  assert.match(component, /<a className="auth3__text-button" href="#">Get help<\/a>/);
+  assert.doesNotMatch(styles, /column-gap:6px/);
+});
+
+test("entrance animations use original Motion parameters", async () => {
+  const component = await load("../src/components/Auth3.jsx");
+  assert.match(component, /from "motion\/react"/);
+  assert.match(component, /initial=\{\{ opacity: 0, x: -50 \}\} animate=\{\{ opacity: 1, x: 0 \}\} transition=\{\{ duration: 0\.6 \}\}/);
+  assert.match(component, /initial=\{\{ opacity: 0, x: 50 \}\} animate=\{\{ opacity: 1, x: 0 \}\} transition=\{\{ duration: 0\.6, delay: 0\.2 \}\}/);
+  assert.equal((component.match(/<motion\./g)||[]).length, 2);
+});
+
+test("inactive controls and email submit match visible original behavior without recording user data", async () => {
+  const component = await load("../src/components/Auth3.jsx");
+  assert.match(component, /const handleSubmit = \(event\) => event\.preventDefault\(\)/);
+  assert.match(component, /type="email" value=\{email\} onChange=/);
+  assert.match(component, /type="submit" id="auth-continue"/);
+  assert.doesNotMatch(component, /previewAction|setStatus|console\.log|fetch\s*\(|sendBeacon|localStorage|XMLHttpRequest/);
+});
+
+test("colors, size, spacing and font weights are explicitly source-mapped", async () => {
+  const css = await load("../src/styles.css");
+  const pkg = JSON.parse(await load("../package.json"));
+  assert.equal(pkg.dependencies.motion, "14.9.1");
+  for (const snippet of [
+    "IBM+Plex+Sans:wght@400;500;700",
+    ".auth3{min-height:100vh",
+    "padding:24px;overflow:hidden",
+    "gap:48px;max-width:1400px",
+    "max-width:448px",
+    "padding:32px",
+    "font-size:30px;line-height:36px;font-weight:700",
+    "font-size:14px;line-height:20px",
+    "font-weight:500",
+    "gap:16px;margin-bottom:24px",
+    "gap:12px;margin-bottom:16px",
+    "letter-spacing:-.025em",
+    ".auth3__text-button:hover{color:#404040}",
+    ".auth3--dark .auth3__email-group input{background:#171717;border-color:#404040;color:#fff}",
+    ".auth3--dark .auth3__email-group input:focus{box-shadow:0 0 0 2px #525252}",
+    ".auth3--dark .auth3__continue:hover{background:#e5e5e5}",
+    ".auth3--dark .auth3__social:hover{background:#333}",
+    "photo-1709562493281-03c47edcb046",
+  ]) assert.ok(css.includes(snippet), "Missing recovered style: " + snippet);
 });
