@@ -71,3 +71,17 @@ html, body, #root {
   .auth3-theme-toggle { transition: none; }
   .auth3-theme-toggle:hover { transform: none; }
 }
+
+/* On short mobile screens, keep the extra theme toggle below the original
+ * card rather than covering its help text. The original Auth-3 classes remain
+ * untouched; this applies only to the user-added control. */
+@media (max-width: 640px) and (max-height: 700px) {
+  .auth3-root { display: flex; flex-direction: column; }
+  .auth3-theme-toggle {
+    position: relative;
+    align-self: flex-end;
+    right: auto;
+    bottom: auto;
+    margin: 12px 20px 20px auto;
+  }
+}

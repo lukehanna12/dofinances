@@ -38,3 +38,5 @@ The page is still a **visual sign-in preview**. Theme toggling and user-requeste
 ## Verification
 
 Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, two entrypoints and absence of the old apex page. CI builds the app and performs live smoke checks on both Studio URLs. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
+
+For very short mobile viewports (up to 640px wide and 700px high), the additional theme toggle is placed after the card rather than overlapping the original help text. This is a user-toggle-only responsive exception; all 28 original source classes remain unchanged.

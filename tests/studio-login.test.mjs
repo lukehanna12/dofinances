@@ -83,3 +83,10 @@ test("the apex /login implementation stays deleted", async () => {
   const { stat } = await import("node:fs/promises");
   await assert.rejects(stat(new URL("../sites/_apex/login/index.html", import.meta.url)), { code: "ENOENT" });
 });
+
+test("short mobile viewports position the extra theme control outside the original card", async () => {
+  const css = await load("../src/styles.css");
+  assert.match(css, /@media \(max-width: 640px\) and \(max-height: 700px\)/);
+  assert.match(css, /\.auth3-theme-toggle\s*\{\s*position: relative;\s*align-self: flex-end;/);
+  // Original utility classes must still be enforced by the source contract.
+});
