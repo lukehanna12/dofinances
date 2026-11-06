@@ -1,0 +1,20 @@
+name: Verify wildcard routing
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test live TLS and routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$(curl --fail --silent --show-error --max-time 25 https://ci-probe.dofinances.com/)"
+          grep -q 'Wildcard CI probe' <<< "$root"
+          nested="$(curl --fail --silent --show-error --max-time 25 'https://ci-probe.dofinances.com/nested/hello?x=1')"
+          grep -q 'Nested route works' <<< "$nested"
+          status="$(curl --silent --show-error --max-time 25 --output /dev/null --write-out '%{http_code}' https://ci-probe.dofinances.com/missing)"
+          test "$status" = 404
+          echo "Wildcard TLS, page content, nested paths and missing-page 404 verified"
