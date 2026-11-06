@@ -45,7 +45,7 @@ button,input{font:inherit}button{cursor:pointer}
 .auth3--dark .auth3__card{background:#171717;color:#f5f5f5}
 .auth3--dark .auth3__card h1{color:#fff}
 .auth3--dark .auth3__subtitle,.auth3--dark .auth3__help{color:#a3a3a3}
-.auth3--dark .auth3__text-button,.auth3--dark .auth3__more{color:#f5f5f5}
+.auth3--dark .auth3__text-button,.auth3--dark .auth3__more{color:#fff}
 .auth3--dark .auth3__text-button:hover,.auth3--dark .auth3__more:hover{color:#d4d4d4}
 .auth3--dark .auth3__email-group input{background:#171717;border-color:#404040;color:#fff}
 .auth3--dark .auth3__email-group input::placeholder{color:#a3a3a3}
