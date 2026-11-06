@@ -39,6 +39,8 @@ jobs:
           grep -Fq 'await fetch' src/components/Auth3.jsx
           test -s sites/_apex/app/index.html
           test -s sites/_apex/app/assets/dashboard.js
+          grep -Fq 'https://send.api.mailtrap.io/api/send' edge/auth-mail.mjs
+          ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs
           grep -Fq 'Sign in · Dofinances' dist/index.html
           test -d dist/assets
       - name: Save built site for deployment

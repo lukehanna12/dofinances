@@ -34,6 +34,7 @@ test("backup codes are random, unique and hashes are scoped to account",async()=
 });
 test("provider missing fails closed and never attempts outbound email",async()=>{
   assert.equal(mailReady({}),false);
-  assert.equal(mailReady({SENDGRID_API_KEY:"test",AUTH_EMAIL_FROM:"no-reply@dofinances.com"}),true);
+  assert.equal(mailReady({SENDGRID_API_KEY:"old-key",AUTH_EMAIL_FROM:"noreply@dofinances.com"}),false);
+  assert.equal(mailReady({MAILTRAP_API_TOKEN:"test",AUTH_EMAIL_FROM:"noreply@dofinances.com"}),true);
   await assert.rejects(sendAccountEmail({}, {to:"x@example.com",kind:"verify",token:"a"}),/not configured/);
 });

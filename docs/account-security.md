@@ -16,16 +16,51 @@ Verification/reset tokens are 256-bit cryptographically random, stored only as S
 
 TOTP implements RFC 6238 with 30-second SHA-1 six-digit codes, a ±1 step tolerance, replay protection, AES-GCM encryption at rest using a server-only `MFA_ENCRYPTION_KEY` and 10 one-use, account-scoped hashed recovery codes. Enrollment requires the user's current password. Enabling/disabling MFA revokes all active sessions. Login requests with MFA enabled receive a five-minute single-use challenge, never a logged-in cookie, until the correct second factor is supplied. Authentication failures are rate-limited.
 
-## Outbound email prerequisite
+## Selected outbound provider: Mailtrap Email Sending
 
-To activate sending for arbitrary new users, configure SendGrid transactional email with a verified sender or authenticated sending domain. Add these as **secrets to the `dofinances-host-router` Cloudflare Worker** (never GitHub files or chat messages):
+**Mailtrap is the chosen transactional provider; SendGrid is not used.** The integration calls
+`POST https://send.api.mailtrap.io/api/send` with the `Api-Token` header, a single recipient,
+plain-text plus HTML content, and the `account-verification`/`password-recovery` category.
+It does **not** call Mailtrap's Sandbox or bulk-marketing API. On the free plan, the currently
+advertised allowance is **4,000 messages/month, capped at 150/day**, for **one verified sending
+domain**. This is a provider quota, not a D1 cost.
 
-- `SENDGRID_API_KEY`: a least-privilege API key with Mail Send permission.
-- `AUTH_EMAIL_FROM`: your verified sender email address.
+### Activating outbound email (requires account owner)
 
-DNS records referring to SendGrid are not proof that an API key or sender is currently configured. Test actual delivery of verification and reset emails to controlled addresses before advertising open registration. If mail credentials are missing, new signup and email-dependent flows fail closed with 503; existing login and MFA continue. A send failure during signup may leave a pending account that can request a new link later.
+1. Register or sign into [Mailtrap](https://mailtrap.io/) and select **Email API/SMTP Sending**, not
+   Email Sandbox. Use the free plan; do not subscribe to a paid plan.
+2. Under **Sending Domains**, add **`dofinances.com`** and obtain Mailtrap's exact verification
+   records. The domain's **authoritative DNS is Cloudflare**, even though GoDaddy is the registrar.
+   The site already has Zoho MX records, existing DKIM selectors and DMARC; preserve them.
+   Only add nonconflicting records that Mailtrap actually issues. If Mailtrap requests a conflicting
+   DMARC value, review it instead of blindly replacing the existing security policy.
+3. Complete Mailtrap's compliance/domain verification and confirm its status is **Verified**.
+4. In Mailtrap **Sending Domains → Integration → Transactional Stream → API** (or Settings →
+   API Tokens), obtain a **send-only, domain-scoped API token**.
+5. Configure these as **Cloudflare Worker secrets** for `dofinances-host-router`:
+   - `MAILTRAP_API_TOKEN`: the transactional sending token (**never commit or paste into chat**).
+   - `AUTH_EMAIL_FROM`: the verified sender, e.g. `noreply@dofinances.com`.
+   - Optional `AUTH_EMAIL_REPLY_TO`: `support@dofinances.com` **only when inbound
+     reception/forwarding has been confirmed**.
+6. Send test verification and password-reset messages to controlled Gmail and Outlook mailboxes.
+   Confirm send acceptance, inbox placement, links, and delivery before advertising open registration.
 
-The `MFA_ENCRYPTION_KEY` (64 hexadecimal characters representing a 256-bit random key) is installed as a Cloudflare Worker secret. Keep it safe and do not rotate without a key-rotation plan: rotating it invalidates decryption of previously enrolled authenticators. Never log or commit secrets, verification links, codes or plaintext passwords.
+`noreply@` and `support@` are two local-part addresses of the **same verified domain**, not
+two separately purchased mailboxes or two sending domains. Mailtrap authenticates the domain;
+it does not receive/forward personal support mail as part of this Worker integration.
+
+**Incoming email remains separate:** existing `mx.zoho.com`, `mx2.zoho.com` and
+`mx3.zoho.com` MX records are left unchanged. No GoDaddy, Zoho, DNS, R2 or D1 mutations
+are needed just to commit this application-side Mailtrap API adapter.
+
+If mail credentials are missing, signup and email-dependent flows fail closed with HTTP 503;
+existing login and MFA continue. If email dispatch fails during signup, the pending account
+may remain and can request a new link later. There is **no retry loop** for an uncertain send.
+
+The `MFA_ENCRYPTION_KEY` (64 hexadecimal characters representing a 256-bit random key)
+is installed as a Cloudflare Worker secret. Keep it safe and do not rotate without a key
+rotation plan: rotating it invalidates decryption of previously enrolled authenticators.
+Never log or commit secrets, verification links, codes or plaintext passwords.
 
 ## Security boundaries and follow-up
 
