@@ -72,3 +72,7 @@ The user supplied all three original linked stylesheets (a 21,340-character font
 - The source stylesheet has no `--color-neutral-750` definition or compiled `dark:hover:bg-neutral-750` selector. It is not assigned a speculative value; the original dark `neutral-800` background remains the fallback.
 
 The original site-wide CSS is not copied wholesale to public Studio assets; only the small supported subset of theme rules needed by Auth-3 is retained. The rest of the source CSS styles unrelated React Bits documentation and marketing components.
+
+## Selected-text highlighting fidelity
+
+The supplied original Tailwind 4.1.17 stylesheet explicitly declares `::selection{color:oklch(100% 0 0);background-color:oklch(14.5% 0 0)}` and `.dark ::selection{color:#0a0a0a;background-color:oklch(100% 0 0)}`. Previously Studio had no corresponding selectors and showed the browser-default selection highlight (typically blue). The reconstructed implementation now scopes equivalent `::selection` styling to `.auth3-root` and its descendants for both light and dark themes, preserving identical contrast reversal. It does not change fonts, spacing, card/background colors, hovering, or the original 28 source utility class names.

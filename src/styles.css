@@ -47,6 +47,22 @@ html, body, #root {
     border-color: var(--border);
     outline-color: var(--ring);
   }
+  /* From the original React Bits Pro Tailwind 4.1.17 stylesheet:
+   * ::selection {color:oklch(100% 0 0);background-color:oklch(14.5% 0 0)}
+   * .dark ::selection {color:#0a0a0a;background-color:oklch(100% 0 0)}
+   *
+   * Scope the two states to the standalone Auth-3 root instead of affecting
+   * other Dofinances pages. Include the root itself for completeness. */
+  .auth3-root::selection,
+  .auth3-root *::selection {
+    color: oklch(100% 0 0);
+    background-color: oklch(14.5% 0 0);
+  }
+  .auth3-root.dark::selection,
+  .auth3-root.dark *::selection {
+    color: #0a0a0a;
+    background-color: oklch(100% 0 0);
+  }
   @supports (color: color-mix(in lab, red, red)) {
     .auth3-root, .auth3-root :where(*) {
       outline-color: color-mix(in oklab, var(--ring) 50%, transparent);

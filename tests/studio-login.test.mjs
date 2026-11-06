@@ -144,3 +144,14 @@ test("resting base border and focus-ring tokens mirror original compiled CSS", a
   assert.match(css, /body:has\(\.auth3-root:not\(\.dark\)\) \{ background-color: #fff; \}/);
   assert.match(css, /background-color: transparent;/);
 });
+
+
+test("original Auth-3 text selection has exact inverted light/dark colors", async () => {
+  const css = await load("../src/styles.css");
+  const jsx = await load("../src/components/Auth3.jsx");
+  assert.match(css, /\.auth3-root::selection,\s*\.auth3-root \*::selection\s*\{\s*color: oklch\(100% 0 0\);\s*background-color: oklch\(14\.5% 0 0\);/);
+  assert.match(css, /\.auth3-root\.dark::selection,\s*\.auth3-root\.dark \*::selection\s*\{\s*color: #0a0a0a;\s*background-color: oklch\(100% 0 0\);/);
+  assert.ok(jsx.includes('useState("dark")'));
+  // No global ::selection override. Keep the feature within Studio Auth-3.
+  assert.doesNotMatch(css, /\n::selection\s*\{/);
+});
