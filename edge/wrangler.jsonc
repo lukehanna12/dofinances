@@ -26,5 +26,8 @@
     "run_worker_first": true,
     "html_handling": "none",
     "not_found_handling": "none"
+  },
+  "vars": {
+    "AUTH_EMAIL_FROM": "noreply@dofinances.com"
   }
 }

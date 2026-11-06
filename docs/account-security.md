@@ -39,7 +39,7 @@ domain**. This is a provider quota, not a D1 cost.
    API Tokens), obtain a **send-only, domain-scoped API token**.
 5. Configure these as **Cloudflare Worker secrets** for `dofinances-host-router`:
    - `MAILTRAP_API_TOKEN`: the transactional sending token (**never commit or paste into chat**).
-   - `AUTH_EMAIL_FROM`: the verified sender, e.g. `noreply@dofinances.com`.
+   - `AUTH_EMAIL_FROM`: already set to `noreply@dofinances.com` as a non-secret variable in `edge/wrangler.jsonc`; no extra setup required.
    - Optional `AUTH_EMAIL_REPLY_TO`: `support@dofinances.com` **only when inbound
      reception/forwarding has been confirmed**.
 6. Send test verification and password-reset messages to controlled Gmail and Outlook mailboxes.

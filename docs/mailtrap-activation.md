@@ -1,6 +1,6 @@
 # Activate Dofinances transactional email (Mailtrap)
 
-Status: **application adapter deployed, integration contract tests passed; live Mailtrap delivery not yet enabled.**
+Status: **application adapter deployed, default sender configured, integration contract tests passed; live Mailtrap delivery not yet enabled.**
 
 This is the sole remaining onboarding playbook. No Mailtrap credentials are committed to the repository, and no provider-issued DNS verification records should be fabricated before the account is ready. The domain is registered at GoDaddy, but **Cloudflare is authoritative for DNS**.
 
@@ -23,7 +23,7 @@ This is the sole remaining onboarding playbook. No Mailtrap credentials are comm
 4. Wait for the Mailtrap sending domain to report verified/approved.
 5. Create a least-privilege transactional-sending API token, preferably scoped to the verified domain. In Cloudflare Dashboard → Workers & Pages → `dofinances-host-router` → Settings → Variables and Secrets, set:
    - `MAILTRAP_API_TOKEN` as **Secret** (transactional Email API token; never provide it in a chat or a Git commit).
-   - `AUTH_EMAIL_FROM` as **Secret** or Worker configuration variable with value `noreply@dofinances.com`.
+   - `AUTH_EMAIL_FROM=noreply@dofinances.com` is **already included in the checked-in Worker configuration**. No extra secret or manual sender variable is needed.
    - **Optional:** `AUTH_EMAIL_REPLY_TO=support@dofinances.com`, *after* verifying that this support address receives mail via Zoho or forwards to your personal inbox.
 6. Check `https://dofinances.com/api/auth/config`; `emailAvailable` becomes `true` only when the required sender/token environment bindings are present. This checks presence, **not** domain approval or actual mail deliverability.
 7. Perform controlled end-to-end testing: sign up with an inbox you own; receive verification email; open link; sign in; trigger password recovery; confirm single-use/reset expiry; check Gmail/Outlook inbox delivery and spam placement; optionally enroll authenticator MFA and confirm recovery-code behavior.

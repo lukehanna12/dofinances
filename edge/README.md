@@ -23,4 +23,4 @@ The apex's `/app` and `/dashboard` paths require a valid server-side session; un
 
 ## Transactional email readiness
 
-Account verification and password recovery use `edge/auth-mail.mjs` and the Mailtrap Email API. The Worker requires a valid `MAILTRAP_API_TOKEN` secret and `AUTH_EMAIL_FROM=noreply@dofinances.com` before opening email-dependent operations. Missing credentials fail closed (503) and do not issue a usable sign-in cookie. The Worker itself has no SMTP listener, inbound mail routing or D1 bindings. See [Mailtrap activation](../docs/mailtrap-activation.md).
+Account verification and password recovery use `edge/auth-mail.mjs` and the Mailtrap Email API. The Worker requires a valid `MAILTRAP_API_TOKEN` secret; `AUTH_EMAIL_FROM=noreply@dofinances.com` is already configured as a non-secret Wrangler variable. Both must be present before email-dependent operations open. Missing credentials fail closed (503) and do not issue a usable sign-in cookie. The Worker itself has no SMTP listener, inbound mail routing or D1 bindings. See [Mailtrap activation](../docs/mailtrap-activation.md).
