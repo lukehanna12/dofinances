@@ -85,7 +85,7 @@ test("colors, size, spacing and font weights are explicitly source-mapped", asyn
   const pkg = JSON.parse(await load("../package.json"));
   assert.equal(pkg.dependencies.motion, "14.9.1");
   for (const snippet of [
-    "IBM+Plex+Sans:wght@400;500;700",
+    "font-family:ui-sans-serif,system-ui,sans-serif",
     ".auth3{min-height:100vh",
     "padding:24px;overflow:hidden",
     "gap:48px;max-width:1400px",
@@ -104,4 +104,31 @@ test("colors, size, spacing and font weights are explicitly source-mapped", asyn
     ".auth3--dark .auth3__social:hover{background:#333}",
     "photo-1709562493281-03c47edcb046",
   ]) assert.ok(css.includes(snippet), "Missing recovered style: " + snippet);
+});
+
+test("computed original outline widths, corner shapes, scales and alignment", async () => {
+  const css = await load("../src/styles.css");
+  const jsx = await load("../src/components/Auth3.jsx");
+  // Measurements directly recovered from the original Chrome protocol capture,
+  // sampled with the original Auth-3 card displayed dark at 818×800.
+  assert.match(css, /\.auth3__card\{[^}]*max-width:448px;[^}]*border-radius:16px;padding:32px/);
+  assert.match(css, /\.auth3__email-group input\{[^}]*height:52px;[^}]*border-radius:12\.8px;border:2px solid/);
+  assert.match(css, /\.auth3__continue\{[^}]*min-height:48px;[^}]*border:0;border-radius:12\.8px/);
+  assert.match(css, /\.auth3__social\{[^}]*min-height:46px;[^}]*border:1px solid #d4d4d4;border-radius:12\.8px/);
+  assert.match(css, /\.auth3__layout\{[^}]*align-items:center;justify-content:center;gap:48px/);
+  assert.match(css, /\.auth3__social\{[^}]*align-items:center;justify-content:center;gap:12px/);
+  assert.match(css, /\.auth3__more\{display:inline-block/);
+  assert.match(css, /\.auth3__theme-toggle\{cursor:pointer;position:fixed/);
+  assert.match(jsx, /initial=\{\{ opacity: 0, x: -50 \}\}/);
+  assert.match(jsx, /initial=\{\{ opacity: 0, x: 50 \}\}/);
+});
+
+test("source-accurate transition easing and computed system font", async () => {
+  const css = await load("../src/styles.css");
+  assert.match(css, /font-family:ui-sans-serif,system-ui,sans-serif/);
+  assert.doesNotMatch(css, /IBM\+Plex\+Sans|fonts\.googleapis\.com/);
+  assert.match(css, /\.auth3__email-group input\{[^}]*transition:all \.2s cubic-bezier\(0\.4,0,0\.2,1\)/);
+  assert.equal((css.match(/transition-timing-function:cubic-bezier\(0\.4,0,0\.2,1\)/g) || []).length, 2);
+  assert.match(css, /button\{cursor:default\}/);
+  assert.doesNotMatch(css, /\.auth3__card,\.auth3__card h1,\.auth3__subtitle.*transition:/);
 });
