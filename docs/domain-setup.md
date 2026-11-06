@@ -38,3 +38,7 @@ Temporary verification pages were created and then deleted by Git commits; their
 - [Wildcard removal/404 checks](../.github/workflows/verify-wildcard.yml)
 
 Cloudflare reference: https://developers.cloudflare.com/workers/static-assets/binding/
+
+## Authentication architecture
+
+The apex Worker now also serves a protected `/app` dashboard and email/password authentication under `/api/auth/*`. The `AuthStore` Durable Object is declared in `edge/wrangler.jsonc` using a SQLite-backed class export, and is provisioned during the same GitHub Actions Wrangler deployment. This creates **no D1 bindings, D1 row reads or D1 row writes**. The Studio Pages project is not an account authority. `www` authentication URLs redirect to canonical apex. No Tailscale Funnel, Workers Builds, external OAuth providers or new DNS records are needed.

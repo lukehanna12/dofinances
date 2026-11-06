@@ -59,7 +59,8 @@ test("theme defaults to dark and can switch without persistence", async () => {
   assert.match(source, /aria-pressed=\{isDark\}/);
   assert.match(source, /className="auth3-theme-toggle"/);
   assert.match(source, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
-  assert.doesNotMatch(source, /localStorage|sessionStorage|cookie|fetch\s*\(/);
+  assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie/);
+  assert.match(source, /credentials: "same-origin"/);
 });
 
 test("Motion's parameters and responsive caption classes match the source", async () => {
@@ -73,12 +74,17 @@ test("Motion's parameters and responsive caption classes match the source", asyn
 
 test("links and email form preserve original UI behavior without credential recording", async () => {
   const source = await load("../src/components/Auth3.jsx");
-  assert.match(source, /New user\?\{" "\}/);
+  assert.match(source, /"New user\?"/);
   assert.match(source, /Can't sign in\?\{" "\}/);
   assert.equal((source.match(/href="#"/g)||[]).length, 2);
   assert.match(source, /<form onSubmit=\{handleSubmit\} className="mb-6">/);
   assert.match(source, /event\.preventDefault\(\)/);
-  assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|fetch\s*\(|onClick=\{\(\) => previewAction/);
+  assert.match(source, /await fetch\("\/api\/auth\//);
+  assert.match(source, /window\.location\.assign\("\/app"\)/);
+  assert.match(source, /type="password"/);
+  assert.match(source, /confirmPassword/);
+  assert.match(source, /disabled title="Not connected"/);
+  assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|localStorage|sessionStorage|document\.cookie/);
 });
 
 test("both retired Studio /login URLs return a scoped Pages Function 404", async () => {

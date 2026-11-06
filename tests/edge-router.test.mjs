@@ -1,13 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {assetCandidates, handleRequest, siteFolder} from "../edge/worker.mjs";
+import {assetCandidates, handleRequest, siteFolder} from "../edge/router.mjs";
 
 const mock = {
   ASSETS: {fetch:async request => {
     const path = new URL(request.url).pathname;
     const contents = {
       "/_apex/index.html":"<h1>Dofinances</h1>",
+      "/_apex/app/index.html":"<h1>Dashboard · Dofinances</h1>",
+      "/_apex/app/assets/dashboard.js":"dashboard-script",
       "/_apex/login/index.html":"<h1>Sign in · Dofinances</h1>",
       "/_apex/assets/app-compiled.js":"compiled-preview",
       "/_apex/notes/2026/index.html":"<h1>Notes</h1>",
@@ -75,4 +77,45 @@ test("HEAD and POST are handled safely",async()=>{
 test("repository includes initial Git-owned homepage files",async()=>{
   const html=await readFile(new URL("../sites/_apex/index.html",import.meta.url),"utf8");
   assert.match(html,/Dofinances/);
+});
+
+const VALID_TOKEN="A".repeat(43);
+const authed={
+  ...mock,
+  AUTH_STORE:{idFromName:()=>({}),get:()=>({
+    session:async token=>token===VALID_TOKEN?{id:"user-test",email:"account@example.invalid"}:null,
+  })},
+};
+test("protected dashboard redirects unauthenticated visitors to /login",async()=>{
+  for(const pathname of ["/app","/app/","/dashboard","/app/assets/dashboard.js"]){
+    const response=await handleRequest(new Request("https://dofinances.com"+pathname),authed);
+    assert.equal(response.status,302,pathname);
+    assert.equal(response.headers.get("Location"),"/login");
+    assert.equal(response.headers.get("Cache-Control"),"no-store");
+  }
+});
+test("a valid session serves app HTML and assets privately",async()=>{
+  for(const [path,word] of [["/app","Dashboard"],["/dashboard","Dashboard"],["/app/assets/dashboard.js","dashboard-script"]]){
+    const response=await handleRequest(new Request("https://dofinances.com"+path,{
+      headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN},
+    }),authed);
+    assert.equal(response.status,200,path);
+    assert.match(await response.text(),new RegExp(word));
+    assert.equal(response.headers.get("Cache-Control"),"no-store");
+  }
+});
+test("www login and app routes redirect to canonical apex",async()=>{
+  for(const path of ["/login","/app","/api/auth/me"]){
+    const response=await handleRequest(new Request("https://www.dofinances.com"+path),mock);
+    assert.equal(response.status,301,path);
+    assert.equal(response.headers.get("Location"),"https://dofinances.com"+path);
+  }
+});
+test("auth endpoints fail closed and reject cross-origin mutations",async()=>{
+  assert.equal((await handleRequest(new Request("https://dofinances.com/api/auth/me"),mock)).status,503);
+  const denial=await handleRequest(new Request("https://dofinances.com/api/auth/signup",{
+    method:"POST",headers:{"Origin":"https://evil.example","Content-Type":"application/json"},
+    body:JSON.stringify({email:"x@example.com",password:"examplepassword"}),
+  }),{...mock,AUTH_STORE:{idFromName:()=>({}),get:()=>({})}});
+  assert.equal(denial.status,403);
 });

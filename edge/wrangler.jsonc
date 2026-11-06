@@ -6,6 +6,20 @@
   "observability": {
     "enabled": false
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUTH_STORE",
+        "class_name": "AuthStore"
+      }
+    ]
+  },
+  "exports": {
+    "AuthStore": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
   "assets": {
     "directory": "../sites",
     "binding": "ASSETS",

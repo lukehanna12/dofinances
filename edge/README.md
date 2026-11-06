@@ -15,3 +15,7 @@ Cloudflare Wrangler configuration: `edge/wrangler.jsonc`, with `assets.directory
 After editing files, push to `main`: GitHub Actions tests and deploys the Worker automatically. The existing React studio is a separate Pages deployment from the same workflow.
 
 This is static website CI/CD. Dynamic server-side applications would require implementing additional Worker routes and dependencies; they are not implied by adding HTML files.
+
+## Authenticated dashboard
+
+The apex's `/app` and `/dashboard` paths require a valid server-side session; unauthenticated requests redirect to `/login`. The Worker owns an independent SQLite-backed Durable Object for accounts and sessions, configured as `AUTH_STORE`; it never reads or writes D1. The Studio login interface is built once in GitHub Actions, and CI's live auth smoke test signs up an ephemeral user, exercises login/logout/dashboard protection, and then deletes the test account.

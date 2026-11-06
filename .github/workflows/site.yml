@@ -36,6 +36,9 @@ jobs:
           test -s dist/404.html
           test -s dist/_routes.json
           test ! -e dist/login/index.html
+          grep -Fq 'await fetch' src/components/Auth3.jsx
+          test -s sites/_apex/app/index.html
+          test -s sites/_apex/app/assets/dashboard.js
           grep -Fq 'Sign in · Dofinances' dist/index.html
           test -d dist/assets
       - name: Save built site for deployment
@@ -159,3 +162,51 @@ jobs:
             echo "$url -> HTTP $code (expected 404)"
             test "$code" = 404
           done
+
+      - name: Verify real authenticated dashboard and account lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=https://dofinances.com
+          status="$(curl -sS -o /dev/null -w '%{http_code}' "$base/app")"
+          echo "Unauthenticated /app -> $status"
+          test "$status" = 302
+          test "$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/auth/me")" = 401
+
+          email="ci-auth-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(openssl rand -hex 5)@example.invalid"
+          password="$(openssl rand -hex 18)"
+          payload="$(printf '{"email":"%s","password":"%s"}' "$email" "$password")"
+          jar="$(mktemp)"
+          body="$(mktemp)"
+          cleanup() {
+            curl -sS --max-time 20 -o /dev/null -b "$jar" -X DELETE \
+              -H 'Origin: https://dofinances.com' -H 'Content-Type: application/json' \
+              --data "$payload" "$base/api/auth/account" || true
+            rm -f "$jar" "$body"
+          }
+          trap cleanup EXIT
+
+          signup="$(curl --silent --show-error --max-time 30 -o "$body" -w '%{http_code}' \
+            -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
+            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/signup")"
+          echo "Sign-up -> $signup"
+          test "$signup" = 201
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 200
+          curl -fsS --max-time 20 -b "$jar" "$base/api/auth/me" | grep -Fq "$email"
+
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
+            -b "$jar" -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
+            -H 'Content-Type: application/json' --data '{}' "$base/api/auth/logout")" = 200
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 302
+
+          login="$(curl --silent --show-error --max-time 30 -o "$body" -w '%{http_code}' \
+            -b "$jar" -c "$jar" -X POST -H 'Origin: https://dofinances.com' \
+            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/login")"
+          echo "Sign-in -> $login"
+          test "$login" = 200
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 200
+          test "$(curl -sS --max-time 30 -o /dev/null -w '%{http_code}' \
+            -b "$jar" -c "$jar" -X DELETE -H 'Origin: https://dofinances.com' \
+            -H 'Content-Type: application/json' --data "$payload" "$base/api/auth/account")" = 204
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -b "$jar" "$base/app")" = 302
+          echo "Authenticated dashboard and account lifecycle verified"

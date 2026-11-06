@@ -1,5 +1,11 @@
 # Dofinances Studio — Auth-3 source-fidelity implementation
 
+## November 6, 2026 — Live account authentication
+
+The apex `/login` form now submits real email/password sign-in and sign-up requests to same-origin Worker endpoints. Successful authentication issues a secure HTTP-only cookie and sends the browser to the server-protected `/app` dashboard. Account and session records are held in an independent SQLite-backed Durable Object, **not D1**. Authenticated account deletion is available.
+
+This is an initial authentication implementation, not a finished consumer identity platform. Email verification, password resets, MFA and third-party sign-in are not enabled. The original social-login buttons remain visible but disabled and explicitly labeled not connected; previously captured style utilities and source provenance are retained.
+
 ## Live routes and scope
 
 - `https://stu.dofinances.com/` — Studio homepage, unchanged.
@@ -14,6 +20,8 @@ The Auth-3 component was extracted from `Auth-3.heapsnapshot` as Webpack module 
 
 The original component uses Tailwind utilities (including dark, hover, focus, placeholders, spacing, border, radius, text sizing, line height, weight, tracking, shadows, responsive visibility and alignment). Instead of manually translating those utilities into approximate CSS, this project uses Tailwind CSS 4.2.2 with the corresponding Vite 8-compatible plugin. Motion controls enter transitions exactly as authored: x=-50px, opacity 0→1, duration 0.6 seconds for the card; x=+50px, opacity 0→1, duration 0.6 seconds, delay 0.2 seconds for the caption.
 
+The historical source-fidelity investigation below documents the pre-authentication design. Authentication introduces an additional password input, a sign-up state, inline errors, and disabled social providers while retaining the original utility class strings.
+
 The site theme variables observable in the live documentation tab include:
 - `--radius: .8rem`
 - `--radius-lg: .8rem` (12.8px)
@@ -27,7 +35,7 @@ The Webpack source contains `dark:hover:bg-neutral-750`, but the accessible site
 
 ## Original behavior and intentional differences
 
-The source has functional email control state, an email form that prevents default navigation, inert social-provider and View more buttons, and links to `#`. Those visible semantics are retained. The source's diagnostic logging of entered emails is intentionally suppressed to protect user privacy. There is **no authentication backend**, no network request and no email storage.
+The source has functional email control state, an email form that prevents default navigation, inert social-provider and View more buttons, and links to `#`. Those visible semantics are retained. The source's diagnostic logging of entered emails is intentionally suppressed to protect user privacy. That paragraph described the **previous visual preview**. The current apex form sends credentials only to the same-origin Worker authentication service; the new durable object stores the email address with a salted derived password hash (never plaintext), and revocable hashed session tokens.
 
 The user-requested customizations are:
 - Dofinances name and caption instead of React Bits Pro marketing copy.

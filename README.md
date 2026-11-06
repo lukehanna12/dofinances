@@ -7,7 +7,9 @@ GitHub-based development and automatic deployment for `dofinances.com`, `www.dof
 - **Apex and first-level wildcard subdomains:** Cloudflare Worker `dofinances-host-router` with Workers Static Assets in `sites/`.
 - **www:** same Worker; independent files in `sites/_www/` override paths, and otherwise the URL redirects to the apex.
 - **stu:** React and Vite project on Cloudflare Pages `dofinances-studio`, sourced from `src/`; its root remains the Auth-3 preview, but `/login` is removed.
-- **Apex `/login`:** the same built Auth-3 preview, packaged from the Studio build artifact into the Worker static assets during CI/CD.
+- **Apex `/login`:** email/password sign-in and registration using the Auth-3 React interface, packaged from the Studio build artifact into the Worker assets during CI/CD.
+- **Apex `/app`:** a protected dashboard served only after the Worker checks the HTTP-only session cookie.
+- **Account state:** a new SQLite-backed Cloudflare Durable Object owned by this Worker. This auth path does not use D1, KV, or R2.
 - **Existing email and commerce records:** remain separate, DNS-only, and are not served by the Worker.
 
 ## Add, update, or delete public pages
@@ -27,6 +29,14 @@ Commit files to `main` in these directories:
 Removing a file and committing it makes that page return 404 (or, for `www`, fall back to its apex redirect). No DNS additions are required for new first-level subdomain names. Unknown paths/hosts return HTTP 404.
 
 For Studio, edit `src/` and `public/` and push `main`; Vite builds the React application. CI also copies the compiled `dist/index.html` and hashed assets into the Worker deployment for `https://dofinances.com/login` and `/login/`. This avoids maintaining two independent login implementations. A narrowly scoped Pages Function at `functions/login.js` enforces HTTP 404 on both removed Studio `/login` URL variants; `public/_routes.json` limits Function invocation to those paths. The top-level `public/404.html` provides a static 404 for other unknown routes.
+
+## Email/password authentication
+
+The Worker handles `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, and authenticated `DELETE /api/auth/account`. Accounts are stored in the Worker-bound `AuthStore` Durable Object with individually salted PBKDF2-SHA256 password hashes, hashed revocable session tokens, server-side rate limits, and seven-day `__Host-` HttpOnly Secure SameSite=Lax cookies. All state-changing requests require the exact apex Origin.
+
+The public home page links to `/login`, `/login?mode=signup`, and `/app`. An unauthenticated `/app` visit redirects to `/login`. The Studio root still uses the same form design and directs visitors to the canonical apex authentication origin.
+
+**Current limitations:** email ownership verification, password resets, MFA, OAuth, and real financial data integrations are not implemented. Users should not treat the initial dashboard as a financial-data vault. Account deletion is available from the protected dashboard.
 
 ## CI/CD and verification
 

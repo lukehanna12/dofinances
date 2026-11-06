@@ -20,3 +20,14 @@ test("both deployments run through gated GitHub Actions", async ()=>{
   assert.match(yaml,/https:\/\/stu\.dofinances\.com\/login/);
   assert.match(yaml,/https:\/\/dofinances\.com\/login/);
 });
+
+test("auth backend uses SQLite Durable Objects without any D1 binding",async()=>{
+  const config=JSON.parse(await readFile(new URL("../edge/wrangler.jsonc",import.meta.url),"utf8"));
+  assert.equal(config.durable_objects.bindings[0].name,"AUTH_STORE");
+  assert.equal(config.exports.AuthStore.storage,"sqlite");
+  assert.doesNotMatch(JSON.stringify(config),/d1_databases|r2_buckets/);
+  const router=await readFile(new URL("../edge/router.mjs",import.meta.url),"utf8");
+  assert.match(router,/sessionCookie/);
+  assert.match(router,/getUser/);
+  assert.match(router,/redirect\("\/login"\)/);
+});
