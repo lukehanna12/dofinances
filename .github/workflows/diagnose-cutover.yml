@@ -1,0 +1,28 @@
+name: Diagnose production website cutover
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check DNS, HTTPS, content and routing
+        shell: bash
+        run: |
+          set -uo pipefail
+          for url in \
+            'https://dofinances.com/' \
+            'https://dofinances.com/assets/site.css' \
+            'https://dofinances.com/__ci_check.html' \
+            'https://www.dofinances.com/' \
+            'https://www.dofinances.com/__ci_check.html' \
+            'https://ci-probe.dofinances.com/' \
+            'https://ci-probe.dofinances.com/nested/deep' \
+            'https://stu.dofinances.com/'; do
+            echo "::group::$url"
+            curl --silent --show-error --location --max-time 20 --output /tmp/dofinances-diagnose-body --write-out 'status=%{http_code} tls=%{ssl_verify_result} ip=%{remote_ip} final=%{url_effective}\n' "$url" || true
+            echo "BODY:"
+            head -c 450 /tmp/dofinances-diagnose-body 2>/dev/null || true
+            echo
+            echo "::endgroup::"
+          done
