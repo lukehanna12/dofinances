@@ -1,21 +1,14 @@
-# Optional wildcard routing Worker
+# Git-managed Dofinances website router
 
-This Worker proxies **eligible first-level** subdomains (e.g. `alpha.dofinances.com/a/b?x=1`) to the React Pages app hosted on `dofinances-studio.pages.dev`. It does **not** proxy `dofinances.com` or its existing `www`, `stu`, payment, email and verification hostnames. Deeper names need separate TLS coverage and are intentionally rejected.
+All changes to pages declared in `edge/pages.mjs` are published automatically through GitHub Actions after CI passes on `main`. The HTML and content type for each address are versioned in Git.
 
-The apex and `www` remain on **GoDaddy Websites + Marketing**; `stu` remains on **Cloudflare Pages**.
+- Add a key `portfolio.dofinances.com/` to create a hostname homepage.
+- Add `portfolio.dofinances.com/briefing/2027` to create a nested page.
+- Delete a key, commit and allow CI to finish to remove the page (HTTP 404).
+- Query strings are ignored when choosing the page.
+- Existing `stu.dofinances.com` stays on Cloudflare Pages; domain payment and email subdomains are excluded.
+- Apex/www can be handled by the same router while preserving the original GoDaddy content by default, but only after safe origin proxy verification.
 
-## Deploy through GitHub Actions
+CI/CD publishes `dofinances-host-router` from `edge/wrangler.jsonc` and `dofinances-studio` Pages from the same workflow. The Worker itself does not modify DNS/zone routes.
 
-In GitHub Actions run **Build and deploy Dofinances**, selecting the optional `deploy_wildcard` input. The Worker uses a separately scoped secret `CLOUDFLARE_WORKERS_API_TOKEN` when present, otherwise tries the existing `CLOUDFLARE_API_TOKEN`. A Pages-only token will not have Worker deployment access.
-
-Wrangler config sets `workers_dev: false` and **no live routes**. A successful deployment alone will not change any public hostnames.
-
-The DNS and route cutover is a separate Cloudflare change: create a **proxied wildcard A** record (for a Worker-only origin, `192.0.2.1` can be used), and attach `*.dofinances.com/*` to `dofinances-host-router`. **Before** attaching the wildcard route, create no-script exceptions for `stu.dofinances.com/*`, `www.dofinances.com/*` and any other existing proxied application hosts. These more-specific rules take precedence.
-
-For safety, the router itself accepts only exact single-label valid hostnames not in its reserved list, only GET/HEAD, and strips Cookie/Authorization before requesting the fixed static-site upstream.
-
-Use a throwaway test name matching the wildcard DNS record and verify HTTP/HTTPS behavior and arbitrary nested paths, then inspect the exact real DNS and active routes. No local Mac files are needed.
-
-Cloudflare official references:
-- https://developers.cloudflare.com/workers/configuration/routing/routes/
-- https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/configuration/hostname-routing/
+The `ci-probe` entries are temporary and intended to be removed after live testing. For very large/multi-file websites, migrate page content to Workers Static Assets; the inline registry is intended for small-to-medium standalone HTML pages and is subject to the Workers code bundle size limit.
