@@ -13,7 +13,7 @@ button,input{font:inherit}button{cursor:pointer}
 .auth3__layout{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:48px;max-width:1400px;width:100%;margin:auto}
 .auth3__card{width:100%;max-width:448px;flex:0 1 448px;background:#fff;border-radius:16px;padding:32px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25);animation:auth3-enter-left .6s both}
 .auth3__card h1{font-size:30px;line-height:36px;font-weight:700;letter-spacing:0;color:#171717;margin:0 0 8px}
-.auth3__subtitle{font-size:14px;line-height:20px;color:#525252;margin:0 0 32px}
+.auth3__subtitle{font-size:14px;line-height:20px;color:#525252;margin:0 0 32px;display:flex;align-items:baseline;flex-wrap:wrap;column-gap:6px}
 .auth3__text-button{background:none;border:0;color:#171717;padding:0;text-align:left;font-size:inherit;line-height:inherit;font-weight:500;transition:color .2s;text-decoration:none}
 .auth3__text-button:hover,.auth3__text-button:focus-visible{color:#525252;text-decoration:underline}
 .auth3__email-group{margin-bottom:24px}
@@ -31,17 +31,43 @@ button,input{font:inherit}button{cursor:pointer}
 .auth3__social svg{flex:none}
 .auth3__more{display:block;width:100%;margin:0 0 24px;padding:0;background:none;border:0;font-size:14px;line-height:20px;color:#171717;font-weight:500;transition:color .2s}
 .auth3__more:hover{color:#525252}
-.auth3__help{margin:0;text-align:center;color:#525252;font-size:14px;line-height:20px}
+.auth3__help{margin:0;text-align:center;color:#525252;font-size:14px;line-height:20px;display:flex;align-items:baseline;justify-content:center;flex-wrap:wrap;column-gap:6px}
 .auth3__status{font-size:12px;line-height:18px;color:#384e59;background:#f1f5f7;border:1px solid #d3e1e5;border-radius:8px;padding:10px 12px;margin:20px 0 0}
 .auth3__status[hidden]{display:none}
 .auth3__copy{flex:0 1 384px;max-width:384px;min-width:0;color:#fff;animation:auth3-enter-right .6s .2s both}
 .auth3__copy h2{font-size:36px;line-height:40px;letter-spacing:-.05em;font-weight:500;margin:0 0 16px}
 .auth3__copy p{font-size:18px;line-height:28px;letter-spacing:-.025em;color:rgba(255,255,255,.9);max-width:25ch;margin:0}
+
+/* Local-only mode toggle. The first render is always dark; no preference data is stored. */
+.auth3--dark{color-scheme:dark}
+.auth3--light{color-scheme:light}
+.auth3__card,.auth3__card h1,.auth3__subtitle,.auth3__help,.auth3__text-button,.auth3__email-group input,.auth3__social,.auth3__continue,.auth3__more,.auth3__status{transition:background-color .2s,border-color .2s,color .2s}
+.auth3--dark .auth3__card{background:#171717;color:#f5f5f5}
+.auth3--dark .auth3__card h1{color:#fff}
+.auth3--dark .auth3__subtitle,.auth3--dark .auth3__help{color:#a3a3a3}
+.auth3--dark .auth3__text-button,.auth3--dark .auth3__more{color:#f5f5f5}
+.auth3--dark .auth3__text-button:hover,.auth3--dark .auth3__more:hover{color:#d4d4d4}
+.auth3--dark .auth3__email-group input{background:#202020;border-color:#454545;color:#fff}
+.auth3--dark .auth3__email-group input::placeholder{color:#a3a3a3}
+.auth3--dark .auth3__email-group input:focus{border-color:#a3a3a3;box-shadow:0 0 0 2px #737373}
+.auth3--dark .auth3__continue{background:#fafafa;color:#171717}
+.auth3--dark .auth3__continue:hover{background:#e5e5e5}
+.auth3--dark .auth3__divider span{background:#404040}
+.auth3--dark .auth3__divider small{color:#a3a3a3}
+.auth3--dark .auth3__social{background:#262626;color:#fafafa;border-color:#454545}
+.auth3--dark .auth3__social:hover{background:#333}
+.auth3--dark .auth3__status{background:#242d33;border-color:#40515a;color:#e2edf1}
+.auth3__theme-toggle{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:10;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:10px 16px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(26,26,26,.88);color:#f5f5f5;box-shadow:0 10px 28px rgba(0,0,0,.22);font-size:13px;line-height:20px;font-weight:600;letter-spacing:0;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:background-color .2s,border-color .2s,color .2s,transform .2s}
+.auth3__theme-toggle:hover{background:#303030;transform:translateY(-1px)}
+.auth3__theme-toggle svg{flex:none}
+.auth3--light .auth3__theme-toggle{background:rgba(255,255,255,.92);color:#171717;border-color:#d4d4d4}
+.auth3--light .auth3__theme-toggle:hover{background:#fff}
+
 .auth3__sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 button:focus-visible{outline:3px solid #6ca7d2;outline-offset:3px}
 @keyframes auth3-enter-left{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
 @keyframes auth3-enter-right{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
 @media(max-width:1023px){.auth3__copy{display:none}.auth3__layout{gap:0}.auth3__card{flex:0 1 448px}}
-@media(max-width:540px){.auth3{padding:58px 20px 28px}.auth3__preview-label{top:15px;right:16px;font-size:10px;padding:5px 9px}.auth3__card{padding:30px 24px}.auth3__card h1{font-size:30px}.auth3__background{background-position:center}}
+@media(max-width:540px){.auth3{padding:58px 20px 88px}.auth3__preview-label{top:15px;right:16px;font-size:10px;padding:5px 9px}.auth3__card{padding:30px 24px}.auth3__card h1{font-size:30px}.auth3__background{background-position:center}}
 @media(max-width:365px){.auth3{padding-left:12px;padding-right:12px}.auth3__card{padding:26px 20px}}
-@media(prefers-reduced-motion:reduce){.auth3__card,.auth3__copy{animation:none}*,*:before,*:after{scroll-behavior:auto!important;transition-duration:0.01ms!important}}
+@media(prefers-reduced-motion:reduce){.auth3__card,.auth3__copy{animation:none}.auth3__theme-toggle:hover{transform:none}*,*:before,*:after{scroll-behavior:auto!important;transition-duration:0.01ms!important}}

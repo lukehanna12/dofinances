@@ -13,3 +13,5 @@ The icons, responsive layout, background photograph URL, card dimensions, and CS
 The existing studio landing page is replaced by this reconstruction, as requested. The separate Studio deployment does not require changes to DNS, GoDaddy, or the apex-domain Worker routes.
 
 The GitHub Actions build verifies both HTML outputs. The deployment smoke job fetches both Studio URLs and validates that they contain the new page marker.
+
+The Studio preview now defaults to dark mode. A fixed, accessible toggle in the bottom-right switches between dark and light mode using React state (without storing user preferences or contacting a server). Registration and help prompts use an explicit 6px flex gap to maintain spacing.

@@ -39,3 +39,26 @@ test("Studio login preview does not submit or log credentials", async () => {
   assert.doesNotMatch(component, /<form\b/);
   assert.doesNotMatch(component, /type="password"/);
 });
+
+test("Studio login defaults to dark mode and provides an accessible bottom-right toggle", async () => {
+  const component = await load("../src/components/Auth3.jsx");
+  const styles = await load("../src/styles.css");
+  assert.match(component, /\[theme, setTheme\] = useState\("dark"\)/);
+  assert.match(component, /className=\{\`auth3 auth3--\$\{theme\}\`\}/);
+  assert.match(component, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
+  assert.match(component, /aria-pressed=\{isDark\}/);
+  assert.match(component, /onClick=\{\(\) => setTheme\(isDark \? "light" : "dark"\)\}/);
+  assert.match(styles, /\.auth3__theme-toggle\{position:fixed;right:/);
+  assert.match(styles, /bottom:max\(20px,env\(safe-area-inset-bottom\)\)/);
+  assert.match(styles, /\.auth3--dark \.auth3__card\{background:#171717/);
+  assert.match(styles, /\.auth3--light \.auth3__theme-toggle/);
+});
+
+test("registration and help prompts retain visual spacing", async () => {
+  const component = await load("../src/components/Auth3.jsx");
+  const styles = await load("../src/styles.css");
+  assert.match(component, /<p className="auth3__subtitle"><span>New user\?<\/span>/);
+  assert.match(component, /<p className="auth3__help"><span>Can't sign in\?<\/span>/);
+  assert.match(styles, /\.auth3__subtitle\{[^}]*column-gap:6px/);
+  assert.match(styles, /\.auth3__help\{[^}]*column-gap:6px/);
+});
