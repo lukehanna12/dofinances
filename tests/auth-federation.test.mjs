@@ -78,7 +78,10 @@ test("Google OIDC verifies RSA signature, nonce, issuer, audience and email_veri
       idToken=await sign(patch);
       await assert.rejects(exchangeFederatedIdentity(config,"code",txn));
     }
-    idToken=(await sign()).replace(/.$/,"x");
+    const intact=await sign();
+    const pieces=intact.split(".");
+    pieces[2]=(pieces[2][0]==="A"?"B":"A")+pieces[2].slice(1);
+    idToken=pieces.join(".");
     await assert.rejects(exchangeFederatedIdentity(config,"code",txn));
   }finally{globalThis.fetch=originalFetch;}
 });
