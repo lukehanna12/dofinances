@@ -16,23 +16,31 @@ test("Studio root is the only React entrypoint; the apex /login reuses its build
   assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
 });
 
-test("all 28 CSS utility strings match recovered Webpack module 55010 exactly and in order", async () => {
+test("original non-social Auth-3 layout utilities remain unchanged", async () => {
   const source = await load("../src/components/Auth3.jsx");
   const contract = JSON.parse(await load("./fixtures/auth3-source-class-contract.json"));
   assert.equal(contract.classes.length, 28);
   const classes = [...source.matchAll(/className="([^"]+)"/g)]
     .map(match => match[1]).filter(value => value !== "auth3-theme-toggle");
-  assert.deepEqual(classes, contract.classes);
+  // Only the 3 static, disabled social buttons were replaced with enabled-aware controls.
+  for(const expected of [...contract.classes.slice(0,16),...contract.classes.slice(23)]){
+    assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
+  }
+  assert.match(source,/const signInProviders=/);
+  assert.match(source,/provider\.key==="chatgpt"/);
+  assert.match(source,/data-oai-siwc-button/);
+  assert.doesNotMatch(source,/Apple \(not connected\)/);
 });
 
-test("captured SVG icon structure and background image are preserved", async () => {
-  const source = await load("../src/components/Auth3.jsx");
-  assert.equal((source.match(/<svg\b/g) || []).length, 4); // Three originals plus theme toggle
-  assert.match(source, /M22\.56 12\.25c0-.78/);  // Google path
-  assert.match(source, /M788\.1 340\.9/);        // Apple path
-  assert.match(source, /M12 0c-6\.626 0/);       // GitHub path
-  assert.match(source, /photo-1709562493281-03c47edcb046/);
-  assert.match(source, /Beautiful|Dofinances/);
+test("sign-in providers replace Apple without changing the Auth-3 backdrop or theme icon",async()=>{
+  const source=await load("../src/components/Auth3.jsx");
+  assert.equal((source.match(/<svg\b/g)||[]).length,1);
+  assert.match(source,/photo-1709562493281-03c47edcb046/);
+  assert.match(source,/key:"google"/);
+  assert.match(source,/key:"chatgpt"/);
+  assert.match(source,/key:"github"/);
+  assert.match(source,/federation\[provider\.key\]\?\.enabled/);
+  assert.match(source,/Dofinances/);
 });
 
 test("Tailwind 4 reuses captured radius and color scale, rather than approximated BEM CSS", async () => {
@@ -83,7 +91,9 @@ test("links and email form preserve original UI behavior without credential reco
   assert.match(source, /window\.location\.assign\("\/app"\)/);
   assert.match(source, /type="password"/);
   assert.match(source, /confirmPassword/);
-  assert.match(source, /disabled title="Not connected"/);
+  assert.match(source, /provider\.key==="chatgpt"/);
+  assert.match(source, /className=\{common\+" opacity-60 cursor-not-allowed"\}/);
+  assert.match(source, /\/api\/auth\/oauth\/start\?provider=/);
   assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|localStorage|sessionStorage|document\.cookie/);
 });
 
@@ -146,7 +156,7 @@ test("dark variant uses exact original Tailwind selector specificity", async () 
   assert.match(css, /@custom-variant dark \(&\:is\(\.dark \*\)\);/);
   assert.doesNotMatch(css, /@custom-variant dark \(&\:where/);
   assert.match(component, /dark:bg-neutral-800/);
-  assert.match(component, /hover:bg-neutral-50 dark:hover:bg-neutral-750/);
+  assert.match(component, /hover:bg-neutral-100 dark:hover:bg-neutral-700/);
   // The original shipped without a compiled neutral-750 declaration. The
   // later dark:bg-neutral-800 selector must win over light:hover:bg-neutral-50.
   assert.doesNotMatch(css, /--color-neutral-750:/);

@@ -107,3 +107,95 @@ document.getElementById("mfa-disable-form").addEventListener("submit",async(e)=>
   finally{document.getElementById("disable-password").value="";
     document.getElementById("disable-code").value="";}
 });
+
+
+const PROVIDER_NAMES={google:"Google",github:"GitHub",chatgpt:"ChatGPT"};
+const FLOWED_ERRORS={
+  link_required:"Sign in using your existing method, then link this account here.",
+  identity_used:"That external account belongs to another Dofinances user.",
+  limit:"You have reached the maximum number of accounts for that provider.",
+  email_required:"This provider did not return an email address.",
+  invalid:"The external sign-in request expired. Please try again.",
+  cancelled:"Account linking was cancelled.",
+  unavailable:"External sign-in could not be completed. Please try again."
+};
+async function loadFederatedAccounts(){
+  const area=document.getElementById("linked-identity-list");
+  const buttons=document.getElementById("add-identity-buttons");
+  const feedback=document.getElementById("federation-feedback");
+  const params=new URLSearchParams(location.search);
+  if(params.has("federation_linked"))feedback.textContent="Account linked successfully.";
+  if(params.has("federation_error"))feedback.textContent=FLOWED_ERRORS[params.get("federation_error")]||"Account linking could not be completed.";
+  try{
+    const [accountsResponse,configResponse]=await Promise.all([
+      fetch("/api/auth/federation/accounts",{credentials:"same-origin",cache:"no-store"}),
+      fetch("/api/auth/config",{cache:"no-store"})
+    ]);
+    if(!accountsResponse.ok||!configResponse.ok)throw Error("Unable to load connected accounts.");
+    const accounts=await accountsResponse.json(),config=await configResponse.json();
+    area.replaceChildren();buttons.replaceChildren();
+    const total=accounts.identities.length;
+    if(!total){
+      const p=document.createElement("p");
+      p.textContent=accounts.hasPassword?"Your email and password are your current sign-in method.":"No external accounts are connected.";
+      area.append(p);
+    }
+    if(!accounts.hasPassword){
+      const p=document.createElement("p");
+      p.textContent="This account has no password. At least one linked provider must remain connected.";
+      area.append(p);
+      document.getElementById("enable-password").disabled=true;
+      document.getElementById("start-mfa").disabled=true;
+      const danger=document.querySelector(".danger");
+      if(danger)danger.hidden=true;
+    }
+    for(const item of accounts.identities){
+      const line=document.createElement("div");
+      line.style.cssText="display:flex;gap:12px;align-items:center;justify-content:space-between;margin:10px 0;flex-wrap:wrap";
+      const label=document.createElement("span");
+      label.textContent=(PROVIDER_NAMES[item.provider]||item.provider)+" · "+(item.email||item.displayName||"Connected account");
+      const remove=document.createElement("button");
+      remove.type="button";remove.className="secondary";remove.textContent="Remove";
+      remove.disabled=!accounts.hasPassword&&total<=1;
+      if(remove.disabled)remove.title="You must keep at least one sign-in method.";
+      remove.addEventListener("click",async()=>{
+        if(!confirm("Unlink this "+(PROVIDER_NAMES[item.provider]||item.provider)+" account? Other sessions will be signed out."))return;
+        remove.disabled=true;
+        feedback.textContent="Removing linked account…";
+        try{
+          const response=await fetch("/api/auth/federation/unlink",{
+            method:"POST",credentials:"same-origin",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({id:item.id})
+          });
+          const result=await response.json();
+          if(!response.ok)throw Error(result.error||"Unable to unlink account.");
+          location.replace("/login");
+        }catch(e){feedback.textContent=e.message;remove.disabled=false;}
+      });
+      line.append(label,remove);area.append(line);
+    }
+    for(const provider of ["google","github","chatgpt"]){
+      const count=accounts.identities.filter(x=>x.provider===provider).length;
+      const max=accounts.limits?.[provider]||0;
+      const enabled=!!config.federation?.[provider]?.enabled;
+      const add=document.createElement("a");
+      add.className="secondary";
+      add.style.cssText="display:inline-block;margin:7px 7px 7px 0;text-decoration:none";
+      add.textContent="Add "+(PROVIDER_NAMES[provider]||provider)+" ("+count+"/"+max+")";
+      if(enabled&&count<max){
+        add.href="/api/auth/oauth/start?provider="+provider+"&intent=link";
+      }else{
+        add.removeAttribute("href");
+        add.setAttribute("aria-disabled","true");
+        add.style.opacity=".55";
+        add.title=count>=max?"Maximum linked accounts reached.":
+          provider==="chatgpt"?"Awaiting Sign in with ChatGPT partner approval.":"OAuth application credentials are not configured.";
+      }
+      buttons.append(add);
+    }
+  }catch(e){
+    area.textContent=e.message||"Unable to load connected accounts.";
+  }
+}
+loadFederatedAccounts();
