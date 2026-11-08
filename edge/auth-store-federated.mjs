@@ -72,7 +72,10 @@ export class AuthStore extends SecureAuthStore {
 
     // A new OAuth-only account gets a random unusable password hash; its
     // separate password-method flag is authoritative. Legacy schema stays intact.
-    const salt=randomSalt(),hash=await passwordHash(randomToken()+randomToken(),salt);
+    const prior=this.sql.exec("SELECT user_id FROM federated_identities WHERE provider=? AND issuer=? AND subject=?",provider,issuer,subject).toArray()[0];
+    const needsPlaceholder=intent==="signin"&&!prior;
+    const salt=needsPlaceholder?randomSalt():null;
+    const hash=needsPlaceholder?await passwordHash(randomToken()+randomToken(),salt):null;
     const result=this.ctx.storage.transactionSync(()=>{
       const existing=this.sql.exec("SELECT user_id FROM federated_identities WHERE provider=? AND issuer=? AND subject=?",
         provider,issuer,subject).toArray()[0];
