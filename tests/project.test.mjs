@@ -46,5 +46,9 @@ test("email verification, password reset and MFA are isolated from D1",async()=>
   assert.match(auth,/verifyFactor/);
   assert.doesNotMatch(auth,/\.D1\.|d1_databases/);
   const worker=await readFile(new URL("../edge/worker.mjs",import.meta.url),"utf8");
-  assert.match(worker,/auth-store-secure/);
+  assert.match(worker,/auth-store-federated/);
+  const federation=await readFile(new URL("../edge/auth-store-federated.mjs",import.meta.url),"utf8");
+  assert.match(federation,/auth-store-secure/);
+  assert.match(federation,/UNIQUE\(provider,issuer,subject\)/);
+  assert.doesNotMatch(federation,/\.D1\.|d1_databases/);
 });
