@@ -112,7 +112,7 @@ async function verifyIdToken(jwt,config,txn) {
     (config.provider==="google"&&payload.iss==="accounts.google.com");
   const audience=Array.isArray(payload.aud)?payload.aud:[payload.aud];
   if(!issuerOk||!audience.includes(config.clientId)||
-     (audience.length>1&&payload.azp!==config.clientId)||
+     ((audience.length>1||payload.azp!==undefined)&&payload.azp!==config.clientId)||
      !Number.isFinite(payload.exp)||payload.exp<=now-60||
      !Number.isFinite(payload.iat)||payload.iat>now+60||
      payload.nonce!==txn.nonce)
