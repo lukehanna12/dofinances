@@ -46,9 +46,9 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 ## Federated sign-in and account linking
 
-Dofinances supports identity-only Google, GitHub and ChatGPT sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google, 3 GitHub, 1 ChatGPT**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
+Dofinances supports identity-only Google and GitHub sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google and 3 GitHub**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
 
-Provider configuration and OpenAI's separate limited website partnership approval are documented in [Federated authentication](docs/federated-auth.md). Existing email/password accounts, MFA, email verification and Durable Object storage remain supported. Disabled provider buttons signal missing credentials or partner approval, rather than presenting nonfunctional links.
+Provider configuration is documented in [Federated authentication](docs/federated-auth.md). Existing email/password accounts, MFA, email verification and Durable Object storage remain supported. Disabled provider buttons signal missing OAuth client credentials, rather than presenting nonfunctional links.
 
 ## CI/CD and verification
 
