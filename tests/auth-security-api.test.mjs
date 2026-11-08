@@ -10,6 +10,8 @@ const mock={
     verifyEmail:async token=>token===dummy?{status:200,verified:true}:{status:400,error:"Invalid token."},
     resetPassword:async args=>args.token===dummy?{status:200,reset:true}:{status:400,error:"Invalid token."},
     finishMfa:async()=>({status:401,error:"Invalid challenge."}),
+    federatedAccounts:async()=>({status:401,error:"Not authenticated."}),
+    unlinkFederation:async()=>({status:401,error:"Not authenticated."}),
     signup:async()=>({status:202,pending:true,delivery:{kind:"verify",to:"test@example.com",token:dummy}}),
   })},
 };
@@ -33,4 +35,17 @@ test("one-time verification and reset endpoints are POST-only and CSRF protected
   assert.equal((await post("/api/auth/mfa/finish",{challenge:dummy,code:"123456"})).status,401);
   assert.equal((await post("/api/auth/verification/confirm",{token:dummy},mock,"https://evil.example")).status,403);
   assert.equal((await handleRequest(new Request(ORIGIN+"/api/auth/verification/confirm"),mock)).status,405);
+});
+
+test("federated sign-in fails closed when provider credentials are not configured",async()=>{
+  const response=await handleRequest(new Request(ORIGIN+"/api/auth/oauth/start?provider=google&intent=signin"),mock);
+  assert.equal(response.status,303);
+  assert.equal(response.headers.get("Location"),"/login?federation_error=unavailable");
+  assert.equal(response.headers.get("Cache-Control"),"no-store");
+  assert.ok(!response.headers.has("Set-Cookie"));
+});
+test("federated account inspection and unlink are session-bound and origin protected",async()=>{
+  assert.equal((await handleRequest(new Request(ORIGIN+"/api/auth/federation/accounts"),mock)).status,401);
+  assert.equal((await post("/api/auth/federation/unlink",{id:"00000000-0000-0000-0000-000000000000"},mock,"https://evil.example")).status,403);
+  assert.equal((await post("/api/auth/federation/unlink",{id:"00000000-0000-0000-0000-000000000000"})).status,401);
 });
