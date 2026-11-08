@@ -1,0 +1,157 @@
+// Identity-only federation for Dofinances. No provider OAuth tokens are persisted.
+// Fixed upstream endpoints prevent an OAuth configuration from becoming an SSRF proxy.
+import {randomToken, normalizedEmail} from "./auth-core.mjs";
+
+export const FEDERATION_LIMITS = Object.freeze({google:5, github:3, chatgpt:1});
+export const OAUTH_COOKIE = "__Host-dofinances_oauth";
+export const OAUTH_TTL = 600;
+const CALLBACK = "https://dofinances.com/api/auth/oauth/callback/";
+const textEncoder = new TextEncoder();
+
+export function federationProvider(env, provider) {
+  if (provider === "google") {
+    const clientId=env.GOOGLE_OAUTH_CLIENT_ID,secret=env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (!clientId || !secret) return null;
+    return {provider,clientId,secret,issuer:"https://accounts.google.com",
+      authorize:"https://accounts.google.com/o/oauth2/v2/auth",
+      token:"https://oauth2.googleapis.com/token",
+      jwks:"https://www.googleapis.com/oauth2/v3/certs",
+      scope:"openid profile email",method:"post"};
+  }
+  if (provider === "github") {
+    const clientId=env.GITHUB_OAUTH_CLIENT_ID,secret=env.GITHUB_OAUTH_CLIENT_SECRET;
+    if (!clientId || !secret) return null;
+    return {provider,clientId,secret,issuer:"https://github.com",
+      authorize:"https://github.com/login/oauth/authorize",
+      token:"https://github.com/login/oauth/access_token",
+      scope:"read:user user:email",method:"post"};
+  }
+  if (provider === "chatgpt") {
+    // Sign in with ChatGPT is currently restricted to approved website clients.
+    const clientId=env.OPENAI_OAUTH_CLIENT_ID;
+    const method=env.OPENAI_OAUTH_TOKEN_AUTH_METHOD || "basic";
+    const secret=env.OPENAI_OAUTH_CLIENT_SECRET;
+    if (!clientId || !/^oaiapp_[A-Za-z0-9_-]+$/.test(clientId) ||
+        !["basic","none"].includes(method) || (method==="basic"&&!secret)) return null;
+    return {provider,clientId,secret,issuer:"https://auth.openai.com",
+      authorize:"https://auth.openai.com/api/accounts/authorize",
+      token:"https://auth.openai.com/api/accounts/oauth/token",
+      jwks:"https://auth.openai.com/.well-known/jwks.json",
+      scope:"openid profile email",method};
+  }
+  return null;
+}
+export function federationAvailability(env) {
+  return Object.fromEntries(Object.entries(FEDERATION_LIMITS).map(([provider,max])=>
+    [provider,{enabled:!!federationProvider(env,provider),max}]));
+}
+function b64u(bytes){
+  return btoa(String.fromCharCode(...bytes)).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
+}
+function fromB64u(value){
+  if(typeof value!=="string"||!/^[A-Za-z0-9_-]+$/.test(value))throw Error("Invalid identity encoding");
+  const s=atob(value.replaceAll("-","+").replaceAll("_","/"));
+  return Uint8Array.from(s,x=>x.charCodeAt(0));
+}
+export async function pkceChallenge(verifier){
+  const b=await crypto.subtle.digest("SHA-256",textEncoder.encode(verifier));
+  return b64u(new Uint8Array(b));
+}
+export function newOAuthTransaction(){
+  return {state:randomToken(),verifier:randomToken(),nonce:randomToken()};
+}
+export function oauthCookie(state){
+  return OAUTH_COOKIE+"="+state+"; Path=/; Max-Age="+OAUTH_TTL+"; HttpOnly; Secure; SameSite=Lax";
+}
+export function expiredOAuthCookie(){
+  return OAUTH_COOKIE+"=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax";
+}
+export function readOAuthCookie(header){
+  const p=(header||"").split(";").map(s=>s.trim()).find(s=>s.startsWith(OAUTH_COOKIE+"="));
+  const v=p?.slice(OAUTH_COOKIE.length+1);
+  return /^[A-Za-z0-9_-]{43}$/.test(v||"")?v:null;
+}
+export async function oauthAuthorizeUrl(config,txn){
+  const u=new URL(config.authorize);
+  const v={client_id:config.clientId,redirect_uri:CALLBACK+config.provider,
+    response_type:"code",scope:config.scope,state:txn.state,
+    code_challenge:await pkceChallenge(txn.verifier),code_challenge_method:"S256"};
+  if(config.provider!=="github")v.nonce=txn.nonce;
+  for(const [k,value] of Object.entries(v))u.searchParams.set(k,value);
+  if(config.provider==="google"){u.searchParams.set("prompt","select_account");}
+  if(config.provider==="github"){u.searchParams.set("prompt","select_account");}
+  return u.toString();
+}
+async function jsonFromResponse(res){
+  if(!res.ok)throw Error("Identity provider rejected the request");
+  const body=await res.text();
+  if(body.length>200000)throw Error("Identity response too large");
+  return JSON.parse(body);
+}
+async function verifyIdToken(jwt,config,txn) {
+  if(typeof jwt!=="string"||jwt.length>20000)throw Error("Invalid identity token");
+  const pieces=jwt.split(".");
+  if(pieces.length!==3)throw Error("Malformed identity token");
+  const header=JSON.parse(new TextDecoder().decode(fromB64u(pieces[0])));
+  const payload=JSON.parse(new TextDecoder().decode(fromB64u(pieces[1])));
+  if(header.alg!=="RS256"||typeof header.kid!=="string"||!header.kid||
+     typeof payload.sub!=="string"||!payload.sub||payload.sub.length>256)
+    throw Error("Unsupported identity token");
+  const jwks=await jsonFromResponse(await fetch(config.jwks,{headers:{Accept:"application/json"},
+    redirect:"error",signal:AbortSignal.timeout(10000)}));
+  const key=(jwks.keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA"&&
+    (!k.use||k.use==="sig")&&(!k.alg||k.alg==="RS256"));
+  if(!key)throw Error("Unknown identity signing key");
+  const cryptoKey=await crypto.subtle.importKey("jwk",{kty:key.kty,n:key.n,e:key.e,
+    alg:"RS256",ext:true}, {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+  const verified=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",cryptoKey,
+    fromB64u(pieces[2]),textEncoder.encode(pieces[0]+"."+pieces[1]));
+  if(!verified)throw Error("Identity signature invalid");
+  const now=Math.floor(Date.now()/1000);
+  const issuerOk=payload.iss===config.issuer ||
+    (config.provider==="google"&&payload.iss==="accounts.google.com");
+  const audience=Array.isArray(payload.aud)?payload.aud:[payload.aud];
+  if(!issuerOk||!audience.includes(config.clientId)||
+     (audience.length>1&&payload.azp!==config.clientId)||
+     !Number.isFinite(payload.exp)||payload.exp<=now-60||
+     !Number.isFinite(payload.iat)||payload.iat>now+60||
+     payload.nonce!==txn.nonce)
+    throw Error("Identity token claims invalid");
+  return {provider:config.provider,issuer:config.issuer,clientId:config.clientId,
+    subject:payload.sub,email:normalizedEmail(payload.email),
+    verified:payload.email_verified===true,displayName:typeof payload.name==="string"?
+      payload.name.slice(0,140):null};
+}
+export async function exchangeFederatedIdentity(config,code,txn){
+  if(typeof code!=="string"||!code||code.length>4096)throw Error("Invalid authorization code");
+  const body=new URLSearchParams({grant_type:"authorization_code",code,
+    redirect_uri:CALLBACK+config.provider,client_id:config.clientId,
+    code_verifier:txn.verifier});
+  const headers={"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"};
+  if(config.method==="basic"){
+    const encoded=x=>new URLSearchParams({value:x}).toString().slice("value=".length);
+    headers.Authorization="Basic "+btoa(encoded(config.clientId)+":"+encoded(config.secret));
+  } else if(config.method==="post")body.set("client_secret",config.secret);
+  const res=await fetch(config.token,{method:"POST",headers,body,redirect:"error",
+    signal:AbortSignal.timeout(10000)});
+  const result=await jsonFromResponse(res);
+  if(config.provider!=="github")return verifyIdToken(result.id_token,config,txn);
+  const token=result.access_token;
+  if(typeof token!=="string"||token.length>4096||!token)throw Error("No provider access token");
+  const apiHeaders={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,
+    "X-GitHub-Api-Version":"2022-11-28","User-Agent":"Dofinances-Identity"};
+  const [profile,emails]=await Promise.all([
+    fetch("https://api.github.com/user",{headers:apiHeaders,redirect:"error",
+      signal:AbortSignal.timeout(10000)}).then(jsonFromResponse),
+    fetch("https://api.github.com/user/emails",{headers:apiHeaders,redirect:"error",
+      signal:AbortSignal.timeout(10000)}).then(jsonFromResponse)
+  ]);
+  if(!Number.isSafeInteger(profile.id)||profile.id<=0||!Array.isArray(emails))
+    throw Error("Invalid GitHub identity");
+  const verified=emails.filter(x=>x.verified===true&&normalizedEmail(x.email));
+  const selected=verified.find(x=>x.primary===true)||verified[0]||null;
+  return {provider:"github",issuer:config.issuer,clientId:config.clientId,
+    subject:String(profile.id),email:selected?normalizedEmail(selected.email):null,
+    verified:!!selected,displayName:typeof profile.login==="string"?
+      profile.login.slice(0,140):null};
+}
