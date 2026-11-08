@@ -27,17 +27,17 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
-  assert.match(source,/provider\.key==="chatgpt"/);
-  assert.match(source,/data-oai-siwc-button/);
+  assert.doesNotMatch(source,/chatgpt/i);
+  assert.doesNotMatch(source,/data-oai-siwc-button/);
   assert.doesNotMatch(source,/Apple \(not connected\)/);
 });
 
-test("sign-in providers replace Apple without changing the Auth-3 backdrop or theme icon",async()=>{
+test("Google and GitHub sign-in providers preserve the Auth-3 backdrop and theme icon",async()=>{
   const source=await load("../src/components/Auth3.jsx");
   assert.equal((source.match(/<svg\b/g)||[]).length,1);
   assert.match(source,/photo-1709562493281-03c47edcb046/);
   assert.match(source,/key:"google"/);
-  assert.match(source,/key:"chatgpt"/);
+  assert.doesNotMatch(source,/key:"chatgpt"/);
   assert.match(source,/key:"github"/);
   assert.match(source,/federation\[provider\.key\]\?\.enabled/);
   assert.match(source,/Dofinances/);
@@ -91,7 +91,7 @@ test("links and email form preserve original UI behavior without credential reco
   assert.match(source, /window\.location\.assign\("\/app"\)/);
   assert.match(source, /type="password"/);
   assert.match(source, /confirmPassword/);
-  assert.match(source, /provider\.key==="chatgpt"/);
+  assert.doesNotMatch(source,/chatgpt/i);
   assert.match(source, /className=\{common\+" opacity-60 cursor-not-allowed"\}/);
   assert.match(source, /\/api\/auth\/oauth\/start\?provider=/);
   assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|localStorage|sessionStorage|document\.cookie/);
