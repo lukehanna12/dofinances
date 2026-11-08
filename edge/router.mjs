@@ -1,6 +1,8 @@
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
+import {federationAvailability} from "./auth-federation.mjs";
+import {handleFederation,readFederatedMfaCookie,expireFederatedMfaCookie} from "./auth-federation-routes.mjs";
 const ROOT="dofinances.com";
 const RESERVED=new Set(["stu","pay","zb30895346","_domainconnect","_dmarc","zmail","gd-origin"]);
 const LABEL=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -45,7 +47,11 @@ async function api(request,env,pathname) {
   const stub=store(env);
   if(!stub)return json({error:"Authentication temporarily unavailable."},503);
   if(pathname==="/api/auth/config" && method==="GET")
-    return json({emailAvailable:mailReady(env),mfaAvailable:!!env.MFA_ENCRYPTION_KEY});
+    return json({emailAvailable:mailReady(env),mfaAvailable:!!env.MFA_ENCRYPTION_KEY,federation:federationAvailability(env)});
+  if(pathname==="/api/auth/federation/accounts" && method==="GET"){
+    const result=await stub.federatedAccounts(token);
+    return json(result.error?{error:result.error}:result,result.status);
+  }
   if(pathname==="/api/auth/me" && method==="GET"){
     const user=token?await stub.session(token):null;
     return user?json({user}):json({error:"Not authenticated."},401);
@@ -64,7 +70,8 @@ async function api(request,env,pathname) {
     "/api/auth/mfa/finish":"finishMfa",
     "/api/auth/mfa/setup":"mfaSetup",
     "/api/auth/mfa/confirm":"mfaConfirm",
-    "/api/auth/mfa/disable":"mfaDisable"
+    "/api/auth/mfa/disable":"mfaDisable",
+    "/api/auth/federation/unlink":"unlinkFederation"
   };
   const action=actions[pathname];
   if(!action)return json({error:"Not found."},404);
@@ -101,12 +108,13 @@ async function api(request,env,pathname) {
     case "verifyEmail": result=await stub.verifyEmail(body.token); break;
     case "passwordRecoveryRequest": result=await stub.passwordRecoveryRequest(args); break;
     case "resetPassword": result=await stub.resetPassword(args); break;
-    case "finishMfa": result=await stub.finishMfa(args); break;
+    case "finishMfa": result=await stub.finishMfa({...args,challenge:body.challenge||readFederatedMfaCookie(request.headers.get("Cookie"))}); break;
     case "mfaSetup": result=await stub.mfaSetup({...args,token}); break;
     case "mfaConfirm": result=await stub.mfaConfirm({...args,token}); break;
     case "mfaStatus": result=await stub.mfaStatus(token); break;
     case "mfaDisable": result=await stub.mfaDisable({...args,token}); break;
     case "account": result=await stub.deleteAccount({...args,token}); break;
+    case "unlinkFederation": result=await stub.unlinkFederation({...args,token}); break;
   }
   if(result.delivery){
     try{await sendAccountEmail(env,result.delivery);}
@@ -117,12 +125,16 @@ async function api(request,env,pathname) {
     }
   }
   if(result.status===204)return new Response(null,{status:204,headers:{...NO_STORE,"Set-Cookie":expireCookie()}});
+  if(action==="unlinkFederation"&&result.unlinked)return json({unlinked:true,reauthenticate:true},200,{"Set-Cookie":expireCookie()});
   if(result.error)return json({
     error:result.error,
     ...(result.verification_required?{verification_required:true}:{})
   },result.status);
-  if(result.token&&action==="login"||result.token&&action==="finishMfa")
-    return json({user:result.user},result.status,{"Set-Cookie":sessionCookie(result.token)});
+  if(result.token&&(action==="login"||action==="finishMfa")){
+    const headers=new Headers(NO_STORE);headers.append("Set-Cookie",sessionCookie(result.token));
+    if(action==="finishMfa")headers.append("Set-Cookie",expireFederatedMfaCookie());
+    return Response.json({user:result.user},{status:result.status,headers});
+  }
   if(action==="mfaConfirm"||action==="mfaDisable")
     return json(result,result.status,action==="mfaDisable"?{"Set-Cookie":expireCookie()}:{});
   if(action==="signup"||action==="verificationRequest"||action==="passwordRecoveryRequest")
@@ -162,7 +174,11 @@ export async function handleRequest(request,env={}) {
     return redirect(url.href,301);
   }
   if(folder==="_apex" && url.pathname.startsWith("/api/auth/")) {
-    try{return await api(request,env,url.pathname);}
+    try{
+      if(url.pathname==="/api/auth/oauth/start"||url.pathname.startsWith("/api/auth/oauth/callback/"))
+        return await handleFederation(request,env,url.pathname);
+      return await api(request,env,url.pathname);
+    }
     catch{return json({error:"Authentication service unavailable."},503);}
   }
   if(request.method!=="GET" && request.method!=="HEAD")
