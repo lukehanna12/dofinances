@@ -37,7 +37,6 @@ export function Auth3() {
   },[]);
   const signInProviders=[
     {key:"google",label:"Google",mark:"G"},
-    {key:"chatgpt",label:"ChatGPT",mark:"✳"},
     {key:"github",label:"GitHub",mark:"GH"}
   ];
   const inputClasses = "w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200";
@@ -192,18 +191,17 @@ export function Auth3() {
               {signInProviders.map(provider=>{
                 const available=!!federation[provider.key]?.enabled;
                 const common="w-full tracking-tight px-6 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium transition-colors duration-200 flex items-center justify-center gap-3 text-sm";
-                const contents=<><span aria-hidden="true" className="w-5 font-semibold text-center">{provider.mark}</span>{available?"Continue with "+provider.label:provider.label+(provider.key==="chatgpt"?" (approval required)":" (setup required)")}</>;
+                const contents=<><span aria-hidden="true" className="w-5 font-semibold text-center">{provider.mark}</span>{available?"Continue with "+provider.label:provider.label+" (setup required)"}</>;
                 return available
                   ? <a key={provider.key} href={"/api/auth/oauth/start?provider="+provider.key+"&intent=signin"}
-                       data-oai-siwc-button={provider.key==="chatgpt"?"":undefined}
                        className={common+" no-underline hover:bg-neutral-100 dark:hover:bg-neutral-700"}>{contents}</a>
                   : <button key={provider.key} type="button" disabled aria-disabled="true"
-                       title={provider.key==="chatgpt"?"OpenAI commercial partner approval is required":"OAuth application credentials are not configured"}
+                       title="OAuth application credentials are not configured"
                        className={common+" opacity-60 cursor-not-allowed"}>{contents}</button>;
               })}
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-6">
-              You can link additional Google, GitHub or ChatGPT accounts from Account settings after signing in.
+              You can link additional Google or GitHub accounts from Account settings after signing in.
             </p>
             <p className="text-sm text-center text-neutral-600 dark:text-neutral-400">
               Can't sign in?{" "}
