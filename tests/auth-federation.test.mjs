@@ -12,14 +12,13 @@ const encoder=new TextEncoder();
 const b64u=data=>btoa(String.fromCharCode(...data)).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
 
 test("federation is opt-in and respects the requested provider limits",()=>{
-  assert.deepEqual(FEDERATION_LIMITS,{google:5,github:3,chatgpt:1});
+  assert.deepEqual(FEDERATION_LIMITS,{google:5,github:3});
   const empty=federationAvailability({});
   assert.ok(Object.values(empty).every(p=>p.enabled===false));
   assert.equal(federationAvailability(credentials).google.enabled,true);
   assert.equal(federationAvailability(credentials).github.enabled,true);
-  assert.equal(federationAvailability(credentials).chatgpt.enabled,false);
-  assert.equal(federationProvider({OPENAI_OAUTH_CLIENT_ID:"oaiapp_test"},"chatgpt"),null);
-  assert.equal(federationProvider({OPENAI_OAUTH_CLIENT_ID:"oaiapp_test",OPENAI_OAUTH_TOKEN_AUTH_METHOD:"none"},"chatgpt").method,"none");
+  assert.equal(Object.hasOwn(federationAvailability(credentials),"chatgpt"),false);
+  assert.equal(federationProvider({OPENAI_OAUTH_CLIENT_ID:"unused"},"chatgpt"),null);
   assert.equal(federationProvider(credentials,"apple"),null);
 });
 test("OAuth authorization uses exact callbacks, PKCE, state and no secrets in URL",async()=>{

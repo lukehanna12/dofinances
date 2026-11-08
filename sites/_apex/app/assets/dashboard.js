@@ -109,7 +109,7 @@ document.getElementById("mfa-disable-form").addEventListener("submit",async(e)=>
 });
 
 
-const PROVIDER_NAMES={google:"Google",github:"GitHub",chatgpt:"ChatGPT"};
+const PROVIDER_NAMES={google:"Google",github:"GitHub"};
 const FLOWED_ERRORS={
   link_required:"Sign in using your existing method, then link this account here.",
   identity_used:"That external account belongs to another Dofinances user.",
@@ -175,7 +175,7 @@ async function loadFederatedAccounts(){
       });
       line.append(label,remove);area.append(line);
     }
-    for(const provider of ["google","github","chatgpt"]){
+    for(const provider of ["google","github"]){
       const count=accounts.identities.filter(x=>x.provider===provider).length;
       const max=accounts.limits?.[provider]||0;
       const enabled=!!config.federation?.[provider]?.enabled;
@@ -190,7 +190,7 @@ async function loadFederatedAccounts(){
         add.setAttribute("aria-disabled","true");
         add.style.opacity=".55";
         add.title=count>=max?"Maximum linked accounts reached.":
-          provider==="chatgpt"?"Awaiting Sign in with ChatGPT partner approval.":"OAuth application credentials are not configured.";
+          "OAuth application credentials are not configured.";
       }
       buttons.append(add);
     }

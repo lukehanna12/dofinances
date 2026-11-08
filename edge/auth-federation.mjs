@@ -2,7 +2,7 @@
 // Fixed upstream endpoints prevent an OAuth configuration from becoming an SSRF proxy.
 import {randomToken, normalizedEmail} from "./auth-core.mjs";
 
-export const FEDERATION_LIMITS = Object.freeze({google:5, github:3, chatgpt:1});
+export const FEDERATION_LIMITS = Object.freeze({google:5, github:3});
 export const OAUTH_COOKIE = "__Host-dofinances_oauth";
 export const OAUTH_TTL = 600;
 const CALLBACK = "https://dofinances.com/api/auth/oauth/callback/";
@@ -25,19 +25,6 @@ export function federationProvider(env, provider) {
       authorize:"https://github.com/login/oauth/authorize",
       token:"https://github.com/login/oauth/access_token",
       scope:"read:user user:email",method:"post"};
-  }
-  if (provider === "chatgpt") {
-    // Sign in with ChatGPT is currently restricted to approved website clients.
-    const clientId=env.OPENAI_OAUTH_CLIENT_ID;
-    const method=env.OPENAI_OAUTH_TOKEN_AUTH_METHOD || "basic";
-    const secret=env.OPENAI_OAUTH_CLIENT_SECRET;
-    if (!clientId || !/^oaiapp_[A-Za-z0-9_-]+$/.test(clientId) ||
-        !["basic","none"].includes(method) || (method==="basic"&&!secret)) return null;
-    return {provider,clientId,secret,issuer:"https://auth.openai.com",
-      authorize:"https://auth.openai.com/api/accounts/authorize",
-      token:"https://auth.openai.com/api/accounts/oauth/token",
-      jwks:"https://auth.openai.com/.well-known/jwks.json",
-      scope:"openid profile email",method};
   }
   return null;
 }

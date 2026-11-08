@@ -21,7 +21,7 @@ const post=(path,body={},env=mock,origin=ORIGIN)=>handleRequest(new Request(ORIG
 test("configuration reports email service readiness and private MFA setup",async()=>{
   const r=await handleRequest(new Request(ORIGIN+"/api/auth/config"),{...mock,MFA_ENCRYPTION_KEY:"a".repeat(64)});
   assert.equal(r.status,200);
-  assert.deepEqual(await r.json(),{emailAvailable:false,mfaAvailable:true,federation:{google:{enabled:false,max:5},github:{enabled:false,max:3},chatgpt:{enabled:false,max:1}}});
+  assert.deepEqual(await r.json(),{emailAvailable:false,mfaAvailable:true,federation:{google:{enabled:false,max:5},github:{enabled:false,max:3}}});
   assert.equal((await handleRequest(new Request(ORIGIN+"/api/auth/mfa/status"),mock)).status,401);
 });
 test("password recovery and sign-up refuse absent email service",async()=>{
