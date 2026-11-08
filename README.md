@@ -44,6 +44,12 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 **Further hardening:** MFA, email verification, and resets do not turn this into a regulated financial-data application. Security review, better password KDFs, abuse controls, and financial-data protections are necessary before storing private financial records. See [Account security](docs/account-security.md).
 
+## Federated sign-in and account linking
+
+Dofinances supports identity-only Google, GitHub and ChatGPT sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google, 3 GitHub, 1 ChatGPT**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
+
+Provider configuration and OpenAI's separate limited website partnership approval are documented in [Federated authentication](docs/federated-auth.md). Existing email/password accounts, MFA, email verification and Durable Object storage remain supported. Disabled provider buttons signal missing credentials or partner approval, rather than presenting nonfunctional links.
+
 ## CI/CD and verification
 
 [`site.yml`](.github/workflows/site.yml) builds and tests on pushes to `main`; with `DEPLOY_ENABLED=true`, it deploys **both** studio Pages and the Worker. Cloudflare Workers uploads site files directly from `sites/`, without D1, R2, or local Mac build artifacts.
