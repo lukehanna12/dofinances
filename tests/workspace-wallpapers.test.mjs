@@ -17,8 +17,8 @@ test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
 });
 test("wallpaper geometry derives both the image and spacer from header height",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
-  assert.match(css,/height:calc\(var\(--workspace-header-height\) \* 3\)/);
-  assert.match(css,/padding-top:calc\(var\(--workspace-header-height\) \* 2 \+ var\(--workspace-content-leading\)\)/);
+  assert.match(css,/--workspace-banner-height:168px/);
+  assert.match(css,/padding-top:calc\(var\(--workspace-banner-height\) - var\(--workspace-header-height\) \+ var\(--workspace-content-leading\)\)/);
   assert.match(css,/backdrop-filter:blur\(18px\)/);
 });
 test("every named page has the exact owner-selected wallpaper",()=>{
@@ -43,7 +43,9 @@ test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
   assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
   assert.match(css,/background-position:center,center bottom/);
   assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::after/);
-  assert.match(css,/position:absolute;\s*inset:auto 0 0/);
+  assert.match(css,/position:fixed;\s*inset:auto 0 0/);
+  assert.match(css,/--workspace-seam:rgba\(/);
+  assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
 });
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{
   const router=readFileSync(new URL("../edge/router.mjs",import.meta.url),"utf8");

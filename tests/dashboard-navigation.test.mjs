@@ -53,7 +53,7 @@ test("reconstruction-inspired adaptive presentation covers all shared workspace 
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
   const foundation=await read("../sites/_apex/assets/site-foundation.css");
   assert.match(html,/href="\/app\/assets\/dashboard\.css"[\s\S]*href="\/assets\/site-foundation\.css"[\s\S]*href="\/app\/assets\/workspace-theme\.css"/);
-  assert.match(html,/<meta name="theme-color" content="#000000">/);
+  assert.match(html,/<meta name="theme-color" content="#171717">/);
   assert.equal((html.match(/name="theme-color"/g)||[]).length,1);
   for(const name of [".sidebar",".nav-link.active",".topbar",".content",
     ".feature-card",".project-card",".project-view .empty-state",
@@ -61,12 +61,12 @@ test("reconstruction-inspired adaptive presentation covers all shared workspace 
     assert.ok(css.includes(name),"missing style: "+name);
   }
   assert.match(foundation,/color-scheme:\s*dark;/);
-  assert.match(foundation,/--ui-canvas:\s*#000000;/);
-  assert.match(foundation,/--ui-sidebar:\s*#000000;/);
+  assert.match(foundation,/--ui-canvas:\s*#171717;/);
+  assert.match(foundation,/--ui-sidebar:\s*#171717;/);
   assert.match(foundation,/--ui-divider:\s*#303030;/);
   assert.match(css,/border-right:\s*1px solid var\(--ui-divider\)/);
-  assert.match(foundation,/--ui-surface:\s*#212121;/);
-  assert.match(foundation,/--ui-elevated:\s*#171717;/);
+  assert.match(foundation,/--ui-surface:\s*#292929;/);
+  assert.match(foundation,/--ui-elevated:\s*#202020;/);
   assert.match(foundation,/--ui-selected:\s*#303030;/);
   assert.doesNotMatch(css,/@media\s*\(prefers-color-scheme:/);
   assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
@@ -224,9 +224,11 @@ test("screen navigation has no entrance displacement or smooth-scroll jitter",as
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
-  for(const name of COLOSSEUM_ROUTES)
+  for(const name of COLOSSEUM_ROUTES.filter(name=>name!=="settings"))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
-  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length);
+  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1);
+  assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
+  assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="sidebar-toggle"/);

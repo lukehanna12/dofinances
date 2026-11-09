@@ -1,3 +1,4 @@
+import {initWorkspaceScroll} from "./workspace-scroll.js";
 import {applyWorkspaceWallpaper} from "./workspace-wallpapers.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
@@ -132,6 +133,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-expanded","true");
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
+  const workspaceScroll=initWorkspaceScroll(doc,win);
   let lastRenderedRoute=null;
   function render(){
     const route=resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
@@ -158,8 +160,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
     // Only reset when changing to a different screen. Avoid browser CSS
     // smooth-scroll movement and unnecessary resets during initial hydration,
     // repeated hash events, or history updates for the same route.
-    if(changingScreen&&win.scrollTo)
-      win.scrollTo({top:0,left:0,behavior:"instant"});
+    if(changingScreen){
+      workspaceScroll.reset();
+      if(win.scrollTo)win.scrollTo({top:0,left:0,behavior:"instant"});
+    } else workspaceScroll.sync();
+    // Content may be resized after hash-route elements are revealed.
+    win.requestAnimationFrame?.(workspaceScroll.sync);
   }
 
   desktopToggle.addEventListener("click",()=>{

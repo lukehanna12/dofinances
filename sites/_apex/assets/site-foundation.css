@@ -6,11 +6,11 @@
   --ui-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
-  --ui-canvas: #000000;
-  --ui-sidebar: #000000;
+  --ui-canvas: #171717;
+  --ui-sidebar: #171717;
   --ui-divider: #303030;
-  --ui-surface: #212121;
-  --ui-elevated: #171717;
+  --ui-surface: #292929;
+  --ui-elevated: #202020;
   --ui-hover: #262626;
   --ui-selected: #303030;
   --ui-field: #212121;

@@ -33,7 +33,7 @@ test("Production includes exact oracle-backed glass with no preview scenery",asy
   assert.match(dashboard,/catch\(error=>console\.warn/);
   assert.match(worker,/generateOracleField|projectOracleFieldWidth/);
   assert.match(nav,/is-sidebar-toggling/);
-  assert.match(foundation,/--ui-canvas:\s*#000000/);
+  assert.match(foundation,/--ui-canvas:\s*#171717/);
 });
 
 test("Oracle values remain exact across lossless width projection and neutral displacement",()=>{

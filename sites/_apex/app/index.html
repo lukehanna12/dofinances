@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#171717">
   <meta name="description" content="Your private DoFinances workspace">
   <title>Workspace · DoFinances</title>
   <link rel="stylesheet" href="/app/assets/dashboard.css">
@@ -66,9 +66,10 @@
         </div>
         <div class="top-actions"><span id="account-email" class="email">Loading account…</span><button id="signout" type="button" class="secondary">Sign out</button></div>
       </header>
-      <main class="content" id="main-content">
+      <div class="workspace-scroll" id="workspace-scroll" tabindex="-1">
+        <main class="content" id="main-content">
         <section class="view" data-view="home" aria-labelledby="home-title">
-          <div class="page-heading"><div class="eyebrow">WELCOME BACK</div><h1 id="home-title">Your workspace, all in one place.</h1>
+          <div class="page-heading"><h1 id="home-title">Your workspace, all in one place.</h1>
           <p class="lead">A home for your projects and account. Choose a destination to get started.</p></div>
           <div class="home-highlights">
             <a href="#projects" class="feature-card" aria-label="Open Projects">
@@ -84,14 +85,14 @@
           </a>
         </section>
         <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
-          <div class="page-heading"><div class="eyebrow">WORKSPACE</div><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
+          <div class="page-heading"><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
           <div class="section-subheading"><h2>All projects</h2><span class="count-label">1 project</span></div>
           <a class="project-card" href="#colosseum/utilities" aria-label="Open Colosseum project">
             <span class="project-emblem large">C</span><span class="project-card-copy"><strong>Colosseum</strong><span>Open project workspace</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
           </a>
         </section>
         <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
-          <div class="page-heading"><div class="eyebrow">YOUR ACCOUNT</div><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
+          <div class="page-heading"><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
         <section id="account" class="panel settings-panel" aria-label="Account and security settings">
           <h2>Account & security</h2>
           <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
@@ -157,32 +158,30 @@
 
         </section>
         <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-utilities-title">Utilities</h1><p class="lead">Colosseum · Utilities</p></div>
+          <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1><p class="lead">Colosseum · Utilities</p></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/collections" hidden aria-labelledby="project-collections-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-collections-title">Collections</h1><p class="lead">Colosseum · Collections</p></div>
+          <div class="page-heading"><h1 id="project-collections-title">Collections</h1><p class="lead">Colosseum · Collections</p></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/providers" hidden aria-labelledby="project-providers-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-providers-title">Providers</h1><p class="lead">Colosseum · Providers</p></div>
+          <div class="page-heading"><h1 id="project-providers-title">Providers</h1><p class="lead">Colosseum · Providers</p></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-permissions-title">Permissions</h1><p class="lead">Colosseum · Permissions</p></div>
+          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1><p class="lead">Colosseum · Permissions</p></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-diagnostics-title">Diagnostics</h1><p class="lead">Colosseum · Diagnostics</p></div>
+          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1><p class="lead">Colosseum · Diagnostics</p></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
-        <section class="view project-view" data-view="colosseum/settings" hidden aria-labelledby="project-settings-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-settings-title">Settings</h1><p class="lead">Colosseum · Settings</p></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
-        </section>
-        <p class="footer">© DoFinances · Private workspace</p>
-      </main>
+              </main>
+        <div class="workspace-scroll-end" aria-hidden="true"></div>
+      </div>
     </div>
   </div>
+  <footer class="workspace-footer" id="workspace-footer" aria-label="Copyright">© DoFinances · 2026</footer>
 </body>
 </html>

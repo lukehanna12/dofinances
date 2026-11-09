@@ -1,68 +1,95 @@
-/* Page-wide wallpaper and dark frosted navigation shared by the production
- * workspace and standalone Studio. No duplicated image is painted in the
- * sidebar: its native backdrop sampler sees this real page-level artwork. */
+/* Workspace-wide wallpaper presentation, shared by the authenticated app and
+ * standalone Studio. The sidebar's native optical effect continues to sample
+ * the real page backdrop; no wallpaper is copied inside the glass surface. */
 :root {
   --workspace-header-height:66px;
-  --workspace-content-leading:57px;
-  /* 40% of the two-header-height top crop, not 40% of the 3-height banner. */
+  --workspace-banner-height:168px; /* Identical across all workspace routes. */
+  --workspace-top-overpull:96px;
+  --workspace-content-leading:26px;
   --workspace-bottom-strip-height:calc(var(--workspace-header-height) * .8);
+  --workspace-seam:rgba(201,205,211,.27);
+}
+html:has(body > #workspace-shell),
+body:has(> #workspace-shell) {
+  height:100%;
+  overflow:hidden; /* The document itself never rubber-bands. */
+  background:var(--ui-canvas,#171717);
 }
 body:has(> #workspace-shell) {
   position:relative;
   isolation:isolate;
-  background:var(--ui-canvas,#000);
+  height:100dvh;
 }
 body:has(> #workspace-shell)::before,
 body:has(> #workspace-shell.liquid-glass-preview)::before,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::before,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   content:"";
-  position:absolute;
-  inset:0 0 auto;
+  position:fixed;
+  inset:calc(-1 * var(--workspace-top-overpull)) 0 auto;
   width:100%;
-  height:calc(var(--workspace-header-height) * 3);
+  height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
   z-index:0;
   pointer-events:none;
-  /* Fades only near the bottom, keeping the wide crop recognizable. */
+  /* Extra artwork above the viewport remains the SAME source image. When
+     the inner scroller bounces downward it reveals a continuing scene. */
   background-image:
-    linear-gradient(180deg,rgba(0,0,0,.12) 0%,rgba(0,0,0,.10) 58%,rgba(0,0,0,.30) 78%,#000 100%),
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
     var(--workspace-wallpaper-image,none);
   background-size:cover,cover;
   background-position:center,var(--workspace-wallpaper-position,center 46%);
   background-repeat:no-repeat;
+  border-bottom:1px solid var(--workspace-seam);
 }
-/* Bottom slice uses the bottom edge of the ORIGINAL, full-width wallpaper.
- * This is in document flow coordinates, not fixed to the viewport: on a long
- * Settings page it remains at the actual bottom of the screen's content.
- * Equal image sizing at full screen width retains the source's bottom crop. */
+/* A fixed, viewport-wide strip is exposed only when the CONTENT scroller
+   reaches its real end. This does not move on wheel/touch overscroll. */
 body:has(> #workspace-shell)::after,
 body:has(> #workspace-shell.liquid-glass-preview)::after,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::after,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
   content:"";
-  position:absolute;
+  position:fixed;
   inset:auto 0 0;
-  width:100%;
   height:var(--workspace-bottom-strip-height);
+  width:100%;
   z-index:0;
   pointer-events:none;
   background-image:
-    linear-gradient(180deg,#000 0%,rgba(0,0,0,.10) 40%,rgba(0,0,0,.23) 100%),
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
     var(--workspace-wallpaper-image,none);
   background-size:cover,cover;
   background-position:center,center bottom;
   background-repeat:no-repeat;
+  border-top:1px solid var(--workspace-seam);
+  opacity:0;
 }
-body:has(> #workspace-shell) .shell,
+body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
+body:has(> #workspace-shell) .shell {
+  height:100dvh;
+  min-height:0;
+  background:transparent;
+  --workspace-sidebar-fade-width:260px;
+}
+body:has(> #workspace-shell) .shell.is-collapsed {
+  --workspace-sidebar-fade-width:74px;
+}
 body:has(> #workspace-shell) .main,
 body:has(> #workspace-shell.liquid-glass-preview) .main {
+  display:flex;
+  flex-direction:column;
+  height:100dvh;
+  min-height:0;
+  overflow:hidden;
   background:transparent;
 }
 body:has(> #workspace-shell) .topbar {
+  position:relative;
+  top:auto;
+  flex:0 0 var(--workspace-header-height);
   height:var(--workspace-header-height);
   min-height:var(--workspace-header-height);
   background:transparent;
-  border-bottom:0;
+  border:0;
   isolation:isolate;
 }
 body:has(> #workspace-shell) .topbar::before {
@@ -74,23 +101,85 @@ body:has(> #workspace-shell) .topbar::before {
   height:var(--workspace-header-height);
   z-index:-1;
   pointer-events:none;
-  background:rgba(6,8,11,.60);
+  background:rgba(14,15,17,.69);
   -webkit-backdrop-filter:blur(18px) saturate(120%);
   backdrop-filter:blur(18px) saturate(120%);
-  border-bottom:1px solid rgba(255,255,255,.08);
+  border-bottom:1px solid rgba(211,214,218,.12);
+  /* Dissolve the header shader toward the foreground sidebar's edge. */
+  -webkit-mask-image:linear-gradient(to right,
+    transparent 0,
+    rgba(0,0,0,.18) calc(var(--workspace-sidebar-fade-width) - 42px),
+    rgba(0,0,0,.84) calc(var(--workspace-sidebar-fade-width) + 24px),
+    #000 calc(var(--workspace-sidebar-fade-width) + 95px));
+  mask-image:linear-gradient(to right,
+    transparent 0,
+    rgba(0,0,0,.18) calc(var(--workspace-sidebar-fade-width) - 42px),
+    rgba(0,0,0,.84) calc(var(--workspace-sidebar-fade-width) + 24px),
+    #000 calc(var(--workspace-sidebar-fade-width) + 95px));
+}
+body:has(> #workspace-shell) .workspace-scroll {
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain; /* Allow top elastic pull, never chain to body. */
+  scrollbar-gutter:stable;
+  scroll-behavior:auto;
+  background:transparent;
 }
 body:has(> #workspace-shell) .content {
   position:relative;
+  flex:1 0 auto;
+  width:100%;
+  max-width:1110px;
+  margin-inline:auto;
+  min-height:calc(100% - var(--workspace-bottom-strip-height));
   background:transparent;
-  padding-top:calc(var(--workspace-header-height) * 2 + var(--workspace-content-leading));
-  min-height:calc(100dvh - var(--workspace-header-height));
+  padding-top:calc(var(--workspace-banner-height) - var(--workspace-header-height) + var(--workspace-content-leading));
+  padding-bottom:36px;
+}
+body:has(> #workspace-shell) .workspace-scroll-end {
+  flex:none;
+  height:var(--workspace-bottom-strip-height);
+  pointer-events:none;
+}
+/* Footer copy stays attached to the viewport-wide final image slice. */
+body:has(> #workspace-shell) .workspace-footer {
+  position:fixed;
+  inset:auto 0 0;
+  z-index:2;
+  height:var(--workspace-bottom-strip-height);
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  padding:0 clamp(20px,4.1vw,58px);
+  pointer-events:none;
+  color:var(--workspace-footer-ink,#e5e5e5);
+  font:500 12px/1.3 var(--ui-font-sans,system-ui);
+  letter-spacing:.01em;
+  text-shadow:0 1px 8px rgba(16,17,18,.36);
+  opacity:0;
+}
+body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
+@media (min-width:761px) and (max-width:1279px) {
+  body:has(> #workspace-shell) .shell {--workspace-sidebar-fade-width:74px}
 }
 @media (max-width:760px) {
-  :root {--workspace-header-height:63px;--workspace-content-leading:40px}
+  :root {--workspace-header-height:63px;--workspace-content-leading:24px}
+  body:has(> #workspace-shell) .shell {--workspace-sidebar-fade-width:0px}
+  body:has(> #workspace-shell) .workspace-footer {padding-inline:19px}
 }
 @media (max-width:480px) {
-  :root {--workspace-content-leading:31px}
+  :root {--workspace-content-leading:20px}
 }
 @supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))) {
-  body:has(> #workspace-shell) .topbar::before {background:rgba(6,8,11,.88)}
+  body:has(> #workspace-shell) .topbar::before {background:rgba(18,19,21,.93)}
+}
+@media (prefers-contrast:more) {
+  :root {--workspace-seam:rgba(230,230,230,.65)}
+  body:has(> #workspace-shell) .workspace-footer {text-shadow:0 1px 6px #000}
 }
