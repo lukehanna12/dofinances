@@ -6,11 +6,31 @@
  * three PNG data:image URLs consumed by SVG feImage; fallback transfers
  * the exact arrays to the legacy main-thread encoder.
  */
-import {generateOracleField} from "./sidebar-glass-oracle.js";
+import {generateOracleField,projectOracleFieldWidth} from "./sidebar-glass-oracle.js";
 
 const canEncode=typeof OffscreenCanvas==="function" &&
                 typeof FileReaderSync==="function";
 const reader=canEncode?new FileReaderSync():null;
+const rawBases=new Map();
+const MAX_BASES=2;
+function sourceExactField(request){
+  const {w,h,corner}=request;
+  // The supported 74–274px sidebar and its two recorded CSS radii are
+  // the ONLY known translation-equivariant domain for this optimization.
+  if(w<74||w>274||h<1||(corner!==24&&corner!==26))
+    return generateOracleField(w,h,corner);
+  const key=h+"@"+corner;
+  let base=rawBases.get(key);
+  if(!base){
+    base=generateOracleField(274,h,corner);
+    rawBases.set(key,base);
+    while(rawBases.size>MAX_BASES)rawBases.delete(rawBases.keys().next().value);
+  }else{
+    rawBases.delete(key);
+    rawBases.set(key,base);
+  }
+  return projectOracleFieldWidth(base,w);
+}
 async function toPNG(buffer,width,height){
   const canvas=new OffscreenCanvas(width,height);
   const ctx=canvas.getContext("2d");
@@ -23,15 +43,16 @@ async function toPNG(buffer,width,height){
 }
 self.onmessage=async({data:request})=>{
   try{
-    const field=generateOracleField(request.w,request.h,request.corner);
+    const field=sourceExactField(request);
     if(canEncode){
-      const urls=[];
-      for(const pixels of [field.inner,field.outer,field.blurMask]){
-        urls.push(await toPNG(pixels,request.w,request.h));
-      }
-      self.postMessage({key:request.key,urls});
+      const urls=await Promise.all(
+        [field.inner,field.outer,field.blurMask].map(pixels=>
+          toPNG(pixels,request.w,request.h)));
+      self.postMessage({key:request.key,w:request.w,h:request.h,
+        corner:request.corner,urls});
     }else{
-      self.postMessage({key:request.key,inner:field.inner,outer:field.outer,
+      self.postMessage({key:request.key,w:request.w,h:request.h,
+        corner:request.corner,inner:field.inner,outer:field.outer,
         blurMask:field.blurMask},
         [field.inner.buffer,field.outer.buffer,field.blurMask.buffer]);
     }

@@ -374,6 +374,40 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
   return {width,height,inner,outer,blurMask};
 }
 
+
+/*
+ * Lossless WIDTH-ONLY transport of the exact mode5 browser field.
+ *
+ * Proof domain: current square-left / rounded-right sidebar; normalBlend=0,
+ * 74 <= width <= 274, fixed height and fixed corner radius (24/26 CSS px).
+ * AIR four-corner selection is translation invariant within each half of
+ * the pane: left-source x=x, right-source x=baseWidth-(width-x).
+ * This is NOT the rejected y-invariant nine-slice shortcut. Every Y row is
+ * copied independently, including full corner/SDF variation. Never stretch
+ * maps or interpolate the parameters; the resulting RGBA bytes must equal
+ * generateOracleField(width,height,radius).
+ */
+export function projectOracleFieldWidth(base,width){
+  const w=Math.round(width),baseW=base?.width,h=base?.height;
+  if(!(Number.isInteger(w)&&w>=74&&w<=274&&
+    Number.isInteger(baseW)&&baseW>=w&&baseW<=274&&
+    Number.isInteger(h)&&h>=1))
+    throw new RangeError("Width projection outside supported sidebar domain");
+  const left=Math.ceil(w/2),right=w-left;
+  const project=source=>{
+    if(source?.length!==baseW*h*4)throw new RangeError("Invalid baseline field length");
+    const out=new Uint8ClampedArray(w*h*4),stride=w*4,baselineStride=baseW*4;
+    for(let y=0;y<h;y++){
+      const start=y*baselineStride,dst=y*stride;
+      out.set(source.subarray(start,start+left*4),dst);
+      out.set(source.subarray(start+(baseW-right)*4,start+baselineStride),dst+left*4);
+    }
+    return out;
+  };
+  return {width:w,height:h,inner:project(base.inner),
+    outer:project(base.outer),blurMask:project(base.blurMask)};
+}
+
 function imageDataURL(win,buffer,width,height){
   const c=win.document.createElement("canvas");
   c.width=width;c.height=height;

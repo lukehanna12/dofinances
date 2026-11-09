@@ -289,9 +289,10 @@ try{
       await physicalClick("#mobile-nav-toggle");
       assert(await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
         "Real pointer must open mobile drawer");
-      const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath};})()');
-      assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("274px"),
-        "Scrim must be enabled, opaque to pointer events, and excluded from sampled sidebar "+JSON.stringify(mask));
+      const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath,background:css.backgroundColor,backdrop:css.backdropFilter};})()');
+      assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("274px")&&
+        mask.backdrop==="none"&&mask.background==="rgba(0, 0, 0, 0)",
+        "Transparent click-away scrim must be interactive and visually absent "+JSON.stringify(mask));
       // Compare actual rendered backdrop pixels with the dismissal scrim
       // confined outside the pane versus incorrectly painted beneath it.
       // This checks mobile darkening as an integration effect, not as
@@ -307,8 +308,8 @@ try{
       const dimming=comparePixels(clipped,overlapped,45,260,140,730);
       console.log("MOBILE_SCRIM_BACKDROP_OVERLAP_DIFF",JSON.stringify(dimming));
       await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");s.style.removeProperty("clip-path");s.style.removeProperty("-webkit-clip-path");return true;})()');
-      assert(dimming.different>250,
-        "Removing scrim overlap must measurably affect actual glass pixels");
+      assert(dimming.different<=10 && dimming.max<=1,
+        "Clear scrim must not change live glass pixels when unclipped "+JSON.stringify(dimming));
       await physicalClick('#main-navigation .nav-link[data-route="settings"]');
       assert(await evaluate('location.hash==="#settings"&& !document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
         "Real pointer must navigate and close mobile drawer");

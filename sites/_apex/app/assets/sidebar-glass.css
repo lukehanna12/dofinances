@@ -238,6 +238,11 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   .shell.liquid-glass-preview .sidebar-scrim:not([hidden]){
     -webkit-clip-path:inset(0 0 0 274px);
     clip-path:inset(0 0 0 274px);
+    /* Outside-click target, not an opaque visual overlay: a full-screen
+       70% black/blur scrim previously popped in at drawer-open time. */
+    background:transparent;
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
     pointer-events:auto;
   }
 }

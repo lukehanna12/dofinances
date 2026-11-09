@@ -9,7 +9,8 @@ import {
   airBlurDistribution,airTextureMipLOD,oracleFaceColorMatrixValues,
   SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,
   airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField,
-  ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection
+  ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection,
+  projectOracleFieldWidth
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -343,8 +344,8 @@ test("exact Oracle field computation moves off the UI thread without changing ge
   const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
   const browser=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
   const workflow=await read("../.github/workflows/app-sidebar-preview.yml");
-  assert.match(worker,/import \{generateOracleField\} from "\.\/sidebar-glass-oracle\.js"/);
-  assert.match(worker,/field=generateOracleField\(request\.w,request\.h,request\.corner\)/);
+  assert.match(worker,/import \{generateOracleField,projectOracleFieldWidth\} from "\.\/sidebar-glass-oracle\.js"/);
+  assert.match(worker,/const field=sourceExactField\(request\)/);
   assert.match(worker,/field\.inner\.buffer,field\.outer\.buffer,field\.blurMask\.buffer/);
   assert.match(browser,/new win\.Worker\(new URL\("\.\/sidebar-glass-field-worker\.js",import\.meta\.url\)/);
   assert.match(browser,/const geometryCache=new Map\(\)/);
@@ -361,7 +362,7 @@ test("worker PNG encoding uses identical source pixels and main-thread fallback"
   assert.match(worker,/ctx\.putImageData\(image,0,0\)/);
   assert.match(worker,/canvas\.convertToBlob\(\{type:"image\/png"\}\)/);
   assert.match(worker,/reader\.readAsDataURL\(blob\)/);
-  assert.match(worker,/const field=generateOracleField\(request\.w,request\.h,request\.corner\)/);
+  assert.match(worker,/const field=sourceExactField\(request\)/);
   assert.match(browser,/const urls=field\.urls\|\|\[/);
   assert.match(browser,/lastMaterialWord=word/);
   assert.match(browser,/if\(word!==lastMaterialWord\)/);
@@ -402,4 +403,25 @@ test("probe full-height x-translation invariance of source mode5 fields",()=>{
   console.log("ORACLE_FULL_HEIGHT_X_TRANSLATION_PROBE",JSON.stringify(deviations));
   assert.ok(deviations.every(v=>v.inner===0&&v.outer===0&&v.blurMask===0),
     "Full-height left/right splitting must be BYTE EXACT across every channel");
+});
+
+test("optimized WIDTH projection reproduces exact oracle RGBA arrays at representative heights",()=>{
+  // Any change in the mode5 shape, native-derived parameters, or encoding
+  // will fail here. No approximate geometry or interpolated pixels allowed.
+  for(const [h,r] of [[760,24],[844,26],[900,24]]){
+    const base=generateOracleField(274,h,r);
+    for(const w of [74,75,80,100,128,171,183,220,259,260,274]){
+      const expected=generateOracleField(w,h,r);
+      const actual=projectOracleFieldWidth(base,w);
+      for(const name of ["inner","outer","blurMask"])
+        assert.deepEqual(actual[name],expected[name],
+          "Lossless mode5 field "+name+" at "+w+"x"+h+" r="+r);
+    }
+  }
+});
+test("drawer scrim is visually transparent and retains pointer interception",async()=>{
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*background:transparent/s);
+  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*backdrop-filter:none/s);
+  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*pointer-events:auto/s);
 });
