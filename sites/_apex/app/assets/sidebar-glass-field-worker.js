@@ -17,7 +17,7 @@ function sourceExactField(request){
   const {w,h,corner}=request;
   // Only desktop 74–260px with radius 24 is proven byte-exact.
   // Mobile uses the untouched generator, especially at radius 26.
-  if(w<74||w>260||h<1||corner!==24
+  if(w<74||w>260||h<1||corner!==24)
     return generateOracleField(w,h,corner);
   const key=h+"@"+corner;
   let base=rawBases.get(key);
