@@ -472,6 +472,57 @@ try{
       })()`);
 
 
+      // Test the SECOND reported path: tablet rail -> xl expanded sidebar.
+      // This is a breakpoint transition, not an explicit sidebar toggle.
+      await send("Emulation.setDeviceMetricsOverride",{
+        width:980,height:900,deviceScaleFactor:1,mobile:false
+      });
+      await sleep(700);
+      const beforeResize=await evaluate(`(()=>{
+        const shell=document.getElementById("workspace-shell");
+        const side=document.getElementById("workspace-sidebar");
+        const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
+        return {w:side.getBoundingClientRect().width,mw:Number(map.getAttribute("width")),
+          rail:shell.classList.contains("is-compact-rail"),
+          collapsed:shell.classList.contains("is-collapsed")};
+      })()`);
+      assert(beforeResize.rail&&beforeResize.w<=75,
+        "Responsive test must start on compact exact-width rail "+JSON.stringify(beforeResize));
+      await evaluate(`(()=>{
+        const shell=document.getElementById("workspace-shell");
+        const side=document.getElementById("workspace-sidebar");
+        const main=document.querySelector(".main");
+        const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
+        const snapshots=[];const start=performance.now();
+        const observe=t=>{
+          const bounds=side.getBoundingClientRect();
+          snapshots.push({ms:Math.round(t-start),w:Math.round(bounds.width),
+            map:Number(map.getAttribute("width")),
+            x:Math.round(bounds.x),mainX:Math.round(main.getBoundingClientRect().x),
+            entering:shell.classList.contains("is-rail-entering"),
+            collapsed:shell.classList.contains("is-collapsed"),
+            updated:Number(shell.dataset.oracleFieldBuilds||0),
+            hits:Number(shell.dataset.oracleFieldCacheHits||0)});
+          if(t-start<1000)requestAnimationFrame(observe);
+          else window.__responsiveGlassTrace=snapshots;
+        };
+        window.__responsiveGlassTrace=null;
+        requestAnimationFrame(observe);
+        return true;
+      })()`);
+      await sleep(90);
+      await send("Emulation.setDeviceMetricsOverride",{
+        width:1440,height:900,deviceScaleFactor:1,mobile:false
+      });
+      const responsive=await until(()=>evaluate("window.__responsiveGlassTrace||null"),12000);
+      const compactResponsive=responsive.filter((p,i)=>i===0||
+        p.w!==responsive[i-1].w||p.map!==responsive[i-1].map||
+        p.entering!==responsive[i-1].entering||p.collapsed!==responsive[i-1].collapsed);
+      console.log("RESPONSIVE_WIDEN_GLASS_TIMELINE",JSON.stringify(compactResponsive));
+      assert(responsive.at(-1)?.w===260&&responsive.at(-1)?.map===260,
+        "Widening must restore exact expanded 260px geometry");
+
+
     }
   }
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
