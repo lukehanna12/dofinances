@@ -427,3 +427,16 @@ test("drawer scrim is visually transparent and retains pointer interception",asy
   assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*backdrop-filter:none/s);
   assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*pointer-events:auto/s);
 });
+
+test("exact cached endpoint fields synchronize to CSS width-transition completion",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
+  assert.match(code,/if\(field\.urls && field\.key!==desired\?\.key\)\s*cacheField\(field,field\.urls\)/);
+  assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
+  assert.match(code,/function armEndpointPrefetch\(\)/);
+  assert.match(code,/geometryCache\.has\(key\)\|\|prefetchDisabled\.has\(key\)/);
+  assert.match(code,/event\.propertyName==="width"\)apply\(\)/);
+  assert.match(code,/sidebar\.addEventListener\("transitionend",onWidthTransition\)/);
+  assert.match(code,/sidebar\.removeEventListener\("transitionend",onWidthTransition\)/);
+  assert.match(worker,/prefetch:!!request\.prefetch/);
+});
