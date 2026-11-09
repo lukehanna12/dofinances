@@ -40,7 +40,7 @@ jobs:
           test -s sites/_apex/app/index.html
           test -s sites/_apex/assets/site-foundation.css
           test -s sites/_apex/assets/account-security.css
-          grep -Fq -- '--ui-canvas: #000000' sites/_apex/assets/site-foundation.css
+          grep -Fq -- '--ui-canvas: #171717' sites/_apex/assets/site-foundation.css
           grep -R -Fq -- '--ui-font-sans' dist/assets
           test -s sites/_apex/app/assets/dashboard.js
           test -s sites/_apex/app/assets/workspace-scroll.js
@@ -95,6 +95,7 @@ jobs:
           cp sites/_apex/app/assets/dashboard.css dist/app/assets/dashboard.css
           cp sites/_apex/app/assets/workspace-theme.css dist/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js dist/app/assets/workspace-nav.js
+          cp sites/_apex/app/assets/workspace-scroll.js dist/app/assets/workspace-scroll.js
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
           cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
