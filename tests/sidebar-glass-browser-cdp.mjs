@@ -152,6 +152,56 @@ try{
     assert(state.filter,"Advanced backdrop inactive at "+width);
     assert(state.wall&&state.wall!=="none","Shared page wallpaper missing at "+width);
     console.log("CDP viewport verified",width,height,state.info);
+    if(width===1440){
+      // Baseline performance diagnostic using REAL transitions (unlike
+      // functional tests, which intentionally use reduced motion).
+      await send("Emulation.setEmulatedMedia",{features:[
+        {name:"prefers-reduced-motion",value:"no-preference"}]});
+      await evaluate(`(()=>{
+        const shell=document.getElementById("workspace-shell");
+        const toggle=document.getElementById("sidebar-toggle");
+        const gaps=[];let last=0;let lastTasks=[];
+        const longTasks=[];
+        let observer;
+        try{
+          observer=new PerformanceObserver(list=>{
+            for(const e of list.getEntries())longTasks.push(e.duration);
+          });
+          observer.observe({entryTypes:["longtask"]});
+        }catch{}
+        let start=performance.now();
+        function frame(t){
+          if(last)gaps.push(t-last);last=t;
+          if(t-start<1200)requestAnimationFrame(frame);
+          else{
+            observer?.disconnect();
+            const sorted=gaps.toSorted((a,b)=>a-b);
+            window.__glassPerf={
+              frames:gaps.length,
+              median:sorted[Math.floor(sorted.length*.5)],
+              p95:sorted[Math.floor(sorted.length*.95)],
+              worst:sorted.at(-1),
+              stalls34:gaps.filter(t=>t>34).length,
+              stalls50:gaps.filter(t=>t>50).length,
+              longTasks,
+              builds:Number(shell.dataset.oracleFieldBuilds||0),
+              cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
+              finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
+            };
+          }
+        }
+        requestAnimationFrame(frame);
+        setTimeout(()=>toggle.click(),60);
+        setTimeout(()=>toggle.click(),390);
+        return true;
+      })()`);
+      const perf=await until(()=>evaluate("window.__glassPerf||null"),10000);
+      console.log("SIDEBAR_MOTION_BASELINE",JSON.stringify(perf));
+      assert(perf.finalWidth>250,"Perf test must restore expanded sidebar");
+      await send("Emulation.setEmulatedMedia",{features:[
+        {name:"prefers-reduced-motion",value:"reduce"}]});
+      await sleep(150);
+    }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
       // programmatic .click() cannot detect.
