@@ -24,3 +24,15 @@ for name in ["glass_background_sdf_no_bleed_lph","glass_background_lph"]:
          and ins["source_line"]>225):
       continue
      print(ins["source_line"],ins["ir"][:320],flush=True)
+
+import lzma,struct
+for name in ["live_mode_joins.json.xz","mode4_exact_joins.json.xz"]:
+ f=root/name
+ d=json.loads(lzma.decompress(f.read_bytes()))
+ print("SDF_DATA",name,"keys",list(d),flush=True)
+ print("SDF_JSON_PREFIX",json.dumps(d,ensure_ascii=True)[:11500],flush=True)
+f=root/"color_matrices_uniform.bin"
+if f.exists():
+ b=f.read_bytes()
+ print("DIRECT_SDF_UNIFORM",len(b),list(struct.unpack("<12f",b[:48])),flush=True)
+ print("DIRECT_BLUR_WORD",struct.unpack("<f",b[88:92])[0],flush=True)
