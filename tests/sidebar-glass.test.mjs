@@ -477,3 +477,18 @@ test("source complementary blur and refraction branches use linear-addition join
     }
   }
 });
+
+test("AIR native-background source performs true four-component interpolation, not Porter-Duff over",()=>{
+  const py=String.raw`
+import gzip,json,pathlib
+p=pathlib.Path("preview/oracle-evidence/glass_background_sdf_no_bleed_lph.ssa.json.gz")
+d=json.loads(gzip.decompress(p.read_bytes()))
+base=next(f for f in d["functions"] if "glass_background_base" in f["name"])
+air={i["source_line"]:i["ir"] for b in base["blocks"] for i in b["instructions"]}
+for line in (430,437):
+  assert "@air.mix." in air[line],(line,air.get(line))
+print("AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED")
+  `;
+  const result=execFileSync("python3",["-c",py],{encoding:"utf8"});
+  assert.match(result,/AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED/);
+});

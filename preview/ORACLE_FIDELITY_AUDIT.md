@@ -16,7 +16,7 @@ evidence and deterministic tests.
 | Inner/outer refraction | AIR 256–271 and 352–366; same-case 264-byte live fragment bindings | Two separate signed-distance envelopes and geometry-only SVG vector fields over LIVE DOM backdrop | Native displacement matrix / texture coordinate mapping not universally proved for arbitrary browser dimensions |
 | Inner/outer mip blur | AIR 271, 290–337, 366, 370–397; actual `blur_alpha0..3` and `blur_dist0..3` | Independently computed **refraction-adjusted** distances and two live-backdrop Gaussian branches; separate masks blended after sampling | Gaussian is only a browser approximation of Metal mip sampling; sigma mapping unproved |
 | Refraction mixing | AIR 405–417, sampled-color mixing later in base function | Half-precision observed `refraction_opacity` and separate source-sampled branches | Color/alpha and extended output behavior approximate |
-| Face-color material | Recorded half4 `face_cm0..2`, `face_opacity=1`; selected direct-execution color-matrix perturbation | SVG color matrix applied to live backdrop after refraction | SVG sRGB matrix differs from extended-sRGB and target-GPU arithmetic |
+| Face-color material | Recorded half4 `face_cm0..2`, `face_opacity=1`; selected direct-execution color-matrix perturbation | SVG color matrix stage currently uses **identity passthrough**, retaining the private m1 matrix only for evidence | Public color/material selection and Q numerical output remain unresolved |
 | Selection/collapse/navigation | Real `/app` `workspace-nav.js`, 260px desktop/74px compact/274px mobile | **Unmodified existing app ownership**; selected row geometry follows current route | UI behavior validated at three widths; no native glass input event simulator |
 | Page source | Real `/app` HTML/CSS | One page-level background; browser `SourceGraphic` backdrop filtering; canvas contains displacement/mask data **only** | No embedded/snapshotted page bitmap inside sidebar |
 
@@ -120,3 +120,30 @@ continues to operate on the genuine browser backdrop. Neither change claims
 native regular-style/Q pixel equivalence. Browser and static regressions
 now check backdrop layering, visible full-panel SDF evaluation, and absence
 of the private diagnostic darkening transform.
+
+## November 9: complementary-alpha compositing correction
+
+A browser-specific error was identified independent of the unresolved native
+proof obligations. The existing filter used Porter–Duff `over` at three
+complementary, premultiplied-alpha joins: near/far for each of the two
+refraction paths, and the threshold-selected inner/outer path join.
+
+The retained `glass_background_base` AIR instructions 430/437 explicitly
+invoke `air.mix` on four-component sampled colors. For two opaque source
+images and a mixing factor m, the intended premultiplied color is
+`m * A + (1 - m) * B` with alpha 1; `over` instead yields alpha
+`m + (1-m)^2`, introducing source-unjustified second attenuation of B.
+
+The test branch now uses SVG `feComposite operator="arithmetic"` with
+`k2=1,k3=1` at these exact joins. The three original sources, the
+near/far blurred backdrops, the retained displacement maps, the source
+mixing weights, and the face color passthrough remain unchanged.
+W3C Filter Effects specifies the arithmetic operator and premultiplied RGBA
+filter inputs. Chrome's controlled high-contrast browser experiment
+confirmed that the former `over` version differed across 42,848/228,800
+sampled pixels; this is evidence of a consequential browser implementation
+error, NOT proof of Apple output-pixel equivalence.
+
+This correction does not identify the missing full mip texture sampling,
+native G14G instruction numerics, public color/material selection, or
+runtime display Q chain. No additional native equivalence claim is made.

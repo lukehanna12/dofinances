@@ -375,8 +375,11 @@ try{
       },90000)).data);
       const patternDiff=comparePixels(glassGrid,blurGrid,190,260,70,820);
       console.log("CONTROLLED_PAGE_GRID_REFRACTION_DIFF",JSON.stringify(patternDiff));
-      assert(patternDiff.different>=1400&&patternDiff.mean>=2,
-        "Controlled PAGE backdrop: glass must bend a high-contrast grid, not just blur it");
+      // The previous >=2 mean gate was calibrated to a wrong source-over
+      // compositing step that attenuated the alternate branch twice.
+      // Correct source-derived linear mixing still bends the grid distinctly.
+      assert(patternDiff.different>=1400&&patternDiff.mean>=1.5,
+        "Controlled PAGE backdrop: source-consistent glass must bend a high-contrast grid");
       // Optical-compositing candidate: the current 'over' on two
       // COMPLEMENTARY premultiplied-alpha branches is not the source
       // shader's linear image interpolation. Test W3C arithmetic sum
