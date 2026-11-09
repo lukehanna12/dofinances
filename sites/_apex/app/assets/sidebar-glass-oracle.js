@@ -857,8 +857,14 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   }
   const endpointObserver=typeof MutationObserver!=="undefined"?
     new MutationObserver(()=>{
-      if(shell.classList.contains("is-sidebar-toggling")&&!endpointFrame)
-        endpointFrame=win.requestAnimationFrame(watchEndpoint);
+      if(shell.classList.contains("is-sidebar-toggling")){
+        stopAnticipation();
+        if(!endpointFrame)endpointFrame=win.requestAnimationFrame(watchEndpoint);
+      }else{
+        // A no-layout-change class removal need not fire ResizeObserver.
+        // Re-arm idle exact-map preparation when the user motion finishes.
+        armAnticipation();
+      }
     }):null;
   endpointObserver?.observe(shell,{attributes:true,attributeFilter:["class"]});
   schedule();
