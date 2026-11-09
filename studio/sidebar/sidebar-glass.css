@@ -158,69 +158,18 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   box-shadow:inset 0 1px rgba(255,255,255,.10);
 }
 .shell.liquid-glass-preview .sidebar-toggle,
+/* Match production: one active row background, synchronized with its ink. */
 .shell.liquid-glass-preview .nav-link {
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
-}
-.shell.liquid-glass-preview .sidebar-toggle:hover,
-.shell.liquid-glass-preview .icon-button:hover{
-  background:rgba(255,255,255,.12);color:#fff;
-}
-.shell.liquid-glass-preview .nav-section-label,
-.shell.liquid-glass-preview .sidebar-bottom{color:rgba(237,240,244,.58);}
-.shell.liquid-glass-preview .sidebar-bottom{
-  border-top-color:rgba(250,251,253,.11);
-}
-.shell.liquid-glass-preview .sidebar-bottom .status-dot{
-  background:#9cd3b6;box-shadow:0 0 9px rgba(146,215,181,.25);
-}
-.shell.liquid-glass-preview .nav-link {
-  position:relative;
-  z-index:1;
-  border-color:transparent;
-  color:rgba(245,247,250,.86);
-  transform:translateZ(0);
-  transition:
-    background-color 135ms ease,color 135ms ease,
+  position:relative;z-index:1;border-color:transparent;color:rgba(245,247,250,.86);
+  transition:background-color 135ms ease,color 135ms ease,border-color 135ms ease,
     padding-left var(--sidebar-layout-duration) var(--ui-ease),
     padding-right var(--sidebar-layout-duration) var(--ui-ease),
     gap var(--sidebar-layout-duration) var(--ui-ease);
 }
-.shell.liquid-glass-preview .nav-link:hover{
-  background:rgba(244,247,251,.095);color:#fff;
-}
+.shell.liquid-glass-preview .nav-link:hover{background:rgba(244,247,251,.095);color:#fff;}
 .shell.liquid-glass-preview .nav-link.active{
-  background:rgba(255,255,255,.13);color:#fff;
+  background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.09);color:#fff;
 }
-.shell.liquid-glass-preview.has-glass-indicator .nav-link.active{
-  background:transparent;
-}
-.shell.liquid-glass-preview.has-glass-indicator .nav-link.active:hover{
-  background:rgba(255,255,255,.035);
-}
-.shell.liquid-glass-preview .glass-selection {
-  position:absolute;
-  top:0;left:0;
-  z-index:0;
-  /* Follow the actual row's responsive track on every frame. */
-  width:100%;
-  height:var(--glass-selection-height,39px);
-  transform:translate3d(var(--glass-selection-x,0px),var(--glass-selection-y,0px),0);
-  /* A restrained control state over the actual refracting pane, not a
-     second invented lens or an unverified native foreground shader. */
-  border-radius:11px;
-  border:1px solid rgba(255,255,255,.09);
-  background:rgba(243,247,250,.10);
-  box-shadow:inset 0 1px rgba(255,255,255,.08);
-  pointer-events:none;
-  opacity:0;
-  will-change:transform;
-  transition:
-    transform 250ms cubic-bezier(.23,.86,.25,1),
-    height 160ms ease,
-    opacity 110ms ease;
-}
-.shell.liquid-glass-preview.has-glass-indicator .glass-selection{opacity:1;}
 .shell.liquid-glass-preview .glass-scene-toggle{
   display:inline-flex;align-items:center;gap:8px;
   padding:7px 11px;min-height:34px;
@@ -276,8 +225,7 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   }
 }
 @media(prefers-reduced-motion:reduce){
-  .shell.liquid-glass-preview .glass-selection,
-  .shell.liquid-glass-preview .nav-link {transition:none;will-change:auto;}
+  .shell.liquid-glass-preview .nav-link {transition:none;}
 }
 @media(prefers-reduced-transparency:reduce){
   .shell.liquid-glass-preview .sidebar,
@@ -292,7 +240,6 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
     border-right:2px solid CanvasText;
     -webkit-backdrop-filter:none;backdrop-filter:none;
   }
-  .shell.liquid-glass-preview .glass-selection{display:none;}
   .shell.liquid-glass-preview .nav-link.active{background:Highlight;color:HighlightText;}
 }
 @supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){

@@ -61,3 +61,12 @@ test("Studio preview mirrors production navigation without enabling account muta
   assert.match(bootstrap,/global-menu-toggle/);
   assert.match(bootstrap,/global-search-toggle/);
 });
+
+test("Studio sidebar uses the production's immediate active-row selection without delayed geometry",()=>{
+  const css=read("../studio/sidebar/sidebar-glass.css");
+  const js=read("../studio/sidebar/sidebar-glass.js");
+  assert.doesNotMatch(css,/glass-selection|has-glass-indicator/);
+  assert.doesNotMatch(js,/glass-selection|MutationObserver|glassIndicatorGeometry|requestAnimationFrame/);
+  assert.match(css,/\.shell\.liquid-glass-preview \.nav-link\.active\{/);
+  assert.match(js,/glass-scene-toggle/);
+});
