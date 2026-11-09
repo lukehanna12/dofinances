@@ -155,7 +155,8 @@ test("displacement maps are geometry-only, not screen or background captures",()
   }
   assert.ok(innerAffected>0,JSON.stringify({innerAffected,outerAffected,center:[...field.inner.slice(edge,edge+4)]}));
   assert.ok(outerAffected>0,JSON.stringify({innerAffected,outerAffected}));
-  assert.equal(field.blurMask[center+2],0);
+  assert.ok(field.blurMask[center+2]>0,
+    "mode5 left-half coverage is no longer artificially zeroed");
   const intermediate=(49*72+61)*4;
   assert.ok(field.blurMask[intermediate]>0,"inner path gains a near mip inside the edge");
   assert.ok(field.blurMask[intermediate+1]>0,"outer path gains a near mip inside the edge");
