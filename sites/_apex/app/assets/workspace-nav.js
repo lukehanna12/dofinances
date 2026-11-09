@@ -1,5 +1,5 @@
 import {initWorkspaceScroll} from "./workspace-scroll.js";
-import {applyWorkspaceWallpaper} from "./workspace-wallpapers.js";
+import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
@@ -134,10 +134,14 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
   const workspaceScroll=initWorkspaceScroll(doc,win);
+  const wallpaper=initWorkspaceWallpaper(doc,win);
   let lastRenderedRoute=null;
   function render(){
     const route=resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
-    const changingScreen=lastRenderedRoute!==null&&lastRenderedRoute!==route;
+    // hashchange/popstate can both fire for one navigation. A repeated route
+    // must not trigger another wallpaper repaint, layout measurement or decode.
+    if(route===lastRenderedRoute)return;
+    const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
     mainNav.hidden=meta.project;
     projectNav.hidden=!meta.project;
@@ -145,7 +149,6 @@ export function initWorkspaceNavigation(doc=document,win=window){
     breadcrumb.textContent=meta.breadcrumb;
     subtitle.textContent=meta.subtitle;
     doc.title=meta.label+" · "+(meta.project?"Colosseum · ":"")+"DoFinances";
-    applyWorkspaceWallpaper(doc,route);
     // One Settings DOM view for both Workspace and every project.
     const visibleView=route==="colosseum/settings"?"settings":route;
     for(const view of views)view.hidden=view.dataset.view!==visibleView;
@@ -157,15 +160,11 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
     closeDrawer();
     lastRenderedRoute=route;
-    // Only reset when changing to a different screen. Avoid browser CSS
-    // smooth-scroll movement and unnecessary resets during initial hydration,
-    // repeated hash events, or history updates for the same route.
-    if(changingScreen){
-      workspaceScroll.reset();
-      if(win.scrollTo)win.scrollTo({top:0,left:0,behavior:"instant"});
-    } else workspaceScroll.sync();
-    // Content may be resized after hash-route elements are revealed.
-    win.requestAnimationFrame?.(workspaceScroll.sync);
+    // Content and active navigation commit first. Loading/decoding a new
+    // full-width image must never block this interaction or the scroll reset.
+    if(first)workspaceScroll.sync();
+    else workspaceScroll.reset();
+    wallpaper.show(route,first);
   }
 
   desktopToggle.addEventListener("click",()=>{
@@ -186,7 +185,13 @@ export function initWorkspaceNavigation(doc=document,win=window){
       closeDrawer(true);mobileToggle.focus();
     }
   });
-  for(const link of links)link.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
+  for(const link of links){
+    link.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
+    // Warm only likely next routes; avoid pre-decoding eight full-size images.
+    const anticipate=()=>wallpaper.warm(link.href?.split("#")[1]||"home");
+    link.addEventListener("pointerenter",anticipate,{passive:true});
+    link.addEventListener("focus",anticipate,{passive:true});
+  }
   back.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
   win.addEventListener("hashchange",render);
   win.addEventListener("popstate",render);
