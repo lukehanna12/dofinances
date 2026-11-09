@@ -164,13 +164,20 @@ test("mobile to compact sidebar slides from left; desktop expands only above xl"
   assert.equal(shell.classList.contains("is-rail-entering"),true);
   assert.equal(shell.classList.contains("is-sidebar-toggling"),false);
   assert.equal(m.elements["sidebar-toggle"].disabled,true);
-  m.elements["sidebar-toggle"].dispatch("click"); // No way to expand at tablet widths.
+  m.elements["sidebar-toggle"].dispatch("click"); // Collapsed rail toggle remains disabled.
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  m.elements["workspace-sidebar"].dispatch("click"); // Blank glass expands at tablet widths.
+  assert.equal(shell.classList.contains("is-rail-expanded"),true);
+  assert.equal(shell.classList.contains("is-collapsed"),false);
+  assert.equal(m.elements["sidebar-toggle"].disabled,false);
+  m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(shell.classList.contains("is-collapsed"),true);
   m.compact(false);m.fire("resize"); // >=1280
   assert.equal(shell.classList.contains("is-compact-rail"),false);
   assert.equal(shell.classList.contains("is-collapsed"),false);
   assert.equal(m.elements["sidebar-toggle"].disabled,false);
-  assert.equal(shell.classList.contains("is-sidebar-toggling"),true);
+  assert.equal(shell.classList.contains("is-sidebar-toggling"),false,
+    "Viewport-driven breakpoint changes never trigger sidebar motion");
   m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(shell.classList.contains("is-collapsed"),true);
   assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
@@ -183,17 +190,17 @@ test("mobile to compact sidebar slides from left; desktop expands only above xl"
   assert.equal(shell.classList.contains("is-collapsed"),true,
     "wide sidebar may still be manually collapsed");
 });
-test("the account email cannot expand the responsive topbar vertically",async()=>{
+test("header stays at 50px on mobile and desktop with account email constrained",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
-  const toolbar=css.match(/\.topbar \{([^}]*)\}/)?.[1]||"";
-  assert.match(toolbar,/height:\s*66px/);
-  assert.match(toolbar,/flex-wrap:\s*nowrap/);
+  const updated=await read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.match(css,/\.topbar-start \{[^}]*min-width:\s*0/);
   assert.match(css,/\.email \{[^}]*white-space:\s*nowrap/);
-  assert.match(css,/\.top-actions \.email \{display:\s*none;\}/);
-  assert.match(css,/@media \(max-width: 760px\) \{[\s\S]*?\.topbar \{height:\s*63px/);
+  assert.match(updated,/--workspace-header-height:50px/);
+  assert.match(updated,/--global-menu-height:44px/);
+  assert.match(updated,/\.topbar\{height:50px;min-height:50px/);
+  assert.match(updated,/flex-wrap:nowrap;align-items:center/);
 });
-test("screen navigation has no entrance displacement or smooth-scroll jitter",async()=>{
+test("navigation is stationary except for the 170ms content-only arrival, without scroll jitter",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
   const head=css.match(/html\s*\{([^}]*)\}/)?.[1]||"";
   const view=css.match(/\.view\s*\{([^}]*)\}/)?.[1]||"";
@@ -202,6 +209,8 @@ test("screen navigation has no entrance displacement or smooth-scroll jitter",as
   assert.match(view,/animation:\s*none/,"disable page-entry animation");
   assert.match(view,/transform:\s*none/,"remove translateY movement");
   assert.doesNotMatch(css,/@keyframes\s+ui-page-appear/);
+  const arrivals=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.match(arrivals,/\.content > \.view:not\(\[hidden\]\)\{animation:workspace-content-arrive 170ms/);
   assert.match(css,/\.sidebar\s*\{[\s\S]*?transition:\s*width var\(--sidebar-layout-duration\)/,
     "sidebar width transition should remain available for user clicks");
   const m=mockNavigation();
@@ -236,7 +245,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);
   assert.match(html,/id="back-to-workspace"/);
-  assert.match(html,/href="#projects"[^>]+aria-label="Back to Projects"/);
+  assert.match(html,/<a class="rb-crumb" id="back-to-workspace" href="#projects"/);
+  assert.match(html,/<nav class="rb-breadcrumbs" id="breadcrumb"/);
   assert.match(html,/href="#colosseum\/utilities"/);
   assert.match(html,/aria-label="Utilities" title="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
