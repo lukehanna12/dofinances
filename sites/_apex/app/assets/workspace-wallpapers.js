@@ -68,10 +68,75 @@ export function applyWorkspaceWallpaper(doc,route) {
   const name=wallpaper.sha+"."+wallpaper.ext;
   // Navigation can be exercised against DOM mocks without a body element.
   if(!doc.body?.style?.setProperty)return wallpaper;
-  doc.body.style.setProperty("--workspace-wallpaper-image",'url("https://dofinances.com/wallpapers/'+name+'")');
-  doc.body.style.setProperty("--workspace-wallpaper-position",wallpaper.position);
-  doc.body.style.setProperty("--workspace-footer-ink",wallpaper.footerInk);
-  doc.body.dataset.wallpaper=name;
-  doc.body.dataset.wallpaperRoute=route;
+  // Avoid invalidating the painted wallpaper if the same asset is re-selected.
+  const set=(key,value)=>{
+    if(doc.body.style.getPropertyValue?.(key)!==value)
+      doc.body.style.setProperty(key,value);
+  };
+  set("--workspace-wallpaper-image",'url("https://dofinances.com/wallpapers/'+name+'")');
+  set("--workspace-wallpaper-position",wallpaper.position);
+  set("--workspace-footer-ink",wallpaper.footerInk);
+  if(doc.body.dataset.wallpaper!==name)doc.body.dataset.wallpaper=name;
+  if(doc.body.dataset.wallpaperRoute!==route)doc.body.dataset.wallpaperRoute=route;
   return wallpaper;
+}
+
+/* Route content must respond immediately even when the next wallpaper is
+ * uncached. Decode asynchronously and paint only the latest requested image
+ * after the browser has an opportunity to commit the navigation state.
+ * Keep at most four decoded images alive to bound memory on small Macs. */
+export function initWorkspaceWallpaper(doc=document,win=window){
+  const decoded=new Map();
+  let generation=0;
+  const imageURL=wallpaper=>'https://dofinances.com/wallpapers/'+wallpaper.sha+'.'+wallpaper.ext;
+  function warm(route){
+    if(typeof win.Image!=="function")return null;
+    const wallpaper=workspaceWallpaperForRoute(route);
+    const name=wallpaper.sha+"."+wallpaper.ext;
+    if(decoded.has(name)){
+      const hit=decoded.get(name);
+      decoded.delete(name);
+      decoded.set(name,hit);
+      return hit.ready;
+    }
+    try{
+      const img=new win.Image();
+      img.decoding="async";
+      let completed;
+      if(typeof img.decode==="function"){
+        img.src=imageURL(wallpaper);
+        completed=Promise.resolve(img.decode()).catch(()=>{});
+      }else{
+        completed=new Promise(resolve=>{
+          img.onload=resolve;img.onerror=resolve;
+          img.src=imageURL(wallpaper);
+          if(img.complete)resolve();
+        });
+      }
+      decoded.set(name,{img,ready:completed});
+      while(decoded.size>4)decoded.delete(decoded.keys().next().value);
+      return completed;
+    }catch{return null;}
+  }
+  function show(route,first=false){
+    const ticket=++generation;
+    const wallpaper=workspaceWallpaperForRoute(route);
+    const name=wallpaper.sha+"."+wallpaper.ext;
+    if(first||doc.body?.dataset?.wallpaper===name){
+      applyWorkspaceWallpaper(doc,route);
+      return;
+    }
+    const paint=()=>{
+      if(ticket!==generation)return;
+      const commit=()=>{
+        if(ticket===generation)applyWorkspaceWallpaper(doc,route);
+      };
+      if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(commit);
+      else commit();
+    };
+    const ready=warm(route);
+    if(ready)ready.then(paint,paint);
+    else paint();
+  }
+  return {show,warm};
 }
