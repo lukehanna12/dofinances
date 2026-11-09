@@ -323,12 +323,20 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
     outer[i+1]=encode(p.ny*outerAmount);
     inner[i+2]=outer[i+2]=Math.round(clamp(mx,0,1)*255);
     inner[i+3]=outer[i+3]=255;
-    const distribution=airBlurDistribution(p.distance,parameters);
-    // Within the visible, signed-distance-negative face the retained
-    // distribution spans 0.5 at the edge to 1.0 in the interior.
-    const nearWeight=clamp((1-distribution)/.5,0,1);
-    blurMask[i]=blurMask[i+1]=0;
-    blurMask[i+2]=Math.round(255*nearWeight);
+    // AIR background base LPH source lines 271/290–321 and 366/370–381:
+    // blur_alpha ramps consume REFRACTION-ADJUSTED SDF distance, not the
+    // original signed distance. The two texture reads have distinct LOD.
+    const innerDistance=f32(p.distance+innerAmount);
+    const outerDistance=f32(p.distance+outerAmount);
+    const innerDistribution=airBlurDistribution(innerDistance,parameters);
+    const outerDistribution=airBlurDistribution(outerDistance,parameters);
+    // The near/far Gaussian interpolation is a browser mip approximation.
+    // R controls inner-path near blur, G controls outer-path near blur.
+    const innerNear=clamp((1-innerDistribution)/.5,0,1);
+    const outerNear=clamp((1-outerDistribution)/.5,0,1);
+    blurMask[i]=Math.round(255*innerNear);
+    blurMask[i+1]=Math.round(255*outerNear);
+    blurMask[i+2]=Math.round(255*innerNear);
     blurMask[i+3]=255;
   }
   return {width,height,inner,outer,blurMask};
@@ -369,21 +377,31 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     in:"SourceGraphic",stdDeviation:"2",result:"nearBlur"});
   const blurMap=makeSVG(doc,"feImage",{result:"blurMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
-  const nearAlpha=makeSVG(doc,"feColorMatrix",{in:"blurMap",type:"matrix",
-    values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0",result:"nearCoverage"});
-  const nearPart=makeSVG(doc,"feComposite",{
-    in:"nearBlur",in2:"nearCoverage",operator:"in",result:"nearPart"});
-  const farPart=makeSVG(doc,"feComposite",{
-    in:"farBlur",in2:"nearCoverage",operator:"out",result:"farPart"});
-  const blurred=makeSVG(doc,"feComposite",{
-    in:"nearPart",in2:"farPart",operator:"over",result:"blurred"});
+  // A single geometry-only PNG holds the two independently evaluated
+  // AIR blur-distance ramps: red=inner, green=outer.
+  const innerNearAlpha=makeSVG(doc,"feColorMatrix",{in:"blurMap",type:"matrix",
+    values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1 0 0 0 0",result:"innerNearCoverage"});
+  const outerNearAlpha=makeSVG(doc,"feColorMatrix",{in:"blurMap",type:"matrix",
+    values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1 0 0 0",result:"outerNearCoverage"});
+  const innerNearPart=makeSVG(doc,"feComposite",{
+    in:"nearBlur",in2:"innerNearCoverage",operator:"in",result:"innerNearPart"});
+  const innerFarPart=makeSVG(doc,"feComposite",{
+    in:"farBlur",in2:"innerNearCoverage",operator:"out",result:"innerFarPart"});
+  const innerBlur=makeSVG(doc,"feComposite",{
+    in:"innerNearPart",in2:"innerFarPart",operator:"over",result:"innerBlurred"});
+  const outerNearPart=makeSVG(doc,"feComposite",{
+    in:"nearBlur",in2:"outerNearCoverage",operator:"in",result:"outerNearPart"});
+  const outerFarPart=makeSVG(doc,"feComposite",{
+    in:"farBlur",in2:"outerNearCoverage",operator:"out",result:"outerFarPart"});
+  const outerBlur=makeSVG(doc,"feComposite",{
+    in:"outerNearPart",in2:"outerFarPart",operator:"over",result:"outerBlurred"});
   const innerMap=makeSVG(doc,"feImage",{result:"innerMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
   const outerMap=makeSVG(doc,"feImage",{result:"outerMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
-  const innerDist=makeSVG(doc,"feDisplacementMap",{in:"blurred",in2:"innerMap",scale:128,
+  const innerDist=makeSVG(doc,"feDisplacementMap",{in:"innerBlurred",in2:"innerMap",scale:128,
     xChannelSelector:"R",yChannelSelector:"G",result:"innerShift"});
-  const outerDist=makeSVG(doc,"feDisplacementMap",{in:"blurred",in2:"outerMap",scale:128,
+  const outerDist=makeSVG(doc,"feDisplacementMap",{in:"outerBlurred",in2:"outerMap",scale:128,
     xChannelSelector:"R",yChannelSelector:"G",result:"outerShift"});
   const mask=makeSVG(doc,"feColorMatrix",{in:"innerMap",type:"matrix",
     values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0",result:"outerBlendMask"});
@@ -400,8 +418,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const face=makeSVG(doc,"feColorMatrix",{
     in:"composited",type:"matrix",
     values:oracleFaceColorMatrixValues(),result:"faceMaterial"});
-  filter.append(blurFar,blurNear,blurMap,nearAlpha,nearPart,farPart,
-    blurred,innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,
+  filter.append(blurFar,blurNear,blurMap,innerNearAlpha,outerNearAlpha,
+    innerNearPart,innerFarPart,innerBlur,outerNearPart,outerFarPart,outerBlur,
+    innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,
     join,face);
   defs.append(filter);svg.append(defs);doc.body.append(svg);
   const supported=!!win.CSS?.supports?.("backdrop-filter",'url("#'+id+'")');

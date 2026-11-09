@@ -32,10 +32,16 @@
     const blend=filter.querySelector('feColorMatrix[result="faceMaterial"]');
     assert(!!blend&&blend.getAttribute("values").trim().split(/\s+/).length===20,
       "retained Oracle face-color half4 matrix applied to source backdrop");
-    const near=filter.querySelector('feColorMatrix[result="nearCoverage"]');
-    assert(!!near,"blur-alpha signed-distance mask is active");
-    const nearSource=filter.querySelector('feComposite[result="nearPart"]');
-    assert(!!nearSource,"blur-alpha influences real blurred backdrop");
+    const nearI=filter.querySelector('feColorMatrix[result="innerNearCoverage"]');
+    const nearO=filter.querySelector('feColorMatrix[result="outerNearCoverage"]');
+    assert(!!nearI&&!!nearO,"native inner/outer blur-distance masks are independent");
+    assert(!!filter.querySelector('feComposite[result="innerBlurred"]') &&
+      !!filter.querySelector('feComposite[result="outerBlurred"]'),
+      "both refraction paths use their own SDF-adjusted blurred backdrop");
+    assert(filter.querySelector('feDisplacementMap[result="innerShift"]')
+      ?.getAttribute("in")==="innerBlurred","inner path samples its own LOD");
+    assert(filter.querySelector('feDisplacementMap[result="outerShift"]')
+      ?.getAttribute("in")==="outerBlurred","outer path samples its own LOD");
     const radius=parseFloat(shell.style.getPropertyValue("--oracle-input-radius"));
     const width=sidebar.getBoundingClientRect().width;
     assert(radius>=2&&radius<=4,"public-style radius within retained range");

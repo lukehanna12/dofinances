@@ -154,7 +154,11 @@ test("displacement maps are geometry-only, not screen or background captures",()
   assert.ok(innerAffected>0,JSON.stringify({innerAffected,outerAffected,center:[...field.inner.slice(edge,edge+4)]}));
   assert.ok(outerAffected>0,JSON.stringify({innerAffected,outerAffected}));
   assert.equal(field.blurMask[center+2],0);
-  assert.ok(field.blurMask[edge+2]>0);
+  const intermediate=(49*72+61)*4;
+  assert.ok(field.blurMask[intermediate]>0,"inner path gains a near mip inside the edge");
+  assert.ok(field.blurMask[intermediate+1]>0,"outer path gains a near mip inside the edge");
+  assert.ok(field.blurMask[edge]<=field.blurMask[intermediate],
+    "native refraction-adjusted distance reduces near blur at the rim");
 });
 
 test("Oracle filter uses the actual browser backdrop, never an embedded wallpaper",async()=>{
@@ -166,9 +170,16 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   assert.match(js,/in:"blurred",in2:"innerMap",scale:128/);
   assert.match(js,/in:"blurred",in2:"outerMap",scale:128/);
   assert.match(js,/outerBlendMask/);
-  assert.match(js,/result:"nearCoverage"/);
-  assert.match(js,/in:"nearBlur",in2:"nearCoverage"/);
-  assert.match(js,/in:"farBlur",in2:"nearCoverage"/);
+  assert.match(js,/result:"innerNearCoverage"/);
+  assert.match(js,/result:"outerNearCoverage"/);
+  assert.match(js,/in:"nearBlur",in2:"innerNearCoverage"/);
+  assert.match(js,/in:"nearBlur",in2:"outerNearCoverage"/);
+  assert.match(js,/in:"farBlur",in2:"innerNearCoverage"/);
+  assert.match(js,/in:"farBlur",in2:"outerNearCoverage"/);
+  assert.match(js,/in:"innerBlurred",in2:"innerMap",scale:128/);
+  assert.match(js,/in:"outerBlurred",in2:"outerMap",scale:128/);
+  assert.match(js,/innerDistance=f32\(p\.distance\+innerAmount\)/);
+  assert.match(js,/outerDistance=f32\(p\.distance\+outerAmount\)/);
   assert.match(js,/in:"composited",type:"matrix"/);
   assert.match(js,/oracleFaceColorMatrixValues\(\)/);
   assert.match(js,/airSupercircleSDF/);

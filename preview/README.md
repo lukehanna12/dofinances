@@ -38,7 +38,9 @@ ONLY geometry masks (two refraction vector fields and one blur-level mask).
 - AIR blur distributions: source lines 290–337 for `blur_alpha0..3`,
   `blur_dist0..3`, `blur_radius`, and mip LOD. The observed uploaded
   distribution is [1, 0.5, 0, -0.5] at [-28, -1, 0, 0]. The browser
-  combines two **live backdrop Gaussian** levels using SDF-derived masks.
+  evaluates the alpha/distance ramps at two **different refraction-adjusted**
+  signed distances, as in AIR source lines 271 and 366, then interpolates two
+  **live backdrop Gaussian** levels independently for each path.
   Gaussian sigma approximates the native mip footprint; the relative
   distribution is from the actual source.
 - Face color: `face_cm0..2` directly from the SAME 264-byte uploaded
