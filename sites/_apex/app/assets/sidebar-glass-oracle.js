@@ -326,7 +326,7 @@ export function encodeOracleDisplacement(v){
 export function decodeOracleDisplacement(encoded){
   if(!Number.isInteger(encoded)||encoded<0||encoded>255)
     throw new RangeError("An 8-bit displacement sample is required");
-  return 128*(encoded/255-0.5-SVG_DISPLACEMENT_NEUTRAL_BIAS);
+  return (encoded-128)*128/255;
 }
 
 export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTION){
