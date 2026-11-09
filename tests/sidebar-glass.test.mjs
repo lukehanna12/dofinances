@@ -181,8 +181,8 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   assert.match(js,/in:"nearBlur",in2:"outerNearCoverage"/);
   assert.match(js,/in:"farBlur",in2:"innerNearCoverage"/);
   assert.match(js,/in:"farBlur",in2:"outerNearCoverage"/);
-  assert.match(js,/in:"innerBlurred",in2:"innerMap",scale:128/);
-  assert.match(js,/in:"outerBlurred",in2:"outerMap",scale:128/);
+  assert.match(js,/in:"innerBlurred",in2:"innerCentered",scale:128/);
+  assert.match(js,/in:"outerBlurred",in2:"outerCentered",scale:128/);
   assert.match(js,/innerDistance=f32\(p\.distance\+innerAmount\)/);
   assert.match(js,/outerDistance=f32\(p\.distance\+outerAmount\)/);
   assert.match(js,/in:"composited",type:"matrix"/);
