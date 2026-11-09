@@ -101,8 +101,42 @@ try{
   })()`);
   assert.ok(blank,"No hit-testable unoccupied rail space found");
   assert.equal(blank.cursor,"e-resize","Empty collapsed rail must show the expand cursor");
+  // The rail's icon and row should both center on the actual pane, not an
+  // asymmetrically padded grid track.
+  const railAlignment=await evaluate(String.raw`(()=>{
+    const side=document.querySelector(".sidebar").getBoundingClientRect();
+    const row=document.querySelector(".nav-link:not([hidden])");
+    const r=row.getBoundingClientRect(),i=row.querySelector(".nav-icon").getBoundingClientRect();
+    return {rowX:r.left+r.width/2,iconX:i.left+i.width/2,
+      sidebarX:side.left+side.width/2,rowY:r.top+r.height/2,
+      iconY:i.top+i.height/2};
+  })()`);
+  assert.ok(Math.abs(railAlignment.rowX-railAlignment.sidebarX)<2,
+    "Collapsed nav button is not horizontally centered: "+JSON.stringify(railAlignment));
+  assert.ok(Math.abs(railAlignment.iconX-railAlignment.rowX)<2,
+    "Collapsed icon is not centered in its button: "+JSON.stringify(railAlignment));
+  assert.ok(Math.abs(railAlignment.iconY-railAlignment.rowY)<2,
+    "Collapsed icon is not vertically centered: "+JSON.stringify(railAlignment));
+  // This specifically tests the user's observed regression: a hand cursor
+  // should apply to a real link, then revert to the rail's right-arrow cursor
+  // when the pointer returns to blank space after the click.
+  const linkCenter=await evaluate(String.raw`(()=>{
+    const link=document.querySelector('#main-navigation .nav-link[data-route="projects"]');
+    const r=link.getBoundingClientRect();
+    return {x:r.left+r.width/2,y:r.top+r.height/2};
+  })()`);
+  await move(linkCenter.x,linkCenter.y);
+  const linkCursor=await evaluate(String.raw`(()=>{
+    const p=document.elementFromPoint(0,0);
+    return getComputedStyle(document.querySelector('#main-navigation .nav-link[data-route="projects"]')).cursor;
+  })()`);
+  assert.equal(linkCursor,"pointer","Real nav links should retain the hand cursor");
+  await down(linkCenter.x,linkCenter.y);await up(linkCenter.x,linkCenter.y);
   await move(blank.x,blank.y);
-  await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip");
+  const afterLinkCursor=await evaluate(`getComputedStyle(document.elementFromPoint(${blank.x},${blank.y})).cursor`);
+  assert.equal(afterLinkCursor,"e-resize",
+    "After clicking a link, blank rail space must return to the expand cursor");
+  await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
   await down(blank.x,blank.y);await up(blank.x,blank.y);
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
