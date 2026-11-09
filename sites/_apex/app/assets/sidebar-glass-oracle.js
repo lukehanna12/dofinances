@@ -440,6 +440,40 @@ function imageDataURL(win,buffer,width,height){
   return c.toDataURL("image/png");
 }
 
+/* Predict desktop CSS width transitions at common 60Hz sample times.
+ * This function guesses CANDIDATE widths only; every generated field still
+ * comes from the exact byte-preserving oracle worker. Both directions must
+ * be included: collapse widths are not the expansion widths.
+ * No backdrop pixels, source-dependent data, or optical coefficients here.
+ */
+export function predictSidebarMotionWidths(learned=[]){
+  function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
+  function valueAt(progress){
+    let low=0,high=1;
+    for(let iteration=0;iteration<24;iteration++){
+      const mid=(low+high)/2;
+      if(bezier(mid,.2,.2)<progress)low=mid;else high=mid;
+    }
+    return bezier((low+high)/2,.8,1);
+  }
+  const widths=new Set();
+  for(let ms=1000/60;ms<210;ms+=1000/60){
+    const t=valueAt(ms/210);
+    // Same 210ms CSS cubic-bezier(.2,.8,.2,1), reversed endpoints.
+    const expand=Math.round(74+186*t);
+    const collapse=Math.round(260-186*t);
+    for(const center of [expand,collapse]){
+      if(center>74&&center<260)widths.add(center);
+      if(ms>170){
+        if(center>75)widths.add(center-1);
+        if(center<259)widths.add(center+1);
+      }
+    }
+  }
+  return [...new Set([...learned,...widths])].filter(w=>
+    Number.isInteger(w)&&w>74&&w<260);
+}
+
 export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   if(!shell||!sidebar)throw Error("Genuine /app sidebar required");
   const reduced=win.matchMedia?.("(prefers-reduced-transparency: reduce)")?.matches ||
@@ -540,41 +574,21 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
    * The synchronous path is retained when Worker execution is unavailable.
    */
   const geometryCache=new Map();
-  // Exact geometry-only PNGs; 32 animation samples + two canonical
-  // endpoints. Cache is in-memory and scoped to the actual viewport height.
-  // NO webpage/backdrop pixels are ever captured or cached.
-  const CACHE_LIMIT=48;
+  // Retain bounded exact geometry-only PNGs (no webpage pixels). The
+  // 32-entry LRU covers responsive endpoints and a selectively warmed path;
+  // stale height-specific maps are retired when the window height changes.
+  const CACHE_LIMIT=32;
+  const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
-  let anticipateSignature="",anticipateCount=0;
+  let anticipateSignature="",anticipateCount=0,cacheHeight=0;
   const anticipatedKeys=new Set();
+  const observedWidths=new Map();
 
   function expectedExpandWidths(){
-    // Sample the CSS width timing-function cubic-bezier(.2,.8,.2,1)
-    // at 60Hz over its 210ms transition. These are only candidate REQUEST
-    // dimensions; each cached map still uses exact generateOracleField()
-    // math and is installed ONLY at its exact rounded pane width.
-    function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
-    function valueAt(progress){
-      let low=0,high=1;
-      for(let iteration=0;iteration<24;iteration++){
-        const mid=(low+high)/2;
-        if(bezier(mid,.2,.2)<progress)low=mid;else high=mid;
-      }
-      return bezier((low+high)/2,.8,1);
-    }
-    const widths=new Set();
-    for(let ms=1000/60;ms<210;ms+=1000/60){
-      const eased=valueAt(ms/210);
-      const center=Math.round(74+186*eased);
-      for(const delta of [-1,0,1]){
-        const w=center+delta;
-        if(w>74&&w<260)widths.add(w);
-      }
-    }
-    // Prefer the high-motion central widths, then the last few pixels
-    // before the fully expanded edge. Do not prefetch arbitrary pane sizes.
-    return [...widths].sort((a,b)=>Math.abs(a-205)-Math.abs(b-205));
+    // Actual per-device widths come first after the first transition.
+    const learned=[...observedWidths].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+    return predictSidebarMotionWidths(learned);
   }
   function stopAnticipation(){
     if(anticipateTimer){win.clearTimeout(anticipateTimer);anticipateTimer=0;}
@@ -595,15 +609,18 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       stopAnticipation();
       anticipateSignature=signature;
       anticipateCount=0;
+      observedWidths.clear();
+      anticipatedKeys.clear();
     }
-    if(anticipateTimer||anticipateCount>=32)return;
+    if(anticipateTimer||anticipateCount>=SPECULATIVE_TOTAL_LIMIT)return;
     anticipateTimer=win.setTimeout(()=>{
       anticipateTimer=0;
       if(disposed||!desired||desired.h+"@24"!==signature||
          shell.classList.contains("is-sidebar-toggling"))return;
       const queue=expectedExpandWidths().map(w=>({
         w,h:desired.h,corner:24,key:w+"x"+desired.h+"@24",prefetch:true
-      })).filter(request=>!geometryCache.has(request.key));
+      })).filter(request=>!geometryCache.has(request.key))
+        .slice(0,Math.min(SPECULATIVE_BURST,SPECULATIVE_TOTAL_LIMIT-anticipateCount));
       if(!queue.length)return;
       try{
         anticipateWorker=new win.Worker(
@@ -627,10 +644,11 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
           anticipatedKeys.add(response.key);
           anticipateCount++;
           shell.dataset.oracleWarmFieldCount=String(anticipateCount);
-          // If the pane has reached this exact width meanwhile, install
-          // the field without interpolation or any stale-width substitution.
+          // A ready exact map can be committed BEFORE the next animation
+          // paint without waiting for another rAF. This calls the SAME
+          // reconciler; no stale map is blindly installed by a worker.
           if(desired?.key===response.key&&previous!==response.key)
-            apply();
+            reconcileReady();
           sendNext();
         });
         anticipateWorker.addEventListener("error",stopAnticipation);
@@ -639,11 +657,41 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     },900);
   }
   let lastMaterialWord=NaN,lastInputRadius=NaN;
+  // The SVG filter is one optical state: three width-exact mode5 fields
+  // AND the finite public blur word computed from those same dimensions.
+  // Never advance Gaussian sampling parameters ahead of a pending field.
+  // This also skips expensive filter invalidations when the worker has not
+  // yet produced the next exact map. No native constants are changed.
+  function commitMaterial(w,h){
+    const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
+    if(radius!==lastInputRadius){
+      shell.style.setProperty("--oracle-input-radius",radius+"px");
+      lastInputRadius=radius;
+    }
+    if(word!==lastMaterialWord){
+      const farLOD=airTextureMipLOD(word,1);
+      const nearLOD=airTextureMipLOD(word,.5);
+      const effective=word/ORACLE_FINITE_REFRACTION.surfaceScale;
+      const nearSigma=effective*.5,farSigma=effective;
+      shell.style.setProperty("--oracle-render-word",word+"px");
+      shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
+      shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
+      shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
+      blurFar.setAttribute("stdDeviation",String(farSigma));
+      blurNear.setAttribute("stdDeviation",String(nearSigma));
+      lastMaterialWord=word;
+    }
+  }
   function setMaps(request,urls){
+    // Coherent optical commit in the SAME JavaScript task as the map update.
+    commitMaterial(request.w,request.h);
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
       if(node.getAttribute("href")!==uri){
+        // Modern SVG feImage.href is supported in Chrome/WebKit/Firefox.
+        // Writing both href AND xlink:href invalidates the backdrop input
+        // twice for identical PNG bytes. Retain xlink for older engines only.
         node.setAttribute("href",uri);
-        node.setAttributeNS(NS,"xlink:href",uri);
+        if(!("href" in node))node.setAttributeNS(NS,"xlink:href",uri);
       }
       if(node.getAttribute("width")!==String(request.w))
         node.setAttribute("width",String(request.w));
@@ -652,13 +700,26 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }
     previous=request.key;
     usingSVG=true;
-    shell.classList.add("has-oracle-backdrop");
+    if(!shell.classList.contains("has-oracle-backdrop"))
+      shell.classList.add("has-oracle-backdrop");
   }
   function cacheField(request,urls){
+    if(desired&&request.h!==desired.h)return;
+    if(cacheHeight&&cacheHeight!==request.h){
+      // A resized viewport invalidates the entire old-height PNG cohort.
+      // No optical bytes are approximated or retained with wrong geometry.
+      geometryCache.clear();
+      anticipatedKeys.clear();
+      observedWidths.clear();
+    }
+    cacheHeight=request.h;
     geometryCache.delete(request.key);
     geometryCache.set(request.key,urls);
-    while(geometryCache.size>CACHE_LIMIT)
-      geometryCache.delete(geometryCache.keys().next().value);
+    while(geometryCache.size>CACHE_LIMIT){
+      const evicted=geometryCache.keys().next().value;
+      geometryCache.delete(evicted);
+      anticipatedKeys.delete(evicted);
+    }
   }
   function storeField(request,field,engine){
     const urls=field.urls||[
@@ -685,8 +746,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     worker=null;workerBusy=false;
   }
   function armEndpointWarmup(){
-    if(idleTimer)win.clearTimeout(idleTimer);
-    if(!worker||workerBusy||!desired)return;
+    // The callback reads CURRENT desired geometry. Rescheduling this idle
+    // timer on every rAF gains nothing and can starve endpoint warmup.
+    if(idleTimer||!worker||workerBusy||!desired)return;
     idleTimer=win.setTimeout(()=>{
       idleTimer=0;
       if(disposed||!worker||workerBusy||!desired||
@@ -724,17 +786,36 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
           }
           stopWorker();if(desired)syncField(desired);return;
         }
-        // Save exact completed fields even when a resize advanced; never
-        // INSTALL stale geometry against a different pane width.
-        if(field.urls && field.key!==desired?.key)
+        // Every worker output is a byte-exact RGBA map for its own key.
+        // Cache completed PNGs first, including superseded resize widths.
+        // The central frame reconciler alone decides if/when to install.
+        if(field.urls){
           cacheField(field,field.urls);
-        if(field.key===desired?.key&&!field.prefetch){
+          if(field.key===desired?.key&&!field.prefetch){
+            shell.dataset.oracleFieldEngine="worker";
+            shell.dataset.oraclePngEngine="worker";
+            shell.dataset.oracleFieldBuilds=String(
+              Number(shell.dataset.oracleFieldBuilds||0)+1);
+            reconcileReady();
+          }
+        }else if(field.key===desired?.key&&!field.prefetch){
+          // Legacy browsers without worker-side PNG encoding keep the
+          // prior exact raw-pixel main-thread fallback.
           try{storeField(desired,field,"worker");}
           catch{stopWorker();if(desired)syncField(desired);return;}
         }
         if(field.prefetch)shell.dataset.oraclePrefetchedEndpoint=field.key;
-        if(desired?.key!==previous)dispatchLatest();
-        else {armEndpointWarmup();armAnticipation();}
+        // Don't enqueue a duplicate worker job when the desired key is
+        // ALREADY in the cache awaiting a single animation-frame commit.
+        if(desired?.key!==previous&&!geometryCache.has(desired.key))
+          dispatchLatest();
+        else {
+          schedule();
+          if(!shell.classList.contains("is-sidebar-toggling")){
+            armEndpointWarmup();
+            armAnticipation();
+          }
+        }
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -750,38 +831,31 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const bounds=sidebar.getBoundingClientRect();
     const w=Math.round(bounds.width),h=Math.round(bounds.height);
     if(w<1||h<1)return;
-    const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
-    // Exact LOD word; Gaussian sigma remains the original stated browser
-    // approximation. These material parameters are NOT changed for speed.
-    const scale=ORACLE_FINITE_REFRACTION.surfaceScale;
-    if(radius!==lastInputRadius){
-      shell.style.setProperty("--oracle-input-radius",radius+"px");
-      lastInputRadius=radius;
+    if(!canUse){
+      // Preserve the original CPU/CSS blur fallback where no SVG filter is
+      // available: its blur still follows the current pane width.
+      commitMaterial(w,h);
+      return;
     }
-    if(word!==lastMaterialWord){
-      // Same exact Float32 material; avoid invalidating the entire SVG
-      // backdrop chain on widths where the blur word has not changed.
-      const farLOD=airTextureMipLOD(word,1);
-      const nearLOD=airTextureMipLOD(word,.5);
-      const effective=word/scale;
-      const nearSigma=effective*.5;
-      const farSigma=effective;
-      shell.style.setProperty("--oracle-render-word",word+"px");
-      shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
-      shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
-      shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
-      blurFar.setAttribute("stdDeviation",String(farSigma));
-      blurNear.setAttribute("stdDeviation",String(nearSigma));
-      lastMaterialWord=word;
-    }
-    if(!canUse)return;
     // Read the actual CSS corner, not a geometry-only blur radius.
     const style=win.getComputedStyle?.(sidebar);
     const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
-    if(key===previous){armEndpointWarmup();armAnticipation();return;}
+    if(shell.classList.contains("is-sidebar-toggling")&&
+       corner===24&&w>74&&w<260){
+      observedWidths.set(w,(observedWidths.get(w)||0)+1);
+    }
+    if(key===previous){
+      // No DOM writes, no timers, and no worker messages on a no-op frame.
+      // Only settled endpoints are eligible for geometry-only warmup.
+      if(!shell.classList.contains("is-sidebar-toggling")){
+        armEndpointWarmup();
+        armAnticipation();
+      }
+      return;
+    }
     const cached=geometryCache.get(key);
     if(cached){
       geometryCache.delete(key);
@@ -792,20 +866,59 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       if(anticipatedKeys.has(key))
         shell.dataset.oracleAnticipatedFieldHits=
           String(Number(shell.dataset.oracleAnticipatedFieldHits||0)+1);
-      armEndpointWarmup();
-      armAnticipation();
+      if(!shell.classList.contains("is-sidebar-toggling")){
+        armEndpointWarmup();
+        armAnticipation();
+      }
       return;
     }
     if(worker)dispatchLatest();
     else syncField(desired);
   }
-  function schedule(){
-    if(shell.classList.contains("is-sidebar-toggling"))stopAnticipation();
-    if(disposed||queued)return;
-    // Coalesce multiple observers into one exact-current-geometry frame.
-    queued=win.requestAnimationFrame(apply);
+  // A worker may finish just after one frame was scheduled, while
+  // Chromium is about to paint the next width. Commit a newly ready map
+  // synchronously through the EXACT same apply() code, cancelling the pending
+  // rAF to avoid duplicate updates. This preserves the proven responsive
+  // fast handoff and prevents an extra frame of worker-result latency.
+  function reconcileReady(){
+    if(disposed)return;
+    if(queued){win.cancelAnimationFrame(queued);queued=0;}
+    apply();
+    if(shell.classList.contains("is-sidebar-toggling"))schedule();
   }
-  const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
+  // One animation-frame coordinator for the entire glass geometry:
+  // ResizeObserver, width transitions, idle-worker results and viewport
+  // events converge on the same read/reconcile/commit. Keep a continuous
+  // rAF only during an explicit CSS width animation; other times no loop.
+  function frameStep(){
+    queued=0;
+    if(disposed)return;
+    apply();
+    if(shell.classList.contains("is-sidebar-toggling"))schedule();
+  }
+  function schedule(){
+    if(disposed||queued)return;
+    if(shell.classList.contains("is-sidebar-toggling")&&
+       (anticipateTimer||anticipateWorker))stopAnticipation();
+    queued=win.requestAnimationFrame(frameStep);
+  }
+  function onPaneResize(){
+    // ResizeObserver runs after layout, before paint. When the *exact* map
+    // for this newly laid-out width is already cached, commit immediately
+    // instead of deferring it by a full rAF. Missing sizes still use the
+    // original coalesced worker path: never stretch/crop an old PNG.
+    if(disposed)return;
+    const bounds=sidebar.getBoundingClientRect();
+    const w=Math.round(bounds.width),h=Math.round(bounds.height);
+    if(w<1||h<1)return;
+    const css=win.getComputedStyle?.(sidebar);
+    const rawCorner=Number.parseFloat(css?.borderTopRightRadius||"24");
+    const corner=Math.min(Number.isFinite(rawCorner)?rawCorner:24,w*.5,h*.5);
+    const key=w+"x"+h+"@"+corner;
+    if(key!==previous&&geometryCache.has(key))reconcileReady();
+    else schedule();
+  }
+  const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(onPaneResize):null;
   resize?.observe(sidebar);
   function onViewportResize(){
     // At the tablet→desktop breakpoint the pane can switch directly from
@@ -825,44 +938,23 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }else schedule();
   }
   win.addEventListener("resize",onViewportResize,{passive:true});
-  // A CSS transitionend event provides the earliest exact final width:
-  // do not wait for a delayed ResizeObserver/rAF after expansion.
+  // Width-transition completion is one more input to the SAME frame
+  // scheduler. The prior second rAF loop raced ResizeObserver and worker
+  // callbacks, causing redundant filter operations for a single width.
   const onWidthTransition=event=>{
-    if(event.target===sidebar&&event.propertyName==="width")apply();
+    if(event.target===sidebar&&event.propertyName==="width")schedule();
   };
   sidebar.addEventListener("transitionend",onWidthTransition);
   sidebar.addEventListener("transitioncancel",onWidthTransition);
-
-  // A ResizeObserver callback can arrive after the current frame's
-  // visible width has advanced. On explicit width transitions, check the
-  // already-encoded EXACT field for that frame in rAF. This is only cache
-  // lookup; no SDF math, PNG encoding, or backdrop capture occurs here.
-  // The normal worker/ResizeObserver route remains for uncached sizes.
-  let endpointFrame=0;
-  function watchEndpoint(){
-    endpointFrame=0;
-    if(disposed||!shell.classList.contains("is-sidebar-toggling"))return;
-    const target=shell.classList.contains("is-collapsed")?74:260;
-    const bounds=sidebar.getBoundingClientRect();
-    const w=Math.round(bounds.width),h=Math.round(bounds.height);
-    const css=win.getComputedStyle?.(sidebar);
-    const rawCorner=Number.parseFloat(css?.borderTopRightRadius||"24");
-    const corner=Math.min(Number.isFinite(rawCorner)?rawCorner:24,w*.5,h*.5);
-    const key=w+"x"+h+"@"+corner;
-    if(previous!==key&&geometryCache.has(key))apply();
-    // Stop after the final exact endpoint is installed. Keep watching only
-    // while a user-initiated transition is active and the field may advance.
-    if(Math.round(bounds.width)===target&&previous===key)return;
-    endpointFrame=win.requestAnimationFrame(watchEndpoint);
-  }
   const endpointObserver=typeof MutationObserver!=="undefined"?
     new MutationObserver(()=>{
       if(shell.classList.contains("is-sidebar-toggling")){
         stopAnticipation();
-        if(!endpointFrame)endpointFrame=win.requestAnimationFrame(watchEndpoint);
+        schedule();
       }else{
-        // A no-layout-change class removal need not fire ResizeObserver.
-        // Re-arm idle exact-map preparation when the user motion finishes.
+        // Class removal may not cause a ResizeObserver event. Reconcile the
+        // exact endpoint once, then re-arm geometry-only idle preparation.
+        schedule();
         armAnticipation();
       }
     }):null;
@@ -880,7 +972,6 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       geometryCache.clear();
       resize?.disconnect();
       endpointObserver?.disconnect();
-      if(endpointFrame)win.cancelAnimationFrame(endpointFrame);
       win.removeEventListener("resize",onViewportResize);
       sidebar.removeEventListener("transitionend",onWidthTransition);
       sidebar.removeEventListener("transitioncancel",onWidthTransition);

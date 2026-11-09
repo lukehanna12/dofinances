@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {generateOracleField,projectOracleFieldWidth,encodeOracleDisplacement,decodeOracleDisplacement}
+import {generateOracleField,projectOracleFieldWidth,encodeOracleDisplacement,decodeOracleDisplacement,predictSidebarMotionWidths}
   from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -49,4 +49,20 @@ test("Oracle values remain exact across lossless width projection and neutral di
         field+" fields must be byte-identical at width "+w);
     }
   }
+});
+
+test("both desktop motion directions prefetch only exact oracle geometry within bounded memory",async()=>{
+  const widths=predictSidebarMotionWidths();
+  assert.ok(widths.length>18&&widths.length<45);
+  for(const w of [133,201,183,151,213,121,231,103,248,86])
+    assert.ok(widths.includes(w),"Missing exact predicted collapse/expand width "+w);
+  assert.ok(widths.every(w=>Number.isInteger(w)&&w>74&&w<260));
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/const CACHE_LIMIT=32/);
+  assert.match(code,/const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24/);
+  assert.match(code,/new ResizeObserver\(onPaneResize\)/);
+  assert.match(code,/if\(key!==previous&&geometryCache\.has\(key\)\)reconcileReady\(\)/);
+  assert.match(code,/function setMaps\(request,urls\)\{[\s\S]*?commitMaterial\(request\.w,request\.h\)/);
+  assert.match(code,/if\(node\.getAttribute\("href"\)!==uri\)/);
+  assert.doesNotMatch(code,/html2canvas|getDisplayMedia|captureStream|createImageBitmap\(document/);
 });
