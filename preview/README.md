@@ -27,10 +27,14 @@ ONLY geometry masks (two refraction vector fields and one blur-level mask).
 
 - Selected shader: `glass_background_sdf_no_bleed_lph`, the target M2 G14G
   LPH family.
-- Real SDF: mode4 `supercircle_sdf`, transcribed from retained AIR SSA
-  source lines 1062–1154; the missing mode5 to real per-corner browser
-  shape is still an explicit scope limitation. The physical radius used in
-  the browser is read from the real sidebar's computed CSS right corner.
+- Real SDF: `supercircle_sdf` from AIR source lines 1062–1154,
+  used through the **mode5 four-corner selection** (AIR lines 940–1041).
+  Signed corner radii are processed through `fast_fabs` as the native
+  shader requires, even for negative private corner lanes. The browser
+  maps the actual square-left/rounded-right CSS geometry into this mode5
+  representation. This CSS-to-private-state mapping is an adapter, NOT
+  a universally proved native public-state producer. The right corner
+  radius comes from the real computed sidebar CSS.
 - AIR refraction: source lines 256–271 / 352–366, signed-distance-dependent
   inner and outer envelopes, and lines 405–417 for threshold mixing. Scalar
   projection uses the exact retained coherent diagnostic m1 case (index1,
@@ -77,10 +81,12 @@ not discard that effect on the grounds that its qualitative appearance is
 small. Other output changes are observed for holding tone and clamp limits,
 but their entire Q/compositor relations remain unsettled.
 
-The adapter is NOT a pixel-identical LPH shader translation. It does not
-reproduce the full 935-instruction function graph, mode5 per-corner route,
-Metal mipmap sampling (SVG uses Gaussian), all bleed/shadow/holding-tone
-branches, or native G14G and output Q/EDR semantics. A matching source
+The adapter is NOT a pixel-identical LPH shader translation. It now
+implements the mode5 four-corner SDF and correct inner/outer refraction-
+adjusted blur sampling distances, but does not reproduce the full
+935-instruction function graph, the native Metal mipmap sampler (SVG uses
+Gaussian approximations), all bleed/shadow/holding-tone branches, or
+G14G native and output Q/EDR semantics. A matching source
 coefficient is not proof that a browser's color-space/primitive conversion
 is identical. No visually tuned, unsupported constants should be presented
 as Apple's own constants.
@@ -98,3 +104,26 @@ fidelity and evidence exhaustion are prioritized before optimization.
 Run: `node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs`
 
 Preview: https://app-sidebar-preview.dofinances-studio.pages.dev/app/
+
+### Exhaustion checkpoint and deferred performance
+
+A source-level audit of both foreground LPH programs
+(`glass_foreground_lph` and `glass_foreground_sdf_lph`) recovered their
+directional refraction, chromatic-aberration and four-tap sampling
+operations, including the 16-field foreground ABI. **They remain disabled**
+because the retained m0/m1 background fragment uploads do not constitute
+matching foreground uniforms. Inventing the angles or aberration amount
+would violate the evidence-first requirement.
+
+The canonical Oracle's current target-locked frontier is 9 of 10 validated
+scalar/geometry families, 108 mode4/5 SDF joins, and three still-open proof
+obligations: `LG-P-SCALARS` (final blur scale), `LG-SR-NATIVE` (formal
+AIR/native equivalence), and `LG-Q-NUMERICAL` (runtime final color chain).
+The bounded resolver/precision selector and C-stage second successor are
+closed on their documented scopes. Exact browser pixel-equivalence is
+**not proven**. See `preview/ORACLE_FIDELITY_AUDIT.md` for the implemented
+and intentionally excluded source features.
+
+The expensive SVG and full-resolution geometry rendering are left
+unchanged with respect to optimization. Optimize only after source-backed
+fidelity review, as requested.
