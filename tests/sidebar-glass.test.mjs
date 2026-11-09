@@ -574,3 +574,12 @@ test("no-op animation frames cannot rearm timers or touch SVG inputs",async()=>{
   assert.match(code,/if\(word!==lastMaterialWord\)/);
   assert.match(code,/if\(radius!==lastInputRadius\)/);
 });
+
+test("exact worker result commits synchronously without a second paint-frame delay",async()=>{
+  const src=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(src,/function reconcileReady\(\)\{/);
+  assert.match(src,/if\(queued\)\{win\.cancelAnimationFrame\(queued\);queued=0;\}/);
+  assert.match(src,/function reconcileReady\(\)\{[\s\S]*?apply\(\);/);
+  assert.match(src,/if\(desired\?\.key===response\.key&&previous!==response\.key\)\s*reconcileReady\(\)/);
+  assert.match(src,/if\(field\.key===desired\?\.key&&!field\.prefetch\)\{[\s\S]*?reconcileReady\(\)/);
+});

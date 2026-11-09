@@ -634,10 +634,11 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
           anticipatedKeys.add(response.key);
           anticipateCount++;
           shell.dataset.oracleWarmFieldCount=String(anticipateCount);
-          // Any exact-width match joins the SAME frame-level scheduler.
-          // Never install a map from an idle worker callback independently.
+          // A ready exact map can be committed BEFORE the next animation
+          // paint without waiting for another rAF. This calls the SAME
+          // reconciler; no stale map is blindly installed by a worker.
           if(desired?.key===response.key&&previous!==response.key)
-            schedule();
+            reconcileReady();
           sendNext();
         });
         anticipateWorker.addEventListener("error",stopAnticipation);
@@ -758,7 +759,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
             shell.dataset.oraclePngEngine="worker";
             shell.dataset.oracleFieldBuilds=String(
               Number(shell.dataset.oracleFieldBuilds||0)+1);
-            schedule();
+            reconcileReady();
           }
         }else if(field.key===desired?.key&&!field.prefetch){
           // Legacy browsers without worker-side PNG encoding keep the
@@ -855,6 +856,17 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }
     if(worker)dispatchLatest();
     else syncField(desired);
+  }
+  // A worker may finish just after one frame was scheduled, while
+  // Chromium is about to paint the next width. Commit a newly ready map
+  // synchronously through the EXACT same apply() code, cancelling the pending
+  // rAF to avoid duplicate updates. This preserves the proven responsive
+  // fast handoff and prevents an extra frame of worker-result latency.
+  function reconcileReady(){
+    if(disposed)return;
+    if(queued){win.cancelAnimationFrame(queued);queued=0;}
+    apply();
+    if(shell.classList.contains("is-sidebar-toggling"))schedule();
   }
   // One animation-frame coordinator for the entire glass geometry:
   // ResizeObserver, width transitions, idle-worker results and viewport
