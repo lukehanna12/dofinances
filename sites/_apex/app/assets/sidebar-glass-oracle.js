@@ -482,7 +482,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     usingSVG=true;
     shell.classList.add("has-oracle-backdrop");
   }
-  function storeField(request,field){
+  function storeField(request,field,engine){
     const urls=[
       imageDataURL(win,field.inner,request.w,request.h),
       imageDataURL(win,field.outer,request.w,request.h),
@@ -495,9 +495,11 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       geometryCache.delete(geometryCache.keys().next().value);
     }
     setMaps(request,urls);
+    shell.dataset.oracleFieldEngine=engine;
+    shell.dataset.oracleFieldBuilds=String(Number(shell.dataset.oracleFieldBuilds||0)+1);
   }
   function syncField(request){
-    try{storeField(request,generateOracleField(request.w,request.h,request.corner));}
+    try{storeField(request,generateOracleField(request.w,request.h,request.corner),"main");}
     catch{usingSVG=false;shell.classList.remove("has-oracle-backdrop");}
   }
   function stopWorker(){
@@ -522,7 +524,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         // Do not spend main-thread PNG encoding time on obsolete animation
         // widths. The latest request gets an exact fresh field instead.
         if(field.key===desired?.key){
-          try{storeField(desired,field);}
+          try{storeField(desired,field,"worker");}
           catch{stopWorker();if(desired)syncField(desired);return;}
         }
         if(desired?.key!==previous)dispatchLatest();
@@ -570,6 +572,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       geometryCache.delete(key);
       geometryCache.set(key,cached);
       setMaps(desired,cached);
+      shell.dataset.oracleFieldCacheHits=
+        String(Number(shell.dataset.oracleFieldCacheHits||0)+1);
       return;
     }
     if(worker)dispatchLatest();

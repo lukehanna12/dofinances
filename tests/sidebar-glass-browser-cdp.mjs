@@ -176,6 +176,23 @@ try{
       const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath};})()');
       assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("274px"),
         "Scrim must be enabled, opaque to pointer events, and excluded from sampled sidebar "+JSON.stringify(mask));
+      // Compare actual rendered backdrop pixels with the dismissal scrim
+      // confined outside the pane versus incorrectly painted beneath it.
+      // This checks mobile darkening as an integration effect, not as
+      // scientific evidence for Apple's final output-color operator.
+      const clipped=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");s.style.clipPath="none";s.style.webkitClipPath="none";return true;})()');
+      await sleep(260);
+      const overlapped=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const dimming=comparePixels(clipped,overlapped,45,260,140,730);
+      console.log("MOBILE_SCRIM_BACKDROP_OVERLAP_DIFF",JSON.stringify(dimming));
+      await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");s.style.removeProperty("clip-path");s.style.removeProperty("-webkit-clip-path");return true;})()');
+      assert(dimming.different>250,
+        "Removing scrim overlap must measurably affect actual glass pixels");
       await physicalClick('#main-navigation .nav-link[data-route="settings"]');
       assert(await evaluate('location.hash==="#settings"&& !document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
         "Real pointer must navigate and close mobile drawer");

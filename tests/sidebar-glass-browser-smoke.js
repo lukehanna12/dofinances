@@ -68,6 +68,8 @@
         getComputedStyle(sidebar).webkitBackdropFilter || "";
       assert(property.includes("oracle-glass-native-backdrop"),
         "computed backdrop-filter points to SVG actual backdrop");
+      if(typeof Worker==="function")assert(shell.dataset.oracleFieldEngine==="worker",
+        "Chrome must calculate the exact SDF in the worker, not silently fall back");
     }else{
       assert(!hasNative,"unsupported advanced filter retains CSS blur");
       assert(getComputedStyle(sidebar).backdropFilter.includes("blur"),
@@ -107,6 +109,8 @@
         sidebar.getBoundingClientRect().width<=77,"74px real rail");
       toggle.click();await tick(900);
       assert(!shell.classList.contains("is-collapsed"),"desktop expand works");
+      assert(Number(shell.dataset.oracleFieldCacheHits||0)>=1,
+        "restored desktop size must reuse its exact cached geometry PNGs");
     }else if(w>760){
       assert(shell.classList.contains("is-collapsed"),"tablet forces icon rail");
       assert(document.getElementById("sidebar-toggle").disabled,"tablet expand disabled");
