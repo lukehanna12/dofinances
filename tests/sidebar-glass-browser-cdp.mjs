@@ -217,7 +217,11 @@ try{
         // Start with explicitly expanded sidebar (known CI state).
         function sample(t){
           const w=sidebar.getBoundingClientRect().width;
+          const active=sidebar.querySelector('.nav-stack:not([hidden]) .nav-link.active');
+          const selected=sidebar.querySelector('.glass-selection');
           list.push({ms:Math.round(t-start),width:Math.round(w),
+            rowWidth:active?.getBoundingClientRect().width||0,
+            selectionWidth:selected?.getBoundingClientRect().width||0,
             mapWidth:Number(map.getAttribute("width")),
             builds:Number(shell.dataset.oracleFieldBuilds||0),
             cacheHits:Number(shell.dataset.oracleFieldCacheHits||0)});
@@ -233,6 +237,12 @@ try{
       const compact=trace.filter((s,i,all)=>i===0||s.width!==all[i-1].width||
         s.mapWidth!==all[i-1].mapWidth||s.builds!==all[i-1].builds);
       console.log("SIDEBAR_FIELD_TRANSITION_TIMELINE",JSON.stringify(compact));
+      const visibleFrames=trace.filter(s=>s.rowWidth>0&&s.selectionWidth>0);
+      assert(visibleFrames.length>10,"Measure active selection across normal-motion transition");
+      const worstSelectionMismatch=Math.max(...visibleFrames.map(s=>Math.abs(s.rowWidth-s.selectionWidth)));
+      console.log("SIDEBAR_SELECTION_WIDTH_FRAME_DELTA",worstSelectionMismatch);
+      assert(worstSelectionMismatch<=1,
+        "Active button highlight must morph WITH its own nav row, not after width settles");
       assert(await evaluate('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'),
         "Transition trace must restore expanded state");
       await sleep(100);
@@ -289,6 +299,10 @@ try{
       await physicalClick("#mobile-nav-toggle");
       assert(await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
         "Real pointer must open mobile drawer");
+      const paneMobile=await evaluate('(()=>{const p=document.getElementById("workspace-sidebar").getBoundingClientRect();'+
+        'return {x:Math.round(p.left),y:Math.round(p.top),width:Math.round(p.width),height:Math.round(p.height)};})()');
+      assert(paneMobile.x===8&&paneMobile.y===8&&paneMobile.width===274&&paneMobile.height===828,
+        "Mobile drawer must float 8px within viewport, without scaling its oracle map "+JSON.stringify(paneMobile));
       const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath,background:css.backgroundColor,backdrop:css.backdropFilter};})()');
       assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("282px")&&
         mask.backdrop==="none"&&mask.background==="rgba(0, 0, 0, 0)",
@@ -324,6 +338,16 @@ try{
       console.log("MOBILE_PHYSICAL_POINTER_NAV_CLOSE_AND_SCRIM_PASSED");
     }
     if(width===1440){
+      const pane=await evaluate('(()=>{const p=document.getElementById("workspace-sidebar").getBoundingClientRect();'+
+        'const banner=getComputedStyle(document.querySelector(".topbar"),"::before");'+
+        'return {x:Math.round(p.left),y:Math.round(p.top),width:Math.round(p.width),'+
+        'height:Math.round(p.height),bannerWidth:parseFloat(banner.width),'+
+        'bannerPosition:banner.position};})()');
+      assert(pane.x===8&&pane.y===8&&pane.width===260&&pane.height===884,
+        "Pane must keep exact optical dimensions with 8px outer inset "+JSON.stringify(pane));
+      assert(pane.bannerPosition==="fixed"&&Math.abs(pane.bannerWidth-1440)<1,
+        "Top blur banner must extend across viewport behind sidebar "+JSON.stringify(pane));
+      const glassSample=[pane.x+190,pane.x+260,pane.y+70,pane.y+820];
       const full=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
       },90000)).data);
@@ -339,7 +363,7 @@ try{
       const blur=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
       },90000)).data);
-      const diff=comparePixels(full,blur,190,260,70,820);
+      const diff=comparePixels(full,blur,...glassSample);
       console.log("ACTUAL_GLASS_VS_BLUR_PIXEL_DIFF",JSON.stringify(diff));
       assert(diff.different>=200&&diff.max>=4,
         "Real scene: refraction must be visibly distinct from a blur-only control");
@@ -373,7 +397,7 @@ try{
       const blurGrid=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
       },90000)).data);
-      const patternDiff=comparePixels(glassGrid,blurGrid,190,260,70,820);
+      const patternDiff=comparePixels(glassGrid,blurGrid,...glassSample);
       console.log("CONTROLLED_PAGE_GRID_REFRACTION_DIFF",JSON.stringify(patternDiff));
       // The previous >=2 mean gate was calibrated to a wrong source-over
       // compositing step that attenuated the alternate branch twice.
