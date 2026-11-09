@@ -177,8 +177,29 @@ try{
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
 }finally{
   try{socket?.close();}catch{}
-  try{chrome.kill("SIGTERM");}catch{}
+  // Chrome's renderer children can still be writing the profile after the
+  // top-level process receives SIGTERM. Wait for exit and retry removal;
+  // ENOTEMPTY here was a CI CLEANUP race, not an optical test failure.
+  const exit=chrome.exitCode===null?
+    new Promise(resolve=>chrome.once("exit",resolve)):Promise.resolve();
+  try{if(chrome.exitCode===null)chrome.kill("SIGTERM");}catch{}
+  await Promise.race([exit,sleep(3500)]);
+  if(chrome.exitCode===null){
+    try{chrome.kill("SIGKILL");}catch{}
+    await Promise.race([exit,sleep(2000)]);
+  }
   await sleep(300);
-  try{rmSync(profile,{recursive:true,force:true});}
-  catch(e){console.error("CDP profile cleanup failed",e.message);process.exitCode=1;}
+  let removed=false;
+  for(let attempt=0;attempt<8&&!removed;attempt++){
+    try{
+      rmSync(profile,{recursive:true,force:true,maxRetries:12,retryDelay:150});
+      removed=!existsSync(profile);
+    }catch(e){
+      if(attempt===7){
+        console.error("CDP profile cleanup failed",e.message);
+        process.exitCode=1;
+      }else await sleep(250);
+    }
+  }
+  if(!removed){console.error("CDP profile remains:",profile);process.exitCode=1;}
 }
