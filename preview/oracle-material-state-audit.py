@@ -76,3 +76,21 @@ for ix,row in enumerate(joined.get("rows",[])[:8]):
    print(" ARRAY",k,len(v),"FIRST",str(v[0])[:260] if v else "-",flush=True)
   elif isinstance(v,dict):
    print(" MAPPING",k,list(v)[:18],"FIRST",str(next(iter(v.items()),None))[:260],flush=True)
+
+print("=== LIVE MODE4/5 SDF48 DISTINCT ===",flush=True)
+distinct={}
+for row in joined["rows"]:
+ src=row["producer_return"]["cpu48_hex"]
+ dst=row["upload"]["source48_hex"]
+ binding=row["draw_binding"]
+ case=row.get("parameter_case")
+ raw=bytes.fromhex(src)
+ assert len(raw)==48
+ assert src==dst
+ assert binding["bytes"].lower().startswith(src.lower())
+ mode=struct.unpack_from("<f",raw,8)[0]
+ key=(mode,src)
+ record=distinct.setdefault(key,dict(mode=mode,cases=[],property=row["property"],sdf=list(struct.unpack("<12f",raw)),cpu48_sha256=row["producer_return"]["cpu48_sha256"]))
+ record["cases"].append(case)
+for item in distinct.values():
+ print("DISTINCT",json.dumps(item,separators=(",",":")),flush=True)
