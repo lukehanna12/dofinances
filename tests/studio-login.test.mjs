@@ -16,19 +16,36 @@ test("Studio root is the only React entrypoint; the apex /login reuses its build
   assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
 });
 
-test("Studio root is intentionally blank, while /login retains the full original auth build", async () => {
-  const blank = await load("../studio/blank.html");
-  const workflow = await load("../.github/workflows/site.yml");
-  assert.match(blank, /studio-empty-v1/);
-  assert.match(blank, /<title>Studio · DoFinances<\/title>/);
-  assert.match(blank, /<body><\/body>/);
-  assert.doesNotMatch(blank, /Sign in|Auth3|<form|<button|<script/i);
+test("Studio root displays isolated Liquid Glass workspace while apex /login keeps Auth-3", async () => {
+  const [page,bootstrap,glassCSS,glassJS,oracle,workflow] = await Promise.all([
+    load("../studio/sidebar/index.html"),
+    load("../studio/sidebar/preview-bootstrap.js"),
+    load("../studio/sidebar/sidebar-glass.css"),
+    load("../studio/sidebar/sidebar-glass.js"),
+    load("../sites/_apex/app/assets/sidebar-glass-oracle.js"),
+    load("../.github/workflows/site.yml")
+  ]);
+  assert.match(page, /<title>Studio · DoFinances<\/title>/);
+  assert.match(page, /id="workspace-sidebar"/);
+  assert.match(page, /sidebar-glass\.css/);
+  assert.match(page, /src="\/app\/assets\/preview-bootstrap\.js"/);
+  assert.doesNotMatch(page, /src="\/app\/assets\/dashboard\.js"/);
+  assert.match(bootstrap, /initWorkspaceNavigation\(\)/);
+  assert.match(bootstrap, /initLiquidGlassSidebar\(\)/);
+  assert.match(bootstrap, /field\.disabled=true|field\.disabled = true/);
+  assert.doesNotMatch(bootstrap, /fetch\(|api\/auth|location\.replace/);
+  assert.match(glassCSS, /glass-scene-neutral|glass-scene-prism/);
+  assert.match(glassJS, /glass-scene-toggle/);
+  assert.match(oracle, /function onPaneResize\(\)/);
   const pages = workflow.split("  deploy:\n")[1].split("\n  deploy-host-router:")[0];
   const hostRouter = workflow.split("  deploy-host-router:\n")[1].split("\n  smoke:")[0];
-  assert.match(pages, /cp studio\/blank\.html dist\/index\.html/);
+  assert.match(pages, /cp studio\/sidebar\/index\.html dist\/index\.html/);
+  assert.match(pages, /cp studio\/sidebar\/sidebar-glass\.css dist\/app\/assets\/sidebar-glass\.css/);
+  assert.match(pages, /cp studio\/sidebar\/preview-bootstrap\.js dist\/app\/assets\/preview-bootstrap\.js/);
+  assert.match(pages, /test ! -e dist\/app\/assets\/dashboard\.js/);
   assert.match(hostRouter, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
-  assert.doesNotMatch(hostRouter, /cp studio\/blank\.html/);
-  assert.match(workflow, /grep -Fq 'studio-empty-v1' "\$studio_body"/);
+  assert.doesNotMatch(hostRouter, /studio\/sidebar|studio\/blank/);
+  assert.match(workflow, /grep -Fq 'preview-bootstrap\.js' "\$studio_body"/);
   assert.match(workflow, /grep -Fq 'Sign in · Dofinances' "\$body"/);
 });
 

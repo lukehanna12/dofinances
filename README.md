@@ -6,7 +6,7 @@ GitHub-based development and automatic deployment for `dofinances.com`, `www.dof
 
 - **Apex and first-level wildcard subdomains:** Cloudflare Worker `dofinances-host-router` with Workers Static Assets in `sites/`.
 - **www:** same Worker; independent files in `sites/_www/` override paths, and otherwise the URL redirects to the apex.
-- **stu:** React and Vite project on Cloudflare Pages `dofinances-studio`, sourced from `src/`; its root remains the Auth-3 preview, but `/login` is removed.
+- **stu:** React and Vite project on Cloudflare Pages `dofinances-studio`, sourced from `src/`; its root and `/app/` expose the standalone Liquid Glass workspace demo; `/login` remains 404.
 - **Apex `/login`:** email/password sign-in and registration using the Auth-3 React interface, packaged from the Studio build artifact into the Worker assets during CI/CD.
 - **Apex `/app`:** a protected dashboard served only after the Worker checks the HTTP-only session cookie.
 - **Account state:** a new SQLite-backed Cloudflare Durable Object owned by this Worker. This auth path does not use D1, KV, or R2.
@@ -28,13 +28,13 @@ Commit files to `main` in these directories:
 
 Removing a file and committing it makes that page return 404 (or, for `www`, fall back to its apex redirect). No DNS additions are required for new first-level subdomain names. Unknown paths/hosts return HTTP 404.
 
-For Studio, edit `src/` and `public/` and push `main`; Vite builds the React application. CI also copies the compiled `dist/index.html` and hashed assets into the Worker deployment for `https://dofinances.com/login` and `/login/`. This avoids maintaining two independent login implementations. A narrowly scoped Pages Function at `functions/login.js` enforces HTTP 404 on both removed Studio `/login` URL variants; `public/_routes.json` limits Function invocation to those paths. The top-level `public/404.html` provides a static 404 for other unknown routes.
+For the Studio sidebar, edit `studio/sidebar/` and the shared `sites/_apex/app` assets, then push `main`; CI assembles the standalone static Pages application. `src/` still produces the Auth-3 React/Vite build for apex `/login` only. CI also copies the compiled `dist/index.html` and hashed assets into the Worker deployment for `https://dofinances.com/login` and `/login/`. This avoids maintaining two independent login implementations. A narrowly scoped Pages Function at `functions/login.js` enforces HTTP 404 on both removed Studio `/login` URL variants; `public/_routes.json` limits Function invocation to those paths. The top-level `public/404.html` provides a static 404 for other unknown routes.
 
 ## Email/password authentication
 
 The Worker handles account registration, email verification, password recovery, MFA enrollment/challenges, session logout, and account deletion under `/api/auth/*`. **Mailtrap is the selected transactional email provider** for the verification and recovery messages; no other transactional provider is configured. Accounts are stored in the Worker-bound `AuthStore` Durable Object with individually salted PBKDF2-SHA256 password hashes, hashed revocable session tokens, server-side rate limits, and seven-day `__Host-` HttpOnly Secure SameSite=Lax cookies. All state-changing requests require the exact apex Origin.
 
-The public home page links to `/login`, `/login?mode=signup`, and `/app`. An unauthenticated `/app` visit redirects to `/login`. The Studio root still uses the same form design and directs visitors to the canonical apex authentication origin.
+The public home page links to `/login`, `/login?mode=signup`, and `/app`. An unauthenticated `/app` visit redirects to `/login`. The Studio root presents the standalone Liquid Glass workspace preview with account controls deliberately disabled; real authentication remains at the apex.
 
 **Password hashing compatibility:** Cloudflare currently caps native PBKDF2 iterations at 100,000. This initial system uses 100,000 individually salted PBKDF2-SHA256 iterations, below the stronger modern guidance; move to a reviewed, memory-hard password KDF before accepting sensitive financial data.
 
@@ -61,9 +61,9 @@ and password reset use it beneath a **public** account-security stylesheet so
 styles load even when the user has no active session. The public
 homepage uses `assets/site.css` for layout on the same tokens.
 
-The Studio React login uses the **same source CSS**, bundled from
-`src/styles.css` by Vite. This compiled experience is deployed both to
-`stu.dofinances.com/` and `dofinances.com/login`. Its default is dark, with
+The Auth-3 React login uses the **same source CSS**, bundled from
+`src/styles.css` by Vite and published only at `dofinances.com/login`.
+The Studio Pages site uses shared workspace CSS and the standalone sidebar demo instead. Its default is dark, with
 the existing explicit light-mode toggle preserved. The standalone Studio 404
 uses equivalent fallback styling so the error page is still legible without
 loading application JavaScript. The `www` host redirects to the apex for
@@ -100,7 +100,7 @@ Provider configuration is documented in [Federated authentication](docs/federate
 
 ## CI/CD and verification
 
-[`site.yml`](.github/workflows/site.yml) builds and tests on pushes to `main`; with `DEPLOY_ENABLED=true`, it deploys **both** studio Pages and the Worker. Cloudflare Workers uploads site files directly from `sites/`, without D1, R2, or local Mac build artifacts.
+[`site.yml`](.github/workflows/site.yml) builds and tests on pushes to `main`; with `DEPLOY_ENABLED=true`, it deploys **both** the standalone Studio Pages preview and the authenticated apex Worker. The separate Vite artifact supplies apex `/login` without exposing authentication controls on Studio. Cloudflare Workers uploads site files directly from `sites/`, without D1, R2, or local Mac build artifacts.
 
 [`verify-git-sites.yml`](.github/workflows/verify-git-sites.yml) is a separate manual end-to-end verification workflow.
 
