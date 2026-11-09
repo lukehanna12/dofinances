@@ -103,3 +103,26 @@ test("GitHub identity uses immutable numeric ID and only verified email addresse
     assert.equal(identity.verified,true);
   }finally{globalThis.fetch=originalFetch;}
 });
+
+test("Google invalid_client and invalid_grant fail with public-safe, specific codes",async()=>{
+  const config=federationProvider(credentials,"google"),txn=newOAuthTransaction();
+  const originalFetch=globalThis.fetch;
+  try{
+    for(const [upstreamError,publicCode] of [
+      ["invalid_client","oauth_client_rejected"],["invalid_grant","oauth_code_rejected"],
+      ["invalid_request","oauth_token_rejected"]
+    ]){
+      globalThis.fetch=async()=>Response.json({error:upstreamError,
+        error_description:"Do not disclose this provider response"},{status:400});
+      await assert.rejects(
+        exchangeFederatedIdentity(config,"one-time-auth-code",txn),
+        err=>err.code===publicCode && !err.message.includes("provider response")
+      );
+    }
+  } finally{globalThis.fetch=originalFetch;}
+});
+test("unknown providers stay disabled without exposing any OAuth configuration",()=>{
+  assert.equal(federationProvider(credentials,"chatgpt"),null);
+  assert.equal(federationProvider(credentials,"apple"),null);
+  assert.deepEqual(Object.keys(federationAvailability(credentials)).sort(),["github","google"]);
+});
