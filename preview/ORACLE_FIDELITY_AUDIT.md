@@ -101,3 +101,22 @@ compiler runs exceeded the connected execution gateway's 200% CPU ceiling
 before native code started. The temporary Mac files were cleaned and verified
 absent. The canonical Oracle stores these calculations as **derived finite
 predictions**, not new primary evidence or unrestricted proof closure.
+
+## November 9: source/surface mismatch correction
+
+The preview had three distinct integration regressions unrelated to
+global Oracle closure: (1) the backdrop artwork sat on pseudo-elements
+within an isolated shell, not in a shared page stacking layer; (2) the
+displacement field forcibly zeroed x<width/2 in addition to the recorded
+SDF boundary; and (3) the private m1 diagnostic face matrix was applied to
+every public regular-style browser pixel, darkening the interface with a
+material/color choice not established for this sidebar.
+
+Corrections: use body-level full-screen wallpaper under transparent workspace,
+remove local sidebar/root isolation, eliminate the arbitrary x<width/2
+displacement clamp, and use a documented color-pass-through stage while
+retaining the exact private diagnostic matrix for source tests. SVG sampling
+continues to operate on the genuine browser backdrop. Neither change claims
+native regular-style/Q pixel equivalence. Browser and static regressions
+now check backdrop layering, visible full-panel SDF evaluation, and absence
+of the private diagnostic darkening transform.

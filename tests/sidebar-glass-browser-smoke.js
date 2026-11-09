@@ -30,8 +30,11 @@
     const maps=[...filter.querySelectorAll("feImage")];
     assert(maps.length===3,"two refraction vector fields and one blur-distribution field");
     const blend=filter.querySelector('feColorMatrix[result="faceMaterial"]');
-    assert(!!blend&&blend.getAttribute("values").trim().split(/\s+/).length===20,
-      "retained Oracle face-color half4 matrix applied to source backdrop");
+    const face=blend?.getAttribute("values")?.trim().split(/\s+/).map(Number);
+    assert(!!face&&face.length===20,"four-by-five public color transform");
+    assert(face.join(",")===[
+      1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0
+    ].join(","),"private diagnostic darkening matrix must not be applied to public sidebar");
     const nearI=filter.querySelector('feColorMatrix[result="innerNearCoverage"]');
     const nearO=filter.querySelector('feColorMatrix[result="outerNearCoverage"]');
     assert(!!nearI&&!!nearO,"native inner/outer blur-distance masks are independent");
@@ -64,9 +67,17 @@
       assert(getComputedStyle(sidebar).backdropFilter.includes("blur"),
         "unsupported browser retains simple blur");
     }
-    assert(!!getComputedStyle(shell,"::before").backgroundImage &&
-      getComputedStyle(shell,"::before").backgroundImage!=="none",
-      "full screen wallpaper belongs to PAGE, not pane");
+    const scene=getComputedStyle(document.body,"::before");
+    const overlay=getComputedStyle(document.body,"::after");
+    assert(scene.backgroundImage!=="none"&&overlay.backgroundImage!=="none",
+      "one physical page-level wallpaper is behind both content and sidebar");
+    const shellColor=getComputedStyle(shell).backgroundColor;
+    assert(shellColor==="rgba(0, 0, 0, 0)"||shellColor==="transparent",
+      "glass host shell must not introduce an opaque dark background");
+    assert(getComputedStyle(sidebar).isolation==="auto",
+      "sidebar must not isolate itself from the real page backdrop");
+    assert(getComputedStyle(shell).isolation==="auto",
+      "workspace root must not isolate the backdrop away from page artwork");
     const active=sidebar.querySelector('.nav-stack:not([hidden]) .nav-link.active');
     assert(!!active,"real active nav item exists");
     const capsule=sidebar.querySelector(".glass-selection");

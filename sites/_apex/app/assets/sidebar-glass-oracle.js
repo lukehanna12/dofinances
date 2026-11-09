@@ -159,6 +159,19 @@ export function oracleFaceColorMatrixValues(material=ORACLE_FINITE_REFRACTION){
 }
 
 /*
+ * Do not apply the retained PRIVATE m1 diagnostic face matrix as if it
+ * described the public regular-style sidebar. The native matrix is intact in
+ * oracleFaceColorMatrixValues() for source tests, but the appropriate public
+ * color-selection and Q/output path have not been captured. We must pass
+ * the browser's actual backdrop colors through unchanged instead of
+ * implicitly darkening them using a matrix from an unrelated material.
+ * This is an explicitly uncalibrated color-stage bypass, not a claim that
+ * native Liquid Glass uses an identity matrix.
+ */
+export const SIDEBAR_PUBLIC_COLOR_PASSTHROUGH =
+  "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0";
+
+/*
  * Transcription of retained _ZN2CA3OGL5Metal12ShaderUtils_IDhE15supercircle_sdf...
  * for the mode4 finite SDF path. The constants are decoded EXACTLY from
  * LLVM/AIR f64 literals, not artist-chosen. Native GPU half precision is
@@ -312,7 +325,11 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const i=(y*width+x)*4;
     const dst=Math.min(x,width-x-.5,y,height-y-.5);
-    if(x<width*.5 || dst>activeSpan){
+    // The actual mode5 SDF is a FOUR-corner shape. The previous x<width/2
+    // shortcut erased every displacement sample in the left half of the
+    // pane, even at its upper/lower outline; that shortcut has no AIR
+    // provenance. Keep only the proven distance-domain optimization.
+    if(dst>activeSpan){
       inner[i]=outer[i]=128;
       inner[i+1]=outer[i+1]=128;
       inner[i+2]=outer[i+2]=0;
@@ -426,13 +443,15 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     operator:"out",result:"innerPart"});
   const join=makeSVG(doc,"feComposite",{
     in:"outerPart",in2:"innerPart",operator:"over",result:"composited"});
-  // AIR base lines 479–525: face_opacity>0 transforms source.rgb/alpha
-  // through three half4 rows plus biases, then mixes back to the input.
-  // The retained live binding has face_opacity exactly 1.0, so we use the
-  // observed three half4 rows directly; extended-sRGB/Q output is not closed.
+  // The m1 PRIVATE diagnostic face matrix is a legitimate source value,
+  // but not the proven PUBLIC regular-style color/material selection.
+  // Applying it across arbitrary browser sRGB page content darkened the
+  // entire sidebar. Preserve original backdrop colors until a matching
+  // public-state/Q mapping exists; keep the diagnostic matrix separately
+  // available for evidence tests.
   const face=makeSVG(doc,"feColorMatrix",{
     in:"composited",type:"matrix",
-    values:oracleFaceColorMatrixValues(),result:"faceMaterial"});
+    values:SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,result:"faceMaterial"});
   filter.append(blurFar,blurNear,blurMap,innerNearAlpha,outerNearAlpha,
     innerNearPart,innerFarPart,innerBlur,outerNearPart,outerFarPart,outerBlur,
     innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,

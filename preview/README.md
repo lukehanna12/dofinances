@@ -9,6 +9,36 @@ Preview address: https://app-sidebar-preview.dofinances-studio.pages.dev/app/
 The live site uses production branch `main`. The untouched baseline is saved as commit `7cced4fa98bac32261390cc256158eb2624a2ee3` and branch `backup/app-sidebar-before-experiments-20261108`. To discard an experiment, leave `main` untouched and abandon this branch.
 
 
+## November 9: background visibility and material-color regression repair
+
+The browser preview previously placed its wallpaper on `#workspace-shell::before`
+and `::after`, while both `#workspace-shell` and the sidebar used
+`isolation:isolate`. This made the intended full-screen scene dependent on
+nested backdrop/stacking boundaries. The continuous single wallpaper is
+now painted behind the workspace on **body-level** pseudo-elements; the
+workspace background is transparent and the sidebar no longer isolates
+itself from the scene. No screenshot or duplicate texture is embedded in
+the sidebar.
+
+The SDF geometry generator also mistakenly zeroed **the whole left half**
+of the refraction vector fields. That ad hoc half-pane bailout is removed:
+signed-distance optimization alone determines inactive interior pixels.
+The mode5 top and bottom outlines can now bend the actual page backdrop
+across the panel, including its left half.
+
+Finally, the previously selected `diagnostic_m1_b4.75_z1.0` face-color
+matrix is a *private diagnostic* and has no source-grounded claim to be
+the public regular-style sidebar's matrix. Applying it to all browser sRGB
+pixels was visually darkening the panel. It remains retained and exactly
+testable in `oracleFaceColorMatrixValues()`, but the public sidebar now
+uses **color pass-through** until a matching public-state/color-chain
+mapping exists. This is a deliberate open-boundary approximation, not a
+claim that Apple uses an identity face matrix.
+
+The actual LPH refraction envelopes, independently computed blur ramps,
+sidebar finite blur projection, four-corner SDF, and existing /app
+navigation remain intact. Performance optimization remains deferred.
+
 ## Evidence-driven Oracle port: current stage
 
 The preview uses the **actual** `/app` document and `workspace-nav.js`.
@@ -47,10 +77,11 @@ ONLY geometry masks (two refraction vector fields and one blur-level mask).
   **live backdrop Gaussian** levels independently for each path.
   Gaussian sigma approximates the native mip footprint; the relative
   distribution is from the actual source.
-- Face color: `face_cm0..2` directly from the SAME 264-byte uploaded
-  diagnostic state, applied as a 4×5 SVG color matrix after refraction.
-  The observed `face_opacity` is 1 for this state. The browser has sRGB
-  rather than the native extended-sRGB/EDR working/output chain.
+- Face color: `face_cm0..2` from the same *private diagnostic* upload
+  remains retained and tested. It is **not** installed as the public
+  regular-style face-color matrix: the public same-case color selection
+  and Q/EDR conversion are not proved, so the preview uses an explicit
+  sRGB color pass-through rather than darkening arbitrary page pixels.
 - Native public style radius: exact Double-order interpolation with all 52
   independent retained regular/clear cases passing. The native Float32
   blur-word producer is separately retained, but composing it with the

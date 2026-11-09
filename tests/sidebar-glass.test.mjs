@@ -7,6 +7,7 @@ import {
   ORACLE_TARGET,ORACLE_FINITE_REFRACTION,nativePublicBlurRadius,
   observedBlurWord,airRefractionEnvelope,airThresholdMix,airSupercircleSDF,
   airBlurDistribution,airTextureMipLOD,oracleFaceColorMatrixValues,
+  SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,
   airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField,
   ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
@@ -182,7 +183,10 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   assert.match(js,/innerDistance=f32\(p\.distance\+innerAmount\)/);
   assert.match(js,/outerDistance=f32\(p\.distance\+outerAmount\)/);
   assert.match(js,/in:"composited",type:"matrix"/);
-  assert.match(js,/oracleFaceColorMatrixValues\(\)/);
+  assert.match(js,/values:SIDEBAR_PUBLIC_COLOR_PASSTHROUGH/);
+  assert.doesNotMatch(js,/values:oracleFaceColorMatrixValues\(\),result:"faceMaterial"/);
+  assert.equal(SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,
+    "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0");
   assert.match(js,/airSupercircleSDF/);
   assert.match(js,/1\.5286649465560913/);
   assert.match(js,/const t=clamp\(f32\(f32\(-distance\)\*f32\(invHeight\)\),0,1\)/);
@@ -193,6 +197,21 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   assert.doesNotMatch(wrapper,/createSceneBackedGlass|glass-optics|glass-wallpaper/);
   assert.doesNotMatch(css,/\.glass-wallpaper|\.glass-optics|has-refractive-glass/);
   assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|sendBeacon|\.cookie|localStorage/);
+});
+
+test("full SDF border and shared page backdrop are not suppressed by shell isolation",async()=>{
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  const js=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::before/);
+  assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::after/);
+  assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\.glass-scene-neutral\)::before/);
+  assert.match(css,/\.shell\.liquid-glass-preview \{[^}]*isolation:auto;[^}]*background:transparent/s);
+  assert.match(css,/\.shell\.liquid-glass-preview \.sidebar \{[^}]*isolation:auto;/s);
+  assert.doesNotMatch(js,/if\(x<width\*\.5 \|\| dst>activeSpan\)/);
+  const f=generateOracleField(260,320,24);
+  const topQuarter=(1*260+65)*4;
+  assert.ok(f.inner[topQuarter]!==128||f.inner[topQuarter+1]!==128,
+    "mode5 top/left-side corner region must participate in refraction");
 });
 
 test("fallbacks are defined for reduced transparency, forced colors and reduced motion",async()=>{
