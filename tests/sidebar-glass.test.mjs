@@ -44,7 +44,8 @@ test("all 52 held-out public regular/clear radius values match the exact operati
   assert.equal(nativePublicBlurRadius("regular",74,900),2+((74-48)/112)*2);
   assert.equal(nativePublicBlurRadius("clear",260,900),10);
   assert.throws(()=>nativePublicBlurRadius("prominent",260,900),RangeError);
-  assert.throws(()=>nativePublicBlurRadius("regular",0,200),RangeError);
+  assert.equal(nativePublicBlurRadius("regular",0,200),2);
+  assert.throws(()=>nativePublicBlurRadius("regular",-1,200),RangeError);
 });
 
 test("native selected blur word retains the recorded float32 evaluation sequence",()=>{

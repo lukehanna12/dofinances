@@ -44,8 +44,8 @@ const f32=Math.fround;
 
 export function nativePublicBlurRadius(style,width,height){
   if(style!=="regular"&&style!=="clear")throw new RangeError("Only public regular/clear styles");
-  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)
-    throw new RangeError("Positive finite public frame dimensions required");
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<0||height<0)
+    throw new RangeError("Nonnegative finite public frame dimensions required");
   // Exact Double operation order from 52 independent held-out public cases;
   // not a universal upstream source theorem.
   const m=Math.min(width,height);
