@@ -7,9 +7,25 @@ export function initWorkspaceScroll(doc=document,win=window) {
   if(!scroll||!doc.body?.classList)return {sync(){},reset(){}};
   const maxScroll=()=>Math.max(0,scroll.scrollHeight-scroll.clientHeight);
   const atEnd=()=>maxScroll()-scroll.scrollTop<=1.5;
-  const sync=()=>doc.body.classList.toggle("workspace-at-end",atEnd());
+  const syncNow=()=>doc.body.classList.toggle("workspace-at-end",atEnd());
+  let queued=false;
+  const sync=()=>{
+    // Reading scrollHeight immediately after toggling multiple hidden views
+    // forces a costly synchronous layout on every navigation. Measure once
+    // in the next frame, sharing the result with scroll and ResizeObserver.
+    if(typeof win.requestAnimationFrame!=="function"){
+      syncNow();
+      return;
+    }
+    if(queued)return;
+    queued=true;
+    win.requestAnimationFrame(()=>{
+      queued=false;
+      syncNow();
+    });
+  };
   const reset=()=>{
-    scroll.scrollTo?.({top:0,left:0,behavior:"instant"});
+    if(scroll.scrollTop>0)scroll.scrollTo?.({top:0,left:0,behavior:"instant"});
     sync();
   };
   scroll.addEventListener("scroll",sync,{passive:true});
