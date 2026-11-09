@@ -30,5 +30,11 @@
   "vars": {
     "AUTH_EMAIL_FROM": "noreply@dofinances.com"
   },
-  "keep_vars": true
+  "keep_vars": true,
+  "services": [
+    {
+      "binding": "LIBRARY_III",
+      "service": "library-iii"
+    }
+  ]
 }

@@ -1,0 +1,70 @@
+/* Page-wide wallpaper and dark frosted navigation shared by the production
+ * workspace and standalone Studio. No duplicated image is painted in the
+ * sidebar: its native backdrop sampler sees this real page-level artwork. */
+:root {--workspace-header-height:66px;--workspace-content-leading:57px}
+body:has(> #workspace-shell) {
+  position:relative;
+  isolation:isolate;
+  background:var(--ui-canvas,#000);
+}
+body:has(> #workspace-shell)::before,
+body:has(> #workspace-shell.liquid-glass-preview)::before,
+body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::before,
+body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  width:100%;
+  height:calc(var(--workspace-header-height) * 3);
+  z-index:0;
+  pointer-events:none;
+  /* Fades only near the bottom, keeping the wide crop recognizable. */
+  background-image:
+    linear-gradient(180deg,rgba(0,0,0,.12) 0%,rgba(0,0,0,.10) 58%,rgba(0,0,0,.30) 78%,#000 100%),
+    var(--workspace-wallpaper-image,none);
+  background-size:cover,cover;
+  background-position:center,var(--workspace-wallpaper-position,center 46%);
+  background-repeat:no-repeat;
+}
+body:has(> #workspace-shell.liquid-glass-preview)::after {content:none}
+body:has(> #workspace-shell) .shell,
+body:has(> #workspace-shell) .main,
+body:has(> #workspace-shell.liquid-glass-preview) .main {
+  background:transparent;
+}
+body:has(> #workspace-shell) .topbar {
+  height:var(--workspace-header-height);
+  min-height:var(--workspace-header-height);
+  background:transparent;
+  border-bottom:0;
+  isolation:isolate;
+}
+body:has(> #workspace-shell) .topbar::before {
+  content:"";
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:var(--workspace-header-height);
+  z-index:-1;
+  pointer-events:none;
+  background:rgba(6,8,11,.60);
+  -webkit-backdrop-filter:blur(18px) saturate(120%);
+  backdrop-filter:blur(18px) saturate(120%);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+body:has(> #workspace-shell) .content {
+  position:relative;
+  background:transparent;
+  padding-top:calc(var(--workspace-header-height) * 2 + var(--workspace-content-leading));
+  min-height:calc(100dvh - var(--workspace-header-height));
+}
+@media (max-width:760px) {
+  :root {--workspace-header-height:63px;--workspace-content-leading:40px}
+}
+@media (max-width:480px) {
+  :root {--workspace-content-leading:31px}
+}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))) {
+  body:has(> #workspace-shell) .topbar::before {background:rgba(6,8,11,.88)}
+}
