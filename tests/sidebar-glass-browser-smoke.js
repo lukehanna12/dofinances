@@ -103,8 +103,10 @@
     assert(!!active,"real active nav item exists");
     const capsule=sidebar.querySelector(".glass-selection");
     assert(!!capsule,"selection indicator follows actual rows");
-    const capsuleWidth=parseFloat(capsule.style.getPropertyValue("--glass-selection-width"));
-    assert(capsuleWidth>30&&capsuleWidth<250,"capsule stays within nav row width");
+    const capsuleWidth=capsule.getBoundingClientRect().width;
+    const activeWidth=active.getBoundingClientRect().width;
+    assert(capsuleWidth>30&&capsuleWidth<250&&Math.abs(capsuleWidth-activeWidth)<1,
+      "selection shape must track the actual row continuously");
     const scene=document.querySelector(".glass-scene-toggle");
     assert(!!scene,"scene switch is present");
     scene.click();await tick(100);

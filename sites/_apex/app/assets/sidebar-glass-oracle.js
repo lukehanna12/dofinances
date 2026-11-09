@@ -700,8 +700,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     else syncField(desired);
   }
   function schedule(){
-    if(disposed)return;
-    if(queued)win.cancelAnimationFrame(queued);
+    if(disposed||queued)return;
+    // Coalesce multiple observers into one exact-current-geometry frame.
     queued=win.requestAnimationFrame(apply);
   }
   const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;

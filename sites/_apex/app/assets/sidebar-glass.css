@@ -68,10 +68,28 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   background:linear-gradient(90deg,rgba(7,13,17,.10),rgba(6,10,14,.23) 75%,rgba(6,10,14,.35));
 }
 .shell.liquid-glass-preview .topbar {
+  /* Keep header controls in-flow while its blur banner spans the viewport,
+     including the area behind the foreground glass sidebar. */
+  background:transparent;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  border-bottom:0;
+  isolation:isolate;
+}
+.shell.liquid-glass-preview .topbar::before {
+  content:"";
+  position:fixed;
+  top:0;left:0;
+  width:100vw;height:66px;
+  z-index:-1;
+  pointer-events:none;
   background:rgba(12,18,22,.33);
   -webkit-backdrop-filter:blur(10px);
   backdrop-filter:blur(10px);
   border-bottom:1px solid rgba(245,248,252,.065);
+}
+@media(max-width:760px){
+  .shell.liquid-glass-preview .topbar::before{height:63px;}
 }
 .shell.liquid-glass-preview .content {position:relative;background:transparent;}
 .shell.liquid-glass-preview .feature-card,
@@ -88,11 +106,14 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
 .shell.liquid-glass-preview .sidebar {
   z-index:12;
   isolation:auto;
+  /* Exact original optical dimensions; the breathing room is OUTSIDE. */
+  margin:8px 0 8px 8px;
+  top:8px;
+  height:calc(100dvh - 16px);
   background:var(--glass-pane);
   color:var(--glass-ink);
-  border:0;
-  border-right:1px solid rgba(255,255,255,.21);
-  border-radius:0 24px 24px 0;
+  border:1px solid rgba(255,255,255,.21);
+  border-radius:24px;
   -webkit-backdrop-filter:blur(var(--oracle-backdrop-blur));
   backdrop-filter:blur(var(--oracle-backdrop-blur));
   box-shadow:
@@ -181,7 +202,8 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   position:absolute;
   top:0;left:0;
   z-index:0;
-  width:var(--glass-selection-width,0px);
+  /* Follow the actual row's responsive track on every frame. */
+  width:100%;
   height:var(--glass-selection-height,39px);
   transform:translate3d(var(--glass-selection-x,0px),var(--glass-selection-y,0px),0);
   /* A restrained control state over the actual refracting pane, not a
@@ -192,10 +214,9 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   box-shadow:inset 0 1px rgba(255,255,255,.08);
   pointer-events:none;
   opacity:0;
-  will-change:transform,width;
+  will-change:transform;
   transition:
     transform 250ms cubic-bezier(.23,.86,.25,1),
-    width var(--sidebar-layout-duration) var(--ui-ease),
     height 160ms ease,
     opacity 110ms ease;
 }
@@ -228,7 +249,15 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   .shell.liquid-glass-preview .glass-scene-dot{width:9px;height:9px;}
 }
 @media(max-width:760px){
-  .shell.liquid-glass-preview .sidebar{border-radius:0 26px 26px 0;}
+  .shell.liquid-glass-preview .sidebar{
+    margin:0;left:8px;top:8px;bottom:8px;
+    height:calc(100dvh - 16px);
+    border-radius:26px;
+    transform:translateX(calc(-100% - 8px));
+  }
+  .shell.liquid-glass-preview.is-mobile-open .sidebar{
+    transform:translateX(0);
+  }
   /*
    * A backdrop-filter samples layers already painted behind the sidebar.
    * The full-screen dismissal scrim must NOT be sampled inside the glass
@@ -236,8 +265,8 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
    * Clip only its 274px sidebar overlap. Outside clicks still hit the scrim.
    */
   .shell.liquid-glass-preview .sidebar-scrim:not([hidden]){
-    -webkit-clip-path:inset(0 0 0 274px);
-    clip-path:inset(0 0 0 274px);
+    -webkit-clip-path:inset(0 0 0 282px);
+    clip-path:inset(0 0 0 282px);
     /* Outside-click target, not an opaque visual overlay: a full-screen
        70% black/blur scrim previously popped in at drawer-open time. */
     background:transparent;

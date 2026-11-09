@@ -274,7 +274,7 @@ try{
       async function physicalClick(selector){
         const expression="(()=>{const e=document.querySelector("+JSON.stringify(selector)+");"+
           "if(!e)return null;const r=e.getBoundingClientRect();"+
-          "const x=e.id==='sidebar-scrim'?Math.round((274+innerWidth)/2):Math.round(r.left+r.width/2);const y=Math.round(r.top+r.height/2);"+
+          "const x=e.id==='sidebar-scrim'?Math.round((282+innerWidth)/2):Math.round(r.left+r.width/2);const y=Math.round(r.top+r.height/2);"+
           "const h=document.elementFromPoint(x,y);"+
           "return {x,y,hit:h?.id||h?.className?.baseVal||h?.className||h?.tagName,"+
           "onTarget:h===e||e.contains(h),disabled:!!e.disabled};})()";
@@ -290,7 +290,7 @@ try{
       assert(await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
         "Real pointer must open mobile drawer");
       const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath,background:css.backgroundColor,backdrop:css.backdropFilter};})()');
-      assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("274px")&&
+      assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("282px")&&
         mask.backdrop==="none"&&mask.background==="rgba(0, 0, 0, 0)",
         "Transparent click-away scrim must be interactive and visually absent "+JSON.stringify(mask));
       // Compare actual rendered backdrop pixels with the dismissal scrim

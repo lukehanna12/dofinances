@@ -337,7 +337,7 @@ test("mobile drawer scrim remains interactive and cannot darken the sampled glas
   const boot=await read("../preview/app-sidebar-bootstrap.js");
   const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
   assert.match(boot,/button\.id==="sidebar-scrim"/);
-  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*clip-path:inset\(0 0 0 274px\)/s);
+  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*clip-path:inset\(0 0 0 282px\)/s);
   assert.match(css,/pointer-events:auto/);
 });
 
@@ -516,4 +516,18 @@ test("SVG PNG displacement maps encode zero exactly and bound error at native-de
   assert.match(source,/result:"outerCentered"/);
   assert.match(source,/in:"innerBlurred",in2:"innerCentered",scale:128/);
   assert.match(source,/in:"outerBlurred",in2:"outerCentered",scale:128/);
+});
+
+test("inset glass and screen-wide banner preserve oracle field sizes and live backdrop",async()=>{
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  const js=await read("../sites/_apex/app/assets/sidebar-glass.js");
+  const oracle=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(css,/\.shell\.liquid-glass-preview \.sidebar \{[^}]*margin:8px 0 8px 8px;[^}]*height:calc\(100dvh - 16px\)/s);
+  assert.match(css,/\.shell\.liquid-glass-preview \.topbar::before \{[^}]*position:fixed;[^}]*width:100vw/s);
+  assert.match(css,/\.shell\.liquid-glass-preview \.glass-selection \{[^}]*width:100%/s);
+  assert.doesNotMatch(js,/setProperty\("--glass-selection-width"/);
+  assert.doesNotMatch(js,/resize\?\.observe\(sidebar\)/);
+  assert.match(oracle,/const geometryCache=new Map\(\)/);
+  assert.match(oracle,/if\(disposed\|\|queued\)return;/);
+  assert.doesNotMatch(oracle,/html2canvas|getDisplayMedia|createImageBitmap\(document/);
 });

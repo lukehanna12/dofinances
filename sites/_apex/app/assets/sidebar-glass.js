@@ -51,10 +51,14 @@ export function initLiquidGlassSidebar(doc=document,win=window){
       first=false;
       indicator.style.transition="none";
     }else indicator.style.removeProperty("transition");
-    indicator.style.setProperty("--glass-selection-x",bounds.x+"px");
-    indicator.style.setProperty("--glass-selection-y",bounds.y+"px");
-    indicator.style.setProperty("--glass-selection-width",bounds.width+"px");
-    indicator.style.setProperty("--glass-selection-height",bounds.height+"px");
+    // The CSS track now owns horizontal morphing. Avoid duplicate JS
+    // animations, forced layout on every width frame and unchanged writes.
+    for(const [name,value] of [
+      ["--glass-selection-x",bounds.x+"px"],
+      ["--glass-selection-y",bounds.y+"px"],
+      ["--glass-selection-height",bounds.height+"px"]
+    ])if(indicator.style.getPropertyValue(name)!==value)
+      indicator.style.setProperty(name,value);
     shell.classList.add("has-glass-indicator");
     if(indicator.style.transition==="none")
       win.requestAnimationFrame(()=>indicator.style.removeProperty("transition"));
@@ -64,9 +68,8 @@ export function initLiquidGlassSidebar(doc=document,win=window){
   }
   const mutations=new MutationObserver(scheduleIndicator);
   mutations.observe(sidebar,{subtree:true,attributes:true,attributeFilter:["class","hidden"]});
-  const resize=typeof ResizeObserver!=="undefined"?
-    new ResizeObserver(scheduleIndicator):null;
-  resize?.observe(sidebar);resize?.observe(navigation);
+  // Geometry of the highlight scales with the CSS row. Route changes,
+  // navigation scroll and viewport changes still schedule its Y position.
   navigation.addEventListener("scroll",scheduleIndicator,{passive:true});
   win.addEventListener("resize",scheduleIndicator,{passive:true});
   win.addEventListener("hashchange",scheduleIndicator);
@@ -102,7 +105,7 @@ export function initLiquidGlassSidebar(doc=document,win=window){
   function cleanup(){
     if(disposed)return;
     disposed=true;
-    mutations.disconnect();resize?.disconnect();
+    mutations.disconnect();
     navigation.removeEventListener("scroll",scheduleIndicator);
     win.removeEventListener("resize",scheduleIndicator);
     win.removeEventListener("hashchange",scheduleIndicator);
