@@ -54,11 +54,11 @@ test("footer ink colors reflect the six page-specific contrast adjustments",()=>
 });
 test("Home keeps its original pixels and a near-native desktop foreground",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
-  assert.match(css,/width:min\\(100%,1100px\\)/);
+  assert.match(css,/width:min\(100%,1100px\)/);
   assert.match(css,/data-wallpaper-route="home"/);
-  assert.match(css,/filter:blur\\(10px\\)/);
-  assert.match(css,/\\.workspace-home-art-top/);
-  assert.match(css,/\\.workspace-home-art-bottom/);
+  assert.match(css,/filter:blur\(10px\)/);
+  assert.match(css,/\.workspace-home-art-top/);
+  assert.match(css,/\.workspace-home-art-bottom/);
   assert.equal(WORKSPACE_WALLPAPERS.home.sha,
     "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b");
 });
