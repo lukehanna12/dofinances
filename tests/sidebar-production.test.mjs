@@ -28,7 +28,7 @@ test("Production includes exact oracle-backed glass with no preview scenery",asy
   assert.match(dashboard,/initWorkspaceNavigation\(\)/);
   assert.match(dashboard,/await fetch\("\/api\/auth\/me"/);
   assert.match(dashboard,/\/api\/auth\/logout/);
-  assert.match(dashboard,/\/api\/auth\/mfa/);
+  assert.match(dashboard,/authPost\("mfa\/setup"/);
   assert.match(dashboard,/import\("\.\/sidebar-glass\.js"\)/);
   assert.match(dashboard,/catch\(error=>console\.warn/);
   assert.match(worker,/generateOracleField|projectOracleFieldWidth/);
@@ -40,10 +40,10 @@ test("Oracle values remain exact across lossless width projection and neutral di
   assert.equal(encodeOracleDisplacement(0),128);
   assert.equal(decodeOracleDisplacement(128),0);
   const height=640,radius=24;
-  const base=generateOracleField(274,height,radius);
-  for(const w of [74,100,149,200,260,274]){
+  const base=generateOracleField(260,height,radius);
+  for(const w of [74,100,149,200,260]){
     const expected=generateOracleField(w,height,radius);
-    const projected=projectOracleFieldWidth(base,w);
+    const projected=projectOracleFieldWidth(base,w,radius);
     for(const field of ["inner","outer","blurMask"]){
       assert.deepEqual(projected[field],expected[field],
         field+" fields must be byte-identical at width "+w);
