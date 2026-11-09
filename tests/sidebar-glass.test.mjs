@@ -7,7 +7,7 @@ import {
   ORACLE_TARGET,ORACLE_FINITE_REFRACTION,nativePublicBlurRadius,
   observedBlurWord,airRefractionEnvelope,airThresholdMix,airSupercircleSDF,
   airBlurDistribution,airTextureMipLOD,oracleFaceColorMatrixValues,
-  paneField,generateOracleField
+  airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -184,4 +184,73 @@ test("only the isolated preview publishes the adapter and never the auth dashboa
   assert.match(workflow,/pages deploy .*--branch=app-sidebar-preview/);
   assert.match(workflow,/test ! -e .app-sidebar-preview\/app\/assets\/dashboard\.js/);
   assert.doesNotMatch(workflow,/pages deploy .*--branch=main/);
+});
+
+
+test("two independently retained mode5 CPU48→GPU join states decode as signed corner radii",()=>{
+  const py=String.raw`
+import json,lzma,pathlib,struct
+p=pathlib.Path("preview/oracle-evidence/live_mode_joins.json.xz")
+d=json.loads(lzma.decompress(p.read_bytes()))
+seen={}
+for row in d["rows"]:
+  b=bytes.fromhex(row["upload"]["source48_hex"])
+  assert len(b)==48
+  decoded=list(struct.unpack("<12f",b))
+  mode=decoded[2]
+  assert mode in (4,5)
+  key=(row["parameter_case"],mode,tuple(decoded[8:12]))
+  seen[key]=seen.get(key,0)+1
+print(json.dumps([{"case":k[0],"mode":k[1],"corners":list(k[2]),"joins":v}
+ for k,v in sorted(seen.items())]))
+  `;
+  const rows=JSON.parse(execFileSync("python3",["-c",py],{encoding:"utf8"}));
+  assert.equal(rows.filter(x=>x.mode===5).length,2);
+  assert.deepEqual(rows.filter(x=>x.mode===5).map(x=>x.corners),[
+    [-20,-3,-20,-36],[-12,-28,-44,-6]
+  ]);
+  for(const row of rows)assert.ok(row.joins>=2,"same-case repeated CPU→GPU joins");
+  assert.equal(Math.fround(ORACLE_CORNER_FLOOR),ORACLE_CORNER_FLOOR);
+  assert.ok(ORACLE_CORNER_FLOOR>0 && ORACLE_CORNER_FLOOR<.011);
+});
+
+test("mode5 follows four mirrored supercircle calls and their signed-distance max",()=>{
+  const captured=[
+    {x:0,y:0,halfW:130,halfH:70,r:[-20,-3,-20,-36]},
+    {x:95,y:61,halfW:130,halfH:70,r:[-20,-3,-20,-36]},
+    {x:110,y:-61,halfW:130,halfH:70,r:[-12,-28,-44,-6]},
+    {x:-118,y:56,halfW:130,halfH:70,r:[-12,-28,-44,-6]}
+  ];
+  for(const c of captured){
+    const out=airMode5SDF(c.x,c.y,c.halfW,c.halfH,c.r);
+    const values=[
+      airSupercircleSDF(c.x,c.y,c.halfW,c.halfH,c.r[1]).distance,
+      airSupercircleSDF(-c.x,c.y,c.halfW,c.halfH,c.r[0]).distance,
+      airSupercircleSDF(c.x,-c.y,c.halfW,c.halfH,c.r[2]).distance,
+      airSupercircleSDF(-c.x,-c.y,c.halfW,c.halfH,c.r[3]).distance
+    ];
+    // In these exact mode5 observed states, the source-computed curvature
+    // blend factors saturate to 0, so each call uses the unblended helper.
+    assert.ok(Math.abs(out.distance-Math.max(...values))<.002,
+      JSON.stringify({c,out,values}));
+    assert.ok(Number.isFinite(out.nx)&&Number.isFinite(out.ny));
+  }
+  const core=paneField(130,450,260,900,24);
+  const rightOutside=paneField(272,450,260,900,24);
+  assert.ok(core.distance<0,JSON.stringify(core));
+  assert.ok(rightOutside.distance>0,JSON.stringify(rightOutside));
+});
+
+test("browser sidebar maps left square and right circular CSS corners into four signed mode5 lanes",async()=>{
+  const js=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(js,/export function airMode5SDF/);
+  assert.match(js,/const specs=\[/);
+  assert.match(js,/\[x,y,r1,factors\[0\],factors\[3\],1,1\]/);
+  assert.match(js,/\[-x,y,r0,factors\[0\],factors\[1\],-1,1\]/);
+  assert.match(js,/\[x,-y,r2,factors\[2\],factors\[3\],1,-1\]/);
+  assert.match(js,/\[-x,-y,r3,factors\[2\],factors\[1\],-1,-1\]/);
+  assert.match(js,/const shape=airMode5SDF\(px,py,w\*\.5,h\*\.5,\[left,right,right,left\]\)/);
+  assert.match(js,/1\.891557216644287/);
+  assert.match(js,/getComputedStyle\?\.\(sidebar\)/);
+  assert.doesNotMatch(js,/drawGlassWallpaper|texImage2D/);
 });

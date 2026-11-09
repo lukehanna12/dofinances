@@ -185,25 +185,94 @@ export function airSupercircleSDF(absX,absY,halfWidth,halfHeight,radius,blendX=0
   return {distance:dist,nx:vx,ny:vy};
 }
 
+/*
+ * Actual LPH compute_sdf_with_mode(mode5), AIR source lines 940–1041.
+ * One PRIVATE CPU SDF48 contains [halfWidth,halfHeight,5,normalBlend],
+ * the 2x2 transform, and FOUR SIGNED corner radii.
+ *
+ * The four calls are in the exact AIR order:
+ *   ( x, y, r1), (-x, y, r0), ( x,-y, r2), (-x,-y, r3)
+ * and their signed distances combine via ORDERED max selection, with
+ * mirrored normals. This does not assert universal public CSS→SDF mapping.
+ * Native G14G half-precision/transcendental equivalence is still unproved.
+ */
+export function airMode5SDF(x,y,halfWidth,halfHeight,signedCornerRadii,
+  normalBlend=0){
+  const [r0,r1,r2,r3]=signedCornerRadii;
+  if(![x,y,halfWidth,halfHeight,r0,r1,r2,r3,normalBlend].every(Number.isFinite))
+    throw new TypeError("Finite mode5 SDF inputs required");
+  if(halfWidth<=0||halfHeight<=0)throw new RangeError("Positive SDF half-dimensions");
+  // Exact AIR f32 blend weights source lines 943–954. Only the private
+  // retained examples establish these negative radii, not CSS corner writer.
+  const pair=[
+    f32(f32(f32(r0+r1)*.5)),
+    f32(f32(f32(r0+r3)*.5)),
+    f32(f32(f32(r3+r2)*.5)),
+    f32(f32(f32(r1+r2)*.5))
+  ];
+  const dims=[halfWidth,halfHeight,halfWidth,halfHeight];
+  const factors=pair.map((mid,i)=>{
+    if(mid>=0)return 1;
+    const ratio=f32(f32(dims[i])/mid);
+    return clamp(f32(f32(-1.5286649465560913-ratio)*
+      f32(-1.891557216644287)),0,1);
+  });
+  // y uses Cartesian positive-up, matching the native centered SDF.
+  const specs=[
+    [x,y,r1,factors[0],factors[3],1,1],
+    [-x,y,r0,factors[0],factors[1],-1,1],
+    [x,-y,r2,factors[2],factors[3],1,-1],
+    [-x,-y,r3,factors[2],factors[1],-1,-1]
+  ];
+  let choice=null;
+  for(const [cx,cy,r,bx,by,sx,sy] of specs){
+    const value=airSupercircleSDF(cx,cy,halfWidth,halfHeight,r,bx,by);
+    const candidate={
+      distance:value.distance,
+      nx:value.nx*sx,ny:value.ny*sy
+    };
+    if(!choice||candidate.distance>choice.distance)choice=candidate;
+  }
+  // AIR lines 994–1022: when arg.w>0, blend selected supercircle normal
+  // with normalize([x,(halfWidth/halfHeight)*y]), then normalize again.
+  if(normalBlend!==0){
+    const sy=f32(f32(halfWidth*y)/halfHeight);
+    const len=Math.hypot(x,sy);
+    const bx=len>0?x/len:0,by=len>0?sy/len:0;
+    const vx=mix(choice.nx,bx,normalBlend);
+    const vy=mix(choice.ny,by,normalBlend);
+    const normalized=Math.hypot(vx,vy);
+    choice.nx=normalized>0?vx/normalized:0;
+    choice.ny=normalized>0?vy/normalized:0;
+  }
+  return choice;
+}
+
+/* Native private mode5 uses NEGATIVE signed corner radii. The sidebar's
+ * public browser CSS has ZERO left corners and rounded right corners.
+ * Use the retained private-lane minimum f32(0.01) for the zero-corner
+ * adapter. The final two native static floor values are not retained and
+ * this is not an identified Apple public-CSS producer relationship. */
+export const ORACLE_CORNER_FLOOR = Math.fround(.009999999776482582);
+
 const SVG="http://www.w3.org/2000/svg";
 const NS="http://www.w3.org/1999/xlink";
 const attribute=(el,attrs)=>{for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));return el;};
 function makeSVG(doc,tag,attrs){return attribute(doc.createElementNS(SVG,tag),attrs);}
 
 /*
- * The pane has rounded RIGHT corners and square LEFT corners. The uniform
- * mode4 native supercircle is applied at the rounded right outline; the
- * square-left seam is handled by a rectangular distance and has no lensing.
- * Apple's exact mode5 per-corner producer mapping is not established by this.
+ * A browser CSS adaptation of the actual mode5 FOUR-CORNER AIR route.
+ * SDF arg2 order is [top-left, top-right, bottom-right, bottom-left]
+ * for our positive-up native coordinate mapping. Native values are signed
+ * negative and the first two lanes are clamped to 0.01 in the private
+ * representation. Do not claim the other floors or CSS producer are exact.
  */
 export function paneField(x,y,w,h,radius){
-  const px=x-w*.5,py=y-h*.5;
-  if(x < w*.5){
-    return {distance:Math.max(-x,x-w,-y,y-h),nx:0,ny:0};
-  }
-  const sdf=airSupercircleSDF(Math.abs(px),Math.abs(py),w*.5,h*.5,radius,0,0);
-  return {distance:sdf.distance,nx:sdf.nx*(px>=0?1:-1),
-    ny:sdf.ny*(py>=0?1:-1)};
+  const px=x-w*.5,py=h*.5-y;
+  const left=-ORACLE_CORNER_FLOOR;
+  const right=-Math.max(ORACLE_CORNER_FLOOR,radius);
+  const shape=airMode5SDF(px,py,w*.5,h*.5,[left,right,right,left]);
+  return {distance:shape.distance,nx:shape.nx,ny:-shape.ny};
 }
 
 export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTION){
