@@ -160,7 +160,99 @@ try{
       const measures=[];
       let referenceFrame=null;
       for(const mode of ["oracle","overlay-plane","blur-only"]){
-        await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
+        await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
+        await evaluate('(()=>{document.getElementById("ci-plane")?.remove();'+
+          'document.getElementById("ci-perf-filter")?.remove();return true;})()');
+        if(mode!=="oracle"){
+          const css=mode==="overlay-plane"?
+            ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+            "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;"+
+            "background:transparent!important;border-right-color:transparent!important;box-shadow:none!important;}"+
+            ".shell.liquid-glass-preview #ci-plane{"+
+            "position:fixed;top:0;left:0;width:260px;height:100dvh;z-index:11;"+
+            "pointer-events:none;background:var(--glass-pane);"+
+            "border-radius:0 24px 24px 0;"+
+            "-webkit-backdrop-filter:url('#oracle-glass-native-backdrop');"+
+            "backdrop-filter:url('#oracle-glass-native-backdrop');"+
+            "clip-path:inset(0 0 0 0 round 0 24px 24px 0);"+
+            "transition:clip-path var(--sidebar-layout-duration) var(--ui-ease);"+
+            "}"+
+            ".shell.is-collapsed #ci-plane{clip-path:inset(0 186px 0 0 round 0 24px 24px 0);}"
+            :".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+            "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
+            "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
+          await evaluate('(()=>{const s=document.createElement("style");'+
+            's.id="ci-perf-filter";s.textContent='+JSON.stringify(css)+
+            ';document.head.append(s);return true;})()');
+          if(mode==="overlay-plane")await evaluate('(()=>{'+
+            'const p=document.createElement("div");p.id="ci-plane";'+
+            'document.getElementById("workspace-shell").prepend(p);return true;})()');
+        }
+        await sleep(160);
+        if(mode==="overlay-plane"&&referenceFrame){
+          const variant=decodePNG((await send("Page.captureScreenshot",{
+            format:"png",captureBeyondViewport:false,fromSurface:true
+          },90000)).data);
+          console.log("OVERLAY_PLANE_RESTING_PIXEL_DIFF",
+            JSON.stringify(comparePixels(referenceFrame,variant,10,250,90,830)));
+        }
+        const pre=(await send("Performance.getMetrics")).metrics;
+        await evaluate(`(()=>{
+          const shell=document.getElementById("workspace-shell");
+          const toggle=document.getElementById("sidebar-toggle");
+          const gaps=[];let last=0;
+          const longTasks=[];
+          let observer;
+          try{
+            observer=new PerformanceObserver(list=>{
+              for(const e of list.getEntries())longTasks.push(e.duration);
+            });
+            observer.observe({entryTypes:["longtask"]});
+          }catch{}
+          const start=performance.now();
+          function frame(t){
+            if(last)gaps.push(t-last);last=t;
+            if(t-start<1200)requestAnimationFrame(frame);
+            else{
+              observer?.disconnect();
+              const sorted=gaps.toSorted((a,b)=>a-b);
+              window.__glassPerf={
+                frames:gaps.length,
+                median:sorted[Math.floor(sorted.length*.5)],
+                p95:sorted[Math.floor(sorted.length*.95)],
+                worst:sorted.at(-1),
+                stalls34:gaps.filter(t=>t>34).length,
+                stalls50:gaps.filter(t=>t>50).length,
+                longTasks,builds:Number(shell.dataset.oracleFieldBuilds||0),
+                cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
+                finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
+              };
+            }
+          }
+          window.__glassPerf=null;
+          requestAnimationFrame(frame);
+          setTimeout(()=>toggle.click(),60);
+          setTimeout(()=>toggle.click(),390);
+          return true;
+        })()`);
+        const result=await until(()=>evaluate("window.__glassPerf||null"),10000);
+        const post=(await send("Performance.getMetrics")).metrics;
+        const diff={};
+        for(const metric of ["LayoutDuration","RecalcStyleDuration","ScriptDuration","TaskDuration"]){
+          diff[metric]=((post.find(m=>m.name===metric)?.value||0)-
+                        (pre.find(m=>m.name===metric)?.value||0))*1000;
+        }
+        assert(result.finalWidth>250,"Perf variant must restore expanded sidebar");
+        const data={mode,...result,mainThreadMs:diff};
+        measures.push(data);
+        console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify(data));
+        if(mode==="oracle"){
+          referenceFrame=decodePNG((await send("Page.captureScreenshot",{
+            format:"png",captureBeyondViewport:false,fromSurface:true
+          },90000)).data);
+        }
+      }
+      await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
         'document.getElementById("ci-plane")?.remove();return true;})()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
