@@ -24,6 +24,7 @@ test("both deployments run through gated GitHub Actions", async ()=>{
 test("auth backend uses SQLite Durable Objects without any D1 binding",async()=>{
   const config=JSON.parse(await readFile(new URL("../edge/wrangler.jsonc",import.meta.url),"utf8"));
   assert.equal(config.durable_objects.bindings[0].name,"AUTH_STORE");
+  assert.equal(config.keep_vars,true,"Wrangler must preserve externally configured OAuth client IDs");
   assert.equal(config.exports.AuthStore.storage,"sqlite");
   assert.equal(config.vars.AUTH_EMAIL_FROM,"noreply@dofinances.com");
   assert.doesNotMatch(JSON.stringify(config),/d1_databases|r2_buckets/);
