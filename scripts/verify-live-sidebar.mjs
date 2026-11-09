@@ -93,14 +93,24 @@ try{
         const x=r.left+dx,y=r.top+dy;
         if(y>=r.bottom-10)continue;
         const el=document.elementFromPoint(x,y);
-        if(el && sidebar.contains(el) && !el.closest("a,button,input,[role=separator]"))
-          return {x,y,cursor:getComputedStyle(el).cursor,tag:el.tagName};
+        // A real full-rail button must win blank-space hit testing,
+        // even though the icon links above it remain independently clickable.
+        if(el?.id==="sidebar-rail-expand-target")
+          return {x,y,cursor:getComputedStyle(el).cursor,tag:el.tagName,id:el.id};
       }
     }
     return null;
   })()`);
   assert.ok(blank,"No hit-testable unoccupied rail space found");
-  assert.equal(blank.cursor,"e-resize","Empty collapsed rail must show the expand cursor");
+  assert.equal(blank.tag,"BUTTON","Blank rail must be an actual button hit target");
+  assert.equal(blank.cursor,"e-resize","The hovered rail button must show the native expand cursor");
+  const noCustomCursors=await evaluate(String.raw`(()=>{
+    const css=[...document.styleSheets].flatMap(s=>{
+      try{return [...s.cssRules].map(r=>r.cssText)}catch{return []}
+    }).filter(rule=>rule.includes("sidebar-rail-expand-target")||rule.includes("sidebar-resize-handle"));
+    return !css.some(rule=>rule.includes("data:image/png;base64"));
+  })()`);
+  assert.equal(noCustomCursors,true,"No custom mouse pointer graphics should be installed");
   // The rail's icon and row should both center on the actual pane, not an
   // asymmetrically padded grid track.
   const railAlignment=await evaluate(String.raw`(()=>{
