@@ -159,19 +159,13 @@ try{
       await send("Performance.enable");
       const measures=[];
       let referenceFrame=null;
-      for(const mode of ["oracle","pseudo-fixed","blur-only"]){
+      for(const mode of ["oracle","css-preblur","blur-only"]){
         await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
         if(mode!=="oracle"){
-          const css=mode==="pseudo-fixed"?
+          const css=mode==="css-preblur"?
             ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
-              "backdrop-filter:none !important;-webkit-backdrop-filter:none !important;"+
-              "background:transparent !important;}"+
-            ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar::before{"+
-              "content:'';position:absolute;top:0;left:0;width:260px;height:100%;"+
-              "border-radius:0 24px 24px 0;background:var(--glass-pane);"+
-              "backdrop-filter:url('#oracle-glass-native-backdrop');"+
-              "-webkit-backdrop-filter:url('#oracle-glass-native-backdrop');"+
-              "pointer-events:none;z-index:0;}"
+              "backdrop-filter:blur(calc(var(--oracle-backdrop-blur) / 2)) url('#oracle-glass-native-backdrop') !important;"+
+              "-webkit-backdrop-filter:blur(calc(var(--oracle-backdrop-blur) / 2)) url('#oracle-glass-native-backdrop') !important;}"
             :".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
               "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
               "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
@@ -179,12 +173,19 @@ try{
             's.id="ci-perf-filter";s.textContent='+JSON.stringify(css)+
             ';document.head.append(s);return true;})()');
         }
+        if(mode==="css-preblur"){
+          await evaluate('(()=>{const f=document.getElementById("oracle-glass-native-backdrop");'+
+            'const s=parseFloat(document.getElementById("workspace-shell").style.getPropertyValue("--oracle-backdrop-blur"));'+
+            'f.querySelector(\'feGaussianBlur[result="nearBlur"]\').setAttribute("stdDeviation","0");'+
+            'f.querySelector(\'feGaussianBlur[result="farBlur"]\').setAttribute("stdDeviation",String(s*Math.sqrt(3)/2));'+
+            'return true;})()');
+        }
         await sleep(160);
-        if(mode==="pseudo-fixed"&&referenceFrame){
+        if(mode==="css-preblur"&&referenceFrame){
           const variant=decodePNG((await send("Page.captureScreenshot",{
             format:"png",captureBeyondViewport:false,fromSurface:true
           },90000)).data);
-          console.log("PSEUDO_FIXED_RESTING_PIXEL_DIFF",
+          console.log("CSS_PREBLUR_RESTING_PIXEL_DIFF",
             JSON.stringify(comparePixels(referenceFrame,variant,10,250,90,830)));
         }
         const pre=(await send("Performance.getMetrics")).metrics;
@@ -243,7 +244,12 @@ try{
           },90000)).data);
         }
       }
-      await evaluate('document.getElementById("ci-perf-filter")?.remove()');
+      await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
+        'const f=document.getElementById("oracle-glass-native-backdrop");'+
+        'const s=parseFloat(document.getElementById("workspace-shell").style.getPropertyValue("--oracle-backdrop-blur"));'+
+        'f.querySelector(\'feGaussianBlur[result="nearBlur"]\').setAttribute("stdDeviation",String(s/2));'+
+        'f.querySelector(\'feGaussianBlur[result="farBlur"]\').setAttribute("stdDeviation",String(s));'+
+        'return true;})()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
