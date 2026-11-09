@@ -39,18 +39,28 @@ test("every named page has the exact owner-selected wallpaper",()=>{
 });
 test("footer ink colors reflect the six page-specific contrast adjustments",()=>{
   const expected={
-    home:"#494949",
-    projects:"#555555",
-    settings:"#505050",
-    "colosseum/utilities":"#505050",
+    home:"#5c5c5c",
+    projects:"#454545",
+    settings:"#626262",
+    "colosseum/utilities":"#666666",
     "colosseum/collections":"#303030",
-    "colosseum/providers":"#dce3df",
+    "colosseum/providers":"#c5d0ca",
     "colosseum/permissions":"#505050",
-    "colosseum/diagnostics":"#ebebeb"
+    "colosseum/diagnostics":"#dedede"
   };
   assert.deepEqual(Object.fromEntries(Object.entries(WORKSPACE_WALLPAPERS)
     .map(([route,entry])=>[route,entry.footerInk])),expected);
   assert.strictEqual(workspaceWallpaperForRoute("colosseum/settings"),WORKSPACE_WALLPAPERS.settings);
+});
+test("Home keeps its original pixels and a near-native desktop foreground",()=>{
+  const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
+  assert.match(css,/width:min\\(100%,1100px\\)/);
+  assert.match(css,/data-wallpaper-route="home"/);
+  assert.match(css,/filter:blur\\(10px\\)/);
+  assert.match(css,/\\.workspace-home-art-top/);
+  assert.match(css,/\\.workspace-home-art-bottom/);
+  assert.equal(WORKSPACE_WALLPAPERS.home.sha,
+    "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b");
 });
 test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
