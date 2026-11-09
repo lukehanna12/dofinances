@@ -264,3 +264,19 @@ test("GPU path uploads exactly the shared wallpaper, renders distortion and acce
   renderer.dispose();
   assert.equal(classNames.has("has-refractive-glass"),false);
 });
+
+
+test("browser smoke is isolated, checks GPU and all responsive modes, and is removed before deployment",async()=>{
+  const browser=await read("../tests/sidebar-glass-browser-smoke.js");
+  const flow=await read("../.github/workflows/app-sidebar-preview.yml");
+  assert.match(browser,/data-glass-browser-smoke/);
+  assert.match(browser,/has-refractive-glass/);
+  assert.match(browser,/gl\.getError\(\)===gl\.NO_ERROR/);
+  assert.match(browser,/is-mobile-open/);
+  assert.match(browser,/is-collapsed/);
+  assert.match(flow,/runs-on: ubuntu-24\.04/);
+  assert.match(flow,/viewport in 1440,900 980,760 390,844/);
+  assert.match(flow,/--enable-unsafe-swiftshader/);
+  assert.match(flow,/unlinkSync\('\.app-sidebar-preview\/app\/assets\/_ci-glass-smoke\.js'\)/);
+  assert.match(flow,/test ! -e \.app-sidebar-preview\/app\/assets\/_ci-glass-smoke\.js/);
+});

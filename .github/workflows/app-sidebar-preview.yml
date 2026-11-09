@@ -16,7 +16,7 @@ jobs:
   preview:
     name: Build isolated app preview
     if: github.ref == 'refs/heads/test/app-sidebar'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: cloudflare-production
     steps:
       - name: Checkout test branch
@@ -71,6 +71,52 @@ jobs:
           grep -Fq 'from "./sidebar-glass-refraction.js"' .app-sidebar-preview/app/assets/sidebar-glass.js
           ! grep -Fq 'dashboard.js' .app-sidebar-preview/app/index.html
           ! grep -R -Eq 'fetch\(|api/auth|location.replace' .app-sidebar-preview/app/assets/*.js
+      - name: Exercise real desktop/tablet/mobile layout and WebGL in Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          cp tests/sidebar-glass-browser-smoke.js .app-sidebar-preview/app/assets/_ci-glass-smoke.js
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const path='.app-sidebar-preview/app/index.html';
+          const html=readFileSync(path,'utf8');
+          if(!html.includes('</body>'))throw Error('Missing body close');
+          writeFileSync(path,html.replace('</body>',
+            '<script type="module" src="/app/assets/_ci-glass-smoke.js"></script></body>'));
+          NODE
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory .app-sidebar-preview > "$RUNNER_TEMP/glass-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          for viewport in 1440,900 980,760 390,844; do
+            file="$RUNNER_TEMP/glass-browser-${viewport}.html"
+            error="$RUNNER_TEMP/glass-browser-${viewport}.log"
+            if ! timeout 32s google-chrome --headless=new --no-sandbox               --disable-dev-shm-usage --disable-background-networking               --no-first-run --no-default-browser-check               --enable-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist               --window-size="$viewport" --virtual-time-budget=7500               --dump-dom http://127.0.0.1:8765/app/ > "$file" 2> "$error"; then
+              echo "Chrome could not run glass smoke at $viewport" >&2
+              tail -30 "$error" >&2
+              exit 1
+            fi
+            if ! grep -Fq 'data-glass-browser-smoke="pass"' "$file"; then
+              echo "Browser glass smoke failed at $viewport" >&2
+              grep -o 'data-glass-browser-info="[^"]*"' "$file" | head -2 >&2 || true
+              tail -30 "$error" >&2
+              exit 1
+            fi
+            echo "Browser glass smoke passed at $viewport"
+          done
+          # Never ship the CI test script or its script tag in the preview.
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
+          const path='.app-sidebar-preview/app/index.html';
+          const html=readFileSync(path,'utf8');
+          const tag='<script type="module" src="/app/assets/_ci-glass-smoke.js"></script>';
+          if(!html.includes(tag))throw Error('CI injection vanished');
+          writeFileSync(path,html.replace(tag,''));
+          unlinkSync('.app-sidebar-preview/app/assets/_ci-glass-smoke.js');
+          NODE
+          ! grep -Fq '_ci-glass-smoke' .app-sidebar-preview/app/index.html
+          test ! -e .app-sidebar-preview/app/assets/_ci-glass-smoke.js
       - name: Deploy to non-production Pages preview branch
         uses: cloudflare/wrangler-action@v4
         with:
