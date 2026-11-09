@@ -93,7 +93,7 @@ jobs:
           const html=readFileSync(path,'utf8');
           if(!html.includes('</body>'))throw Error('Missing body close');
           writeFileSync(path,html.replace('</body>',
-            '<script type="module" src="/app/assets/_ci-glass-smoke.js"></script></body>'));
+            '<script src="/app/assets/_ci-glass-smoke.js"></script></body>'));
           NODE
           python3 -m http.server 8765 --bind 127.0.0.1 --directory .app-sidebar-preview > "$RUNNER_TEMP/glass-server.log" 2>&1 &
           server_pid=$!
@@ -125,7 +125,7 @@ jobs:
           import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
           const path='.app-sidebar-preview/app/index.html';
           const html=readFileSync(path,'utf8');
-          const tag='<script type="module" src="/app/assets/_ci-glass-smoke.js"></script>';
+          const tag='<script src="/app/assets/_ci-glass-smoke.js"></script>';
           if(!html.includes(tag))throw Error('CI injection vanished');
           writeFileSync(path,html.replace(tag,''));
           unlinkSync('.app-sidebar-preview/app/assets/_ci-glass-smoke.js');
