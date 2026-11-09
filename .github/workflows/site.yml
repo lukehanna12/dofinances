@@ -236,6 +236,61 @@ jobs:
             test "$code" = 404
           done
 
+      - name: Verify library-iii wallpaper images, crop resolution and shared stylesheet
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_js="$(mktemp)"
+          source_css="$(mktemp)"
+          curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.js -o "$source_js"
+          curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.css -o "$source_css"
+          grep -Fq -- '--workspace-header-height' "$source_css"
+          python3 - "$source_js" <<'PY'
+          import re, sys, subprocess, tempfile, struct, os
+
+          js = open(sys.argv[1], encoding="utf-8").read()
+          assets = list(dict.fromkeys(re.findall(r'"sha":\s*"([a-f0-9]{64})",\s*"ext":\s*"(jpg|png|webp|avif)"', js)))
+          assert len(assets) == 8, f"Expected eight distinct wallpaper assets, got {len(assets)}"
+          def dimensions(data):
+              if data.startswith(b"\x89PNG\r\n\x1a\n"):
+                  return struct.unpack(">II", data[16:24])
+              if data.startswith(b"\xff\xd8"):
+                  i = 2
+                  while i < len(data) - 10:
+                      if data[i] != 0xff:
+                          i += 1
+                          continue
+                      marker = data[i+1]
+                      i += 2
+                      if marker in (0xd8, 0xd9) or 0xd0 <= marker <= 0xd7:
+                          continue
+                      size = int.from_bytes(data[i:i+2], "big")
+                      if marker in (0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf):
+                          return (int.from_bytes(data[i+5:i+7],"big"), int.from_bytes(data[i+3:i+5],"big"))
+                      i += size
+              return None
+
+          for sha, ext in assets:
+              url = f"https://dofinances.com/wallpapers/{sha}.{ext}"
+              with tempfile.NamedTemporaryFile() as tmp, tempfile.NamedTemporaryFile() as hdr:
+                  command = ["curl", "--retry", "3", "--retry-delay", "2", "-fsSL", "--max-time", "35", "-D", hdr.name, "-o", tmp.name, url]
+                  subprocess.run(command, check=True)
+                  content = open(tmp.name, "rb").read()
+                  headers = open(hdr.name, encoding="latin-1").read().lower()
+                  mime = {"jpg":"image/jpeg","png":"image/png","webp":"image/webp","avif":"image/avif"}[ext]
+                  assert f"content-type: {mime}" in headers, f"Unexpected MIME for {sha}: {headers[-900:]}"
+                  assert len(content) > 50_000, f"Image unexpectedly small: {sha}"
+                  dims = dimensions(content)
+                  assert dims is not None, f"Could not parse image dimensions: {sha}"
+                  width, height = dims
+                  assert width >= 1280 and height >= 300, f"Insufficient wallpaper resolution: {sha} {dims}"
+                  print(f"Verified {sha[:12]}.{ext}: {width} x {height}, {len(content):,} bytes; full-width banner crop")
+          PY
+          invalid="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://dofinances.com/wallpapers/not-allowlisted.jpg)"
+          test "$invalid" = 404
+          rm "$source_js" "$source_css"
+          echo 'All eight library-iii wallpapers and the shared Studio stylesheet are live'
+
       - name: Verify authentication boundaries and new account security routes
         shell: bash
         run: |
