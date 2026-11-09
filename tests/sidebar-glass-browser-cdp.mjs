@@ -342,10 +342,10 @@ try{
         'const banner=getComputedStyle(document.querySelector(".topbar"),"::before");'+
         'return {x:Math.round(p.left),y:Math.round(p.top),width:Math.round(p.width),'+
         'height:Math.round(p.height),bannerWidth:parseFloat(banner.width),'+
-        'bannerPosition:banner.position};})()');
+        'layoutWidth:document.documentElement.clientWidth,bannerPosition:banner.position};})()');
       assert(pane.x===8&&pane.y===8&&pane.width===260&&pane.height===884,
         "Pane must keep exact optical dimensions with 8px outer inset "+JSON.stringify(pane));
-      assert(pane.bannerPosition==="fixed"&&Math.abs(pane.bannerWidth-1440)<1,
+      assert(pane.bannerPosition==="fixed"&&Math.abs(pane.bannerWidth-pane.layoutWidth)<1,
         "Top blur banner must extend across viewport behind sidebar "+JSON.stringify(pane));
       const glassSample=[pane.x+190,pane.x+260,pane.y+70,pane.y+820];
       const full=decodePNG((await send("Page.captureScreenshot",{
