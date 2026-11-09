@@ -48,3 +48,19 @@ for group in ["diagnostic_m0_b4.75_z1.0","diagnostic_m1_b4.75_z1.0"]:
    else:x=min(1,max(0,(dist-td[i])/difference))
    acc-=alpha[i+1]*x
   print("BLUR_LOD_CONTROL",group,dist,round(acc,7),flush=True)
+
+print("=== EXACT LIVE MODE4/MODE5 CPU48->GPU SDF BINDINGS ===",flush=True)
+joined=json.loads(lzma.decompress((root/"live_mode_joins.json.xz").read_bytes()))
+seen=set()
+for row in joined["rows"]:
+ mode=row.get("mode")
+ raw=row.get("cpu_sdf48_hex") or row.get("sdf48_hex") or row.get("gpu_sdf48_hex")
+ if raw is None:continue
+ if (mode,raw) in seen:continue
+ seen.add((mode,raw))
+ b=bytes.fromhex(raw)
+ if len(b)!=48:continue
+ print("EXACT_SDF",mode,row.get("case_id"),"same_case",row.get("same_case"),
+       "cpu_gpu_equal",row.get("exact_equality"),
+       "float4_triplet",list(struct.unpack("<12f",b)),flush=True)
+print("UNIQUE_LIVE_SDF_STATES",len(seen),flush=True)
