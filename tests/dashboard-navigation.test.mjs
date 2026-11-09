@@ -283,7 +283,7 @@ function mockNavigation(){
     "sidebar-scrim","main-navigation","project-navigation",
     "breadcrumb","location-subtitle","back-to-workspace"];
   const elements=Object.fromEntries(ids.map(id=>[id,element()]));
-  const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x)].map(name=>
+  const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x)].map(name=>
     element({dataset:{view:name}}));
   const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
@@ -317,8 +317,8 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   assert.equal(m.elements["main-navigation"].hidden,true);
   assert.equal(m.elements["project-navigation"].hidden,false);
   assert.equal(m.elements["back-to-workspace"].hidden,false);
-  assert.equal(m.views.find(x=>x.dataset.view==="settings").hidden,true);
-  assert.equal(m.views.find(x=>x.dataset.view==="colosseum/settings").hidden,false);
+  assert.equal(m.views.find(x=>x.dataset.view==="settings").hidden,false);
+  assert.equal(m.views.filter(x=>x.dataset.view==="settings").length,1);
   assert.equal(m.links.find(x=>x.href.endsWith("#colosseum/settings")).getAttribute("aria-current"),"page");
   m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),true);
