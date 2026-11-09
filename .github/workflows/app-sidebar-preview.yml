@@ -99,27 +99,11 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           sleep 1
-          for viewport in 1440,900 980,760 390,844; do
-            file="$RUNNER_TEMP/glass-browser-${viewport}.html"
-            error="$RUNNER_TEMP/glass-browser-${viewport}.log"
-            if ! timeout 90s google-chrome --headless=new --no-sandbox               --disable-dev-shm-usage --disable-background-networking               --no-first-run --no-default-browser-check               --enable-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist               --window-size="$viewport" --virtual-time-budget=28000               --dump-dom http://127.0.0.1:8765/app/ > "$file" 2> "$error"; then
-              echo "Chrome could not run glass smoke at $viewport" >&2
-              tail -30 "$error" >&2
-              exit 1
-            fi
-            if ! grep -Fq 'data-glass-browser-smoke="pass"' "$file"; then
-              echo "Browser glass smoke failed at $viewport" >&2
-              grep -o 'data-glass-browser-info="[^"]*"' "$file" | head -2 >&2 || true
-              grep -o 'data-glass-browser-smoke="[^"]*"' "$file" | head -2 >&2 || true
-              grep -o '<title>[^<]*</title>' "$file" | head -2 >&2 || true
-              echo "DOM beginning:" >&2
-              head -c 1300 "$file" >&2 || true
-              echo >&2
-              tail -30 "$error" >&2
-              exit 1
-            fi
-            echo "Browser glass smoke passed at $viewport"
-          done
+          # Direct CDP checks avoid Chrome --virtual-time-budget prematurely
+          # snapshotting the DOM before the optical filter initializes.
+          # The desktop pass also compares actual screenshot PIXELS, in memory,
+          # against a same-background blur-only control.
+          node tests/sidebar-glass-browser-cdp.mjs
           # Never ship the CI test script or its script tag in the preview.
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
