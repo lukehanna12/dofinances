@@ -440,3 +440,13 @@ test("exact cached endpoint fields synchronize to CSS width-transition completio
   assert.match(code,/sidebar\.removeEventListener\("transitionend",onWidthTransition\)/);
   assert.match(worker,/prefetch:!!request\.prefetch/);
 });
+
+test("exact cached endpoint fields synchronize on final width animation frame",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/function watchEndpoint\(\)/);
+  assert.match(code,/Math\.round\(bounds\.width\)===target/);
+  assert.match(code,/previous!==key&&geometryCache\.has\(key\)/);
+  assert.match(code,/endpointObserver\?\.observe\(shell/);
+  assert.match(code,/endpointObserver\?\.disconnect\(\)/);
+  assert.match(code,/win\.cancelAnimationFrame\(endpointFrame\)/);
+});

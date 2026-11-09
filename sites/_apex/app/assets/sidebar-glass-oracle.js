@@ -677,6 +677,32 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   };
   sidebar.addEventListener("transitionend",onWidthTransition);
   sidebar.addEventListener("transitioncancel",onWidthTransition);
+
+  // ResizeObserver and transitionend are not necessarily delivered in the
+  // same animation frame as the final CSS width. The two canonical endpoint
+  // maps are already cached by idle warmup. Check ONLY the endpoint on each
+  // animation frame while the explicit width transition runs. This avoids
+  // the final visible 74->260 field swap after the pane has settled, without
+  // inventing intermediate maps or modifying any oracle coefficients.
+  let endpointFrame=0;
+  function watchEndpoint(){
+    endpointFrame=0;
+    if(disposed||!shell.classList.contains("is-sidebar-toggling"))return;
+    const target=shell.classList.contains("is-collapsed")?74:260;
+    const bounds=sidebar.getBoundingClientRect();
+    if(Math.round(bounds.width)===target){
+      const key=target+"x"+Math.round(bounds.height)+"@24";
+      if(previous!==key&&geometryCache.has(key))apply();
+      if(previous===key)return;
+    }
+    endpointFrame=win.requestAnimationFrame(watchEndpoint);
+  }
+  const endpointObserver=typeof MutationObserver!=="undefined"?
+    new MutationObserver(()=>{
+      if(shell.classList.contains("is-sidebar-toggling")&&!endpointFrame)
+        endpointFrame=win.requestAnimationFrame(watchEndpoint);
+    }):null;
+  endpointObserver?.observe(shell,{attributes:true,attributeFilter:["class"]});
   schedule();
   return {
     get active(){return usingSVG;},
@@ -688,6 +714,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       stopWorker();
       geometryCache.clear();
       resize?.disconnect();
+      endpointObserver?.disconnect();
+      if(endpointFrame)win.cancelAnimationFrame(endpointFrame);
       win.removeEventListener("resize",schedule);
       sidebar.removeEventListener("transitionend",onWidthTransition);
       sidebar.removeEventListener("transitioncancel",onWidthTransition);
