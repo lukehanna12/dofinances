@@ -92,7 +92,7 @@ try{
     if(m.error)p.reject(Error(m.error.message));else p.resolve(m.result||{});
   });
   await send("Runtime.enable");await send("Page.enable");
-  await send("Emulation.setDeviceMetricsOverride",{width:1100,height:1024,deviceScaleFactor:1,mobile:false});
+  await send("Emulation.setDeviceMetricsOverride",{width:1100,height:1600,deviceScaleFactor:1,mobile:false});
   await send("Page.navigate",{url:"http://127.0.0.1:8765/gpu-lab/"});
   const state=await until(()=>evaluate('(()=>{const r=document.documentElement.dataset.gpuLabReady;return r?{ready:r,status:document.querySelector("#status")?.textContent}:null;})()'),90000);
   console.log("GPU_LAB_READY",JSON.stringify(state));
@@ -105,6 +105,8 @@ try{
     if(!backgrounds.same||backgrounds.canvas!==260)throw Error("GPU and SVG do not share exact controlled input");
     const box=await evaluate('(()=>{const a=document.querySelector("#svg-scene").getBoundingClientRect();const b=document.querySelector("#gpu-scene").getBoundingClientRect();return {a:{x:Math.round(a.left),y:Math.round(a.top)},b:{x:Math.round(b.left),y:Math.round(b.top)}};})()');
     const photo=decodePNG((await send("Page.captureScreenshot",{format:"png",fromSurface:true,captureBeyondViewport:false})).data);
+    if(Math.max(box.a.y,box.b.y)+640>photo.height)
+      throw Error("Page screenshot is shorter than the compared glass panes");
     const diff=compareRegions(photo,box.a,box.b,260,640);
     console.log("GPU_LAB_CONTROLLED_BACKDROP_PIXEL_DELTA",JSON.stringify(diff));
     if(!Number.isFinite(diff.meanAbsRGB8))throw Error("Invalid GPU / SVG screenshot comparison");
