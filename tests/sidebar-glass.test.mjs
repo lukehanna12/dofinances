@@ -65,3 +65,24 @@ test("the test branch alone deploys a static read-only preview with all required
   assert.match(workflow,/test ! -e .app-sidebar-preview\/app\/assets\/dashboard\.js/);
   assert.match(workflow,/node --test tests\/dashboard-navigation\.test\.mjs tests\/sidebar-glass\.test\.mjs/);
 });
+
+
+test("the preview wallpaper spans the entire viewport and glass remains color-neutral",async()=>{
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  const js=await read("../sites/_apex/app/assets/sidebar-glass.js");
+  // The scene must continue behind BOTH sidebar and content. The previous
+  // 440px color patch plus opaque main obscured the comparison altogether.
+  assert.match(css,/\.shell\.liquid-glass-preview::before,\s*\.shell\.liquid-glass-preview::after\s*\{[^}]*position: fixed;[^}]*inset: 0;[^}]*width: 100%;[^}]*height: 100%/s);
+  assert.doesNotMatch(css,/width:\s*min\(440px/);
+  assert.match(css,/\.shell\.liquid-glass-preview::after\s*\{[^}]*radial-gradient\(circle[^}]*repeating-linear-gradient\(90deg/s);
+  assert.match(css,/\.shell\.liquid-glass-preview \.main\s*\{[^}]*background:\s*linear-gradient\(90deg,\s*rgba\(7,13,17,\.10\)/s);
+  assert.match(css,/\.shell\.liquid-glass-preview \.topbar\s*\{[^}]*background:\s*rgba\(12,\s*18,\s*22,\s*\.34\)/s);
+  assert.match(css,/--glass-pane:\s*rgba\(22,\s*24,\s*26,\s*\.34\)/);
+  assert.match(css,/backdrop-filter:\s*blur\(21px\) saturate\(1\.13\) brightness\(1\.04\)/);
+  assert.match(js,/vec3\(\.86,\.87,\.88\)/);
+  for(const scene of ["Gallery","Monochrome","Spectrum"])
+    assert.match(js,new RegExp('name:"'+scene+'"'));
+  // No new routes, network requests, or external images are added.
+  assert.doesNotMatch(css,/url\(|@import/);
+  assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest/);
+});

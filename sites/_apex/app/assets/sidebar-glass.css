@@ -9,48 +9,87 @@
  * overlay adds only specular and rounded-surface shading, never fake pixels.
  */
 .shell.liquid-glass-preview {
-  --glass-pane: rgba(28, 33, 45, .37);
-  --glass-edge: rgba(229, 240, 255, .30);
-  --glass-high: rgba(243, 250, 255, .23);
-  --glass-ink: #f5f7fd;
-  --glass-selected: rgba(194, 211, 233, .16);
-  --glass-glow: rgba(167, 193, 226, .19);
+  /* The wallpaper supplies the color. The glass itself stays neutral. */
+  --glass-pane: rgba(22, 24, 26, .34);
+  --glass-edge: rgba(250, 252, 255, .29);
+  --glass-high: rgba(255, 255, 255, .20);
+  --glass-ink: #f7f8f9;
+  --glass-selected: rgba(255, 255, 255, .15);
+  --glass-glow: rgba(255, 255, 255, .11);
   position: relative;
   isolation: isolate;
-  background: #080a10;
+  background: #10191d;
   color: var(--glass-ink);
 }
-.shell.liquid-glass-preview::before {
+/*
+ * One continuous, fixed wallpaper across the ENTIRE viewport, not just the
+ * 260px sidebar. Sharp lines and large shapes span the glass boundary and
+ * become noticeably softened through the backdrop-filter. The same wallpaper
+ * remains visible under the workspace so the material has a clear reference.
+ */
+.shell.liquid-glass-preview::before,
+.shell.liquid-glass-preview::after {
   content: "";
   position: fixed;
-  inset: 0 auto 0 0;
-  width: min(440px, 58vw);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
   pointer-events: none;
+}
+.shell.liquid-glass-preview::before {
   background:
-    radial-gradient(ellipse 170px 270px at 7% 14%, rgba(104, 153, 211, .37), transparent 92%),
-    radial-gradient(ellipse 190px 250px at 52% 54%, rgba(97, 166, 164, .26), transparent 92%),
-    radial-gradient(ellipse 175px 260px at 12% 89%, rgba(177, 111, 174, .26), transparent 96%),
-    linear-gradient(138deg, #161b2a 0%, #0a101a 45%, #0b0c12 100%);
+    radial-gradient(ellipse 36vw 47vh at 19% 31%, rgba(224, 159, 90, .55), transparent 78%),
+    radial-gradient(ellipse 40vw 53vh at 79% 25%, rgba(67, 171, 158, .44), transparent 78%),
+    radial-gradient(ellipse 35vw 48vh at 48% 89%, rgba(160, 136, 94, .26), transparent 80%),
+    linear-gradient(132deg, #273a3c 0%, #1b262b 36%, #141d23 67%, #263038 100%);
+}
+.shell.liquid-glass-preview::after {
+  background:
+    radial-gradient(circle at 19% 39%, transparent 0 168px, rgba(255,255,255,.19) 170px 171px, transparent 173px 257px, rgba(255,255,255,.12) 259px 260px, transparent 262px),
+    radial-gradient(circle at 84% 68%, transparent 0 154px, rgba(255,255,255,.14) 156px 157px, transparent 159px 256px, rgba(255,255,255,.08) 258px 259px, transparent 261px),
+    repeating-linear-gradient(90deg, rgba(246,250,255,.073) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg, rgba(246,250,255,.073) 0 1px, transparent 1px 96px),
+    linear-gradient(120deg, transparent 0 33%, rgba(255,255,255,.048) 33.08% 33.18%, transparent 33.27% 68%, rgba(255,255,255,.045) 68.08% 68.18%, transparent 68.27%);
 }
 .shell.liquid-glass-preview.glass-scene-neutral::before {
   background:
-    repeating-linear-gradient(155deg, transparent 0 40px, rgba(238,243,255,.035) 40px 41px, transparent 41px 81px),
-    radial-gradient(ellipse at 24% 32%, rgba(229,238,251,.28), transparent 72%),
-    linear-gradient(120deg, #181e27, #090b10 78%);
+    radial-gradient(ellipse 36vw 48vh at 23% 39%, rgba(220, 219, 204, .36), transparent 76%),
+    radial-gradient(ellipse 43vw 52vh at 78% 30%, rgba(141, 147, 151, .31), transparent 78%),
+    linear-gradient(145deg, #313539 0%, #202529 53%, #141a1f 100%);
 }
 .shell.liquid-glass-preview.glass-scene-prism::before {
   background:
-    radial-gradient(ellipse 160px 320px at 4% 10%, rgba(77,150,255,.69), transparent 91%),
-    radial-gradient(ellipse 200px 250px at 66% 49%, rgba(43,235,213,.42), transparent 92%),
-    radial-gradient(ellipse 190px 280px at 10% 86%, rgba(220,80,190,.45), transparent 93%),
-    repeating-linear-gradient(0deg, rgba(236,242,255,.07) 0 1px, transparent 1px 38px),
-    #121425;
+    radial-gradient(ellipse 36vw 50vh at 17% 31%, rgba(237, 141, 88, .70), transparent 78%),
+    radial-gradient(ellipse 40vw 52vh at 78% 27%, rgba(44, 196, 183, .64), transparent 76%),
+    radial-gradient(ellipse 39vw 48vh at 53% 90%, rgba(120, 107, 205, .43), transparent 82%),
+    linear-gradient(132deg, #26374b 0%, #1b233c 45%, #1b2b38 100%);
 }
+/* Remove the previous opaque near-black sheet over the workspace. */
 .shell.liquid-glass-preview .main {
   position: relative;
   z-index: 1;
-  background: linear-gradient(145deg, rgba(9,12,18,.98), #030405 64%);
+  background: linear-gradient(90deg, rgba(7,13,17,.10), rgba(6,10,14,.23) 75%, rgba(6,10,14,.35));
+}
+.shell.liquid-glass-preview .topbar {
+  background: rgba(12, 18, 22, .34);
+  -webkit-backdrop-filter: blur(10px) saturate(1.08);
+  backdrop-filter: blur(10px) saturate(1.08);
+  border-bottom: 1px solid rgba(245,248,252,.065);
+}
+.shell.liquid-glass-preview .content {
+  position: relative;
+  background: transparent;
+}
+/* Keep text legible while allowing the grid and colored wallpaper to show. */
+.shell.liquid-glass-preview .feature-card,
+.shell.liquid-glass-preview .project-card,
+.shell.liquid-glass-preview .project-row,
+.shell.liquid-glass-preview .panel,
+.shell.liquid-glass-preview .empty-state {
+  background-color: rgba(13, 19, 23, .68);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 .shell.liquid-glass-preview .sidebar {
   /* Preserve widths (260 / 74 / 274), sticky/fixed positioning and flex
@@ -58,17 +97,17 @@
   z-index: 12;
   isolation: isolate;
   border-radius: 0 24px 24px 0;
-  border: 1px solid rgba(238,247,255,.10);
+  border: 1px solid rgba(255,255,255,.10);
   border-left: 0;
   border-right: 1px solid var(--glass-edge);
   background: var(--glass-pane);
-  -webkit-backdrop-filter: blur(21px) saturate(1.62) brightness(1.12);
-  backdrop-filter: blur(21px) saturate(1.62) brightness(1.12);
+  -webkit-backdrop-filter: blur(21px) saturate(1.13) brightness(1.04);
+  backdrop-filter: blur(21px) saturate(1.13) brightness(1.04);
   box-shadow:
     inset -1px 0 rgba(250,253,255,.10),
     inset 0 1px rgba(250,253,255,.09),
     9px 0 31px rgba(0,0,0,.26),
-    0 0 44px rgba(110,146,210,.055);
+    0 0 44px rgba(255,255,255,.035);
   color: var(--glass-ink);
 }
 .shell.liquid-glass-preview .sidebar::after {
@@ -81,7 +120,7 @@
   background:
     linear-gradient(90deg, rgba(255,255,255,.060), transparent 14%, transparent 79%, rgba(240,250,255,.12) 99%),
     radial-gradient(ellipse 95px 125px at 100% 7%, rgba(255,255,255,.14), transparent 95%),
-    radial-gradient(ellipse 80px 195px at 100% 89%, rgba(182,220,255,.075), transparent 95%);
+    radial-gradient(ellipse 80px 195px at 100% 89%, rgba(255,255,255,.06), transparent 95%);
   box-shadow: inset -1px 0 rgba(255,255,255,.1);
 }
 .shell.liquid-glass-preview .glass-optics {
@@ -105,7 +144,7 @@
 .shell.liquid-glass-preview .brand-subtitle {color: rgba(226,233,246,.57);}
 .shell.liquid-glass-preview .mark {
   color: rgba(255,255,255,.96);
-  background: linear-gradient(138deg, rgba(239,247,255,.34), rgba(118,149,196,.16) 58%, rgba(248,250,255,.11));
+  background: linear-gradient(138deg, rgba(255,255,255,.32), rgba(205,205,205,.14) 58%, rgba(248,250,255,.11));
   border: 1px solid rgba(250,251,255,.30);
   box-shadow: inset 0 1px rgba(255,255,255,.24), 0 5px 16px rgba(0,0,0,.2);
 }
@@ -169,7 +208,7 @@
   border-radius: 10px;
   background:
     radial-gradient(ellipse 130% 130% at 18% 0, rgba(249,253,255,.22), transparent 62%),
-    linear-gradient(100deg, rgba(220,234,255,.14), rgba(158,184,218,.09) 56%, rgba(237,245,255,.13));
+    linear-gradient(100deg, rgba(255,255,255,.16), rgba(230,230,230,.08) 56%, rgba(255,255,255,.13));
   box-shadow:
     inset 0 1px rgba(255,255,255,.23),
     inset 0 -1px rgba(154,185,224,.11),
@@ -201,7 +240,7 @@
   min-height: 34px;
   border: 1px solid rgba(229,239,255,.20);
   border-radius: 999px;
-  background: rgba(174,201,245,.09);
+  background: rgba(255,255,255,.09);
   color: rgba(242,247,255,.84);
   font: inherit;
   font-size: 12px;
@@ -211,7 +250,7 @@
   backdrop-filter: blur(12px);
 }
 .shell.liquid-glass-preview .glass-scene-toggle:hover {
-  background: rgba(204,222,252,.17);
+  background: rgba(255,255,255,.17);
   border-color: rgba(233,245,255,.36);
   color: #fff;
 }
@@ -221,22 +260,21 @@
 .shell.liquid-glass-preview .glass-scene-dot {
   display: inline-block;
   width: 7px; height: 7px; border-radius: 50%;
-  background: #a6bfdf;
-  box-shadow: 0 0 9px rgba(180,219,255,.37);
+  background: #e7b889;
+  box-shadow: 0 0 9px rgba(250,207,152,.30);
 }
-.shell.liquid-glass-preview.glass-scene-prism .glass-scene-dot {background:#7de1d8;}
+.shell.liquid-glass-preview.glass-scene-prism .glass-scene-dot {background:#64cfbd;}
 .shell.liquid-glass-preview.glass-scene-neutral .glass-scene-dot {background:#dee6f0;}
 @media (max-width: 930px) {
   .shell.liquid-glass-preview .glass-scene-toggle {font-size: 0; gap: 0; width: 34px; height: 34px; justify-content: center; padding: 0;}
   .shell.liquid-glass-preview .glass-scene-dot {width: 9px; height: 9px;}
 }
 @media (max-width: 760px) {
-  .shell.liquid-glass-preview::before {width: 100vw;}
   .shell.liquid-glass-preview .sidebar {
     border-radius: 0 26px 26px 0;
     /* Keep the existing fixed 274px drawer's left-side entrance. */
-    -webkit-backdrop-filter: blur(24px) saturate(1.5) brightness(1.1);
-    backdrop-filter: blur(24px) saturate(1.5) brightness(1.1);
+    -webkit-backdrop-filter: blur(24px) saturate(1.13) brightness(1.04);
+    backdrop-filter: blur(24px) saturate(1.13) brightness(1.04);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -246,7 +284,7 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .shell.liquid-glass-preview .sidebar {
-    background: #1b202b;
+    background: #222629;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -269,6 +307,6 @@
 }
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .shell.liquid-glass-preview .sidebar {
-    background: rgba(26,33,43,.97);
+    background: rgba(32,34,36,.97);
   }
 }

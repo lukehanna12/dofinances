@@ -67,7 +67,7 @@ void main() {
   float reflected = glint*.045 + bloom + upperLight + edgeLight;
   float grain = (noise(floor(p*1.15+vec2(u_time*.003,0.0)))-.5)*.012;
   float alpha = clamp(reflected + grain, 0.0, .34);
-  vec3 tint = mix(vec3(.60,.72,.90),vec3(.93,.97,1.0),
+  vec3 tint = mix(vec3(.86,.87,.88),vec3(.99,.99,1.0),
                   clamp(.53+rimR*.45+glint*.24,0.0,1.0));
   outColor = vec4(tint*alpha, alpha);
 }`;
@@ -271,16 +271,16 @@ export function initLiquidGlassSidebar(doc=document, win=window) {
   // A preview-only optical calibration scene selector. It changes neither
   // the nav state nor any real account data.
   const scenes = [
-    {name:"Aurora",className:""},
-    {name:"Neutral",className:"glass-scene-neutral"},
-    {name:"Prism",className:"glass-scene-prism"}
+    {name:"Gallery",className:""},
+    {name:"Monochrome",className:"glass-scene-neutral"},
+    {name:"Spectrum",className:"glass-scene-prism"}
   ];
   let scene=0;
   const toggle=doc.createElement("button");
   toggle.type="button";
   toggle.className="glass-scene-toggle";
-  toggle.setAttribute("aria-label","Change glass backdrop: Aurora");
-  toggle.title="Cycle glass backdrop for visual testing";
+  toggle.setAttribute("aria-label","Change glass backdrop: Gallery");
+  toggle.title="Compare the same neutral glass against different full-screen backgrounds";
   const dot=doc.createElement("span");
   dot.className="glass-scene-dot";
   dot.setAttribute("aria-hidden","true");

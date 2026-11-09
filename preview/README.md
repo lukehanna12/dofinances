@@ -18,12 +18,19 @@ routes, persistence, 260px wide / 74px icon rail / 274px mobile drawer, and
 the existing responsive breakpoints. No production /app source changes occur
 until a future explicitly reviewed merge.
 
-The presentation uses a semitranslucent dark regular-glass pane, CSS backdrop
-blur/saturation, a rounded lens edge, a fluid moving active-link capsule, and
-a progressive WebGL2 specular/grazing-light overlay. A CSS-only fallback
-remains usable without GPU support. The three-scene Backdrop selector
-(Aurora / Neutral / Prism) is intentionally preview-only and changes no
-actual routes or account state.
+The presentation now uses a **neutral charcoal glass pane** over a
+**single full-viewport geometric wallpaper**: a fixed grid, large outlined
+rings, warm highlights, and teal accents. Those lines and gradients remain
+visible outside the glass behind the whole workspace, and become softened
+under the sidebar. The main workspace and topbar are intentionally
+translucent rather than blacking out the background. CSS backdrop blur,
+a rounded lens edge, fluid active-link capsule, and optional WebGL2 neutral
+specular/grazing-light highlights make the optical behavior inspectable.
+
+The preview-only Backdrop selector cycles **Gallery / Monochrome / Spectrum**
+to compare the same untinted glass material over different full-screen
+wallpapers. No actual navigation or account state is changed. CSS-only
+and accessibility fallbacks remain available.
 
 Exact Apple CA/Metal native semantics, true runtime refraction, and the
 output-color/EDR Q-stage remain unresolved in the Oracle model. These
