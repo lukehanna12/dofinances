@@ -140,11 +140,14 @@ export async function createGPUExperiment(canvas,input,width,height,radius=24){
     {binding:4,resource:blur.createView()}, {binding:5,resource:sampler},
     {binding:6,resource:{buffer:finalParams}}
   ]});
-  let disposed=false;
+  let disposed=false,blurred=false;
   function draw(){
     if(disposed)return;
     const encoder=device.createCommandEncoder();
-    for(const pass of stageInputs){
+    // The four Gaussian passes are invariant until the supplied source
+    // texture changes. Reusing near/far targets preserves every output
+    // pixel while removing the most expensive work from ordinary frames.
+    if(!blurred)for(const pass of stageInputs){
       const renderPass=encoder.beginRenderPass({colorAttachments:[{
         view:pass.to.createView(),loadOp:"clear",storeOp:"store"
       }]});
@@ -152,6 +155,7 @@ export async function createGPUExperiment(canvas,input,width,height,radius=24){
       renderPass.setBindGroup(0,pass.group);
       renderPass.draw(3);renderPass.end();
     }
+    blurred=true;
     const renderPass=encoder.beginRenderPass({colorAttachments:[{
       view:context.getCurrentTexture().createView(),loadOp:"clear",storeOp:"store"
     }]});
@@ -174,7 +178,12 @@ export async function createGPUExperiment(canvas,input,width,height,radius=24){
       p95Ms:sorted[Math.floor(.95*(samples-1))],maxMs:sorted.at(-1),
       totalMs:durations.reduce((a,b)=>a+b,0)};
   }
-  return {draw,benchmark,device,adapter,source:field,
+  function updateSource(pixels){
+    if(disposed)throw Error("GPU renderer is disposed");
+    write(src,pixels);
+    blurred=false;
+  }
+  return {draw,updateSource,benchmark,device,adapter,source:field,
     dispose(){if(disposed)return;disposed=true;for(const t of textures)t.destroy();
       for(const p of stageInputs)p.buffer.destroy();finalParams.destroy();device.destroy();}};
 }
