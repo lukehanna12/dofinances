@@ -117,6 +117,16 @@ const FLOWED_ERRORS={
   email_required:"This provider did not return an email address.",
   invalid:"The external sign-in request expired. Please try again.",
   cancelled:"Account linking was cancelled.",
+  oauth_client_rejected:"Google or GitHub rejected the OAuth client credentials. Check the client secret configured in Cloudflare.",
+  oauth_code_rejected:"The authorization code was rejected or expired. Please start linking again.",
+  oauth_token_rejected:"The provider rejected the authorization code exchange.",
+  oauth_identity_invalid:"The provider identity could not be verified. The account was not linked.",
+  oauth_response_invalid:"The provider returned an invalid authentication response.",
+  oauth_jwks_unavailable:"The provider signing keys were unavailable.",
+  oauth_profile_unavailable:"The provider could not return the profile.",
+  oauth_provider_network_error:"Dofinances could not complete its secure connection to the provider.",
+  oauth_account_store_failed:"The Google/GitHub identity was verified, but Dofinances could not save the account link.",
+  oauth_mail_unavailable:"The account verification email could not be sent.",
   unavailable:"External sign-in could not be completed. Please try again."
 };
 async function loadFederatedAccounts(){
