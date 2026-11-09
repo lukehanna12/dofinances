@@ -70,12 +70,6 @@ test("anonymous recovery links receive public dark CSS without exposing protecte
   assert.equal(denied.status,302);
   assert.equal(denied.headers.get("Location"),"/login");
 });
-test("www can have independent files or redirect to apex",async()=>{")));
-  }
-  const denied=await handleRequest(new Request("https://dofinances.com/app/assets/dashboard.css"),authed);
-  assert.equal(denied.status,302);
-  assert.equal(denied.headers.get("Location"),"/login");
-});
 test("www can have independent files or redirect to apex",async()=>{
   const page=await handleRequest(new Request("https://www.dofinances.com/independent.html"),mock);
   assert.equal(page.status,200);
