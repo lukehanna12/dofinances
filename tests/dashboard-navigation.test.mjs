@@ -47,13 +47,22 @@ test("reconstruction-inspired adaptive presentation covers all shared workspace 
   const html=await read("../sites/_apex/app/index.html");
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
   assert.match(html,/href="\/app\/assets\/dashboard\.css"[\s\S]*href="\/app\/assets\/workspace-theme\.css"/);
-  assert.match(html,/name="theme-color"[^>]*prefers-color-scheme: dark/);
+  assert.match(html,/<meta name="theme-color" content="#000000">/);
+  assert.equal((html.match(/name="theme-color"/g)||[]).length,1);
   for(const name of [".sidebar",".nav-link.active",".topbar",".content",
     ".feature-card",".project-card",".project-view .empty-state",
     ".settings-panel",".security-form input",".danger"]){
     assert.ok(css.includes(name),"missing style: "+name);
   }
-  assert.match(css,/@media \(prefers-color-scheme: dark\)/);
+  assert.match(css,/color-scheme:\s*dark;/);
+  assert.match(css,/--ui-canvas:\s*#000000;/);
+  assert.match(css,/--ui-sidebar:\s*#000000;/);
+  assert.match(css,/--ui-divider:\s*#303030;/);
+  assert.match(css,/border-right:\s*1px solid var\(--ui-divider\)/);
+  assert.match(css,/--ui-surface:\s*#212121;/);
+  assert.match(css,/--ui-elevated:\s*#171717;/);
+  assert.match(css,/--ui-selected:\s*#303030;/);
+  assert.doesNotMatch(css,/@media\s*\(prefers-color-scheme:/);
   assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css,/@media \(prefers-contrast: more\)/);
   assert.match(css,/\.shell\.is-collapsed \.sidebar/);
