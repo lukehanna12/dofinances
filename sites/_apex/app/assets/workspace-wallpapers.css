@@ -94,6 +94,7 @@ body:has(> #workspace-shell) .topbar::before {
   height:var(--workspace-header-height);
   z-index:-1;
   pointer-events:none;
+  border:0; /* Clear the earlier sidebar-glass topbar rule in both app shells. */
   background:rgba(14,15,17,.69);
   -webkit-backdrop-filter:blur(18px) saturate(120%);
   backdrop-filter:blur(18px) saturate(120%);
