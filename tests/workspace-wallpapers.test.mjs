@@ -23,7 +23,7 @@ test("wallpaper geometry derives both the image and spacer from header height",(
 });
 test("every named page has the exact owner-selected wallpaper",()=>{
   const expected={
-    home:"clouds-over-rice-terraces.webp",
+    home:"clouds-over-rice-terraces-high-quality.jpg",
     projects:"winding-icelandic-river-mountains.webp",
     settings:"misty-tropical-forest-hillside.avif",
     "colosseum/utilities":"waterfall-between-mossy-cliffs.jpg",
@@ -60,7 +60,8 @@ test("Home keeps its original pixels and a near-native desktop foreground",()=>{
   assert.match(css,/\.workspace-home-art-top/);
   assert.match(css,/\.workspace-home-art-bottom/);
   assert.equal(WORKSPACE_WALLPAPERS.home.sha,
-    "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b");
+    "656a4d103f5dd4dd4450a9da0954099c686b0e7d6d60f6fbfc35b3e14b2fe4a6");
+  assert.equal(WORKSPACE_WALLPAPERS.home.path,"/app/assets/home-rice-terraces-hq.jpg");
 });
 test("route changes decode new wallpaper outside the immediate navigation turn and discard stale paints",async()=>{
   const variables=new Map(),writes=[];

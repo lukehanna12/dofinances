@@ -12,9 +12,43 @@
   <link rel="stylesheet" href="/app/assets/workspace-theme.css">
   <link rel="stylesheet" href="/app/assets/sidebar-glass.css">
   <link rel="stylesheet" href="/app/assets/workspace-wallpapers.css">
+  <link rel="stylesheet" href="/app/assets/workspace-enhancements.css">
   <script src="/app/assets/dashboard.js" type="module"></script>
 </head>
 <body>
+  <nav class="global-menu" id="global-menu" aria-label="Global navigation">
+    <div class="global-menu-inner">
+      <a class="global-brand" data-global-route href="#home" aria-label="DoFinances Home"><span class="global-brand-mark" aria-hidden="true">D</span><span>DoFinances</span></a>
+      <div class="global-menu-links" id="global-menu-links">
+        <a data-global-route href="#home">Workspace</a>
+        <a data-global-route href="#projects">Projects</a>
+        <a data-global-route href="#colosseum/utilities">Colosseum</a>
+        <a data-global-route href="#colosseum/collections">Collections</a>
+        <a data-global-route href="#colosseum/providers">Providers</a>
+        <a data-global-route href="#settings">Settings</a>
+      </div>
+      <div class="global-menu-actions">
+        <button id="global-search-toggle" class="global-menu-icon" type="button" aria-label="Search navigation" aria-controls="global-search-panel" aria-expanded="false" title="Search navigation"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.3 15.3 5 5"/></svg></button>
+        <a class="global-menu-account" data-global-route href="#settings">Account</a>
+        <button id="global-menu-toggle" class="global-menu-icon global-mobile-toggle" type="button" aria-label="Open global menu" aria-controls="global-menu-links" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      </div>
+    </div>
+    <div class="global-search-panel" id="global-search-panel" hidden>
+      <label for="global-search-input">Find a page</label>
+      <input id="global-search-input" type="search" autocomplete="off" placeholder="Search workspace or Colosseum…" aria-label="Search pages">
+      <div class="global-search-results" id="global-search-results">
+        <a data-global-route href="#home">Home</a>
+        <a data-global-route href="#projects">Projects</a>
+        <a data-global-route href="#settings">Account Settings</a>
+        <a data-global-route href="#colosseum/utilities">Utilities</a>
+        <a data-global-route href="#colosseum/collections">Collections</a>
+        <a data-global-route href="#colosseum/providers">Providers</a>
+        <a data-global-route href="#colosseum/permissions">Permissions</a>
+        <a data-global-route href="#colosseum/diagnostics">Diagnostics</a>
+        <a data-global-route href="#colosseum/settings">Colosseum Settings</a>
+      </div>
+    </div>
+  </nav>
   <!-- Independent viewport layers never translate with the responsive sidebar. -->
   <div class="workspace-home-art workspace-home-art-top" aria-hidden="true"></div>
   <div class="workspace-home-art workspace-home-art-bottom" aria-hidden="true"></div>
@@ -44,31 +78,40 @@
       <div class="sidebar-navigation" id="sidebar-navigation">
         <nav id="main-navigation" class="nav-stack" aria-label="Main workspace navigation">
           <div class="nav-section-label">WORKSPACE</div>
-          <a class="nav-link" data-route="home" href="#home" aria-label="Home" title="Home"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-home"></use></svg><span class="nav-label">Home</span></a>
-          <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects" title="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label">Projects</span></a>
-          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label">Settings</span></a>
+          <a class="nav-link" data-route="home" href="#home" aria-label="Home" title="Home"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-home"></use></svg><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
+          <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects" title="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label"><span class="nav-label-text">Projects</span></span></a>
+          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
-          <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities" title="Utilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><span class="nav-label">Utilities</span></a>
-          <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections" title="Collections"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><span class="nav-label">Collections</span></a>
-          <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers" title="Providers"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><span class="nav-label">Providers</span></a>
-          <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions" title="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label">Permissions</span></a>
-          <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics" title="Diagnostics"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><span class="nav-label">Diagnostics</span></a>
-          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label">Settings</span></a>
+          <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities" title="Utilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><span class="nav-label"><span class="nav-label-text">Utilities</span></span></a>
+          <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections" title="Collections"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><span class="nav-label"><span class="nav-label-text">Collections</span></span></a>
+          <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers" title="Providers"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><span class="nav-label"><span class="nav-label-text">Providers</span></span></a>
+          <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions" title="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
+          <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics" title="Diagnostics"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
+          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
       </div>
       <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
+      <div id="sidebar-resize-handle" class="sidebar-resize-handle" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin="200" aria-valuemax="440" aria-valuenow="260" tabindex="0" title="Drag to resize sidebar"></div>
     </aside>
     <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Close navigation" hidden></button>
     <div class="main">
       <header class="topbar">
         <div class="topbar-start">
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>
-          <a id="back-to-workspace" class="icon-button back-button" href="#projects" aria-label="Back to Projects" title="Back to Projects" hidden><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-back"></use></svg></a>
-          <div class="page-location"><span class="breadcrumb-label" id="breadcrumb">Workspace / Home</span><span class="breadcrumb-subtitle" id="location-subtitle">Your personal workspace</span></div>
+          <nav class="rb-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
+            <a class="rb-crumb" data-breadcrumb-root href="#home">Workspace</a>
+            <span class="rb-crumb-separator" aria-hidden="true">›</span>
+            <a class="rb-crumb" id="back-to-workspace" href="#projects" hidden>Projects</a>
+            <span class="rb-crumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden>›</span>
+            <a class="rb-crumb" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a>
+            <span class="rb-crumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden>›</span>
+            <span class="rb-crumb-current" id="breadcrumb-current" aria-current="page">Home</span>
+          </nav>
+          <span id="location-subtitle" hidden></span>
         </div>
-        <div class="top-actions"><span id="account-email" class="email">Loading account…</span><button id="signout" type="button" class="secondary">Sign out</button></div>
+        <div class="top-actions"><span id="account-email" class="email">Loading account…</span></div>
       </header>
       <div class="workspace-scroll" id="workspace-scroll" tabindex="-1">
         <main class="content" id="main-content">
@@ -146,6 +189,10 @@
               <p id="mfa-disable-feedback" role="alert"></p>
             </form>
           </div>
+          <section class="manage-account settings-divider" aria-labelledby="manage-account-title">
+            <h3 id="manage-account-title">Manage Account</h3>
+            <button id="signout" type="button" class="secondary">Sign out</button>
+          </section>
           <details class="danger">
             <summary>Delete my account</summary>
             <p>This permanently deletes your registered account and all sessions. This cannot be undone.</p>

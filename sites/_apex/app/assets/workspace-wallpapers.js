@@ -3,9 +3,10 @@
  * Each blob is SHA-256 addressed at /objects/<sha>.bin. */
 export const WORKSPACE_WALLPAPERS = Object.freeze({
   "home": {
-    "sha": "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b",
-    "ext": "webp",
-    "name": "clouds-over-rice-terraces.webp",
+    "sha": "656a4d103f5dd4dd4450a9da0954099c686b0e7d6d60f6fbfc35b3e14b2fe4a6",
+    "ext": "jpg",
+    "name": "clouds-over-rice-terraces-high-quality.jpg",
+    "path": "/app/assets/home-rice-terraces-hq.jpg",
     "position": "center 46%",
     "footerInk": "#5c5c5c"
   },
@@ -73,7 +74,7 @@ export function applyWorkspaceWallpaper(doc,route) {
     if(doc.body.style.getPropertyValue?.(key)!==value)
       doc.body.style.setProperty(key,value);
   };
-  set("--workspace-wallpaper-image",'url("https://dofinances.com/wallpapers/'+name+'")');
+  set("--workspace-wallpaper-image",'url("'+(wallpaper.path||'https://dofinances.com/wallpapers/'+name)+'")');
   set("--workspace-wallpaper-position",wallpaper.position);
   set("--workspace-footer-ink",wallpaper.footerInk);
   if(doc.body.dataset.wallpaper!==name)doc.body.dataset.wallpaper=name;
@@ -88,7 +89,7 @@ export function applyWorkspaceWallpaper(doc,route) {
 export function initWorkspaceWallpaper(doc=document,win=window){
   const decoded=new Map();
   let generation=0;
-  const imageURL=wallpaper=>'https://dofinances.com/wallpapers/'+wallpaper.sha+'.'+wallpaper.ext;
+  const imageURL=wallpaper=>wallpaper.path||'https://dofinances.com/wallpapers/'+wallpaper.sha+'.'+wallpaper.ext;
   function warm(route){
     if(typeof win.Image!=="function")return null;
     const wallpaper=workspaceWallpaperForRoute(route);

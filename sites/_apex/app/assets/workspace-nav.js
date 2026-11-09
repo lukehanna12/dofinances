@@ -10,6 +10,8 @@ const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",
   utilities:"Utilities",collections:"Collections",providers:"Providers",
   permissions:"Permissions",diagnostics:"Diagnostics"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
+const WIDTH_KEY="dofinances.workspace.sidebar.width";
+const RESIZE_CAP=440;
 
 export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
@@ -60,6 +62,18 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const breadcrumb=doc.getElementById("breadcrumb");
   const subtitle=doc.getElementById("location-subtitle");
   const back=doc.getElementById("back-to-workspace");
+  const currentCrumb=doc.getElementById("breadcrumb-current");
+  const projectArrow=doc.getElementById("breadcrumb-project-separator");
+  const colosseumCrumb=doc.getElementById("breadcrumb-colosseum");
+  const colosseumArrow=doc.getElementById("breadcrumb-colosseum-separator");
+  const resizeHandle=doc.getElementById("sidebar-resize-handle");
+  const globalMenu=doc.getElementById("global-menu");
+  const globalToggle=doc.getElementById("global-menu-toggle");
+  const searchToggle=doc.getElementById("global-search-toggle");
+  const searchPanel=doc.getElementById("global-search-panel");
+  const searchInput=doc.getElementById("global-search-input");
+  const globalLinks=[...doc.querySelectorAll("[data-global-route]")];
+  const searchable=[...doc.querySelectorAll("#global-search-results a")];
   const views=[...doc.querySelectorAll(".view[data-view]")];
   const links=[...doc.querySelectorAll(".nav-link[data-route]")];
   if(!shell||!sidebar||!desktopToggle||!mobileToggle||!scrim||
@@ -105,14 +119,45 @@ export function initWorkspaceNavigation(doc=document,win=window){
     },250);
   }
   let collapsed=false;
-  try{collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";}catch{}
+  let railExpanded=false;
+  let expandedWidth=260;
+  try{
+    collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";
+    const saved=Number(win.localStorage.getItem(WIDTH_KEY));
+    if(Number.isFinite(saved)&&saved>=180)expandedWidth=saved;
+  }catch{}
+  // The minimum is driven by real navigation label widths and chrome,
+  // never a percentage of viewport width. A 25%-content minimum caps max.
+  const titleWidths=()=>{
+    let widest=0;
+    const canvas=doc.createElement?.("canvas");
+    const ctx=canvas?.getContext?.("2d");
+    if(ctx)ctx.font="450 14px system-ui, sans-serif";
+    for(const link of links){
+      const title=link.querySelector?.(".nav-label")?.textContent||link.getAttribute?.("aria-label")||"";
+      widest=Math.max(widest,ctx?ctx.measureText(title).width:title.length*8);
+    }
+    return widest;
+  };
+  const minSidebarWidth=Math.max(204,Math.ceil(titleWidths()+18+11+22+24+18));
+  const maxSidebarWidth=()=>Math.max(minSidebarWidth,Math.min(RESIZE_CAP,Math.floor((win.innerWidth||1280)*.75)));
+  const clampWidth=n=>Math.round(Math.max(minSidebarWidth,Math.min(maxSidebarWidth(),n)));
+  function setSidebarWidth(n){
+    expandedWidth=clampWidth(n);
+    shell.style?.setProperty?.("--sidebar-expanded-width",expandedWidth+"px");
+    resizeHandle?.setAttribute?.("aria-valuemin",String(minSidebarWidth));
+    resizeHandle?.setAttribute?.("aria-valuemax",String(maxSidebarWidth()));
+    resizeHandle?.setAttribute?.("aria-valuenow",String(expandedWidth));
+  }
+  setSidebarWidth(expandedWidth);
   function updateCollapse(){
     const forcedRail=isCompactRail();
-    const effectiveCollapsed=forcedRail||collapsed;
+    const effectiveCollapsed=forcedRail?!railExpanded:collapsed;
     shell.classList.toggle("is-compact-rail",forcedRail);
+    shell.classList.toggle("is-rail-expanded",forcedRail&&railExpanded);
     shell.classList.toggle("is-collapsed",effectiveCollapsed);
-    // The compact rail is a responsive mode, not a user toggle.
-    desktopToggle.disabled=forcedRail;
+    // Compact rail can expand from its empty surface; toggle then collapses.
+    desktopToggle.disabled=forcedRail&&!railExpanded;
     desktopToggle.setAttribute("aria-expanded",String(!effectiveCollapsed));
     desktopToggle.setAttribute("aria-label",isMobile()?"Close navigation":
       effectiveCollapsed?"Expand sidebar":"Collapse sidebar");
@@ -149,8 +194,19 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mainNav.hidden=meta.project;
     projectNav.hidden=!meta.project;
     back.hidden=!meta.project;
-    breadcrumb.textContent=meta.breadcrumb;
-    subtitle.textContent=meta.subtitle;
+    if(currentCrumb){
+      currentCrumb.textContent=meta.label;
+      if(projectArrow)projectArrow.hidden=!meta.project;
+      if(colosseumCrumb)colosseumCrumb.hidden=!meta.project;
+      if(colosseumArrow)colosseumArrow.hidden=!meta.project;
+    }else breadcrumb.textContent=meta.breadcrumb; // Lightweight DOM-test fixture.
+    subtitle.textContent=""; // The former second header line is retired.
+    for(const link of globalLinks){
+      const selected=link.href?.split("#")[1]===route;
+      link.classList.toggle("is-current",selected);
+      if(selected)link.setAttribute("aria-current","page");
+      else link.removeAttribute("aria-current");
+    }
     doc.title=meta.label+" · "+(meta.project?"Colosseum · ":"")+"DoFinances";
     // One Settings DOM view for both Workspace and every project.
     const visibleView=route==="colosseum/settings"?"settings":route;
@@ -172,20 +228,134 @@ export function initWorkspaceNavigation(doc=document,win=window){
 
   desktopToggle.addEventListener("click",()=>{
     if(isMobile()){closeDrawer(true);return;}
-    if(isCompactRail())return;
+    if(isCompactRail()&&!railExpanded)return;
     startSidebarMotion("layout");
-    collapsed=!collapsed;
+    if(isCompactRail()){
+      railExpanded=false;
+      collapsed=true;
+    }else collapsed=!collapsed;
     try{win.localStorage.setItem(PREFERENCE_KEY,String(collapsed));}catch{}
     updateCollapse();
   });
+  // In collapsed desktop mode the unused glass surface is an expansion
+  // target. Native links, buttons and the resize grip keep their own actions.
+  sidebar.addEventListener?.("click",event=>{
+    if(isMobile()||!shell.classList.contains("is-collapsed"))return;
+    if(event.target?.closest?.('a,button,input,[role="separator"]'))return;
+    if(isCompactRail())railExpanded=true;
+    else {
+      collapsed=false;
+      try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
+    }
+    startSidebarMotion("layout");
+    updateCollapse();
+  });
+
+  // A single frame owns each drag width change; the oracle's ResizeObserver
+  // then sees the real CSS width. Dragging never animates the width itself.
+  if(resizeHandle){
+    let drag=null,queued=false,pendingWidth=expandedWidth;
+    const paint=()=>{
+      queued=false;
+      if(drag)setSidebarWidth(pendingWidth);
+    };
+    const onMove=event=>{
+      if(!drag)return;
+      pendingWidth=clampWidth(drag.width+event.clientX-drag.x);
+      if(queued)return;
+      queued=true;
+      if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(paint);
+      else paint();
+    };
+    const onEnd=()=>{
+      if(!drag)return;
+      setSidebarWidth(pendingWidth);
+      drag=null;
+      shell.classList.remove("is-sidebar-resizing");
+      try{win.localStorage.setItem(WIDTH_KEY,String(expandedWidth));}catch{}
+    };
+    resizeHandle.addEventListener("pointerdown",event=>{
+      if(isMobile()||shell.classList.contains("is-collapsed"))return;
+      event.preventDefault?.();
+      stopSidebarMotion();
+      drag={x:event.clientX,width:expandedWidth};
+      pendingWidth=expandedWidth;
+      shell.classList.add("is-sidebar-resizing");
+      resizeHandle.setPointerCapture?.(event.pointerId);
+    });
+    resizeHandle.addEventListener("pointermove",onMove);
+    resizeHandle.addEventListener("pointerup",onEnd);
+    resizeHandle.addEventListener("pointercancel",onEnd);
+    resizeHandle.addEventListener("lostpointercapture",onEnd);
+    resizeHandle.addEventListener("keydown",event=>{
+      if(isMobile()||shell.classList.contains("is-collapsed"))return;
+      if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+      event.preventDefault?.();
+      const next=event.key==="Home"?minSidebarWidth:
+        event.key==="End"?maxSidebarWidth():
+        expandedWidth+(event.key==="ArrowRight"?10:-10);
+      setSidebarWidth(next);
+      try{win.localStorage.setItem(WIDTH_KEY,String(expandedWidth));}catch{}
+    });
+  }
+
+  // Genuine Apple-documentation-style global menu, with fully functional
+  // route links, a compact navigation menu, and keyboard-searchable routes.
+  const closeGlobal=()=>{
+    globalMenu?.classList?.remove("is-open");
+    globalToggle?.setAttribute?.("aria-expanded","false");
+    if(searchPanel)searchPanel.hidden=true;
+    searchToggle?.setAttribute?.("aria-expanded","false");
+  };
+  globalToggle?.addEventListener?.("click",()=>{
+    const open=!globalMenu.classList.contains("is-open");
+    closeGlobal();
+    globalMenu.classList.toggle("is-open",open);
+    globalToggle.setAttribute("aria-expanded",String(open));
+  });
+  searchToggle?.addEventListener?.("click",()=>{
+    const open=!!searchPanel?.hidden;
+    closeGlobal();
+    if(!searchPanel)return;
+    searchPanel.hidden=!open;
+    searchToggle.setAttribute("aria-expanded",String(open));
+    if(open){if(searchInput)searchInput.value="";searchable.forEach(a=>a.hidden=false);searchInput?.focus?.();}
+  });
+  searchInput?.addEventListener?.("input",()=>{
+    const q=searchInput.value.trim().toLowerCase();
+    for(const a of searchable)a.hidden=!a.textContent.toLowerCase().includes(q);
+  });
+  for(const link of globalLinks)link.addEventListener("click",()=>{
+    const route=link.href?.split("#")[1];
+    if(route)render(route);
+    closeGlobal();
+  });
+  for(const link of links){
+    const label=link.querySelector?.(".nav-label");
+    const inner=link.querySelector?.(".nav-label-text");
+    if(!label||!inner)continue;
+    const activate=()=>{
+      if(!isMobile())return;
+      const extra=Math.max(0,inner.scrollWidth-label.clientWidth);
+      label.classList.toggle("is-marquee",extra>1);
+      label.style?.setProperty?.("--marquee-distance",extra+"px");
+    };
+    link.addEventListener("pointerenter",activate,{passive:true});
+    link.addEventListener("focus",activate,{passive:true});
+    link.addEventListener("pointerleave",()=>label.classList.remove("is-marquee"),{passive:true});
+    link.addEventListener("blur",()=>label.classList.remove("is-marquee"),{passive:true});
+  }
   mobileToggle.addEventListener("click",()=>{
     if(shell.classList.contains("is-mobile-open"))closeDrawer(true);
     else openDrawer();
   });
   scrim.addEventListener("click",()=>closeDrawer(true));
   doc.addEventListener("keydown",event=>{
-    if(event.key==="Escape"&&shell.classList.contains("is-mobile-open")){
-      closeDrawer(true);mobileToggle.focus();
+    if(event.key==="Escape"){
+      closeGlobal();
+      if(shell.classList.contains("is-mobile-open")){
+        closeDrawer(true);mobileToggle.focus();
+      }
     }
   });
   for(const link of links){
@@ -206,6 +376,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   win.addEventListener("resize",()=>{
     const nowMobile=isMobile();
     const nowCompactRail=isCompactRail();
+    setSidebarWidth(expandedWidth);
     if(nowMobile!==wasMobile){
       stopSidebarMotion();
       stopRailEntry();
@@ -214,9 +385,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(wasMobile&&!nowMobile)enterDesktopFromLeft();
     }else if(nowCompactRail!==wasCompactRail){
       stopRailEntry();
-      // Within desktop layouts the rail/full-width resize may interpolate.
-      startSidebarMotion("layout");
+      // A viewport-driven breakpoint must not animate a stale geometry.
+      stopSidebarMotion();
     }
+    if(!nowCompactRail)railExpanded=false;
     if(!nowMobile&&!nowCompactRail&&(wasCompactRail||wasMobile)){
       // Entering xl is a fresh full-sidebar layout, not a remembered tablet
       // collapse. Manual collapse remains available once wide.
