@@ -58,8 +58,27 @@ a:hover {text-decoration: none;}
   transition: width 210ms var(--ui-ease), transform 210ms var(--ui-ease);
   z-index: 12;
 }
-.sidebar-head {min-height: 71px; gap: 6px; align-items: flex-start;}
-.brand {padding: 2px 4px 17px; gap: 10px; font-size: 15px; font-weight: 600; letter-spacing: -.025em;}
+/* Keep the header in one layout mode. Only its height is interpolated;
+   flex-direction switching used to make navigation jump at toggle time. */
+.sidebar-head {
+  display: block;
+  position: relative;
+  flex: none;
+  height: 71px;
+  min-height: 71px;
+  transition: height 210ms var(--ui-ease);
+}
+.brand {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 2px 4px 17px;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.025em;
+  transition: transform 210ms var(--ui-ease);
+}
 .brand-wordmark {line-height: 1.18; margin-top: 2px;}
 .brand-subtitle {font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--ui-muted); margin-top: 4px;}
 .mark {
@@ -76,7 +95,16 @@ a:hover {text-decoration: none;}
 }
 .icon-button:hover {background: var(--ui-hover); color: var(--ui-text); border-color: transparent;}
 .icon-button:active {background: var(--ui-selected);}
-.sidebar-toggle {width: 34px; height: 34px; margin-top: 1px;}
+.sidebar-toggle {
+  position: absolute;
+  right: 0;
+  top: 1px;
+  width: 34px;
+  height: 34px;
+  margin-top: 0;
+  transition: top 210ms var(--ui-ease), right 210ms var(--ui-ease),
+    background-color 160ms ease, color 160ms ease;
+}
 .sidebar-navigation {scrollbar-width: thin; scrollbar-color: var(--ui-border-strong) transparent;}
 .nav-stack {gap: 2px;}
 .nav-section-label {
@@ -90,7 +118,14 @@ a:hover {text-decoration: none;}
   font-size: 14px; font-weight: 450;
   transition: background-color 130ms ease, color 130ms ease;
 }
-.nav-label {font-weight: 450; letter-spacing: 0;}
+.nav-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 450;
+  letter-spacing: 0;
+}
 .nav-icon {width: 18px; height: 18px; stroke-width: 1.7;}
 .nav-link:hover {background: var(--ui-hover); color: var(--ui-text); border-color: transparent;}
 .nav-link.active {background: var(--ui-selected); border-color: transparent; color: var(--ui-text);}
@@ -104,11 +139,40 @@ a:hover {text-decoration: none;}
 .status-dot {width: 7px; height: 7px; background: var(--ui-secondary);}
 .sidebar-bottom .status-dot {box-shadow: none;}
 .shell.is-collapsed .sidebar {width: 74px; padding-left: 11px; padding-right: 11px;}
-.shell.is-collapsed .sidebar-head {min-height: 115px; gap: 8px;}
-.shell.is-collapsed .nav-link {padding: 10px 0; justify-content: center;}
-.shell.is-collapsed .nav-link .nav-icon {width: 19px; height: 19px;}
-.shell.is-collapsed .sidebar-bottom {padding-inline: 0;}
-.shell.is-collapsed .sidebar-navigation {padding-top: 8px;}
+/* Collapse/expand should be the same animation in reverse.
+   Preserve each row's position, icon size and internal display geometry.
+   Fade labels instead of removing them from layout with display:none. */
+.brand-wordmark, .nav-label, .nav-section-label, .sidebar-foot-label {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
+}
+.shell.is-collapsed .sidebar-head {
+  display: block;
+  height: 113px;
+  min-height: 113px;
+}
+.shell.is-collapsed .brand {
+  padding: 2px 4px 17px;
+  transform: translateX(4px);
+}
+.shell.is-collapsed .sidebar-toggle {top: 44px; right: 7px;}
+.shell.is-collapsed .brand-wordmark,
+.shell.is-collapsed .nav-label,
+.shell.is-collapsed .nav-section-label,
+.shell.is-collapsed .sidebar-foot-label {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 105ms ease, visibility 0s linear 105ms;
+}
+.shell.is-collapsed .brand-wordmark {display: flex;}
+.shell.is-collapsed .nav-label {display: block;}
+.shell.is-collapsed .nav-section-label {display: block;}
+.shell.is-collapsed .sidebar-foot-label {display: inline-block;}
+.shell.is-collapsed .nav-link {justify-content: flex-start; padding: 9px 11px;}
+.shell.is-collapsed .nav-link .nav-icon {width: 18px; height: 18px;}
+.shell.is-collapsed .sidebar-bottom {justify-content: flex-start; padding-inline: 11px;}
+.shell.is-collapsed .sidebar-navigation {padding-top: 0;}
 
 /* Minimal navigation header, balanced like a modern conversation workspace. */
 .topbar {
@@ -285,10 +349,18 @@ input::placeholder {color: var(--ui-muted);}
   }
   .shell.is-mobile-open .sidebar {transform: translateX(0);}
   .shell.is-collapsed .sidebar {width: 274px; padding: 17px 12px 12px;}
-  .shell.is-collapsed .sidebar-head {min-height: 71px; flex-direction: row; align-items: flex-start;}
+  .shell.is-collapsed .sidebar-head {display: block; height: 71px; min-height: 71px;}
+  .shell.is-collapsed .brand {transform: none;}
+  .shell.is-collapsed .sidebar-toggle {top: 1px; right: 0;}
   .shell.is-collapsed .sidebar-navigation {padding-top: 0;}
   .shell.is-collapsed .nav-link {justify-content: flex-start; padding: 9px 11px;}
-  .shell.is-collapsed .nav-label, .shell.is-collapsed .nav-section-label, .shell.is-collapsed .brand-wordmark, .shell.is-collapsed .sidebar-foot-label {display: initial;}
+  .shell.is-collapsed .brand-wordmark {display: flex;}
+  .shell.is-collapsed .nav-label, .shell.is-collapsed .nav-section-label {display: block;}
+  .shell.is-collapsed .sidebar-foot-label {display: inline-block;}
+  .shell.is-collapsed .nav-label, .shell.is-collapsed .nav-section-label,
+  .shell.is-collapsed .brand-wordmark, .shell.is-collapsed .sidebar-foot-label {
+    opacity: 1; visibility: visible; transition: none;
+  }
   .shell.is-collapsed .sidebar-bottom {justify-content: flex-start; padding: 15px 11px 6px;}
   .mobile-nav-toggle {display: inline-grid;}
   .sidebar-scrim:not([hidden]) {background: var(--ui-scrim); backdrop-filter: blur(2px);}
@@ -309,7 +381,9 @@ input::placeholder {color: var(--ui-muted);}
 @media (prefers-reduced-motion: reduce) {
   html {scroll-behavior: auto;}
   .view {animation: none;}
-  .sidebar, .nav-link, .icon-button, .feature-card, .project-card, .project-row,
+  .sidebar, .sidebar-head, .brand, .sidebar-toggle,
+  .brand-wordmark, .nav-label, .nav-section-label, .sidebar-foot-label,
+  .nav-link, .icon-button, .feature-card, .project-card, .project-row,
   .secondary, .destructive, input {transition: none;}
 }
 @media (prefers-contrast: more) {
