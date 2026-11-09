@@ -292,3 +292,23 @@ body:has(> #workspace-shell) .content{
   .shadcn-breadcrumb-link,.global-menu a,.global-menu-icon{transition:none;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }
+
+/* Hover-only native cursor glyphs; clicks and drags are intentionally unchanged.
+   Explicit images make the affordance consistent across macOS and browsers. */
+@media(min-width:761px){
+  .shell.liquid-glass-preview.is-collapsed .sidebar,
+  .shell.liquid-glass-preview.is-collapsed .sidebar *,
+  .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target{
+    cursor:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAmklEQVR42u2UUQqDQAxEZ8QbWMXe/3CCeIfpj8oiNQFtti3k/S0smdlMskCSJMk/opWuH9X1oyTpaq0m2ujXDEjSY3i6JppIcQDwTIQYIMllnvazZYJR2ZbiG8s8gSSrDeEmanWivVO8fJ1nopyJ6h04xvBTM/CRCN4VLlfx7E6Vf8ASr/IPWOK3I/BMSJIlHr4FnniSJAkAvABpoWMVuezyXgAAAABJRU5ErkJggg==") 6 16,e-resize!important;
+  }
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(a,button),
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(a,button) *{
+    cursor:pointer!important;
+  }
+  .shell > .sidebar-resize-handle,
+  .shell > .sidebar-resize-handle:hover,
+  .shell > .sidebar-resize-handle:active,
+  .shell.is-sidebar-resizing > .sidebar-resize-handle{
+    cursor:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAwUlEQVR42u2UUQ7DIAxDHdQbUKr2/ofr1HVn8H6GxBAbgfaj0/L+YxvkBDAMw/hF+MKHmT9DDAUhynBYAQEuIOFcL4bTmALBva5M5ANRCuBZzERFNABGRNOy3EHLmy0vUHiGl0pxlrgkhn1o7Tgv2bX0b7iXXedxvUuxATJYW6OgP5Oa53rU6oN2CvCslYe0WuTNW6cgKu9Z9br0DtfsxaMTii9L2audqx2vQivUUsHfOMIz/4gnPVq2SMTZSyAAAAABJRU5ErkJggg==") 16 16,ew-resize!important;
+  }
+}
