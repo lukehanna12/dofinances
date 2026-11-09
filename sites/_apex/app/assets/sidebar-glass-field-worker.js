@@ -15,21 +15,21 @@ const rawBases=new Map();
 const MAX_BASES=2;
 function sourceExactField(request){
   const {w,h,corner}=request;
-  // The supported 74–274px sidebar and its two recorded CSS radii are
-  // the ONLY known translation-equivariant domain for this optimization.
-  if(w<74||w>274||h<1||(corner!==24&&corner!==26))
+  // Only desktop 74–260px with radius 24 is proven byte-exact.
+  // Mobile uses the untouched generator, especially at radius 26.
+  if(w<74||w>260||h<1||corner!==24
     return generateOracleField(w,h,corner);
   const key=h+"@"+corner;
   let base=rawBases.get(key);
   if(!base){
-    base=generateOracleField(274,h,corner);
+    base=generateOracleField(260,h,corner);
     rawBases.set(key,base);
     while(rawBases.size>MAX_BASES)rawBases.delete(rawBases.keys().next().value);
   }else{
     rawBases.delete(key);
     rawBases.set(key,base);
   }
-  return projectOracleFieldWidth(base,w);
+  return projectOracleFieldWidth(base,w,corner);
 }
 async function toPNG(buffer,width,height){
   const canvas=new OffscreenCanvas(width,height);

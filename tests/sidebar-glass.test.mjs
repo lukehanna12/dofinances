@@ -408,16 +408,18 @@ test("probe full-height x-translation invariance of source mode5 fields",()=>{
 test("optimized WIDTH projection reproduces exact oracle RGBA arrays at representative heights",()=>{
   // Any change in the mode5 shape, native-derived parameters, or encoding
   // will fail here. No approximate geometry or interpolated pixels allowed.
-  for(const [h,r] of [[760,24],[844,26],[900,24]]){
-    const base=generateOracleField(274,h,r);
-    for(const w of [74,75,80,100,128,171,183,220,259,260,274]){
+  for(const h of [760,844,900]){
+    const r=24,base=generateOracleField(260,h,r);
+    for(const w of [74,75,80,100,128,171,183,220,259,260]){
       const expected=generateOracleField(w,h,r);
-      const actual=projectOracleFieldWidth(base,w);
+      const actual=projectOracleFieldWidth(base,w,r);
       for(const name of ["inner","outer","blurMask"])
         assert.deepEqual(actual[name],expected[name],
           "Lossless mode5 field "+name+" at "+w+"x"+h+" r="+r);
     }
   }
+  assert.throws(()=>projectOracleFieldWidth(generateOracleField(260,844,26),74,26),RangeError,
+    "The mobile 26px material is deliberately outside the lossless projection domain");
 });
 test("drawer scrim is visually transparent and retains pointer interception",async()=>{
   const css=await read("../sites/_apex/app/assets/sidebar-glass.css");

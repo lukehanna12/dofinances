@@ -379,7 +379,7 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
  * Lossless WIDTH-ONLY transport of the exact mode5 browser field.
  *
  * Proof domain: current square-left / rounded-right sidebar; normalBlend=0,
- * 74 <= width <= 274, fixed height and fixed corner radius (24/26 CSS px).
+ * 74 <= width <= 260, fixed height and the 24px DESKTOP corner radius.
  * AIR four-corner selection is translation invariant within each half of
  * the pane: left-source x=x, right-source x=baseWidth-(width-x).
  * This is NOT the rejected y-invariant nine-slice shortcut. Every Y row is
@@ -387,10 +387,10 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
  * maps or interpolate the parameters; the resulting RGBA bytes must equal
  * generateOracleField(width,height,radius).
  */
-export function projectOracleFieldWidth(base,width){
+export function projectOracleFieldWidth(base,width,radius){
   const w=Math.round(width),baseW=base?.width,h=base?.height;
-  if(!(Number.isInteger(w)&&w>=74&&w<=274&&
-    Number.isInteger(baseW)&&baseW>=w&&baseW<=274&&
+  if(!(radius===24&&Number.isInteger(w)&&w>=74&&w<=260&&
+    Number.isInteger(baseW)&&baseW===260&&
     Number.isInteger(h)&&h>=1))
     throw new RangeError("Width projection outside supported sidebar domain");
   const left=Math.ceil(w/2),right=w-left;
