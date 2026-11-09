@@ -3,6 +3,7 @@
 .studio-sandbox {
   --studio-sidebar-width: 260px;
   --studio-motion: 0ms;
+  --studio-entry-offset: 74px;
   display: flex;
   min-height: 100dvh;
   width: 100%;
@@ -18,6 +19,7 @@
 .studio-sandbox button:focus-visible {outline: 2px solid var(--ui-focus); outline-offset: 3px;}
 .studio-sandbox--animating {--studio-motion: 210ms;}
 .studio-sandbox--collapsed {--studio-sidebar-width: 74px;}
+.studio-sandbox--wide:not(.studio-sandbox--collapsed) {--studio-entry-offset: 260px;}
 .studio-sandbox__sidebar {
   position: sticky;
   top: 0;
@@ -71,7 +73,7 @@
   line-height: 1.15;
   opacity: 1;
   overflow: hidden;
-  transition: opacity 105ms ease;
+  transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
 }
 .studio-sandbox__brand-copy > span {
   margin-top: 4px;
@@ -116,6 +118,7 @@
   font-size: 11px;
   font-weight: 500;
   white-space: nowrap;
+  transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
 }
 .studio-sandbox__nav-link {
   display: flex;
@@ -149,7 +152,8 @@
   overflow: hidden;
   white-space: nowrap;
   opacity: 1;
-  transition: max-width var(--studio-motion) var(--ui-ease), opacity 105ms ease;
+  transition: max-width var(--studio-motion) var(--ui-ease),
+    opacity 105ms ease 105ms, visibility 0s linear 0s;
 }
 .studio-sandbox__sidebar-foot {
   display: flex;
@@ -163,13 +167,19 @@
   font-size: 12px;
 }
 .studio-sandbox__status-dot {flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ui-secondary);}
-.studio-sandbox__foot-label {overflow: hidden; white-space: nowrap; opacity: 1;}
+.studio-sandbox__foot-label {
+  overflow: hidden; white-space: nowrap; opacity: 1;
+  transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
+}
 .studio-sandbox--collapsed .studio-sandbox__sidebar-head {height: 113px;}
 .studio-sandbox--collapsed .studio-sandbox__brand {transform: translateX(4px);}
 .studio-sandbox--collapsed .studio-sandbox__brand-copy,
 .studio-sandbox--collapsed .studio-sandbox__nav-heading,
 .studio-sandbox--collapsed .studio-sandbox__nav-label,
-.studio-sandbox--collapsed .studio-sandbox__foot-label {opacity: 0; visibility: hidden;}
+.studio-sandbox--collapsed .studio-sandbox__foot-label {
+  opacity: 0; visibility: hidden;
+  transition: opacity 105ms ease, visibility 0s linear 105ms;
+}
 .studio-sandbox--collapsed .studio-sandbox__toggle {top: 44px; right: 7px;}
 .studio-sandbox--collapsed .studio-sandbox__nav-link {padding: 9px 0 9px 15px; gap: 0;}
 .studio-sandbox--collapsed .studio-sandbox__nav-label {max-width: 0;}
@@ -277,17 +287,12 @@
 .studio-sandbox__footer {margin-top: 43px; color: var(--ui-muted); font-size: 12px;}
 .studio-sandbox--rail-entering .studio-sandbox__sidebar {animation: studio-sidebar-enter-left 240ms var(--ui-ease) both;}
 .studio-sandbox--rail-entering .studio-sandbox__main {animation: studio-main-follow-left 240ms var(--ui-ease) both;}
-@keyframes studio-sidebar-enter-left {from {transform: translateX(-74px);} to {transform: translateX(0);}}
-@keyframes studio-main-follow-left {from {transform: translateX(-74px);} to {transform: translateX(0);}}
+@keyframes studio-sidebar-enter-left {from {transform: translateX(calc(-1 * var(--studio-entry-offset)));} to {transform: translateX(0);}}
+@keyframes studio-main-follow-left {from {transform: translateX(calc(-1 * var(--studio-entry-offset)));} to {transform: translateX(0);}}
 @media (min-width: 761px) and (max-width: 1279px) {
-  .studio-sandbox {--studio-sidebar-width: 74px;}
-  .studio-sandbox--rail .studio-sandbox__sidebar-head {height: 71px;}
-  .studio-sandbox__brand {transform: translateX(4px);}
-  .studio-sandbox__brand-copy, .studio-sandbox__nav-heading,
-  .studio-sandbox__nav-label, .studio-sandbox__foot-label {opacity: 0; visibility: hidden;}
+  /* The React rail class owns width/label changes, so a single batched
+     update can animate them rather than CSS snapping before React commits. */
   .studio-sandbox__toggle {display: none;}
-  .studio-sandbox__nav-link {padding: 9px 0 9px 15px; gap: 0;}
-  .studio-sandbox__nav-label {max-width: 0;}
   .studio-sandbox__cards {grid-template-columns: repeat(2, minmax(0, 1fr));}
   .studio-sandbox__card:last-child {grid-column: 1 / -1;}
 }
@@ -306,12 +311,22 @@
     height: 100dvh;
     z-index: 32;
     transform: translateX(-100%);
-    transition: transform 210ms var(--ui-ease);
+    transition: transform 210ms var(--ui-ease), visibility 0s linear 210ms;
     box-shadow: 14px 0 44px rgb(0 0 0 / 18%);
+    visibility: hidden;
+    pointer-events: none;
   }
-  .studio-sandbox--mobile-open .studio-sandbox__sidebar {transform: translateX(0);}
+  .studio-sandbox--mobile-open .studio-sandbox__sidebar {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 210ms var(--ui-ease), visibility 0s;
+  }
   .studio-sandbox__main {width: 100%;}
-  .studio-sandbox__scrim {position: fixed; inset: 0; z-index: 31; width: 100%; border: 0; background: var(--ui-scrim); backdrop-filter: blur(2px);}
+  .studio-sandbox__scrim {
+    position: fixed; inset: 0; z-index: 31; width: 100%;
+    border: 0; background: var(--ui-scrim); backdrop-filter: blur(2px);
+  }
   .studio-sandbox__mobile-menu {display: grid;}
   .studio-sandbox__topbar {height: 63px; min-height: 63px; padding: 12px 20px;}
   .studio-sandbox__content {padding: 40px 22px 78px;}

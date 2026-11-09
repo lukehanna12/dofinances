@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./StudioSidebarSandbox.css";
 
 // Deliberately local UI state: none of the demo screens or cards navigate,
@@ -69,8 +69,10 @@ function Icon({ name, size = 18 }) {
 
 function currentMode() {
   if (typeof window === "undefined") return "wide";
-  if (window.innerWidth <= 760) return "mobile";
-  return window.innerWidth < 1280 ? "rail" : "wide";
+  // Use the same media-query evaluation as the CSS, including classic
+  // scrollbar widths near a breakpoint.
+  if (window.matchMedia("(max-width: 760px)").matches) return "mobile";
+  return window.matchMedia("(max-width: 1279px)").matches ? "rail" : "wide";
 }
 
 export function StudioSidebarSandbox() {
@@ -83,45 +85,76 @@ export function StudioSidebarSandbox() {
   const previousMode = useRef(mode);
   const entryTimer = useRef(null);
   const widthTimer = useRef(null);
+  const sidebarRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
-  useEffect(() => {
+  // Change breakpoint state and animation state in the SAME React update.
+  // Previously the useEffect ran after the new layout had already painted:
+  // the rail snapped into place, then its entrance animation ran.
+  useLayoutEffect(() => {
     document.title = "Sidebar Lab · DoFinances";
-    const resize = () => setMode(currentMode());
+    const resize = () => {
+      const next = currentMode();
+      const previous = previousMode.current;
+      if (next === previous) return;
+      previousMode.current = next;
+      clearTimeout(entryTimer.current);
+      clearTimeout(widthTimer.current);
+      const fromMobile = previous === "mobile" && next !== "mobile";
+      const withinDesktop = previous !== "mobile" && next !== "mobile";
+      setRailEntering(fromMobile);
+      setSidebarAnimating(withinDesktop);
+      setMode(next);
+      if (next !== "mobile") setMobileOpen(false);
+      if (next === "wide") setWideCollapsed(false);
+      if (fromMobile) {
+        entryTimer.current = setTimeout(() => setRailEntering(false), 280);
+      } else if (withinDesktop) {
+        widthTimer.current = setTimeout(() => setSidebarAnimating(false), 245);
+      }
+    };
     window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-
-  useEffect(() => {
-    const previous = previousMode.current;
-    if (previous === mode) return;
-    previousMode.current = mode;
-    clearTimeout(entryTimer.current);
-    clearTimeout(widthTimer.current);
-    setRailEntering(false);
-    setSidebarAnimating(false);
-    if (mode !== "mobile") setMobileOpen(false);
-    if (mode === "wide" && previous !== "wide") setWideCollapsed(false);
-    if (previous === "mobile" && mode !== "mobile") {
-      setRailEntering(true);
-      entryTimer.current = setTimeout(() => setRailEntering(false), 280);
-    } else if (previous !== "mobile" && mode !== "mobile") {
-      setSidebarAnimating(true);
-      widthTimer.current = setTimeout(() => setSidebarAnimating(false), 245);
-    }
     return () => {
+      window.removeEventListener("resize", resize);
       clearTimeout(entryTimer.current);
       clearTimeout(widthTimer.current);
     };
-  }, [mode]);
+  }, []);
+
+  function closeMobileDrawer() {
+    setMobileOpen(false);
+    mobileMenuRef.current?.focus({ preventScroll: true });
+  }
 
   useEffect(() => {
-    if (!mobileOpen) return;
-    const onEscape = event => {
-      if (event.key === "Escape") setMobileOpen(false);
+    if (mode !== "mobile" || !mobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const sidebar = sidebarRef.current;
+    const focusable = () => [...(sidebar?.querySelectorAll("button:not([disabled])") || [])];
+    (sidebar?.querySelector(".studio-sandbox__nav-link.is-active") || focusable()[0])
+      ?.focus({ preventScroll: true });
+    const onKeydown = event => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobileDrawer();
+      } else if (event.key === "Tab") {
+        const controls = focusable();
+        if (!controls.length) return;
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !sidebar?.contains(document.activeElement))) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !sidebar?.contains(document.activeElement))) {
+          event.preventDefault(); first.focus();
+        }
+      }
     };
-    window.addEventListener("keydown", onEscape);
-    return () => window.removeEventListener("keydown", onEscape);
-  }, [mobileOpen]);
+    window.addEventListener("keydown", onKeydown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeydown);
+    };
+  }, [mode, mobileOpen]);
 
   function toggleWideSidebar() {
     if (mode !== "wide") return;
@@ -132,8 +165,9 @@ export function StudioSidebarSandbox() {
   }
 
   function navigate(id) {
+    if (mode === "mobile") closeMobileDrawer();
+    if (screen === id) return; // Avoid a scroll jump when reselecting a page.
     setScreen(id);
-    if (mode === "mobile") setMobileOpen(false);
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }
 
@@ -143,6 +177,7 @@ export function StudioSidebarSandbox() {
     "studio-sandbox",
     collapsed ? "studio-sandbox--collapsed" : "",
     mode === "rail" ? "studio-sandbox--rail" : "",
+    mode === "wide" ? "studio-sandbox--wide" : "",
     mode === "mobile" ? "studio-sandbox--mobile" : "",
     mobileOpen ? "studio-sandbox--mobile-open" : "",
     railEntering ? "studio-sandbox--rail-entering" : "",
@@ -151,7 +186,12 @@ export function StudioSidebarSandbox() {
 
   return (
     <div className={shellClasses} data-studio-sidebar-sandbox>
-      <aside id="studio-sidebar" className="studio-sandbox__sidebar" aria-label="Sidebar demo navigation">
+      <aside id="studio-sidebar" ref={sidebarRef} className="studio-sandbox__sidebar"
+        aria-label="Sidebar demo navigation"
+        inert={mode === "mobile" && !mobileOpen ? true : undefined}
+        aria-hidden={mode === "mobile" && !mobileOpen ? true : undefined}
+        role={mode === "mobile" && mobileOpen ? "dialog" : undefined}
+        aria-modal={mode === "mobile" && mobileOpen ? "true" : undefined}>
         <div className="studio-sandbox__sidebar-head">
           <div className="studio-sandbox__brand">
             <span className="studio-sandbox__mark" aria-hidden="true">D</span>
@@ -159,8 +199,9 @@ export function StudioSidebarSandbox() {
           </div>
           <button className="studio-sandbox__toggle" type="button"
             aria-label={mode === "mobile" ? "Close menu" : collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!collapsed} aria-controls="studio-sidebar-nav"
-            onClick={mode === "mobile" ? () => setMobileOpen(false) : toggleWideSidebar}
+            aria-expanded={mode === "mobile" ? mobileOpen : !collapsed}
+            aria-controls="studio-sidebar-nav"
+            onClick={mode === "mobile" ? closeMobileDrawer : toggleWideSidebar}
             title={mode === "mobile" ? "Close menu" : collapsed ? "Expand sidebar" : "Collapse sidebar"}>
             <Icon name="panel" />
           </button>
@@ -187,14 +228,14 @@ export function StudioSidebarSandbox() {
 
       {mode === "mobile" && mobileOpen && (
         <button className="studio-sandbox__scrim" type="button" aria-label="Close sidebar"
-          onClick={() => setMobileOpen(false)} />
+          onClick={closeMobileDrawer} />
       )}
 
       <div className="studio-sandbox__main">
         <header className="studio-sandbox__topbar">
           <div className="studio-sandbox__topbar-left">
             {mode === "mobile" && (
-              <button className="studio-sandbox__mobile-menu" type="button"
+              <button className="studio-sandbox__mobile-menu" ref={mobileMenuRef} type="button"
                 aria-label="Open sidebar" aria-expanded={mobileOpen}
                 aria-controls="studio-sidebar" onClick={() => setMobileOpen(true)}>
                 <Icon name="menu" size={19} />
