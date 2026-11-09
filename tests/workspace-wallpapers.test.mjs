@@ -21,6 +21,30 @@ test("wallpaper geometry derives both the image and spacer from header height",(
   assert.match(css,/padding-top:calc\(var\(--workspace-header-height\) \* 2 \+ var\(--workspace-content-leading\)\)/);
   assert.match(css,/backdrop-filter:blur\(18px\)/);
 });
+test("every named page has the exact owner-selected wallpaper",()=>{
+  const expected={
+    home:"clouds-over-rice-terraces.webp",
+    projects:"winding-icelandic-river-mountains.webp",
+    settings:"misty-tropical-forest-hillside.avif",
+    "colosseum/utilities":"waterfall-between-mossy-cliffs.jpg",
+    "colosseum/collections":"misty-alpine-mountain-valley.jpg",
+    "colosseum/providers":"green-water-foam-swirls.jpg",
+    "colosseum/permissions":"autumn-colored-mountain-slopes.jpg",
+    "colosseum/diagnostics":"steam-spewing-yellow-machine.jpg"
+  };
+  assert.deepEqual(Object.fromEntries(
+    Object.entries(WORKSPACE_WALLPAPERS).map(([route,wallpaper])=>[route,wallpaper.name])
+  ),expected);
+  assert.strictEqual(workspaceWallpaperForRoute("colosseum/settings"),WORKSPACE_WALLPAPERS.settings);
+});
+test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
+  const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
+  assert.match(css,/--workspace-bottom-strip-height:calc\(var\(--workspace-header-height\) \* \.8\)/);
+  assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
+  assert.match(css,/background-position:center,center bottom/);
+  assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::after/);
+  assert.match(css,/position:absolute;\s*inset:auto 0 0/);
+});
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{
   const router=readFileSync(new URL("../edge/router.mjs",import.meta.url),"utf8");
   const wrangler=JSON.parse(readFileSync(new URL("../edge/wrangler.jsonc",import.meta.url),"utf8"));
