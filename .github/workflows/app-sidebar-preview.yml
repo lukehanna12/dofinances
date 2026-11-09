@@ -25,8 +25,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Inspect canonical Oracle LPH SSA evidence (read-only)
-        run: python3 preview/oracle-ssa-audit.py
       - name: Test real workspace navigation and experimental glass
         run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs
       - name: Package actual app UI with safe preview entrypoint
@@ -39,7 +37,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-theme.css .app-sidebar-preview/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js .app-sidebar-preview/app/assets/workspace-nav.js
           cp sites/_apex/app/assets/sidebar-glass.js .app-sidebar-preview/app/assets/sidebar-glass.js
-          cp sites/_apex/app/assets/sidebar-glass-refraction.js .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
+          cp sites/_apex/app/assets/sidebar-glass-oracle.js .app-sidebar-preview/app/assets/sidebar-glass-oracle.js
           cp sites/_apex/app/assets/sidebar-glass.css .app-sidebar-preview/app/assets/sidebar-glass.css
           cp preview/app-sidebar-bootstrap.js .app-sidebar-preview/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css .app-sidebar-preview/assets/site-foundation.css
@@ -69,11 +67,13 @@ jobs:
           grep -Fq 'sidebar-glass.js' .app-sidebar-preview/app/assets/preview-bootstrap.js
           test -s .app-sidebar-preview/app/assets/sidebar-glass.css
           test -s .app-sidebar-preview/app/assets/sidebar-glass.js
-          test -s .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
-          grep -Fq 'from "./sidebar-glass-refraction.js"' .app-sidebar-preview/app/assets/sidebar-glass.js
+          test -s .app-sidebar-preview/app/assets/sidebar-glass-oracle.js
+          grep -Fq 'from "./sidebar-glass-oracle.js"' .app-sidebar-preview/app/assets/sidebar-glass.js
+          test ! -e .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
+          ! grep -Fq 'glass-wallpaper' .app-sidebar-preview/app/assets/sidebar-glass.css
           ! grep -Fq 'dashboard.js' .app-sidebar-preview/app/index.html
           ! grep -R -Eq 'fetch\(|api/auth|location.replace' .app-sidebar-preview/app/assets/*.js
-      - name: Exercise real desktop/tablet/mobile layout and WebGL in Chrome
+      - name: Exercise actual page-backdrop filter and sidebar at three sizes in Chrome
         shell: bash
         run: |
           set -euo pipefail

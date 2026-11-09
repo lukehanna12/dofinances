@@ -1,0 +1,440 @@
+{
+  "schema": "liquid-plexiglass-public-glass-geometry-radius-heldout-v1",
+  "target": {
+    "build": "25F80",
+    "device": "Apple M2",
+    "gpu": "G14G"
+  },
+  "source": "model/probes/target_glass_public_geometry_radius.swift",
+  "method": "Live AppKit NSGlassEffectView public style and frame dimension controls; 2 CARenderer offscreen frames per case; read the generated internal glassBackground CAFilter.inputBlurRadius, never modify its value; independent heldout case design after separate 16-case discovery.",
+  "candidate_model": {
+    "regular": "min(4,max(2,2+((min(width,height)-48)/112)*2))",
+    "clear": "min(10,max(5,5+((min(width,height)-48)/72)*5))"
+  },
+  "cases": [
+    {
+      "id": "heldout_0",
+      "style": "regular",
+      "width": 50,
+      "height": 20,
+      "corner": 8,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_1",
+      "style": "regular",
+      "width": 70,
+      "height": 48,
+      "corner": 9,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_2",
+      "style": "regular",
+      "width": 43,
+      "height": 71,
+      "corner": 7,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_3",
+      "style": "regular",
+      "width": 141,
+      "height": 60,
+      "corner": 0,
+      "observed_radius": 2.2142857142857144
+    },
+    {
+      "id": "heldout_4",
+      "style": "regular",
+      "width": 320,
+      "height": 112,
+      "corner": 5,
+      "observed_radius": 3.142857142857143
+    },
+    {
+      "id": "heldout_5",
+      "style": "regular",
+      "width": 120,
+      "height": 120,
+      "corner": 50,
+      "observed_radius": 3.2857142857142856
+    },
+    {
+      "id": "heldout_6",
+      "style": "regular",
+      "width": 300,
+      "height": 175,
+      "corner": 65,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_7",
+      "style": "regular",
+      "width": 460,
+      "height": 250,
+      "corner": 55,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_8",
+      "style": "regular",
+      "width": 210,
+      "height": 390,
+      "corner": 12,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_9",
+      "style": "regular",
+      "width": 480,
+      "height": 480,
+      "corner": 15,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_10",
+      "style": "regular",
+      "width": 75,
+      "height": 100,
+      "corner": 20,
+      "observed_radius": 2.482142857142857
+    },
+    {
+      "id": "heldout_11",
+      "style": "clear",
+      "width": 50,
+      "height": 20,
+      "corner": 8,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_12",
+      "style": "clear",
+      "width": 70,
+      "height": 48,
+      "corner": 9,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_13",
+      "style": "clear",
+      "width": 43,
+      "height": 71,
+      "corner": 7,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_14",
+      "style": "clear",
+      "width": 141,
+      "height": 60,
+      "corner": 0,
+      "observed_radius": 5.833333333333333
+    },
+    {
+      "id": "heldout_15",
+      "style": "clear",
+      "width": 320,
+      "height": 112,
+      "corner": 5,
+      "observed_radius": 9.444444444444445
+    },
+    {
+      "id": "heldout_16",
+      "style": "clear",
+      "width": 120,
+      "height": 120,
+      "corner": 50,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_17",
+      "style": "clear",
+      "width": 300,
+      "height": 175,
+      "corner": 65,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_18",
+      "style": "clear",
+      "width": 460,
+      "height": 250,
+      "corner": 55,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_19",
+      "style": "clear",
+      "width": 210,
+      "height": 390,
+      "corner": 12,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_20",
+      "style": "clear",
+      "width": 480,
+      "height": 480,
+      "corner": 15,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_21",
+      "style": "clear",
+      "width": 75,
+      "height": 100,
+      "corner": 20,
+      "observed_radius": 6.875
+    },
+    {
+      "id": "heldout_22",
+      "style": "regular",
+      "width": 0,
+      "height": 11.125,
+      "corner": 0,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_23",
+      "style": "regular",
+      "width": 1,
+      "height": 12.125,
+      "corner": 0,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_24",
+      "style": "regular",
+      "width": 12.5,
+      "height": 23.625,
+      "corner": 0,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_25",
+      "style": "regular",
+      "width": 47.9,
+      "height": 59.025,
+      "corner": 0,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_26",
+      "style": "regular",
+      "width": 48,
+      "height": 59.125,
+      "corner": 0,
+      "observed_radius": 2
+    },
+    {
+      "id": "heldout_27",
+      "style": "regular",
+      "width": 48.1,
+      "height": 59.225,
+      "corner": 0,
+      "observed_radius": 2.0017857142857145
+    },
+    {
+      "id": "heldout_28",
+      "style": "regular",
+      "width": 52.25,
+      "height": 63.375,
+      "corner": 0,
+      "observed_radius": 2.075892857142857
+    },
+    {
+      "id": "heldout_29",
+      "style": "regular",
+      "width": 73.3,
+      "height": 84.425,
+      "corner": 0,
+      "observed_radius": 2.4517857142857142
+    },
+    {
+      "id": "heldout_30",
+      "style": "regular",
+      "width": 94.75,
+      "height": 105.875,
+      "corner": 0,
+      "observed_radius": 2.834821428571429
+    },
+    {
+      "id": "heldout_31",
+      "style": "regular",
+      "width": 119.9,
+      "height": 131.025,
+      "corner": 0,
+      "observed_radius": 3.2839285714285715
+    },
+    {
+      "id": "heldout_32",
+      "style": "regular",
+      "width": 120.1,
+      "height": 131.225,
+      "corner": 0,
+      "observed_radius": 3.2874999999999996
+    },
+    {
+      "id": "heldout_33",
+      "style": "regular",
+      "width": 159.9,
+      "height": 171.025,
+      "corner": 0,
+      "observed_radius": 3.998214285714286
+    },
+    {
+      "id": "heldout_34",
+      "style": "regular",
+      "width": 160.1,
+      "height": 171.225,
+      "corner": 0,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_35",
+      "style": "regular",
+      "width": 200,
+      "height": 211.125,
+      "corner": 0,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_36",
+      "style": "regular",
+      "width": 300.125,
+      "height": 311.25,
+      "corner": 0,
+      "observed_radius": 4
+    },
+    {
+      "id": "heldout_37",
+      "style": "clear",
+      "width": 11.125,
+      "height": 0,
+      "corner": 13.25,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_38",
+      "style": "clear",
+      "width": 12.125,
+      "height": 1,
+      "corner": 13.25,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_39",
+      "style": "clear",
+      "width": 23.625,
+      "height": 12.5,
+      "corner": 13.25,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_40",
+      "style": "clear",
+      "width": 59.025,
+      "height": 47.9,
+      "corner": 13.25,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_41",
+      "style": "clear",
+      "width": 59.125,
+      "height": 48,
+      "corner": 13.25,
+      "observed_radius": 5
+    },
+    {
+      "id": "heldout_42",
+      "style": "clear",
+      "width": 59.225,
+      "height": 48.1,
+      "corner": 13.25,
+      "observed_radius": 5.006944444444445
+    },
+    {
+      "id": "heldout_43",
+      "style": "clear",
+      "width": 63.375,
+      "height": 52.25,
+      "corner": 13.25,
+      "observed_radius": 5.295138888888889
+    },
+    {
+      "id": "heldout_44",
+      "style": "clear",
+      "width": 84.425,
+      "height": 73.3,
+      "corner": 13.25,
+      "observed_radius": 6.756944444444445
+    },
+    {
+      "id": "heldout_45",
+      "style": "clear",
+      "width": 105.875,
+      "height": 94.75,
+      "corner": 13.25,
+      "observed_radius": 8.246527777777779
+    },
+    {
+      "id": "heldout_46",
+      "style": "clear",
+      "width": 131.025,
+      "height": 119.9,
+      "corner": 13.25,
+      "observed_radius": 9.993055555555557
+    },
+    {
+      "id": "heldout_47",
+      "style": "clear",
+      "width": 131.225,
+      "height": 120.1,
+      "corner": 13.25,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_48",
+      "style": "clear",
+      "width": 171.025,
+      "height": 159.9,
+      "corner": 13.25,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_49",
+      "style": "clear",
+      "width": 171.225,
+      "height": 160.1,
+      "corner": 13.25,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_50",
+      "style": "clear",
+      "width": 211.125,
+      "height": 200,
+      "corner": 13.25,
+      "observed_radius": 10
+    },
+    {
+      "id": "heldout_51",
+      "style": "clear",
+      "width": 311.25,
+      "height": 300.125,
+      "corner": 13.25,
+      "observed_radius": 10
+    }
+  ],
+  "independent_heldout_count": 52,
+  "scope": "Two selected publicly exposed Glass styles, specified positive integer frame sizes, and target macOS 25F80. Formula is empirically heldout-exact, but universal source-level derivation and all environment/variant/scale selection branches not proven.",
+  "status": "FINITE_PUBLIC_RELATION_ONLY",
+  "heldout_partitions": {
+    "integer_size_cases": 22,
+    "fractional_and_boundary_cases": 30
+  },
+  "precision_note": "The fractional native observations expose 1-ULP differences from equivalent but differently ordered rational expressions. This exact Double operation order predicts all 52 recorded cases with zero floating-point residual, including 30 fractional/threshold cases."
+}

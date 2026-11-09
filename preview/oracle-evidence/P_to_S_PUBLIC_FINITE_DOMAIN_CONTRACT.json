@@ -1,0 +1,916 @@
+{
+  "authority": "Internal-only. CAFilter state projected only through mechanically recovered QuartzCore CPU equations; no displayed output used.",
+  "case_count": 331,
+  "exact_projected_fields": 33,
+  "field_domains": {
+    "blur_alpha0": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f800000",
+          "count": 241,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_alpha1": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f000000",
+          "count": 225,
+          "value_repr": "0.5"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 106,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_alpha2": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_alpha3": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf000000",
+          "count": 225,
+          "value_repr": "-0.5"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 106,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_dist0": {
+      "distinct_value_count": 12,
+      "values": [
+        {
+          "bits_hex": "0xc2be0000",
+          "count": 219,
+          "value_repr": "-95.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0xc2100000",
+          "count": 13,
+          "value_repr": "-36.0"
+        },
+        {
+          "bits_hex": "0xbf000000",
+          "count": 1,
+          "value_repr": "-0.5"
+        },
+        {
+          "bits_hex": "0xbf800000",
+          "count": 1,
+          "value_repr": "-1.0"
+        },
+        {
+          "bits_hex": "0xc1780000",
+          "count": 1,
+          "value_repr": "-15.5"
+        },
+        {
+          "bits_hex": "0xc1e80000",
+          "count": 1,
+          "value_repr": "-29.0"
+        },
+        {
+          "bits_hex": "0xc2260000",
+          "count": 1,
+          "value_repr": "-41.5"
+        },
+        {
+          "bits_hex": "0xc2ff0000",
+          "count": 1,
+          "value_repr": "-127.5"
+        },
+        {
+          "bits_hex": "0xc3200000",
+          "count": 1,
+          "value_repr": "-160.0"
+        },
+        {
+          "bits_hex": "0xc3020000",
+          "count": 1,
+          "value_repr": "-130.0"
+        },
+        {
+          "bits_hex": "0xc33f8000",
+          "count": 1,
+          "value_repr": "-191.5"
+        }
+      ]
+    },
+    "blur_dist1": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf800000",
+          "count": 241,
+          "value_repr": "-1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_dist2": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_dist3": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "blur_radius_pre_scale": {
+      "distinct_value_count": 8,
+      "values": [
+        {
+          "bits_hex": "0x40800000",
+          "count": 124,
+          "value_repr": "4.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3f800000",
+          "count": 88,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x42480000",
+          "count": 16,
+          "value_repr": "50.0"
+        },
+        {
+          "bits_hex": "0x41000000",
+          "count": 8,
+          "value_repr": "8.0"
+        },
+        {
+          "bits_hex": "0x3faaaaab",
+          "count": 3,
+          "value_repr": "1.3333333730697632"
+        },
+        {
+          "bits_hex": "0x3fc92492",
+          "count": 1,
+          "value_repr": "1.5714285373687744"
+        },
+        {
+          "bits_hex": "0x400aaaab",
+          "count": 1,
+          "value_repr": "2.1666667461395264"
+        }
+      ]
+    },
+    "complex_refraction": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f800000",
+          "count": 225,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 106,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "edge_bleed_amount": {
+      "distinct_value_count": 11,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 178,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x42850000",
+          "count": 144,
+          "value_repr": "66.5"
+        },
+        {
+          "bits_hex": "0x3eb33333",
+          "count": 1,
+          "value_repr": "0.3499999940395355"
+        },
+        {
+          "bits_hex": "0x3f333333",
+          "count": 1,
+          "value_repr": "0.699999988079071"
+        },
+        {
+          "bits_hex": "0x412d999a",
+          "count": 1,
+          "value_repr": "10.850000381469727"
+        },
+        {
+          "bits_hex": "0x41a26666",
+          "count": 1,
+          "value_repr": "20.299999237060547"
+        },
+        {
+          "bits_hex": "0x41e86666",
+          "count": 1,
+          "value_repr": "29.049999237060547"
+        },
+        {
+          "bits_hex": "0x42b28000",
+          "count": 1,
+          "value_repr": "89.25"
+        },
+        {
+          "bits_hex": "0x42e00000",
+          "count": 1,
+          "value_repr": "112.0"
+        },
+        {
+          "bits_hex": "0x42b60000",
+          "count": 1,
+          "value_repr": "91.0"
+        },
+        {
+          "bits_hex": "0x43060ccd",
+          "count": 1,
+          "value_repr": "134.0500030517578"
+        }
+      ]
+    },
+    "edge_bleed_dist0": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f800000",
+          "count": 241,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "edge_bleed_dist1": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "edge_bleed_inv_height": {
+      "distinct_value_count": 11,
+      "values": [
+        {
+          "bits_hex": "0x7f800000",
+          "count": 178,
+          "value_repr": "inf"
+        },
+        {
+          "bits_hex": "0x3c76603e",
+          "count": 144,
+          "value_repr": "0.015037594363093376"
+        },
+        {
+          "bits_hex": "0x4036db6e",
+          "count": 1,
+          "value_repr": "2.857142925262451"
+        },
+        {
+          "bits_hex": "0x3fb6db6e",
+          "count": 1,
+          "value_repr": "1.4285714626312256"
+        },
+        {
+          "bits_hex": "0x3dbcc17a",
+          "count": 1,
+          "value_repr": "0.09216590225696564"
+        },
+        {
+          "bits_hex": "0x3d49c5fd",
+          "count": 1,
+          "value_repr": "0.04926108196377754"
+        },
+        {
+          "bits_hex": "0x3d0cff8f",
+          "count": 1,
+          "value_repr": "0.034423407167196274"
+        },
+        {
+          "bits_hex": "0x3c379301",
+          "count": 1,
+          "value_repr": "0.011204482056200504"
+        },
+        {
+          "bits_hex": "0x3c124925",
+          "count": 1,
+          "value_repr": "0.008928571827709675"
+        },
+        {
+          "bits_hex": "0x3c340b41",
+          "count": 1,
+          "value_repr": "0.010989011265337467"
+        },
+        {
+          "bits_hex": "0x3bf47234",
+          "count": 1,
+          "value_repr": "0.007459903135895729"
+        }
+      ]
+    },
+    "edge_bleed_opacity": {
+      "distinct_value_count": 4,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 198,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3f000000",
+          "count": 124,
+          "value_repr": "0.5"
+        },
+        {
+          "bits_hex": "0x3f4ccccd",
+          "count": 8,
+          "value_repr": "0.800000011920929"
+        },
+        {
+          "bits_hex": "0x3dcaaaab",
+          "count": 1,
+          "value_repr": "0.0989583358168602"
+        }
+      ]
+    },
+    "face_opacity": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f800000",
+          "count": 241,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "inner_refraction_amount": {
+      "distinct_value_count": 7,
+      "values": [
+        {
+          "bits_hex": "0xc2700000",
+          "count": 208,
+          "value_repr": "-60.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 106,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0xc2666666",
+          "count": 13,
+          "value_repr": "-57.599998474121094"
+        },
+        {
+          "bits_hex": "0xbf4ccccd",
+          "count": 1,
+          "value_repr": "-0.800000011920929"
+        },
+        {
+          "bits_hex": "0xbfcccccd",
+          "count": 1,
+          "value_repr": "-1.600000023841858"
+        },
+        {
+          "bits_hex": "0xc1c66666",
+          "count": 1,
+          "value_repr": "-24.799999237060547"
+        },
+        {
+          "bits_hex": "0xc239999a",
+          "count": 1,
+          "value_repr": "-46.400001525878906"
+        }
+      ]
+    },
+    "inner_refraction_inv_height": {
+      "distinct_value_count": 7,
+      "values": [
+        {
+          "bits_hex": "0x3d4ccccd",
+          "count": 200,
+          "value_repr": "0.05000000074505806"
+        },
+        {
+          "bits_hex": "0x7f800000",
+          "count": 114,
+          "value_repr": "inf"
+        },
+        {
+          "bits_hex": "0x3d638e39",
+          "count": 13,
+          "value_repr": "0.0555555559694767"
+        },
+        {
+          "bits_hex": "0x40800000",
+          "count": 1,
+          "value_repr": "4.0"
+        },
+        {
+          "bits_hex": "0x40000000",
+          "count": 1,
+          "value_repr": "2.0"
+        },
+        {
+          "bits_hex": "0x3e042108",
+          "count": 1,
+          "value_repr": "0.12903225421905518"
+        },
+        {
+          "bits_hex": "0x3d8d3dcb",
+          "count": 1,
+          "value_repr": "0.06896551698446274"
+        }
+      ]
+    },
+    "outer_refraction_amount": {
+      "distinct_value_count": 11,
+      "values": [
+        {
+          "bits_hex": "0x42180000",
+          "count": 216,
+          "value_repr": "38.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 106,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3e4ccccd",
+          "count": 1,
+          "value_repr": "0.20000000298023224"
+        },
+        {
+          "bits_hex": "0x3ecccccd",
+          "count": 1,
+          "value_repr": "0.4000000059604645"
+        },
+        {
+          "bits_hex": "0x40c66666",
+          "count": 1,
+          "value_repr": "6.199999809265137"
+        },
+        {
+          "bits_hex": "0x4139999a",
+          "count": 1,
+          "value_repr": "11.600000381469727"
+        },
+        {
+          "bits_hex": "0x4184cccd",
+          "count": 1,
+          "value_repr": "16.600000381469727"
+        },
+        {
+          "bits_hex": "0x424c0000",
+          "count": 1,
+          "value_repr": "51.0"
+        },
+        {
+          "bits_hex": "0x42800000",
+          "count": 1,
+          "value_repr": "64.0"
+        },
+        {
+          "bits_hex": "0x42500000",
+          "count": 1,
+          "value_repr": "52.0"
+        },
+        {
+          "bits_hex": "0x42993333",
+          "count": 1,
+          "value_repr": "76.5999984741211"
+        }
+      ]
+    },
+    "outer_refraction_inv_height": {
+      "distinct_value_count": 11,
+      "values": [
+        {
+          "bits_hex": "0x3d2c7692",
+          "count": 216,
+          "value_repr": "0.04210526496171951"
+        },
+        {
+          "bits_hex": "0x7f800000",
+          "count": 106,
+          "value_repr": "inf"
+        },
+        {
+          "bits_hex": "0x41000000",
+          "count": 1,
+          "value_repr": "8.0"
+        },
+        {
+          "bits_hex": "0x40800000",
+          "count": 1,
+          "value_repr": "4.0"
+        },
+        {
+          "bits_hex": "0x3e842108",
+          "count": 1,
+          "value_repr": "0.25806450843811035"
+        },
+        {
+          "bits_hex": "0x3e0d3dcb",
+          "count": 1,
+          "value_repr": "0.13793103396892548"
+        },
+        {
+          "bits_hex": "0x3dc565c8",
+          "count": 1,
+          "value_repr": "0.09638553857803345"
+        },
+        {
+          "bits_hex": "0x3d008081",
+          "count": 1,
+          "value_repr": "0.0313725508749485"
+        },
+        {
+          "bits_hex": "0x3ccccccd",
+          "count": 1,
+          "value_repr": "0.02500000037252903"
+        },
+        {
+          "bits_hex": "0x3cfc0fc1",
+          "count": 1,
+          "value_repr": "0.03076923079788685"
+        },
+        {
+          "bits_hex": "0x3cab1cbe",
+          "count": 1,
+          "value_repr": "0.02088772878050804"
+        }
+      ]
+    },
+    "preserve_hue": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "refraction_opacity": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 194,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3e99999a",
+          "count": 137,
+          "value_repr": "0.30000001192092896"
+        }
+      ]
+    },
+    "refraction_threshold0": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf800000",
+          "count": 241,
+          "value_repr": "-1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "refraction_threshold1": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf000000",
+          "count": 241,
+          "value_repr": "-0.5"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "sdr_shadow_dist0": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf800000",
+          "count": 241,
+          "value_repr": "-1.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "sdr_shadow_dist1": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0xbf000000",
+          "count": 241,
+          "value_repr": "-0.5"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "sdr_white_value": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x3f7851ec",
+          "count": 241,
+          "value_repr": "0.9700000286102295"
+        },
+        {
+          "bits_hex": "0x3f800000",
+          "count": 90,
+          "value_repr": "1.0"
+        }
+      ]
+    },
+    "shadow_amount": {
+      "distinct_value_count": 7,
+      "values": [
+        {
+          "bits_hex": "0x42960000",
+          "count": 236,
+          "value_repr": "75.0"
+        },
+        {
+          "bits_hex": "0x00000000",
+          "count": 90,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3f200000",
+          "count": 1,
+          "value_repr": "0.625"
+        },
+        {
+          "bits_hex": "0x3fa00000",
+          "count": 1,
+          "value_repr": "1.25"
+        },
+        {
+          "bits_hex": "0x419b0000",
+          "count": 1,
+          "value_repr": "19.375"
+        },
+        {
+          "bits_hex": "0x42110000",
+          "count": 1,
+          "value_repr": "36.25"
+        },
+        {
+          "bits_hex": "0x424f8000",
+          "count": 1,
+          "value_repr": "51.875"
+        }
+      ]
+    },
+    "shadow_contribution": {
+      "distinct_value_count": 3,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 198,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3f800000",
+          "count": 132,
+          "value_repr": "1.0"
+        },
+        {
+          "bits_hex": "0x3e4aaaab",
+          "count": 1,
+          "value_repr": "0.1979166716337204"
+        }
+      ]
+    },
+    "shadow_dist_offset": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    },
+    "shadow_inv_height": {
+      "distinct_value_count": 11,
+      "values": [
+        {
+          "bits_hex": "0x3c579436",
+          "count": 232,
+          "value_repr": "0.01315789483487606"
+        },
+        {
+          "bits_hex": "0x7f800000",
+          "count": 90,
+          "value_repr": "inf"
+        },
+        {
+          "bits_hex": "0x40200000",
+          "count": 1,
+          "value_repr": "2.5"
+        },
+        {
+          "bits_hex": "0x3fa00000",
+          "count": 1,
+          "value_repr": "1.25"
+        },
+        {
+          "bits_hex": "0x3da5294a",
+          "count": 1,
+          "value_repr": "0.08064515888690948"
+        },
+        {
+          "bits_hex": "0x3d308d3e",
+          "count": 1,
+          "value_repr": "0.043103449046611786"
+        },
+        {
+          "bits_hex": "0x3cf6bf3b",
+          "count": 1,
+          "value_repr": "0.0301204826682806"
+        },
+        {
+          "bits_hex": "0x3c20a0a1",
+          "count": 1,
+          "value_repr": "0.009803921915590763"
+        },
+        {
+          "bits_hex": "0x3c000000",
+          "count": 1,
+          "value_repr": "0.0078125"
+        },
+        {
+          "bits_hex": "0x3c1d89d9",
+          "count": 1,
+          "value_repr": "0.009615384973585606"
+        },
+        {
+          "bits_hex": "0x3bd5e3ed",
+          "count": 1,
+          "value_repr": "0.006527415011078119"
+        }
+      ]
+    },
+    "shadow_inv_radius": {
+      "distinct_value_count": 2,
+      "values": [
+        {
+          "bits_hex": "0x7f800000",
+          "count": 178,
+          "value_repr": "inf"
+        },
+        {
+          "bits_hex": "0x3d2aaaab",
+          "count": 153,
+          "value_repr": "0.0416666679084301"
+        }
+      ]
+    },
+    "shadow_opacity": {
+      "distinct_value_count": 5,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 178,
+          "value_repr": "0.0"
+        },
+        {
+          "bits_hex": "0x3e800000",
+          "count": 148,
+          "value_repr": "0.25"
+        },
+        {
+          "bits_hex": "0x3f000000",
+          "count": 3,
+          "value_repr": "0.5"
+        },
+        {
+          "bits_hex": "0x3ef49249",
+          "count": 1,
+          "value_repr": "0.4776785671710968"
+        },
+        {
+          "bits_hex": "0x3ed80000",
+          "count": 1,
+          "value_repr": "0.421875"
+        }
+      ]
+    },
+    "x86_workaround": {
+      "distinct_value_count": 1,
+      "values": [
+        {
+          "bits_hex": "0x00000000",
+          "count": 331,
+          "value_repr": "0.0"
+        }
+      ]
+    }
+  },
+  "generated_at": "2026-08-07T19:05:00Z",
+  "note": "Several entries in remaining_nonprojected_families are partially or fully advanced by later dedicated contracts; this list is preserved as the source projection layer's own boundary.",
+  "pre_scale_fields": 1,
+  "projected_field_count": 34,
+  "remaining_nonprojected_families": [
+    "displacement_mat",
+    "blur_radius_final_scale",
+    "edge_bleed_blur_radius_final_scale",
+    "shadow_offset_geometry_transform",
+    "shadow_blur_radius_final_scale",
+    "color_matrices",
+    "shadow_face_opacity",
+    "bleed_darken",
+    "holding_tone_opacity",
+    "clamp_limit_gamma"
+  ],
+  "schema": "liquid-glass-p-to-s-public-finite-domain-v1",
+  "scope": "331 enumerated static PublicBridge cases on target tau; finite-domain contract, not a universal public API theorem.",
+  "source": {
+    "projection_jsonl": "NORMALIZED_EVIDENCE/P_TO_S_PUBLIC_CASE_UNIFORMS/public_case_uniform_projection.jsonl",
+    "projection_sha256": "98d5bc97d72d42fb584591e1d8545c9e4c3a0aa9f5e5eda816baf0e2c2201fc6",
+    "summary": "NORMALIZED_EVIDENCE/P_TO_S_PUBLIC_CASE_UNIFORMS/summary.json"
+  },
+  "unique_projected_uniform_signatures": 17
+}

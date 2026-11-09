@@ -1,362 +1,242 @@
 /*
- * Liquid Plexiglass /app sidebar experiment — test/app-sidebar ONLY.
- * A bounded browser interpretation of a dark regular navigation material,
- * NOT a claim of Apple Liquid Glass numerical equivalence. Original layout
- * and route mechanics are retained in workspace-theme.css/workspace-nav.js.
- *
- * For the controlled preview wallpaper, one Canvas2D scene is shared by
- * the screen and the sidebar's WebGL2 sampling shader. This enables REAL
- * screen-space displacement of the SAME source pixels at rounded edges.
- * Native Apple shader kernels and exact material parameters remain unknown;
- * all browser lens coefficients are explicitly approximations.
+ * Liquid Glass test page. No background, wallpaper or page capture is
+ * embedded inside the sidebar: the material filters the ACTUAL DOM backdrop.
+ * The #oracle-glass-native-backdrop SVG receives SourceGraphic supplied by
+ * the browser's backdrop compositor. Its geometry/warp fields are computed
+ * from retained LPH AIR and finite uniform evidence, with documented limits.
  */
 .shell.liquid-glass-preview {
-  /* The wallpaper supplies the color. The glass itself stays neutral. */
-  --glass-pane: rgba(22, 24, 26, .34);
-  --glass-edge: rgba(250, 252, 255, .29);
-  --glass-high: rgba(255, 255, 255, .20);
-  --glass-ink: #f7f8f9;
-  --glass-selected: rgba(255, 255, 255, .15);
-  --glass-glow: rgba(255, 255, 255, .11);
-  position: relative;
-  isolation: isolate;
-  background: #10191d;
-  color: var(--glass-ink);
+  --glass-pane: rgba(22,23,25,.23);
+  --glass-ink:#f6f7f8;
+  --oracle-input-radius:4px;
+  --oracle-backdrop-blur:6.4px;
+  position:relative;
+  isolation:isolate;
+  background:#131a1c;
+  color:var(--glass-ink);
 }
-/*
- * One continuous, fixed wallpaper across the ENTIRE viewport, not just the
- * 260px sidebar. Sharp lines and large shapes span the glass boundary and
- * become noticeably softened through the backdrop-filter. The same wallpaper
- * remains visible under the workspace so the material has a clear reference.
- */
+/* All artwork belongs to the PAGE, behind BOTH content and sidebar. */
 .shell.liquid-glass-preview::before,
 .shell.liquid-glass-preview::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
 }
 .shell.liquid-glass-preview::before {
   background:
-    radial-gradient(ellipse 36vw 47vh at 19% 31%, rgba(224, 159, 90, .55), transparent 78%),
-    radial-gradient(ellipse 40vw 53vh at 79% 25%, rgba(67, 171, 158, .44), transparent 78%),
-    radial-gradient(ellipse 35vw 48vh at 48% 89%, rgba(160, 136, 94, .26), transparent 80%),
-    linear-gradient(132deg, #273a3c 0%, #1b262b 36%, #141d23 67%, #263038 100%);
+    radial-gradient(ellipse 35vw 47vh at 15% 30%,rgba(197,139,90,.40),transparent 78%),
+    radial-gradient(ellipse 44vw 52vh at 74% 26%,rgba(75,153,147,.35),transparent 81%),
+    radial-gradient(ellipse 39vw 48vh at 48% 90%,rgba(166,146,109,.17),transparent 83%),
+    linear-gradient(132deg,#28373a 0%,#1a282c 47%,#161d25 100%);
 }
 .shell.liquid-glass-preview::after {
   background:
-    radial-gradient(circle at 19% 39%, transparent 0 168px, rgba(255,255,255,.19) 170px 171px, transparent 173px 257px, rgba(255,255,255,.12) 259px 260px, transparent 262px),
-    radial-gradient(circle at 84% 68%, transparent 0 154px, rgba(255,255,255,.14) 156px 157px, transparent 159px 256px, rgba(255,255,255,.08) 258px 259px, transparent 261px),
-    repeating-linear-gradient(90deg, rgba(246,250,255,.073) 0 1px, transparent 1px 96px),
-    repeating-linear-gradient(0deg, rgba(246,250,255,.073) 0 1px, transparent 1px 96px),
-    linear-gradient(120deg, transparent 0 33%, rgba(255,255,255,.048) 33.08% 33.18%, transparent 33.27% 68%, rgba(255,255,255,.045) 68.08% 68.18%, transparent 68.27%);
+    radial-gradient(circle at 19% 39%,transparent 0 168px,rgba(255,255,255,.18) 170px 171px,transparent 173px 257px,rgba(255,255,255,.11) 259px 260px,transparent 262px),
+    radial-gradient(circle at 84% 68%,transparent 0 154px,rgba(255,255,255,.12) 156px 157px,transparent 159px 256px,rgba(255,255,255,.07) 258px 259px,transparent 261px),
+    repeating-linear-gradient(90deg,rgba(246,250,255,.058) 0 1px,transparent 1px 96px),
+    repeating-linear-gradient(0deg,rgba(246,250,255,.058) 0 1px,transparent 1px 96px);
 }
 .shell.liquid-glass-preview.glass-scene-neutral::before {
   background:
-    radial-gradient(ellipse 36vw 48vh at 23% 39%, rgba(220, 219, 204, .36), transparent 76%),
-    radial-gradient(ellipse 43vw 52vh at 78% 30%, rgba(141, 147, 151, .31), transparent 78%),
-    linear-gradient(145deg, #313539 0%, #202529 53%, #141a1f 100%);
+    radial-gradient(ellipse 36vw 48vh at 23% 39%,rgba(220,219,204,.30),transparent 76%),
+    radial-gradient(ellipse 43vw 52vh at 78% 30%,rgba(141,147,151,.24),transparent 78%),
+    linear-gradient(145deg,#313539,#202529 53%,#141a1f);
 }
 .shell.liquid-glass-preview.glass-scene-prism::before {
   background:
-    radial-gradient(ellipse 36vw 50vh at 17% 31%, rgba(237, 141, 88, .70), transparent 78%),
-    radial-gradient(ellipse 40vw 52vh at 78% 27%, rgba(44, 196, 183, .64), transparent 76%),
-    radial-gradient(ellipse 39vw 48vh at 53% 90%, rgba(120, 107, 205, .43), transparent 82%),
-    linear-gradient(132deg, #26374b 0%, #1b233c 45%, #1b2b38 100%);
-}
-/* Remove the previous opaque near-black sheet over the workspace. */
-.shell.liquid-glass-preview .glass-wallpaper {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  width: 100vw;
-  height: 100dvh;
-  pointer-events: none;
-  display: block;
-}
-.shell.liquid-glass-preview.has-glass-wallpaper::before,
-.shell.liquid-glass-preview.has-glass-wallpaper::after {
-  /* CSS scenes remain as a fallback if Canvas2D is unavailable. */
-  display: none;
+    radial-gradient(ellipse 36vw 50vh at 17% 31%,rgba(237,141,88,.58),transparent 78%),
+    radial-gradient(ellipse 40vw 52vh at 78% 27%,rgba(44,196,183,.51),transparent 76%),
+    radial-gradient(ellipse 39vw 48vh at 53% 90%,rgba(120,107,205,.34),transparent 82%),
+    linear-gradient(132deg,#26374b,#1b233c 45%,#1b2b38);
 }
 .shell.liquid-glass-preview .main {
-  position: relative;
-  z-index: 1;
-  background: linear-gradient(90deg, rgba(7,13,17,.10), rgba(6,10,14,.23) 75%, rgba(6,10,14,.35));
+  position:relative;
+  z-index:1;
+  background:linear-gradient(90deg,rgba(7,13,17,.10),rgba(6,10,14,.23) 75%,rgba(6,10,14,.35));
 }
 .shell.liquid-glass-preview .topbar {
-  background: rgba(12, 18, 22, .34);
-  -webkit-backdrop-filter: blur(10px) saturate(1.08);
-  backdrop-filter: blur(10px) saturate(1.08);
-  border-bottom: 1px solid rgba(245,248,252,.065);
+  background:rgba(12,18,22,.33);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(245,248,252,.065);
 }
-.shell.liquid-glass-preview .content {
-  position: relative;
-  background: transparent;
-}
-/* Keep text legible while allowing the grid and colored wallpaper to show. */
+.shell.liquid-glass-preview .content {position:relative;background:transparent;}
 .shell.liquid-glass-preview .feature-card,
 .shell.liquid-glass-preview .project-card,
 .shell.liquid-glass-preview .project-row,
 .shell.liquid-glass-preview .panel,
 .shell.liquid-glass-preview .empty-state {
-  background-color: rgba(13, 19, 23, .68);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background-color:rgba(13,19,23,.68);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
 }
+/* The real sidebar retains its existing 260px/74px/274px width and motion.
+   No copy of any scene, texture or backdrop is painted here. */
 .shell.liquid-glass-preview .sidebar {
-  /* Preserve widths (260 / 74 / 274), sticky/fixed positioning and flex
-     geometry from the original CSS; change only the material. */
-  z-index: 12;
-  isolation: isolate;
-  border-radius: 0 24px 24px 0;
-  border: 1px solid rgba(255,255,255,.10);
-  border-left: 0;
-  border-right: 1px solid var(--glass-edge);
-  background: var(--glass-pane);
-  -webkit-backdrop-filter: blur(21px) saturate(1.13) brightness(1.04);
-  backdrop-filter: blur(21px) saturate(1.13) brightness(1.04);
+  z-index:12;
+  isolation:isolate;
+  background:var(--glass-pane);
+  color:var(--glass-ink);
+  border:0;
+  border-right:1px solid rgba(255,255,255,.21);
+  border-radius:0 24px 24px 0;
+  -webkit-backdrop-filter:blur(var(--oracle-backdrop-blur));
+  backdrop-filter:blur(var(--oracle-backdrop-blur));
   box-shadow:
-    inset -1px 0 rgba(250,253,255,.10),
-    inset 0 1px rgba(250,253,255,.09),
-    9px 0 31px rgba(0,0,0,.26),
-    0 0 44px rgba(255,255,255,.035);
-  color: var(--glass-ink);
+    inset -1px 0 rgba(255,255,255,.10),
+    10px 0 27px rgba(0,0,0,.19),
+    0 0 1px rgba(255,255,255,.12);
+}
+.shell.liquid-glass-preview.has-oracle-backdrop .sidebar {
+  /* SVG filter is applied to the BROWSER BACKDROP, not an image of it. */
+  -webkit-backdrop-filter:url("#oracle-glass-native-backdrop");
+  backdrop-filter:url("#oracle-glass-native-backdrop");
+}
+.oracle-filter-defs {
+  position:absolute!important;
+  width:0!important;
+  height:0!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
 }
 .shell.liquid-glass-preview .sidebar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, rgba(255,255,255,.060), transparent 14%, transparent 79%, rgba(240,250,255,.12) 99%),
-    radial-gradient(ellipse 95px 125px at 100% 7%, rgba(255,255,255,.14), transparent 95%),
-    radial-gradient(ellipse 80px 195px at 100% 89%, rgba(255,255,255,.06), transparent 95%);
-  box-shadow: inset -1px 0 rgba(255,255,255,.1);
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:1;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,.028),transparent 18%,
+    transparent 91%,rgba(255,255,255,.08));
+  box-shadow:inset -1px 0 rgba(255,255,255,.07);
 }
-.shell.liquid-glass-preview .glass-optics {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: .86;
-}
-/*
- * GPU path: the refracted background IS the material. Do not apply CSS
- * backdrop-filter underneath it (double blur/tint), or mix the opaque shader
- * with screen blending. This scoped class is set only after a successful
- * WebGL frame. If WebGL fails, the existing CSS-only fallback remains.
- */
-.shell.liquid-glass-preview.has-refractive-glass .sidebar {
-  background: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-.shell.liquid-glass-preview.has-refractive-glass .glass-optics {
-  mix-blend-mode: normal;
-  opacity: 1;
-}
-.shell.liquid-glass-preview .glass-optics[hidden] {display: none;}
 .shell.liquid-glass-preview .sidebar-head,
 .shell.liquid-glass-preview .sidebar-navigation,
-.shell.liquid-glass-preview .sidebar-bottom {
-  position: relative;
-  z-index: 2;
-}
-.shell.liquid-glass-preview .sidebar-navigation {isolation: isolate;}
-.shell.liquid-glass-preview .brand {color: rgba(250,253,255,.97);}
-.shell.liquid-glass-preview .brand-subtitle {color: rgba(226,233,246,.57);}
+.shell.liquid-glass-preview .sidebar-bottom {position:relative;z-index:2;}
+.shell.liquid-glass-preview .sidebar-navigation{isolation:isolate;}
+.shell.liquid-glass-preview .brand{color:rgba(252,253,255,.95);}
+.shell.liquid-glass-preview .brand-subtitle{color:rgba(236,239,241,.58);}
 .shell.liquid-glass-preview .mark {
-  color: rgba(255,255,255,.96);
-  background: linear-gradient(138deg, rgba(255,255,255,.32), rgba(205,205,205,.14) 58%, rgba(248,250,255,.11));
-  border: 1px solid rgba(250,251,255,.30);
-  box-shadow: inset 0 1px rgba(255,255,255,.24), 0 5px 16px rgba(0,0,0,.2);
+  color:#f7f8f8;
+  background:linear-gradient(145deg,rgba(244,244,244,.21),rgba(255,255,255,.075));
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow:inset 0 1px rgba(255,255,255,.10);
 }
 .shell.liquid-glass-preview .sidebar-toggle,
 .shell.liquid-glass-preview .nav-link {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
 .shell.liquid-glass-preview .sidebar-toggle:hover,
-.shell.liquid-glass-preview .icon-button:hover {
-  background: rgba(236,247,255,.13);
-  color: #fff;
+.shell.liquid-glass-preview .icon-button:hover{
+  background:rgba(255,255,255,.12);color:#fff;
 }
 .shell.liquid-glass-preview .nav-section-label,
-.shell.liquid-glass-preview .sidebar-bottom {color: rgba(220,232,248,.56);}
-.shell.liquid-glass-preview .sidebar-bottom {
-  border-top-color: rgba(245,249,255,.12);
+.shell.liquid-glass-preview .sidebar-bottom{color:rgba(237,240,244,.58);}
+.shell.liquid-glass-preview .sidebar-bottom{
+  border-top-color:rgba(250,251,253,.11);
 }
-.shell.liquid-glass-preview .sidebar-bottom .status-dot {
-  background: #a3dcc7;
-  box-shadow: 0 0 10px rgba(112,233,196,.38);
+.shell.liquid-glass-preview .sidebar-bottom .status-dot{
+  background:#9cd3b6;box-shadow:0 0 9px rgba(146,215,181,.25);
 }
 .shell.liquid-glass-preview .nav-link {
-  position: relative;
-  z-index: 1;
-  color: rgba(242,246,253,.85);
-  border-color: transparent;
-  transform: translateZ(0);
+  position:relative;
+  z-index:1;
+  border-color:transparent;
+  color:rgba(245,247,250,.86);
+  transform:translateZ(0);
   transition:
-    background-color 145ms ease,
-    color 145ms ease,
+    background-color 135ms ease,color 135ms ease,
     padding-left var(--sidebar-layout-duration) var(--ui-ease),
     padding-right var(--sidebar-layout-duration) var(--ui-ease),
     gap var(--sidebar-layout-duration) var(--ui-ease);
 }
-.shell.liquid-glass-preview .nav-link:hover {
-  background: rgba(230,242,255,.10);
-  color: #fff;
+.shell.liquid-glass-preview .nav-link:hover{
+  background:rgba(244,247,251,.095);color:#fff;
 }
-.shell.liquid-glass-preview .nav-link:active {
-  background: rgba(230,242,255,.18);
+.shell.liquid-glass-preview .nav-link.active{
+  background:rgba(255,255,255,.13);color:#fff;
 }
-.shell.liquid-glass-preview .nav-link.active {
-  background: var(--glass-selected);
-  color: #fff;
+.shell.liquid-glass-preview.has-glass-indicator .nav-link.active{
+  background:transparent;
 }
-.shell.liquid-glass-preview.has-glass-indicator .nav-link.active {
-  background: transparent;
-}
-.shell.liquid-glass-preview.has-glass-indicator .nav-link.active:hover {
-  background: rgba(243,250,255,.045);
+.shell.liquid-glass-preview.has-glass-indicator .nav-link.active:hover{
+  background:rgba(255,255,255,.035);
 }
 .shell.liquid-glass-preview .glass-selection {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: var(--glass-selection-width, 0px);
-  height: var(--glass-selection-height, 39px);
-  transform: translate3d(var(--glass-selection-x, 0px), var(--glass-selection-y, 0px), 0);
-  border: 1px solid rgba(242,249,255,.28);
-  border-radius: 10px;
-  background:
-    radial-gradient(ellipse 130% 130% at 18% 0, rgba(249,253,255,.22), transparent 62%),
-    linear-gradient(100deg, rgba(255,255,255,.16), rgba(230,230,230,.08) 56%, rgba(255,255,255,.13));
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.23),
-    inset 0 -1px rgba(154,185,224,.11),
-    0 4px 12px rgba(0,0,0,.13);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform, width;
+  position:absolute;
+  top:0;left:0;
+  z-index:0;
+  width:var(--glass-selection-width,0px);
+  height:var(--glass-selection-height,39px);
+  transform:translate3d(var(--glass-selection-x,0px),var(--glass-selection-y,0px),0);
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.15);
+  background:rgba(243,247,250,.13);
+  box-shadow:inset 0 1px rgba(255,255,255,.13);
+  pointer-events:none;
+  opacity:0;
+  will-change:transform,width;
   transition:
-    transform 290ms cubic-bezier(.23,.86,.25,1),
-    width 210ms cubic-bezier(.23,.86,.25,1),
-    height 210ms cubic-bezier(.23,.86,.25,1),
-    opacity 130ms ease;
+    transform 250ms cubic-bezier(.23,.86,.25,1),
+    width var(--sidebar-layout-duration) var(--ui-ease),
+    height 160ms ease,
+    opacity 110ms ease;
 }
-.shell.liquid-glass-preview.has-glass-indicator .glass-selection {opacity: 1;}
-.shell.liquid-glass-preview .glass-selection::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(125deg, rgba(255,255,255,.12), transparent 46%, rgba(255,255,255,.045));
-  pointer-events: none;
+.shell.liquid-glass-preview.has-glass-indicator .glass-selection{opacity:1;}
+.shell.liquid-glass-preview .glass-scene-toggle{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 11px;min-height:34px;
+  border:1px solid rgba(233,239,245,.20);
+  border-radius:999px;background:rgba(255,255,255,.08);
+  color:rgba(243,246,248,.88);
+  font:inherit;font-size:12px;line-height:1.2;cursor:pointer;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
 }
-.shell.liquid-glass-preview .glass-scene-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 11px;
-  min-height: 34px;
-  border: 1px solid rgba(229,239,255,.20);
-  border-radius: 999px;
-  background: rgba(255,255,255,.09);
-  color: rgba(242,247,255,.84);
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.2;
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+.shell.liquid-glass-preview .glass-scene-toggle:hover{
+  background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.34);
 }
-.shell.liquid-glass-preview .glass-scene-toggle:hover {
-  background: rgba(255,255,255,.17);
-  border-color: rgba(233,245,255,.36);
-  color: #fff;
+.shell.liquid-glass-preview .glass-scene-toggle:focus-visible{
+  outline:2px solid #d6ecff;outline-offset:3px;
 }
-.shell.liquid-glass-preview .glass-scene-toggle:focus-visible {
-  outline: 2px solid #c3e5ff; outline-offset: 3px;
+.shell.liquid-glass-preview .glass-scene-dot{
+  display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#e3b285;
 }
-.shell.liquid-glass-preview .glass-scene-dot {
-  display: inline-block;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #e7b889;
-  box-shadow: 0 0 9px rgba(250,207,152,.30);
+.shell.liquid-glass-preview.glass-scene-neutral .glass-scene-dot{background:#dfe3e6;}
+.shell.liquid-glass-preview.glass-scene-prism .glass-scene-dot{background:#64cfbd;}
+@media(max-width:930px){
+  .shell.liquid-glass-preview .glass-scene-toggle{
+    width:34px;height:34px;justify-content:center;gap:0;padding:0;font-size:0;
+  }
+  .shell.liquid-glass-preview .glass-scene-dot{width:9px;height:9px;}
 }
-.shell.liquid-glass-preview.glass-scene-prism .glass-scene-dot {background:#64cfbd;}
-.shell.liquid-glass-preview.glass-scene-neutral .glass-scene-dot {background:#dee6f0;}
-.shell.liquid-glass-preview .glass-lens-toggle[aria-pressed="true"] .glass-scene-dot {
-  background: #ffffff;
-  box-shadow: 0 0 9px rgba(255,255,255,.55);
+@media(max-width:760px){
+  .shell.liquid-glass-preview .sidebar{border-radius:0 26px 26px 0;}
 }
-.shell.liquid-glass-preview .glass-lens-toggle[aria-pressed="false"] {
-  border-color: rgba(255,255,255,.11);
-  color: rgba(244,247,250,.63);
+@media(prefers-reduced-motion:reduce){
+  .shell.liquid-glass-preview .glass-selection,
+  .shell.liquid-glass-preview .nav-link {transition:none;will-change:auto;}
 }
-.shell.liquid-glass-preview .glass-lens-off .glass-scene-dot {
-  background: #94999d;
-  box-shadow: none;
-}
-@media (max-width: 930px) {
-  .shell.liquid-glass-preview .glass-scene-toggle {font-size: 0; gap: 0; width: 34px; height: 34px; justify-content: center; padding: 0;}
-  .shell.liquid-glass-preview .glass-scene-dot {width: 9px; height: 9px;}
-}
-@media (max-width: 760px) {
-  .shell.liquid-glass-preview .sidebar {
-    border-radius: 0 26px 26px 0;
-    /* Keep the existing fixed 274px drawer's left-side entrance. */
-    -webkit-backdrop-filter: blur(24px) saturate(1.13) brightness(1.04);
-    backdrop-filter: blur(24px) saturate(1.13) brightness(1.04);
+@media(prefers-reduced-transparency:reduce){
+  .shell.liquid-glass-preview .sidebar,
+  .shell.liquid-glass-preview.has-oracle-backdrop .sidebar{
+    background:#26292b;-webkit-backdrop-filter:none;backdrop-filter:none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .shell.liquid-glass-preview .glass-selection {transition: none; will-change: auto;}
-  .shell.liquid-glass-preview .nav-link {transition: none;}
-  .shell.liquid-glass-preview .glass-optics {opacity: .50;}
+@media(prefers-contrast:more),(forced-colors:active){
+  .shell.liquid-glass-preview .sidebar,
+  .shell.liquid-glass-preview.has-oracle-backdrop .sidebar{
+    background:Canvas;color:CanvasText;
+    border-right:2px solid CanvasText;
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+  }
+  .shell.liquid-glass-preview .glass-selection{display:none;}
+  .shell.liquid-glass-preview .nav-link.active{background:Highlight;color:HighlightText;}
 }
-@media (prefers-reduced-transparency: reduce) {
-  .shell.liquid-glass-preview .sidebar {
-    background: #222629;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .shell.liquid-glass-preview .glass-optics {display: none;}
-  .shell.liquid-glass-preview.has-refractive-glass .sidebar {
-    background: #222629;
-  }
-}
-@media (prefers-contrast: more), (forced-colors: active) {
-  .shell.liquid-glass-preview .sidebar {
-    border-right: 2px solid CanvasText;
-    background: Canvas;
-    color: CanvasText;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .shell.liquid-glass-preview .glass-optics {display: none;}
-  .shell.liquid-glass-preview.has-refractive-glass .sidebar {
-    background: Canvas;
-  }
-  .shell.liquid-glass-preview .nav-link.active {
-    background: Highlight;
-    color: HighlightText;
-  }
-  .shell.liquid-glass-preview .glass-selection {display: none;}
-}
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .shell.liquid-glass-preview .sidebar {
-    background: rgba(32,34,36,.97);
-  }
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .shell.liquid-glass-preview .sidebar{background:rgba(31,33,35,.96);}
 }
