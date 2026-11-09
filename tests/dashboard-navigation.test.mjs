@@ -209,16 +209,18 @@ test("screen navigation has no entrance displacement or smooth-scroll jitter",as
   assert.deepEqual(m.scrollCalls,[],"first render should not disturb restored scroll");
   m.win.location.hash="#projects";
   m.fire("hashchange");
-  assert.deepEqual(m.scrollCalls,[[{top:0,left:0,behavior:"instant"}]]);
+  // The inner content scroller resets; forcing a window-level scroll
+  // during navigation used to create extra synchronous main-thread work.
+  assert.deepEqual(m.scrollCalls,[]);
   m.fire("hashchange");
   m.fire("popstate");
-  assert.equal(m.scrollCalls.length,1,"same route should not reset scroll");
+  assert.deepEqual(m.scrollCalls,[],"same route must do no redundant work");
   m.win.location.hash="#colosseum/settings";
   m.fire("hashchange");
-  assert.deepEqual(m.scrollCalls[1],[{top:0,left:0,behavior:"instant"}]);
+  assert.deepEqual(m.scrollCalls,[]);
   m.win.location.hash="#settings";
   m.fire("hashchange");
-  assert.deepEqual(m.scrollCalls[2],[{top:0,left:0,behavior:"instant"}]);
+  assert.deepEqual(m.scrollCalls,[]);
   assert.equal(m.elements["main-navigation"].hidden,false);
 });
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
