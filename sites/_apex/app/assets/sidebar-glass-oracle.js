@@ -503,19 +503,29 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
    * The synchronous path is retained when Worker execution is unavailable.
    */
   const geometryCache=new Map();
-  const CACHE_LIMIT=6;
-  let worker=null,workerBusy=false,desired=null;
+  const CACHE_LIMIT=24;
+  let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let lastMaterialWord=NaN,lastInputRadius=NaN;
   function setMaps(request,urls){
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
-      node.setAttribute("href",uri);
-      node.setAttributeNS(NS,"xlink:href",uri);
-      node.setAttribute("width",String(request.w));
-      node.setAttribute("height",String(request.h));
+      if(node.getAttribute("href")!==uri){
+        node.setAttribute("href",uri);
+        node.setAttributeNS(NS,"xlink:href",uri);
+      }
+      if(node.getAttribute("width")!==String(request.w))
+        node.setAttribute("width",String(request.w));
+      if(node.getAttribute("height")!==String(request.h))
+        node.setAttribute("height",String(request.h));
     }
     previous=request.key;
     usingSVG=true;
     shell.classList.add("has-oracle-backdrop");
+  }
+  function cacheField(request,urls){
+    geometryCache.delete(request.key);
+    geometryCache.set(request.key,urls);
+    while(geometryCache.size>CACHE_LIMIT)
+      geometryCache.delete(geometryCache.keys().next().value);
   }
   function storeField(request,field,engine){
     const urls=field.urls||[
@@ -524,11 +534,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       imageDataURL(win,field.blurMask,request.w,request.h)
     ];
     if(urls.some(uri=>!uri))throw Error("Canvas2D geometry encoding unavailable");
-    geometryCache.delete(request.key);
-    geometryCache.set(request.key,urls);
-    while(geometryCache.size>CACHE_LIMIT){
-      geometryCache.delete(geometryCache.keys().next().value);
-    }
+    cacheField(request,urls);
     setMaps(request,urls);
     shell.dataset.oracleFieldEngine=engine;
     shell.dataset.oraclePngEngine=field.urls?"worker":"main";
@@ -538,9 +544,30 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     try{storeField(request,generateOracleField(request.w,request.h,request.corner),"main");}
     catch{usingSVG=false;shell.classList.remove("has-oracle-backdrop");}
   }
+  const prefetchDisabled=new Set();
   function stopWorker(){
+    if(idleTimer)win.clearTimeout(idleTimer);
+    idleTimer=0;
     try{worker?.terminate();}catch{}
     worker=null;workerBusy=false;
+  }
+  function armEndpointPrefetch(){
+    if(idleTimer)win.clearTimeout(idleTimer);
+    if(!worker||workerBusy||!desired)return;
+    idleTimer=win.setTimeout(()=>{
+      idleTimer=0;
+      if(disposed||!worker||workerBusy||!desired||
+         shell.classList.contains("is-sidebar-toggling"))return;
+      // Idle-only preparation of exact 74/260px desktop endpoints.
+      const w=desired.w===74?260:desired.w===260?74:0;
+      if(!w||desired.corner!==24)return;
+      const key=w+"x"+desired.h+"@24";
+      if(geometryCache.has(key)||prefetchDisabled.has(key))return;
+      const next={key,w,h:desired.h,corner:24,prefetch:true};
+      workerBusy=true;
+      try{worker.postMessage(next);}
+      catch{stopWorker();}
+    },350);
   }
   function dispatchLatest(){
     if(!worker||workerBusy||!desired||desired.key===previous)return;
@@ -556,14 +583,25 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         workerBusy=false;
         if(disposed)return;
         const field=event.data;
-        if(!field||field.error){stopWorker();if(desired)syncField(desired);return;}
-        // Do not spend main-thread PNG encoding time on obsolete animation
-        // widths. The latest request gets an exact fresh field instead.
-        if(field.key===desired?.key){
+        if(!field||field.error){
+          if(field?.prefetch){
+            prefetchDisabled.add(field.key);
+            if(desired?.key!==previous)dispatchLatest();
+            return;
+          }
+          stopWorker();if(desired)syncField(desired);return;
+        }
+        // Save exact completed fields even when a resize advanced; never
+        // INSTALL stale geometry against a different pane width.
+        if(field.urls && field.key!==desired?.key)
+          cacheField(field,field.urls);
+        if(field.key===desired?.key&&!field.prefetch){
           try{storeField(desired,field,"worker");}
           catch{stopWorker();if(desired)syncField(desired);return;}
         }
+        if(field.prefetch)shell.dataset.oraclePrefetchedEndpoint=field.key;
         if(desired?.key!==previous)dispatchLatest();
+        else armEndpointPrefetch();
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -610,7 +648,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
-    if(key===previous)return;
+    if(key===previous){armEndpointPrefetch();return;}
     const cached=geometryCache.get(key);
     if(cached){
       geometryCache.delete(key);
@@ -618,6 +656,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       setMaps(desired,cached);
       shell.dataset.oracleFieldCacheHits=
         String(Number(shell.dataset.oracleFieldCacheHits||0)+1);
+      armEndpointPrefetch();
       return;
     }
     if(worker)dispatchLatest();
@@ -631,6 +670,13 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
   resize?.observe(sidebar);
   win.addEventListener("resize",schedule,{passive:true});
+  // A CSS transitionend event provides the earliest exact final width:
+  // do not wait for a delayed ResizeObserver/rAF after expansion.
+  const onWidthTransition=event=>{
+    if(event.target===sidebar&&event.propertyName==="width")apply();
+  };
+  sidebar.addEventListener("transitionend",onWidthTransition);
+  sidebar.addEventListener("transitioncancel",onWidthTransition);
   schedule();
   return {
     get active(){return usingSVG;},
@@ -643,6 +689,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       geometryCache.clear();
       resize?.disconnect();
       win.removeEventListener("resize",schedule);
+      sidebar.removeEventListener("transitionend",onWidthTransition);
+      sidebar.removeEventListener("transitioncancel",onWidthTransition);
       shell.classList.remove("has-oracle-backdrop");
       svg.remove();
     }
