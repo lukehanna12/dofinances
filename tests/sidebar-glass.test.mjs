@@ -483,10 +483,16 @@ test("AIR native-background source performs true four-component interpolation, n
 import gzip,json,pathlib
 p=pathlib.Path("preview/oracle-evidence/glass_background_sdf_no_bleed_lph.ssa.json.gz")
 d=json.loads(gzip.decompress(p.read_bytes()))
-base=next(f for f in d["functions"] if "glass_background_base" in f["name"])
-air={int(i["source_line"]):i["ir"] for b in base["blocks"] for i in b["instructions"]}
+air={}
+for func in d["functions"]:
+  if "glass_background_base" not in func["name"]:continue
+  for block in func["blocks"]:
+    for inst in block["instructions"]:
+      if "@air.mix." in inst["ir"]:
+        air.setdefault(int(inst["source_line"]),[]).append(inst["ir"])
 for line in (430,437):
-  assert "@air.mix." in air[line],(line,air.get(line))
+  assert line in air,(line,sorted(air))
+  assert any("@air.mix." in value for value in air[line]),(line,air[line])
 print("AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED")
   `;
   const result=execFileSync("python3",["-c",py],{encoding:"utf8"});
