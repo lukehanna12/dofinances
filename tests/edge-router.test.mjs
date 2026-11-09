@@ -104,6 +104,30 @@ test("a valid session serves app HTML and assets privately",async()=>{
     assert.equal(response.headers.get("Cache-Control"),"no-store");
   }
 });
+test("nested workspace pages remain authenticated and serve the same app document",async()=>{
+  const routes=["/app/home","/app/projects","/app/settings","/app/account",
+    "/app/colosseum","/app/colosseum/capabilities","/app/colosseum/collections",
+    "/app/colosseum/providers","/app/colosseum/permissions",
+    "/app/colosseum/diagnostics","/app/colosseum/settings"];
+  for(const path of routes){
+    const unauthenticated=await handleRequest(
+      new Request("https://dofinances.com"+path),authed);
+    assert.equal(unauthenticated.status,302,path);
+    assert.equal(unauthenticated.headers.get("Location"),"/login",path);
+    const authenticated=await handleRequest(new Request("https://dofinances.com"+path,{
+      headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN},
+    }),authed);
+    assert.equal(authenticated.status,200,path);
+    assert.match(await authenticated.text(),/Dashboard/);
+    assert.equal(authenticated.headers.get("Cache-Control"),"no-store");
+    assert.equal(authenticated.headers.get("Vary"),"Cookie");
+    assert.equal(authenticated.headers.get("X-Frame-Options"),"DENY");
+  }
+  const unknown=await handleRequest(new Request("https://dofinances.com/app/colosseum/missing",{
+    headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN},
+  }),authed);
+  assert.equal(unknown.status,404);
+});
 test("www login and app routes redirect to canonical apex",async()=>{
   for(const path of ["/login","/app","/api/auth/me"]){
     const response=await handleRequest(new Request("https://www.dofinances.com"+path),mock);
