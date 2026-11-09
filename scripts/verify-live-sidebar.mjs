@@ -100,7 +100,7 @@ try{
     return null;
   })()`);
   assert.ok(blank,"No hit-testable unoccupied rail space found");
-  assert.match(blank.cursor,/data:image\/png;base64,/,"Empty collapsed rail must use its visible expand cursor");
+  assert.equal(blank.cursor,"e-resize","Empty collapsed rail must show the expand cursor");
   // The rail's icon and row should both center on the actual pane, not an
   // asymmetrically padded grid track.
   const railAlignment=await evaluate(String.raw`(()=>{
@@ -134,7 +134,7 @@ try{
   await down(linkCenter.x,linkCenter.y);await up(linkCenter.x,linkCenter.y);
   await move(blank.x,blank.y);
   const afterLinkCursor=await evaluate(`getComputedStyle(document.elementFromPoint(${blank.x},${blank.y})).cursor`);
-  assert.match(afterLinkCursor,/data:image\/png;base64,/,
+  assert.equal(afterLinkCursor,"e-resize",
     "After clicking a link, blank rail space must return to the expand cursor");
   await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
   await down(blank.x,blank.y);await up(blank.x,blank.y);
@@ -158,7 +158,7 @@ try{
   assert.equal(header.layout,"grid","Expanded logo/toggle must use separate grid cells");
   assert.ok(header.toggleLeft-header.logoRight>=6,
     "D logo and expanded toggle overlap: "+JSON.stringify(header));
-  assert.match(header.gripCursor,/data:image\/png;base64,/,"Visible grip must use its two-way resize cursor");
+  assert.equal(header.gripCursor,"ew-resize","Visible grip must have two-way resize cursor");
   assert.notEqual(header.gripDisplay,"none","Resize grip should be visible in expanded compact rail");
   assert.ok(Math.abs(header.gripCenter-header.sidebarRight)<2,
     "The 28px hover target must straddle the actual sidebar edge");
