@@ -96,9 +96,10 @@ export function airSupercircleSDF(absX,absY,halfWidth,halfHeight,radius,blendX=0
   const rad=Math.hypot(nx0,ny0);
   const big=Math.max(nx0,ny0),small=Math.min(nx0,ny0);
   const u=big===0?0:clamp(small/big,0,1);
-  const polynomial=(((((3.1560099124908447-u*.9260540008544922)*u
+  const polynomial =
+    (((3.1560099124908447-u*.9260540008544922)*u
     -3.6412200927734375)*u+1.268030047416687)*u
-    +.2685309946537018)));
+    +.2685309946537018;
   const denom=1-u*u*clamp(rad,0,1)*polynomial;
   const rounded=rad+1-(denom===0?0:1/denom);
   const q2x=Math.max(0,f32(nx0*1.5286649465560913-.5286650061607361));
