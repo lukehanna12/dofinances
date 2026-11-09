@@ -227,6 +227,17 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
 }
 @media(max-width:760px){
   .shell.liquid-glass-preview .sidebar{border-radius:0 26px 26px 0;}
+  /*
+   * A backdrop-filter samples layers already painted behind the sidebar.
+   * The full-screen dismissal scrim must NOT be sampled inside the glass
+   * pane: it belongs over the rest of the page, not beneath the drawer.
+   * Clip only its 274px sidebar overlap. Outside clicks still hit the scrim.
+   */
+  .shell.liquid-glass-preview .sidebar-scrim:not([hidden]){
+    -webkit-clip-path:inset(0 0 0 274px);
+    clip-path:inset(0 0 0 274px);
+    pointer-events:auto;
+  }
 }
 @media(prefers-reduced-motion:reduce){
   .shell.liquid-glass-preview .glass-selection,

@@ -14,7 +14,7 @@ for(const form of document.querySelectorAll("form")){
   }
 }
 for(const button of document.querySelectorAll("button")){
-  if(button.id==="sidebar-toggle"||button.id==="mobile-nav-toggle")continue;
+  if(button.id==="sidebar-toggle"||button.id==="mobile-nav-toggle"||button.id==="sidebar-scrim")continue;
   button.disabled=true;
   button.title="Disabled in this static preview";
 }

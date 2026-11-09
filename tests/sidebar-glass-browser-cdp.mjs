@@ -152,6 +152,43 @@ try{
     assert(state.filter,"Advanced backdrop inactive at "+width);
     assert(state.wall&&state.wall!=="none","Shared page wallpaper missing at "+width);
     console.log("CDP viewport verified",width,height,state.info);
+    if(width===390){
+      // CDP pointer events expose hit-testing and disabled overlays that
+      // programmatic .click() cannot detect.
+      async function physicalClick(selector){
+        const expression="(()=>{const e=document.querySelector("+JSON.stringify(selector)+");"+
+          "if(!e)return null;const r=e.getBoundingClientRect();"+
+          "const x=Math.round(r.left+r.width/2),y=Math.round(r.top+r.height/2);"+
+          "const h=document.elementFromPoint(x,y);"+
+          "return {x,y,hit:h?.id||h?.className?.baseVal||h?.className||h?.tagName,"+
+          "onTarget:h===e||e.contains(h),disabled:!!e.disabled};})()";
+        const p=await evaluate(expression);
+        assert(p&&p.onTarget&&!p.disabled,"Pointer target blocked: "+selector+" "+JSON.stringify(p));
+        await send("Input.dispatchMouseEvent",{type:"mousePressed",x:p.x,y:p.y,button:"left",clickCount:1});
+        await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:p.x,y:p.y,button:"left",clickCount:1});
+        await sleep(300);
+      }
+      const open=await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")');
+      assert(!open,"Smoke leaves mobile drawer closed");
+      await physicalClick("#mobile-nav-toggle");
+      assert(await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
+        "Real pointer must open mobile drawer");
+      const mask=await evaluate('(()=>{const s=document.getElementById("sidebar-scrim");const css=getComputedStyle(s);return {hidden:s.hidden,disabled:s.disabled,opacity:css.opacity,clip:css.clipPath};})()');
+      assert(!mask.hidden&&!mask.disabled&&mask.opacity==="1"&&mask.clip.includes("274px"),
+        "Scrim must be enabled, opaque to pointer events, and excluded from sampled sidebar "+JSON.stringify(mask));
+      await physicalClick('#main-navigation .nav-link[data-route="settings"]');
+      assert(await evaluate('location.hash==="#settings"&& !document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
+        "Real pointer must navigate and close mobile drawer");
+      await physicalClick("#mobile-nav-toggle");
+      await physicalClick("#sidebar-toggle");
+      assert(!await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
+        "Real pointer on sidebar close button must dismiss mobile drawer");
+      await physicalClick("#mobile-nav-toggle");
+      await physicalClick("#sidebar-scrim");
+      assert(!await evaluate('document.getElementById("workspace-shell").classList.contains("is-mobile-open")'),
+        "Real pointer outside drawer must dismiss via scrim");
+      console.log("MOBILE_PHYSICAL_POINTER_NAV_CLOSE_AND_SCRIM_PASSED");
+    }
     if(width===1440){
       const full=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true

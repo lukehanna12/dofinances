@@ -329,3 +329,12 @@ test("sidebar finite Float32 blur words exactly reproduce Oracle derived contrac
   assert.equal(contract.proof_limits.unrestricted_final_blur_radius_scale_closed,false);
   assert.equal(contract.validation.new_native_sidebar_size_lldb_replay_completed,false);
 });
+
+
+test("mobile drawer scrim remains interactive and cannot darken the sampled glass",async()=>{
+  const boot=await read("../preview/app-sidebar-bootstrap.js");
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  assert.match(boot,/button\.id==="sidebar-scrim"/);
+  assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*clip-path:inset\(0 0 0 274px\)/s);
+  assert.match(css,/pointer-events:auto/);
+});
