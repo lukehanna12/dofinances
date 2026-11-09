@@ -1,5 +1,5 @@
 // Retire both /login and /login/ on the Studio Pages host.
-// The Studio root is blank; account sign-in remains at apex /login.
+// Studio now shows a standalone, non-authenticated glass preview; account sign-in remains at apex /login.
 export function onRequest({request}) {
   return new Response(request.method === "HEAD" ? null : "Not found", {
     status: 404,

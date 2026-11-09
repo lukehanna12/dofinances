@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Standalone DoFinances Liquid Glass Studio workspace preview">
+  <title>Studio · DoFinances</title>
+  <link rel="stylesheet" href="/app/assets/dashboard.css">
+  <link rel="stylesheet" href="/assets/site-foundation.css">
+  <link rel="stylesheet" href="/app/assets/workspace-theme.css">
+  <!-- Independent, static Liquid Glass Studio workspace; account controls disabled. -->
+  <link rel="stylesheet" href="/app/assets/sidebar-glass.css">
+  <script src="/app/assets/preview-bootstrap.js" type="module"></script>
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="icon-projects" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v2m0 13v2M3.5 12h2m13 0h2m-14.4-5.6 1.4 1.4m9 9 1.4 1.4m0-12.4-1.4 1.4m-9 9-1.4 1.4"/><circle cx="12" cy="12" r="4.4"/></symbol>
+    <symbol id="icon-utilities" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3.4 7H17l-6 13 1-9H5l8-11z"/></symbol>
+    <symbol id="icon-collections" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></symbol>
+    <symbol id="icon-providers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7V4m6 3V4M7 10h10M7 14h10M9 17v3m6-3v3"/><rect x="5" y="7" width="14" height="10" rx="2"/></symbol>
+    <symbol id="icon-permissions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1"/></symbol>
+    <symbol id="icon-diagnostics" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/><path d="M3 5h3M3 19h3M18 5h3M18 19h3"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/><path d="M20 12H9"/></symbol>
+    <symbol id="icon-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16m5-11 3 3-3 3"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="icon-layer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5zm-9 9 9 5 9-5m-18 5 9 5 9-5"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M8 6h10v10"/></symbol>
+  </svg>
+  <div class="shell" id="workspace-shell">
+    <aside class="sidebar" id="workspace-sidebar" aria-label="Workspace sidebar">
+      <div class="sidebar-head">
+        <a class="brand" href="#home" aria-label="DoFinances Home" title="DoFinances Home"><span class="mark">D</span><span class="brand-wordmark">DoFinances<span class="brand-subtitle">Workspace</span></span></a>
+        <button id="sidebar-toggle" class="sidebar-toggle icon-button" type="button" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="sidebar-navigation" title="Collapse sidebar"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
+      </div>
+      <div class="sidebar-navigation" id="sidebar-navigation">
+        <nav id="main-navigation" class="nav-stack" aria-label="Main workspace navigation">
+          <div class="nav-section-label">WORKSPACE</div>
+          <a class="nav-link" data-route="home" href="#home" aria-label="Home" title="Home"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-home"></use></svg><span class="nav-label">Home</span></a>
+          <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects" title="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label">Projects</span></a>
+          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label">Settings</span></a>
+        </nav>
+        <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
+          <div class="nav-section-label">COLOSSEUM</div>
+          <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities" title="Utilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><span class="nav-label">Utilities</span></a>
+          <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections" title="Collections"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><span class="nav-label">Collections</span></a>
+          <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers" title="Providers"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><span class="nav-label">Providers</span></a>
+          <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions" title="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label">Permissions</span></a>
+          <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics" title="Diagnostics"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><span class="nav-label">Diagnostics</span></a>
+          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings" title="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label">Settings</span></a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
+    </aside>
+    <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Close navigation" hidden></button>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-start">
+          <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>
+          <a id="back-to-workspace" class="icon-button back-button" href="#projects" aria-label="Back to Projects" title="Back to Projects" hidden><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-back"></use></svg></a>
+          <div class="page-location"><span class="breadcrumb-label" id="breadcrumb">Workspace / Home</span><span class="breadcrumb-subtitle" id="location-subtitle">Your personal workspace</span></div>
+        </div>
+        <div class="top-actions"><span id="account-email" class="email">Loading account…</span><button id="signout" type="button" class="secondary">Sign out</button></div>
+      </header>
+      <main class="content" id="main-content">
+        <section class="view" data-view="home" aria-labelledby="home-title">
+          <div class="page-heading"><div class="eyebrow">WELCOME BACK</div><h1 id="home-title">Your workspace, all in one place.</h1>
+          <p class="lead">A home for your projects and account. Choose a destination to get started.</p></div>
+          <div class="home-highlights">
+            <a href="#projects" class="feature-card" aria-label="Open Projects">
+              <span class="feature-icon"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg></span><span class="feature-copy"><span class="feature-kicker">WORKSPACE</span><strong>Projects</strong><span>Open your projects and pick up where you left off.</span></span><span class="feature-arrow"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></span>
+            </a>
+            <a href="#settings" class="feature-card" aria-label="Open Settings">
+              <span class="feature-icon"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg></span><span class="feature-copy"><span class="feature-kicker">ACCOUNT</span><strong>Settings</strong><span>Manage sign-in methods, security, and your account.</span></span><span class="feature-arrow"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></span>
+            </a>
+          </div>
+          <div class="home-section-caption"><span>YOUR PROJECTS</span><a href="#projects">View projects <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></a></div>
+          <a class="project-row" href="#colosseum/utilities" aria-label="Open Colosseum">
+            <span class="project-emblem">C</span><span class="project-row-copy"><strong>Colosseum</strong><span>Project workspace</span></span><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg>
+          </a>
+        </section>
+        <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
+          <div class="page-heading"><div class="eyebrow">WORKSPACE</div><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
+          <div class="section-subheading"><h2>All projects</h2><span class="count-label">1 project</span></div>
+          <a class="project-card" href="#colosseum/utilities" aria-label="Open Colosseum project">
+            <span class="project-emblem large">C</span><span class="project-card-copy"><strong>Colosseum</strong><span>Open project workspace</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
+          </a>
+        </section>
+        <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
+          <div class="page-heading"><div class="eyebrow">YOUR ACCOUNT</div><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
+        <section id="account" class="panel settings-panel" aria-label="Account and security settings">
+          <h2>Account & security</h2>
+          <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
+          <p class="note">Your account security settings are below. No banking connections or sensitive financial records are stored in this dashboard.</p>
+          <div id="security-controls" style="margin-top:24px;border-top:1px solid #304058;padding-top:18px">
+            <section id="linked-accounts" style="margin-top:27px;border-top:1px solid #304058;padding-top:18px" aria-label="Linked sign-in accounts">
+              <h3>Connected sign-in accounts</h3>
+              <p class="note">Link up to five Google accounts and three GitHub accounts. Each external account belongs to only one Dofinances user.</p>
+              <p id="federation-feedback" role="status"></p>
+              <div id="linked-identity-list" aria-live="polite"><p>Loading connected accounts…</p></div>
+              <div id="add-identity-buttons" class="security-form" style="margin-top:16px"></div>
+            </section>
+            <div class="settings-divider"><h3>Email verification</h3></div>
+            <p id="verification-state" role="status">Checking account…</p>
+            <button id="resend-verification" type="button" class="secondary" hidden style="margin-top:12px">Send verification email</button>
+            <p id="verification-feedback" role="alert"></p>
+
+            <h3 style="margin-top:27px">Two-factor authentication</h3>
+            <label for="enable-password" style="display:block;margin-top:16px;font-size:13px">Current password (required to enable MFA)</label>
+            <input id="enable-password" type="password" autocomplete="current-password" style="margin-top:8px">
+            <p id="mfa-state" role="status">Loading MFA status…</p>
+            <button id="start-mfa" type="button" class="secondary" style="margin-top:12px">Enable authenticator MFA</button>
+            <section id="mfa-setup" hidden class="security-setup">
+              <p>In your authenticator app, add an account manually using this secret (30-second codes, SHA-1, 6 digits):</p>
+              <p class="secret" id="mfa-secret"></p>
+              <p>Keep this secret private. It will not be displayed again after activation.</p>
+              <form id="mfa-confirm-form" class="security-form">
+                <label for="setup-code">Enter the code shown by your authenticator</label>
+                <input id="setup-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+                <button class="secondary" type="submit">Confirm and enable MFA</button>
+              </form>
+              <p id="mfa-setup-feedback" role="alert"></p>
+            </section>
+            <section id="mfa-recovery" hidden class="security-setup">
+              <h3>Save your recovery codes</h3>
+              <p>Store these codes somewhere safe. Each can be used once. They will not be displayed again.</p>
+              <pre id="recovery-codes" class="secret"></pre>
+              <p>Your active sessions were revoked. <a href="/login">Sign in again</a> using your authenticator.</p>
+            </section>
+            <form id="mfa-disable-form" class="security-form" hidden>
+              <h3>Disable two-factor authentication</h3>
+              <label for="disable-password">Current password</label>
+              <input id="disable-password" name="password" type="password" autocomplete="current-password" required>
+              <label for="disable-code">Authenticator or recovery code</label>
+              <input id="disable-code" name="code" type="text" autocomplete="one-time-code" maxlength="48" required>
+              <button class="destructive" type="submit">Disable MFA</button>
+              <p id="mfa-disable-feedback" role="alert"></p>
+            </form>
+          </div>
+          <details class="danger">
+            <summary>Delete my account</summary>
+            <p>This permanently deletes your registered account and all sessions. This cannot be undone.</p>
+            <form id="delete-form">
+              <label for="delete-password">Enter your password to confirm deletion</label>
+              <input id="delete-password" name="password" type="password" autocomplete="current-password" required>
+              <label for="delete-code">Authenticator or recovery code (if MFA enabled)</label>
+              <input id="delete-code" name="code" type="text" autocomplete="one-time-code" maxlength="48">
+              <button type="submit" class="destructive">Permanently delete account</button>
+              <p id="delete-feedback" role="alert" aria-live="polite"></p>
+            </form>
+          </details>
+        </section>
+
+        </section>
+        <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-utilities-title">Utilities</h1><p class="lead">Colosseum · Utilities</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <section class="view project-view" data-view="colosseum/collections" hidden aria-labelledby="project-collections-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-collections-title">Collections</h1><p class="lead">Colosseum · Collections</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <section class="view project-view" data-view="colosseum/providers" hidden aria-labelledby="project-providers-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-providers-title">Providers</h1><p class="lead">Colosseum · Providers</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-permissions-title">Permissions</h1><p class="lead">Colosseum · Permissions</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-diagnostics-title">Diagnostics</h1><p class="lead">Colosseum · Diagnostics</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <section class="view project-view" data-view="colosseum/settings" hidden aria-labelledby="project-settings-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-settings-title">Settings</h1><p class="lead">Colosseum · Settings</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        </section>
+        <p class="footer">© DoFinances · Private workspace</p>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -78,15 +78,36 @@ jobs:
         with:
           name: dofinances-dist
           path: dist
-      - name: Clear Studio root without modifying the built apex login
+      - name: Package static Liquid Glass Studio without modifying apex login build
         shell: bash
         run: |
           set -euo pipefail
-          # Only the Pages deployment copy is replaced. The build artifact
-          # downloaded independently by deploy-host-router stays unchanged.
-          cp studio/blank.html dist/index.html
-          grep -Fq 'studio-empty-v1' dist/index.html
-          ! grep -Eiq '<script|<form|auth3-studio-preview-v1' dist/index.html
+          # The Vite build artifact downloaded independently by the Worker
+          # job still supplies the real Auth-3 apex /login page.
+          # Only this Pages deployment's dist/ copy becomes the standalone
+          # Studio preview. No auth JS or test-branch dependency is included.
+          mkdir -p dist/app/assets dist/assets
+          cp studio/sidebar/index.html dist/index.html
+          cp studio/sidebar/index.html dist/app/index.html
+          cp sites/_apex/app/assets/dashboard.css dist/app/assets/dashboard.css
+          cp sites/_apex/app/assets/workspace-theme.css dist/app/assets/workspace-theme.css
+          cp sites/_apex/app/assets/workspace-nav.js dist/app/assets/workspace-nav.js
+          cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
+          cp sites/_apex/app/assets/sidebar-glass-field-worker.js dist/app/assets/sidebar-glass-field-worker.js
+          cp studio/sidebar/sidebar-glass.css dist/app/assets/sidebar-glass.css
+          cp studio/sidebar/sidebar-glass.js dist/app/assets/sidebar-glass.js
+          cp studio/sidebar/preview-bootstrap.js dist/app/assets/preview-bootstrap.js
+          cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
+          test ! -e dist/app/assets/dashboard.js
+          grep -Fq 'preview-bootstrap.js' dist/index.html
+          grep -Fq 'sidebar-glass.css' dist/app/index.html
+          grep -Fq 'initLiquidGlassSidebar' dist/app/assets/preview-bootstrap.js
+          grep -Fq 'glass-scene-toggle' dist/app/assets/sidebar-glass.js
+          grep -Fq 'body:has(> #workspace-shell.liquid-glass-preview)' dist/app/assets/sidebar-glass.css
+          ! grep -Fq 'auth3-studio-preview-v1' dist/index.html
+          ! grep -R -Eq 'fetch\(|api/auth|location.replace' dist/app/assets/*.js
+          cmp studio/sidebar/sidebar-glass.css dist/app/assets/sidebar-glass.css
+          cmp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
@@ -159,17 +180,29 @@ jobs:
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
 
-      - name: Verify Studio root, apex login, and deleted Studio login routes
+      - name: Verify Studio glass root, apex login, and deleted Studio login routes
         shell: bash
         run: |
           set -euo pipefail
           studio_body="$(mktemp)"
           studio_code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$studio_body" https://stu.dofinances.com/)"
-          echo "Studio root -> HTTP $studio_code (expected blank Studio page)"
+          echo "Studio root -> HTTP $studio_code (standalone glass preview)"
           test "$studio_code" = 200
-          grep -Fq 'studio-empty-v1' "$studio_body"
-          ! grep -Eiq '<script|<form|auth3-studio-preview-v1|Sign in · Dofinances' "$studio_body"
+          grep -Fq 'preview-bootstrap.js' "$studio_body"
+          grep -Fq 'id="workspace-sidebar"' "$studio_body"
+          grep -Fq 'sidebar-glass.css' "$studio_body"
+          ! grep -Fq 'auth3-studio-preview-v1' "$studio_body"
           rm "$studio_body"
+          for route in /app/ /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
+            code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "https://stu.dofinances.com$route")"
+            echo "Studio $route -> HTTP $code"
+            test "$code" = 200
+          done
+          studio_app="$(mktemp)"
+          curl -fsSL --max-time 20 https://stu.dofinances.com/app/ > "$studio_app"
+          grep -Fq 'id="workspace-sidebar"' "$studio_app"
+          grep -Fq 'preview-bootstrap.js' "$studio_app"
+          rm "$studio_app"
           for url in https://dofinances.com/login https://dofinances.com/login/; do
             body="$(mktemp)"
             code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
