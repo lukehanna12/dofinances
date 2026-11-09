@@ -1,0 +1,78 @@
+/* Public account security screens: same tokens as /app without requiring
+   a session to retrieve their styles. The CSS includes no private state. */
+* {box-sizing: border-box;}
+body {margin:0; min-height:100dvh; background:var(--ui-canvas); color:var(--ui-text);}
+.content {
+  width:calc(100% - 32px);
+  padding:clamp(20px,4vw,40px);
+  margin-inline:auto;
+}
+.eyebrow {
+  font-size:11px;
+  font-weight:550;
+  letter-spacing:.08em;
+  color:var(--ui-muted);
+}
+h1 {
+  font-size:clamp(30px,4vw,43px);
+  font-weight:620;
+  line-height:1.2;
+  letter-spacing:-.037em;
+  color:var(--ui-text);
+  margin:14px 0 12px;
+}
+.lead {
+  font-size:15px;
+  line-height:1.6;
+  color:var(--ui-secondary);
+  margin:0 0 24px;
+}
+.panel {
+  margin-top:28px;
+  padding:clamp(20px,3vw,28px);
+  border:1px solid var(--ui-border);
+  border-radius:16px;
+  background:var(--ui-elevated);
+}
+.panel p {color:var(--ui-secondary);font-size:13px;line-height:1.6;}
+.panel label {
+  display:grid;
+  gap:7px;
+  color:var(--ui-secondary);
+  font-size:13px;
+  line-height:1.5;
+}
+.panel input {
+  width:100%;
+  min-height:42px;
+  padding:10px 12px;
+  border-radius:11px;
+  border:1px solid var(--ui-border-strong);
+  background:var(--ui-field);
+  color:var(--ui-text);
+  font:inherit;
+}
+.panel input:focus {outline:2px solid var(--ui-focus);outline-offset:2px;}
+.secondary {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  justify-self:start;
+  min-height:39px;
+  padding:9px 16px;
+  border-radius:999px;
+  border:1px solid var(--ui-border);
+  background:var(--ui-surface);
+  color:var(--ui-text);
+  font:inherit;
+  font-size:13px;
+  font-weight:550;
+  cursor:pointer;
+  transition:background-color 150ms ease,border-color 150ms ease;
+}
+.secondary:hover {background:var(--ui-hover);border-color:var(--ui-border-strong);}
+.secondary:disabled {cursor:not-allowed;opacity:.55;}
+a {color:var(--ui-link);text-underline-offset:3px;}
+a:hover {color:var(--ui-text);}
+[role="alert"]:not(:empty),[role="status"]:not(:empty) {overflow-wrap:anywhere;}
+@media (prefers-reduced-motion:reduce){.secondary{transition:none;}}
