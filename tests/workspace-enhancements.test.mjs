@@ -99,7 +99,7 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.brand\{transform:none;/);
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:auto;right:auto;/);
   assert.match(nav,/Click to expand sidebar/);
-  assert.match(nav,/Drag to resize • pull left to collapse/);
+  assert.match(nav,/Drag to resize • collapse past half minimum width/);
   assert.match(nav,/collapse past half minimum width/);
   assert.match(nav,/COLLAPSE_DRAG_FRACTION=\.5/);
   assert.match(nav,/rawWidth<minSidebarWidth\*COLLAPSE_DRAG_FRACTION/);
