@@ -90,7 +90,7 @@ test("HEAD and POST are handled safely",async()=>{
 });
 test("repository includes initial Git-owned homepage files",async()=>{
   const html=await readFile(new URL("../sites/_apex/index.html",import.meta.url),"utf8");
-  assert.match(html,/Dofinances/);
+  assert.match(html,/DoFinances/);
 });
 
 const VALID_TOKEN="A".repeat(43);

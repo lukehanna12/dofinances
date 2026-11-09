@@ -18,9 +18,9 @@ jobs:
           status() {
             curl --silent --show-error --max-time 25 -o /dev/null -w '%{http_code}' "$1"
           }
-          contains 'https://dofinances.com/' 'managed in GitHub'
+          contains 'https://dofinances.com/' 'DoFinances'
           contains 'https://dofinances.com/assets/site.css' 'font-family'
-          contains 'https://www.dofinances.com/' 'managed in GitHub'
+          contains 'https://www.dofinances.com/' 'DoFinances'
           test "$(status 'https://dofinances.com/__ci_check.html')" = 404
           test "$(status 'https://www.dofinances.com/__ci_check.html')" = 301
           test "$(status 'https://ci-probe.dofinances.com/')" = 404

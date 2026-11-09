@@ -138,8 +138,8 @@ jobs:
           set -euo pipefail
           passed=false
           for attempt in 1 2 3 4 5; do
-            if curl -fsSL --max-time 20 https://dofinances.com/ | grep -Fq 'Dofinances' &&
-               curl -fsSL --max-time 20 https://www.dofinances.com/ | grep -Fq 'Dofinances' &&
+            if curl -fsSL --max-time 20 https://dofinances.com/ | grep -Fq 'DoFinances' &&
+               curl -fsSL --max-time 20 https://www.dofinances.com/ | grep -Fq 'DoFinances' &&
                curl -fsSL --max-time 20 https://stu.dofinances.com/ >/dev/null &&
                test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://ci-probe.dofinances.com/)" = 404; then
               passed=true
