@@ -71,7 +71,7 @@ test("440px reference projects exact native-derived fields during arbitrary manu
 test("Oracle retains exact size-keyed cache and warms the actual resized endpoint",async()=>{
   const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
   const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
-  assert.match(code,/CACHE_URL_BUDGET=24\*1024\*1024/);
+  assert.match(code,/CACHE_URL_BUDGET=40\*1024\*1024/);
   assert.match(code,/const key=w\+"x"\+h\+"@"\+corner/);
   assert.match(code,/desired\.w===74\?expanded:desired\.w===expanded\?74:0/);
   assert.match(code,/shell\.classList\.contains\("is-sidebar-resizing"\)/);
@@ -88,8 +88,8 @@ test("both desktop motion directions prefetch only exact oracle geometry within 
     assert.ok(widths.includes(w),"Missing exact predicted collapse/expand width "+w);
   assert.ok(widths.every(w=>Number.isInteger(w)&&w>74&&w<260));
   const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
-  assert.match(code,/const CACHE_LIMIT=32/);
-  assert.match(code,/const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24/);
+  assert.match(code,/const CACHE_LIMIT=64/);
+  assert.match(code,/const SPECULATIVE_BURST=44, SPECULATIVE_TOTAL_LIMIT=48/);
   assert.match(code,/new ResizeObserver\(onPaneResize\)/);
   assert.match(code,/if\(key!==previous&&geometryCache\.has\(key\)\)reconcileReady\(\)/);
   assert.match(code,/function setMaps\(request,urls\)\{[\s\S]*?commitMaterial\(request\.w,request\.h\)/);
@@ -105,7 +105,7 @@ test("vertical resize retains exact stale width-height fields for reverse resize
   assert.match(code,/geometryCache\.set\(request\.key,urls\)/);
   assert.match(code,/const key=w\+"x"\+h\+"@"\+corner/);
   assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
-  assert.match(code,/CACHE_URL_BUDGET=24\*1024\*1024/);
+  assert.match(code,/CACHE_URL_BUDGET=40\*1024\*1024/);
 });
 
 test("reference fields project byte-exactly along both axes for desktop resize",()=>{
@@ -123,4 +123,15 @@ test("reference fields project byte-exactly along both axes for desktop resize",
     "Very short panes need direct mode5 generation");
   assert.throws(()=>projectOracleFieldSize(base,440,600,24),RangeError,
     "Do not project beyond the reference height");
+});
+
+test("cold optical-field misses never display stale SVG displacement maps",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.match(code,/shell\.classList\.add\("is-oracle-pending"\)/);
+  assert.match(code,/previous=request\.key;[\s\S]*?settleOpticalField\(\)/);
+  assert.match(code,/if\(key===previous\)\{[\s\S]*?settleOpticalField\(\)/);
+  assert.match(css,/\.has-oracle-backdrop\.is-oracle-pending \.sidebar\{/);
+  assert.match(code,/const CACHE_LIMIT=64/);
+  assert.match(code,/SPECULATIVE_BURST=44, SPECULATIVE_TOTAL_LIMIT=48/);
 });

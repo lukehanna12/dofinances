@@ -610,13 +610,11 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
    * The synchronous path is retained when Worker execution is unavailable.
    */
   const geometryCache=new Map();
-  // Retain bounded exact geometry-only PNGs (no webpage pixels). The
-  // 32-entry LRU covers responsive endpoints and a selectively warmed path;
-  // stale height-specific maps are retired when the window height changes.
-  const CACHE_LIMIT=32;
-  // Bound decoded PNG data-URL strings across multiple exact-width/height keys.
-  const CACHE_URL_BUDGET=24*1024*1024;
-  const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24;
+  // Exact pixel fields for each width and height, bounded by entry count
+  // AND compressed bytes. Warm enough transition widths for fast displays.
+  const CACHE_LIMIT=64;
+  const CACHE_URL_BUDGET=40*1024*1024;
+  const SPECULATIVE_BURST=44, SPECULATIVE_TOTAL_LIMIT=48;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
   let anticipateSignature="",anticipateCount=0;
@@ -650,7 +648,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
        !win.matchMedia?.("(min-width: 761px)")?.matches){
       stopAnticipation();return;
     }
-    const signature=desired.h+"@24";
+    const signature=desired.h+"@24@"+expandedTargetWidth();
     if(anticipateWorker&&anticipateSignature===signature)return;
     if(anticipateSignature!==signature){
       stopAnticipation();
@@ -662,8 +660,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     if(anticipateTimer||anticipateCount>=SPECULATIVE_TOTAL_LIMIT)return;
     anticipateTimer=win.setTimeout(()=>{
       anticipateTimer=0;
-      if(disposed||!desired||desired.h+"@24"!==signature||
-         shell.classList.contains("is-sidebar-toggling"))return;
+      if(disposed||!desired||desired.h+"@24@"+expandedTargetWidth()!==signature||
+         shell.classList.contains("is-sidebar-toggling")||
+         shell.classList.contains("is-sidebar-resizing"))return;
       const queue=expectedExpandWidths().map(w=>({
         w,h:desired.h,corner:24,key:w+"x"+desired.h+"@24",prefetch:true
       })).filter(request=>!geometryCache.has(request.key))
@@ -684,7 +683,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         anticipateWorker.addEventListener("message",event=>{
           const response=event.data;
           if(disposed||!response||response.error||!response.urls||
-             response.h+"@"+response.corner!==anticipateSignature){
+             response.h+"@"+response.corner+"@"+expandedTargetWidth()!==anticipateSignature){
             stopAnticipation();return;
           }
           cacheField(response,response.urls);
@@ -701,7 +700,21 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         anticipateWorker.addEventListener("error",stopAnticipation);
         sendNext();
       }catch{stopAnticipation();}
-    },900);
+    },120);
+  }
+  let opticalPending=false;
+  const paneIsMoving=()=>shell.classList.contains("is-sidebar-toggling")||
+    shell.classList.contains("is-sidebar-resizing");
+  function markOpticalPending(){
+    if(opticalPending)return;
+    opticalPending=true;
+    shell.classList.add("is-oracle-pending");
+  }
+  function settleOpticalField(){
+    if(opticalPending&&desired?.key===previous&&!paneIsMoving()){
+      opticalPending=false;
+      shell.classList.remove("is-oracle-pending");
+    }
   }
   let lastMaterialWord=NaN,lastInputRadius=NaN;
   // The SVG filter is one optical state: three width-exact mode5 fields
@@ -746,6 +759,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         node.setAttribute("height",String(request.h));
     }
     previous=request.key;
+    settleOpticalField();
     usingSVG=true;
     if(!shell.classList.contains("has-oracle-backdrop"))
       shell.classList.add("has-oracle-backdrop");
@@ -909,6 +923,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       observedWidths.set(w,(observedWidths.get(w)||0)+1);
     }
     if(key===previous){
+      settleOpticalField();
       // No DOM writes, no timers, and no worker messages on a no-op frame.
       // Only settled endpoints are eligible for geometry-only warmup.
       if(!shell.classList.contains("is-sidebar-toggling")){
@@ -933,6 +948,10 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       }
       return;
     }
+    // The pane may have already changed size on the current CSS frame.
+    // Do not render old displacement PNGs stretched over its new middle.
+    markOpticalPending();
+    commitMaterial(w,h);
     if(worker)dispatchLatest();
     else syncField(desired);
   }
@@ -1037,6 +1056,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       sidebar.removeEventListener("transitionend",onWidthTransition);
       sidebar.removeEventListener("transitioncancel",onWidthTransition);
       shell.classList.remove("has-oracle-backdrop");
+      shell.classList.remove("is-oracle-pending");
       svg.remove();
     }
   };

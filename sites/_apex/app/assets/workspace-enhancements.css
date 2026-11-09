@@ -192,6 +192,13 @@ body:has(> #workspace-shell) .content{
   }
   .shell.is-compact-rail.is-rail-expanded .sidebar{cursor:default;}
   .shell.is-compact-rail.is-rail-expanded > .sidebar-resize-handle{display:block;}
+  /* A missing exact map must not be painted using another pane's geometry.
+     Retain a uniform live backdrop blur during the miss and restore the
+     mode5 filter only once all exact maps match the real current pane. */
+  .shell.liquid-glass-preview.has-oracle-backdrop.is-oracle-pending .sidebar{
+    -webkit-backdrop-filter:blur(var(--oracle-backdrop-blur))!important;
+    backdrop-filter:blur(var(--oracle-backdrop-blur))!important;
+  }
   /* Pointer cue floats above the page instead of brightening the glass. */
   .sidebar-interaction-tooltip{position:fixed;z-index:100;pointer-events:none;opacity:0;
     padding:6px 10px;border-radius:7px;background:rgba(36,36,39,.97);
