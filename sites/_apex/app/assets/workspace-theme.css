@@ -5,34 +5,7 @@
  * Deliberately authored for DoFinances; no private runtime or compiled CSS is copied.
  * Existing dashboard.css remains the behavior/layout fallback.
  */
-:root {
-  /* One deliberately fixed dark appearance across every authenticated screen. */
-  color-scheme: dark;
-  --ui-canvas: #000000;
-  --ui-sidebar: #000000;
-  --ui-divider: #303030;
-  --ui-surface: #212121;
-  --ui-elevated: #171717;
-  --ui-hover: #262626;
-  --ui-selected: #303030;
-  --ui-field: #212121;
-  --ui-text: #f4f4f4;
-  --ui-secondary: #b4b4b4;
-  --ui-muted: #898989;
-  --ui-border: #343434;
-  --ui-border-strong: #515151;
-  --ui-focus: #89b7fb;
-  --ui-danger: #ff9698;
-  --ui-danger-bg: #392628;
-  --ui-link: #a0caff;
-  --ui-scrim: rgb(0 0 0 / 70%);
-  --ui-ring: 0 0 0 3px color-mix(in srgb, var(--ui-focus) 20%, transparent);
-  --ui-ease: cubic-bezier(.2, .8, .2, 1);
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--ui-canvas);
-  color: var(--ui-text);
-}
-/* Route changes should not ease the viewport or alter content width. */
+/* Palette and system typography are inherited from /assets/site-foundation.css. */
 html {scroll-behavior: auto; scrollbar-gutter: stable;}
 body {margin: 0; min-height: 100vh; background: var(--ui-canvas); color: var(--ui-text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;}
 a {color: inherit;}
