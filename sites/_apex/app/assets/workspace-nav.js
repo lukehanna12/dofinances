@@ -63,6 +63,25 @@ export function initWorkspaceNavigation(doc=document,win=window){
     throw Error("Workspace navigation markup is incomplete.");
 
   const isMobile=()=>!!win.matchMedia?.("(max-width: 760px)").matches;
+  // A viewport breakpoint is a layout change, not an expand/collapse action.
+  // Keep transitions off unless a user actually clicked a sidebar control.
+  let motionTimeout=null;
+  let wasMobile=isMobile();
+  function stopSidebarMotion(){
+    if(motionTimeout!==null)clearTimeout(motionTimeout);
+    motionTimeout=null;
+    shell.classList.remove("is-sidebar-toggling");
+    shell.classList.remove("is-drawer-toggling");
+  }
+  function startSidebarMotion(kind){
+    stopSidebarMotion();
+    const className=kind==="drawer"?"is-drawer-toggling":"is-sidebar-toggling";
+    shell.classList.add(className);
+    motionTimeout=setTimeout(()=>{
+      shell.classList.remove(className);
+      motionTimeout=null;
+    },250);
+  }
   let collapsed=false;
   try{collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";}catch{}
   function updateCollapse(){
@@ -72,13 +91,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
       collapsed?"Expand sidebar":"Collapse sidebar");
     desktopToggle.title=collapsed?"Expand sidebar":"Collapse sidebar";
   }
-  function closeDrawer(){
+  function closeDrawer(animate=false){
+    if(animate===true&&isMobile()&&shell.classList.contains("is-mobile-open"))
+      startSidebarMotion("drawer");
     shell.classList.remove("is-mobile-open");
     scrim.hidden=true;
     mobileToggle.setAttribute("aria-expanded","false");
     mobileToggle.setAttribute("aria-label","Open navigation");
   }
   function openDrawer(){
+    if(isMobile())startSidebarMotion("drawer");
     shell.classList.add("is-mobile-open");
     scrim.hidden=false;
     mobileToggle.setAttribute("aria-expanded","true");
@@ -112,27 +134,35 @@ export function initWorkspaceNavigation(doc=document,win=window){
   }
 
   desktopToggle.addEventListener("click",()=>{
-    if(isMobile()){closeDrawer();return;}
+    if(isMobile()){closeDrawer(true);return;}
+    startSidebarMotion("layout");
     collapsed=!collapsed;
     try{win.localStorage.setItem(PREFERENCE_KEY,String(collapsed));}catch{}
     updateCollapse();
   });
   mobileToggle.addEventListener("click",()=>{
-    if(shell.classList.contains("is-mobile-open"))closeDrawer();
+    if(shell.classList.contains("is-mobile-open"))closeDrawer(true);
     else openDrawer();
   });
-  scrim.addEventListener("click",closeDrawer);
+  scrim.addEventListener("click",()=>closeDrawer(true));
   doc.addEventListener("keydown",event=>{
     if(event.key==="Escape"&&shell.classList.contains("is-mobile-open")){
-      closeDrawer();mobileToggle.focus();
+      closeDrawer(true);mobileToggle.focus();
     }
   });
-  for(const link of links)link.addEventListener("click",()=>{if(isMobile())closeDrawer();});
-  back.addEventListener("click",()=>{if(isMobile())closeDrawer();});
+  for(const link of links)link.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
+  back.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
   win.addEventListener("hashchange",render);
   win.addEventListener("popstate",render);
   win.addEventListener("resize",()=>{
-    if(!isMobile())closeDrawer();
+    const nowMobile=isMobile();
+    if(nowMobile!==wasMobile){
+      // Cancel an in-flight button animation before the layout switches
+      // between a fixed off-canvas drawer and an in-flow desktop rail.
+      stopSidebarMotion();
+      wasMobile=nowMobile;
+    }
+    if(!nowMobile)closeDrawer();
     updateCollapse();
   });
   updateCollapse();

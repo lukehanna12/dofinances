@@ -78,12 +78,12 @@ test("sidebar collapse/expand keeps layout mounted and interpolates positions",a
   assert.match(head,/display:\s*block/,"avoid flex-direction layout switching");
   assert.match(head,/height:\s*71px/);
   assert.match(head,/min-height:\s*0/);
-  assert.match(head,/transition:\s*height 210ms/);
+  assert.match(head,/transition:\s*height var\(--sidebar-layout-duration\)/);
   assert.match(collapsedHead,/display:\s*block/);
   assert.match(collapsedHead,/height:\s*113px/);
   assert.match(collapsedHead,/min-height:\s*0/,"min-height must not clamp the height transition");
   assert.match(css,/\.shell\.is-collapsed \.sidebar-toggle \{top:\s*44px;\s*right:\s*7px;\}/);
-  assert.match(css,/transition:\s*top 210ms[^;]+right 210ms/);
+  assert.match(css,/transition:\s*top var\(--sidebar-layout-duration\)[^;]+right var\(--sidebar-layout-duration\)/);
   for(const [selector,display] of [
     ["brand-wordmark","flex"],["nav-label","block"],
     ["nav-section-label","block"],["sidebar-foot-label","inline-block"]
@@ -142,6 +142,39 @@ test("collapsed rail links actually shrink inside the sidebar and keep rounded s
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \{[\s\S]*?padding:\s*9px 11px;[\s\S]*?gap:\s*11px/);
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \.nav-label \{max-width:\s*24ch;\}/);
 });
+test("responsive drawer-to-rail switch cannot animate or jolt the main content",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  const shell=css.match(/\.shell \{([^}]*)\}/)?.[1]||"";
+  const clickable=css.match(/\.shell\.is-sidebar-toggling \{([^}]*)\}/)?.[1]||"";
+  assert.match(shell,/--sidebar-layout-duration:\s*0ms/);
+  assert.match(shell,/--sidebar-drawer-duration:\s*0ms/);
+  assert.match(clickable,/--sidebar-layout-duration:\s*210ms/);
+  assert.match(css,/\.shell\.is-drawer-toggling \{--sidebar-drawer-duration:\s*210ms;\}/);
+  assert.match(css,/transition:\s*width var\(--sidebar-layout-duration\)/);
+  assert.match(css,/transform var\(--sidebar-drawer-duration\)/);
+  // No transition class should be applied by resizing past 760/761px.
+  const m=mockNavigation();
+  const rail=m.elements["workspace-shell"];
+  initWorkspaceNavigation(m.doc,m.win);
+  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
+  m.mobile(true);m.fire("resize");
+  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
+  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
+  m.mobile(false);m.fire("resize");
+  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
+  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
+  // Clicking the desktop toggle still animates, but only for that interaction.
+  m.elements["sidebar-toggle"].dispatch("click");
+  assert.equal(rail.classList.contains("is-sidebar-toggling"),true);
+  // Crossing the breakpoint during a transition immediately cancels it.
+  m.mobile(true);m.fire("resize");
+  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
+  m.elements["mobile-nav-toggle"].dispatch("click");
+  assert.equal(rail.classList.contains("is-drawer-toggling"),true);
+  m.mobile(false);m.fire("resize");
+  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
+  assert.equal(rail.classList.contains("is-mobile-open"),false);
+});
 test("screen navigation has no entrance displacement or smooth-scroll jitter",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
   const head=css.match(/html\s*\{([^}]*)\}/)?.[1]||"";
@@ -151,8 +184,8 @@ test("screen navigation has no entrance displacement or smooth-scroll jitter",as
   assert.match(view,/animation:\s*none/,"disable page-entry animation");
   assert.match(view,/transform:\s*none/,"remove translateY movement");
   assert.doesNotMatch(css,/@keyframes\s+ui-page-appear/);
-  assert.match(css,/\.sidebar\s*\{[\s\S]*?transition:\s*width 210ms/,
-    "sidebar width transition should remain intact");
+  assert.match(css,/\.sidebar\s*\{[\s\S]*?transition:\s*width var\(--sidebar-layout-duration\)/,
+    "sidebar width transition should remain available for user clicks");
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
   assert.deepEqual(m.scrollCalls,[],"first render should not disturb restored scroll");

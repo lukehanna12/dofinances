@@ -13,7 +13,22 @@ a:hover {text-decoration: none;}
 ::selection {background: color-mix(in srgb, var(--ui-focus) 26%, transparent);}
 :focus-visible {outline: 2px solid var(--ui-focus); outline-offset: 3px;}
 [hidden] {display: none !important;}
-.shell {min-height: 100dvh; background: var(--ui-canvas);}
+/* Only explicit sidebar button interactions animate. Breakpoint changes must
+   immediately settle into their target layout, not interpolate from the drawer. */
+.shell {
+  min-height: 100dvh;
+  background: var(--ui-canvas);
+  --sidebar-layout-duration: 0ms;
+  --sidebar-fade-duration: 0ms;
+  --sidebar-fade-delay: 0ms;
+  --sidebar-drawer-duration: 0ms;
+}
+.shell.is-sidebar-toggling {
+  --sidebar-layout-duration: 210ms;
+  --sidebar-fade-duration: 105ms;
+  --sidebar-fade-delay: 105ms;
+}
+.shell.is-drawer-toggling {--sidebar-drawer-duration: 210ms;}
 .main {min-width: 0; min-height: 100dvh; background: var(--ui-canvas);}
 
 /* Chat-style sidebar: quiet secondary surface, compact neutral rows and icon rail. */
@@ -29,7 +44,8 @@ a:hover {text-decoration: none;}
   border: 0;
   border-right: 1px solid var(--ui-divider);
   overflow-x: hidden;
-  transition: width 210ms var(--ui-ease), transform 210ms var(--ui-ease);
+  transition: width var(--sidebar-layout-duration) var(--ui-ease),
+    transform var(--sidebar-drawer-duration) var(--ui-ease);
   z-index: 12;
 }
 /* Keep the header in one layout mode. Only its height is interpolated;
@@ -40,7 +56,7 @@ a:hover {text-decoration: none;}
   flex: none;
   height: 71px;
   min-height: 0; /* Avoid a discrete min-height clamp mid-animation. */
-  transition: height 210ms var(--ui-ease);
+  transition: height var(--sidebar-layout-duration) var(--ui-ease);
 }
 .brand {
   position: absolute;
@@ -51,7 +67,7 @@ a:hover {text-decoration: none;}
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -.025em;
-  transition: transform 210ms var(--ui-ease);
+  transition: transform var(--sidebar-layout-duration) var(--ui-ease);
 }
 .brand-wordmark {line-height: 1.18; margin-top: 2px;}
 .brand-subtitle {font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--ui-muted); margin-top: 4px;}
@@ -76,7 +92,8 @@ a:hover {text-decoration: none;}
   width: 34px;
   height: 34px;
   margin-top: 0;
-  transition: top 210ms var(--ui-ease), right 210ms var(--ui-ease),
+  transition: top var(--sidebar-layout-duration) var(--ui-ease),
+    right var(--sidebar-layout-duration) var(--ui-ease),
     background-color 160ms ease, color 160ms ease;
 }
 /* A grid track's automatic min-content width used to retain hidden label
@@ -109,8 +126,9 @@ a:hover {text-decoration: none;}
   background: transparent; color: var(--ui-text);
   font-size: 14px; font-weight: 450;
   transition: background-color 130ms ease, color 130ms ease,
-    padding-left 210ms var(--ui-ease), padding-right 210ms var(--ui-ease),
-    gap 210ms var(--ui-ease);
+    padding-left var(--sidebar-layout-duration) var(--ui-ease),
+    padding-right var(--sidebar-layout-duration) var(--ui-ease),
+    gap var(--sidebar-layout-duration) var(--ui-ease);
 }
 .nav-label {
   display: block;
@@ -141,12 +159,14 @@ a:hover {text-decoration: none;}
 .brand-wordmark, .nav-label, .nav-section-label, .sidebar-foot-label {
   opacity: 1;
   visibility: visible;
-  transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
+  transition: opacity var(--sidebar-fade-duration) ease var(--sidebar-fade-delay),
+    visibility 0s linear 0s;
 }
 /* Label width contracts with the rail; fading alone leaves a wide grid item. */
 .nav-link .nav-label {
-  transition: max-width 210ms var(--ui-ease),
-    opacity 105ms ease 105ms, visibility 0s linear 0s;
+  transition: max-width var(--sidebar-layout-duration) var(--ui-ease),
+    opacity var(--sidebar-fade-duration) ease var(--sidebar-fade-delay),
+    visibility 0s linear 0s;
 }
 .shell.is-collapsed .sidebar-head {
   display: block;
@@ -164,7 +184,8 @@ a:hover {text-decoration: none;}
 .shell.is-collapsed .sidebar-foot-label {
   opacity: 0;
   visibility: hidden;
-  transition: opacity 105ms ease, visibility 0s linear 105ms;
+  transition: opacity var(--sidebar-fade-duration) ease,
+    visibility 0s linear var(--sidebar-fade-delay);
 }
 .shell.is-collapsed .brand-wordmark {display: flex;}
 .shell.is-collapsed .nav-label {display: block;}
@@ -179,8 +200,9 @@ a:hover {text-decoration: none;}
 }
 .shell.is-collapsed .nav-link .nav-label {
   max-width: 0;
-  transition: max-width 210ms var(--ui-ease),
-    opacity 105ms ease, visibility 0s linear 105ms;
+  transition: max-width var(--sidebar-layout-duration) var(--ui-ease),
+    opacity var(--sidebar-fade-duration) ease,
+    visibility 0s linear var(--sidebar-fade-delay);
 }
 .shell.is-collapsed .nav-link .nav-icon {width: 18px; height: 18px;}
 .shell.is-collapsed .sidebar-bottom {justify-content: flex-start; padding-inline: 11px;}
