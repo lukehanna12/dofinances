@@ -22,6 +22,7 @@ a:hover {text-decoration: none;}
   --sidebar-fade-duration: 0ms;
   --sidebar-fade-delay: 0ms;
   --sidebar-drawer-duration: 0ms;
+  --rail-entry-width: 74px;
 }
 .shell.is-sidebar-toggling {
   --sidebar-layout-duration: 210ms;
@@ -29,6 +30,23 @@ a:hover {text-decoration: none;}
   --sidebar-fade-delay: 105ms;
 }
 .shell.is-drawer-toggling {--sidebar-drawer-duration: 210ms;}
+
+/* A viewport resize is not a toggle. Enter the desktop layout from the LEFT,
+   and compensate the main column so the 74px rail does not shove content. */
+.shell.is-rail-entering .sidebar {
+  animation: sidebar-enter-from-left 240ms var(--ui-ease) both;
+}
+.shell.is-rail-entering .main {
+  animation: main-follow-sidebar 240ms var(--ui-ease) both;
+}
+@keyframes sidebar-enter-from-left {
+  from {transform: translateX(calc(-1 * var(--rail-entry-width)));}
+  to {transform: translateX(0);}
+}
+@keyframes main-follow-sidebar {
+  from {transform: translateX(calc(-1 * var(--rail-entry-width)));}
+  to {transform: translateX(0);}
+}
 .main {min-width: 0; min-height: 100dvh; background: var(--ui-canvas);}
 
 /* Chat-style sidebar: quiet secondary surface, compact neutral rows and icon rail. */
@@ -211,21 +229,32 @@ a:hover {text-decoration: none;}
 /* Minimal navigation header, balanced like a modern conversation workspace. */
 .topbar {
   position: sticky; top: 0; z-index: 5;
-  min-height: 66px; padding: 12px clamp(24px, 4.1vw, 58px);
+  height: 66px; min-height: 66px; padding: 12px clamp(24px, 4.1vw, 58px);
   border: 0; background: var(--ui-canvas);
   color: var(--ui-text); backdrop-filter: none;
   gap: 18px;
+  flex-wrap: nowrap;
 }
-.topbar-start {gap: 10px;}
-.page-location {gap: 2px;}
+.topbar-start {gap: 10px; flex: 1 1 auto; min-width: 0; overflow: hidden;}
+.page-location {gap: 2px; min-width: 0; overflow: hidden;}
 .breadcrumb-label {font-size: 14px; font-weight: 550; color: var(--ui-text); letter-spacing: -.012em;}
 .breadcrumb-subtitle {font-size: 12px; color: var(--ui-muted);}
+.breadcrumb-label, .breadcrumb-subtitle {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .back-button {
   background: transparent; border-color: transparent;
   width: 36px; height: 36px; color: var(--ui-secondary);
 }
-.top-actions {gap: 12px;}
-.email {font-size: 12px; color: var(--ui-secondary); max-width: 220px;}
+.top-actions {gap: 12px; flex: 0 0 auto; min-width: 0; white-space: nowrap;}
+.email {
+  font-size: 12px; color: var(--ui-secondary); max-width: 220px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .secondary, .destructive,
 .security-form button,
 #add-identity-buttons a.secondary {
@@ -365,6 +394,26 @@ input::placeholder {color: var(--ui-muted);}
 .footer {color: var(--ui-muted);}
 
 /* Profile rail, tablet, and small touch targets. */
+@media (min-width: 1280px) {
+  .shell {--rail-entry-width: 260px;}
+  .shell.is-collapsed {--rail-entry-width: 74px;}
+}
+/* Compact desktop is always a 74px icon rail. An explicitly stored wide-screen
+   collapse preference must not force expansion at 761–1279px. */
+@media (min-width: 761px) and (max-width: 1279px) {
+  .shell .sidebar {width: 74px;}
+  /* Keep the rail correct even before the navigation module hydrates. */
+  .shell .brand {transform: translateX(4px);}
+  .shell .brand-wordmark, .shell .nav-label,
+  .shell .nav-section-label, .shell .sidebar-foot-label {
+    opacity: 0; visibility: hidden;
+  }
+  .shell .nav-link {justify-content: flex-start; padding: 9px 0 9px 15px; gap: 0;}
+  .shell .nav-link .nav-label {max-width: 0;}
+  .shell.is-compact-rail .sidebar-toggle {display: none;}
+  .shell.is-compact-rail .sidebar-head {height: 71px; min-height: 0;}
+  .top-actions .email {display: none;}
+}
 @media (min-width: 761px) and (max-width: 1080px) {
   .sidebar {width: 246px;}
   .shell.is-collapsed .sidebar {width: 74px;}
@@ -404,7 +453,8 @@ input::placeholder {color: var(--ui-muted);}
   .shell.is-collapsed .sidebar-bottom {justify-content: flex-start; padding: 15px 11px 6px;}
   .mobile-nav-toggle {display: inline-grid;}
   .sidebar-scrim:not([hidden]) {background: var(--ui-scrim); backdrop-filter: blur(2px);}
-  .topbar {min-height: 63px; padding: 12px 20px;}
+  .topbar {height: 63px; min-height: 63px; padding: 12px 20px;}
+  .top-actions .email {display: none;}
   .content {padding: 40px 22px 78px;}
   .project-card {padding: 18px;}
 }
@@ -425,6 +475,7 @@ input::placeholder {color: var(--ui-muted);}
   .brand-wordmark, .nav-label, .nav-section-label, .sidebar-foot-label,
   .nav-link, .icon-button, .feature-card, .project-card, .project-row,
   .secondary, .destructive, input {transition: none;}
+  .shell.is-rail-entering .sidebar, .shell.is-rail-entering .main {animation: none;}
 }
 @media (prefers-contrast: more) {
   .nav-link.active, .feature-card, .project-card, .project-row, .panel, .security-setup {border: 1px solid var(--ui-border-strong);}

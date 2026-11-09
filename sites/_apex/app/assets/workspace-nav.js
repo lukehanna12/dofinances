@@ -63,10 +63,28 @@ export function initWorkspaceNavigation(doc=document,win=window){
     throw Error("Workspace navigation markup is incomplete.");
 
   const isMobile=()=>!!win.matchMedia?.("(max-width: 760px)").matches;
+  // Match the reference's xl breakpoint: mobile drawer, compact desktop rail,
+  // then an expandable full-width sidebar at 1280px and above.
+  const isCompactRail=()=>!!win.matchMedia?.("(min-width: 761px) and (max-width: 1279px)").matches;
   // A viewport breakpoint is a layout change, not an expand/collapse action.
   // Keep transitions off unless a user actually clicked a sidebar control.
   let motionTimeout=null;
+  let entryTimeout=null;
   let wasMobile=isMobile();
+  let wasCompactRail=isCompactRail();
+  function stopRailEntry(){
+    if(entryTimeout!==null)clearTimeout(entryTimeout);
+    entryTimeout=null;
+    shell.classList.remove("is-rail-entering");
+  }
+  function enterDesktopFromLeft(){
+    stopRailEntry();
+    shell.classList.add("is-rail-entering");
+    entryTimeout=setTimeout(()=>{
+      shell.classList.remove("is-rail-entering");
+      entryTimeout=null;
+    },290);
+  }
   function stopSidebarMotion(){
     if(motionTimeout!==null)clearTimeout(motionTimeout);
     motionTimeout=null;
@@ -85,11 +103,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
   let collapsed=false;
   try{collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";}catch{}
   function updateCollapse(){
-    shell.classList.toggle("is-collapsed",collapsed);
-    desktopToggle.setAttribute("aria-expanded",String(!collapsed));
+    const forcedRail=isCompactRail();
+    const effectiveCollapsed=forcedRail||collapsed;
+    shell.classList.toggle("is-compact-rail",forcedRail);
+    shell.classList.toggle("is-collapsed",effectiveCollapsed);
+    // The compact rail is a responsive mode, not a user toggle.
+    desktopToggle.disabled=forcedRail;
+    desktopToggle.setAttribute("aria-expanded",String(!effectiveCollapsed));
     desktopToggle.setAttribute("aria-label",isMobile()?"Close navigation":
-      collapsed?"Expand sidebar":"Collapse sidebar");
-    desktopToggle.title=collapsed?"Expand sidebar":"Collapse sidebar";
+      effectiveCollapsed?"Expand sidebar":"Collapse sidebar");
+    desktopToggle.title=effectiveCollapsed?"Expand sidebar":"Collapse sidebar";
   }
   function closeDrawer(animate=false){
     if(animate===true&&isMobile()&&shell.classList.contains("is-mobile-open"))
@@ -135,6 +158,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
 
   desktopToggle.addEventListener("click",()=>{
     if(isMobile()){closeDrawer(true);return;}
+    if(isCompactRail())return;
     startSidebarMotion("layout");
     collapsed=!collapsed;
     try{win.localStorage.setItem(PREFERENCE_KEY,String(collapsed));}catch{}
@@ -156,12 +180,26 @@ export function initWorkspaceNavigation(doc=document,win=window){
   win.addEventListener("popstate",render);
   win.addEventListener("resize",()=>{
     const nowMobile=isMobile();
+    const nowCompactRail=isCompactRail();
     if(nowMobile!==wasMobile){
-      // Cancel an in-flight button animation before the layout switches
-      // between a fixed off-canvas drawer and an in-flow desktop rail.
       stopSidebarMotion();
-      wasMobile=nowMobile;
+      stopRailEntry();
+      // The 274px fixed drawer must never animate from the right into a
+      // 74px in-flow rail. Instead reveal the desktop rail from the left.
+      if(wasMobile&&!nowMobile)enterDesktopFromLeft();
+    }else if(nowCompactRail!==wasCompactRail){
+      stopRailEntry();
+      // Within desktop layouts the rail/full-width resize may interpolate.
+      startSidebarMotion("layout");
     }
+    if(!nowMobile&&!nowCompactRail&&(wasCompactRail||wasMobile)){
+      // Entering xl is a fresh full-sidebar layout, not a remembered tablet
+      // collapse. Manual collapse remains available once wide.
+      collapsed=false;
+      try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
+    }
+    wasMobile=nowMobile;
+    wasCompactRail=nowCompactRail;
     if(!nowMobile)closeDrawer();
     updateCollapse();
   });

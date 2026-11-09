@@ -142,38 +142,51 @@ test("collapsed rail links actually shrink inside the sidebar and keep rounded s
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \{[\s\S]*?padding:\s*9px 11px;[\s\S]*?gap:\s*11px/);
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \.nav-label \{max-width:\s*24ch;\}/);
 });
-test("responsive drawer-to-rail switch cannot animate or jolt the main content",async()=>{
+test("mobile to compact sidebar slides from left; desktop expands only above xl",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
-  const shell=css.match(/\.shell \{([^}]*)\}/)?.[1]||"";
-  const clickable=css.match(/\.shell\.is-sidebar-toggling \{([^}]*)\}/)?.[1]||"";
-  assert.match(shell,/--sidebar-layout-duration:\s*0ms/);
-  assert.match(shell,/--sidebar-drawer-duration:\s*0ms/);
-  assert.match(clickable,/--sidebar-layout-duration:\s*210ms/);
-  assert.match(css,/\.shell\.is-drawer-toggling \{--sidebar-drawer-duration:\s*210ms;\}/);
-  assert.match(css,/transition:\s*width var\(--sidebar-layout-duration\)/);
-  assert.match(css,/transform var\(--sidebar-drawer-duration\)/);
-  // No transition class should be applied by resizing past 760/761px.
-  const m=mockNavigation();
-  const rail=m.elements["workspace-shell"];
+  assert.match(css,/\.shell\.is-rail-entering \.sidebar \{[\s\S]*?sidebar-enter-from-left/);
+  assert.match(css,/@keyframes sidebar-enter-from-left/);
+  assert.match(css,/@keyframes main-follow-sidebar/);
+  assert.match(css,/@media \(min-width: 761px\) and \(max-width: 1279px\)/);
+  assert.match(css,/\.shell\.is-compact-rail \.sidebar-toggle \{display: none;\}/);
+  const m=mockNavigation(),shell=m.elements["workspace-shell"];
   initWorkspaceNavigation(m.doc,m.win);
-  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
+  assert.equal(shell.classList.contains("is-collapsed"),false);
   m.mobile(true);m.fire("resize");
-  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
-  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
-  m.mobile(false);m.fire("resize");
-  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
-  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
-  // Clicking the desktop toggle still animates, but only for that interaction.
+  m.compact(true);m.mobile(false);m.fire("resize");
+  assert.equal(shell.classList.contains("is-compact-rail"),true);
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  assert.equal(shell.classList.contains("is-rail-entering"),true);
+  assert.equal(shell.classList.contains("is-sidebar-toggling"),false);
+  assert.equal(m.elements["sidebar-toggle"].disabled,true);
+  m.elements["sidebar-toggle"].dispatch("click"); // No way to expand at tablet widths.
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  m.compact(false);m.fire("resize"); // >=1280
+  assert.equal(shell.classList.contains("is-compact-rail"),false);
+  assert.equal(shell.classList.contains("is-collapsed"),false);
+  assert.equal(m.elements["sidebar-toggle"].disabled,false);
+  assert.equal(shell.classList.contains("is-sidebar-toggling"),true);
   m.elements["sidebar-toggle"].dispatch("click");
-  assert.equal(rail.classList.contains("is-sidebar-toggling"),true);
-  // Crossing the breakpoint during a transition immediately cancels it.
-  m.mobile(true);m.fire("resize");
-  assert.equal(rail.classList.contains("is-sidebar-toggling"),false);
-  m.elements["mobile-nav-toggle"].dispatch("click");
-  assert.equal(rail.classList.contains("is-drawer-toggling"),true);
-  m.mobile(false);m.fire("resize");
-  assert.equal(rail.classList.contains("is-drawer-toggling"),false);
-  assert.equal(rail.classList.contains("is-mobile-open"),false);
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
+  m.compact(true);m.fire("resize");
+  m.compact(false);m.fire("resize");
+  assert.equal(shell.classList.contains("is-collapsed"),false,
+    "returning from compact rail to xl should expand automatically");
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"false");
+  m.elements["sidebar-toggle"].dispatch("click");
+  assert.equal(shell.classList.contains("is-collapsed"),true,
+    "wide sidebar may still be manually collapsed");
+});
+test("the account email cannot expand the responsive topbar vertically",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  const toolbar=css.match(/\.topbar \{([^}]*)\}/)?.[1]||"";
+  assert.match(toolbar,/height:\s*66px/);
+  assert.match(toolbar,/flex-wrap:\s*nowrap/);
+  assert.match(css,/\.topbar-start \{[^}]*min-width:\s*0/);
+  assert.match(css,/\.email \{[^}]*white-space:\s*nowrap/);
+  assert.match(css,/\.top-actions \.email \{display:\s*none;\}/);
+  assert.match(css,/@media \(max-width: 760px\) \{[\s\S]*?\.topbar \{height:\s*63px/);
 });
 test("screen navigation has no entrance displacement or smooth-scroll jitter",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-theme.css");
@@ -267,6 +280,7 @@ function mockNavigation(){
   const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
   let mobile=false;
+  let compactRail=false;
   const listeners={};
   const stored=new Map();
   const scrollCalls=[];
@@ -275,10 +289,13 @@ function mockNavigation(){
     addEventListener:(key,fn)=>{(listeners["doc:"+key]??=[]).push(fn);}};
   const win={location:{hash:"",search:""},localStorage:{
     getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)},
-    matchMedia:()=>({matches:mobile}),scrollTo:(...args)=>{scrollCalls.push(args);},
+    matchMedia:query=>({matches:query.includes("(max-width: 760px)")?mobile:
+      query.includes("(max-width: 1279px)")?compactRail:false}),
+    scrollTo:(...args)=>{scrollCalls.push(args);},
     addEventListener:(key,fn)=>{(listeners[key]??=[]).push(fn);}};
   const fire=key=>(listeners[key]||[]).forEach(fn=>fn());
-  return {doc,win,elements,views,links,fire,stored,scrollCalls,mobile:value=>{mobile=value;}};
+  return {doc,win,elements,views,links,fire,stored,scrollCalls,
+    mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
 test("sidebar changes nav scope, highlights selected view, and supports collapse and mobile drawer",()=>{
   const m=mockNavigation();
