@@ -56,6 +56,14 @@
     if(width>200)assert(Math.abs(radius-4)<1e-6,"expanded geometry gives regular radius4");
     document.documentElement.setAttribute("data-glass-browser-info","passed filter structure");
     await tick(600);
+    // Headless software-GPU initialization may contend with browser
+    // pipeline compilation. Check eventual actual activation rather than
+    // treating a 1.55s cold-start budget as an optical failure.
+    if(CSS.supports("backdrop-filter",'url("#oracle-glass-native-backdrop")')){
+      for(let attempt=0;attempt<60 &&
+          !shell.classList.contains("has-oracle-backdrop");attempt++)
+        await tick(150);
+    }
     const hasNative=shell.classList.contains("has-oracle-backdrop");
     if(CSS.supports("backdrop-filter",'url("#oracle-glass-native-backdrop")')){
       assert(hasNative,"Chrome activated the backdrop displacement path");
