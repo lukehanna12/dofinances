@@ -242,6 +242,68 @@ try{
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
     }
+    if(width===1440){
+      // Encoding/transport experiment. Input geometry and SVG graph remain
+      // unchanged; compare full pane INCLUDING optical rim, not a crop.
+      // Blob URLs can give Chromium different decoded-image cache semantics
+      // from data URLs while representing byte-identical PNG input.
+      const images=await evaluate('(()=>{'+
+        'const f=document.getElementById("oracle-glass-native-backdrop");'+
+        'return ["innerMap","outerMap","blurMap"].map(id=>{const n=f.querySelector(\'[result="'+id+'"]\');'+
+        'return {id,url:n.getAttribute("href")};});})()');
+      assert(images.length===3 && images.every(i=>i.url?.startsWith("data:image/png;base64,")),
+        "Expected canonical Oracle PNG data URLs before transport experiment");
+      const reference=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const blobResult=await evaluate('(()=>{'+
+        'const f=document.getElementById("oracle-glass-native-backdrop");'+
+        'window.__ciBlobURLs=[];'+
+        'for(const name of ["innerMap","outerMap","blurMap"]){'+
+        'const node=f.querySelector(\'[result="'+name+'"]\');'+
+        'const raw=atob(node.getAttribute("href").split(",")[1]);'+
+        'const data=Uint8Array.from(raw,c=>c.charCodeAt(0));'+
+        'const url=URL.createObjectURL(new Blob([data],{type:"image/png"}));'+
+        'window.__ciBlobURLs.push(url);'+
+        'node.setAttribute("href",url);node.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",url);'+
+        '}return {count:window.__ciBlobURLs.length};})()');
+      await sleep(450);
+      const version=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const diff=comparePixels(reference,version,0,260,0,900);
+      console.log("ORACLE_BLOB_IMAGE_EXACT_PIXEL_DELTA",JSON.stringify({...blobResult,...diff}));
+      for(const mode of ["blob","data"]){
+        if(mode==="data"){
+          await evaluate('(()=>{const f=document.getElementById("oracle-glass-native-backdrop");'+
+            'for(const record of '+JSON.stringify(images)+'){const n=f.querySelector(\'[result="'+record.id+'"]\');'+
+            'n.setAttribute("href",record.url);'+
+            'n.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",record.url);'+
+            '}return true;})()');
+        }
+        await sleep(220);
+        await evaluate('(()=>{const s=document.createElement("style");s.id="ci-backdrop-motion";'+
+          's.textContent="@keyframes ciShift{from{transform:translateX(0)}to{transform:translateX(18px)}}'+
+          'body:has(> #workspace-shell.liquid-glass-preview)::after{animation:ciShift 240ms linear infinite alternate;will-change:transform}";'+
+          'document.head.append(s);return true;})()');
+        await evaluate(`(()=>{const gaps=[];let last=0;const start=performance.now();
+          function frame(t){if(last)gaps.push(t-last);last=t;
+            if(t-start<1200)requestAnimationFrame(frame);
+            else{const sorted=gaps.toSorted((a,b)=>a-b);window.__ciTransportPerf={
+              frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
+              worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
+              stalls50:gaps.filter(x=>x>50).length
+            };}}
+          window.__ciTransportPerf=null;requestAnimationFrame(frame);return true;})()`);
+        const perf=await until(()=>evaluate("window.__ciTransportPerf||null"),10000);
+        console.log("ORACLE_BLOB_IMAGE_MOTION_CONTROL",JSON.stringify({mode,...perf}));
+        await evaluate('document.getElementById("ci-backdrop-motion")?.remove()');
+      }
+      await evaluate('(()=>{const urls=window.__ciBlobURLs||[];'+
+        'for(const url of urls)URL.revokeObjectURL(url);delete window.__ciBlobURLs;'+
+        'return true;})()');
+      await sleep(150);
+    }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
       // programmatic .click() cannot detect.
