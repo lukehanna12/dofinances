@@ -833,23 +833,26 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   sidebar.addEventListener("transitionend",onWidthTransition);
   sidebar.addEventListener("transitioncancel",onWidthTransition);
 
-  // ResizeObserver and transitionend are not necessarily delivered in the
-  // same animation frame as the final CSS width. The two canonical endpoint
-  // maps are already cached by idle warmup. Check ONLY the endpoint on each
-  // animation frame while the explicit width transition runs. This avoids
-  // the final visible 74->260 field swap after the pane has settled, without
-  // inventing intermediate maps or modifying any oracle coefficients.
+  // A ResizeObserver callback can arrive after the current frame's
+  // visible width has advanced. On explicit width transitions, check the
+  // already-encoded EXACT field for that frame in rAF. This is only cache
+  // lookup; no SDF math, PNG encoding, or backdrop capture occurs here.
+  // The normal worker/ResizeObserver route remains for uncached sizes.
   let endpointFrame=0;
   function watchEndpoint(){
     endpointFrame=0;
     if(disposed||!shell.classList.contains("is-sidebar-toggling"))return;
     const target=shell.classList.contains("is-collapsed")?74:260;
     const bounds=sidebar.getBoundingClientRect();
-    if(Math.round(bounds.width)===target){
-      const key=target+"x"+Math.round(bounds.height)+"@24";
-      if(previous!==key&&geometryCache.has(key))apply();
-      if(previous===key)return;
-    }
+    const w=Math.round(bounds.width),h=Math.round(bounds.height);
+    const css=win.getComputedStyle?.(sidebar);
+    const rawCorner=Number.parseFloat(css?.borderTopRightRadius||"24");
+    const corner=Math.min(Number.isFinite(rawCorner)?rawCorner:24,w*.5,h*.5);
+    const key=w+"x"+h+"@"+corner;
+    if(previous!==key&&geometryCache.has(key))apply();
+    // Stop after the final exact endpoint is installed. Keep watching only
+    // while a user-initiated transition is active and the field may advance.
+    if(Math.round(bounds.width)===target&&previous===key)return;
     endpointFrame=win.requestAnimationFrame(watchEndpoint);
   }
   const endpointObserver=typeof MutationObserver!=="undefined"?
