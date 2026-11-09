@@ -706,7 +706,24 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   }
   const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
   resize?.observe(sidebar);
-  win.addEventListener("resize",schedule,{passive:true});
+  function onViewportResize(){
+    // At the tablet→desktop breakpoint the pane can switch directly from
+    // 74px to 260px before its first rAF. If its EXACT target field is
+    // already cached, install it during the resize event, prior to paint.
+    // This changes only the timing of exact image delivery, never its data.
+    if(disposed)return;
+    const r=sidebar.getBoundingClientRect();
+    const w=Math.round(r.width),h=Math.round(r.height);
+    const style=win.getComputedStyle?.(sidebar);
+    const value=Number.parseFloat(style?.borderTopRightRadius||"24");
+    const radius=Math.min(Number.isFinite(value)?value:24,w*.5,h*.5);
+    const key=w+"x"+h+"@"+radius;
+    if(w>0&&h>0&&key!==previous&&geometryCache.has(key)){
+      if(queued){win.cancelAnimationFrame(queued);queued=0;}
+      apply();
+    }else schedule();
+  }
+  win.addEventListener("resize",onViewportResize,{passive:true});
   // A CSS transitionend event provides the earliest exact final width:
   // do not wait for a delayed ResizeObserver/rAF after expansion.
   const onWidthTransition=event=>{
@@ -753,7 +770,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       resize?.disconnect();
       endpointObserver?.disconnect();
       if(endpointFrame)win.cancelAnimationFrame(endpointFrame);
-      win.removeEventListener("resize",schedule);
+      win.removeEventListener("resize",onViewportResize);
       sidebar.removeEventListener("transitionend",onWidthTransition);
       sidebar.removeEventListener("transitioncancel",onWidthTransition);
       shell.classList.remove("has-oracle-backdrop");
