@@ -221,3 +221,9 @@ async function loadFederatedAccounts(){
   }
 }
 loadFederatedAccounts();
+
+// Optical decoration is optional: never block authentication, navigation,
+// sign-out, MFA or account management if a browser cannot initialize glass.
+void import("./sidebar-glass.js")
+  .then(({initLiquidGlassSidebar})=>initLiquidGlassSidebar())
+  .catch(error=>console.warn("Liquid Glass unavailable; retaining workspace controls",error));
