@@ -76,25 +76,46 @@ export async function oauthAuthorizeUrl(config,txn){
 export class FederationFailure extends Error {
   constructor(code){super("OAuth operation failed");this.code=code;}
 }
+// Closed, non-sensitive failure codes only. OAuth tokens, secrets, provider
+// descriptions and arbitrary upstream response strings are never exposed.
+const TOKEN_ERROR_CODES=Object.freeze({
+  invalid_client:"oauth_client_rejected",
+  unauthorized_client:"oauth_client_rejected",
+  incorrect_client_credentials:"oauth_client_rejected",
+  redirect_uri_mismatch:"oauth_callback_mismatch",
+  bad_verification_code:"oauth_code_rejected",
+  invalid_grant:"oauth_code_rejected",
+  unverified_user_email:"oauth_github_email_unverified",
+  slow_down:"oauth_provider_rate_limited",
+  rate_limit_exceeded:"oauth_provider_rate_limited",
+  unsupported_grant_type:"oauth_grant_rejected",
+  invalid_request:"oauth_request_rejected"
+});
+function tokenErrorCode(data,status){
+  const upstream=typeof data?.error==="string"?data.error:"";
+  if(Object.hasOwn(TOKEN_ERROR_CODES,upstream))return TOKEN_ERROR_CODES[upstream];
+  if(status===429)return "oauth_provider_rate_limited";
+  if(status===403)return "oauth_provider_forbidden";
+  if(status===401)return "oauth_client_rejected";
+  if(status>=500)return "oauth_provider_unavailable";
+  if(status>=300&&status<400)return "oauth_provider_redirected";
+  return "oauth_token_rejected";
+}
 async function jsonFromResponse(res,stage="profile"){
-  if(!res.ok){
-    if(stage==="token"){
-      let errorType="";
-      try{
-        const text=await res.text();
-        if(text.length<=4096){
-          const data=JSON.parse(text);
-          if(typeof data.error==="string")errorType=data.error;
-        }
-      }catch{}
-      if(errorType==="invalid_client"||errorType==="unauthorized_client")
-        throw new FederationFailure("oauth_client_rejected");
-      if(errorType==="invalid_grant")
-        throw new FederationFailure("oauth_code_rejected");
-      throw new FederationFailure("oauth_token_rejected");
-    }
-    throw new FederationFailure(stage==="jwks"?"oauth_jwks_unavailable":"oauth_profile_unavailable");
+  if(stage==="token"){
+    // GitHub's token endpoint may return OAuth error JSON with HTTP 200.
+    // Examine the status and allowlisted error code, never error_description.
+    const body=await res.text();
+    let parsed=null;
+    if(body.length<=4096){try{parsed=JSON.parse(body);}catch{}}
+    if(!res.ok||parsed?.error)
+      throw new FederationFailure(tokenErrorCode(parsed,res.status));
+    if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))
+      throw new FederationFailure("oauth_response_invalid");
+    return parsed;
   }
+  if(!res.ok)
+    throw new FederationFailure(stage==="jwks"?"oauth_jwks_unavailable":"oauth_profile_unavailable");
   const body=await res.text();
   if(body.length>200000)throw new FederationFailure("oauth_response_invalid");
   try{return JSON.parse(body);}
@@ -136,10 +157,13 @@ async function verifyIdToken(jwt,config,txn) {
 }
 export async function exchangeFederatedIdentity(config,code,txn){
   if(typeof code!=="string"||!code||code.length>4096)throw Error("Invalid authorization code");
-  const body=new URLSearchParams({grant_type:"authorization_code",code,
-    redirect_uri:CALLBACK+config.provider,client_id:config.clientId,
-    code_verifier:txn.verifier});
+  const body=new URLSearchParams({code,redirect_uri:CALLBACK+config.provider,
+    client_id:config.clientId,code_verifier:txn.verifier});
+  // GitHub documents the exact code, client and PKCE parameters, but not
+  // grant_type for this endpoint. Google follows the standard OAuth grant.
+  if(config.provider!=="github")body.set("grant_type","authorization_code");
   const headers={"Accept":"application/json","Content-Type":"application/x-www-form-urlencoded"};
+  if(config.provider==="github")headers["User-Agent"]="DoFinances-OAuth/1.0";
   if(config.method==="basic"){
     const encoded=x=>new URLSearchParams({value:x}).toString().slice("value=".length);
     headers.Authorization="Basic "+btoa(encoded(config.clientId)+":"+encoded(config.secret));
