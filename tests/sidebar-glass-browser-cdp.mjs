@@ -599,15 +599,25 @@ try{
     await evaluate(`(()=>{
       const gaps=[];let last=0;const start=performance.now();
       const button=document.getElementById("sidebar-toggle");
+      const sidebar=document.getElementById("workspace-sidebar");
+      const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
+      let staleFrames=0,maxWidthError=0,totalWidthError=0;
       function sample(t){
         if(last)gaps.push(t-last);last=t;
+        const actual=Math.round(sidebar.getBoundingClientRect().width);
+        const encoded=Number(map.getAttribute("width"));
+        const diff=Math.abs(actual-encoded);
+        if(diff>0)staleFrames++;
+        maxWidthError=Math.max(maxWidthError,diff);
+        totalWidthError+=diff;
         if(t-start<1220)requestAnimationFrame(sample);
         else {
           const sorted=gaps.toSorted((a,b)=>a-b);
           window.__abMotionResult={
             frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
             worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
-            stalls50:gaps.filter(x=>x>50).length
+            stalls50:gaps.filter(x=>x>50).length,
+            staleFrames,maxWidthError,totalWidthError
           };
         }
       }
