@@ -34,12 +34,13 @@ jobs:
       - name: Audit foreground LPH refraction and edge-light operator graph
         run: python3 preview/oracle-foreground-audit.py
       - name: Test real workspace navigation and experimental glass
-        run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs
+        run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs tests/sidebar-gpu-lab.test.mjs
       - name: Package actual app UI with safe preview entrypoint
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .app-sidebar-preview/app/assets .app-sidebar-preview/assets
+          mkdir -p .app-sidebar-preview/app/assets .app-sidebar-preview/assets .app-sidebar-preview/gpu-lab
+          cp preview/gpu-lab/* .app-sidebar-preview/gpu-lab/
           cp sites/_apex/app/index.html .app-sidebar-preview/app/index.html
           cp sites/_apex/app/assets/dashboard.css .app-sidebar-preview/app/assets/dashboard.css
           cp sites/_apex/app/assets/workspace-theme.css .app-sidebar-preview/app/assets/workspace-theme.css
@@ -78,6 +79,8 @@ jobs:
           test -s .app-sidebar-preview/app/assets/sidebar-glass.js
           test -s .app-sidebar-preview/app/assets/sidebar-glass-oracle.js
           test -s .app-sidebar-preview/app/assets/sidebar-glass-field-worker.js
+          test -s .app-sidebar-preview/gpu-lab/gpu-renderer.js
+          test -s .app-sidebar-preview/gpu-lab/index.html
           grep -Fq 'from "./sidebar-glass-oracle.js"' .app-sidebar-preview/app/assets/sidebar-glass.js
           test ! -e .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
           ! grep -Fq 'glass-wallpaper' .app-sidebar-preview/app/assets/sidebar-glass.css
@@ -90,6 +93,9 @@ jobs:
           command -v google-chrome
           node --check tests/sidebar-glass-browser-smoke.js
           node --check tests/sidebar-glass-browser-cdp.mjs
+          node --check tests/sidebar-gpu-lab-cdp.mjs
+          node --check .app-sidebar-preview/gpu-lab/gpu-renderer.js
+          node --check .app-sidebar-preview/gpu-lab/gpu-lab.js
           cp tests/sidebar-glass-browser-smoke.js .app-sidebar-preview/app/assets/_ci-glass-smoke.js
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -108,6 +114,8 @@ jobs:
           # The desktop pass also compares actual screenshot PIXELS, in memory,
           # against a same-background blur-only control.
           node tests/sidebar-glass-browser-cdp.mjs
+          # Separate controlled-texture WebGPU candidate, never a live sidebar replacement.
+          node tests/sidebar-gpu-lab-cdp.mjs
           # Never ship the CI test script or its script tag in the preview.
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
