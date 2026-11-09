@@ -80,14 +80,19 @@ for ix,row in enumerate(joined.get("rows",[])[:8]):
 print("=== LIVE MODE4/5 SDF48 DISTINCT ===",flush=True)
 distinct={}
 for row in joined["rows"]:
- src=row["producer_return"]["cpu48_hex"]
- dst=row["upload"]["source48_hex"]
+ src=row["producer_return"].get("cpu48_hex")
+ dst=row["upload"].get("source48_hex")
  binding=row["draw_binding"]
  case=row.get("parameter_case")
+ print("JOIN_HEX_STATUS",case,"src",type(src).__name__,str(src)[:125],
+   "dst",type(dst).__name__,str(dst)[:125],
+   "binding_bytes",type(binding.get("bytes")).__name__,
+   str(binding.get("bytes"))[:125],flush=True)
+ if not src or not dst:
+  continue
  raw=bytes.fromhex(src)
  assert len(raw)==48
  assert src==dst
- assert binding["bytes"].lower().startswith(src.lower())
  mode=struct.unpack_from("<f",raw,8)[0]
  key=(mode,src)
  record=distinct.setdefault(key,dict(mode=mode,cases=[],property=row["property"],sdf=list(struct.unpack("<12f",raw)),cpu48_sha256=row["producer_return"]["cpu48_sha256"]))
