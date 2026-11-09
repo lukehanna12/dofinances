@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {WORKSPACE_WALLPAPERS,workspaceWallpaperForRoute} from "../sites/_apex/app/assets/workspace-wallpapers.js";
+import {WORKSPACE_WALLPAPERS,workspaceWallpaperForRoute,applyWorkspaceWallpaper,initWorkspaceWallpaper} from "../sites/_apex/app/assets/workspace-wallpapers.js";
 
 test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
   const routes=["home","projects","settings","colosseum/utilities","colosseum/collections","colosseum/providers","colosseum/permissions","colosseum/diagnostics","colosseum/settings"];
@@ -61,6 +61,46 @@ test("Home keeps its original pixels and a near-native desktop foreground",()=>{
   assert.match(css,/\.workspace-home-art-bottom/);
   assert.equal(WORKSPACE_WALLPAPERS.home.sha,
     "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b");
+});
+test("route changes decode new wallpaper outside the immediate navigation turn and discard stale paints",async()=>{
+  const variables=new Map(),writes=[];
+  const body={
+    dataset:{},
+    style:{
+      getPropertyValue:key=>variables.get(key)||"",
+      setProperty:(key,value)=>{variables.set(key,value);writes.push([key,value]);}
+    }
+  };
+  const doc={body};
+  const pending=[],frames=[];
+  class TestImage{
+    set src(url){this.url=url;}
+    decode(){return new Promise(resolve=>pending.push({url:this.url,resolve}));}
+  }
+  const win={Image:TestImage,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;}};
+  const controller=initWorkspaceWallpaper(doc,win);
+  controller.show("home",true);
+  assert.equal(body.dataset.wallpaperRoute,"home");
+  controller.show("projects");
+  controller.show("settings");
+  assert.equal(body.dataset.wallpaperRoute,"home","sidebar responds before image decode");
+  assert.equal(pending.length,2);
+  pending[0].resolve();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(frames.length,0,"superseded route must not schedule its image paint");
+  pending[1].resolve();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(frames.length,1);
+  frames.shift()();
+  assert.equal(body.dataset.wallpaperRoute,"settings");
+  const imageWrites=writes.filter(([key])=>key==="--workspace-wallpaper-image").length;
+  controller.show("colosseum/settings");
+  assert.equal(body.dataset.wallpaperRoute,"colosseum/settings");
+  assert.equal(writes.filter(([key])=>key==="--workspace-wallpaper-image").length,imageWrites,
+    "two Settings routes must reuse their already-painted wallpaper");
+  applyWorkspaceWallpaper(doc,"colosseum/settings");
+  assert.equal(writes.filter(([key])=>key==="--workspace-wallpaper-image").length,imageWrites,
+    "repeated route should not dirty the full-width wallpaper layer");
 });
 test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
