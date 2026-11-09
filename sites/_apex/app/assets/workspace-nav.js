@@ -136,8 +136,11 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const workspaceScroll=initWorkspaceScroll(doc,win);
   const wallpaper=initWorkspaceWallpaper(doc,win);
   let lastRenderedRoute=null;
-  function render(){
-    const route=resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
+  function render(requestedRoute=null){
+    // Click commits in this turn; hashchange/popstate only reconcile.
+    const route=typeof requestedRoute==="string"
+      ? resolveWorkspaceRoute("#"+requestedRoute)
+      : resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
     // hashchange/popstate can both fire for one navigation. A repeated route
     // must not trigger another wallpaper repaint, layout measurement or decode.
     if(route===lastRenderedRoute)return;
@@ -186,7 +189,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
   });
   for(const link of links){
-    link.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
+    link.addEventListener("click",()=>{
+      // Never wait for later hashchange delivery to show the selected route.
+      const target=link.href?.split("#")[1];
+      if(target)render(target);
+      if(isMobile())closeDrawer(true);
+    });
     // Warm only likely next routes; avoid pre-decoding eight full-size images.
     const anticipate=()=>wallpaper.warm(link.href?.split("#")[1]||"home");
     link.addEventListener("pointerenter",anticipate,{passive:true});

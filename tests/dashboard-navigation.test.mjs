@@ -309,6 +309,21 @@ function mockNavigation(){
   return {doc,win,elements,views,links,fire,stored,scrollCalls,
     mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
+test("click selects route immediately, without awaiting the browser hashchange event",()=>{
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  const target=m.links.find(item=>item.href.endsWith("#colosseum/providers"));
+  assert.equal(m.win.location.hash,"");
+  target.dispatch("click");
+  assert.equal(m.win.location.hash,"","Default anchor navigation has not occurred yet");
+  assert.equal(target.getAttribute("aria-current"),"page");
+  assert.equal(m.elements["project-navigation"].hidden,false);
+  assert.equal(m.views.find(item=>item.dataset.view==="colosseum/providers").hidden,false);
+  m.win.location.hash="#colosseum/providers";
+  m.fire("hashchange");
+  assert.equal(target.getAttribute("aria-current"),"page");
+});
+
 test("sidebar changes nav scope, highlights selected view, and supports collapse and mobile drawer",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);

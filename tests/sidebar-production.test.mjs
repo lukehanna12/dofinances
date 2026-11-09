@@ -19,7 +19,9 @@ test("Production includes exact oracle-backed glass with no preview scenery",asy
   assert.match(css,/backdrop-filter:url\("#oracle-glass-native-backdrop"\)/);
   assert.match(css,/margin:8px 0 8px 8px/);
   assert.match(css,/clip-path:inset\(0 0 0 282px\)/);
-  assert.match(css,/\.glass-selection \{[^}]*width:100%/s);
+  assert.doesNotMatch(css,/glass-selection/,"No separate delayed highlight layer");
+  assert.doesNotMatch(js,/MutationObserver|requestAnimationFrame|glassIndicatorGeometry/);
+  assert.match(css,/\.shell\.liquid-glass-preview \.nav-link\.active\{/);
   assert.doesNotMatch(css,/glass-scene-|body:has\(/);
   assert.doesNotMatch(js,/glass-scene-|topActions|location\.replace|fetch\(/);
   assert.match(js,/mountOracleBackdrop\(/);
