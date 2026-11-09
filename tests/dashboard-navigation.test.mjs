@@ -228,7 +228,7 @@ test("dashboard HTML provides every requested view and preserves existing authen
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
   assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1);
   assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
-  assert.doesNotMatch(html,/data-view="colosseum\\/settings"/);
+  assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="sidebar-toggle"/);
