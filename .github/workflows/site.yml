@@ -173,6 +173,8 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout UI validation script
+        uses: actions/checkout@v6
       - name: Check public HTTPS, Git-managed homepage, studio and wildcard
         shell: bash
         run: |
@@ -363,3 +365,9 @@ jobs:
             -d '{"token":"invalid"}' "$base/api/auth/verification/confirm")"
           test "$code" = 400
           echo "Authentication access boundaries verified; sending is tested separately after email provider activation"
+
+      - name: Verify live sidebar cursors, hit target and logo separation in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-live-sidebar.mjs
