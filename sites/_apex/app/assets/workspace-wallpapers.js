@@ -7,28 +7,28 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
     "ext": "webp",
     "name": "clouds-over-rice-terraces.webp",
     "position": "center 46%",
-    "footerInk": "#494949"
+    "footerInk": "#5c5c5c"
   },
   "projects": {
     "sha": "302138334c5973c7fed71a26037e19a8b94fce8433fecce8bad1454474c36a08",
     "ext": "webp",
     "name": "winding-icelandic-river-mountains.webp",
     "position": "center 44%",
-    "footerInk": "#555555"
+    "footerInk": "#454545"
   },
   "settings": {
     "sha": "ca6bf0317dcb6806a536f5d41b8c54cf34446a196e8a5f7265dc5f10c7f3b957",
     "ext": "avif",
     "name": "misty-tropical-forest-hillside.avif",
     "position": "center 45%",
-    "footerInk": "#505050"
+    "footerInk": "#626262"
   },
   "colosseum/utilities": {
     "sha": "c49181be2b93fe24a44774a7c6f4253f23ec3bf0cfc369a318e420d7418f9eb2",
     "ext": "jpg",
     "name": "waterfall-between-mossy-cliffs.jpg",
     "position": "center 43%",
-    "footerInk": "#505050"
+    "footerInk": "#666666"
   },
   "colosseum/collections": {
     "sha": "dcb3d4f1e42bf3aebab2186768a598d17a8aad76e9620a150e268938eee01441",
@@ -42,7 +42,7 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
     "ext": "jpg",
     "name": "green-water-foam-swirls.jpg",
     "position": "center 47%",
-    "footerInk": "#dce3df"
+    "footerInk": "#c5d0ca"
   },
   "colosseum/permissions": {
     "sha": "8f54a531db0e7382a7a18c27e0daf5283bfaa8e655fae9da460f21242a3a1ec6",
@@ -56,7 +56,7 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
     "ext": "jpg",
     "name": "steam-spewing-yellow-machine.jpg",
     "position": "center 46%",
-    "footerInk": "#ebebeb"
+    "footerInk": "#dedede"
   }
 });
 export function workspaceWallpaperForRoute(route) {
@@ -72,5 +72,6 @@ export function applyWorkspaceWallpaper(doc,route) {
   doc.body.style.setProperty("--workspace-wallpaper-position",wallpaper.position);
   doc.body.style.setProperty("--workspace-footer-ink",wallpaper.footerInk);
   doc.body.dataset.wallpaper=name;
+  doc.body.dataset.wallpaperRoute=route;
   return wallpaper;
 }

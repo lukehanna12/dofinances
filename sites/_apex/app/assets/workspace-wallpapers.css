@@ -61,6 +61,50 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
   opacity:0;
 }
 body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
+
+/* Home's photograph is only 976 pixels wide. Show it at almost native scale
+ * in a centered band, softly blending into the same image in the background.
+ * Unlike AI sharpening, this preserves the original photographic pixels. */
+body[data-wallpaper-route="home"]::before,
+body[data-wallpaper-route="home"]::after {
+  filter:blur(10px);
+  clip-path:inset(0);
+}
+body[data-wallpaper-route="home"] > .workspace-home-art {
+  position:fixed;
+  left:50%;
+  width:min(100%,1100px);
+  z-index:0;
+  transform:translateX(-50%);
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
+    var(--workspace-wallpaper-image,none);
+  background-repeat:no-repeat;
+  background-size:cover,cover;
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);
+  mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);
+}
+body[data-wallpaper-route="home"] > .workspace-home-art-top {
+  top:calc(-1 * var(--workspace-top-overpull));
+  height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
+  background-position:center,var(--workspace-wallpaper-position,center 46%);
+}
+body[data-wallpaper-route="home"] > .workspace-home-art-bottom {
+  bottom:0;
+  height:var(--workspace-bottom-strip-height);
+  background-position:center,center bottom;
+  opacity:0;
+}
+body[data-wallpaper-route="home"].workspace-at-end > .workspace-home-art-bottom {opacity:1}
+@media (max-width:1100px) {
+  body[data-wallpaper-route="home"]::before,
+  body[data-wallpaper-route="home"]::after {filter:none}
+  body[data-wallpaper-route="home"] > .workspace-home-art {
+    -webkit-mask-image:none;
+    mask-image:none;
+  }
+}
 body:has(> #workspace-shell) .shell {
   height:100dvh;
   min-height:0;
@@ -85,16 +129,16 @@ body:has(> #workspace-shell) .topbar {
   border:0;
   isolation:isolate;
 }
-body:has(> #workspace-shell) .topbar::before {
-  content:"";
+/* Fixed descendants of the animated main column follow its transform.
+ * The actual frosted plane lives at body level and stays viewport anchored. */
+body:has(> #workspace-shell) .topbar::before {content:none}
+body:has(> #workspace-shell) > .workspace-topbar-backdrop {
   position:fixed;
-  top:0;
-  left:0;
+  inset:0 0 auto;
   width:100%;
   height:var(--workspace-header-height);
-  z-index:-1;
+  z-index:0;
   pointer-events:none;
-  border:0; /* Clear the earlier sidebar-glass topbar rule in both app shells. */
   background:rgba(14,15,17,.69);
   -webkit-backdrop-filter:blur(18px) saturate(120%);
   backdrop-filter:blur(18px) saturate(120%);
@@ -155,7 +199,7 @@ body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
   :root {--workspace-content-leading:20px}
 }
 @supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))) {
-  body:has(> #workspace-shell) .topbar::before {background:rgba(18,19,21,.93)}
+  body:has(> #workspace-shell) > .workspace-topbar-backdrop {background:rgba(18,19,21,.93)}
 }
 @media (prefers-contrast:more) {
   body:has(> #workspace-shell) .workspace-footer {text-shadow:0 1px 6px #000}
