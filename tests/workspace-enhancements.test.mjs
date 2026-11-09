@@ -93,7 +93,7 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");
   assert.match(css,/var\(--workspace-sidebar-bottom-gap\) var\(--workspace-sidebar-left-gap\)/);
   assert.match(css,/var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)/);
-  assert.match(css,/width:22px;z-index:5;cursor:ew-resize/);
+  assert.match(css,/width:28px;height:auto;z-index:39/);
   assert.match(css,/sidebar-resize-handle:hover,/);
   assert.match(css,/cursor:ew-resize!important;background:transparent!important;box-shadow:none!important/);
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.brand\{transform:none;/);
