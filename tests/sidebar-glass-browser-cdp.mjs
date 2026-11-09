@@ -158,13 +158,20 @@ try{
       // against the same page, dimensions and 210ms layout animation.
       await send("Performance.enable");
       const measures=[];
-      for(const mode of ["oracle","composited","paint-contain","blur-only"]){
+      let referenceFrame=null;
+      for(const mode of ["oracle","pseudo-fixed","blur-only"]){
         await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
         if(mode!=="oracle"){
-          const css=mode==="composited"
-            ?".shell.liquid-glass-preview .sidebar{will-change:backdrop-filter,transform;}"
-            :mode==="paint-contain"
-            ?".shell.liquid-glass-preview .sidebar{contain:paint;}"
+          const css=mode==="pseudo-fixed"?
+            ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+              "backdrop-filter:none !important;-webkit-backdrop-filter:none !important;"+
+              "background:transparent !important;}"+
+            ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar::before{"+
+              "content:'';position:absolute;top:0;left:0;width:260px;height:100%;"+
+              "border-radius:0 24px 24px 0;background:var(--glass-pane);"+
+              "backdrop-filter:url('#oracle-glass-native-backdrop');"+
+              "-webkit-backdrop-filter:url('#oracle-glass-native-backdrop');"+
+              "pointer-events:none;z-index:0;}"
             :".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
               "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
               "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
@@ -173,6 +180,13 @@ try{
             ';document.head.append(s);return true;})()');
         }
         await sleep(160);
+        if(mode==="pseudo-fixed"&&referenceFrame){
+          const variant=decodePNG((await send("Page.captureScreenshot",{
+            format:"png",captureBeyondViewport:false,fromSurface:true
+          },90000)).data);
+          console.log("PSEUDO_FIXED_RESTING_PIXEL_DIFF",
+            JSON.stringify(comparePixels(referenceFrame,variant,10,250,90,830)));
+        }
         const pre=(await send("Performance.getMetrics")).metrics;
         await evaluate(`(()=>{
           const shell=document.getElementById("workspace-shell");
@@ -223,6 +237,11 @@ try{
         const data={mode,...result,mainThreadMs:diff};
         measures.push(data);
         console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify(data));
+        if(mode==="oracle"){
+          referenceFrame=decodePNG((await send("Page.captureScreenshot",{
+            format:"png",captureBeyondViewport:false,fromSurface:true
+          },90000)).data);
+        }
       }
       await evaluate('document.getElementById("ci-perf-filter")?.remove()');
       await send("Emulation.setEmulatedMedia",{features:[
