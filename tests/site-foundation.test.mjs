@@ -7,11 +7,11 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 test("all Git-managed DoFinances page families share system typography and dark tokens",async()=>{
   const foundation=await read("../sites/_apex/assets/site-foundation.css");
   const expected={
-    "--ui-canvas":"#000000",
-    "--ui-sidebar":"#000000",
+    "--ui-canvas":"#171717",
+    "--ui-sidebar":"#171717",
     "--ui-divider":"#303030",
-    "--ui-surface":"#212121",
-    "--ui-elevated":"#171717",
+    "--ui-surface":"#292929",
+    "--ui-elevated":"#202020",
     "--ui-selected":"#303030",
     "--ui-text":"#f4f4f4",
     "--ui-secondary":"#b4b4b4",
@@ -28,7 +28,7 @@ test("all Git-managed DoFinances page families share system typography and dark 
     "../sites/_apex/verify/index.html","../sites/_apex/reset/index.html"]){
     const html=await read(file);
     assert.match(html,/href="\/assets\/site-foundation\.css"/,file);
-    assert.match(html,/name="theme-color" content="#000000"/,file);
+    assert.match(html,/name="theme-color" content="#171717"/,file);
   }
 
   const app=await read("../sites/_apex/app/assets/workspace-theme.css");
@@ -47,7 +47,7 @@ test("login and Studio compile the same foundation while retaining authenticatio
   assert.match(css,/@import "tailwindcss";\s*@import "\.\.\/sites\/_apex\/assets\/site-foundation\.css";/);
   assert.match(css,/body\s*\{\s*background-color:\s*var\(--ui-canvas\)/);
   assert.match(css,/--font-sans:\s*ui-sans-serif, system-ui, sans-serif/);
-  assert.match(studio,/name="theme-color" content="#000000"/);
+  assert.match(studio,/name="theme-color" content="#171717"/);
   assert.match(jsx,/useState\("dark"\)/);
   assert.match(jsx,/setTheme\(isDark \? "light" : "dark"\)/);
   assert.match(jsx,/\/api\/auth\//);

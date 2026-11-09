@@ -43,6 +43,9 @@ jobs:
           grep -Fq -- '--ui-canvas: #000000' sites/_apex/assets/site-foundation.css
           grep -R -Fq -- '--ui-font-sans' dist/assets
           test -s sites/_apex/app/assets/dashboard.js
+          test -s sites/_apex/app/assets/workspace-scroll.js
+          grep -Fq 'id="workspace-scroll"' sites/_apex/app/index.html
+          grep -Fq '© DoFinances · 2026' sites/_apex/app/index.html
           grep -Fq 'https://send.api.mailtrap.io/api/send' edge/auth-mail.mjs
           ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs
           grep -Fq 'Sign in · Dofinances' dist/index.html
@@ -219,6 +222,8 @@ jobs:
           studio_app="$(mktemp)"
           curl -fsSL --max-time 20 https://stu.dofinances.com/app/ > "$studio_app"
           grep -Fq 'id="workspace-sidebar"' "$studio_app"
+          grep -Fq 'id="workspace-scroll"' "$studio_app"
+          grep -Fq '© DoFinances · 2026' "$studio_app"
           grep -Fq 'preview-bootstrap.js' "$studio_app"
           rm "$studio_app"
           for url in https://dofinances.com/login https://dofinances.com/login/; do
