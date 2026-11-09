@@ -433,7 +433,7 @@ test("exact cached endpoint fields synchronize to CSS width-transition completio
   const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
   assert.match(code,/if\(field\.urls && field\.key!==desired\?\.key\)\s*cacheField\(field,field\.urls\)/);
   assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
-  assert.match(code,/function armEndpointPrefetch\(\)/);
+  assert.match(code,/function armEndpointWarmup\(\)/);
   assert.match(code,/geometryCache\.has\(key\)\|\|prefetchDisabled\.has\(key\)/);
   assert.match(code,/event\.propertyName==="width"\)apply\(\)/);
   assert.match(code,/sidebar\.addEventListener\("transitionend",onWidthTransition\)/);
