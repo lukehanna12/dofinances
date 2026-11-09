@@ -7,7 +7,6 @@
   --workspace-top-overpull:96px;
   --workspace-content-leading:26px;
   --workspace-bottom-strip-height:calc(var(--workspace-header-height) * .8);
-  --workspace-seam:rgba(201,205,211,.27);
 }
 html:has(body > #workspace-shell),
 body:has(> #workspace-shell) {
@@ -39,7 +38,6 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   background-size:cover,cover;
   background-position:center,var(--workspace-wallpaper-position,center 46%);
   background-repeat:no-repeat;
-  border-bottom:1px solid var(--workspace-seam);
 }
 /* A fixed, viewport-wide strip is exposed only when the CONTENT scroller
    reaches its real end. This does not move on wheel/touch overscroll. */
@@ -60,7 +58,6 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
   background-size:cover,cover;
   background-position:center,center bottom;
   background-repeat:no-repeat;
-  border-top:1px solid var(--workspace-seam);
   opacity:0;
 }
 body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
@@ -68,10 +65,6 @@ body:has(> #workspace-shell) .shell {
   height:100dvh;
   min-height:0;
   background:transparent;
-  --workspace-sidebar-fade-width:260px;
-}
-body:has(> #workspace-shell) .shell.is-collapsed {
-  --workspace-sidebar-fade-width:74px;
 }
 body:has(> #workspace-shell) .main,
 body:has(> #workspace-shell.liquid-glass-preview) .main {
@@ -101,21 +94,10 @@ body:has(> #workspace-shell) .topbar::before {
   height:var(--workspace-header-height);
   z-index:-1;
   pointer-events:none;
+  border:0; /* Clear the earlier sidebar-glass topbar rule in both app shells. */
   background:rgba(14,15,17,.69);
   -webkit-backdrop-filter:blur(18px) saturate(120%);
   backdrop-filter:blur(18px) saturate(120%);
-  border-bottom:1px solid rgba(211,214,218,.12);
-  /* Dissolve the header shader toward the foreground sidebar's edge. */
-  -webkit-mask-image:linear-gradient(to right,
-    transparent 0,
-    rgba(0,0,0,.18) calc(var(--workspace-sidebar-fade-width) - 42px),
-    rgba(0,0,0,.84) calc(var(--workspace-sidebar-fade-width) + 24px),
-    #000 calc(var(--workspace-sidebar-fade-width) + 95px));
-  mask-image:linear-gradient(to right,
-    transparent 0,
-    rgba(0,0,0,.18) calc(var(--workspace-sidebar-fade-width) - 42px),
-    rgba(0,0,0,.84) calc(var(--workspace-sidebar-fade-width) + 24px),
-    #000 calc(var(--workspace-sidebar-fade-width) + 95px));
 }
 body:has(> #workspace-shell) .workspace-scroll {
   flex:1 1 auto;
@@ -165,12 +147,8 @@ body:has(> #workspace-shell) .workspace-footer {
   opacity:0;
 }
 body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
-@media (min-width:761px) and (max-width:1279px) {
-  body:has(> #workspace-shell) .shell {--workspace-sidebar-fade-width:74px}
-}
 @media (max-width:760px) {
   :root {--workspace-header-height:63px;--workspace-content-leading:24px}
-  body:has(> #workspace-shell) .shell {--workspace-sidebar-fade-width:0px}
   body:has(> #workspace-shell) .workspace-footer {padding-inline:19px}
 }
 @media (max-width:480px) {
@@ -180,6 +158,5 @@ body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
   body:has(> #workspace-shell) .topbar::before {background:rgba(18,19,21,.93)}
 }
 @media (prefers-contrast:more) {
-  :root {--workspace-seam:rgba(230,230,230,.65)}
   body:has(> #workspace-shell) .workspace-footer {text-shadow:0 1px 6px #000}
 }

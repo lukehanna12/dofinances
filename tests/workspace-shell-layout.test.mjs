@@ -18,7 +18,7 @@ test("production app and Studio share stationary shell and copyright band",()=>{
   }
 });
 
-test("workspace dark gray, title sizing, sharp image seams, fixed banner and navigation",()=>{
+test("workspace dark gray, clean image edges, full-width header shader and stationary navigation",()=>{
   const css=read("../sites/_apex/app/assets/workspace-wallpapers.css");
   const theme=read("../sites/_apex/app/assets/workspace-theme.css");
   const foundation=read("../sites/_apex/assets/site-foundation.css");
@@ -28,10 +28,12 @@ test("workspace dark gray, title sizing, sharp image seams, fixed banner and nav
   assert.match(css,/--workspace-top-overpull:96px/);
   assert.match(css,/position:fixed;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
   assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
-  assert.match(css,/border-bottom:1px solid var\(--workspace-seam\)/);
-  assert.match(css,/border-top:1px solid var\(--workspace-seam\)/);
+  assert.doesNotMatch(css,/--workspace-seam/);
+  assert.doesNotMatch(css,/border-(?:top|bottom):1px solid/);
   assert.match(css,/background-position:center,center bottom/);
-  assert.match(css,/mask-image:linear-gradient\(to right/);
+  assert.doesNotMatch(css,/(?:-webkit-)?mask-image/);
+  assert.doesNotMatch(css,/--workspace-sidebar-fade-width/);
+  assert.match(css,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
   assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
   assert.match(css,/\.main,\s*body:has\(> #workspace-shell\.liquid-glass-preview\) \.main \{[\s\S]*?display:flex;[\s\S]*?overflow:hidden;/);
 });

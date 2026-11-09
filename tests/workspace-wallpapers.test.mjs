@@ -59,7 +59,8 @@ test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
   assert.match(css,/background-position:center,center bottom/);
   assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::after/);
   assert.match(css,/position:fixed;\s*inset:auto 0 0/);
-  assert.match(css,/--workspace-seam:rgba\(/);
+  assert.doesNotMatch(css,/--workspace-seam/);
+  assert.doesNotMatch(css,/border-(?:top|bottom):1px solid/);
   assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
 });
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{
