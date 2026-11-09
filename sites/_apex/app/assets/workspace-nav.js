@@ -9,7 +9,7 @@ const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",
   permissions:"Permissions",diagnostics:"Diagnostics"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
 
-export function resolveWorkspaceRoute(hash="",search=""){
+export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
   if(MAIN_SET.has(raw))return raw;
   if(raw==="account")return "settings"; // old dashboard deep-link
@@ -18,7 +18,17 @@ export function resolveWorkspaceRoute(hash="",search=""){
     const section=raw.slice("colosseum/".length);
     if(PROJECT_SET.has(section))return "colosseum/"+section;
   }
-  if(!raw&&/(?:^|[?&])federation_(?:linked|error)=/.test(search))return "settings";
+  if(raw)return "home"; // Invalid hashes must not silently select a different page.
+  if(/(?:^|[?&])federation_(?:linked|error)=/.test(search))return "settings";
+  // The Worker serves the same authenticated document for these nested view URLs.
+  const urlPath=typeof pathname==="string"?pathname.replace(/\/+$/,"").toLowerCase()
+    .replace(/^\/dashboard(?=\/|$)/,"/app"):"";
+  const slug=urlPath.startsWith("/app/")?urlPath.slice("/app/".length):"";
+  if(MAIN_SET.has(slug))return slug;
+  if(slug==="account")return "settings";
+  if(slug==="colosseum")return "colosseum/capabilities";
+  if(slug.startsWith("colosseum/")&&PROJECT_SET.has(slug.slice("colosseum/".length)))
+    return slug;
   return "home";
 }
 export function workspaceRouteDetails(route){
@@ -75,7 +85,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
   function render(){
-    const route=resolveWorkspaceRoute(win.location.hash,win.location.search);
+    const route=resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
     const meta=workspaceRouteDetails(route);
     mainNav.hidden=meta.project;
     projectNav.hidden=!meta.project;
