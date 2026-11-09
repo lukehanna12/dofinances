@@ -153,54 +153,58 @@ try{
     assert(state.wall&&state.wall!=="none","Shared page wallpaper missing at "+width);
     console.log("CDP viewport verified",width,height,state.info);
     if(width===1440){
-      // Same-run controlled motion profiling, not a visual substitute:
-      // SVG oracle, standard backdrop blur, and no filter are all tested
-      // against the same page, dimensions and 210ms layout animation.
+      // Exact-visual compositor optimization experiment. Never change
+      // optical equations or SVG nodes. All hints affect only layers
+      // that supply the true live browser backdrop.
       await send("Performance.enable");
-      const measures=[];
-      let referenceFrame=null;
-      for(const mode of ["oracle","inner-only","blur-only"]){
-        await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
-          'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\')?.setAttribute("in","composited");'+
-          'return true;})()');
-        if(mode==="inner-only"){
-          await evaluate('(()=>{'+
-            'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\').setAttribute("in","innerShift");'+
-            'return true;})()');
-        }else if(mode==="blur-only"){
-          const css=".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
-            "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
-            "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
-          await evaluate('(()=>{const z=document.createElement("style");z.id="ci-perf-filter";'+
-            'z.textContent='+JSON.stringify(css)+';document.head.append(z);return true;})()');
+      const modes=[
+        {name:"oracle",css:""},
+        {name:"promote-scene",css:
+          "body:has(> #workspace-shell.liquid-glass-preview)::before,"+
+          "body:has(> #workspace-shell.liquid-glass-preview)::after"+
+          "{will-change:transform;transform:translateZ(0)}"},
+        {name:"promote-main",css:
+          ".shell.liquid-glass-preview .main{will-change:transform;transform:translateZ(0)}"},
+        {name:"promote-scene-main",css:
+          "body:has(> #workspace-shell.liquid-glass-preview)::before,"+
+          "body:has(> #workspace-shell.liquid-glass-preview)::after,"+
+          ".shell.liquid-glass-preview .main"+
+          "{will-change:transform;transform:translateZ(0)}"},
+        {name:"blur-only",css:
+          ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar"+
+          "{backdrop-filter:blur(var(--oracle-backdrop-blur))!important;"+
+          "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur))!important}"}
+      ];
+      const outputs=[];
+      let originalImage=null;
+      for(const mode of modes){
+        await evaluate('document.getElementById("ci-perf-filter")?.remove()');
+        if(mode.css){
+          await evaluate('(()=>{const s=document.createElement("style");s.id="ci-perf-filter";'+
+            's.textContent='+JSON.stringify(mode.css)+';document.head.append(s);return true})()');
         }
-        await sleep(160);
-        if(mode==="inner-only"&&referenceFrame){
-          const variant=decodePNG((await send("Page.captureScreenshot",{
-            format:"png",captureBeyondViewport:false,fromSurface:true
-          },90000)).data);
-          console.log("INNER_ONLY_RESTING_PIXEL_DIFF",
-            JSON.stringify(comparePixels(referenceFrame,variant,10,250,90,830)));
+        await sleep(200);
+        // Resting pixel diff must remain within rasterization tolerance;
+        // optical coefficients, displacement maps and filter nodes unchanged.
+        const bmp=decodePNG((await send("Page.captureScreenshot",{
+          format:"png",captureBeyondViewport:false,fromSurface:true
+        },90000)).data);
+        if(mode.name==="oracle")originalImage=bmp;
+        else if(mode.name!=="blur-only"){
+          const difference=comparePixels(originalImage,bmp,12,260,90,830);
+          console.log("SIDEBAR_SCENE_PROMOTION_PIXEL_DELTA",
+            JSON.stringify({mode:mode.name,...difference}));
         }
         const pre=(await send("Performance.getMetrics")).metrics;
         await evaluate(`(()=>{
           const shell=document.getElementById("workspace-shell");
           const toggle=document.getElementById("sidebar-toggle");
           const gaps=[];let last=0;
-          const longTasks=[];
-          let observer;
-          try{
-            observer=new PerformanceObserver(list=>{
-              for(const e of list.getEntries())longTasks.push(e.duration);
-            });
-            observer.observe({entryTypes:["longtask"]});
-          }catch{}
           const start=performance.now();
           function frame(t){
             if(last)gaps.push(t-last);last=t;
             if(t-start<1200)requestAnimationFrame(frame);
             else{
-              observer?.disconnect();
               const sorted=gaps.toSorted((a,b)=>a-b);
               window.__glassPerf={
                 frames:gaps.length,
@@ -209,7 +213,7 @@ try{
                 worst:sorted.at(-1),
                 stalls34:gaps.filter(t=>t>34).length,
                 stalls50:gaps.filter(t=>t>50).length,
-                longTasks,builds:Number(shell.dataset.oracleFieldBuilds||0),
+                builds:Number(shell.dataset.oracleFieldBuilds||0),
                 cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
                 finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
               };
@@ -228,19 +232,12 @@ try{
           diff[metric]=((post.find(m=>m.name===metric)?.value||0)-
                         (pre.find(m=>m.name===metric)?.value||0))*1000;
         }
-        assert(result.finalWidth>250,"Perf variant must restore expanded sidebar");
-        const data={mode,...result,mainThreadMs:diff};
-        measures.push(data);
+        assert(result.finalWidth>250,"Performance variant must restore expanded pane");
+        const data={mode:mode.name,...result,mainThreadMs:diff};
         console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify(data));
-        if(mode==="oracle"){
-          referenceFrame=decodePNG((await send("Page.captureScreenshot",{
-            format:"png",captureBeyondViewport:false,fromSurface:true
-          },90000)).data);
-        }
+        outputs.push(data);
       }
-      await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
-        'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\')?.setAttribute("in","composited");'+
-        'return true;})()');
+      await evaluate('document.getElementById("ci-perf-filter")?.remove()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
