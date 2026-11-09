@@ -145,8 +145,15 @@ jobs:
             code="$(curl -sSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
             if test "$code" = 200 && grep -Fq 'preview-bootstrap.js' "$body"; then
               echo "Isolated app preview verified at $url"
-              rm "$body"
-              exit 0
+              gpu_url=https://app-sidebar-preview.dofinances-studio.pages.dev/gpu-lab/
+              gpu_body="$(mktemp)"
+              gpu_code="$(curl -sSL --max-time 20 -w '%{http_code}' -o "$gpu_body" "$gpu_url")"
+              if test "$gpu_code" = 200 && grep -Fq 'GPU Liquid Glass' "$gpu_body"; then
+                echo "Isolated GPU lab verified at $gpu_url"
+                rm "$body" "$gpu_body"
+                exit 0
+              fi
+              rm "$gpu_body"
             fi
             rm "$body"
             sleep 4
