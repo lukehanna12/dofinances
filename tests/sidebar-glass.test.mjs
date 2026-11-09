@@ -167,8 +167,8 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
   assert.match(js,/in:"SourceGraphic",stdDeviation:/);
   assert.match(js,/feDisplacementMap/);
-  assert.match(js,/in:"blurred",in2:"innerMap",scale:128/);
-  assert.match(js,/in:"blurred",in2:"outerMap",scale:128/);
+  assert.match(js,/in:"innerBlurred",in2:"innerMap",scale:128/);
+  assert.match(js,/in:"outerBlurred",in2:"outerMap",scale:128/);
   assert.match(js,/outerBlendMask/);
   assert.match(js,/result:"innerNearCoverage"/);
   assert.match(js,/result:"outerNearCoverage"/);
