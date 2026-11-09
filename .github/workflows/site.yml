@@ -185,13 +185,29 @@ jobs:
         run: |
           set -euo pipefail
           studio_body="$(mktemp)"
-          studio_code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$studio_body" https://stu.dofinances.com/)"
-          echo "Studio root -> HTTP $studio_code (standalone glass preview)"
-          test "$studio_code" = 200
-          grep -Fq 'preview-bootstrap.js' "$studio_body"
-          grep -Fq 'id="workspace-sidebar"' "$studio_body"
-          grep -Fq 'sidebar-glass.css' "$studio_body"
-          ! grep -Fq 'auth3-studio-preview-v1' "$studio_body"
+          studio_ready=false
+          # Probe a fresh URL after deployment to distinguish a stale Pages
+          # edge response from a failed static-asset package. Always inspect
+          # the full workspace marker; HTTP 200 alone is insufficient.
+          for attempt in 1 2 3 4 5 6; do
+            studio_code="$(curl --retry 2 --retry-delay 2 -fsSL --max-time 20 -H 'Cache-Control: no-cache' -w '%{http_code}' -o "$studio_body" "https://stu.dofinances.com/?studio_release=${GITHUB_RUN_ID}-${attempt}")"
+            echo "Studio root probe $attempt -> HTTP $studio_code ($(wc -c < "$studio_body") bytes)"
+            if test "$studio_code" = 200 &&
+               grep -Fq 'preview-bootstrap.js' "$studio_body" &&
+               grep -Fq 'id="workspace-sidebar"' "$studio_body" &&
+               grep -Fq 'sidebar-glass.css' "$studio_body" &&
+               ! grep -Fq 'auth3-studio-preview-v1' "$studio_body"; then
+              studio_ready=true
+              break
+            fi
+            echo "Unexpected Studio HTML markers:"
+            grep -Eo '<title>[^<]+|studio-empty-v1|auth3-studio-preview-v1|preview-bootstrap\.js' "$studio_body" | head -12 || true
+            sleep 5
+          done
+          if test "$studio_ready" != true; then
+            echo "Live Studio is not the expected static sidebar; refusing preview retirement." >&2
+            exit 1
+          fi
           rm "$studio_body"
           for route in /app/ /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
             code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "https://stu.dofinances.com$route")"
