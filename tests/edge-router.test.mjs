@@ -64,7 +64,13 @@ test("anonymous recovery links receive public dark CSS without exposing protecte
     ["/assets/account-security.css","var(--ui-elevated)"]]){
     const res=await handleRequest(new Request("https://dofinances.com"+path),mock);
     assert.equal(res.status,200,path);
-    assert.match(await res.text(),new RegExp(content.replace(/[.*+?^${}()|[\]\\]/g,"\\test("www can have independent files or redirect to apex",async()=>{")));
+    assert.ok((await res.text()).includes(content),path);
+  }
+  const denied=await handleRequest(new Request("https://dofinances.com/app/assets/dashboard.css"),authed);
+  assert.equal(denied.status,302);
+  assert.equal(denied.headers.get("Location"),"/login");
+});
+test("www can have independent files or redirect to apex",async()=>{")));
   }
   const denied=await handleRequest(new Request("https://dofinances.com/app/assets/dashboard.css"),authed);
   assert.equal(denied.status,302);
