@@ -62,9 +62,9 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
 }
 body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
 
-/* Home's photograph is only 976 pixels wide. Show it at almost native scale
- * in a centered band, softly blending into the same image in the background.
- * Unlike AI sharpening, this preserves the original photographic pixels. */
+/* Home uses the user's higher-resolution 1280 x 854 photograph, served
+ * as a Git-managed Cloudflare Pages asset instead of the previous 976px image.
+ * Center its photographic composition within the soft side mask. */
 body[data-wallpaper-route="home"]::before,
 body[data-wallpaper-route="home"]::after {
   filter:blur(10px);

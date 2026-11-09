@@ -48,3 +48,16 @@ test("Home wallpaper uses its retained 1280px replacement without invoking a sha
   assert.match(js,/home-rice-terraces-hq\.jpg/);
   assert.match(js,/wallpaper\.path\|\|/);
 });
+
+test("Studio preview mirrors production navigation without enabling account mutations",()=>{
+  const studio=read("../studio/sidebar/index.html");
+  const bootstrap=read("../studio/sidebar/preview-bootstrap.js");
+  assert.match(studio,/class="global-menu"/);
+  assert.match(studio,/class="rb-breadcrumbs"/);
+  assert.match(studio,/workspace-enhancements.css/);
+  assert.match(studio,/Manage Account/);
+  assert.match(studio,/preview-bootstrap.js/);
+  assert.doesNotMatch(studio,/src="\/app\/assets\/dashboard.js"/);
+  assert.match(bootstrap,/global-menu-toggle/);
+  assert.match(bootstrap,/global-search-toggle/);
+});

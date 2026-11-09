@@ -376,7 +376,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   win.addEventListener("resize",()=>{
     const nowMobile=isMobile();
     const nowCompactRail=isCompactRail();
-    setSidebarWidth(expandedWidth);
+    if(!nowMobile)setSidebarWidth(expandedWidth);
     if(nowMobile!==wasMobile){
       stopSidebarMotion();
       stopRailEntry();

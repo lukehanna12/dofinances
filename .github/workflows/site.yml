@@ -98,12 +98,17 @@ jobs:
           cp sites/_apex/app/assets/workspace-scroll.js dist/app/assets/workspace-scroll.js
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
+          cp sites/_apex/app/assets/workspace-enhancements.css dist/app/assets/workspace-enhancements.css
+          cp sites/_apex/app/assets/home-rice-terraces-hq.jpg dist/app/assets/home-rice-terraces-hq.jpg
           cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
           cp sites/_apex/app/assets/sidebar-glass-field-worker.js dist/app/assets/sidebar-glass-field-worker.js
           cp studio/sidebar/sidebar-glass.css dist/app/assets/sidebar-glass.css
           cp studio/sidebar/sidebar-glass.js dist/app/assets/sidebar-glass.js
           cp studio/sidebar/preview-bootstrap.js dist/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
+          test -s dist/app/assets/home-rice-terraces-hq.jpg
+          grep -Fq 'global-menu' dist/app/index.html
+          grep -Fq 'workspace-enhancements.css' dist/app/index.html
           test ! -e dist/app/assets/dashboard.js
           grep -Fq 'preview-bootstrap.js' dist/index.html
           grep -Fq 'sidebar-glass.css' dist/app/index.html
@@ -225,6 +230,8 @@ jobs:
           grep -Fq 'id="workspace-sidebar"' "$studio_app"
           grep -Fq 'id="workspace-scroll"' "$studio_app"
           grep -Fq '© DoFinances · 2026' "$studio_app"
+          grep -Fq 'global-menu' "$studio_app"
+          grep -Fq 'Manage Account' "$studio_app"
           grep -Fq 'preview-bootstrap.js' "$studio_app"
           rm "$studio_app"
           for url in https://dofinances.com/login https://dofinances.com/login/; do
@@ -242,7 +249,7 @@ jobs:
             test "$code" = 404
           done
 
-      - name: Verify library-iii wallpaper images, crop resolution and shared stylesheet
+      - name: Verify Git-hosted Home wallpaper, library-iii images and shared stylesheet
         shell: bash
         run: |
           set -euo pipefail
@@ -256,7 +263,7 @@ jobs:
           import re, sys, subprocess, tempfile, struct, os
 
           js = open(sys.argv[1], encoding="utf-8").read()
-          assets = list(dict.fromkeys(re.findall(r'"sha":\s*"([a-f0-9]{64})",\s*"ext":\s*"(jpg|png|webp|avif)"', js)))
+          assets = list(dict.fromkeys(re.findall(r'"sha":\s*"([a-f0-9]{64})",\s*"ext":\s*"(jpg|png|webp|avif)",\s*"name":\s*"[^"]+"(?:,\s*"path":\s*"([^"]+)")?', js)))
           assert len(assets) == 8, f"Expected eight distinct wallpaper assets, got {len(assets)}"
           def dimensions(data):
               # PNG IHDR
@@ -300,8 +307,10 @@ jobs:
                       if 0<width<100000 and 0<height<100000:
                           return (width,height)
               return None
-          for sha, ext in assets:
-              url = f"https://dofinances.com/wallpapers/{sha}.{ext}"
+          for sha, ext, path in assets:
+              url = "https://stu.dofinances.com" + path if path else f"https://dofinances.com/wallpapers/{sha}.{ext}"
+              if path:
+                  assert path == "/app/assets/home-rice-terraces-hq.jpg", f"Unexpected Git-managed asset: {path}"
               with tempfile.NamedTemporaryFile() as tmp, tempfile.NamedTemporaryFile() as hdr:
                   command = ["curl", "--retry", "5", "--retry-all-errors", "--retry-delay", "2", "-fsSL", "--max-time", "35", "-D", hdr.name, "-o", tmp.name, url]
                   subprocess.run(command, check=True)
@@ -314,14 +323,16 @@ jobs:
                   assert dims is not None, f"Could not parse image dimensions: {sha}"
                   width, height = dims
                   assert width >= 300 and height >= 200, f"Insufficient or invalid wallpaper dimensions: {sha} {dims}"
-                  if width < 1280:
+                  if path:
+                      assert (width, height) == (1280, 854), f'Home image dimensions changed: {(width,height)}'
+                  elif width < 1280:
                       print(f"WARNING: {sha[:12]}.{ext} is {width}px wide; wide screens may upscale it")
-                  print(f"Verified {sha[:12]}.{ext}: {width} x {height}, {len(content):,} bytes; full-width banner crop")
+                  print(f"Verified {url}: {width} x {height}, {len(content):,} bytes; full-width banner crop")
           PY
           invalid="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://dofinances.com/wallpapers/not-allowlisted.jpg)"
           test "$invalid" = 404
           rm "$source_js" "$source_css"
-          echo 'All eight library-iii wallpapers and the shared Studio stylesheet are live'
+          echo 'Git-managed Home and seven library-iii wallpapers are live'
 
       - name: Verify authentication boundaries and new account security routes
         shell: bash
