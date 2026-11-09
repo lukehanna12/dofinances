@@ -109,28 +109,69 @@ body:has(> #workspace-shell) .content{
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-rail-expanded .sidebar{width:var(--sidebar-expanded-width,260px);}
-  .shell.is-collapsed .sidebar{cursor:e-resize;}
-  .shell.is-collapsed .sidebar :is(.sidebar-head,.sidebar-navigation,.sidebar-bottom,.nav-stack,.nav-section-label){cursor:e-resize;}
-  .shell.is-collapsed .sidebar a,.shell.is-collapsed .sidebar button{cursor:pointer;}
-  .shell.is-collapsed .sidebar-resize-handle{display:none;}
+  /* Cursor applies to the actual hovered descendants, not just the aside:
+     most empty rail pixels belong to the head, nav, or footer children. */
+  .shell.is-collapsed .sidebar,
+  .shell.is-collapsed .sidebar *{cursor:e-resize!important;}
+  .shell.is-collapsed .sidebar :is(a,button),
+  .shell.is-collapsed .sidebar :is(a,button) *{cursor:pointer!important;}
+  .shell.is-collapsed > .sidebar-resize-handle{display:none!important;}
+  /* Two separately sized header cells prevent the D and toggle sharing
+     a coordinate during compact-rail expansion. */
+  .shell.liquid-glass-preview:not(.is-collapsed) .sidebar-head{
+    display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;
+    align-items:start;height:71px;
+  }
+  .shell.liquid-glass-preview:not(.is-collapsed) .sidebar-head > .brand{
+    position:relative;left:auto;top:auto;transform:none;
+    min-width:0;width:100%;max-width:100%;overflow:hidden;
+    grid-column:1;grid-row:1;
+  }
+  .shell.liquid-glass-preview:not(.is-collapsed) .sidebar-head > .sidebar-toggle{
+    position:relative;top:auto;right:auto;grid-column:2;grid-row:1;
+    flex:none;
+  }
+  /* Hide only while the rail is too narrow to lay out both header cells.
+     Restores immediately after the user-triggered 210ms expansion. */
+  .shell.is-sidebar-toggling:not(.is-collapsed) .sidebar-head > .sidebar-toggle{
+    visibility:hidden;pointer-events:none;
+  }
   .shell.is-sidebar-resizing .sidebar{transition:none!important;user-select:none;}
   .shell.is-sidebar-resizing,.shell.is-sidebar-resizing *{cursor:ew-resize!important;}
-  .sidebar-resize-handle{
-    display:block;position:absolute;right:0;top:16px;bottom:16px;
-    width:22px;z-index:5;cursor:ew-resize;touch-action:none;
-    border-radius:0;background:transparent!important;box-shadow:none!important;
+  /* The grip is a fixed sibling of <aside>, not an overflowing child.
+     Twenty-eight pixels straddle its outside edge and remain hit-testable. */
+  .shell > .sidebar-resize-handle{
+    display:block;position:fixed;
+    left:calc(var(--workspace-sidebar-left-gap) + var(--sidebar-expanded-width) - 14px);
+    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 22px);
+    bottom:calc(var(--workspace-sidebar-bottom-gap) + 22px);
+    right:auto;width:28px;height:auto;z-index:39;
+    cursor:ew-resize!important;touch-action:none;
+    border:0;border-radius:0;outline-offset:-3px;
+    background:transparent!important;box-shadow:none!important;
   }
-  .sidebar-resize-handle:hover{background:transparent!important;box-shadow:none!important;}
-  .sidebar-resize-handle:focus-visible{outline:2px solid var(--ui-secondary);outline-offset:-4px;}
-  .shell.is-sidebar-resizing .sidebar-resize-handle{background:transparent!important;box-shadow:none!important;}
-  /* Undo the tablet rail's transform when click-expanding. Otherwise the D
-     logo winds up beneath the returned collapse button. */
-  .shell.is-compact-rail.is-rail-expanded .sidebar-head{height:71px;min-height:0;}
+  .shell > .sidebar-resize-handle:hover,
+  .shell > .sidebar-resize-handle:active{
+    cursor:ew-resize!important;background:transparent!important;box-shadow:none!important;
+  }
+  .shell > .sidebar-resize-handle:focus-visible{outline:2px solid var(--ui-secondary);}
+  .shell.is-sidebar-resizing > .sidebar-resize-handle{
+    cursor:ew-resize!important;background:transparent!important;box-shadow:none!important;
+  }
+  .shell.is-sidebar-resizing .sidebar{transition:none!important;user-select:none;}
+  .shell.is-sidebar-resizing,.shell.is-sidebar-resizing *{cursor:ew-resize!important;}
+  /* Grid allocation remains explicit on compact desktop breakpoints. */
+  .shell.is-compact-rail.is-rail-expanded .sidebar-head{
+    display:grid;grid-template-columns:minmax(0,1fr) 34px;
+    gap:8px;height:71px;min-height:0;
+  }
   .shell.is-compact-rail.is-rail-expanded .brand{transform:none;}
-  .shell.is-compact-rail.is-rail-expanded .sidebar-toggle{top:1px;right:0;}
-  .shell.is-compact-rail.is-rail-expanded .brand-wordmark{max-width:calc(var(--sidebar-expanded-width) - 105px);overflow:hidden;text-overflow:ellipsis;}
+  .shell.is-compact-rail.is-rail-expanded .sidebar-toggle{top:auto;right:auto;}
+  .shell.is-compact-rail.is-rail-expanded .brand-wordmark{
+    min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
   .shell.is-compact-rail.is-rail-expanded .sidebar{cursor:default;}
-  .shell.is-compact-rail.is-rail-expanded .sidebar-resize-handle{display:block;}
+  .shell.is-compact-rail.is-rail-expanded > .sidebar-resize-handle{display:block;}
   /* Pointer cue floats above the page instead of brightening the glass. */
   .sidebar-interaction-tooltip{position:fixed;z-index:100;pointer-events:none;opacity:0;
     padding:6px 10px;border-radius:7px;background:rgba(36,36,39,.97);
@@ -176,7 +217,28 @@ body:has(> #workspace-shell) .content{
     width:274px!important;
     height:calc(100dvh - var(--global-menu-height) - 8px);
   }
-  .shell.liquid-glass-preview .sidebar-resize-handle{display:none;}
+  .shell > .sidebar-resize-handle{display:none!important;}
+  /* Mobile drawer is always fully laid out regardless of desktop preference. */
+  .shell.liquid-glass-preview .sidebar-head,
+  .shell.liquid-glass-preview.is-collapsed .sidebar-head{
+    display:grid;grid-template-columns:minmax(0,1fr) 34px;
+    align-items:start;gap:8px;height:71px;min-height:0;
+  }
+  .shell.liquid-glass-preview .sidebar-head > .brand{
+    position:relative;left:auto;top:auto;transform:none;
+    min-width:0;width:100%;max-width:100%;overflow:hidden;
+    grid-column:1;grid-row:1;
+  }
+  .shell.liquid-glass-preview .sidebar-head > .sidebar-toggle{
+    display:inline-grid;position:relative;top:auto;right:auto;
+    grid-column:2;grid-row:1;
+  }
+  .shell.liquid-glass-preview.is-collapsed .sidebar,
+  .shell.liquid-glass-preview.is-collapsed .sidebar *{cursor:auto!important;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(a,button),
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(a,button) *{
+    cursor:pointer!important;
+  }
   .shell.liquid-glass-preview .nav-label{min-width:0;width:100%;max-width:100%;text-overflow:ellipsis;overflow:hidden;}
   .shell.liquid-glass-preview .nav-label-text{display:inline-block;white-space:nowrap;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{

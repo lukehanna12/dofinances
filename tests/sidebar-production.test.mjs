@@ -95,3 +95,14 @@ test("both desktop motion directions prefetch only exact oracle geometry within 
   assert.match(code,/if\(node\.getAttribute\("href"\)!==uri\)/);
   assert.doesNotMatch(code,/html2canvas|getDisplayMedia|captureStream|createImageBitmap\(document/);
 });
+
+test("vertical resize retains exact stale width-height fields for reverse resizes",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.doesNotMatch(code,/if\(desired&&request\.h!==desired\.h\)return/);
+  assert.match(code,/const oldHeight=desired\?\.h/);
+  assert.match(code,/if\(oldHeight!==undefined&&oldHeight!==h\)/);
+  assert.match(code,/geometryCache\.set\(request\.key,urls\)/);
+  assert.match(code,/const key=w\+"x"\+h\+"@"\+corner/);
+  assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
+  assert.match(code,/CACHE_URL_BUDGET=24\*1024\*1024/);
+});

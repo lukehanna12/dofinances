@@ -585,7 +585,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
-  let anticipateSignature="",anticipateCount=0,cacheHeight=0;
+  let anticipateSignature="",anticipateCount=0;
   const anticipatedKeys=new Set();
   const observedWidths=new Map();
 
@@ -717,18 +717,10 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       shell.classList.add("has-oracle-backdrop");
   }
   function cacheField(request,urls){
-    if(desired&&request.h!==desired.h)return;
-    if(cacheHeight&&cacheHeight!==request.h){
-      // Retain bounded old-height fields: keys include width, height & corner
-      // and therefore cannot be incorrectly reused at a new pane height.
-      // Release speculative work learned from the obsolete layout instead.
-      stopAnticipation();
-      anticipateSignature="";
-      anticipateCount=0;
-      anticipatedKeys.clear();
-      observedWidths.clear();
-    }
-    cacheHeight=request.h;
+    // Store *exact* completed worker fields even if the user has already
+    // resized away. If they reverse a vertical/horizontal drag we can reuse
+    // that (width,height,radius) key. A stale response never gets painted:
+    // the reconciler commits only the current desired.key.
     geometryCache.delete(request.key);
     geometryCache.set(request.key,urls);
     let used=0;
@@ -865,7 +857,19 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
+    const oldHeight=desired?.h;
     desired={key,w,h,corner};
+    if(oldHeight!==undefined&&oldHeight!==h){
+      // Vertical resizing requires an exact new-height field, not a
+      // stretched/cropped copy. Keep previous-height cache entries for
+      // reversible resizes but retire their speculative animation work.
+      stopAnticipation();
+      anticipateSignature="";
+      anticipateCount=0;
+      anticipatedKeys.clear();
+      observedWidths.clear();
+      if(idleTimer){win.clearTimeout(idleTimer);idleTimer=0;}
+    }
     if(shell.classList.contains("is-sidebar-toggling")&&
        corner===24&&w>74&&w<expandedTargetWidth()){
       observedWidths.set(w,(observedWidths.get(w)||0)+1);

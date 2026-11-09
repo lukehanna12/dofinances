@@ -272,14 +272,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
   };
   const blankSurface=target=>!target?.closest?.('a,button,input,[role="separator"]');
   sidebar.title="Click empty sidebar space to expand when collapsed";
-  sidebar.addEventListener?.("pointermove",event=>{
+  const onRailHover=event=>{
     if(isMobile()){hideHint();return;}
-    if(event.target?.closest?.('[role="separator"]'))
-      showHint(event,"Drag to resize • pull left to collapse");
-    else if(shell.classList.contains("is-collapsed")&&blankSurface(event.target))
+    if(shell.classList.contains("is-collapsed")&&blankSurface(event.target))
       showHint(event,"Click to expand sidebar");
     else hideHint();
-  },{passive:true});
+  };
+  // pointerover fires even when the pointer enters a nested empty element;
+  // pointermove tracks the tooltip while the pointer stays in that element.
+  sidebar.addEventListener?.("pointerover",onRailHover,{passive:true});
+  sidebar.addEventListener?.("pointermove",onRailHover,{passive:true});
   sidebar.addEventListener?.("pointerleave",hideHint);
   sidebar.addEventListener?.("click",event=>{
     if(isMobile()||!shell.classList.contains("is-collapsed")||!blankSurface(event.target))return;
@@ -340,7 +342,15 @@ export function initWorkspaceNavigation(doc=document,win=window){
       resizeHandle.setPointerCapture?.(event.pointerId);
       showHint(event,"Drag to resize • pull left to collapse");
     });
-    resizeHandle.addEventListener("pointermove",onMove);
+    const onGripHover=event=>{
+      if(isMobile()||shell.classList.contains("is-collapsed")){hideHint();return;}
+      if(!drag)showHint(event,"Drag to resize • pull left to collapse");
+    };
+    resizeHandle.addEventListener("pointerenter",onGripHover,{passive:true});
+    resizeHandle.addEventListener("pointermove",event=>{
+      if(drag)onMove(event);else onGripHover(event);
+    });
+    resizeHandle.addEventListener("pointerleave",()=>{if(!drag)hideHint();});
     resizeHandle.addEventListener("pointerup",onEnd);
     resizeHandle.addEventListener("pointercancel",onEnd);
     resizeHandle.addEventListener("lostpointercapture",onEnd);

@@ -394,3 +394,22 @@ test("grip drag resizes, preserves preference, and collapses beyond content mini
   assert.equal(shell.classList.contains("is-collapsed"),false);
   assert.equal(grip.getAttribute("aria-valuenow"),"400");
 });
+
+test("hover wiring is registered before a drag and uses captured resize semantics",()=>{
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  const grip=m.elements["sidebar-resize-handle"];
+  const shell=m.elements["workspace-shell"];
+  const sidebar=m.elements["workspace-sidebar"];
+  grip.dispatch("pointerenter",{clientX:250,clientY:230});
+  assert.equal(shell.classList.contains("is-sidebar-resizing"),false);
+  grip.dispatch("pointerdown",{clientX:250,clientY:230,pointerId:1});
+  assert.equal(shell.classList.contains("is-sidebar-resizing"),true);
+  grip.dispatch("pointerup",{clientX:250,clientY:230,pointerId:1});
+  assert.equal(shell.classList.contains("is-sidebar-resizing"),false);
+  m.elements["sidebar-toggle"].dispatch("click");
+  sidebar.dispatch("pointerover");
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  sidebar.dispatch("click");
+  assert.equal(shell.classList.contains("is-collapsed"),false);
+});

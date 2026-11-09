@@ -94,9 +94,10 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   assert.match(css,/var\(--workspace-sidebar-bottom-gap\) var\(--workspace-sidebar-left-gap\)/);
   assert.match(css,/var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)/);
   assert.match(css,/width:22px;z-index:5;cursor:ew-resize/);
-  assert.match(css,/sidebar-resize-handle:hover\{background:transparent!important;box-shadow:none!important/);
+  assert.match(css,/sidebar-resize-handle:hover,/);
+  assert.match(css,/cursor:ew-resize!important;background:transparent!important;box-shadow:none!important/);
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.brand\{transform:none;/);
-  assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:1px;right:0;/);
+  assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:auto;right:auto;/);
   assert.match(nav,/Click to expand sidebar/);
   assert.match(nav,/Drag to resize • pull left to collapse/);
   assert.match(nav,/Release to collapse sidebar/);
@@ -109,4 +110,23 @@ test("end-of-page image remains visible over small reverse scrolls",()=>{
   assert.match(scroll,/distanceFromEnd\(\)<=\(visible\?LEAVE_END_GAP:ENTER_END_GAP\)/);
   assert.match(css,/::after \{transition:opacity 180ms ease-out;/);
   assert.match(css,/\.workspace-footer \{transition:opacity 180ms ease-out;/);
+});
+
+test("resize grip is outside clipped sidebar and exposes both hover affordances",()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    const asideEnd=html.indexOf("</aside>");
+    const grip=html.indexOf('id="sidebar-resize-handle"');
+    assert.ok(asideEnd>0&&grip>asideEnd,"resize grip must be an aside sibling");
+  }
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const js=read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(css,/\.shell > \.sidebar-resize-handle\{/);
+  assert.match(css,/width:28px;height:auto;z-index:39/);
+  assert.match(css,/cursor:ew-resize!important;touch-action:none/);
+  assert.match(css,/\.shell\.is-collapsed \.sidebar \*\{cursor:e-resize!important;/);
+  assert.match(css,/grid-template-columns:minmax\(0,1fr\) 34px/);
+  assert.match(js,/pointerover",onRailHover/);
+  assert.match(js,/resizeHandle\.addEventListener\("pointerenter",onGripHover/);
+  assert.match(js,/else onGripHover\(event\)/);
 });
