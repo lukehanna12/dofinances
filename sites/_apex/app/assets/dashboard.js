@@ -1,3 +1,6 @@
+import {initWorkspaceNavigation} from "./workspace-nav.js";
+initWorkspaceNavigation();
+
 const account = document.getElementById("account-email");
 const detail = document.getElementById("account-email-detail");
 const logout = document.getElementById("signout");
