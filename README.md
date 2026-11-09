@@ -44,6 +44,12 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 **Further hardening:** MFA, email verification, and resets do not turn this into a regulated financial-data application. Security review, better password KDFs, abuse controls, and financial-data protections are necessary before storing private financial records. See [Account security](docs/account-security.md).
 
+## Private workspace navigation
+
+The authenticated `/app` dashboard has a collapsible sidebar with three main views: **Home** (default), **Projects**, and **Settings**. Projects currently lists **Colosseum**, which opens a separate project navigation scope with **Capabilities**, **Collections**, **Providers**, **Permissions**, **Diagnostics**, and its own **Settings** view. All six project views are intentionally empty placeholders. The arrow in the top bar returns to the main Projects view and main sidebar.
+
+Main Settings retains Google/GitHub identity linking (limits: five Google, three GitHub), email verification, MFA, and account deletion. Navigation uses in-page hash routes such as `/app#projects` and `/app#colosseum/diagnostics`; no additional public Worker routes or permissions are introduced. The sidebar can collapse to an icon rail on desktop, with the preference stored locally in the browser; on phones it becomes an accessible slide-out navigation drawer. OAuth callbacks that return to `/app?federation_linked=1` or `/app?federation_error=...` automatically show the main Settings view.
+
 ## Federated sign-in and account linking
 
 Dofinances supports identity-only Google and GitHub sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google and 3 GitHub**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
