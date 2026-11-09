@@ -471,6 +471,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const geometryCache=new Map();
   const CACHE_LIMIT=6;
   let worker=null,workerBusy=false,desired=null;
+  let lastMaterialWord=NaN,lastInputRadius=NaN;
   function setMaps(request,urls){
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
       node.setAttribute("href",uri);
@@ -483,7 +484,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     shell.classList.add("has-oracle-backdrop");
   }
   function storeField(request,field,engine){
-    const urls=[
+    const urls=field.urls||[
       imageDataURL(win,field.inner,request.w,request.h),
       imageDataURL(win,field.outer,request.w,request.h),
       imageDataURL(win,field.blurMask,request.w,request.h)
@@ -496,6 +497,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }
     setMaps(request,urls);
     shell.dataset.oracleFieldEngine=engine;
+    shell.dataset.oraclePngEngine=field.urls?"worker":"main";
     shell.dataset.oracleFieldBuilds=String(Number(shell.dataset.oracleFieldBuilds||0)+1);
   }
   function syncField(request){
@@ -547,18 +549,26 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     // Exact LOD word; Gaussian sigma remains the original stated browser
     // approximation. These material parameters are NOT changed for speed.
     const scale=ORACLE_FINITE_REFRACTION.surfaceScale;
-    const farLOD=airTextureMipLOD(word,1);
-    const nearLOD=airTextureMipLOD(word,.5);
-    const effective=word/scale;
-    const nearSigma=effective*.5;
-    const farSigma=effective;
-    shell.style.setProperty("--oracle-input-radius",radius+"px");
-    shell.style.setProperty("--oracle-render-word",word+"px");
-    shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
-    shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
-    shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
-    blurFar.setAttribute("stdDeviation",String(farSigma));
-    blurNear.setAttribute("stdDeviation",String(nearSigma));
+    if(radius!==lastInputRadius){
+      shell.style.setProperty("--oracle-input-radius",radius+"px");
+      lastInputRadius=radius;
+    }
+    if(word!==lastMaterialWord){
+      // Same exact Float32 material; avoid invalidating the entire SVG
+      // backdrop chain on widths where the blur word has not changed.
+      const farLOD=airTextureMipLOD(word,1);
+      const nearLOD=airTextureMipLOD(word,.5);
+      const effective=word/scale;
+      const nearSigma=effective*.5;
+      const farSigma=effective;
+      shell.style.setProperty("--oracle-render-word",word+"px");
+      shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
+      shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
+      shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
+      blurFar.setAttribute("stdDeviation",String(farSigma));
+      blurNear.setAttribute("stdDeviation",String(nearSigma));
+      lastMaterialWord=word;
+    }
     if(!canUse)return;
     // Read the actual CSS corner, not a geometry-only blur radius.
     const style=win.getComputedStyle?.(sidebar);

@@ -353,3 +353,16 @@ test("exact Oracle field computation moves off the UI thread without changing ge
   assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass-field-worker\.js/);
   assert.doesNotMatch(worker,/html2canvas|drawImage|drawGlassWallpaper|fetch\(/);
 });
+
+test("worker PNG encoding uses identical source pixels and main-thread fallback",async()=>{
+  const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
+  const browser=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(worker,/new OffscreenCanvas\(width,height\)/);
+  assert.match(worker,/ctx\.putImageData\(image,0,0\)/);
+  assert.match(worker,/canvas\.convertToBlob\(\{type:"image\/png"\}\)/);
+  assert.match(worker,/reader\.readAsDataURL\(blob\)/);
+  assert.match(worker,/const field=generateOracleField\(request\.w,request\.h,request\.corner\)/);
+  assert.match(browser,/const urls=field\.urls\|\|\[/);
+  assert.match(browser,/lastMaterialWord=word/);
+  assert.match(browser,/if\(word!==lastMaterialWord\)/);
+});

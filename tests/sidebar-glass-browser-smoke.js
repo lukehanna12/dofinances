@@ -68,8 +68,13 @@
         getComputedStyle(sidebar).webkitBackdropFilter || "";
       assert(property.includes("oracle-glass-native-backdrop"),
         "computed backdrop-filter points to SVG actual backdrop");
-      if(typeof Worker==="function")assert(shell.dataset.oracleFieldEngine==="worker",
-        "Chrome must calculate the exact SDF in the worker, not silently fall back");
+      if(typeof Worker==="function"){
+        assert(shell.dataset.oracleFieldEngine==="worker",
+          "Chrome must calculate the exact SDF in the worker, not silently fall back");
+        if(typeof OffscreenCanvas==="function")
+          assert(shell.dataset.oraclePngEngine==="worker",
+            "Chrome must encode 3 exact field PNGs off the UI thread");
+      }
     }else{
       assert(!hasNative,"unsupported advanced filter retains CSS blur");
       assert(getComputedStyle(sidebar).backdropFilter.includes("blur"),
