@@ -153,54 +153,24 @@ try{
     assert(state.wall&&state.wall!=="none","Shared page wallpaper missing at "+width);
     console.log("CDP viewport verified",width,height,state.info);
     if(width===1440){
-      // Exact-visual compositor optimization experiment. Never change
-      // optical equations or SVG nodes. All hints affect only layers
-      // that supply the true live browser backdrop.
+      // Performance baseline only. Preserve the exact oracle filter and
+      // compare against blur-only as a diagnostic, not a promoted fallback.
       await send("Performance.enable");
-      const modes=[
-        {name:"oracle",css:""},
-        {name:"promote-scene",css:
-          "body:has(> #workspace-shell.liquid-glass-preview)::before,"+
-          "body:has(> #workspace-shell.liquid-glass-preview)::after"+
-          "{will-change:transform;transform:translateZ(0)}"},
-        {name:"promote-main",css:
-          ".shell.liquid-glass-preview .main{will-change:transform;transform:translateZ(0)}"},
-        {name:"promote-scene-main",css:
-          "body:has(> #workspace-shell.liquid-glass-preview)::before,"+
-          "body:has(> #workspace-shell.liquid-glass-preview)::after,"+
-          ".shell.liquid-glass-preview .main"+
-          "{will-change:transform;transform:translateZ(0)}"},
-        {name:"blur-only",css:
-          ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar"+
-          "{backdrop-filter:blur(var(--oracle-backdrop-blur))!important;"+
-          "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur))!important}"}
-      ];
-      const outputs=[];
-      let originalImage=null;
-      for(const mode of modes){
+      for(const mode of ["oracle","blur-only"]){
         await evaluate('document.getElementById("ci-perf-filter")?.remove()');
-        if(mode.css){
-          await evaluate('(()=>{const s=document.createElement("style");s.id="ci-perf-filter";'+
-            's.textContent='+JSON.stringify(mode.css)+';document.head.append(s);return true})()');
+        if(mode==="blur-only"){
+          await evaluate('(()=>{const s=document.createElement("style");'+
+            's.id="ci-perf-filter";'+
+            's.textContent=".shell.liquid-glass-preview.has-oracle-backdrop .sidebar {'+
+            'backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;'+
+            '-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";'+
+            'document.head.append(s);return true;})()');
         }
-        await sleep(200);
-        // Resting pixel diff must remain within rasterization tolerance;
-        // optical coefficients, displacement maps and filter nodes unchanged.
-        const bmp=decodePNG((await send("Page.captureScreenshot",{
-          format:"png",captureBeyondViewport:false,fromSurface:true
-        },90000)).data);
-        if(mode.name==="oracle")originalImage=bmp;
-        else if(mode.name!=="blur-only"){
-          const difference=comparePixels(originalImage,bmp,12,260,90,830);
-          console.log("SIDEBAR_SCENE_PROMOTION_PIXEL_DELTA",
-            JSON.stringify({mode:mode.name,...difference}));
-        }
-        const pre=(await send("Performance.getMetrics")).metrics;
+        await sleep(240);
         await evaluate(`(()=>{
-          const shell=document.getElementById("workspace-shell");
+          const gaps=[];let last=0;const start=performance.now();
           const toggle=document.getElementById("sidebar-toggle");
-          const gaps=[];let last=0;
-          const start=performance.now();
+          const shell=document.getElementById("workspace-shell");
           function frame(t){
             if(last)gaps.push(t-last);last=t;
             if(t-start<1200)requestAnimationFrame(frame);
@@ -211,11 +181,10 @@ try{
                 median:sorted[Math.floor(sorted.length*.5)],
                 p95:sorted[Math.floor(sorted.length*.95)],
                 worst:sorted.at(-1),
-                stalls34:gaps.filter(t=>t>34).length,
-                stalls50:gaps.filter(t=>t>50).length,
-                builds:Number(shell.dataset.oracleFieldBuilds||0),
-                cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
-                finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
+                stalls34:gaps.filter(x=>x>34).length,
+                stalls50:gaps.filter(x=>x>50).length,
+                fieldBuilds:Number(shell.dataset.oracleFieldBuilds||0),
+                cacheHits:Number(shell.dataset.oracleFieldCacheHits||0)
               };
             }
           }
@@ -226,90 +195,14 @@ try{
           return true;
         })()`);
         const result=await until(()=>evaluate("window.__glassPerf||null"),10000);
-        const post=(await send("Performance.getMetrics")).metrics;
-        const diff={};
-        for(const metric of ["LayoutDuration","RecalcStyleDuration","ScriptDuration","TaskDuration"]){
-          diff[metric]=((post.find(m=>m.name===metric)?.value||0)-
-                        (pre.find(m=>m.name===metric)?.value||0))*1000;
-        }
-        assert(result.finalWidth>250,"Performance variant must restore expanded pane");
-        const data={mode:mode.name,...result,mainThreadMs:diff};
-        console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify(data));
-        outputs.push(data);
+        assert(await evaluate('document.getElementById("workspace-sidebar").getBoundingClientRect().width>250'),
+          "Desktop performance test must restore expanded width");
+        console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify({mode,...result}));
       }
       await evaluate('document.getElementById("ci-perf-filter")?.remove()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
-    }
-    if(width===1440){
-      // Encoding/transport experiment. Input geometry and SVG graph remain
-      // unchanged; compare full pane INCLUDING optical rim, not a crop.
-      // Blob URLs can give Chromium different decoded-image cache semantics
-      // from data URLs while representing byte-identical PNG input.
-      const images=await evaluate(`(()=>{
-        const f=document.getElementById("oracle-glass-native-backdrop");
-        return ["innerMap","outerMap","blurMap"].map(id=>{
-          const n=f.querySelector('[result="' + id + '"]');
-          return {id,url:n.getAttribute("href")};
-        });
-      })()`);
-      assert(images.length===3 && images.every(i=>i.url?.startsWith("data:image/png;base64,")),
-        "Expected canonical Oracle PNG data URLs before transport experiment");
-      const reference=decodePNG((await send("Page.captureScreenshot",{
-        format:"png",captureBeyondViewport:false,fromSurface:true
-      },90000)).data);
-      const blobResult=await evaluate(`(()=>{
-        const f=document.getElementById("oracle-glass-native-backdrop");
-        window.__ciBlobURLs=[];
-        for(const name of ["innerMap","outerMap","blurMap"]){
-          const node=f.querySelector('[result="' + name + '"]');
-          const raw=atob(node.getAttribute("href").split(",")[1]);
-          const data=Uint8Array.from(raw,c=>c.charCodeAt(0));
-          const url=URL.createObjectURL(new Blob([data],{type:"image/png"}));
-          window.__ciBlobURLs.push(url);
-          node.setAttribute("href",url);
-          node.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",url);
-        }
-        return {count:window.__ciBlobURLs.length};
-      })()`);
-      await sleep(450);
-      const version=decodePNG((await send("Page.captureScreenshot",{
-        format:"png",captureBeyondViewport:false,fromSurface:true
-      },90000)).data);
-      const diff=comparePixels(reference,version,0,260,0,900);
-      console.log("ORACLE_BLOB_IMAGE_EXACT_PIXEL_DELTA",JSON.stringify({...blobResult,...diff}));
-      for(const mode of ["blob","data"]){
-        if(mode==="data"){
-          await evaluate('(()=>{const f=document.getElementById("oracle-glass-native-backdrop");'+
-            'for(const record of '+JSON.stringify(images)+'){'+
-            'const n=f.querySelector("[result=\\\"" + record.id + "\\\"]");'+
-            'n.setAttribute("href",record.url);'+
-            'n.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",record.url);'+
-            '}return true;})()');
-        }
-        await sleep(220);
-        await evaluate('(()=>{const s=document.createElement("style");s.id="ci-backdrop-motion";'+
-          's.textContent="@keyframes ciShift{from{transform:translateX(0)}to{transform:translateX(18px)}}'+
-          'body:has(> #workspace-shell.liquid-glass-preview)::after{animation:ciShift 240ms linear infinite alternate;will-change:transform}";'+
-          'document.head.append(s);return true;})()');
-        await evaluate(`(()=>{const gaps=[];let last=0;const start=performance.now();
-          function frame(t){if(last)gaps.push(t-last);last=t;
-            if(t-start<1200)requestAnimationFrame(frame);
-            else{const sorted=gaps.toSorted((a,b)=>a-b);window.__ciTransportPerf={
-              frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
-              worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
-              stalls50:gaps.filter(x=>x>50).length
-            };}}
-          window.__ciTransportPerf=null;requestAnimationFrame(frame);return true;})()`);
-        const perf=await until(()=>evaluate("window.__ciTransportPerf||null"),10000);
-        console.log("ORACLE_BLOB_IMAGE_MOTION_CONTROL",JSON.stringify({mode,...perf}));
-        await evaluate('document.getElementById("ci-backdrop-motion")?.remove()');
-      }
-      await evaluate('(()=>{const urls=window.__ciBlobURLs||[];'+
-        'for(const url of urls)URL.revokeObjectURL(url);delete window.__ciBlobURLs;'+
-        'return true;})()');
-      await sleep(150);
     }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
