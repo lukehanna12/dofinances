@@ -94,6 +94,7 @@ jobs:
           node --check tests/sidebar-glass-browser-smoke.js
           node --check tests/sidebar-glass-browser-cdp.mjs
           node --check tests/sidebar-gpu-lab-cdp.mjs
+          node --check .app-sidebar-preview/app/assets/sidebar-glass-field-worker.js
           node --check .app-sidebar-preview/gpu-lab/gpu-renderer.js
           node --check .app-sidebar-preview/gpu-lab/gpu-lab.js
           cp tests/sidebar-glass-browser-smoke.js .app-sidebar-preview/app/assets/_ci-glass-smoke.js
