@@ -105,22 +105,44 @@ a:hover {text-decoration: none;}
   transition: top 210ms var(--ui-ease), right 210ms var(--ui-ease),
     background-color 160ms ease, color 160ms ease;
 }
-.sidebar-navigation {scrollbar-width: thin; scrollbar-color: var(--ui-border-strong) transparent;}
-.nav-stack {gap: 2px;}
+/* A grid track's automatic min-content width used to retain hidden label
+   text and leave active-link backgrounds cropped by the narrow rail. */
+.sidebar-navigation {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border-strong) transparent;
+}
+.nav-stack {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
 .nav-section-label {
   color: var(--ui-muted); margin: 8px 11px 10px;
   font-size: 11px; font-weight: 500; letter-spacing: 0;
 }
 .nav-link {
+  /* The clickable highlight always fits its interpolating sidebar track. */
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   min-height: 39px; padding: 9px 11px; gap: 11px;
   border-radius: 9px; border: 1px solid transparent;
   background: transparent; color: var(--ui-text);
   font-size: 14px; font-weight: 450;
-  transition: background-color 130ms ease, color 130ms ease;
+  transition: background-color 130ms ease, color 130ms ease,
+    padding-left 210ms var(--ui-ease), padding-right 210ms var(--ui-ease),
+    gap 210ms var(--ui-ease);
 }
 .nav-label {
   display: block;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 24ch;
   overflow: hidden;
   white-space: nowrap;
   font-weight: 450;
@@ -147,6 +169,11 @@ a:hover {text-decoration: none;}
   visibility: visible;
   transition: opacity 105ms ease 105ms, visibility 0s linear 0s;
 }
+/* Label width contracts with the rail; fading alone leaves a wide grid item. */
+.nav-link .nav-label {
+  transition: max-width 210ms var(--ui-ease),
+    opacity 105ms ease 105ms, visibility 0s linear 0s;
+}
 .shell.is-collapsed .sidebar-head {
   display: block;
   height: 113px;
@@ -169,7 +196,18 @@ a:hover {text-decoration: none;}
 .shell.is-collapsed .nav-label {display: block;}
 .shell.is-collapsed .nav-section-label {display: block;}
 .shell.is-collapsed .sidebar-foot-label {display: inline-block;}
-.shell.is-collapsed .nav-link {justify-content: flex-start; padding: 9px 11px;}
+/* 74px rail - 24px side gutters - 1px divider = 49px clickable row.
+   Padding-left of 15px centers the unchanged 18px icon in that row. */
+.shell.is-collapsed .nav-link {
+  justify-content: flex-start;
+  padding: 9px 0 9px 15px;
+  gap: 0;
+}
+.shell.is-collapsed .nav-link .nav-label {
+  max-width: 0;
+  transition: max-width 210ms var(--ui-ease),
+    opacity 105ms ease, visibility 0s linear 105ms;
+}
 .shell.is-collapsed .nav-link .nav-icon {width: 18px; height: 18px;}
 .shell.is-collapsed .sidebar-bottom {justify-content: flex-start; padding-inline: 11px;}
 .shell.is-collapsed .sidebar-navigation {padding-top: 0;}
@@ -353,7 +391,12 @@ input::placeholder {color: var(--ui-muted);}
   .shell.is-collapsed .brand {transform: none;}
   .shell.is-collapsed .sidebar-toggle {top: 1px; right: 0;}
   .shell.is-collapsed .sidebar-navigation {padding-top: 0;}
-  .shell.is-collapsed .nav-link {justify-content: flex-start; padding: 9px 11px;}
+  .shell.is-collapsed .nav-link {
+    justify-content: flex-start;
+    padding: 9px 11px;
+    gap: 11px;
+  }
+  .shell.is-collapsed .nav-link .nav-label {max-width: 24ch;}
   .shell.is-collapsed .brand-wordmark {display: flex;}
   .shell.is-collapsed .nav-label, .shell.is-collapsed .nav-section-label {display: block;}
   .shell.is-collapsed .sidebar-foot-label {display: inline-block;}
