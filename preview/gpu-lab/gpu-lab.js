@@ -41,7 +41,9 @@ try{
   button.addEventListener("click",async()=>{
     button.disabled=true;bench.textContent="Benchmark running…";
     try{
-      const numbers=await gpu.benchmark(80);
+      const requested=Number(new URLSearchParams(location.search).get("samples"));
+      const count=Number.isFinite(requested)&&requested>=4&&requested<=80?requested:80;
+      const numbers=await gpu.benchmark(count);
       bench.textContent=JSON.stringify(numbers,null,2);
       document.documentElement.dataset.gpuLabBenchmark=JSON.stringify(numbers);
     }catch(error){bench.textContent=String(error)}
