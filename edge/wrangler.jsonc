@@ -29,5 +29,6 @@
   },
   "vars": {
     "AUTH_EMAIL_FROM": "noreply@dofinances.com"
-  }
+  },
+  "keep_vars": true
 }
