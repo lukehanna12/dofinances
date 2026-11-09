@@ -224,9 +224,11 @@ test("screen navigation has no entrance displacement or smooth-scroll jitter",as
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
-  for(const name of COLOSSEUM_ROUTES)
+  for(const name of COLOSSEUM_ROUTES.filter(name=>name!=="settings"))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
-  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length);
+  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1);
+  assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
+  assert.doesNotMatch(html,/data-view="colosseum\\/settings"/);
   assert.match(html,/id="main-navigation"/);
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="sidebar-toggle"/);
