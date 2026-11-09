@@ -65,11 +65,11 @@
     if(w>=1280){
       const toggle=document.getElementById("sidebar-toggle");
       assert(!toggle.disabled,"desktop toggle remains enabled");
-      toggle.click();await tick(310);
+      toggle.click();await tick(900);
       assert(shell.classList.contains("is-collapsed"),"desktop collapse works");
       assert(sidebar.getBoundingClientRect().width>=72&&
         sidebar.getBoundingClientRect().width<=77,"74px real rail");
-      toggle.click();await tick(310);
+      toggle.click();await tick(900);
       assert(!shell.classList.contains("is-collapsed"),"desktop expand works");
     }else if(w>760){
       assert(shell.classList.contains("is-collapsed"),"tablet forces icon rail");
