@@ -322,45 +322,14 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
     Math.abs(parameters.blurDist[0]),
     1/parameters.innerInvHeight,
     1/parameters.outerInvHeight);
-  /*
-   * The native AIR mode5 path returns an SDF distance AND a normal.
-   * In the browser adapter, the retained supercircle-normal expression
-   * degenerates to (0,0) at some straight boundary pixels despite a valid
-   * signed-distance gradient. The previous map encoded ZERO warp there.
-   *
-   * Precompute the actual SDF distance once, and use its central-difference
-   * spatial derivative ONLY for zero-native-normal points. This is the
-   * derivative of the SAME Oracle geometry, not a decorative edge normal,
-   * and does not alter the sourced inner/outer refraction coefficients.
-   */
-  const count=width*height;
-  const distanceField=new Float32Array(count);
-  const normalX=new Float32Array(count);
-  const normalY=new Float32Array(count);
-  const sampled=new Uint8Array(count);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-    const j=y*width+x;
-    const dst=Math.min(x,width-x-.5,y,height-y-.5);
-    if(dst>activeSpan)continue;
-    const p=paneField(x+.5,y+.5,width,height,radius);
-    sampled[j]=1;
-    distanceField[j]=p.distance;
-    normalX[j]=p.nx;
-    normalY[j]=p.ny;
-  }
-  const delta=(a,b,center)=>{
-    if(Number.isFinite(a)&&Number.isFinite(b))return (b-a)*.5;
-    if(Number.isFinite(b))return b-center;
-    if(Number.isFinite(a))return center-a;
-    return 0;
-  };
-  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-    const j=y*width+x,i=j*4;
+    const i=(y*width+x)*4;
     const dst=Math.min(x,width-x-.5,y,height-y-.5);
     // The actual mode5 SDF is a FOUR-corner shape. The previous x<width/2
-    // shortcut erased displacement in the left half. Keep only the
-    // source-bounded deep-interior optimization.
-    if(!sampled[j]){
+    // shortcut erased every displacement sample in the left half of the
+    // pane, even at its upper/lower outline; that shortcut has no AIR
+    // provenance. Keep only the proven distance-domain optimization.
+    if(dst>activeSpan){
       inner[i]=outer[i]=128;
       inner[i+1]=outer[i+1]=128;
       inner[i+2]=outer[i+2]=0;
@@ -370,37 +339,27 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
       blurMask[i+3]=255;
       continue;
     }
-    let nx=normalX[j],ny=normalY[j];
-    const d=distanceField[j];
-    if(nx===0&&ny===0){
-      const left=x>0&&sampled[j-1]?distanceField[j-1]:NaN;
-      const right=x+1<width&&sampled[j+1]?distanceField[j+1]:NaN;
-      const above=y>0&&sampled[j-width]?distanceField[j-width]:NaN;
-      const below=y+1<height&&sampled[j+width]?distanceField[j+width]:NaN;
-      const dx=delta(left,right,d),dy=delta(above,below,d);
-      const magnitude=Math.hypot(dx,dy);
-      if(magnitude>0){nx=dx/magnitude;ny=dy/magnitude;}
-    }
+    const p=paneField(x+.5,y+.5,width,height,radius);
     // AIR produces the refraction coefficient from signed distance.
     // Native displacement_mat converts normal to texture coordinates.
     // Pixel-space identity here is the browser adapter's explicit mapping.
-    const innerAmount=airRefractionEnvelope(d,
+    const innerAmount=airRefractionEnvelope(p.distance,
       parameters.innerAmount,parameters.innerInvHeight);
-    const outerAmount=airRefractionEnvelope(d,
+    const outerAmount=airRefractionEnvelope(p.distance,
       parameters.outerAmount,parameters.outerInvHeight);
-    const mx=airThresholdMix(d,
+    const mx=airThresholdMix(p.distance,
       parameters.threshold0,parameters.threshold1,parameters.opacity);
-    inner[i]=encode(nx*innerAmount);
-    inner[i+1]=encode(ny*innerAmount);
-    outer[i]=encode(nx*outerAmount);
-    outer[i+1]=encode(ny*outerAmount);
+    inner[i]=encode(p.nx*innerAmount);
+    inner[i+1]=encode(p.ny*innerAmount);
+    outer[i]=encode(p.nx*outerAmount);
+    outer[i+1]=encode(p.ny*outerAmount);
     inner[i+2]=outer[i+2]=Math.round(clamp(mx,0,1)*255);
     inner[i+3]=outer[i+3]=255;
     // AIR background base LPH source lines 271/290–321 and 366/370–381:
     // blur_alpha ramps consume REFRACTION-ADJUSTED SDF distance, not the
     // original signed distance. The two texture reads have distinct LOD.
-    const innerDistance=f32(d+innerAmount);
-    const outerDistance=f32(d+outerAmount);
+    const innerDistance=f32(p.distance+innerAmount);
+    const outerDistance=f32(p.distance+outerAmount);
     const innerDistribution=airBlurDistribution(innerDistance,parameters);
     const outerDistribution=airBlurDistribution(outerDistance,parameters);
     // The near/far Gaussian interpolation is a browser mip approximation.

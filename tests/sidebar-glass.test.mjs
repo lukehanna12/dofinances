@@ -155,23 +155,6 @@ test("displacement maps are geometry-only, not screen or background captures",()
   }
   assert.ok(innerAffected>0,JSON.stringify({innerAffected,outerAffected,center:[...field.inner.slice(edge,edge+4)]}));
   assert.ok(outerAffected>0,JSON.stringify({innerAffected,outerAffected}));
-  // The native SDF gradient must remain available when the simplified
-  // normal expression degenerates on a straight edge. This fallback uses
-  // derivatives of the SAME signed distance, not stronger warp constants.
-  let degenerateEdges=0,recoveredEdges=0;
-  for(let y=0;y<98;y++)for(let x=0;x<72;x++){
-    const dx=x+.5,dy=y+.5;
-    const near=Math.min(x,72-x-.5,y,98-y-.5)<=28;
-    if(!near)continue;
-    const p=paneField(dx,dy,72,98,24);
-    if(p.nx===0&&p.ny===0){
-      degenerateEdges++;
-      const i=(y*72+x)*4;
-      if(field.inner[i]!==128||field.inner[i+1]!==128)recoveredEdges++;
-    }
-  }
-  assert.ok(degenerateEdges>0,"finite mode5 SDF includes zero-normal samples");
-  assert.ok(recoveredEdges>0,"distance-gradient fallback restores displacement at zero-normal samples");
   assert.ok(field.blurMask[center+2]>0,
     "mode5 left-half coverage is no longer artificially zeroed");
   const intermediate=(49*72+61)*4;
@@ -208,9 +191,6 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   assert.match(js,/airSupercircleSDF/);
   assert.match(js,/1\.5286649465560913/);
   assert.match(js,/const t=clamp\(f32\(f32\(-distance\)\*f32\(invHeight\)\),0,1\)/);
-  assert.match(js,/const distanceField=new Float32Array\(count\)/);
-  assert.match(js,/if\(nx===0&&ny===0\)/);
-  assert.match(js,/const dx=delta\(left,right,d\),dy=delta\(above,below,d\)/);
   assert.match(css,/backdrop-filter:url\("#oracle-glass-native-backdrop"\)/);
   assert.match(css,/--oracle-backdrop-blur/);
   assert.match(wrapper,/mountOracleBackdrop/);

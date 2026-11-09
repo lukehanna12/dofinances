@@ -170,8 +170,42 @@ try{
       },90000)).data);
       const diff=comparePixels(full,blur,190,260,70,820);
       console.log("ACTUAL_GLASS_VS_BLUR_PIXEL_DIFF",JSON.stringify(diff));
-      assert(diff.different>=200&&diff.mean>=.3,
-        "SVG backdrop filter generated no meaningful pixel difference from blur only");
+      assert(diff.different>=200&&diff.max>=4,
+        "Real scene: refraction must be visibly distinct from a blur-only control");
+      /*
+       * The real page is deliberately subdued, so it is not a good
+       * independent test of optical displacement strength. Apply a sharp
+       * high-contrast grid to the PAGE backdrop ONLY, never inside the
+       * sidebar, and compare the live SVG glass with a blur-only control.
+       * This catches filters that parse successfully but do not refract.
+       */
+      await evaluate('(()=>{'+
+        'document.getElementById("ci-compare-blur")?.remove();'+
+        'const s=document.createElement("style");s.id="ci-refractive-target";'+
+        's.textContent="body:has(> #workspace-shell.liquid-glass-preview)::after {'+
+        'background:repeating-linear-gradient(90deg,transparent 0 9px,'+
+        'rgba(255,255,255,.95) 9px 12px,transparent 12px 28px),'+
+        'repeating-linear-gradient(0deg,transparent 0 15px,'+
+        'rgba(255,255,255,.60) 15px 18px,transparent 18px 36px) !important;}";'+
+        'document.head.append(s);return true;})()');
+      await sleep(500);
+      const glassGrid=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      await evaluate('(()=>{'+
+        'const s=document.createElement("style");s.id="ci-compare-blur";'+
+        's.textContent=".shell.liquid-glass-preview.has-oracle-backdrop .sidebar {'+
+        'backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;'+
+        '-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";'+
+        'document.head.append(s);return true;})()');
+      await sleep(500);
+      const blurGrid=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const patternDiff=comparePixels(glassGrid,blurGrid,190,260,70,820);
+      console.log("CONTROLLED_PAGE_GRID_REFRACTION_DIFF",JSON.stringify(patternDiff));
+      assert(patternDiff.different>=1400&&patternDiff.mean>=2,
+        "Controlled PAGE backdrop: glass must bend a high-contrast grid, not just blur it");
     }
   }
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
