@@ -158,17 +158,18 @@ try{
       // against the same page, dimensions and 210ms layout animation.
       await send("Performance.enable");
       const measures=[];
-      for(const mode of ["oracle","blur-only","none"]){
+      for(const mode of ["oracle","composited","paint-contain","blur-only"]){
         await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
         if(mode!=="oracle"){
-          const override=mode==="blur-only"
-            ?"blur(var(--oracle-backdrop-blur))"
-            :"none";
+          const css=mode==="composited"
+            ?".shell.liquid-glass-preview .sidebar{will-change:backdrop-filter,transform;}"
+            :mode==="paint-contain"
+            ?".shell.liquid-glass-preview .sidebar{contain:paint;}"
+            :".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+              "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
+              "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
           await evaluate('(()=>{const s=document.createElement("style");'+
-            's.id="ci-perf-filter";s.textContent='+JSON.stringify(
-              ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
-              "backdrop-filter:"+override+" !important;"+
-              "-webkit-backdrop-filter:"+override+" !important;}")+
+            's.id="ci-perf-filter";s.textContent='+JSON.stringify(css)+
             ';document.head.append(s);return true;})()');
         }
         await sleep(160);
