@@ -111,7 +111,7 @@ test("Google invalid_client and invalid_grant fail with public-safe, specific co
   try{
     for(const [upstreamError,publicCode] of [
       ["invalid_client","oauth_client_rejected"],["invalid_grant","oauth_code_rejected"],
-      ["invalid_request","oauth_token_rejected"]
+      ["invalid_request","oauth_request_rejected"]
     ]){
       globalThis.fetch=async()=>Response.json({error:upstreamError,
         error_description:"Do not disclose this provider response"},{status:400});
@@ -144,7 +144,7 @@ test("all OAuth fetches use Cloudflare-supported manual redirect handling",async
     };
     await assert.rejects(
       exchangeFederatedIdentity(config,"fake-code",txn),
-      error=>error.code==="oauth_token_rejected"
+      error=>error.code==="oauth_provider_redirected"
     );
   }finally{globalThis.fetch=originalFetch;}
 });
