@@ -159,41 +159,27 @@ try{
       await send("Performance.enable");
       const measures=[];
       let referenceFrame=null;
-      for(const mode of ["oracle","overlay-plane","blur-only"]){
-        await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
-        await evaluate('(()=>{document.getElementById("ci-plane")?.remove();'+
-          'document.getElementById("ci-perf-filter")?.remove();return true;})()');
-        if(mode!=="oracle"){
-          const css=mode==="overlay-plane"?
-            ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
-            "-webkit-backdrop-filter:none!important;backdrop-filter:none!important;"+
-            "background:transparent!important;border-right-color:transparent!important;box-shadow:none!important;}"+
-            ".shell.liquid-glass-preview #ci-plane{"+
-            "position:fixed;top:0;left:0;width:260px;height:100dvh;z-index:11;"+
-            "pointer-events:none;background:var(--glass-pane);"+
-            "border-radius:0 24px 24px 0;"+
-            "-webkit-backdrop-filter:url('#oracle-glass-native-backdrop');"+
-            "backdrop-filter:url('#oracle-glass-native-backdrop');"+
-            "clip-path:inset(0 0 0 0 round 0 24px 24px 0);"+
-            "transition:clip-path var(--sidebar-layout-duration) var(--ui-ease);"+
-            "}"+
-            ".shell.is-collapsed #ci-plane{clip-path:inset(0 186px 0 0 round 0 24px 24px 0);}"
-            :".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+      for(const mode of ["oracle","inner-only","blur-only"]){
+        await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
+          'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\')?.setAttribute("in","composited");'+
+          'return true;})()');
+        if(mode==="inner-only"){
+          await evaluate('(()=>{'+
+            'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\').setAttribute("in","innerShift");'+
+            'return true;})()');
+        }else if(mode==="blur-only"){
+          const css=".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
             "backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;"+
             "-webkit-backdrop-filter:blur(var(--oracle-backdrop-blur)) !important;}";
-          await evaluate('(()=>{const s=document.createElement("style");'+
-            's.id="ci-perf-filter";s.textContent='+JSON.stringify(css)+
-            ';document.head.append(s);return true;})()');
-          if(mode==="overlay-plane")await evaluate('(()=>{'+
-            'const p=document.createElement("div");p.id="ci-plane";'+
-            'document.getElementById("workspace-shell").prepend(p);return true;})()');
+          await evaluate('(()=>{const z=document.createElement("style");z.id="ci-perf-filter";'+
+            'z.textContent='+JSON.stringify(css)+';document.head.append(z);return true;})()');
         }
         await sleep(160);
-        if(mode==="overlay-plane"&&referenceFrame){
+        if(mode==="inner-only"&&referenceFrame){
           const variant=decodePNG((await send("Page.captureScreenshot",{
             format:"png",captureBeyondViewport:false,fromSurface:true
           },90000)).data);
-          console.log("OVERLAY_PLANE_RESTING_PIXEL_DIFF",
+          console.log("INNER_ONLY_RESTING_PIXEL_DIFF",
             JSON.stringify(comparePixels(referenceFrame,variant,10,250,90,830)));
         }
         const pre=(await send("Performance.getMetrics")).metrics;
@@ -253,7 +239,8 @@ try{
         }
       }
       await evaluate('(()=>{document.getElementById("ci-perf-filter")?.remove();'+
-        'document.getElementById("ci-plane")?.remove();return true;})()');
+        'document.querySelector(\'#oracle-glass-native-backdrop feColorMatrix[result="faceMaterial"]\')?.setAttribute("in","composited");'+
+        'return true;})()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
