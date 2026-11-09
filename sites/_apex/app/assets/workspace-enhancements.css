@@ -116,6 +116,26 @@ body:has(> #workspace-shell) .content{
   .shell.is-collapsed .sidebar :is(a,button),
   .shell.is-collapsed .sidebar :is(a,button) *{cursor:pointer!important;}
   .shell.is-collapsed > .sidebar-resize-handle{display:none!important;}
+  /* A transparent, keyboard-accessible layer receives only blank-rail
+     interaction. Link and header descendants stay above it. */
+  .shell.liquid-glass-preview .sidebar-rail-expand-target{display:none;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target{
+    display:block;position:absolute;inset:0;z-index:1;
+    cursor:e-resize!important;background:transparent;pointer-events:auto;
+  }
+  .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target[hidden]{display:none!important;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head,.sidebar-navigation,.sidebar-bottom,.nav-stack,.nav-section-label){pointer-events:none;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head a,.sidebar-head button,.nav-link){pointer-events:auto;}
+  /* Precisely centered rows and icons; do not use asymmetric 15px rail padding. */
+  .shell.liquid-glass-preview .sidebar-navigation .nav-link{
+    display:flex;align-items:center;width:calc(100% - 2px);margin-inline:auto;
+  }
+  .shell.liquid-glass-preview .sidebar-navigation .nav-link .nav-icon{flex:0 0 18px;align-self:center;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar-navigation .nav-link{
+    justify-content:center!important;padding-left:0!important;
+    padding-right:0!important;gap:0!important;
+  }
+  .shell.liquid-glass-preview.is-collapsed .sidebar-navigation .nav-link .nav-icon{margin:0!important;}
   /* Two separately sized header cells prevent the D and toggle sharing
      a coordinate during compact-rail expansion. */
   .shell.liquid-glass-preview:not(.is-collapsed) .sidebar-head{
@@ -218,6 +238,7 @@ body:has(> #workspace-shell) .content{
     height:calc(100dvh - var(--global-menu-height) - 8px);
   }
   .shell > .sidebar-resize-handle{display:none!important;}
+  .shell.liquid-glass-preview .sidebar-rail-expand-target{display:none!important;}
   /* Mobile drawer is always fully laid out regardless of desktop preference. */
   .shell.liquid-glass-preview .sidebar-head,
   .shell.liquid-glass-preview.is-collapsed .sidebar-head{

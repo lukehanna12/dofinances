@@ -138,6 +138,24 @@ try{
   }
   await up(header.gripCenter+50,header.gripY);
   await until('Math.round(document.querySelector(".sidebar").getBoundingClientRect().width)>='+String(startWidth+40),"dragged width response");
+  const linkGeometry=await evaluate(String.raw`(()=>{
+    const shell=document.querySelector(".sidebar").getBoundingClientRect();
+    return [...document.querySelectorAll(".sidebar-navigation .nav-link")]
+      .filter(link=>link.getClientRects().length).map(link=>{
+        const row=link.getBoundingClientRect();
+        const icon=link.querySelector(".nav-icon").getBoundingClientRect();
+        return {route:link.getAttribute("data-route"),
+          rowX:row.left+row.width/2,sidebarX:shell.left+shell.width/2,
+          iconY:icon.top+icon.height/2,rowY:row.top+row.height/2};
+      });
+  })()`);
+  assert.ok(linkGeometry.length>=3,"No visible sidebar links");
+  for(const item of linkGeometry){
+    assert.ok(Math.abs(item.rowX-item.sidebarX)<2,
+      "Row not centered in sidebar: "+JSON.stringify(item));
+    assert.ok(Math.abs(item.iconY-item.rowY)<2,
+      "Icon not vertically centered in its button: "+JSON.stringify(item));
+  }
   const before=await evaluate('Math.round(document.querySelector(".sidebar").getBoundingClientRect().height)');
   await metrics(900,680);
   await until('Math.round(document.querySelector(".sidebar").getBoundingClientRect().height)<'+String(before-100),"vertical sidebar resizing");

@@ -131,3 +131,17 @@ test("resize grip is outside clipped sidebar and exposes both hover affordances"
   assert.match(js,/resizeHandle\.addEventListener\("pointerenter",onGripHover/);
   assert.match(js,/else onGripHover\(event\)/);
 });
+
+test("blank rail expands from a dedicated pointer region and icons use centered geometry",()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    assert.match(html,/id="sidebar-rail-expand-target"/);
+    assert.match(html,/aria-label="Expand sidebar" title="Click to expand sidebar"/);
+  }
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(css,/\.sidebar-rail-expand-target\{[\s\S]*?cursor:e-resize!important/);
+  assert.match(css,/\.sidebar-navigation \.nav-link\{[\s\S]*?margin-inline:auto/);
+  assert.match(css,/\.is-collapsed \.sidebar-navigation \.nav-link\{[\s\S]*?justify-content:center!important/);
+  assert.match(nav,/railExpandTarget\?\.addEventListener\?\.\("keydown"/);
+});

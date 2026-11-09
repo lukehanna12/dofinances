@@ -69,6 +69,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const colosseumCrumb=doc.getElementById("breadcrumb-colosseum");
   const colosseumArrow=doc.getElementById("breadcrumb-colosseum-separator");
   const resizeHandle=doc.getElementById("sidebar-resize-handle");
+  const railExpandTarget=doc.getElementById("sidebar-rail-expand-target");
   const globalMenu=doc.getElementById("global-menu");
   const globalToggle=doc.getElementById("global-menu-toggle");
   const searchToggle=doc.getElementById("global-search-toggle");
@@ -169,9 +170,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     desktopToggle.setAttribute("aria-label",isMobile()?"Close navigation":
       effectiveCollapsed?"Expand sidebar":"Collapse sidebar");
     desktopToggle.title=effectiveCollapsed?"Expand sidebar":"Collapse sidebar";
-    if(!isMobile())sidebar.title=effectiveCollapsed?
-      "Click empty sidebar space to expand":"";
-    else sidebar.title="";
+    // Never inherit the expansion hint over real navigation links.
+    sidebar.title="";
+    if(railExpandTarget)railExpandTarget.hidden=isMobile()||!effectiveCollapsed;
   }
   function closeDrawer(animate=false){
     if(animate===true&&isMobile()&&shell.classList.contains("is-mobile-open"))
@@ -271,7 +272,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     hint.dataset.visible="true";
   };
   const blankSurface=target=>!target?.closest?.('a,button,input,[role="separator"]');
-  sidebar.title="Click empty sidebar space to expand when collapsed";
+  if(railExpandTarget)railExpandTarget.title="Click to expand sidebar";
   const onRailHover=event=>{
     if(isMobile()){hideHint();return;}
     if(shell.classList.contains("is-collapsed")&&blankSurface(event.target))
@@ -283,7 +284,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   sidebar.addEventListener?.("pointerover",onRailHover,{passive:true});
   sidebar.addEventListener?.("pointermove",onRailHover,{passive:true});
   sidebar.addEventListener?.("pointerleave",hideHint);
-  sidebar.addEventListener?.("click",event=>{
+  const expandFromBlank=event=>{
     if(isMobile()||!shell.classList.contains("is-collapsed")||!blankSurface(event.target))return;
     if(isCompactRail())railExpanded=true;
     else{
@@ -294,6 +295,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
     setSidebarWidth(expandedWidth,true);
     startSidebarMotion("layout");
     updateCollapse();
+  };
+  sidebar.addEventListener?.("click",expandFromBlank);
+  railExpandTarget?.addEventListener?.("keydown",event=>{
+    if(event.key!=="Enter"&&event.key!==" ")return;
+    event.preventDefault?.();
+    expandFromBlank({target:railExpandTarget});
   });
   // A drag can continue beyond the fixed expanded minimum, but crossing
   // half that minimum collapses immediately. No pointerup/release required.
