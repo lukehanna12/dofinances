@@ -16,6 +16,22 @@ test("Studio root is the only React entrypoint; the apex /login reuses its build
   assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
 });
 
+test("Studio root is intentionally blank, while /login retains the full original auth build", async () => {
+  const blank = await load("../studio/blank.html");
+  const workflow = await load("../.github/workflows/site.yml");
+  assert.match(blank, /studio-empty-v1/);
+  assert.match(blank, /<title>Studio · DoFinances<\/title>/);
+  assert.match(blank, /<body><\/body>/);
+  assert.doesNotMatch(blank, /Sign in|Auth3|<form|<button|<script/i);
+  const pages = workflow.split("  deploy:\n")[1].split("\n  deploy-host-router:")[0];
+  const hostRouter = workflow.split("  deploy-host-router:\n")[1].split("\n  smoke:")[0];
+  assert.match(pages, /cp studio\/blank\.html dist\/index\.html/);
+  assert.match(hostRouter, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
+  assert.doesNotMatch(hostRouter, /cp studio\/blank\.html/);
+  assert.match(workflow, /grep -Fq 'studio-empty-v1' "\$studio_body"/);
+  assert.match(workflow, /grep -Fq 'Sign in · Dofinances' "\$body"/);
+});
+
 test("original non-social Auth-3 layout utilities remain unchanged", async () => {
   const source = await load("../src/components/Auth3.jsx");
   const contract = JSON.parse(await load("./fixtures/auth3-source-class-contract.json"));

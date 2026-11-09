@@ -78,6 +78,15 @@ jobs:
         with:
           name: dofinances-dist
           path: dist
+      - name: Clear Studio root without modifying the built apex login
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only the Pages deployment copy is replaced. The build artifact
+          # downloaded independently by deploy-host-router stays unchanged.
+          cp studio/blank.html dist/index.html
+          grep -Fq 'studio-empty-v1' dist/index.html
+          ! grep -Eiq '<script|<form|auth3-studio-preview-v1' dist/index.html
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4
         with:
@@ -154,7 +163,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for url in https://stu.dofinances.com/ https://dofinances.com/login https://dofinances.com/login/; do
+          studio_body="$(mktemp)"
+          studio_code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$studio_body" https://stu.dofinances.com/)"
+          echo "Studio root -> HTTP $studio_code (expected blank Studio page)"
+          test "$studio_code" = 200
+          grep -Fq 'studio-empty-v1' "$studio_body"
+          ! grep -Eiq '<script|<form|auth3-studio-preview-v1|Sign in · Dofinances' "$studio_body"
+          rm "$studio_body"
+          for url in https://dofinances.com/login https://dofinances.com/login/; do
             body="$(mktemp)"
             code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
             echo "$url -> HTTP $code ($(wc -c < "$body") bytes)"
