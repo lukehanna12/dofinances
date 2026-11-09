@@ -3,6 +3,10 @@
  * before publishing. Tests the ACTUAL DOM backdrop, not a copied wallpaper.
  */
 (async()=>{
+  // Emit a marker BEFORE any asynchronous wait, so headless browser
+  // diagnostics can distinguish module startup from a runtime hang.
+  document.documentElement.setAttribute("data-glass-browser-smoke","started");
+  document.documentElement.setAttribute("data-glass-browser-info","entered module");
   const checks=[];
   const assert=(condition,message)=>{
     checks.push(message);
@@ -11,6 +15,7 @@
   const tick=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   try{
     await tick(950);
+    document.documentElement.setAttribute("data-glass-browser-info","passed initial timer");
     const shell=document.getElementById("workspace-shell");
     const sidebar=document.getElementById("workspace-sidebar");
     assert(!!shell&&!!sidebar,"genuine /app markup exists");
@@ -49,6 +54,7 @@
     const width=sidebar.getBoundingClientRect().width;
     assert(radius>=2&&radius<=4,"public-style radius within retained range");
     if(width>200)assert(Math.abs(radius-4)<1e-6,"expanded geometry gives regular radius4");
+    document.documentElement.setAttribute("data-glass-browser-info","passed filter structure");
     await tick(600);
     const hasNative=shell.classList.contains("has-oracle-backdrop");
     if(CSS.supports("backdrop-filter",'url("#oracle-glass-native-backdrop")')){
@@ -90,6 +96,7 @@
     assert(shell.classList.contains("glass-scene-neutral"),"page background scene switched");
     assert(scene.textContent.includes("Monochrome"),"scene control label updates");
     assert(!document.querySelector(".glass-lens-toggle"),"invented lensing switch removed");
+    document.documentElement.setAttribute("data-glass-browser-info","passed backdrop and geometry");
     const w=innerWidth;
     if(w>=1280){
       const toggle=document.getElementById("sidebar-toggle");
