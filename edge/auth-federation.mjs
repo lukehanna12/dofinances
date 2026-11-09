@@ -69,11 +69,34 @@ export async function oauthAuthorizeUrl(config,txn){
   if(config.provider==="github"){u.searchParams.set("prompt","select_account");}
   return u.toString();
 }
-async function jsonFromResponse(res){
-  if(!res.ok)throw Error("Identity provider rejected the request");
+// Only closed, non-sensitive failure categories reach first-party redirects.
+// Never return provider response bodies, codes, tokens, emails, or client secrets.
+export class FederationFailure extends Error {
+  constructor(code){super("OAuth operation failed");this.code=code;}
+}
+async function jsonFromResponse(res,stage="profile"){
+  if(!res.ok){
+    if(stage==="token"){
+      let errorType="";
+      try{
+        const text=await res.text();
+        if(text.length<=4096){
+          const data=JSON.parse(text);
+          if(typeof data.error==="string")errorType=data.error;
+        }
+      }catch{}
+      if(errorType==="invalid_client"||errorType==="unauthorized_client")
+        throw new FederationFailure("oauth_client_rejected");
+      if(errorType==="invalid_grant")
+        throw new FederationFailure("oauth_code_rejected");
+      throw new FederationFailure("oauth_token_rejected");
+    }
+    throw new FederationFailure(stage==="jwks"?"oauth_jwks_unavailable":"oauth_profile_unavailable");
+  }
   const body=await res.text();
-  if(body.length>200000)throw Error("Identity response too large");
-  return JSON.parse(body);
+  if(body.length>200000)throw new FederationFailure("oauth_response_invalid");
+  try{return JSON.parse(body);}
+  catch{throw new FederationFailure("oauth_response_invalid");}
 }
 async function verifyIdToken(jwt,config,txn) {
   if(typeof jwt!=="string"||jwt.length>20000)throw Error("Invalid identity token");
@@ -85,7 +108,7 @@ async function verifyIdToken(jwt,config,txn) {
      typeof payload.sub!=="string"||!payload.sub||payload.sub.length>256)
     throw Error("Unsupported identity token");
   const jwks=await jsonFromResponse(await fetch(config.jwks,{headers:{Accept:"application/json"},
-    redirect:"error",signal:AbortSignal.timeout(10000)}));
+    redirect:"error",signal:AbortSignal.timeout(10000)},"jwks"));
   const key=(jwks.keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA"&&
     (!k.use||k.use==="sig")&&(!k.alg||k.alg==="RS256"));
   if(!key)throw Error("Unknown identity signing key");
@@ -121,8 +144,11 @@ export async function exchangeFederatedIdentity(config,code,txn){
   } else if(config.method==="post")body.set("client_secret",config.secret);
   const res=await fetch(config.token,{method:"POST",headers,body,redirect:"error",
     signal:AbortSignal.timeout(10000)});
-  const result=await jsonFromResponse(res);
-  if(config.provider!=="github")return verifyIdToken(result.id_token,config,txn);
+  const result=await jsonFromResponse(res,"token");
+  if(config.provider!=="github"){
+    try{return await verifyIdToken(result.id_token,config,txn);}
+    catch{throw new FederationFailure("oauth_identity_invalid");}
+  }
   const token=result.access_token;
   if(typeof token!=="string"||token.length>4096||!token)throw Error("No provider access token");
   const apiHeaders={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,
