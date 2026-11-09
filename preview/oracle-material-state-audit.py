@@ -64,3 +64,15 @@ for row in joined["rows"]:
        "cpu_gpu_equal",row.get("exact_equality"),
        "float4_triplet",list(struct.unpack("<12f",b)),flush=True)
 print("UNIQUE_LIVE_SDF_STATES",len(seen),flush=True)
+
+print("=== LIVE JOIN ROW SCHEMA ===",flush=True)
+print("ROW_COUNT",len(joined.get("rows",[])),flush=True)
+for ix,row in enumerate(joined.get("rows",[])[:8]):
+ print("JOIN_ROW",ix,"KEYS",list(row),flush=True)
+ for k,v in row.items():
+  if isinstance(v,(str,int,float,bool,type(None))):
+   print(" VALUE",k,str(v)[:230],flush=True)
+  elif isinstance(v,list):
+   print(" ARRAY",k,len(v),"FIRST",str(v[0])[:260] if v else "-",flush=True)
+  elif isinstance(v,dict):
+   print(" MAPPING",k,list(v)[:18],"FIRST",str(next(iter(v.items()),None))[:260],flush=True)
