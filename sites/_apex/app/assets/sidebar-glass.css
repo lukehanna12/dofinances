@@ -33,10 +33,10 @@ body:has(> #workspace-shell.liquid-glass-preview)::before {
 }
 body:has(> #workspace-shell.liquid-glass-preview)::after {
   background:
-    radial-gradient(circle at 19% 39%,transparent 0 168px,rgba(255,255,255,.18) 170px 171px,transparent 173px 257px,rgba(255,255,255,.11) 259px 260px,transparent 262px),
-    radial-gradient(circle at 84% 68%,transparent 0 154px,rgba(255,255,255,.12) 156px 157px,transparent 159px 256px,rgba(255,255,255,.07) 258px 259px,transparent 261px),
-    repeating-linear-gradient(90deg,rgba(246,250,255,.058) 0 1px,transparent 1px 96px),
-    repeating-linear-gradient(0deg,rgba(246,250,255,.058) 0 1px,transparent 1px 96px);
+    radial-gradient(circle at 19% 39%,transparent 0 168px,rgba(255,255,255,.28) 170px 171px,transparent 173px 257px,rgba(255,255,255,.18) 259px 260px,transparent 262px),
+    radial-gradient(circle at 84% 68%,transparent 0 154px,rgba(255,255,255,.22) 156px 157px,transparent 159px 256px,rgba(255,255,255,.14) 258px 259px,transparent 261px),
+    repeating-linear-gradient(90deg,rgba(246,250,255,.14) 0 1px,transparent 1px 96px),
+    repeating-linear-gradient(0deg,rgba(246,250,255,.14) 0 1px,transparent 1px 96px);
 }
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::before {
   background:
