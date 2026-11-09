@@ -21,7 +21,7 @@ for name in ["glass_background_sdf_no_bleed_lph","glass_background_lph"]:
     print("BLOCK",block["label"],"count",len(instructions),flush=True)
     for ins in instructions:
      if ("base" in fname.lower() and not "sdf" in fname.lower()
-         and ins["source_line"]>225):
+         and (ins["source_line"]<225 or ins["source_line"]>650)):
       continue
      print(ins["source_line"],ins["ir"][:320],flush=True)
 
