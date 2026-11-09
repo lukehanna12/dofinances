@@ -31,7 +31,21 @@ test("workspace dark gray, clean image edges, full-width header shader and stati
   assert.doesNotMatch(css,/--workspace-seam/);
   assert.doesNotMatch(css,/border-(?:top|bottom):1px solid/);
   assert.match(css,/background-position:center,center bottom/);
-  assert.doesNotMatch(css,/(?:-webkit-)?mask-image/);
+  // Home photo's side mask is intentional; the toolbar shader itself is unmasked.
+  const toolbar=css.match(/> \.workspace-topbar-backdrop \{([^}]*)\}/)?.[1]||"";
+  assert.match(css,/> \.workspace-topbar-backdrop \{/);
+  assert.match(toolbar,/position:fixed/);
+  assert.match(toolbar,/inset:0 0 auto/);
+  assert.doesNotMatch(toolbar,/mask-image|transform/);
+  assert.match(css,/\.topbar::before \{content:none\}/);
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    const glass=html.indexOf('class="workspace-topbar-backdrop"');
+    const shell=html.indexOf('id="workspace-shell"');
+    assert.ok(glass>0&&glass<shell,"blur must be outside animated main and shell");
+    assert.match(html,/class="workspace-home-art workspace-home-art-top"/);
+    assert.match(html,/class="workspace-home-art workspace-home-art-bottom"/);
+  }
   assert.doesNotMatch(css,/--workspace-sidebar-fade-width/);
   assert.match(css,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
   assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
