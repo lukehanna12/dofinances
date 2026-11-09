@@ -158,7 +158,7 @@ try{
       async function physicalClick(selector){
         const expression="(()=>{const e=document.querySelector("+JSON.stringify(selector)+");"+
           "if(!e)return null;const r=e.getBoundingClientRect();"+
-          "const x=e.id==="sidebar-scrim"?Math.round((274+innerWidth)/2):Math.round(r.left+r.width/2);const y=Math.round(r.top+r.height/2);"+
+          "const x=e.id==='sidebar-scrim'?Math.round((274+innerWidth)/2):Math.round(r.left+r.width/2);const y=Math.round(r.top+r.height/2);"+
           "const h=document.elementFromPoint(x,y);"+
           "return {x,y,hit:h?.id||h?.className?.baseVal||h?.className||h?.tagName,"+
           "onTarget:h===e||e.contains(h),disabled:!!e.disabled};})()";
