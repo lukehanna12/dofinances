@@ -1,0 +1,89 @@
+name: Preview real app sidebar (test branch only)
+
+on:
+  push:
+    branches: [test/app-sidebar]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dofinances-app-sidebar-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build isolated app preview
+    if: github.ref == 'refs/heads/test/app-sidebar'
+    runs-on: ubuntu-latest
+    environment: cloudflare-production
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test real workspace navigation
+        run: node --test tests/dashboard-navigation.test.mjs
+      - name: Package actual app UI with safe preview entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .app-sidebar-preview/app/assets .app-sidebar-preview/assets
+          cp sites/_apex/app/index.html .app-sidebar-preview/app/index.html
+          cp sites/_apex/app/assets/dashboard.css .app-sidebar-preview/app/assets/dashboard.css
+          cp sites/_apex/app/assets/workspace-theme.css .app-sidebar-preview/app/assets/workspace-theme.css
+          cp sites/_apex/app/assets/workspace-nav.js .app-sidebar-preview/app/assets/workspace-nav.js
+          cp preview/app-sidebar-bootstrap.js .app-sidebar-preview/app/assets/preview-bootstrap.js
+          cp sites/_apex/assets/site-foundation.css .app-sidebar-preview/assets/site-foundation.css
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const file='.app-sidebar-preview/app/index.html';
+          const html=readFileSync(file,'utf8');
+          const old='src="/app/assets/dashboard.js"';
+          if(!html.includes(old))throw Error('Production auth script changed; refusing unsafe preview');
+          const updated=html.replace(old,'src="/app/assets/preview-bootstrap.js"')
+            .replace('<title>Workspace · DoFinances</title>','<title>Sidebar Preview · DoFinances</title>');
+          if(updated.includes(old))throw Error('Unreplaced authentication script');
+          writeFileSync(file,updated);
+          NODE
+          cat > .app-sidebar-preview/index.html <<'HTML'
+          <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta http-equiv="refresh" content="0;url=/app/"><title>Sidebar preview</title></head><body><a href="/app/">Open app sidebar preview</a></body></html>
+          HTML
+          cat > .app-sidebar-preview/_headers <<'HEADERS'
+          /*
+            X-Robots-Tag: noindex, nofollow
+            Cache-Control: no-store
+          HEADERS
+          test ! -e .app-sidebar-preview/app/assets/dashboard.js
+          grep -Fq 'preview-bootstrap.js' .app-sidebar-preview/app/index.html
+          grep -Fq 'workspace-theme.css' .app-sidebar-preview/app/index.html
+          ! grep -Fq 'dashboard.js' .app-sidebar-preview/app/index.html
+          ! grep -R -Eq 'fetch\(|api/auth|location.replace' .app-sidebar-preview/app/assets/*.js
+      - name: Deploy to non-production Pages preview branch
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: '7d0d4c74836717a4d23784bbf8d5ccd7'
+          command: pages deploy .app-sidebar-preview --project-name=dofinances-studio --branch=app-sidebar-preview
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Smoke test isolated preview URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          url=https://app-sidebar-preview.dofinances-studio.pages.dev/app/
+          for attempt in 1 2 3 4 5 6; do
+            body="$(mktemp)"
+            code="$(curl -sSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
+            if test "$code" = 200 && grep -Fq 'preview-bootstrap.js' "$body"; then
+              echo "Isolated app preview verified at $url"
+              rm "$body"
+              exit 0
+            fi
+            rm "$body"
+            sleep 4
+          done
+          echo 'Preview failed verification; production was not deployed.' >&2
+          exit 1
