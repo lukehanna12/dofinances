@@ -205,6 +205,15 @@ try{
       await sleep(180);
     }
     if(width===1440){
+      // Give geometry-only anticipation an idle opportunity to complete
+      // before assessing an EXPANSION. It does not snapshot any page pixels.
+      const warming=await until(async()=>{
+        const p=await evaluate('(()=>{const s=document.getElementById("workspace-shell");return {'+
+          'count:Number(s.dataset.oracleWarmFieldCount||0),'+
+          'hits:Number(s.dataset.oracleAnticipatedFieldHits||0)};})()');
+        return p.count>=20?p:null;
+      },20000);
+      console.log("EXACT_GEOMETRY_ONLY_IDLE_PREFETCH",JSON.stringify(warming));
       await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
       // Record actual width versus installed SVG field width at every frame,
       // including the interval between layout transition and worker response.
@@ -241,6 +250,10 @@ try{
       assert(visibleFrames.length>10,"Measure active selection across normal-motion transition");
       const worstSelectionMismatch=Math.max(...visibleFrames.map(s=>Math.abs(s.rowWidth-s.selectionWidth)));
       console.log("SIDEBAR_SELECTION_WIDTH_FRAME_DELTA",worstSelectionMismatch);
+      const anticipation=await evaluate('Number(document.getElementById("workspace-shell").dataset.oracleAnticipatedFieldHits||0)');
+      console.log("EXACT_GEOMETRY_ANIMATION_CACHE_HITS",anticipation);
+      assert(anticipation>=1,
+        "At least one intermediate animation width must use its byte-exact idle-prepared field");
       assert(worstSelectionMismatch<=1,
         "Active button highlight must morph WITH its own nav row, not after width settles");
       assert(await evaluate('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'),

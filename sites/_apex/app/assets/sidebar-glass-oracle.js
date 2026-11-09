@@ -547,6 +547,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
   let anticipateSignature="",anticipateCount=0;
+  const anticipatedKeys=new Set();
 
   function expectedExpandWidths(){
     // Sample the CSS width timing-function cubic-bezier(.2,.8,.2,1)
@@ -623,6 +624,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
             stopAnticipation();return;
           }
           cacheField(response,response.urls);
+          anticipatedKeys.add(response.key);
           anticipateCount++;
           shell.dataset.oracleWarmFieldCount=String(anticipateCount);
           // If the pane has reached this exact width meanwhile, install
@@ -787,6 +789,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       setMaps(desired,cached);
       shell.dataset.oracleFieldCacheHits=
         String(Number(shell.dataset.oracleFieldCacheHits||0)+1);
+      if(anticipatedKeys.has(key))
+        shell.dataset.oracleAnticipatedFieldHits=
+          String(Number(shell.dataset.oracleAnticipatedFieldHits||0)+1);
       armEndpointWarmup();
       armAnticipation();
       return;
