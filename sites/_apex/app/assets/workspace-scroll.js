@@ -11,7 +11,7 @@ export function initWorkspaceScroll(doc=document,win=window) {
   const atEnd=()=>distanceFromEnd()<=ENTER_END_GAP;
   const syncNow=()=>{
     // A tiny reverse scroll or rubber-band motion must not remove the photo.
-    const visible=doc.body.classList.contains("workspace-at-end");
+    const visible=doc.body.classList.contains?.("workspace-at-end")??false;
     doc.body.classList.toggle("workspace-at-end",
       distanceFromEnd()<=(visible?LEAVE_END_GAP:ENTER_END_GAP));
   };
