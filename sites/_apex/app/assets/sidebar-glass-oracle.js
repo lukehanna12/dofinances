@@ -153,7 +153,12 @@ export function oracleFaceColorMatrixValues(material=ORACLE_FINITE_REFRACTION){
 export function airSupercircleSDF(absX,absY,halfWidth,halfHeight,radius,blendX=0,blendY=0){
   if(![absX,absY,halfWidth,halfHeight,radius,blendX,blendY].every(Number.isFinite))
     throw new TypeError("Finite SDF operands required");
-  if(radius<=0)return {distance:Math.max(absX-halfWidth,absY-halfHeight),nx:0,ny:0};
+  // AIR supercircle_sdf source line 1062 takes fast_fabs(radius).
+  // Negative radii are legitimate mode5 corner lanes, NOT a switch to a
+  // normal-less rectangle. Keep their sign only for mode5's preceding
+  // per-corner blend-factor selection.
+  if(radius===0)return {distance:Math.max(absX-halfWidth,absY-halfHeight),
+    nx:absX>=halfWidth?1:0,ny:absY>=halfHeight?1:0};
   const ar=f32(Math.abs(radius));
   const k=f32(ar*1.5286649465560913);
   const qx=f32(absX-halfWidth), qy=f32(absY-halfHeight);

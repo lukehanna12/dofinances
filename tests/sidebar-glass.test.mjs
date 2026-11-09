@@ -123,6 +123,14 @@ test("source-derived supercircle SDF has finite signed geometry",()=>{
   assert.ok(beyond.distance>edge.distance,JSON.stringify({edge,beyond}));
   const top=paneField(250,0,260,900,24);
   assert.ok(Number.isFinite(top.distance));
+  const positive=airSupercircleSDF(35.5,.5,36,49,.01);
+  const negative=airSupercircleSDF(35.5,.5,36,49,-.01);
+  // Source line 1062 fabs(radius): sign must not short-circuit the normal.
+  assert.deepEqual(negative,positive);
+  const flatRight=paneField(71.5,49.5,72,98,24);
+  assert.ok(Number.isFinite(flatRight.nx));
+  assert.ok(flatRight.nx>.5,JSON.stringify(flatRight));
+  assert.ok(Math.abs(flatRight.ny)<.5,JSON.stringify(flatRight));
 });
 
 test("displacement maps are geometry-only, not screen or background captures",()=>{
