@@ -174,8 +174,8 @@ jobs:
           set -euo pipefail
           passed=false
           for attempt in 1 2 3 4 5; do
-            if curl -fsSL --max-time 20 https://dofinances.com/ | grep -Fq 'DoFinances' &&
-               curl -fsSL --max-time 20 https://www.dofinances.com/ | grep -Fq 'DoFinances' &&
+            if curl --retry 4 --retry-all-errors --retry-delay 2 -fsSL --max-time 20 https://dofinances.com/ | grep -F 'DoFinances' >/dev/null &&
+               curl --retry 4 --retry-all-errors --retry-delay 2 -fsSL --max-time 20 https://www.dofinances.com/ | grep -F 'DoFinances' >/dev/null &&
                curl -fsSL --max-time 20 https://stu.dofinances.com/ >/dev/null &&
                test "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://ci-probe.dofinances.com/)" = 404; then
               passed=true
@@ -303,7 +303,7 @@ jobs:
           for sha, ext in assets:
               url = f"https://dofinances.com/wallpapers/{sha}.{ext}"
               with tempfile.NamedTemporaryFile() as tmp, tempfile.NamedTemporaryFile() as hdr:
-                  command = ["curl", "--retry", "3", "--retry-delay", "2", "-fsSL", "--max-time", "35", "-D", hdr.name, "-o", tmp.name, url]
+                  command = ["curl", "--retry", "5", "--retry-all-errors", "--retry-delay", "2", "-fsSL", "--max-time", "35", "-D", hdr.name, "-o", tmp.name, url]
                   subprocess.run(command, check=True)
                   content = open(tmp.name, "rb").read()
                   headers = open(hdr.name, encoding="latin-1").read().lower()
@@ -341,8 +341,8 @@ jobs:
           check GET /verify 200
           check GET /reset 200
           configuration="$(curl -fsS --max-time 20 "$base/api/auth/config")"
-          echo "$configuration" | grep -Fq '"mfaAvailable":true'
-          echo "$configuration" | grep -Fq '"emailAvailable":'
+          [[ "$configuration" == *'"mfaAvailable":true'* ]]
+          [[ "$configuration" == *'"emailAvailable":'* ]]
           code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' \
             -X POST -H 'Content-Type: application/json' -H 'Origin: https://evil.example' \
             -d '{}' "$base/api/auth/password/forgot")"
