@@ -93,21 +93,23 @@
         </nav>
       </div>
       <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
-      <div id="sidebar-resize-handle" class="sidebar-resize-handle" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin="200" aria-valuemax="440" aria-valuenow="260" tabindex="0" title="Drag to resize sidebar"></div>
+      <div id="sidebar-resize-handle" class="sidebar-resize-handle" role="separator" aria-label="Resize sidebar" aria-orientation="vertical" aria-valuemin="200" aria-valuemax="440" aria-valuenow="260" tabindex="0" title="Drag to resize sidebar; drag left to collapse"></div>
     </aside>
     <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Close navigation" hidden></button>
     <div class="main">
       <header class="topbar">
         <div class="topbar-start">
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>
-          <nav class="rb-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
-            <a class="rb-crumb" data-breadcrumb-root href="#home">Workspace</a>
-            <span class="rb-crumb-separator" aria-hidden="true">›</span>
-            <a class="rb-crumb" id="back-to-workspace" href="#projects" hidden>Projects</a>
-            <span class="rb-crumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden>›</span>
-            <a class="rb-crumb" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a>
-            <span class="rb-crumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden>›</span>
-            <span class="rb-crumb-current" id="breadcrumb-current" aria-current="page">Home</span>
+          <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
+            <ol class="shadcn-breadcrumb-list">
+              <li class="shadcn-breadcrumb-item"><a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#home">Workspace</a></li>
+              <li class="shadcn-breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
+              <li class="shadcn-breadcrumb-item" id="breadcrumb-project-item" hidden><a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects" hidden>Projects</a></li>
+              <li class="shadcn-breadcrumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
+              <li class="shadcn-breadcrumb-item" id="breadcrumb-colosseum-item" hidden><a class="shadcn-breadcrumb-link" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a></li>
+              <li class="shadcn-breadcrumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
+              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Home</span></li>
+            </ol>
           </nav>
           <span id="location-subtitle" hidden></span>
         </div>

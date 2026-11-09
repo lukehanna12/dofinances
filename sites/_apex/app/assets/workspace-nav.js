@@ -64,6 +64,8 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const back=doc.getElementById("back-to-workspace");
   const currentCrumb=doc.getElementById("breadcrumb-current");
   const projectArrow=doc.getElementById("breadcrumb-project-separator");
+  const projectCrumbItem=doc.getElementById("breadcrumb-project-item");
+  const colosseumCrumbItem=doc.getElementById("breadcrumb-colosseum-item");
   const colosseumCrumb=doc.getElementById("breadcrumb-colosseum");
   const colosseumArrow=doc.getElementById("breadcrumb-colosseum-separator");
   const resizeHandle=doc.getElementById("sidebar-resize-handle");
@@ -120,7 +122,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
   }
   let collapsed=false;
   let railExpanded=false;
-  let expandedWidth=260;
+  let expandedWidth=260; // Persisted preference, even when the viewport contracts.
+  let displayedWidth=260;
+  const COLLAPSE_DRAG_EXTRA=34;
   try{
     collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";
     const saved=Number(win.localStorage.getItem(WIDTH_KEY));
@@ -139,17 +143,20 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
     return widest;
   };
-  const minSidebarWidth=Math.max(204,Math.ceil(titleWidths()+18+11+22+24+18));
-  const maxSidebarWidth=()=>Math.max(minSidebarWidth,Math.min(RESIZE_CAP,Math.floor((win.innerWidth||1280)*.75)));
+  const minSidebarWidth=Math.max(248,Math.ceil(titleWidths()+18+11+22+24+18));
+  // Reserve at least 25% of the full viewport for content, including the gutter.
+  const maxSidebarWidth=()=>Math.max(minSidebarWidth,
+    Math.min(RESIZE_CAP,Math.floor((win.innerWidth||1280)*.75)-16));
   const clampWidth=n=>Math.round(Math.max(minSidebarWidth,Math.min(maxSidebarWidth(),n)));
-  function setSidebarWidth(n){
-    expandedWidth=clampWidth(n);
-    shell.style?.setProperty?.("--sidebar-expanded-width",expandedWidth+"px");
+  function setSidebarWidth(n,preservePreference=false){
+    if(!preservePreference)expandedWidth=n;
+    displayedWidth=clampWidth(n);
+    shell.style?.setProperty?.("--sidebar-expanded-width",displayedWidth+"px");
     resizeHandle?.setAttribute?.("aria-valuemin",String(minSidebarWidth));
     resizeHandle?.setAttribute?.("aria-valuemax",String(maxSidebarWidth()));
-    resizeHandle?.setAttribute?.("aria-valuenow",String(expandedWidth));
+    resizeHandle?.setAttribute?.("aria-valuenow",String(displayedWidth));
   }
-  setSidebarWidth(expandedWidth);
+  setSidebarWidth(expandedWidth,true);
   function updateCollapse(){
     const forcedRail=isCompactRail();
     const effectiveCollapsed=forcedRail?!railExpanded:collapsed;
@@ -194,6 +201,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mainNav.hidden=meta.project;
     projectNav.hidden=!meta.project;
     back.hidden=!meta.project;
+    if(projectCrumbItem)projectCrumbItem.hidden=!meta.project;
+    if(colosseumCrumbItem)colosseumCrumbItem.hidden=!meta.project;
+    if(colosseumCrumb)colosseumCrumb.hidden=!meta.project;
     if(currentCrumb){
       currentCrumb.textContent=meta.label;
       if(projectArrow)projectArrow.hidden=!meta.project;
@@ -237,51 +247,94 @@ export function initWorkspaceNavigation(doc=document,win=window){
     try{win.localStorage.setItem(PREFERENCE_KEY,String(collapsed));}catch{}
     updateCollapse();
   });
-  // In collapsed desktop mode the unused glass surface is an expansion
-  // target. Native links, buttons and the resize grip keep their own actions.
+  // Distinct hover guidance for empty-rail expansion and edge dragging.
+  // The tooltip is body-mounted and cannot light up the optical glass edge.
+  const hint=typeof doc.createElement==="function"&&doc.body?.append
+    ?doc.createElement("div"):null;
+  if(hint){
+    hint.className="sidebar-interaction-tooltip";
+    hint.setAttribute("role","tooltip");
+    hint.setAttribute("aria-hidden","true");
+    doc.body.append(hint);
+  }
+  const hideHint=()=>{if(hint)hint.dataset.visible="false";};
+  const showHint=(event,message)=>{
+    if(!hint||isMobile())return;
+    if(hint.textContent!==message)hint.textContent=message;
+    const x=Number.isFinite(event.clientX)?event.clientX:0;
+    const y=Number.isFinite(event.clientY)?event.clientY:0;
+    hint.style.left=Math.max(8,Math.min((win.innerWidth||1280)-260,x+14))+"px";
+    hint.style.top=Math.max(8,Math.min((win.innerHeight||800)-40,y+16))+"px";
+    hint.dataset.visible="true";
+  };
+  const blankSurface=target=>!target?.closest?.('a,button,input,[role="separator"]');
+  sidebar.title="Click empty sidebar space to expand when collapsed";
+  sidebar.addEventListener?.("pointermove",event=>{
+    if(isMobile()){hideHint();return;}
+    if(event.target?.closest?.('[role="separator"]'))
+      showHint(event,"Drag to resize • pull left to collapse");
+    else if(shell.classList.contains("is-collapsed")&&blankSurface(event.target))
+      showHint(event,"Click to expand sidebar");
+    else hideHint();
+  },{passive:true});
+  sidebar.addEventListener?.("pointerleave",hideHint);
   sidebar.addEventListener?.("click",event=>{
-    if(isMobile()||!shell.classList.contains("is-collapsed"))return;
-    if(event.target?.closest?.('a,button,input,[role="separator"]'))return;
+    if(isMobile()||!shell.classList.contains("is-collapsed")||!blankSurface(event.target))return;
     if(isCompactRail())railExpanded=true;
-    else {
+    else{
       collapsed=false;
       try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
     }
+    hideHint();
     startSidebarMotion("layout");
     updateCollapse();
   });
-
-  // A single frame owns each drag width change; the oracle's ResizeObserver
-  // then sees the real CSS width. Dragging never animates the width itself.
+  // Continue dragging past the content-sized minimum; on release past the
+  // 34px threshold, snap to the 74px rail. Pointer capture remains stable.
   if(resizeHandle){
-    let drag=null,queued=false,pendingWidth=expandedWidth;
+    let drag=null,queued=false,pendingWidth=displayedWidth,rawWidth=displayedWidth;
     const paint=()=>{
       queued=false;
       if(drag)setSidebarWidth(pendingWidth);
     };
     const onMove=event=>{
       if(!drag)return;
-      pendingWidth=clampWidth(drag.width+event.clientX-drag.x);
+      rawWidth=drag.width+event.clientX-drag.x;
+      pendingWidth=clampWidth(rawWidth);
+      showHint(event,rawWidth<minSidebarWidth-COLLAPSE_DRAG_EXTRA
+        ?"Release to collapse sidebar":"Drag to resize • pull left to collapse");
       if(queued)return;
       queued=true;
       if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(paint);
       else paint();
     };
-    const onEnd=()=>{
+    const onEnd=event=>{
       if(!drag)return;
-      setSidebarWidth(pendingWidth);
+      if(event?.type==="pointercancel"){
+        setSidebarWidth(drag.width);
+      }else if(rawWidth<minSidebarWidth-COLLAPSE_DRAG_EXTRA){
+        if(isCompactRail())railExpanded=false;
+        else collapsed=true;
+        try{win.localStorage.setItem(PREFERENCE_KEY,"true");}catch{}
+        startSidebarMotion("layout");
+        updateCollapse();
+      }else{
+        setSidebarWidth(pendingWidth);
+        try{win.localStorage.setItem(WIDTH_KEY,String(displayedWidth));}catch{}
+      }
       drag=null;
       shell.classList.remove("is-sidebar-resizing");
-      try{win.localStorage.setItem(WIDTH_KEY,String(expandedWidth));}catch{}
+      hideHint();
     };
     resizeHandle.addEventListener("pointerdown",event=>{
       if(isMobile()||shell.classList.contains("is-collapsed"))return;
       event.preventDefault?.();
       stopSidebarMotion();
-      drag={x:event.clientX,width:expandedWidth};
-      pendingWidth=expandedWidth;
+      drag={x:event.clientX,width:displayedWidth};
+      rawWidth=pendingWidth=displayedWidth;
       shell.classList.add("is-sidebar-resizing");
       resizeHandle.setPointerCapture?.(event.pointerId);
+      showHint(event,"Drag to resize • pull left to collapse");
     });
     resizeHandle.addEventListener("pointermove",onMove);
     resizeHandle.addEventListener("pointerup",onEnd);
@@ -291,11 +344,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(isMobile()||shell.classList.contains("is-collapsed"))return;
       if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
       event.preventDefault?.();
-      const next=event.key==="Home"?minSidebarWidth:
-        event.key==="End"?maxSidebarWidth():
-        expandedWidth+(event.key==="ArrowRight"?10:-10);
+      if(event.key==="ArrowLeft"&&displayedWidth<=minSidebarWidth){
+        if(isCompactRail())railExpanded=false;else collapsed=true;
+        try{win.localStorage.setItem(PREFERENCE_KEY,"true");}catch{}
+        startSidebarMotion("layout");
+        updateCollapse();return;
+      }
+      const next=event.key==="Home"?minSidebarWidth:event.key==="End"?
+        maxSidebarWidth():displayedWidth+(event.key==="ArrowRight"?10:-10);
       setSidebarWidth(next);
-      try{win.localStorage.setItem(WIDTH_KEY,String(expandedWidth));}catch{}
+      try{win.localStorage.setItem(WIDTH_KEY,String(displayedWidth));}catch{}
     });
   }
 
@@ -376,7 +434,8 @@ export function initWorkspaceNavigation(doc=document,win=window){
   win.addEventListener("resize",()=>{
     const nowMobile=isMobile();
     const nowCompactRail=isCompactRail();
-    if(!nowMobile)setSidebarWidth(expandedWidth);
+    if(!nowMobile)setSidebarWidth(expandedWidth,true);
+    if(nowMobile)hideHint();
     if(nowMobile!==wasMobile){
       stopSidebarMotion();
       stopRailEntry();

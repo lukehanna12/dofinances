@@ -4,7 +4,9 @@
 :root{
   --global-menu-height:44px;
   --workspace-header-height:50px;
-  --workspace-sidebar-gap:18px;
+  --workspace-sidebar-gap:16px;
+  --workspace-sidebar-left-gap:16px;
+  --workspace-sidebar-bottom-gap:16px;
   --sidebar-expanded-width:260px;
 }
 .global-menu{
@@ -76,12 +78,20 @@ body:has(> #workspace-shell) .content{
   padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));
 }
 #location-subtitle{display:none!important;}
-.rb-breadcrumbs{display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;white-space:nowrap;font-size:12.5px;}
-.rb-crumb,.rb-crumb-current{display:inline-flex;align-items:center;min-width:0;max-width:100%;padding:6px 10px;border-radius:999px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
-.rb-crumb{color:var(--ui-secondary);transition:background-color 145ms ease,color 145ms ease;}
-.rb-crumb:hover,.rb-crumb:focus-visible{background:rgba(255,255,255,.11);color:var(--ui-text);}
-.rb-crumb-current{color:var(--ui-text);font-weight:610;background:rgba(255,255,255,.10);}
-.rb-crumb-separator{flex:none;font-size:18px;font-weight:350;color:var(--ui-muted);line-height:1;margin:0 1px;}
+/* shadcn/ui Base Breadcrumb hierarchy, locally styled in the workspace font. */
+.shadcn-breadcrumbs{min-width:0;overflow:hidden;font:inherit;font-size:12.5px;}
+.shadcn-breadcrumb-list{list-style:none;display:flex;align-items:center;flex-wrap:nowrap;gap:7px;margin:0;padding:0;min-width:0;white-space:nowrap;}
+.shadcn-breadcrumb-item{display:inline-flex;align-items:center;min-width:0;max-width:100%;flex:none;}
+.shadcn-breadcrumb-link,.shadcn-breadcrumb-page{
+  display:inline-block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;
+  text-overflow:ellipsis;line-height:1.35;font-size:inherit;text-decoration:none;
+  background:transparent;border:0;border-radius:0;padding:0;
+}
+.shadcn-breadcrumb-link{color:var(--ui-secondary);transition:color 140ms ease;}
+.shadcn-breadcrumb-link:hover{color:var(--ui-text);text-decoration:none;}
+.shadcn-breadcrumb-page{color:var(--ui-text);font-weight:570;}
+.shadcn-breadcrumb-separator{display:inline-flex;align-items:center;justify-content:center;flex:none;width:12px;height:12px;color:var(--ui-muted);}
+.shadcn-breadcrumb-separator svg{width:12px;height:12px;display:block;}
 .settings-panel .manage-account{
   display:flex;flex-direction:column;align-items:flex-start;gap:12px;
   margin-top:26px;padding-top:22px;
@@ -94,22 +104,40 @@ body:has(> #workspace-shell) .content{
 @media(min-width:761px){
   .shell.liquid-glass-preview .sidebar{
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));
-    margin:calc(var(--workspace-header-height) + var(--workspace-sidebar-gap)) 0 8px 8px;
-    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - 8px);
+    margin:calc(var(--workspace-header-height) + var(--workspace-sidebar-gap)) 0 var(--workspace-sidebar-bottom-gap) var(--workspace-sidebar-left-gap);
+    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - var(--workspace-sidebar-bottom-gap));
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-rail-expanded .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-collapsed .sidebar{cursor:e-resize;}
+  .shell.is-collapsed .sidebar :is(.sidebar-head,.sidebar-navigation,.sidebar-bottom,.nav-stack,.nav-section-label){cursor:e-resize;}
   .shell.is-collapsed .sidebar a,.shell.is-collapsed .sidebar button{cursor:pointer;}
   .shell.is-collapsed .sidebar-resize-handle{display:none;}
   .shell.is-sidebar-resizing .sidebar{transition:none!important;user-select:none;}
   .shell.is-sidebar-resizing,.shell.is-sidebar-resizing *{cursor:ew-resize!important;}
   .sidebar-resize-handle{
     display:block;position:absolute;right:0;top:16px;bottom:16px;
-    width:9px;z-index:5;cursor:ew-resize;touch-action:none;
-    border-radius:0 18px 18px 0;
+    width:22px;z-index:5;cursor:ew-resize;touch-action:none;
+    border-radius:0;background:transparent!important;box-shadow:none!important;
   }
-  .sidebar-resize-handle:hover,.sidebar-resize-handle:focus-visible{background:rgba(255,255,255,.11);outline-offset:-2px;}
+  .sidebar-resize-handle:hover{background:transparent!important;box-shadow:none!important;}
+  .sidebar-resize-handle:focus-visible{outline:2px solid var(--ui-secondary);outline-offset:-4px;}
+  .shell.is-sidebar-resizing .sidebar-resize-handle{background:transparent!important;box-shadow:none!important;}
+  /* Undo the tablet rail's transform when click-expanding. Otherwise the D
+     logo winds up beneath the returned collapse button. */
+  .shell.is-compact-rail.is-rail-expanded .sidebar-head{height:71px;min-height:0;}
+  .shell.is-compact-rail.is-rail-expanded .brand{transform:none;}
+  .shell.is-compact-rail.is-rail-expanded .sidebar-toggle{top:1px;right:0;}
+  .shell.is-compact-rail.is-rail-expanded .brand-wordmark{max-width:calc(var(--sidebar-expanded-width) - 105px);overflow:hidden;text-overflow:ellipsis;}
+  .shell.is-compact-rail.is-rail-expanded .sidebar{cursor:default;}
+  .shell.is-compact-rail.is-rail-expanded .sidebar-resize-handle{display:block;}
+  /* Pointer cue floats above the page instead of brightening the glass. */
+  .sidebar-interaction-tooltip{position:fixed;z-index:100;pointer-events:none;opacity:0;
+    padding:6px 10px;border-radius:7px;background:rgba(36,36,39,.97);
+    border:1px solid rgba(255,255,255,.18);color:#f6f6f7;
+    font:500 12px/1.25 var(--ui-font-sans,system-ui);white-space:nowrap;
+    box-shadow:0 6px 18px rgba(0,0,0,.22);}
+  .sidebar-interaction-tooltip[data-visible="true"]{opacity:1;}
   .shell.is-rail-expanded .nav-link{
     justify-content:flex-start;padding:9px 11px;gap:11px;
   }
@@ -155,8 +183,8 @@ body:has(> #workspace-shell) .content{
     animation:nav-label-marquee 4.6s ease-in-out .45s infinite alternate;
   }
   .global-menu-account{display:none;}
-  .rb-breadcrumbs{font-size:11.5px;gap:1px;}
-  .rb-crumb,.rb-crumb-current{padding:6px 6px;}
+  .shadcn-breadcrumbs{font-size:11.5px;}
+  .shadcn-breadcrumb-list{gap:4px;}
 }
 @keyframes nav-label-marquee{
   0%,12%{transform:translateX(0)}
@@ -171,6 +199,6 @@ body:has(> #workspace-shell) .content{
 }
 @media(prefers-reduced-motion:reduce){
   .content > .view:not([hidden]){animation:none;}
-  .rb-crumb,.global-menu a,.global-menu-icon{transition:none;}
+  .shadcn-breadcrumb-link,.global-menu a,.global-menu-icon{transition:none;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }

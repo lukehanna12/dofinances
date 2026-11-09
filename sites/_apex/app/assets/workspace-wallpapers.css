@@ -61,6 +61,7 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
   opacity:0;
 }
 body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
+body:has(> #workspace-shell)::after {transition:opacity 180ms ease-out;}
 
 /* Home uses the user's higher-resolution 1280 x 854 photograph, served
  * as a Git-managed Cloudflare Pages asset instead of the previous 976px image.
@@ -97,6 +98,7 @@ body[data-wallpaper-route="home"] > .workspace-home-art-bottom {
   opacity:0;
 }
 body[data-wallpaper-route="home"].workspace-at-end > .workspace-home-art-bottom {opacity:1}
+body[data-wallpaper-route="home"] > .workspace-home-art-bottom {transition:opacity 180ms ease-out;}
 @media (max-width:1100px) {
   body[data-wallpaper-route="home"]::before,
   body[data-wallpaper-route="home"]::after {filter:none}
@@ -191,6 +193,7 @@ body:has(> #workspace-shell) .workspace-footer {
   opacity:0;
 }
 body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
+body:has(> #workspace-shell) .workspace-footer {transition:opacity 180ms ease-out;}
 @media (max-width:760px) {
   :root {--workspace-header-height:63px;--workspace-content-leading:24px}
   body:has(> #workspace-shell) .workspace-footer {padding-inline:19px}

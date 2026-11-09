@@ -6,8 +6,15 @@ export function initWorkspaceScroll(doc=document,win=window) {
   const scroll=doc.getElementById("workspace-scroll");
   if(!scroll||!doc.body?.classList)return {sync(){},reset(){}};
   const maxScroll=()=>Math.max(0,scroll.scrollHeight-scroll.clientHeight);
-  const atEnd=()=>maxScroll()-scroll.scrollTop<=1.5;
-  const syncNow=()=>doc.body.classList.toggle("workspace-at-end",atEnd());
+  const ENTER_END_GAP=1.5,LEAVE_END_GAP=40;
+  const distanceFromEnd=()=>Math.max(0,maxScroll()-scroll.scrollTop);
+  const atEnd=()=>distanceFromEnd()<=ENTER_END_GAP;
+  const syncNow=()=>{
+    // A tiny reverse scroll or rubber-band motion must not remove the photo.
+    const visible=doc.body.classList.contains("workspace-at-end");
+    doc.body.classList.toggle("workspace-at-end",
+      distanceFromEnd()<=(visible?LEAVE_END_GAP:ENTER_END_GAP));
+  };
   let queued=false;
   const sync=()=>{
     // Reading scrollHeight immediately after toggling multiple hidden views
