@@ -1,14 +1,26 @@
 #!/usr/bin/env python3
-import gzip,json,pathlib
-root=pathlib.Path('preview/oracle-evidence')
-for f in sorted(root.glob('*.gz')):
- d=json.loads(gzip.decompress(f.read_bytes()))
- print("\n###",f.name,"top keys",list(d),"counts",d.get('counts'))
- for k,v in d.items():
-  if isinstance(v,list):
-   print(" LIST",k,len(v),"FIRST",json.dumps(v[0],ensure_ascii=True)[:1300] if v else "-")
-  elif isinstance(v,dict):
-   print(" DICT",k,list(v)[:35],"FIRST",json.dumps(next(iter(v.values()),None),ensure_ascii=True)[:1200])
-  else: print(" SCALAR",k,repr(v)[:140])
- if f.name in ('glass_background_sdf_no_bleed_lph.ssa.json.gz','glass_background_lph.ssa.json.gz'):
-  print(" STRUCTURE SAMPLE",json.dumps(d,ensure_ascii=True)[:12500])
+import gzip,json,pathlib,collections
+root=pathlib.Path("preview/oracle-evidence")
+for name in ["glass_background_sdf_no_bleed_lph","glass_background_lph"]:
+ file=root/(name+".ssa.json.gz")
+ d=json.loads(gzip.decompress(file.read_bytes()))
+ print("\n##",name, d["counts"],flush=True)
+ for fn in d["functions"]:
+  blocks=fn["blocks"]
+  ins=[x for b in blocks for x in b["instructions"]]
+  print("FUNCTION",fn["name"][:140],"blocks",len(blocks),"instr",len(ins),
+        "ops",dict(collections.Counter(i["opcode"] for i in ins)),flush=True)
+ for fn in d["functions"]:
+  fname=fn["name"]
+  blocks=fn["blocks"]
+  if (("sdf" in fname.lower() and fname!=d["entrypoint"]) or
+      ("base" in fname.lower() and fname!=d["entrypoint"])):
+   print("\n-- FUNCTION",fname[:120],flush=True)
+   for block in blocks:
+    instructions=block["instructions"]
+    print("BLOCK",block["label"],"count",len(instructions),flush=True)
+    for ins in instructions:
+     if ("base" in fname.lower() and not "sdf" in fname.lower()
+         and ins["source_line"]>225):
+      continue
+     print(ins["source_line"],ins["ir"][:320],flush=True)
