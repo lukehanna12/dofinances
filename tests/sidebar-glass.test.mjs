@@ -367,25 +367,13 @@ test("worker PNG encoding uses identical source pixels and main-thread fallback"
   assert.match(browser,/if\(word!==lastMaterialWord\)/);
 });
 
-test("oracle fields can be losslessly decomposed into edge strips with constant middle rows",()=>{
-  // This is a proof obligation for any prospective tiling optimization.
-  // Never assume an ordinary rounded rectangle SDF: compare the ACTUAL
-  // four-corner mode5 generated field, byte for byte, across the full pane.
-  const material=ORACLE_FINITE_REFRACTION;
-  const reach=Math.ceil(Math.max(Math.abs(material.blurDist[0]),
-    1/material.innerInvHeight,1/material.outerInvHeight))+2;
-  for(const [w,h,r] of [[260,900,24],[74,900,24],[274,844,26],[170,760,24]]){
-    const fields=generateOracleField(w,h,r);
-    const mid=Math.floor(h/2);
-    for(const [name,buffer] of Object.entries({
-      inner:fields.inner,outer:fields.outer,blurMask:fields.blurMask
-    })){
-      for(let y=reach;y<h-reach;y++)for(let x=0;x<w;x++){
-        if(x>=reach && x<w-reach)continue;
-        const at=(y*w+x)*4,reference=(mid*w+x)*4;
-        for(let c=0;c<4;c++)assert.equal(buffer[at+c],buffer[reference+c],
-          `Lossless tile invariant ${name} ${w}x${h} x=${x} y=${y} channel=${c}`);
-      }
-    }
-  }
+
+test("oracle mode5 fields reject assumed lossless axis-invariant nine-slice tiling",()=>{
+  // The four-corner AIR-based SDF is not a simple rounded rectangle.
+  // A 1px tall edge strip repeated along Y is demonstrably NOT equivalent.
+  // Reject optimizations that silently replace an actual source sample.
+  const field=generateOracleField(260,900,24);
+  const sample=(x,y,c)=>field.inner[(y*260+x)*4+c];
+  assert.notEqual(sample(250,30,1),sample(250,450,1),
+    "mode5 right edge must retain its full Y dependence");
 });
