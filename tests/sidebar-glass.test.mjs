@@ -556,7 +556,7 @@ test("single rAF owner and filter input writes are de-duplicated",async()=>{
 
 test("geometry speculation is bounded, adapts to actual widths, and retires old heights",async()=>{
   const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
-  assert.match(code,/const SPECULATIVE_BURST=14, SPECULATIVE_TOTAL_LIMIT=24/);
+  assert.match(code,/const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24/);
   assert.match(code,/\.slice\(0,Math\.min\(SPECULATIVE_BURST,SPECULATIVE_TOTAL_LIMIT-anticipateCount\)\)/);
   assert.match(code,/const learned=\[\.\.\.observedWidths\]/);
   assert.match(code,/observedWidths\.set\(w,\(observedWidths\.get\(w\)\|\|0\)\+1\)/);

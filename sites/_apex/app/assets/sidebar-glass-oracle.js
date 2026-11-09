@@ -544,7 +544,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   // 32-entry LRU covers responsive endpoints and a selectively warmed path;
   // stale height-specific maps are retired when the window height changes.
   const CACHE_LIMIT=32;
-  const SPECULATIVE_BURST=14, SPECULATIVE_TOTAL_LIMIT=24;
+  const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
   let anticipateSignature="",anticipateCount=0,cacheHeight=0;
