@@ -26,6 +26,41 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.equal(resolveWorkspaceRoute("#colosseum/unknown"),"home");
   assert.equal(resolveWorkspaceRoute("#javascript:evil"),"home");
 });
+test("direct nested app paths resolve the same screens as hash navigation",()=>{
+  for(const route of MAIN_ROUTES){
+    assert.equal(resolveWorkspaceRoute("","",`/app/${route}`),route);
+    assert.equal(resolveWorkspaceRoute("","",`/app/${route}/`),route);
+  }
+  for(const section of COLOSSEUM_ROUTES){
+    const route="colosseum/"+section;
+    assert.equal(resolveWorkspaceRoute("","","/app/"+route),route);
+    assert.equal(resolveWorkspaceRoute("","","/dashboard/"+route),route);
+  }
+  assert.equal(resolveWorkspaceRoute("","","/app/account"),"settings");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum"),"colosseum/capabilities");
+  assert.equal(resolveWorkspaceRoute("#settings","","/app/projects"),"settings");
+  assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/home"),"settings");
+  assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"home");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum/unknown"),"home");
+});
+test("reconstruction-inspired adaptive presentation covers all shared workspace views",async()=>{
+  const html=await read("../sites/_apex/app/index.html");
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  assert.match(html,/href="\/app\/assets\/dashboard\.css"[\s\S]*href="\/app\/assets\/workspace-theme\.css"/);
+  assert.match(html,/name="theme-color"[^>]*prefers-color-scheme: dark/);
+  for(const name of [".sidebar",".nav-link.active",".topbar",".content",
+    ".feature-card",".project-card",".project-view .empty-state",
+    ".settings-panel",".security-form input",".danger"]){
+    assert.ok(css.includes(name),"missing style: "+name);
+  }
+  assert.match(css,/@media \(prefers-color-scheme: dark\)/);
+  assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css,/@media \(prefers-contrast: more\)/);
+  assert.match(css,/\.shell\.is-collapsed \.sidebar/);
+  assert.match(css,/\.shell\.is-mobile-open \.sidebar/);
+  assert.match(css,/:focus-visible/);
+  assert.doesNotMatch(css,/@import|https:\/\/chatgpt\.com\/cdn/i);
+});
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));

@@ -164,6 +164,15 @@ async function serveAsset(request,env,folder,path,privatePage=false) {
   }
   return null;
 }
+// Deep workspace URLs are exact allowlisted views; static assets remain distinct.
+const WORKSPACE_VIEW_PATHS = new Set([
+  "/app/home", "/app/projects", "/app/settings", "/app/account",
+  "/app/colosseum", "/app/colosseum/capabilities",
+  "/app/colosseum/collections", "/app/colosseum/providers",
+  "/app/colosseum/permissions", "/app/colosseum/diagnostics",
+  "/app/colosseum/settings",
+]);
+
 export async function handleRequest(request,env={}) {
   const url=new URL(request.url);
   const folder=siteFolder(url.hostname);
@@ -188,7 +197,9 @@ export async function handleRequest(request,env={}) {
       const user=await getUser(request,env);
       if(!user) return redirect("/login");
       const path=url.pathname.replace(/^\/dashboard(?=\/|$)/,"/app");
-      const asset=await serveAsset(request,env,folder,path,true);
+      const viewPath=path.replace(/\/+$/,"");
+      const asset=await serveAsset(request,env,folder,
+        WORKSPACE_VIEW_PATHS.has(viewPath)?"/app/":path,true);
       return asset||new Response("Not found",{status:404,headers:NO_STORE});
     } catch{return new Response("Authentication service unavailable",{status:503,headers:NO_STORE});}
   }

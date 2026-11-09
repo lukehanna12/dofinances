@@ -50,6 +50,23 @@ The authenticated `/app` dashboard has a collapsible sidebar with three main vie
 
 Main Settings retains Google/GitHub identity linking (limits: five Google, three GitHub), email verification, MFA, and account deletion. Navigation uses in-page hash routes such as `/app#projects` and `/app#colosseum/diagnostics`; no additional public Worker routes or permissions are introduced. The sidebar can collapse to an icon rail on desktop, with the preference stored locally in the browser; on phones it becomes an accessible slide-out navigation drawer. OAuth callbacks that return to `/app?federation_linked=1` or `/app?federation_error=...` automatically show the main Settings view.
 
+## Workspace visual system
+
+The authenticated app's Home, Projects, Settings, and all six Colosseum views share
+`sites/_apex/app/assets/workspace-theme.css`, loaded after the existing
+`dashboard.css`. The presentation is adapted from a source-first reconstruction
+of the ChatGPT web interface: neutral light/dark surfaces following system appearance,
+compact sidebar rows, softly rounded controls, restrained typography, accessible
+focus indicators, and reduced-motion/high-contrast support. No reconstructed
+private runtime, preserved application bundles, or external CDN assets are loaded.
+
+Every existing hash view (for example, `/app#colosseum/providers`) also works
+as an authenticated nested URL (for example, `/app/colosseum/providers`).
+All nested pages are served from the same protected `/app/index.html` document
+and use the existing Google/GitHub linking, MFA, and sign-out handlers.
+Only specifically allowlisted view paths receive this fallback; unknown paths
+remain 404. The legacy `/dashboard` prefix remains supported.
+
 ## Federated sign-in and account linking
 
 Dofinances supports identity-only Google and GitHub sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google and 3 GitHub**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
