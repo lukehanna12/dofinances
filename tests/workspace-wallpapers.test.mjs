@@ -37,6 +37,21 @@ test("every named page has the exact owner-selected wallpaper",()=>{
   ),expected);
   assert.strictEqual(workspaceWallpaperForRoute("colosseum/settings"),WORKSPACE_WALLPAPERS.settings);
 });
+test("footer ink colors reflect the six page-specific contrast adjustments",()=>{
+  const expected={
+    home:"#494949",
+    projects:"#555555",
+    settings:"#505050",
+    "colosseum/utilities":"#505050",
+    "colosseum/collections":"#303030",
+    "colosseum/providers":"#dce3df",
+    "colosseum/permissions":"#505050",
+    "colosseum/diagnostics":"#ebebeb"
+  };
+  assert.deepEqual(Object.fromEntries(Object.entries(WORKSPACE_WALLPAPERS)
+    .map(([route,entry])=>[route,entry.footerInk])),expected);
+  assert.strictEqual(workspaceWallpaperForRoute("colosseum/settings"),WORKSPACE_WALLPAPERS.settings);
+});
 test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
   assert.match(css,/--workspace-bottom-strip-height:calc\(var\(--workspace-header-height\) \* \.8\)/);
