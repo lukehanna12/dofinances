@@ -564,3 +564,13 @@ test("geometry speculation is bounded, adapts to actual widths, and retires old 
   assert.match(code,/anticipatedKeys\.delete\(evicted\)/);
   assert.doesNotMatch(code,/getDisplayMedia|html2canvas|createImageBitmap\(document/);
 });
+
+test("no-op animation frames cannot rearm timers or touch SVG inputs",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/if\(idleTimer\|\|!worker\|\|workerBusy\|\|!desired\)return;/);
+  assert.match(code,/if\(key===previous\)\{[\s\S]*?if\(!shell\.classList\.contains\("is-sidebar-toggling"\)\)\{/);
+  assert.doesNotMatch(code,/oracleImageHrefWrites/);
+  assert.match(code,/if\(node\.getAttribute\("href"\)!==uri\)/);
+  assert.match(code,/if\(word!==lastMaterialWord\)/);
+  assert.match(code,/if\(radius!==lastInputRadius\)/);
+});

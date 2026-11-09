@@ -654,8 +654,6 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         // twice for identical PNG bytes. Retain xlink for older engines only.
         node.setAttribute("href",uri);
         if(!("href" in node))node.setAttributeNS(NS,"xlink:href",uri);
-        shell.dataset.oracleImageHrefWrites=String(
-          Number(shell.dataset.oracleImageHrefWrites||0)+1);
       }
       if(node.getAttribute("width")!==String(request.w))
         node.setAttribute("width",String(request.w));
@@ -710,8 +708,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     worker=null;workerBusy=false;
   }
   function armEndpointWarmup(){
-    if(idleTimer)win.clearTimeout(idleTimer);
-    if(!worker||workerBusy||!desired)return;
+    // The callback reads CURRENT desired geometry. Rescheduling this idle
+    // timer on every rAF gains nothing and can starve endpoint warmup.
+    if(idleTimer||!worker||workerBusy||!desired)return;
     idleTimer=win.setTimeout(()=>{
       idleTimer=0;
       if(disposed||!worker||workerBusy||!desired||
@@ -772,7 +771,13 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         // ALREADY in the cache awaiting a single animation-frame commit.
         if(desired?.key!==previous&&!geometryCache.has(desired.key))
           dispatchLatest();
-        else {schedule();armEndpointWarmup();armAnticipation();}
+        else {
+          schedule();
+          if(!shell.classList.contains("is-sidebar-toggling")){
+            armEndpointWarmup();
+            armAnticipation();
+          }
+        }
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -823,7 +828,15 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
        corner===24&&w>74&&w<260){
       observedWidths.set(w,(observedWidths.get(w)||0)+1);
     }
-    if(key===previous){armEndpointWarmup();armAnticipation();return;}
+    if(key===previous){
+      // No DOM writes, no timers, and no worker messages on a no-op frame.
+      // Only settled endpoints are eligible for geometry-only warmup.
+      if(!shell.classList.contains("is-sidebar-toggling")){
+        armEndpointWarmup();
+        armAnticipation();
+      }
+      return;
+    }
     const cached=geometryCache.get(key);
     if(cached){
       geometryCache.delete(key);
@@ -834,8 +847,10 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       if(anticipatedKeys.has(key))
         shell.dataset.oracleAnticipatedFieldHits=
           String(Number(shell.dataset.oracleAnticipatedFieldHits||0)+1);
-      armEndpointWarmup();
-      armAnticipation();
+      if(!shell.classList.contains("is-sidebar-toggling")){
+        armEndpointWarmup();
+        armAnticipation();
+      }
       return;
     }
     if(worker)dispatchLatest();
