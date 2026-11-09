@@ -204,6 +204,66 @@ try{
         {name:"prefers-reduced-motion",value:"reduce"}]});
       await sleep(180);
     }
+    if(width===1440){
+      // Record actual width versus installed SVG field width at every frame,
+      // including the interval between layout transition and worker response.
+      await evaluate(`(()=>{
+        const shell=document.getElementById("workspace-shell");
+        const sidebar=document.getElementById("workspace-sidebar");
+        const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
+        const toggle=document.getElementById("sidebar-toggle");
+        const list=[];const start=performance.now();
+        // Start with explicitly expanded sidebar (known CI state).
+        function sample(t){
+          const w=sidebar.getBoundingClientRect().width;
+          list.push({ms:Math.round(t-start),width:Math.round(w),
+            mapWidth:Number(map.getAttribute("width")),
+            builds:Number(shell.dataset.oracleFieldBuilds||0),
+            cacheHits:Number(shell.dataset.oracleFieldCacheHits||0)});
+          if(t-start<850)requestAnimationFrame(sample);
+          else window.__glassGeometryTimeline=list;
+        }
+        requestAnimationFrame(sample);
+        setTimeout(()=>toggle.click(),80); // expanded -> collapsed
+        setTimeout(()=>toggle.click(),440); // collapsed -> expanded
+        return true;
+      })()`);
+      const trace=await until(()=>evaluate("window.__glassGeometryTimeline||null"),12000);
+      const compact=trace.filter((s,i,all)=>i===0||s.width!==all[i-1].width||
+        s.mapWidth!==all[i-1].mapWidth||s.builds!==all[i-1].builds);
+      console.log("SIDEBAR_FIELD_TRANSITION_TIMELINE",JSON.stringify(compact));
+      assert(await evaluate('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'),
+        "Transition trace must restore expanded state");
+      await sleep(100);
+    }
+    if(width===390){
+      await evaluate(`(()=>{
+        const shell=document.getElementById("workspace-shell");
+        const nav=document.getElementById("mobile-nav-toggle");
+        const side=document.getElementById("workspace-sidebar");
+        const scrim=document.getElementById("sidebar-scrim");
+        const records=[];const start=performance.now();
+        function sample(t){
+          const cs=getComputedStyle(scrim);
+          const r=side.getBoundingClientRect();
+          records.push({ms:Math.round(t-start),left:Math.round(r.left),
+            visible:!scrim.hidden,background:cs.backgroundColor,
+            opacity:cs.opacity,backdrop:cs.backdropFilter,
+            clip:cs.clipPath});
+          if(t-start<420)requestAnimationFrame(sample);
+          else window.__glassMobileTimeline=records;
+        }
+        requestAnimationFrame(sample);
+        setTimeout(()=>nav.click(),75);
+        return true;
+      })()`);
+      const trace=await until(()=>evaluate("window.__glassMobileTimeline||null"),10000);
+      console.log("MOBILE_DRAWER_SCRIM_TIMELINE",JSON.stringify(
+        trace.filter((s,i,all)=>i===0||s.visible!==all[i-1].visible||
+          Math.abs(s.left-all[i-1].left)>12||s.opacity!==all[i-1].opacity)));
+      await evaluate('document.getElementById("sidebar-toggle").click()');
+      await sleep(250);
+    }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
       // programmatic .click() cannot detect.
