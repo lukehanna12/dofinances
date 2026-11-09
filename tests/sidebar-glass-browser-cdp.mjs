@@ -603,6 +603,16 @@ try{
       const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
       let staleFrames=0,maxWidthError=0,totalWidthError=0;
       let blurMapMismatchFrames=0,maxBlurMapError=0;
+      // The rAF sampler runs BEFORE all layout/ResizeObserver work. This
+      // second sampler runs AFTER layout (and after the renderer's earlier
+      // registered ResizeObserver) but before paint: closer to what is shown.
+      const observerSamples=[];
+      const observer=new ResizeObserver(()=>{
+        const paneWidth=Math.round(sidebar.getBoundingClientRect().width);
+        const mapWidth=Number(map.getAttribute("width"));
+        observerSamples.push({paneWidth,mapWidth});
+      });
+      observer.observe(sidebar);
       const blurFar=document.querySelector('#oracle-glass-native-backdrop [result="farBlur"]');
       function sample(t){
         if(last)gaps.push(t-last);last=t;
@@ -623,12 +633,18 @@ try{
         if(t-start<1220)requestAnimationFrame(sample);
         else {
           const sorted=gaps.toSorted((a,b)=>a-b);
+          observer.disconnect();
+          const resizeErrors=observerSamples.map(x=>Math.abs(x.paneWidth-x.mapWidth));
           window.__abMotionResult={
             frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
             worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
             stalls50:gaps.filter(x=>x>50).length,
             staleFrames,maxWidthError,totalWidthError,
-            blurMapMismatchFrames,maxBlurMapError
+            blurMapMismatchFrames,maxBlurMapError,
+            resizeSamples:resizeErrors.length,
+            resizeStale:resizeErrors.filter(x=>x>0).length,
+            resizeTotalWidthError:resizeErrors.reduce((a,b)=>a+b,0),
+            resizeMaxWidthError:Math.max(0,...resizeErrors)
           };
         }
       }

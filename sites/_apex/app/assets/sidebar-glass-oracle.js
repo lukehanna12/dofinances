@@ -892,7 +892,23 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
        (anticipateTimer||anticipateWorker))stopAnticipation();
     queued=win.requestAnimationFrame(frameStep);
   }
-  const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
+  function onPaneResize(){
+    // ResizeObserver runs after layout, before paint. When the *exact* map
+    // for this newly laid-out width is already cached, commit immediately
+    // instead of deferring it by a full rAF. Missing sizes still use the
+    // original coalesced worker path: never stretch/crop an old PNG.
+    if(disposed)return;
+    const bounds=sidebar.getBoundingClientRect();
+    const w=Math.round(bounds.width),h=Math.round(bounds.height);
+    if(w<1||h<1)return;
+    const css=win.getComputedStyle?.(sidebar);
+    const rawCorner=Number.parseFloat(css?.borderTopRightRadius||"24");
+    const corner=Math.min(Number.isFinite(rawCorner)?rawCorner:24,w*.5,h*.5);
+    const key=w+"x"+h+"@"+corner;
+    if(key!==previous&&geometryCache.has(key))reconcileReady();
+    else schedule();
+  }
+  const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(onPaneResize):null;
   resize?.observe(sidebar);
   function onViewportResize(){
     // At the tablet→desktop breakpoint the pane can switch directly from

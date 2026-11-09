@@ -592,3 +592,12 @@ test("blur and displacement commits are coherent for one exact geometry key",asy
   assert.equal((code.match(/blurFar\.setAttribute\("stdDeviation"/g)||[]).length,1);
   assert.equal((code.match(/blurNear\.setAttribute\("stdDeviation"/g)||[]).length,1);
 });
+
+test("prepaint ResizeObserver installs only cached exact fields",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/function onPaneResize\(\)\{/);
+  assert.match(code,/if\(key!==previous&&geometryCache\.has\(key\)\)reconcileReady\(\)/);
+  assert.match(code,/else schedule\(\);/);
+  assert.match(code,/new ResizeObserver\(onPaneResize\)/);
+  assert.doesNotMatch(code,/new ResizeObserver\(schedule\)/);
+});
