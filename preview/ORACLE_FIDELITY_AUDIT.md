@@ -147,3 +147,34 @@ error, NOT proof of Apple output-pixel equivalence.
 This correction does not identify the missing full mip texture sampling,
 native G14G instruction numerics, public color/material selection, or
 runtime display Q chain. No additional native equivalence claim is made.
+
+## November 9: SVG displacement-map exact-neutral encoding
+
+The browser used standard 8-bit PNG `feDisplacementMap` fields and encoded
+zero displacement as byte 128. SVG scale 128 mathematically converts this
+code to `128*(128/255 - 0.5) = 0.25098` CSS pixels, rather than zero.
+It was a browser encoding error, not an Oracle SDF/normal error.
+
+The corrected map encoder uses `128 + round(255*v/128)`, then a pair of
+pre-displacement SVG R/G-only channel matrices subtract the exact 8-bit
+neutral offset `1/(2*255)`; the threshold selection's blue channel is
+unchanged. Integer-centered round-trip tests prove zero displacement = zero
+and a maximum channel error of `128/(2*255)` pixels for the active finite
+refraction amounts. The page backdrop is still the actual DOM backdrop.
+Chrome measured 226 altered pixels of 228,800 in the full-pane test.
+This changes no target-native equation and does not claim native pixel parity.
+
+## November 9: AIR mip-LOD audit / remaining browser approximation
+
+`preview/oracle-blur-lod-audit.py` checks the retained source program's
+explicit half-precision logarithmic mip selection and the three target
+`air.sample_texture_2d` calls against the retained static sampler identity.
+It quantifies the discrepancy between the exact retained LOD curve and
+our current *linear two-Gaussian* near/far mixing proxy. Source LOD
+selection is known, but a faithful replacement requires the actual native
+sampler filter, mip-generation chain, render/surface scale, input textures,
+and same-case pixel matching. These facts are not established by the current
+retained records. Replacing the Gaussian approximation with another
+hand-selected kernel or LOD-based mix would be speculation. Therefore the
+active browser blur is preserved, explicitly marked unproved, rather than
+claimed complete.

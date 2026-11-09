@@ -27,6 +27,8 @@ jobs:
           node-version: '22'
       - name: Audit two entire observed LPH material states and blur transfer
         run: python3 preview/oracle-material-state-audit.py
+      - name: Read-only exact AIR mip sampling and browser blur boundary audit
+        run: python3 preview/oracle-blur-lod-audit.py
       - name: Decode complete live binding uniform projections
         run: python3 preview/oracle-runtime-projection-audit.py
       - name: Source-level Oracle LPH and numerical witness audit
