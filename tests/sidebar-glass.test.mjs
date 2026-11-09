@@ -135,7 +135,12 @@ test("displacement maps are geometry-only, not screen or background captures",()
   assert.equal(field.inner[center],128);
   assert.equal(field.inner[center+1],128);
   const edge=(49*72+71)*4;
-  assert.ok(field.inner[edge]!==128 || field.inner[edge+1]!==128);
+  assert.ok(field.inner[edge]!==128 || field.inner[edge+1]!==128,
+    JSON.stringify({pixel:[...field.inner.slice(edge,edge+4)],
+      outer:[...field.outer.slice(edge,edge+4)],
+      pane:paneField(71.5,49.5,72,98,24),
+      near:paneField(67.5,49.5,72,98,24),
+      raw:airMode5SDF(35.5,-.5,36,49,[-ORACLE_CORNER_FLOOR,-24,-24,-ORACLE_CORNER_FLOOR])}));
   assert.ok(field.outer[edge]!==128 || field.outer[edge+1]!==128);
   assert.equal(field.blurMask[center+2],0);
   assert.ok(field.blurMask[edge+2]>0);
