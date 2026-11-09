@@ -22,3 +22,133 @@ h1{font-size:clamp(31px,4vw,47px);letter-spacing:-.045em;line-height:1.15;margin
   overflow-wrap:anywhere;white-space:pre-wrap}
 .panel h3{font-size:15px;color:#f1f5ff}
 .panel a{color:#a1edcf;text-decoration:underline}
+
+
+/* Workspace navigation and project views */
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid #9aebc3;outline-offset:3px}
+.svg-sprite{width:0;height:0;position:absolute;overflow:hidden;pointer-events:none}
+.nav-icon{width:19px;height:19px;flex:none;display:block;stroke:currentColor}
+.shell{background:radial-gradient(ellipse at 88% -20%,rgba(41,85,77,.14),transparent 48%),#0b101b}
+.sidebar{width:258px;padding:24px 16px 16px;z-index:12;transition:width .2s ease;overflow-x:hidden;background:linear-gradient(180deg,#101a29 0%,#0d1522 100%)}
+.sidebar-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:82px}
+.brand{min-width:0;display:flex;align-items:center;gap:11px;padding:4px 4px 20px;font-size:12px;letter-spacing:.08em;white-space:nowrap}
+.brand-wordmark{display:flex;flex-direction:column;line-height:1.15;margin-top:1px}
+.brand-subtitle{font-size:9px;color:#7791a8;font-weight:650;letter-spacing:.23em;margin-top:6px}
+.mark{flex:none;background:#a5ecc7;border-radius:11px;width:35px;height:35px}
+.icon-button{display:inline-grid;place-items:center;flex:none;background:transparent;color:#a8b9cb;border:1px solid transparent;border-radius:10px;width:38px;height:38px;padding:0;cursor:pointer}
+.icon-button:hover{background:#1f3042;color:#f6f9ff;border-color:#2f4257}
+.sidebar-toggle{margin-top:2px;width:33px;height:33px}
+.sidebar-toggle .nav-icon{width:17px;height:17px}
+.sidebar-navigation{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
+.nav-stack{display:grid;gap:5px}
+.nav-section-label{margin:7px 12px 11px;color:#647d95;letter-spacing:.18em;font-size:10px;font-weight:850;white-space:nowrap}
+.nav-link{display:flex;align-items:center;gap:12px;padding:13px 13px;min-height:46px;border:1px solid transparent;color:#b4c2d3;white-space:nowrap;transition:background .16s ease,color .16s ease,border-color .16s ease}
+.nav-link:hover{background:#203043;border-color:#2a3e51;color:#f5faff}
+.nav-link.active{background:linear-gradient(90deg,#213b3c,#1b2e36);border-color:#30584c;color:#c7f9dc}
+.nav-link.active .nav-icon{color:#9beabb}
+.nav-label{font-weight:650}
+.sidebar-bottom{margin-top:18px;border-top:1px solid #223145;padding:22px 10px 8px;white-space:nowrap}
+.sidebar-bottom .status-dot{flex:none;box-shadow:0 0 0 3px rgba(115,223,177,.1)}
+.shell.is-collapsed .sidebar{width:82px;padding-left:12px;padding-right:12px}
+.shell.is-collapsed .sidebar-head{flex-direction:column;align-items:center;justify-content:start;gap:8px;min-height:113px}
+.shell.is-collapsed .brand{padding:0}
+.shell.is-collapsed .brand-wordmark,.shell.is-collapsed .nav-label,.shell.is-collapsed .nav-section-label,.shell.is-collapsed .sidebar-foot-label{display:none}
+.shell.is-collapsed .sidebar-navigation{padding-top:12px}
+.shell.is-collapsed .nav-link{justify-content:center;padding:13px 0}
+.shell.is-collapsed .sidebar-bottom{justify-content:center;padding-left:0;padding-right:0}
+.main{min-height:100vh}
+.topbar{min-height:77px;background:rgba(15,24,36,.85);position:sticky;top:0;z-index:5;backdrop-filter:blur(14px);padding-inline:clamp(24px,4.4vw,64px)}
+.topbar-start{display:flex;align-items:center;gap:14px;min-width:0}
+.page-location{display:flex;flex-direction:column;gap:4px;min-width:0}
+.breadcrumb-label{font-size:13px;font-weight:650;color:#d3e2f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.breadcrumb-subtitle{font-size:11px;color:#7792aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back-button{border-color:#2c3e50;background:#192638;width:34px;height:34px}
+.mobile-nav-toggle{display:none}
+.top-actions{gap:16px}
+.email{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content{max-width:1370px;padding-top:clamp(38px,5vw,70px);min-height:calc(100vh - 79px)}
+.view{animation:fade-in .14s ease}
+@keyframes fade-in{from{opacity:.7;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.page-heading .eyebrow{color:#8cdbb5}
+.page-heading h1{max-width:830px}
+.page-heading .lead{margin-bottom:0}
+.home-highlights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px;margin-top:39px}
+.feature-card{background:linear-gradient(155deg,#172638,#111d2b);border:1px solid #2d4052;border-radius:17px;min-height:195px;padding:26px;display:flex;align-items:flex-start;gap:18px;transition:border-color .16s ease,transform .16s ease,background .16s ease}
+.feature-card:hover,.project-card:hover,.project-row:hover{border-color:#477663;background:#1a2b3c;transform:translateY(-2px)}
+.feature-icon{flex:none;display:grid;place-items:center;width:42px;height:42px;border:1px solid #396755;border-radius:12px;background:#1d3b34;color:#9aedba}
+.feature-icon .nav-icon{width:22px;height:22px}
+.feature-copy{display:flex;flex-direction:column;gap:9px;min-width:0;flex:1}
+.feature-kicker{font-size:10px;color:#8ba2b8;letter-spacing:.15em;font-weight:800}
+.feature-copy strong{font-size:20px;color:#ecf4ff;letter-spacing:-.035em}
+.feature-copy>span:last-child{font-size:13px;line-height:1.65;color:#9dacc0}
+.feature-arrow{color:#a3b4c7}
+.feature-arrow .nav-icon{width:18px;height:18px}
+.home-section-caption{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:47px 0 14px}
+.home-section-caption>span{font-weight:800;color:#7e99b1;font-size:10px;letter-spacing:.14em}
+.home-section-caption a{display:inline-flex;align-items:center;gap:5px;color:#b1ebca;font-size:12px;font-weight:700}
+.home-section-caption .nav-icon{width:14px;height:14px}
+.project-row,.project-card{display:flex;align-items:center;gap:18px;background:#131f2e;border:1px solid #2b3d50;border-radius:15px;padding:20px 23px;transition:border-color .16s ease,transform .16s ease,background .16s ease}
+.project-row>.nav-icon{margin-left:auto;color:#8c9fb5}
+.project-emblem{display:grid;place-items:center;border-radius:13px;width:44px;height:44px;flex:none;background:linear-gradient(135deg,#a9f2cd,#5eb6b4);color:#0d2532;font-size:23px;font-weight:850;letter-spacing:-.09em;box-shadow:0 7px 22px rgba(52,144,130,.12)}
+.project-emblem.large{width:60px;height:60px;font-size:31px;border-radius:16px}
+.project-row-copy,.project-card-copy{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.project-row-copy strong,.project-card-copy strong{font-size:16px;letter-spacing:-.015em}
+.project-row-copy span,.project-card-copy span{font-size:12px;color:#91a5bc}
+.section-subheading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:44px 0 17px}
+.section-subheading h2{font-size:17px;margin:0}
+.count-label{color:#9bb0c1;border:1px solid #34475b;background:#172434;border-radius:50px;padding:7px 11px;font-size:11px}
+.project-card{max-width:670px;padding:26px 28px}
+.project-card-copy strong{font-size:21px}
+.open-project{display:grid;place-items:center;border-radius:10px;background:#223349;color:#c3ebd2;width:34px;height:34px}
+.project-view .empty-state{margin-top:54px;max-width:730px;min-height:340px;border:1px dashed #3c5065;background:linear-gradient(150deg,#152334 0%,#101a28 100%);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 25px}
+.empty-state>.nav-icon{width:38px;height:38px;color:#8bd8ae;margin-bottom:20px}
+.empty-state h2{font-size:19px;letter-spacing:-.03em;margin:0 0 10px}
+.empty-state p{color:#95a9bf;font-size:13px;line-height:1.6;max-width:350px}
+.settings-panel{max-width:930px;margin-top:34px}
+.settings-panel #security-controls{margin-top:24px}
+.settings-panel #linked-accounts{margin:0!important;border-top:0!important;padding-top:0!important}
+.settings-panel .settings-divider{border-top:1px solid #304058;margin-top:30px;padding-top:26px}
+.settings-panel .settings-divider h3{margin:0 0 15px}
+.sidebar-scrim{display:none}
+@media(min-width:761px) and (max-width:1080px){
+  .sidebar{width:228px}
+  .shell.is-collapsed .sidebar{width:82px}
+  .feature-card{padding:21px;min-height:210px}
+}
+@media(max-width:930px){.home-highlights{grid-template-columns:1fr}.feature-card{min-height:150px}}
+@media(max-width:760px){
+  .sidebar{display:flex;width:260px;position:fixed;top:0;bottom:0;left:0;height:100dvh;z-index:30;transform:translateX(-100%);transition:transform .2s ease;box-shadow:20px 0 50px rgba(0,0,0,.25)}
+  .shell.is-mobile-open .sidebar{transform:translateX(0)}
+  .shell.is-collapsed .sidebar{width:260px;padding:24px 16px 16px}
+  .shell.is-collapsed .sidebar-head{flex-direction:row;align-items:flex-start;justify-content:space-between;gap:8px;min-height:82px}
+  .shell.is-collapsed .brand-wordmark{display:flex}
+  .shell.is-collapsed .nav-label,.shell.is-collapsed .nav-section-label,.shell.is-collapsed .sidebar-foot-label{display:initial}
+  .shell.is-collapsed .nav-link{justify-content:flex-start;padding:13px}
+  .shell.is-collapsed .sidebar-bottom{justify-content:flex-start;padding:22px 10px 8px}
+  .shell.is-collapsed .sidebar-navigation{padding-top:0}
+  .mobile-nav-toggle{display:inline-grid}
+  .sidebar-scrim:not([hidden]){position:fixed;inset:0;z-index:25;border:0;background:rgba(1,7,15,.75);backdrop-filter:blur(3px);display:block;cursor:pointer}
+  .topbar{position:sticky;padding:14px 22px;gap:10px;align-items:center}
+  .topbar-start{gap:9px;max-width:100%}
+  .top-actions{margin-left:auto}
+  .email{display:none}
+  .content{padding:35px 22px 65px}
+  .feature-card{min-height:147px}
+  .project-card{padding:19px}
+}
+@media(max-width:480px){
+  .topbar{padding:13px 16px}
+  .top-actions .secondary{padding:9px 11px;font-size:12px}
+  .breadcrumb-subtitle{display:none}
+  .content{padding:30px 17px 55px}
+  h1{font-size:32px}
+  .feature-card{padding:19px;gap:13px}
+  .project-view .empty-state{padding:32px 18px;min-height:270px}
+  .settings-panel{padding:20px}
+  .project-row{padding:17px}
+}
+@media(prefers-reduced-motion:reduce){
+  .view{animation:none}
+  .sidebar,.feature-card,.project-card,.project-row{transition:none}
+}
