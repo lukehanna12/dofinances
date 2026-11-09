@@ -3,52 +3,52 @@
  * Each blob is SHA-256 addressed at /objects/<sha>.bin. */
 export const WORKSPACE_WALLPAPERS = Object.freeze({
   "home": {
-    "sha": "937fc1cdf4756a9ceb0da7772e4a8fcff3b197f3ed8904d898e3923ccb29b386",
-    "ext": "jpg",
-    "name": "misty-fjord-coastal-village.jpg",
-    "position": "center 49%"
+    "sha": "3dede3066f1b6ca3eb7dfa4bd4ad077eddbcdb80ca95a7213eb8bc47850ef77b",
+    "ext": "webp",
+    "name": "clouds-over-rice-terraces.webp",
+    "position": "center 46%"
   },
   "projects": {
-    "sha": "d29b17594f91a2dd8388cb4fb0f190013125c0c2fff0a9c1d779130c289d7309",
-    "ext": "png",
-    "name": "stormy-mountain-lake-rays.png",
+    "sha": "302138334c5973c7fed71a26037e19a8b94fce8433fecce8bad1454474c36a08",
+    "ext": "webp",
+    "name": "winding-icelandic-river-mountains.webp",
     "position": "center 44%"
   },
   "settings": {
-    "sha": "ade03e6d5958ddb9e1e5098ad67d46b7f4c801057aa77c85510d846ef8f75091",
-    "ext": "png",
-    "name": "golden-ridges-dark-sand.png",
-    "position": "center 48%"
+    "sha": "ca6bf0317dcb6806a536f5d41b8c54cf34446a196e8a5f7265dc5f10c7f3b957",
+    "ext": "avif",
+    "name": "misty-tropical-forest-hillside.avif",
+    "position": "center 45%"
   },
   "colosseum/utilities": {
-    "sha": "8bf11dba5a786e9a396f7aeded17c02a0e0053f27cc94a568ee6d8e71c0cbdf0",
+    "sha": "c49181be2b93fe24a44774a7c6f4253f23ec3bf0cfc369a318e420d7418f9eb2",
     "ext": "jpg",
-    "name": "blue-gray-eroded-hills.jpg",
-    "position": "center 46%"
+    "name": "waterfall-between-mossy-cliffs.jpg",
+    "position": "center 43%"
   },
   "colosseum/collections": {
-    "sha": "50e820a2a0ca168ddbeb3670afc0823618472fdbd61969a56c6d168666de0cc9",
+    "sha": "dcb3d4f1e42bf3aebab2186768a598d17a8aad76e9620a150e268938eee01441",
     "ext": "jpg",
-    "name": "autumn-alpine-river-valley.jpg",
+    "name": "misty-alpine-mountain-valley.jpg",
     "position": "center 45%"
   },
   "colosseum/providers": {
-    "sha": "c3b94c754a35e440165cfea8985f4f699e53958d495cb4011377bf941529d021",
+    "sha": "65dbc89fe23cd47bbcdb76d419fde8168f93e4b6af9f70c533732cf7ee6015c7",
     "ext": "jpg",
-    "name": "autumn-forest-black-trunks.jpg",
-    "position": "center 45%"
+    "name": "green-water-foam-swirls.jpg",
+    "position": "center 47%"
   },
   "colosseum/permissions": {
-    "sha": "2ba90f393e4c027410d929dee1f3bfc99a178cce522b1876e01ab314fc26dbb8",
-    "ext": "png",
-    "name": "golden-aspens-dark-forest.png",
+    "sha": "8f54a531db0e7382a7a18c27e0daf5283bfaa8e655fae9da460f21242a3a1ec6",
+    "ext": "jpg",
+    "name": "autumn-colored-mountain-slopes.jpg",
     "position": "center 45%"
   },
   "colosseum/diagnostics": {
-    "sha": "816843e6a54c12a3f337fa1d8251575a84b24fd59c0b54709e269378f10cf8b6",
+    "sha": "3203fcc740876cc48c489699ee3f00e5c069fa9a3825cc7afaf2680b836c22cd",
     "ext": "jpg",
-    "name": "blue-gray-eroded-badlands.jpg",
-    "position": "center 45%"
+    "name": "steam-spewing-yellow-machine.jpg",
+    "position": "center 46%"
   }
 });
 export function workspaceWallpaperForRoute(route) {

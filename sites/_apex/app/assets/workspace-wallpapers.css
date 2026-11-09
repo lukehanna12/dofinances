@@ -1,7 +1,12 @@
 /* Page-wide wallpaper and dark frosted navigation shared by the production
  * workspace and standalone Studio. No duplicated image is painted in the
  * sidebar: its native backdrop sampler sees this real page-level artwork. */
-:root {--workspace-header-height:66px;--workspace-content-leading:57px}
+:root {
+  --workspace-header-height:66px;
+  --workspace-content-leading:57px;
+  /* 40% of the two-header-height top crop, not 40% of the 3-height banner. */
+  --workspace-bottom-strip-height:calc(var(--workspace-header-height) * .8);
+}
 body:has(> #workspace-shell) {
   position:relative;
   isolation:isolate;
@@ -26,7 +31,28 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   background-position:center,var(--workspace-wallpaper-position,center 46%);
   background-repeat:no-repeat;
 }
-body:has(> #workspace-shell.liquid-glass-preview)::after {content:none}
+/* Bottom slice uses the bottom edge of the ORIGINAL, full-width wallpaper.
+ * This is in document flow coordinates, not fixed to the viewport: on a long
+ * Settings page it remains at the actual bottom of the screen's content.
+ * Equal image sizing at full screen width retains the source's bottom crop. */
+body:has(> #workspace-shell)::after,
+body:has(> #workspace-shell.liquid-glass-preview)::after,
+body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::after,
+body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
+  content:"";
+  position:absolute;
+  inset:auto 0 0;
+  width:100%;
+  height:var(--workspace-bottom-strip-height);
+  z-index:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(180deg,#000 0%,rgba(0,0,0,.10) 40%,rgba(0,0,0,.23) 100%),
+    var(--workspace-wallpaper-image,none);
+  background-size:cover,cover;
+  background-position:center,center bottom;
+  background-repeat:no-repeat;
+}
 body:has(> #workspace-shell) .shell,
 body:has(> #workspace-shell) .main,
 body:has(> #workspace-shell.liquid-glass-preview) .main {

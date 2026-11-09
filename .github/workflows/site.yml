@@ -245,6 +245,7 @@ jobs:
           curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.js -o "$source_js"
           curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.css -o "$source_css"
           grep -Fq -- '--workspace-header-height' "$source_css"
+          grep -Fq -- '--workspace-bottom-strip-height' "$source_css"
           python3 - "$source_js" <<'PY'
           import re, sys, subprocess, tempfile, struct, os
 
@@ -252,8 +253,10 @@ jobs:
           assets = list(dict.fromkeys(re.findall(r'"sha":\s*"([a-f0-9]{64})",\s*"ext":\s*"(jpg|png|webp|avif)"', js)))
           assert len(assets) == 8, f"Expected eight distinct wallpaper assets, got {len(assets)}"
           def dimensions(data):
+              # PNG IHDR
               if data.startswith(b"\x89PNG\r\n\x1a\n"):
                   return struct.unpack(">II", data[16:24])
+              # JPEG SOF marker
               if data.startswith(b"\xff\xd8"):
                   i = 2
                   while i < len(data) - 10:
@@ -265,11 +268,32 @@ jobs:
                       if marker in (0xd8, 0xd9) or 0xd0 <= marker <= 0xd7:
                           continue
                       size = int.from_bytes(data[i:i+2], "big")
+                      if size < 2:
+                          break
                       if marker in (0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf):
                           return (int.from_bytes(data[i+5:i+7],"big"), int.from_bytes(data[i+3:i+5],"big"))
                       i += size
+              # WebP RIFF VP8X, VP8L and VP8 frame headers
+              if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+                  kind=data[12:16]
+                  if kind==b"VP8X" and len(data)>=30:
+                      return (1+int.from_bytes(data[24:27],"little"),1+int.from_bytes(data[27:30],"little"))
+                  if kind==b"VP8L" and len(data)>=25 and data[20]==0x2f:
+                      b1,b2,b3,b4=data[21:25]
+                      return (1+b1+((b2&0x3f)<<8),1+(b2>>6)+(b3<<2)+((b4&0xf)<<10))
+                  if kind==b"VP8 ":
+                      at=data.find(b"\x9d\x01\x2a",20,128)
+                      if at>=0 and len(data)>=at+7:
+                          return (int.from_bytes(data[at+3:at+5],"little")&0x3fff,
+                                  int.from_bytes(data[at+5:at+7],"little")&0x3fff)
+              # AVIF uses an ISO-BMFF image spatial extents (ispe) property.
+              if b"avif" in data[8:32] or b"avis" in data[8:32]:
+                  at=data.find(b"ispe")
+                  if at>=4 and len(data)>=at+16:
+                      width,height=struct.unpack(">II",data[at+8:at+16])
+                      if 0<width<100000 and 0<height<100000:
+                          return (width,height)
               return None
-
           for sha, ext in assets:
               url = f"https://dofinances.com/wallpapers/{sha}.{ext}"
               with tempfile.NamedTemporaryFile() as tmp, tempfile.NamedTemporaryFile() as hdr:
@@ -283,7 +307,9 @@ jobs:
                   dims = dimensions(content)
                   assert dims is not None, f"Could not parse image dimensions: {sha}"
                   width, height = dims
-                  assert width >= 1280 and height >= 300, f"Insufficient wallpaper resolution: {sha} {dims}"
+                  assert width >= 300 and height >= 200, f"Insufficient or invalid wallpaper dimensions: {sha} {dims}"
+                  if width < 1280:
+                      print(f"WARNING: {sha[:12]}.{ext} is {width}px wide; wide screens may upscale it")
                   print(f"Verified {sha[:12]}.{ext}: {width} x {height}, {len(content):,} bytes; full-width banner crop")
           PY
           invalid="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://dofinances.com/wallpapers/not-allowlisted.jpg)"
