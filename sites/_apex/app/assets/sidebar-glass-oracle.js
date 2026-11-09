@@ -647,7 +647,34 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     },900);
   }
   let lastMaterialWord=NaN,lastInputRadius=NaN;
+  // The SVG filter is one optical state: three width-exact mode5 fields
+  // AND the finite public blur word computed from those same dimensions.
+  // Never advance Gaussian sampling parameters ahead of a pending field.
+  // This also skips expensive filter invalidations when the worker has not
+  // yet produced the next exact map. No native constants are changed.
+  function commitMaterial(w,h){
+    const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
+    if(radius!==lastInputRadius){
+      shell.style.setProperty("--oracle-input-radius",radius+"px");
+      lastInputRadius=radius;
+    }
+    if(word!==lastMaterialWord){
+      const farLOD=airTextureMipLOD(word,1);
+      const nearLOD=airTextureMipLOD(word,.5);
+      const effective=word/ORACLE_FINITE_REFRACTION.surfaceScale;
+      const nearSigma=effective*.5,farSigma=effective;
+      shell.style.setProperty("--oracle-render-word",word+"px");
+      shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
+      shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
+      shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
+      blurFar.setAttribute("stdDeviation",String(farSigma));
+      blurNear.setAttribute("stdDeviation",String(nearSigma));
+      lastMaterialWord=word;
+    }
+  }
   function setMaps(request,urls){
+    // Coherent optical commit in the SAME JavaScript task as the map update.
+    commitMaterial(request.w,request.h);
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
       if(node.getAttribute("href")!==uri){
         // Modern SVG feImage.href is supported in Chrome/WebKit/Firefox.
@@ -794,31 +821,12 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const bounds=sidebar.getBoundingClientRect();
     const w=Math.round(bounds.width),h=Math.round(bounds.height);
     if(w<1||h<1)return;
-    const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
-    // Exact LOD word; Gaussian sigma remains the original stated browser
-    // approximation. These material parameters are NOT changed for speed.
-    const scale=ORACLE_FINITE_REFRACTION.surfaceScale;
-    if(radius!==lastInputRadius){
-      shell.style.setProperty("--oracle-input-radius",radius+"px");
-      lastInputRadius=radius;
+    if(!canUse){
+      // Preserve the original CPU/CSS blur fallback where no SVG filter is
+      // available: its blur still follows the current pane width.
+      commitMaterial(w,h);
+      return;
     }
-    if(word!==lastMaterialWord){
-      // Same exact Float32 material; avoid invalidating the entire SVG
-      // backdrop chain on widths where the blur word has not changed.
-      const farLOD=airTextureMipLOD(word,1);
-      const nearLOD=airTextureMipLOD(word,.5);
-      const effective=word/scale;
-      const nearSigma=effective*.5;
-      const farSigma=effective;
-      shell.style.setProperty("--oracle-render-word",word+"px");
-      shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
-      shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
-      shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
-      blurFar.setAttribute("stdDeviation",String(farSigma));
-      blurNear.setAttribute("stdDeviation",String(nearSigma));
-      lastMaterialWord=word;
-    }
-    if(!canUse)return;
     // Read the actual CSS corner, not a geometry-only blur radius.
     const style=win.getComputedStyle?.(sidebar);
     const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");

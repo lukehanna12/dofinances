@@ -583,3 +583,12 @@ test("exact worker result commits synchronously without a second paint-frame del
   assert.match(src,/if\(desired\?\.key===response\.key&&previous!==response\.key\)\s*reconcileReady\(\)/);
   assert.match(src,/if\(field\.key===desired\?\.key&&!field\.prefetch\)\{[\s\S]*?reconcileReady\(\)/);
 });
+
+test("blur and displacement commits are coherent for one exact geometry key",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/function commitMaterial\(w,h\)\{/);
+  assert.match(code,/function setMaps\(request,urls\)\{\s*\/\/ Coherent optical commit[\s\S]*?commitMaterial\(request\.w,request\.h\);/);
+  assert.match(code,/if\(!canUse\)\{[\s\S]*?commitMaterial\(w,h\);\s*return;/);
+  assert.equal((code.match(/blurFar\.setAttribute\("stdDeviation"/g)||[]).length,1);
+  assert.equal((code.match(/blurNear\.setAttribute\("stdDeviation"/g)||[]).length,1);
+});

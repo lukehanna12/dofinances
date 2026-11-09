@@ -602,11 +602,21 @@ try{
       const sidebar=document.getElementById("workspace-sidebar");
       const map=document.querySelector('#oracle-glass-native-backdrop [result="innerMap"]');
       let staleFrames=0,maxWidthError=0,totalWidthError=0;
+      let blurMapMismatchFrames=0,maxBlurMapError=0;
+      const blurFar=document.querySelector('#oracle-glass-native-backdrop [result="farBlur"]');
       function sample(t){
         if(last)gaps.push(t-last);last=t;
         const actual=Math.round(sidebar.getBoundingClientRect().width);
         const encoded=Number(map.getAttribute("width"));
         const diff=Math.abs(actual-encoded);
+        // The filter must never use a blur word computed for a NEW width
+        // while retaining a displacement map for the PREVIOUS width.
+        const radius=Math.min(4,Math.max(2,2+((encoded-48)/112)*2));
+        const expectedFar=Math.fround(Math.fround(radius)*Math.fround(.4))/.25;
+        const observedFar=Number(blurFar.getAttribute("stdDeviation"));
+        const blurError=Math.abs(observedFar-expectedFar);
+        if(blurError>.0001)blurMapMismatchFrames++;
+        maxBlurMapError=Math.max(maxBlurMapError,blurError);
         if(diff>0)staleFrames++;
         maxWidthError=Math.max(maxWidthError,diff);
         totalWidthError+=diff;
@@ -617,7 +627,8 @@ try{
             frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
             worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
             stalls50:gaps.filter(x=>x>50).length,
-            staleFrames,maxWidthError,totalWidthError
+            staleFrames,maxWidthError,totalWidthError,
+            blurMapMismatchFrames,maxBlurMapError
           };
         }
       }
