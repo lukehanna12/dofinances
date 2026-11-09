@@ -148,3 +148,52 @@ test("all OAuth fetches use Cloudflare-supported manual redirect handling",async
     );
   }finally{globalThis.fetch=originalFetch;}
 });
+
+test("GitHub code exchange uses documented parameters without grant_type",async()=>{
+  const cfg=federationProvider(credentials,"github"),txn=newOAuthTransaction();
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async (url,options)=>{
+      if(String(url).includes("github.com/login/oauth/access_token")){
+        assert.equal(options.method,"POST");
+        assert.equal(options.redirect,"manual");
+        assert.match(options.headers["User-Agent"],/DoFinances/);
+        assert.equal(options.body.get("client_id"),cfg.clientId);
+        assert.equal(options.body.get("client_secret"),cfg.secret);
+        assert.equal(options.body.get("code"),"test-code");
+        assert.equal(options.body.get("code_verifier"),txn.verifier);
+        assert.equal(options.body.get("redirect_uri"),"https://dofinances.com/api/auth/oauth/callback/github");
+        assert.equal(options.body.has("grant_type"),false);
+        return Response.json({access_token:"ephemeral-identity-token"});
+      }
+      if(String(url).endsWith("/user"))return Response.json({id:1,login:"x"});
+      if(String(url).endsWith("/user/emails"))return Response.json([{email:"x@example.com",verified:true,primary:true}]);
+      throw new Error("Unexpected URL");
+    };
+    const id=await exchangeFederatedIdentity(cfg,"test-code",txn);
+    assert.equal(id.provider,"github");
+  }finally{globalThis.fetch=originalFetch;}
+});
+
+test("GitHub provider errors are mapped to safe, actionable codes even with HTTP 200",async()=>{
+  const cfg=federationProvider(credentials,"github"),txn=newOAuthTransaction();
+  const originalFetch=globalThis.fetch;
+  try{
+    for(const [upstream,publicCode] of [
+      ["incorrect_client_credentials","oauth_client_rejected"],
+      ["redirect_uri_mismatch","oauth_callback_mismatch"],
+      ["bad_verification_code","oauth_code_rejected"],
+      ["unverified_user_email","oauth_github_email_unverified"],
+      ["unsupported_grant_type","oauth_grant_rejected"],
+      ["invalid_request","oauth_request_rejected"]
+    ]){
+      for(const status of [200,400]){
+        globalThis.fetch=async()=>Response.json({error:upstream,error_description:"private response: must not leak"},{status});
+        await assert.rejects(exchangeFederatedIdentity(cfg,"fake",txn),e=>
+          e.code===publicCode && !e.message.includes("private response"));
+      }
+    }
+    globalThis.fetch=async()=>Response.json({error:"unknown_error",error_description:"private"},{status:403});
+    await assert.rejects(exchangeFederatedIdentity(cfg,"fake",txn),e=>e.code==="oauth_provider_forbidden");
+  }finally{globalThis.fetch=originalFetch;}
+});
