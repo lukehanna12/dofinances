@@ -366,3 +366,26 @@ test("worker PNG encoding uses identical source pixels and main-thread fallback"
   assert.match(browser,/lastMaterialWord=word/);
   assert.match(browser,/if\(word!==lastMaterialWord\)/);
 });
+
+test("oracle fields can be losslessly decomposed into edge strips with constant middle rows",()=>{
+  // This is a proof obligation for any prospective tiling optimization.
+  // Never assume an ordinary rounded rectangle SDF: compare the ACTUAL
+  // four-corner mode5 generated field, byte for byte, across the full pane.
+  const material=ORACLE_FINITE_REFRACTION;
+  const reach=Math.ceil(Math.max(Math.abs(material.blurDist[0]),
+    1/material.innerInvHeight,1/material.outerInvHeight))+2;
+  for(const [w,h,r] of [[260,900,24],[74,900,24],[274,844,26],[170,760,24]]){
+    const fields=generateOracleField(w,h,r);
+    const mid=Math.floor(h/2);
+    for(const [name,buffer] of Object.entries({
+      inner:fields.inner,outer:fields.outer,blurMask:fields.blurMask
+    })){
+      for(let y=reach;y<h-reach;y++)for(let x=0;x<w;x++){
+        if(x>=reach && x<w-reach)continue;
+        const at=(y*w+x)*4,reference=(mid*w+x)*4;
+        for(let c=0;c<4;c++)assert.equal(buffer[at+c],buffer[reference+c],
+          `Lossless tile invariant ${name} ${w}x${h} x=${x} y=${y} channel=${c}`);
+      }
+    }
+  }
+});
