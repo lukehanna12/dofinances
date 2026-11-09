@@ -124,7 +124,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   let railExpanded=false;
   let expandedWidth=260; // Persisted preference, even when the viewport contracts.
   let displayedWidth=260;
-  const COLLAPSE_DRAG_EXTRA=34;
+  const COLLAPSE_DRAG_FRACTION=.5;
   try{
     collapsed=win.localStorage.getItem(PREFERENCE_KEY)==="true";
     const saved=Number(win.localStorage.getItem(WIDTH_KEY));
@@ -295,20 +295,38 @@ export function initWorkspaceNavigation(doc=document,win=window){
     startSidebarMotion("layout");
     updateCollapse();
   });
-  // Continue dragging past the content-sized minimum; on release past the
-  // 34px threshold, snap to the 74px rail. Pointer capture remains stable.
+  // A drag can continue beyond the fixed expanded minimum, but crossing
+  // half that minimum collapses immediately. No pointerup/release required.
   if(resizeHandle){
     let drag=null,queued=false,pendingWidth=displayedWidth,rawWidth=displayedWidth;
     const paint=()=>{
       queued=false;
       if(drag)setSidebarWidth(pendingWidth,true);
     };
+    const collapseDuringDrag=()=>{
+      if(!drag)return;
+      const pointerId=drag.pointerId;
+      drag=null; // Make lostpointercapture and any queued frame harmless.
+      queued=false;
+      shell.classList.remove("is-sidebar-resizing");
+      if(isCompactRail())railExpanded=false;
+      else collapsed=true;
+      try{win.localStorage.setItem(PREFERENCE_KEY,"true");}catch{}
+      hideHint();
+      startSidebarMotion("layout");
+      updateCollapse();
+      // Release capture after state is settled. Do not wait for pointerup.
+      try{if(pointerId!==undefined)resizeHandle.releasePointerCapture?.(pointerId);}catch{}
+    };
     const onMove=event=>{
       if(!drag)return;
       rawWidth=drag.width+event.clientX-drag.x;
+      if(rawWidth<minSidebarWidth*COLLAPSE_DRAG_FRACTION){
+        collapseDuringDrag();
+        return;
+      }
       pendingWidth=clampWidth(rawWidth);
-      showHint(event,rawWidth<minSidebarWidth-COLLAPSE_DRAG_EXTRA
-        ?"Release to collapse sidebar":"Drag to resize • pull left to collapse");
+      showHint(event,"Drag to resize • collapse past half minimum width");
       if(queued)return;
       queued=true;
       if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(paint);
@@ -316,19 +334,14 @@ export function initWorkspaceNavigation(doc=document,win=window){
     };
     const onEnd=event=>{
       if(!drag)return;
-      if(event?.type==="pointercancel"){
-        setSidebarWidth(drag.width);
-      }else if(rawWidth<minSidebarWidth-COLLAPSE_DRAG_EXTRA){
-        if(isCompactRail())railExpanded=false;
-        else collapsed=true;
-        try{win.localStorage.setItem(PREFERENCE_KEY,"true");}catch{}
-        startSidebarMotion("layout");
-        updateCollapse();
-      }else{
+      if(event?.type==="pointercancel")
+        setSidebarWidth(drag.width,true);
+      else{
         setSidebarWidth(pendingWidth);
         try{win.localStorage.setItem(WIDTH_KEY,String(displayedWidth));}catch{}
       }
       drag=null;
+      queued=false;
       shell.classList.remove("is-sidebar-resizing");
       hideHint();
     };
@@ -336,15 +349,15 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(isMobile()||shell.classList.contains("is-collapsed"))return;
       event.preventDefault?.();
       stopSidebarMotion();
-      drag={x:event.clientX,width:displayedWidth};
+      drag={x:event.clientX,width:displayedWidth,pointerId:event.pointerId};
       rawWidth=pendingWidth=displayedWidth;
       shell.classList.add("is-sidebar-resizing");
       resizeHandle.setPointerCapture?.(event.pointerId);
-      showHint(event,"Drag to resize • pull left to collapse");
+      showHint(event,"Drag to resize • collapse past half minimum width");
     });
     const onGripHover=event=>{
       if(isMobile()||shell.classList.contains("is-collapsed")){hideHint();return;}
-      if(!drag)showHint(event,"Drag to resize • pull left to collapse");
+      if(!drag)showHint(event,"Drag to resize • collapse past half minimum width");
     };
     resizeHandle.addEventListener("pointerenter",onGripHover,{passive:true});
     resizeHandle.addEventListener("pointermove",event=>{

@@ -370,7 +370,7 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   assert.equal(m.elements["main-navigation"].hidden,false);
 });
 
-test("grip drag resizes, preserves preference, and collapses beyond content minimum",()=>{
+test("grip drag collapses instantly past half the minimum, without pointer release",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
   const grip=m.elements["sidebar-resize-handle"];
@@ -382,19 +382,23 @@ test("grip drag resizes, preserves preference, and collapses beyond content mini
   grip.dispatch("pointerup",{clientX:400,pointerId:1});
   assert.equal(grip.getAttribute("aria-valuenow"),"400");
   assert.equal(m.stored.get("dofinances.workspace.sidebar.width"),"400");
-  assert.equal(shell.classList.contains("is-collapsed"),false);
   grip.dispatch("pointerdown",{clientX:400,pointerId:2});
-  grip.dispatch("pointermove",{clientX:170,pointerId:2});
-  grip.dispatch("pointerup",{clientX:170,pointerId:2});
-  assert.equal(shell.classList.contains("is-collapsed"),true);
+  grip.dispatch("pointermove",{clientX:125,pointerId:2});
+  assert.equal(shell.classList.contains("is-collapsed"),false,
+    "At more than half the minimum, the panel must remain expanded");
+  grip.dispatch("pointermove",{clientX:123,pointerId:2});
+  assert.equal(shell.classList.contains("is-collapsed"),true,
+    "Collapse must occur on pointermove without waiting for pointerup");
+  assert.equal(shell.classList.contains("is-sidebar-resizing"),false);
   assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
-  assert.equal(m.stored.get("dofinances.workspace.sidebar.width"),"400",
-    "Collapsed drag must not overwrite the prior useful expanded width");
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.width"),"400");
+  grip.dispatch("pointerup",{clientX:123,pointerId:2});
+  assert.equal(shell.classList.contains("is-collapsed"),true,
+    "Release after auto-collapse must be harmless");
   sidebar.dispatch("click");
   assert.equal(shell.classList.contains("is-collapsed"),false);
   assert.equal(grip.getAttribute("aria-valuenow"),"400");
 });
-
 test("hover wiring is registered before a drag and uses captured resize semantics",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);

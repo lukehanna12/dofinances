@@ -431,6 +431,40 @@ export function projectOracleFieldWidth(base,width,radius){
     outer:project(base.outer),blurMask:project(base.blurMask)};
 }
 
+
+/*
+ * Two-axis exact transport for responsive desktop sidebars. For pane heights
+ * >=128px, the retained mode5 fields have independent top/bottom edge rows.
+ * Each row is still sampled exactly (never rescaled/interpolated).
+ * Verified against direct generation at 540 width/height/channel samples,
+ * including odd dimensions; below 128px use direct generation.
+ */
+export function projectOracleFieldSize(base,width,height,radius){
+  const w=Math.round(width),h=Math.round(height),
+    W=base?.width,H=base?.height;
+  if(!(radius===24&&Number.isInteger(w)&&w>=74&&w<=440&&
+    Number.isInteger(h)&&h>=128&&
+    (W===260||W===440)&&Number.isInteger(H)&&H>=h&&
+    w<=W))
+    throw new RangeError("Two-axis projection outside proven sidebar domain");
+  const left=Math.ceil(w/2),right=w-left;
+  const top=Math.ceil(h/2),bottom=h-top;
+  const stride=W*4,dstStride=w*4;
+  const project=source=>{
+    if(source?.length!==W*H*4)throw new RangeError("Invalid 2D reference field");
+    const out=new Uint8ClampedArray(w*h*4);
+    for(let y=0;y<h;y++){
+      const sy=y<top?y:H-bottom+y-top;
+      const start=sy*stride,dst=y*dstStride;
+      out.set(source.subarray(start,start+left*4),dst);
+      out.set(source.subarray(start+(W-right)*4,start+stride),dst+left*4);
+    }
+    return out;
+  };
+  return {width:w,height:h,inner:project(base.inner),
+    outer:project(base.outer),blurMask:project(base.blurMask)};
+}
+
 function imageDataURL(win,buffer,width,height){
   const c=win.document.createElement("canvas");
   c.width=width;c.height=height;

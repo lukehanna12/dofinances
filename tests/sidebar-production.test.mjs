@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {generateOracleField,projectOracleFieldWidth,encodeOracleDisplacement,decodeOracleDisplacement,predictSidebarMotionWidths}
+import {generateOracleField,projectOracleFieldWidth,projectOracleFieldSize,encodeOracleDisplacement,decodeOracleDisplacement,predictSidebarMotionWidths}
   from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -77,7 +77,8 @@ test("Oracle retains exact size-keyed cache and warms the actual resized endpoin
   assert.match(code,/shell\.classList\.contains\("is-sidebar-resizing"\)/);
   assert.match(code,/for\(const mapped of geometryCache\.values\(\)\)/);
   assert.match(worker,/const baseWidth=w<=260\?260:440/);
-  assert.match(worker,/generateOracleField\(baseWidth,h,corner\)/);
+  assert.match(worker,/generateOracleField\(baseWidth,referenceHeight,corner\)/);
+  assert.match(worker,/projectOracleFieldSize\(base,w,h,corner\)/);
 });
 
 test("both desktop motion directions prefetch only exact oracle geometry within bounded memory",async()=>{
@@ -105,4 +106,21 @@ test("vertical resize retains exact stale width-height fields for reverse resize
   assert.match(code,/const key=w\+"x"\+h\+"@"\+corner/);
   assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
   assert.match(code,/CACHE_URL_BUDGET=24\*1024\*1024/);
+});
+
+test("reference fields project byte-exactly along both axes for desktop resize",()=>{
+  const base=generateOracleField(440,512,24);
+  for(const h of [128,129,257,511,512]){
+    for(const w of [74,248,260,333,440]){
+      const expected=generateOracleField(w,h,24);
+      const output=projectOracleFieldSize(base,w,h,24);
+      for(const channel of ["inner","outer","blurMask"])
+        assert.deepEqual(output[channel],expected[channel],
+          channel+" mismatch at "+w+"x"+h);
+    }
+  }
+  assert.throws(()=>projectOracleFieldSize(base,260,127,24),RangeError,
+    "Very short panes need direct mode5 generation");
+  assert.throws(()=>projectOracleFieldSize(base,440,600,24),RangeError,
+    "Do not project beyond the reference height");
 });

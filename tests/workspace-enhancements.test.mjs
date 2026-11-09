@@ -100,8 +100,9 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:auto;right:auto;/);
   assert.match(nav,/Click to expand sidebar/);
   assert.match(nav,/Drag to resize • pull left to collapse/);
-  assert.match(nav,/Release to collapse sidebar/);
-  assert.match(nav,/COLLAPSE_DRAG_EXTRA=34/);
+  assert.match(nav,/collapse past half minimum width/);
+  assert.match(nav,/COLLAPSE_DRAG_FRACTION=\.5/);
+  assert.match(nav,/rawWidth<minSidebarWidth\*COLLAPSE_DRAG_FRACTION/);
 });
 test("end-of-page image remains visible over small reverse scrolls",()=>{
   const scroll=read("../sites/_apex/app/assets/workspace-scroll.js");

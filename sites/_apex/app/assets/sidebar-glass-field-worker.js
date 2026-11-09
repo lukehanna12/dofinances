@@ -6,31 +6,32 @@
  * three PNG data:image URLs consumed by SVG feImage; fallback transfers
  * the exact arrays to the legacy main-thread encoder.
  */
-import {generateOracleField,projectOracleFieldWidth} from "./sidebar-glass-oracle.js";
+import {generateOracleField,projectOracleFieldSize} from "./sidebar-glass-oracle.js";
 
 const canEncode=typeof OffscreenCanvas==="function" &&
                 typeof FileReaderSync==="function";
 const reader=canEncode?new FileReaderSync():null;
+// One growing exact reference per desktop width tier. Vertical viewport
+// changes within the prepared height project directly; a taller viewport
+// grows the reference only when necessary. No blurred or stretched maps.
 const rawBases=new Map();
-const MAX_BASES=4;
+const MAX_BASES=2;
 function sourceExactField(request){
   const {w,h,corner}=request;
-  // Width-exact transport: 260px base for compact-to-standard widths,
-  // 440px base for wider user-dragged panels. Radius-26 mobile is unchanged.
-  if(w<74||w>440||h<1||corner!==24)
+  if(w<74||w>440||h<128||corner!==24)
     return generateOracleField(w,h,corner);
   const baseWidth=w<=260?260:440;
-  const key=h+"@"+corner+"@"+baseWidth;
-  let base=rawBases.get(key);
-  if(!base){
-    base=generateOracleField(baseWidth,h,corner);
-    rawBases.set(key,base);
+  let base=rawBases.get(baseWidth);
+  if(!base||base.height<h){
+    const referenceHeight=Math.ceil(h/128)*128;
+    base=generateOracleField(baseWidth,referenceHeight,corner);
+    rawBases.set(baseWidth,base);
     while(rawBases.size>MAX_BASES)rawBases.delete(rawBases.keys().next().value);
   }else{
-    rawBases.delete(key);
-    rawBases.set(key,base);
+    rawBases.delete(baseWidth);
+    rawBases.set(baseWidth,base);
   }
-  return projectOracleFieldWidth(base,w,corner);
+  return projectOracleFieldSize(base,w,h,corner);
 }
 async function toPNG(buffer,width,height){
   const canvas=new OffscreenCanvas(width,height);
