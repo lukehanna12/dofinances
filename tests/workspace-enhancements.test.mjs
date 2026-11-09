@@ -125,7 +125,8 @@ test("resize grip is outside clipped sidebar and exposes both hover affordances"
   assert.match(css,/\.shell > \.sidebar-resize-handle\{/);
   assert.match(css,/width:28px;height:auto;z-index:39/);
   assert.match(css,/cursor:ew-resize!important;touch-action:none/);
-  assert.match(css,/\.shell\.is-collapsed \.sidebar \*\{cursor:e-resize!important;/);
+  assert.match(css,/\.shell\.liquid-glass-preview\.is-collapsed \.sidebar\{[\s\S]*?pointer-events:none/);
+  assert.match(css,/\.shell\.liquid-glass-preview\.is-collapsed \.sidebar-rail-expand-target\{[\s\S]*?cursor:e-resize!important/);
   assert.match(css,/grid-template-columns:minmax\(0,1fr\) 34px/);
   assert.match(js,/pointerover",onRailHover/);
   assert.match(js,/resizeHandle\.addEventListener\("pointerenter",onGripHover/);
