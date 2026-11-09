@@ -25,16 +25,37 @@
 export const ORACLE_TARGET = Object.freeze({
   build:"25F80",cpu:"Apple M2",gpu:"G14G",shader:"glass_background_sdf_no_bleed_lph"
 });
+/*
+ * A SINGLE observed 264-byte SDF48+Glass216 live LPH binding, rather than
+ * the invalid combination of separately projected 331-case marginal modes.
+ * Oracle: live_blur_dataflow.json.xz / diagnostic_m1_b4.75_z1.0,
+ * index1 pass148 seq4208. Same joint material signature in 24 uploads.
+ * This is a FINITE PRIVATE diagnostic, not a universal public regular state.
+ * The public regular-radius→blur-word path below is separate, and composing
+ * the two is a documented browser-adapter assumption.
+ */
 export const ORACLE_FINITE_REFRACTION = Object.freeze({
-  // The most frequent independently projected values among 331 retained
-  // finite public states. Their joint co-occurrence is not hereby asserted.
-  innerAmount:Math.fround(-60),
-  innerInvHeight:Math.fround(0.05000000074505806),
-  outerAmount:Math.fround(38),
-  outerInvHeight:Math.fround(0.04210526496171951),
+  sourceCase:"diagnostic_m1_b4.75_z1.0",
+  sourceFragment:"glass_background_sdf_no_bleed_lph",
+  innerAmount:Math.fround(-44.79999923706055),
+  innerInvHeight:Math.fround(0.0714285746216774),
+  outerAmount:Math.fround(11.199999809265137),
+  outerInvHeight:Math.fround(0.1428571492433548),
   threshold0:Math.fround(-1),
   threshold1:Math.fround(-.5),
-  opacity:Math.fround(.30000001192092896),
+  opacity:0.300048828125,
+  faceOpacity:1,
+  shadowOpacity:0.389404296875,
+  shadowFaceOpacity:Math.fround(0.09142857044935226),
+  holdingToneOpacity:1,
+  blurAlpha:Object.freeze([1,.5,0,-.5]),
+  blurDist:Object.freeze([-28,-1,0,0]),
+  // Actual half4 rows (RGB coefficient + bias), NOT a stylistic tint.
+  faceMatrix:Object.freeze([
+    Object.freeze([0.646484375,-0.3486328125,-0.03515625,0.07501220703125]),
+    Object.freeze([-0.1036376953125,0.4013671875,-0.03521728515625,0.07501220703125]),
+    Object.freeze([-0.10369873046875,-0.3486328125,0.71484375,0.07501220703125])
+  ]),
   surfaceScale:Math.fround(.25),
   cpuScaleMultiplier:Math.fround(1.6)
 });
@@ -74,6 +95,52 @@ export function airThresholdMix(distance,threshold0=-1,threshold1=-.5,opacity=.3
   if(threshold0===threshold1)throw new RangeError("Zero AIR threshold interval");
   // AIR lines 409–417: saturate(fma(distance,1/(b-a), -a/(b-a))).
   return f32(f32(opacity)*clamp((distance-threshold0)/(threshold1-threshold0),0,1));
+}
+
+/*
+ * AIR base lines 290–321: blur_alpha0 minus the dot product of the remaining
+ * three alphas and saturated signed-distance interpolation ramps.
+ * The pair blur_dist2=blur_dist3=0 creates a singular interval in the captured
+ * uniform state; comparisons follow the shader's ordered f32 saturation path
+ * with zero/NaN treated as zero at that exact point.
+ */
+export function airBlurDistribution(distance,material=ORACLE_FINITE_REFRACTION){
+  const alpha=material.blurAlpha,dist=material.blurDist;
+  if(!Number.isFinite(distance))throw new TypeError("Finite SDF required");
+  let sum=0;
+  for(let i=0;i<3;i++){
+    const span=dist[i+1]-dist[i];
+    const ratio=span===0?
+      (distance>dist[i]?Infinity:distance<dist[i]?-Infinity:NaN):
+      (distance-dist[i])/span;
+    const fraction=Number.isNaN(ratio)?0:clamp(ratio,0,1);
+    sum+=alpha[i+1]*fraction;
+  }
+  return f32(alpha[0]-sum);
+}
+
+/* AIR lines 329–337 / 388–396 / 443–452: mip LOD is log2(
+   t<2 ? 1+0.5*t : t ), clamped to >=0. Browser's Gaussian footprint
+   below is a separate approximation of this exact Metal-mipmap LOD. */
+export function airTextureMipLOD(blurWord,distribution){
+  if(!Number.isFinite(blurWord)||!Number.isFinite(distribution))
+    throw new TypeError("Finite blur parameters required");
+  const t=f32(f32(blurWord)*f32(distribution));
+  const sample=t<2?f32(f32(.5*t)+1):t;
+  return Math.max(0,Math.log2(sample));
+}
+
+export function oracleFaceColorMatrixValues(material=ORACLE_FINITE_REFRACTION){
+  // SVG 4×5 rows multiply UNPREMULTIPLIED browser sRGB RGBA. Native target
+  // uses half4 rows and a separate extended-sRGB/Q pipeline; exact source
+  // coefficients, non-equivalent working/output color behavior.
+  const [r,g,b]=material.faceMatrix;
+  return [
+    r[0],r[1],r[2],0,r[3],
+    g[0],g[1],g[2],0,g[3],
+    b[0],b[1],b[2],0,b[3],
+    0,0,0,1,0
+  ].join(" ");
 }
 
 /*
@@ -145,15 +212,25 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
   const width=Math.round(w),height=Math.round(h);
   const inner=new Uint8ClampedArray(width*height*4);
   const outer=new Uint8ClampedArray(width*height*4);
+  const blurMask=new Uint8ClampedArray(width*height*4);
   const encode=(v)=>Math.round(255*clamp(.5+v/128,0,1));
+  // All bounds derived from the CAPTURED inverse refraction heights and
+  // blur distance0, not an arbitrary 28px visual cut-off.
+  const activeSpan=Math.max(
+    Math.abs(parameters.blurDist[0]),
+    1/parameters.innerInvHeight,
+    1/parameters.outerInvHeight);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     const i=(y*width+x)*4;
     const dst=Math.min(x,width-x-.5,y,height-y-.5);
-    if(x<width*.5 || dst>28){
+    if(x<width*.5 || dst>activeSpan){
       inner[i]=outer[i]=128;
       inner[i+1]=outer[i+1]=128;
       inner[i+2]=outer[i+2]=0;
       inner[i+3]=outer[i+3]=255;
+      // No edge weighting; far field uses the deep mip/blur level.
+      blurMask[i]=blurMask[i+1]=blurMask[i+2]=0;
+      blurMask[i+3]=255;
       continue;
     }
     const p=paneField(x+.5,y+.5,width,height,radius);
@@ -172,8 +249,15 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
     outer[i+1]=encode(p.ny*outerAmount);
     inner[i+2]=outer[i+2]=Math.round(clamp(mx,0,1)*255);
     inner[i+3]=outer[i+3]=255;
+    const distribution=airBlurDistribution(p.distance,parameters);
+    // Within the visible, signed-distance-negative face the retained
+    // distribution spans 0.5 at the edge to 1.0 in the interior.
+    const nearWeight=clamp((1-distribution)/.5,0,1);
+    blurMask[i]=blurMask[i+1]=0;
+    blurMask[i+2]=Math.round(255*nearWeight);
+    blurMask[i+3]=255;
   }
-  return {width,height,inner,outer};
+  return {width,height,inner,outer,blurMask};
 }
 
 function imageDataURL(win,buffer,width,height){
