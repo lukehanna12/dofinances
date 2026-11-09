@@ -450,3 +450,30 @@ test("exact cached endpoint fields synchronize on final width animation frame",a
   assert.match(code,/endpointObserver\?\.disconnect\(\)/);
   assert.match(code,/win\.cancelAnimationFrame\(endpointFrame\)/);
 });
+
+test("source complementary blur and refraction branches use linear-addition joins",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  for(const [a,b,result] of [
+    ["innerNearPart","innerFarPart","innerBlurred"],
+    ["outerNearPart","outerFarPart","outerBlurred"],
+    ["outerPart","innerPart","composited"]
+  ]){
+    assert.ok(code.includes('in:"'+a+'",in2:"'+b+'",operator:"arithmetic",k2:1,k3:1,result:"'+result+'"'),
+      "Source blend "+result+" must add premultiplied complementary parts");
+  }
+  // With an opaque source and complementary weights m/(1-m), the intended
+  // sum is exactly opaque. Porter-Duff 'over' yields alpha 1-m+m*m instead.
+  for(const m of [.1,.3,.5,.7,.9]){
+    const near=[.25,.4,.9],far=[.8,.1,.2];
+    const expected=near.map((v,i)=>m*v+(1-m)*far[i]);
+    const overAlpha=m+(1-m)*(1-m);
+    const addedAlpha=m+(1-m);
+    const overRGB=near.map((v,i)=>m*v+(1-m)*(1-m)*far[i]);
+    assert.equal(addedAlpha,1);
+    assert.ok(overAlpha<1);
+    for(let c=0;c<3;c++){
+      assert.ok(Math.abs(expected[c]-(m*near[c]+(1-m)*far[c]))<1e-12);
+      assert.ok(Math.abs(expected[c]-overRGB[c])>.001);
+    }
+  }
+});

@@ -391,29 +391,33 @@ try{
         const nodes=["innerBlurred","outerBlurred","composited"].map(
           key=>filter.querySelector('feComposite[result="'+key+'"]'));
         if(nodes.some(n=>!n))return {error:"Missing SVG mix joins"};
+        const original=nodes.map(n=>({op:n.getAttribute("operator"),k2:n.getAttribute("k2"),
+          k3:n.getAttribute("k3")}));
         nodes.forEach(n=>{
-          n.setAttribute("operator","arithmetic");
-          n.setAttribute("k1","0");
-          n.setAttribute("k2","1");
-          n.setAttribute("k3","1");
-          n.setAttribute("k4","0");
+          n.setAttribute("operator","over");
+          n.removeAttribute("k2");n.removeAttribute("k3");
         });
-        return {count:nodes.length,operators:nodes.map(n=>n.getAttribute("operator"))};
+        return {count:nodes.length,original};
       })()`);
       assert(changes.count===3,"Missing candidate operator stages "+JSON.stringify(changes));
       await sleep(360);
-      const arithmeticPicture=decodePNG((await send("Page.captureScreenshot",{
+      const oldOverPicture=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
       },90000)).data);
-      const changed=comparePixels(overPicture,arithmeticPicture,0,260,0,880);
+      const changed=comparePixels(overPicture,oldOverPicture,0,260,0,880);
       console.log("COMPLEMENTARY_WEIGHTED_BRANCH_ARITHMETIC_VS_OVER",
         JSON.stringify(changed));
+      assert(changed.different>1000 && changed.max>2,
+        "Complementary source-derived blend fix must be visible against the prior Porter-Duff over");
+      assert(changes.original.every(o=>o.op==="arithmetic"&&o.k2==="1"&&o.k3==="1"),
+        "Production graph must use additive linear joins");
       await evaluate(`(()=>{
         const filter=document.getElementById("oracle-glass-native-backdrop");
         ["innerBlurred","outerBlurred","composited"].forEach(key=>{
           const node=filter.querySelector('feComposite[result="'+key+'"]');
-          node.setAttribute("operator","over");
-          for(const k of ["k1","k2","k3","k4"])node.removeAttribute(k);
+          node.setAttribute("operator","arithmetic");
+          node.setAttribute("k2","1");
+          node.setAttribute("k3","1");
         });
         return true;
       })()`);

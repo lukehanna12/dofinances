@@ -453,14 +453,19 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     in:"nearBlur",in2:"innerNearCoverage",operator:"in",result:"innerNearPart"});
   const innerFarPart=makeSVG(doc,"feComposite",{
     in:"farBlur",in2:"innerNearCoverage",operator:"out",result:"innerFarPart"});
+  // AIR samples and linearly interpolates colors. The premultiplied
+  // in/out parts below ALREADY sum to one full-coverage image. A Porter-Duff
+  // "over" double-applies 1-alpha to the far branch and loses opacity.
+  // SVG arithmetic (k1=0,k2=k3=1,k4=0) adds the complementary parts.
+  // This corrects compositing algebra; it does not claim an Apple Q color path.
   const innerBlur=makeSVG(doc,"feComposite",{
-    in:"innerNearPart",in2:"innerFarPart",operator:"over",result:"innerBlurred"});
+    in:"innerNearPart",in2:"innerFarPart",operator:"arithmetic",k2:1,k3:1,result:"innerBlurred"});
   const outerNearPart=makeSVG(doc,"feComposite",{
     in:"nearBlur",in2:"outerNearCoverage",operator:"in",result:"outerNearPart"});
   const outerFarPart=makeSVG(doc,"feComposite",{
     in:"farBlur",in2:"outerNearCoverage",operator:"out",result:"outerFarPart"});
   const outerBlur=makeSVG(doc,"feComposite",{
-    in:"outerNearPart",in2:"outerFarPart",operator:"over",result:"outerBlurred"});
+    in:"outerNearPart",in2:"outerFarPart",operator:"arithmetic",k2:1,k3:1,result:"outerBlurred"});
   const innerMap=makeSVG(doc,"feImage",{result:"innerMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
   const outerMap=makeSVG(doc,"feImage",{result:"outerMap",x:0,y:0,
@@ -476,7 +481,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const maskedInner=makeSVG(doc,"feComposite",{in:"innerShift",in2:"outerBlendMask",
     operator:"out",result:"innerPart"});
   const join=makeSVG(doc,"feComposite",{
-    in:"outerPart",in2:"innerPart",operator:"over",result:"composited"});
+    in:"outerPart",in2:"innerPart",operator:"arithmetic",k2:1,k3:1,result:"composited"});
   // The m1 PRIVATE diagnostic face matrix is a legitimate source value,
   // but not the proven PUBLIC regular-style color/material selection.
   // Applying it across arbitrary browser sRGB page content darkened the
