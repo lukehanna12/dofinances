@@ -25,6 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Source-level Oracle LPH and numerical witness audit
+        run: python3 preview/oracle-exhaustive-audit.py
       - name: Test real workspace navigation and experimental glass
         run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs
       - name: Package actual app UI with safe preview entrypoint
