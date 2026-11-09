@@ -521,6 +521,10 @@ try{
       console.log("RESPONSIVE_WIDEN_GLASS_TIMELINE",JSON.stringify(compactResponsive));
       assert(responsive.at(-1)?.w===260&&responsive.at(-1)?.map===260,
         "Widening must restore exact expanded 260px geometry");
+      const staleWide=responsive.filter(p=>p.w===260&&p.map!==260);
+      assert(staleWide.length===0,
+        "After widening, the 260px pane must never paint with the old rail map: "+
+        JSON.stringify(staleWide));
 
 
     }
