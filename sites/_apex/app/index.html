@@ -17,7 +17,7 @@
     <symbol id="icon-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
     <symbol id="icon-projects" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
     <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v2m0 13v2M3.5 12h2m13 0h2m-14.4-5.6 1.4 1.4m9 9 1.4 1.4m0-12.4-1.4 1.4m-9 9-1.4 1.4"/><circle cx="12" cy="12" r="4.4"/></symbol>
-    <symbol id="icon-capabilities" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3.4 7H17l-6 13 1-9H5l8-11z"/></symbol>
+    <symbol id="icon-utilities" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3.4 7H17l-6 13 1-9H5l8-11z"/></symbol>
     <symbol id="icon-collections" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></symbol>
     <symbol id="icon-providers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7V4m6 3V4M7 10h10M7 14h10M9 17v3m6-3v3"/><rect x="5" y="7" width="14" height="10" rx="2"/></symbol>
     <symbol id="icon-permissions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1"/></symbol>
@@ -44,7 +44,7 @@
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
-          <a class="nav-link" data-route="capabilities" href="#colosseum/capabilities" aria-label="Capabilities" title="Capabilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-capabilities"></use></svg><span class="nav-label">Capabilities</span></a>
+          <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities" title="Utilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><span class="nav-label">Utilities</span></a>
           <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections" title="Collections"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><span class="nav-label">Collections</span></a>
           <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers" title="Providers"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><span class="nav-label">Providers</span></a>
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions" title="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label">Permissions</span></a>
@@ -77,14 +77,14 @@
             </a>
           </div>
           <div class="home-section-caption"><span>YOUR PROJECTS</span><a href="#projects">View projects <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></a></div>
-          <a class="project-row" href="#colosseum/capabilities" aria-label="Open Colosseum">
+          <a class="project-row" href="#colosseum/utilities" aria-label="Open Colosseum">
             <span class="project-emblem">C</span><span class="project-row-copy"><strong>Colosseum</strong><span>Project workspace</span></span><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg>
           </a>
         </section>
         <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
           <div class="page-heading"><div class="eyebrow">WORKSPACE</div><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
           <div class="section-subheading"><h2>All projects</h2><span class="count-label">1 project</span></div>
-          <a class="project-card" href="#colosseum/capabilities" aria-label="Open Colosseum project">
+          <a class="project-card" href="#colosseum/utilities" aria-label="Open Colosseum project">
             <span class="project-emblem large">C</span><span class="project-card-copy"><strong>Colosseum</strong><span>Open project workspace</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
           </a>
         </section>
@@ -154,9 +154,9 @@
         </section>
 
         </section>
-        <section class="view project-view" data-view="colosseum/capabilities" hidden aria-labelledby="project-capabilities-title">
-          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-capabilities-title">Capabilities</h1><p class="lead">Colosseum · Capabilities</p></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-capabilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+        <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
+          <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-utilities-title">Utilities</h1><p class="lead">Colosseum · Utilities</p></div>
+          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/collections" hidden aria-labelledby="project-collections-title">
           <div class="page-heading"><div class="eyebrow">PROJECT / COLOSSEUM</div><h1 id="project-collections-title">Collections</h1><p class="lead">Colosseum · Collections</p></div>

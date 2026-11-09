@@ -1,11 +1,11 @@
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
-export const COLOSSEUM_ROUTES=Object.freeze(["capabilities","collections","providers","permissions","diagnostics","settings"]);
+export const COLOSSEUM_ROUTES=Object.freeze(["utilities","collections","providers","permissions","diagnostics","settings"]);
 const MAIN_SET=new Set(MAIN_ROUTES);
 const PROJECT_SET=new Set(COLOSSEUM_ROUTES);
 const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",
-  capabilities:"Capabilities",collections:"Collections",providers:"Providers",
+  utilities:"Utilities",collections:"Collections",providers:"Providers",
   permissions:"Permissions",diagnostics:"Diagnostics"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
 
@@ -13,9 +13,10 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
   if(MAIN_SET.has(raw))return raw;
   if(raw==="account")return "settings"; // old dashboard deep-link
-  if(raw==="colosseum")return "colosseum/capabilities";
+  if(raw==="colosseum")return "colosseum/utilities";
   if(raw.startsWith("colosseum/")){
     const section=raw.slice("colosseum/".length);
+    if(section==="capabilities")return "colosseum/utilities"; // legacy hash link
     if(PROJECT_SET.has(section))return "colosseum/"+section;
   }
   if(raw)return "home"; // Invalid hashes must not silently select a different page.
@@ -26,7 +27,8 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const slug=urlPath.startsWith("/app/")?urlPath.slice("/app/".length):"";
   if(MAIN_SET.has(slug))return slug;
   if(slug==="account")return "settings";
-  if(slug==="colosseum")return "colosseum/capabilities";
+  if(slug==="colosseum")return "colosseum/utilities";
+  if(slug==="colosseum/capabilities")return "colosseum/utilities"; // legacy deep link
   if(slug.startsWith("colosseum/")&&PROJECT_SET.has(slug.slice("colosseum/".length)))
     return slug;
   return "home";

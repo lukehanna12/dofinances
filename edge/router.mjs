@@ -167,7 +167,7 @@ async function serveAsset(request,env,folder,path,privatePage=false) {
 // Deep workspace URLs are exact allowlisted views; static assets remain distinct.
 const WORKSPACE_VIEW_PATHS = new Set([
   "/app/home", "/app/projects", "/app/settings", "/app/account",
-  "/app/colosseum", "/app/colosseum/capabilities",
+  "/app/colosseum", "/app/colosseum/utilities", "/app/colosseum/capabilities",
   "/app/colosseum/collections", "/app/colosseum/providers",
   "/app/colosseum/permissions", "/app/colosseum/diagnostics",
   "/app/colosseum/settings",

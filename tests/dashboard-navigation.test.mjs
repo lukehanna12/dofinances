@@ -8,7 +8,7 @@ const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
-  assert.deepEqual(COLOSSEUM_ROUTES,["capabilities","collections","providers","permissions","diagnostics","settings"]);
+  assert.deepEqual(COLOSSEUM_ROUTES,["utilities","collections","providers","permissions","diagnostics","settings"]);
   assert.equal(resolveWorkspaceRoute(""),"home");
   assert.equal(resolveWorkspaceRoute("#home"),"home");
   assert.equal(resolveWorkspaceRoute("#projects"),"projects");
@@ -16,7 +16,10 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.equal(resolveWorkspaceRoute("#account"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_linked=1"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_error=identity_used"),"settings");
-  assert.equal(resolveWorkspaceRoute("#colosseum"),"colosseum/capabilities");
+  assert.equal(resolveWorkspaceRoute("#colosseum"),"colosseum/utilities");
+  assert.equal(resolveWorkspaceRoute("#colosseum/capabilities"),"colosseum/utilities",
+    "previous Capabilities bookmarks remain valid");
+  assert.equal(workspaceRouteDetails("colosseum/utilities").label,"Utilities");
   for(const section of COLOSSEUM_ROUTES){
     assert.equal(resolveWorkspaceRoute("#colosseum/"+section),"colosseum/"+section);
     assert.equal(workspaceRouteDetails("colosseum/"+section).project,true);
@@ -37,7 +40,9 @@ test("direct nested app paths resolve the same screens as hash navigation",()=>{
     assert.equal(resolveWorkspaceRoute("","","/dashboard/"+route),route);
   }
   assert.equal(resolveWorkspaceRoute("","","/app/account"),"settings");
-  assert.equal(resolveWorkspaceRoute("","","/app/colosseum"),"colosseum/capabilities");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum"),"colosseum/utilities");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum/capabilities"),"colosseum/utilities",
+    "previous direct page URLs remain valid");
   assert.equal(resolveWorkspaceRoute("#settings","","/app/projects"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/home"),"settings");
   assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"home");
@@ -228,7 +233,10 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="mobile-nav-toggle"/);
   assert.match(html,/id="back-to-workspace"/);
   assert.match(html,/href="#projects"[^>]+aria-label="Back to Projects"/);
-  assert.match(html,/href="#colosseum\/capabilities"/);
+  assert.match(html,/href="#colosseum\/utilities"/);
+  assert.match(html,/aria-label="Utilities" title="Utilities"/);
+  assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
+  assert.doesNotMatch(html,/aria-label="Capabilities"/);
   for(const id of ["account-email","account-email-detail","signout","linked-accounts",
     "linked-identity-list","add-identity-buttons","federation-feedback",
     "resend-verification","start-mfa","mfa-confirm-form","mfa-disable-form",
