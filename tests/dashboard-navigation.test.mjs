@@ -90,11 +90,56 @@ test("sidebar collapse/expand keeps layout mounted and interpolates positions",a
     const collapsed=new RegExp("\\.shell\\.is-collapsed \\."+selector+" \\{display: "+display+";\\}");
     assert.match(css,collapsed,selector+" must stay mounted while fading");
   }
-  assert.match(css,/\.shell\.is-collapsed \.nav-link \{justify-content:\s*flex-start;\s*padding:\s*9px 11px;\}/);
+  const collapsedLink=css.match(/\.shell\.is-collapsed \.nav-link \{([^}]*)\}/)?.[1]||"";
+  assert.match(collapsedLink,/justify-content:\s*flex-start/);
+  assert.match(collapsedLink,/padding:\s*9px 0 9px 15px/);
+  assert.match(collapsedLink,/gap:\s*0/);
   assert.match(css,/\.shell\.is-collapsed \.nav-link \.nav-icon \{width:\s*18px;\s*height:\s*18px;\}/);
   assert.match(css,/@media \(max-width: 760px\) \{/);
   assert.match(css,/\.shell\.is-collapsed \.sidebar-toggle \{top:\s*1px;\s*right:\s*0;\}/);
   assert.match(css,/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.sidebar-head, \.brand, \.sidebar-toggle/);
+});
+test("collapsed rail links actually shrink inside the sidebar and keep rounded selections",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  // Original bug: auto-sized grid columns retained the min-content width of
+  // opacity-hidden labels, clipping the selected-link pill.
+  const rule=selector=>{
+    const start=css.indexOf(selector+" {");
+    if(start===-1)return "";
+    const after=css.indexOf("{",start)+1;
+    return css.slice(after,css.indexOf("}",after));
+  };
+  const nav=rule(".sidebar-navigation");
+  const stack=rule(".nav-stack");
+  const link=rule(".nav-link");
+  const label=rule(".nav-label");
+  const rail=rule(".shell.is-collapsed .nav-link");
+  const narrowLabel=rule(".shell.is-collapsed .nav-link .nav-label");
+  assert.match(nav,/width:\s*100%/);
+  assert.match(nav,/min-width:\s*0/);
+  assert.match(stack,/width:\s*100%/);
+  assert.match(stack,/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(link,/width:\s*100%/);
+  assert.match(link,/min-width:\s*0/);
+  assert.match(link,/max-width:\s*100%/);
+  assert.match(link,/overflow:\s*hidden/);
+  assert.match(link,/border-radius:\s*9px/);
+  assert.match(label,/min-width:\s*0/);
+  assert.match(label,/overflow:\s*hidden/);
+  assert.match(rail,/padding:\s*9px 0 9px 15px/);
+  assert.match(rail,/gap:\s*0/);
+  assert.match(narrowLabel,/max-width:\s*0/);
+  assert.match(narrowLabel,/max-width 210ms/);
+  assert.match(css,/\.shell\.is-collapsed \.nav-link \.nav-icon \{width:\s*18px;\s*height:\s*18px;\}/);
+  const railSize=rule(".shell.is-collapsed .sidebar");
+  assert.match(railSize,/width:\s*74px/);
+  // 74px rail minus gutters and 1px divider = 49px pill.
+  assert.equal(74-12-12-1,49);
+  // Mobile drawer must restore labels and spacing even with collapsed preference.
+  const mobile=css.slice(css.indexOf("@media (max-width: 760px)"),
+    css.indexOf("@media (max-width: 480px)"));
+  assert.match(mobile,/\.shell\.is-collapsed \.nav-link \{[\s\S]*?padding:\s*9px 11px;[\s\S]*?gap:\s*11px/);
+  assert.match(mobile,/\.shell\.is-collapsed \.nav-link \.nav-label \{max-width:\s*24ch;\}/);
 });
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
