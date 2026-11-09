@@ -12,17 +12,18 @@ const canEncode=typeof OffscreenCanvas==="function" &&
                 typeof FileReaderSync==="function";
 const reader=canEncode?new FileReaderSync():null;
 const rawBases=new Map();
-const MAX_BASES=2;
+const MAX_BASES=4;
 function sourceExactField(request){
   const {w,h,corner}=request;
-  // Only desktop 74–260px with radius 24 is proven byte-exact.
-  // Mobile uses the untouched generator, especially at radius 26.
-  if(w<74||w>260||h<1||corner!==24)
+  // Width-exact transport: 260px base for compact-to-standard widths,
+  // 440px base for wider user-dragged panels. Radius-26 mobile is unchanged.
+  if(w<74||w>440||h<1||corner!==24)
     return generateOracleField(w,h,corner);
-  const key=h+"@"+corner;
+  const baseWidth=w<=260?260:440;
+  const key=h+"@"+corner+"@"+baseWidth;
   let base=rawBases.get(key);
   if(!base){
-    base=generateOracleField(260,h,corner);
+    base=generateOracleField(baseWidth,h,corner);
     rawBases.set(key,base);
     while(rawBases.size>MAX_BASES)rawBases.delete(rawBases.keys().next().value);
   }else{

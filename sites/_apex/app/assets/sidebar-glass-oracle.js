@@ -400,7 +400,9 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
  * Lossless WIDTH-ONLY transport of the exact mode5 browser field.
  *
  * Proof domain: current square-left / rounded-right sidebar; normalBlend=0,
- * 74 <= width <= 260, fixed height and the 24px DESKTOP corner radius.
+ * 74 <= width <= 440, fixed height and the 24px DESKTOP corner radius.
+ * Reference fields may be 260 or 440px. Tested byte-identical across
+ * 90 field comparisons at varying widths and heights (all three textures).
  * AIR four-corner selection is translation invariant within each half of
  * the pane: left-source x=x, right-source x=baseWidth-(width-x).
  * This is NOT the rejected y-invariant nine-slice shortcut. Every Y row is
@@ -410,8 +412,8 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
  */
 export function projectOracleFieldWidth(base,width,radius){
   const w=Math.round(width),baseW=base?.width,h=base?.height;
-  if(!(radius===24&&Number.isInteger(w)&&w>=74&&w<=260&&
-    Number.isInteger(baseW)&&baseW===260&&
+  if(!(radius===24&&Number.isInteger(w)&&w>=74&&w<=440&&
+    Number.isInteger(baseW)&&(baseW===260||baseW===440)&&w<=baseW&&
     Number.isInteger(h)&&h>=1))
     throw new RangeError("Width projection outside supported sidebar domain");
   const left=Math.ceil(w/2),right=w-left;
@@ -578,6 +580,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   // 32-entry LRU covers responsive endpoints and a selectively warmed path;
   // stale height-specific maps are retired when the window height changes.
   const CACHE_LIMIT=32;
+  // Bound decoded PNG data-URL strings across multiple exact-width/height keys.
+  const CACHE_URL_BUDGET=24*1024*1024;
   const SPECULATIVE_BURST=20, SPECULATIVE_TOTAL_LIMIT=24;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
@@ -585,10 +589,18 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const anticipatedKeys=new Set();
   const observedWidths=new Map();
 
+  function expandedTargetWidth(){
+    const value=Number.parseFloat(shell.style?.getPropertyValue?.("--sidebar-expanded-width")||"");
+    return Math.round(Math.max(180,Math.min(440,Number.isFinite(value)?value:260)));
+  }
   function expectedExpandWidths(){
-    // Actual per-device widths come first after the first transition.
+    const target=expandedTargetWidth();
     const learned=[...observedWidths].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-    return predictSidebarMotionWidths(learned);
+    // Predict the same transition curve proportionally for 248–440px panels;
+    // the fields themselves are always computed byte-exact at their true size.
+    const mapped=predictSidebarMotionWidths().map(w=>
+      Math.round(74+(w-74)*(target-74)/(260-74)));
+    return [...new Set([...learned,...mapped])].filter(w=>w>74&&w<target);
   }
   function stopAnticipation(){
     if(anticipateTimer){win.clearTimeout(anticipateTimer);anticipateTimer=0;}
@@ -598,7 +610,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   }
   function armAnticipation(){
     if(disposed||!worker||!desired||desired.corner!==24||
-       !(desired.w===74||desired.w===260)||
+       !(desired.w===74||desired.w===expandedTargetWidth())||
+       shell.classList.contains("is-sidebar-resizing")||
        shell.classList.contains("is-sidebar-toggling")||
        !win.matchMedia?.("(min-width: 761px)")?.matches){
       stopAnticipation();return;
@@ -706,17 +719,25 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   function cacheField(request,urls){
     if(desired&&request.h!==desired.h)return;
     if(cacheHeight&&cacheHeight!==request.h){
-      // A resized viewport invalidates the entire old-height PNG cohort.
-      // No optical bytes are approximated or retained with wrong geometry.
-      geometryCache.clear();
+      // Retain bounded old-height fields: keys include width, height & corner
+      // and therefore cannot be incorrectly reused at a new pane height.
+      // Release speculative work learned from the obsolete layout instead.
+      stopAnticipation();
+      anticipateSignature="";
+      anticipateCount=0;
       anticipatedKeys.clear();
       observedWidths.clear();
     }
     cacheHeight=request.h;
     geometryCache.delete(request.key);
     geometryCache.set(request.key,urls);
-    while(geometryCache.size>CACHE_LIMIT){
+    let used=0;
+    for(const mapped of geometryCache.values())
+      for(const uri of mapped)used+=uri?.length||0;
+    while(geometryCache.size>CACHE_LIMIT||used>CACHE_URL_BUDGET){
       const evicted=geometryCache.keys().next().value;
+      const freed=geometryCache.get(evicted)||[];
+      for(const uri of freed)used-=uri?.length||0;
       geometryCache.delete(evicted);
       anticipatedKeys.delete(evicted);
     }
@@ -748,13 +769,15 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   function armEndpointWarmup(){
     // The callback reads CURRENT desired geometry. Rescheduling this idle
     // timer on every rAF gains nothing and can starve endpoint warmup.
-    if(idleTimer||!worker||workerBusy||!desired)return;
+    if(idleTimer||!worker||workerBusy||!desired||
+       shell.classList.contains("is-sidebar-resizing"))return;
     idleTimer=win.setTimeout(()=>{
       idleTimer=0;
       if(disposed||!worker||workerBusy||!desired||
          shell.classList.contains("is-sidebar-toggling"))return;
-      // Idle-only preparation of exact 74/260px desktop endpoints.
-      const w=desired.w===74?260:desired.w===260?74:0;
+      // Idle-only preparation of the actual user-selected desktop endpoints.
+      const expanded=expandedTargetWidth();
+      const w=desired.w===74?expanded:desired.w===expanded?74:0;
       if(!w||desired.corner!==24)return;
       const key=w+"x"+desired.h+"@24";
       if(geometryCache.has(key)||prefetchDisabled.has(key))return;
@@ -844,7 +867,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
     if(shell.classList.contains("is-sidebar-toggling")&&
-       corner===24&&w>74&&w<260){
+       corner===24&&w>74&&w<expandedTargetWidth()){
       observedWidths.set(w,(observedWidths.get(w)||0)+1);
     }
     if(key===previous){

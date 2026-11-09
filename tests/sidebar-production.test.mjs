@@ -53,6 +53,33 @@ test("Oracle values remain exact across lossless width projection and neutral di
   }
 });
 
+test("440px reference projects exact native-derived fields during arbitrary manual drag",()=>{
+  for(const h of [113,257]){
+    const base=generateOracleField(440,h,24);
+    for(const w of [248,260,261,323,389,440]){
+      const projected=projectOracleFieldWidth(base,w,24);
+      const exact=generateOracleField(w,h,24);
+      for(const channel of ["inner","outer","blurMask"])
+        assert.deepEqual(projected[channel],exact[channel],
+          channel+" mismatch at width "+w+", height "+h);
+    }
+  }
+  const baseline=generateOracleField(260,113,24);
+  assert.throws(()=>projectOracleFieldWidth(baseline,440,24),RangeError);
+});
+
+test("Oracle retains exact size-keyed cache and warms the actual resized endpoint",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
+  assert.match(code,/CACHE_URL_BUDGET=24\*1024\*1024/);
+  assert.match(code,/const key=w\+"x"\+h\+"@"\+corner/);
+  assert.match(code,/desired\.w===74\?expanded:desired\.w===expanded\?74:0/);
+  assert.match(code,/shell\.classList\.contains\("is-sidebar-resizing"\)/);
+  assert.match(code,/for\(const mapped of geometryCache\.values\(\)\)/);
+  assert.match(worker,/const baseWidth=w<=260\?260:440/);
+  assert.match(worker,/generateOracleField\(baseWidth,h,corner\)/);
+});
+
 test("both desktop motion directions prefetch only exact oracle geometry within bounded memory",async()=>{
   const widths=predictSidebarMotionWidths();
   assert.ok(widths.length>18&&widths.length<45);
