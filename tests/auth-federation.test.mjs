@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
 import {federationProvider,federationAvailability,FEDERATION_LIMITS,newOAuthTransaction,
   pkceChallenge,oauthAuthorizeUrl,oauthCookie,readOAuthCookie,expiredOAuthCookie,
   exchangeFederatedIdentity} from "../edge/auth-federation.mjs";
@@ -101,5 +102,49 @@ test("GitHub identity uses immutable numeric ID and only verified email addresse
     assert.equal(identity.subject,"12345678");
     assert.equal(identity.email,"verified@example.com");
     assert.equal(identity.verified,true);
+  }finally{globalThis.fetch=originalFetch;}
+});
+
+test("Google invalid_client and invalid_grant fail with public-safe, specific codes",async()=>{
+  const config=federationProvider(credentials,"google"),txn=newOAuthTransaction();
+  const originalFetch=globalThis.fetch;
+  try{
+    for(const [upstreamError,publicCode] of [
+      ["invalid_client","oauth_client_rejected"],["invalid_grant","oauth_code_rejected"],
+      ["invalid_request","oauth_token_rejected"]
+    ]){
+      globalThis.fetch=async()=>Response.json({error:upstreamError,
+        error_description:"Do not disclose this provider response"},{status:400});
+      await assert.rejects(
+        exchangeFederatedIdentity(config,"one-time-auth-code",txn),
+        err=>err.code===publicCode && !err.message.includes("provider response")
+      );
+    }
+  } finally{globalThis.fetch=originalFetch;}
+});
+test("unknown providers stay disabled without exposing any OAuth configuration",()=>{
+  assert.equal(federationProvider(credentials,"chatgpt"),null);
+  assert.equal(federationProvider(credentials,"apple"),null);
+  assert.deepEqual(Object.keys(federationAvailability(credentials)).sort(),["github","google"]);
+});
+
+test("all OAuth fetches use Cloudflare-supported manual redirect handling",async()=>{
+  const source=await readFile(new URL("../edge/auth-federation.mjs",import.meta.url),"utf8");
+  assert.doesNotMatch(source,/redirect:\s*["']error["']/);
+  assert.equal((source.match(/redirect:"manual"/g)||[]).length,4);
+  assert.match(source,/if\(!res\.ok\)/);
+  // In Workers redirect:'error' throws before the request; a 3xx response
+  // must be handled explicitly, not followed to an untrusted destination.
+  const config=federationProvider(credentials,"google"),txn=newOAuthTransaction();
+  const originalFetch=globalThis.fetch;
+  try{
+    globalThis.fetch=async (_url,options)=>{
+      assert.equal(options.redirect,"manual");
+      return new Response(null,{status:302,headers:{Location:"https://untrusted.example"}});
+    };
+    await assert.rejects(
+      exchangeFederatedIdentity(config,"fake-code",txn),
+      error=>error.code==="oauth_token_rejected"
+    );
   }finally{globalThis.fetch=originalFetch;}
 });

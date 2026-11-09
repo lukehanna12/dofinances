@@ -26,7 +26,18 @@ export function Auth3() {
   );
   const [error, setError] = useState(() => {
     if(typeof window==="undefined")return "";
-    const errors={link_required:"An account with this email already exists. Sign in first and link this provider in Account settings.",identity_used:"That provider account is linked to another Dofinances user.",limit:"You have reached the limit for that provider.",email_required:"This provider did not supply an email address.",email_unverified:"Verify your email address before signing in.",invalid:"The sign-in request expired or could not be verified.",cancelled:"Provider sign-in was cancelled.",unavailable:"Provider sign-in could not be completed. Please try again."};
+    const errors={
+      oauth_client_rejected:"The provider rejected the OAuth client credentials. Please contact the website administrator.",
+      oauth_code_rejected:"The provider rejected the authorization code. Start the sign-in again.",
+      oauth_token_rejected:"The provider rejected the sign-in exchange.",
+      oauth_identity_invalid:"The provider identity could not be verified.",
+      oauth_response_invalid:"The provider returned an invalid sign-in response.",
+      oauth_jwks_unavailable:"The provider's signing keys were unavailable.",
+      oauth_profile_unavailable:"The provider profile could not be obtained.",
+      oauth_provider_network_error:"The provider connection failed.",
+      oauth_account_store_failed:"The external identity was verified, but Dofinances could not save it.",
+      oauth_mail_unavailable:"The verification email could not be sent.",
+      link_required:"An account with this email already exists. Sign in first and link this provider in Account settings.",identity_used:"That provider account is linked to another Dofinances user.",limit:"You have reached the limit for that provider.",email_required:"This provider did not supply an email address.",email_unverified:"Verify your email address before signing in.",invalid:"The sign-in request expired or could not be verified.",cancelled:"Provider sign-in was cancelled.",unavailable:"Provider sign-in could not be completed. Please try again."};
     return errors[new URLSearchParams(window.location.search).get("federation_error")] || "";
   });
   const [federation,setFederation]=useState({});
