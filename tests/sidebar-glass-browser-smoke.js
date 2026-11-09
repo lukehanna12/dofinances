@@ -20,11 +20,22 @@
     const filter=document.getElementById("oracle-glass-native-backdrop");
     assert(!!filter,"real backdrop SVG filter exists");
     assert(filter.querySelectorAll("feDisplacementMap").length===2,"inner/outer displacement operators");
-    const blur=filter.querySelector("feGaussianBlur");
-    assert(!!blur&&blur.getAttribute("in")==="SourceGraphic","filter reads actual DOM backdrop SourceGraphic");
-    assert(Number(blur.getAttribute("stdDeviation"))>0,"radius-driven background blur value");
-    const maps=filter.querySelectorAll("feImage");
-    assert(maps.length===2,"two independent geometry fields");
+    const blurs=[...filter.querySelectorAll("feGaussianBlur")];
+    assert(blurs.length===2,"AIR-guided near/far blur sampling");
+    assert(blurs.every(b=>b.getAttribute("in")==="SourceGraphic"),
+      "both blur levels operate on ACTUAL DOM backdrop SourceGraphic");
+    assert(Number(blurs[0].getAttribute("stdDeviation"))>
+      Number(blurs[1].getAttribute("stdDeviation")),
+      "blur decreases near the signed-distance edge");
+    const maps=[...filter.querySelectorAll("feImage")];
+    assert(maps.length===3,"two refraction vector fields and one blur-distribution field");
+    const blend=filter.querySelector('feColorMatrix[result="faceMaterial"]');
+    assert(!!blend&&blend.getAttribute("values").trim().split(/\s+/).length===20,
+      "retained Oracle face-color half4 matrix applied to source backdrop");
+    const near=filter.querySelector('feColorMatrix[result="nearCoverage"]');
+    assert(!!near,"blur-alpha signed-distance mask is active");
+    const nearSource=filter.querySelector('feComposite[result="nearPart"]');
+    assert(!!nearSource,"blur-alpha influences real blurred backdrop");
     const radius=parseFloat(shell.style.getPropertyValue("--oracle-input-radius"));
     const width=sidebar.getBoundingClientRect().width;
     assert(radius>=2&&radius<=4,"public-style radius within retained range");
@@ -35,7 +46,8 @@
       assert(hasNative,"Chrome activated the backdrop displacement path");
       for(const m of maps){
         const href=m.getAttribute("href");
-        assert(!!href&&href.startsWith("data:image/png;base64,"),"SDF geometry PNG field encoded");
+        assert(!!href&&href.startsWith("data:image/png;base64,"),
+          "SDF/blur geometry-only PNG field encoded");
       }
       const property=getComputedStyle(sidebar).backdropFilter ||
         getComputedStyle(sidebar).webkitBackdropFilter || "";

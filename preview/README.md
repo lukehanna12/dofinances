@@ -9,65 +9,90 @@ Preview address: https://app-sidebar-preview.dofinances-studio.pages.dev/app/
 The live site uses production branch `main`. The untouched baseline is saved as commit `7cced4fa98bac32261390cc256158eb2624a2ee3` and branch `backup/app-sidebar-before-experiments-20261108`. To discard an experiment, leave `main` untouched and abandon this branch.
 
 
-## Oracle-driven browser port — current experiment
+## Evidence-driven Oracle port: current stage
 
-The live /app page HTML and the original `workspace-nav.js` remain untouched.
-They continue to own navigation, focus, persisted collapse state, 260px wide
-sidebar, 74px rail, and 274px mobile drawer.
+The preview uses the **actual** `/app` document and `workspace-nav.js`.
+The original app owns all navigation, persisted collapse, accessibility,
+260px expanded rail, 74px compact rail, and 274px mobile drawer. The preview
+keeps account/network calls disabled; the live site is never deployed from
+this test branch.
 
-The rendering layer uses:
-- `sidebar-glass-oracle.js`: recovered LPH signed-distance and refraction
-  expressions, finite public uniform-domain values, and exact evaluated
-  regular-style blur-radius equations (52 independent held-out cases).
-- `sidebar-glass.css`: neutral navigation material and ordinary CSS gradient,
-  grid, and circle artwork spanning the WHOLE page as a test backdrop.
-- `sidebar-glass.js`: original nav-row active-selection positioning and
-  a preview-only PAGE-background selection control.
+### Source-specific optical pipeline
 
-**There is no copy of the background embedded in the sidebar.** The native
-browser compositor supplies the actual, live DOM backdrop as SVG
-`SourceGraphic` to a scoped CSS `backdrop-filter:url(...)`. An SVG filter
-uses `feGaussianBlur`, two separate `feDisplacementMap` passes and their
-geometry-derived displacement fields. Canvas2D creates ONLY small signed-
-distance displacement fields (two PNGs encoding XY vectors/alpha mix), **not**
-page screenshots, captured DOM contents, generated wallpaper textures, or
-anything containing source background colors. SVG-filter unsupported browsers
-fall back to CSS `backdrop-filter:blur(...)`.
+**The sidebar never contains, snapshots or embeds any page background.** The
+single, continuous wallpaper is ordinary `/app` page CSS. The browser's
+backdrop compositor supplies actual pixels to an SVG `SourceGraphic` filter
+anchored to the sidebar's CSS `backdrop-filter:url(...)`. Canvas2D produces
+ONLY geometry masks (two refraction vector fields and one blur-level mask).
 
-Oracle provenance (all files are byte-identical copied Git objects from the
-canonical `lukehanna12/liquid-plexiglass-oracle` main branch):
-- `preview/oracle-evidence/glass_background_sdf_no_bleed_lph.ssa.json.gz`
-  retains the actual LPH AIR SSA. Signed-distance AA is in entry source
-  lines 30–43. Refraction envelopes are in base lines 256–271 and 352–366,
-  texture-coordinate displacement around 323–328 and 383–387, threshold
-  mixing around 405–417. The `supercircle_sdf` helper is in lines 1062–1154.
-- `preview/oracle-evidence/uniform_field_layouts.jsonl` maps the 52 field
-  names, layout and types, including inner/outer amount, inverse heights,
-  thresholds, blend opacity, color matrices, blur and shadow.
-- `preview/oracle-evidence/P_to_S_PUBLIC_FINITE_DOMAIN_CONTRACT.json`
-  records exact value domains from 331 retained public cases. The chosen
-  modal scalar values are **individual finite observations**, not evidence
-  that they all co-occur in one real material state.
-- `preview/oracle-evidence/live_public_geometry_radius_heldout.json`
-  contains 52 independent regular/clear public-state radius cases.
-- `preview/oracle-evidence/mode4_exact_joins.json.xz` and
-  `live_mode_joins.json.xz` include exact 48-byte CPU-to-shader SDF joins
-  for mode 4 and 5. The currently implemented native-path SDF is mode4.
+- Selected shader: `glass_background_sdf_no_bleed_lph`, the target M2 G14G
+  LPH family.
+- Real SDF: mode4 `supercircle_sdf`, transcribed from retained AIR SSA
+  source lines 1062–1154; the missing mode5 to real per-corner browser
+  shape is still an explicit scope limitation. The physical radius used in
+  the browser is read from the real sidebar's computed CSS right corner.
+- AIR refraction: source lines 256–271 / 352–366, signed-distance-dependent
+  inner and outer envelopes, and lines 405–417 for threshold mixing. Scalar
+  projection uses the exact retained coherent diagnostic m1 case (index1,
+  pass148, seq4208), not unrelated independently modal values.
+- AIR blur distributions: source lines 290–337 for `blur_alpha0..3`,
+  `blur_dist0..3`, `blur_radius`, and mip LOD. The observed uploaded
+  distribution is [1, 0.5, 0, -0.5] at [-28, -1, 0, 0]. The browser
+  combines two **live backdrop Gaussian** levels using SDF-derived masks.
+  Gaussian sigma approximates the native mip footprint; the relative
+  distribution is from the actual source.
+- Face color: `face_cm0..2` directly from the SAME 264-byte uploaded
+  diagnostic state, applied as a 4×5 SVG color matrix after refraction.
+  The observed `face_opacity` is 1 for this state. The browser has sRGB
+  rather than the native extended-sRGB/EDR working/output chain.
+- Native public style radius: exact Double-order interpolation with all 52
+  independent retained regular/clear cases passing. The native Float32
+  blur-word producer is separately retained, but composing it with the
+  diagnostic material coefficients is an explicit adapter assumption.
 
-**Precision boundaries:** The native 25F80/M2/G14G AIR-to-G14G universal
-semantics, all scalar/downsampling producer branches and final Q/EDR
-output-color chain remain open. Web SVG Gaussian blur is not an identical
-implementation of Apple's retained Metal mipmaps, and the browser filter
-does not implement the complete 935-instruction LPH program or all
-face/bleed/shadow branches. Converting native UV displacement through
-a browser pixel-space identity matrix is an explicitly documented adapter
-assumption. The port is more source-grounded but **not pixel-equivalent**
-to Apple. Avoid treating source lineage, shader compilation or a pretty
-screenshot as mathematical closure.
+### Evidence inventory and correctness boundaries
 
-The CI test uses a temporary headless Chrome smoke script for actual filter
-activation and real /app responsive interactions. It removes that script
-from the deployment artifact before publishing.
+Sources copied byte-identically as Git blobs from the canonical
+`lukehanna12/liquid-plexiglass-oracle` main branch into
+`preview/oracle-evidence/` include the six LPH graphs, uniform-field ABI,
+48 live CPU fragment-binding prefixes, 52 public geometry heldouts,
+public finite-domain contract (331 static cases), direct GPU execution
+metadata and selected output/parameter witnesses. The live fragment buffer
+is SDF48 + Glass (216 retained bytes). **Glass field offsets start at byte 48
+in combined uploads**; previous zero-offset inspections were incorrect.
+
+The 48 bindings contain two coherent material parameter states (24 each).
+The active state is the m1 diagnostic with inner amount -44.8, outer +11.2,
+inner/outer inverse heights 1/14 and 1/7, refraction blend opacity 0.30005,
+face opacity 1, and a nontrivial 3×4 half-precision face matrix. It is a
+finite **private diagnostic**, not evidence of universal public regular
+material values. The other observed material m0 differs; a universal
+selection rule is not established.
+
+The retained exact GPU outputs prove that a selected color-matrix variation
+changes 6,460 of 32,768 bytes for one source/configuration. The renderer must
+not discard that effect on the grounds that its qualitative appearance is
+small. Other output changes are observed for holding tone and clamp limits,
+but their entire Q/compositor relations remain unsettled.
+
+The adapter is NOT a pixel-identical LPH shader translation. It does not
+reproduce the full 935-instruction function graph, mode5 per-corner route,
+Metal mipmap sampling (SVG uses Gaussian), all bleed/shadow/holding-tone
+branches, or native G14G and output Q/EDR semantics. A matching source
+coefficient is not proof that a browser's color-space/primitive conversion
+is identical. No visually tuned, unsupported constants should be presented
+as Apple's own constants.
+
+The CI workflow tests source fields against **the retained compressed 264-byte
+upload** using canonical 48-byte SDF prefix and ABI offsets; validates the
+public 52-case radius and AIR field operations; and runs actual Chrome at
+1440×900, 980×760, and 390×844 with a temporary smoke script removed before
+publishing. `main` and the rollback branch remain untouched.
+
+**Known, deliberately deferred:** the per-resize geometry fields and SVG
+filter chain are expensive, especially during collapse animation. Visual
+fidelity and evidence exhaustion are prioritized before optimization.
 
 Run: `node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs`
+
 Preview: https://app-sidebar-preview.dofinances-studio.pages.dev/app/

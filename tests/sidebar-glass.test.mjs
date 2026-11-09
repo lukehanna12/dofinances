@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {execFileSync} from "node:child_process";
 import {glassIndicatorGeometry} from "../sites/_apex/app/assets/sidebar-glass.js";
 import {
   ORACLE_TARGET,ORACLE_FINITE_REFRACTION,nativePublicBlurRadius,
   observedBlurWord,airRefractionEnvelope,airThresholdMix,airSupercircleSDF,
+  airBlurDistribution,airTextureMipLOD,oracleFaceColorMatrixValues,
   paneField,generateOracleField
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -56,27 +58,59 @@ test("native selected blur word retains the recorded float32 evaluation sequence
   }
 });
 
-test("refraction uniforms come from the retained 331-case public projection",async()=>{
-  const c=JSON.parse(await read("../preview/oracle-evidence/P_to_S_PUBLIC_FINITE_DOMAIN_CONTRACT.json"));
-  assert.equal(c.case_count,331);
-  for(const [name,value] of [
-    ["inner_refraction_amount",ORACLE_FINITE_REFRACTION.innerAmount],
-    ["inner_refraction_inv_height",ORACLE_FINITE_REFRACTION.innerInvHeight],
-    ["outer_refraction_amount",ORACLE_FINITE_REFRACTION.outerAmount],
-    ["outer_refraction_inv_height",ORACLE_FINITE_REFRACTION.outerInvHeight],
-    ["refraction_threshold0",ORACLE_FINITE_REFRACTION.threshold0],
-    ["refraction_threshold1",ORACLE_FINITE_REFRACTION.threshold1],
-    ["refraction_opacity",ORACLE_FINITE_REFRACTION.opacity]
-  ]){
-    assert.ok(c.field_domains[name].values.some(row=>Number(row.value_repr)===value),
-      name+" must occur in the finite public projection");
-  }
+test("all material constants are a coherent same-case 264-byte Oracle upload",()=>{
+  const py=String.raw`
+import json,lzma,pathlib,struct
+root=pathlib.Path("preview/oracle-evidence")
+d=json.loads(lzma.decompress((root/"live_blur_dataflow.json.xz").read_bytes()))
+case=next(c for c in d["cases"] if c["binding"]["case"]=="diagnostic_m1_b4.75_z1.0")
+b=bytes.fromhex(case["binding_prefix_hex"])
+assert len(b)==264
+fields={o["name"]:o for line in (root/"uniform_field_layouts.jsonl").read_text().splitlines()
+        if (o:=json.loads(line)).get("struct_name")=="GlassBackgroundUniforms"}
+def get(name):
+    d=fields[name];i=d["byte_offset"]+48;t=d["llvm_type"]
+    if t=="float":return struct.unpack_from("<f",b,i)[0]
+    if t=="half":return struct.unpack_from("<e",b,i)[0]
+    if t=="<4 x half>":return list(struct.unpack_from("<4e",b,i))
+    raise ValueError(name)
+pairs={"innerAmount":"inner_refraction_amount","innerInvHeight":"inner_refraction_inv_height",
+"outerAmount":"outer_refraction_amount","outerInvHeight":"outer_refraction_inv_height",
+"threshold0":"refraction_threshold0","threshold1":"refraction_threshold1",
+"opacity":"refraction_opacity","faceOpacity":"face_opacity",
+"shadowOpacity":"shadow_opacity","shadowFaceOpacity":"shadow_face_opacity",
+"holdingToneOpacity":"holding_tone_opacity"}
+result={k:get(v) for k,v in pairs.items()}
+result["blurAlpha"]=[get("blur_alpha"+str(i)) for i in range(4)]
+result["blurDist"]=[get("blur_dist"+str(i)) for i in range(4)]
+result["faceMatrix"]=[get("face_cm"+str(i)) for i in range(3)]
+print(json.dumps(result))
+  `;
+  const fromSource=JSON.parse(execFileSync("python3",["-c",py],{encoding:"utf8"}));
+  const active=ORACLE_FINITE_REFRACTION;
+  assert.equal(active.sourceCase,"diagnostic_m1_b4.75_z1.0");
+  for(const [key,v] of Object.entries(fromSource))assert.deepEqual(active[key],v,key);
   assert.equal(ORACLE_TARGET.shader,"glass_background_sdf_no_bleed_lph");
-  assert.equal(airRefractionEnvelope(0,-60,.05),-60);
-  assert.equal(airRefractionEnvelope(-21,-60,.05),0);
-  assert.ok(airRefractionEnvelope(-10,-60,.05)>-60);
-  assert.equal(airThresholdMix(-1,-1,-.5,.3),0);
-  assert.equal(airThresholdMix(-.5,-1,-.5,.3),Math.fround(.3));
+  assert.equal(airRefractionEnvelope(0,active.innerAmount,active.innerInvHeight),active.innerAmount);
+  assert.ok(Math.abs(airRefractionEnvelope(-14,active.innerAmount,active.innerInvHeight))<.01);
+  assert.equal(airThresholdMix(-1,active.threshold0,active.threshold1,active.opacity),0);
+  assert.equal(airThresholdMix(-.5,active.threshold0,active.threshold1,active.opacity),
+    Math.fround(active.opacity));
+  const matrix=oracleFaceColorMatrixValues().split(" ").map(Number);
+  assert.equal(matrix.length,20);
+  assert.deepEqual(matrix.slice(0,5),[...active.faceMatrix[0].slice(0,3),0,active.faceMatrix[0][3]]);
+});
+
+test("AIR blur-alpha/distance ramps vary sampling strength with the actual signed distance",()=>{
+  assert.equal(airBlurDistribution(-40),1);
+  assert.equal(airBlurDistribution(-28),1);
+  assert.ok(Math.abs(airBlurDistribution(-20)-.8518519)<1e-6);
+  assert.ok(Math.abs(airBlurDistribution(-14)-.7407407)<1e-6);
+  assert.ok(Math.abs(airBlurDistribution(-7)-.6111111)<1e-6);
+  assert.equal(airBlurDistribution(-1),.5);
+  assert.equal(airBlurDistribution(-.5),.5);
+  assert.ok(airTextureMipLOD(1.6,1)>airTextureMipLOD(1.6,.5));
+  assert.ok(airTextureMipLOD(1.6,.5)>0);
 });
 
 test("source-derived supercircle SDF has finite signed geometry",()=>{
@@ -95,6 +129,7 @@ test("displacement maps are geometry-only, not screen or background captures",()
   const field=generateOracleField(72,98,24);
   assert.equal(field.inner.length,72*98*4);
   assert.equal(field.outer.length,72*98*4);
+  assert.equal(field.blurMask.length,72*98*4);
   assert.equal(field.inner[3],255);
   const center=(49*72+25)*4;
   assert.equal(field.inner[center],128);
@@ -102,17 +137,24 @@ test("displacement maps are geometry-only, not screen or background captures",()
   const edge=(49*72+71)*4;
   assert.ok(field.inner[edge]!==128 || field.inner[edge+1]!==128);
   assert.ok(field.outer[edge]!==128 || field.outer[edge+1]!==128);
+  assert.equal(field.blurMask[center+2],0);
+  assert.ok(field.blurMask[edge+2]>0);
 });
 
 test("Oracle filter uses the actual browser backdrop, never an embedded wallpaper",async()=>{
   const js=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
   const wrapper=await read("../sites/_apex/app/assets/sidebar-glass.js");
   const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
-  assert.match(js,/in:"SourceGraphic",stdDeviation/);
+  assert.match(js,/in:"SourceGraphic",stdDeviation:/);
   assert.match(js,/feDisplacementMap/);
   assert.match(js,/in:"blurred",in2:"innerMap",scale:128/);
   assert.match(js,/in:"blurred",in2:"outerMap",scale:128/);
   assert.match(js,/outerBlendMask/);
+  assert.match(js,/result:"nearCoverage"/);
+  assert.match(js,/in:"nearBlur",in2:"nearCoverage"/);
+  assert.match(js,/in:"farBlur",in2:"nearCoverage"/);
+  assert.match(js,/in:"composited",type:"matrix"/);
+  assert.match(js,/oracleFaceColorMatrixValues\(\)/);
   assert.match(js,/airSupercircleSDF/);
   assert.match(js,/1\.5286649465560913/);
   assert.match(js,/const t=clamp\(f32\(f32\(-distance\)\*f32\(invHeight\)\),0,1\)/);

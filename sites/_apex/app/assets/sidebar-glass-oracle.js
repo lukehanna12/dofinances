@@ -200,7 +200,25 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const filter=makeSVG(doc,"filter",{id,x:"0%",y:"0%",width:"100%",height:"100%",
     filterUnits:"objectBoundingBox",primitiveUnits:"userSpaceOnUse",
     "color-interpolation-filters":"sRGB"});
-  const blur=makeSVG(doc,"feGaussianBlur",{in:"SourceGraphic",stdDeviation:"4",result:"blurred"});
+  /*
+   * Blur is genuinely sourced from the live DOM backdrop. The two sampled
+   * spatial scales approximate the retained Metal LODs (not identical to
+   * Apple's texture pipeline); AIR alpha/dist ramps choose between them.
+   */
+  const blurFar=makeSVG(doc,"feGaussianBlur",{
+    in:"SourceGraphic",stdDeviation:"4",result:"farBlur"});
+  const blurNear=makeSVG(doc,"feGaussianBlur",{
+    in:"SourceGraphic",stdDeviation:"2",result:"nearBlur"});
+  const blurMap=makeSVG(doc,"feImage",{result:"blurMap",x:0,y:0,
+    width:260,height:800,preserveAspectRatio:"none"});
+  const nearAlpha=makeSVG(doc,"feColorMatrix",{in:"blurMap",type:"matrix",
+    values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0",result:"nearCoverage"});
+  const nearPart=makeSVG(doc,"feComposite",{
+    in:"nearBlur",in2:"nearCoverage",operator:"in",result:"nearPart"});
+  const farPart=makeSVG(doc,"feComposite",{
+    in:"farBlur",in2:"nearCoverage",operator:"out",result:"farPart"});
+  const blurred=makeSVG(doc,"feComposite",{
+    in:"nearPart",in2:"farPart",operator:"over",result:"blurred"});
   const innerMap=makeSVG(doc,"feImage",{result:"innerMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
   const outerMap=makeSVG(doc,"feImage",{result:"outerMap",x:0,y:0,
@@ -215,8 +233,18 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     operator:"in",result:"outerPart"});
   const maskedInner=makeSVG(doc,"feComposite",{in:"innerShift",in2:"outerBlendMask",
     operator:"out",result:"innerPart"});
-  const join=makeSVG(doc,"feComposite",{in:"outerPart",in2:"innerPart",operator:"over"});
-  filter.append(blur,innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,join);
+  const join=makeSVG(doc,"feComposite",{
+    in:"outerPart",in2:"innerPart",operator:"over",result:"composited"});
+  // AIR base lines 479–525: face_opacity>0 transforms source.rgb/alpha
+  // through three half4 rows plus biases, then mixes back to the input.
+  // The retained live binding has face_opacity exactly 1.0, so we use the
+  // observed three half4 rows directly; extended-sRGB/Q output is not closed.
+  const face=makeSVG(doc,"feColorMatrix",{
+    in:"composited",type:"matrix",
+    values:oracleFaceColorMatrixValues(),result:"faceMaterial"});
+  filter.append(blurFar,blurNear,blurMap,nearAlpha,nearPart,farPart,
+    blurred,innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,
+    join,face);
   defs.append(filter);svg.append(defs);doc.body.append(svg);
   const supported=!!win.CSS?.supports?.("backdrop-filter",'url("#'+id+'")');
   const canUse=!!supported&&!reduced;
@@ -230,20 +258,37 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const word=observedBlurWord(radius,1,ORACLE_FINITE_REFRACTION.surfaceScale);
     // Converting finite downsample-space radius to CSS pixel footprint is a
     // browser adapter assumption, not a claimed equivalent Gaussian kernel.
-    const effective=word/ORACLE_FINITE_REFRACTION.surfaceScale;
+    const scale=ORACLE_FINITE_REFRACTION.surfaceScale;
+    const farLOD=airTextureMipLOD(word,1);
+    const nearLOD=airTextureMipLOD(word,.5);
+    // The LODs are source-exact. Mapping mip-filter footprint into CSS
+    // Gaussian sigma is NOT source-exact (browser sampling limitation).
+    // The two sigma levels retain the observed LOD ordering and ratio.
+    const effective=word/scale;
+    const nearSigma=effective*.5;
+    const farSigma=effective;
     shell.style.setProperty("--oracle-input-radius",radius+"px");
     shell.style.setProperty("--oracle-render-word",word+"px");
-    shell.style.setProperty("--oracle-backdrop-blur",effective+"px");
-    blur.setAttribute("stdDeviation",String(effective));
+    shell.style.setProperty("--oracle-backdrop-blur",farSigma+"px");
+    shell.style.setProperty("--oracle-mip-lod-near",String(nearLOD));
+    shell.style.setProperty("--oracle-mip-lod-far",String(farLOD));
+    blurFar.setAttribute("stdDeviation",String(farSigma));
+    blurNear.setAttribute("stdDeviation",String(nearSigma));
     if(!canUse)return;
     const key=w+"x"+h+"@"+radius;
     if(key===previous)return;
     try{
-      const field=generateOracleField(w,h,Math.min(24,Math.max(0,w/3)));
+      // Match the actual DOM sidebar corner geometry rather than inventing
+      // a fixed SDF radius. CSS border radius is part of app layout state.
+      const style=win.getComputedStyle?.(sidebar);
+      const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");
+      const corner=Number.isFinite(actualRadius)?actualRadius:24;
+      const field=generateOracleField(w,h,Math.min(corner,w*.5,h*.5));
       const a=imageDataURL(win,field.inner,w,h);
       const b=imageDataURL(win,field.outer,w,h);
-      if(!a||!b)throw Error("Canvas2D encoding unavailable");
-      for(const [node,uri]of [[innerMap,a],[outerMap,b]]){
+      const c=imageDataURL(win,field.blurMask,w,h);
+      if(!a||!b||!c)throw Error("Canvas2D geometry encoding unavailable");
+      for(const [node,uri]of [[innerMap,a],[outerMap,b],[blurMap,c]]){
         node.setAttribute("href",uri);
         node.setAttributeNS(NS,"xlink:href",uri);
         node.setAttribute("width",String(w));
