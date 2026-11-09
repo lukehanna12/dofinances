@@ -1,3 +1,4 @@
+import {WORKSPACE_WALLPAPERS} from "../sites/_apex/app/assets/workspace-wallpapers.js";
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
@@ -7,6 +8,37 @@ const ROOT="dofinances.com";
 const RESERVED=new Set(["stu","pay","zb30895346","_domainconnect","_dmarc","zmail","gd-origin"]);
 const LABEL=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const NO_STORE={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin"};
+// A deliberately small public allowlist: the website only exposes the eight
+// wallpaper images selected from private Colosseum library-iii (0001b9).
+// All other private library objects remain inaccessible through Dofinances.
+const WALLPAPER_ALLOWLIST=new Map(Object.values(WORKSPACE_WALLPAPERS).map(w=>[
+  w.sha+"."+w.ext,w
+]));
+const WALLPAPER_MIME={jpg:"image/jpeg",png:"image/png",webp:"image/webp",avif:"image/avif"};
+async function serveWallpaper(request,env,pathname){
+  const key=pathname.startsWith("/wallpapers/")?pathname.slice("/wallpapers/".length):"";
+  const wallpaper=WALLPAPER_ALLOWLIST.get(key);
+  if(!wallpaper)return new Response("Not found",{status:404,headers:NO_STORE});
+  if(!env.LIBRARY_III?.fetch)
+    return new Response("Wallpaper library unavailable",{status:503,headers:NO_STORE});
+  let response;
+  try {
+    response=await env.LIBRARY_III.fetch(new Request(
+      "https://library-iii.internal/objects/"+wallpaper.sha+".bin",
+      {method:request.method}
+    ));
+  } catch {return new Response("Wallpaper library unavailable",{status:502,headers:NO_STORE});}
+  if(!response.ok)return new Response("Wallpaper unavailable",{status:502,headers:NO_STORE});
+  const headers=new Headers({
+    "Content-Type":WALLPAPER_MIME[wallpaper.ext],
+    "Cache-Control":"public, max-age=31536000, immutable",
+    "X-Content-Type-Options":"nosniff",
+    "X-Robots-Tag":"noindex",
+    "Access-Control-Allow-Origin":"*"
+  });
+  return new Response(request.method==="HEAD"?null:response.body,{status:200,headers});
+}
+
 
 export function siteFolder(hostname) {
   const host=hostname.toLowerCase();
@@ -192,6 +224,8 @@ export async function handleRequest(request,env={}) {
   }
   if(request.method!=="GET" && request.method!=="HEAD")
     return new Response("Method not allowed",{status:405,headers:{...NO_STORE,Allow:"GET, HEAD"}});
+  if(folder==="_apex" && url.pathname.startsWith("/wallpapers/"))
+    return serveWallpaper(request,env,url.pathname);
   if(folder==="_apex" && /^\/(app|dashboard)(\/|$)/.test(url.pathname)) {
     try {
       const user=await getUser(request,env);

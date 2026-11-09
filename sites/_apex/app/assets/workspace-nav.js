@@ -1,3 +1,4 @@
+import {applyWorkspaceWallpaper} from "./workspace-wallpapers.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
@@ -142,7 +143,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
     breadcrumb.textContent=meta.breadcrumb;
     subtitle.textContent=meta.subtitle;
     doc.title=meta.label+" · "+(meta.project?"Colosseum · ":"")+"DoFinances";
-    for(const view of views)view.hidden=view.dataset.view!==route;
+    applyWorkspaceWallpaper(doc,route);
+    // One Settings DOM view for both Workspace and every project.
+    const visibleView=route==="colosseum/settings"?"settings":route;
+    for(const view of views)view.hidden=view.dataset.view!==visibleView;
     for(const link of links){
       const selected=link.href?.split("#")[1]===route;
       link.classList.toggle("active",selected);
