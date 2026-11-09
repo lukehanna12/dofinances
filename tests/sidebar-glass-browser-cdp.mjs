@@ -424,6 +424,29 @@ try{
         });
         return true;
       })()`);
+      await sleep(200);
+      const aligned=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      await evaluate(`(()=>{
+        const f=document.getElementById("oracle-glass-native-backdrop");
+        f.querySelector('feDisplacementMap[result="innerShift"]').setAttribute("in2","innerMap");
+        f.querySelector('feDisplacementMap[result="outerShift"]').setAttribute("in2","outerMap");
+        return true;
+      })()`);
+      await sleep(280);
+      const oldBias=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const biasDelta=comparePixels(aligned,oldBias,0,260,0,880);
+      console.log("NEUTRAL_DISPLACEMENT_CORRECTION_PIXEL_DIFF",JSON.stringify(biasDelta));
+      await evaluate(`(()=>{
+        const f=document.getElementById("oracle-glass-native-backdrop");
+        f.querySelector('feDisplacementMap[result="innerShift"]').setAttribute("in2","innerCentered");
+        f.querySelector('feDisplacementMap[result="outerShift"]').setAttribute("in2","outerCentered");
+        return true;
+      })()`);
+
 
     }
   }

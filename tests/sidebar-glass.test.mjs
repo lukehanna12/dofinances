@@ -10,7 +10,8 @@ import {
   SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,
   airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField,
   ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection,
-  projectOracleFieldWidth
+  projectOracleFieldWidth,encodeOracleDisplacement,decodeOracleDisplacement,
+  SVG_DISPLACEMENT_NEUTRAL_BIAS
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -171,8 +172,8 @@ test("Oracle filter uses the actual browser backdrop, never an embedded wallpape
   const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
   assert.match(js,/in:"SourceGraphic",stdDeviation:/);
   assert.match(js,/feDisplacementMap/);
-  assert.match(js,/in:"innerBlurred",in2:"innerMap",scale:128/);
-  assert.match(js,/in:"outerBlurred",in2:"outerMap",scale:128/);
+  assert.match(js,/in:"innerBlurred",in2:"innerCentered",scale:128/);
+  assert.match(js,/in:"outerBlurred",in2:"outerCentered",scale:128/);
   assert.match(js,/outerBlendMask/);
   assert.match(js,/result:"innerNearCoverage"/);
   assert.match(js,/result:"outerNearCoverage"/);
@@ -497,4 +498,22 @@ print("AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED")
   `;
   const result=execFileSync("python3",["-c",py],{encoding:"utf8"});
   assert.match(result,/AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED/);
+});
+
+test("SVG PNG displacement maps encode zero exactly and bound error at native-derived amounts",()=>{
+  assert.equal(encodeOracleDisplacement(0),128);
+  assert.equal(decodeOracleDisplacement(128),0);
+  assert.equal(SVG_DISPLACEMENT_NEUTRAL_BIAS,1/(2*255));
+  const oldNeutralOffset=128*(128/255-.5);
+  assert.ok(oldNeutralOffset>.25);
+  const tolerance=128/(2*255)+1e-10;
+  for(let v=-44.8;v<=44.8;v+=.027){
+    assert.ok(Math.abs(decodeOracleDisplacement(encodeOracleDisplacement(v))-v)<=tolerance,
+      "Quantizer error bounded for "+v);
+  }
+  const source=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(source,/result:"innerCentered"/);
+  assert.match(source,/result:"outerCentered"/);
+  assert.match(source,/in:"innerBlurred",in2:"innerCentered",scale:128/);
+  assert.match(source,/in:"outerBlurred",in2:"outerCentered",scale:128/);
 });

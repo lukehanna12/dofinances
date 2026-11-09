@@ -308,6 +308,27 @@ export function paneField(x,y,w,h,radius){
   return {distance:shape.distance,nx:shape.nx,ny:-shape.ny};
 }
 
+/* SVG displacement uses scale*(channel - 0.5); an 8-bit PNG cannot encode
+ * 0.5 exactly. The historical round(255*(0.5 + v/128)) encoded v=0 as 128,
+ * which decodes to a spurious +128/(2*255) pixel displacement. Round the
+ * SIGNED offset around byte 128 instead, and compensate the fixed 8-bit
+ * center bias in the feColorMatrix immediately before feDisplacementMap.
+ *
+ * This keeps the bound <= 128/(2*255) pixels for each component, but makes
+ * truly zero native-derived displacement EXACTLY zero. No blur/material
+ * coefficient or four-corner SDF expression changes.
+ */
+export const SVG_DISPLACEMENT_NEUTRAL_BIAS = 1/(2*255);
+export function encodeOracleDisplacement(v){
+  if(!Number.isFinite(v))throw new TypeError("Finite displacement required");
+  return Math.min(255,Math.max(0,128+Math.round(v*255/128)));
+}
+export function decodeOracleDisplacement(encoded){
+  if(!Number.isInteger(encoded)||encoded<0||encoded>255)
+    throw new RangeError("An 8-bit displacement sample is required");
+  return 128*(encoded/255-0.5-SVG_DISPLACEMENT_NEUTRAL_BIAS);
+}
+
 export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTION){
   if(!Number.isFinite(w)||!Number.isFinite(h)||w<1||h<1||w*h>6000000)
     throw new RangeError("Invalid filter field dimensions");
@@ -315,7 +336,7 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
   const inner=new Uint8ClampedArray(width*height*4);
   const outer=new Uint8ClampedArray(width*height*4);
   const blurMask=new Uint8ClampedArray(width*height*4);
-  const encode=(v)=>Math.round(255*clamp(.5+v/128,0,1));
+  const encode=encodeOracleDisplacement;
   // All bounds derived from the CAPTURED inverse refraction heights and
   // blur distance0, not an arbitrary 28px visual cut-off.
   const activeSpan=Math.max(
@@ -470,9 +491,20 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     width:260,height:800,preserveAspectRatio:"none"});
   const outerMap=makeSVG(doc,"feImage",{result:"outerMap",x:0,y:0,
     width:260,height:800,preserveAspectRatio:"none"});
-  const innerDist=makeSVG(doc,"feDisplacementMap",{in:"innerBlurred",in2:"innerMap",scale:128,
+  // SVG channel center 0.5 lies BETWEEN PNG bytes 127 and 128.
+  // Correct the exact 128-byte neutral code WITHOUT shifting the backdrop:
+  // the R/G components are now ((byte-128)/255 + 0.5). Other channels and
+  // masks are unchanged; native-derived displacement equations are intact.
+  const neutralValues=`1 0 0 0 -${SVG_DISPLACEMENT_NEUTRAL_BIAS} `+
+    `0 1 0 0 -${SVG_DISPLACEMENT_NEUTRAL_BIAS} `+
+    "0 0 1 0 0  0 0 0 1 0";
+  const innerCentered=makeSVG(doc,"feColorMatrix",{
+    in:"innerMap",type:"matrix",values:neutralValues,result:"innerCentered"});
+  const outerCentered=makeSVG(doc,"feColorMatrix",{
+    in:"outerMap",type:"matrix",values:neutralValues,result:"outerCentered"});
+  const innerDist=makeSVG(doc,"feDisplacementMap",{in:"innerBlurred",in2:"innerCentered",scale:128,
     xChannelSelector:"R",yChannelSelector:"G",result:"innerShift"});
-  const outerDist=makeSVG(doc,"feDisplacementMap",{in:"outerBlurred",in2:"outerMap",scale:128,
+  const outerDist=makeSVG(doc,"feDisplacementMap",{in:"outerBlurred",in2:"outerCentered",scale:128,
     xChannelSelector:"R",yChannelSelector:"G",result:"outerShift"});
   const mask=makeSVG(doc,"feColorMatrix",{in:"innerMap",type:"matrix",
     values:"0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0",result:"outerBlendMask"});
@@ -493,7 +525,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     values:SIDEBAR_PUBLIC_COLOR_PASSTHROUGH,result:"faceMaterial"});
   filter.append(blurFar,blurNear,blurMap,innerNearAlpha,outerNearAlpha,
     innerNearPart,innerFarPart,innerBlur,outerNearPart,outerFarPart,outerBlur,
-    innerMap,outerMap,innerDist,outerDist,mask,maskedOuter,maskedInner,
+    innerMap,outerMap,innerCentered,outerCentered,innerDist,outerDist,mask,maskedOuter,maskedInner,
     join,face);
   defs.append(filter);svg.append(defs);doc.body.append(svg);
   const supported=!!win.CSS?.supports?.("backdrop-filter",'url("#'+id+'")');
