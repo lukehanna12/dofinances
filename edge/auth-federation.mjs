@@ -1,5 +1,7 @@
 // Identity-only federation for Dofinances. No provider OAuth tokens are persisted.
 // Fixed upstream endpoints prevent an OAuth configuration from becoming an SSRF proxy.
+// Cloudflare Workers rejects fetch redirect:"error"; use supported "manual" and
+// reject all non-2xx responses, including 3xx, before reading provider data.
 import {randomToken, normalizedEmail} from "./auth-core.mjs";
 
 export const FEDERATION_LIMITS = Object.freeze({google:5, github:3});
@@ -108,7 +110,7 @@ async function verifyIdToken(jwt,config,txn) {
      typeof payload.sub!=="string"||!payload.sub||payload.sub.length>256)
     throw Error("Unsupported identity token");
   const jwks=await jsonFromResponse(await fetch(config.jwks,{headers:{Accept:"application/json"},
-    redirect:"error",signal:AbortSignal.timeout(10000)},"jwks"));
+    redirect:"manual",signal:AbortSignal.timeout(10000)},"jwks"));
   const key=(jwks.keys||[]).find(k=>k.kid===header.kid&&k.kty==="RSA"&&
     (!k.use||k.use==="sig")&&(!k.alg||k.alg==="RS256"));
   if(!key)throw Error("Unknown identity signing key");
@@ -142,7 +144,7 @@ export async function exchangeFederatedIdentity(config,code,txn){
     const encoded=x=>new URLSearchParams({value:x}).toString().slice("value=".length);
     headers.Authorization="Basic "+btoa(encoded(config.clientId)+":"+encoded(config.secret));
   } else if(config.method==="post")body.set("client_secret",config.secret);
-  const res=await fetch(config.token,{method:"POST",headers,body,redirect:"error",
+  const res=await fetch(config.token,{method:"POST",headers,body,redirect:"manual",
     signal:AbortSignal.timeout(10000)});
   const result=await jsonFromResponse(res,"token");
   if(config.provider!=="github"){
@@ -154,9 +156,9 @@ export async function exchangeFederatedIdentity(config,code,txn){
   const apiHeaders={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,
     "X-GitHub-Api-Version":"2022-11-28","User-Agent":"Dofinances-Identity"};
   const [profile,emails]=await Promise.all([
-    fetch("https://api.github.com/user",{headers:apiHeaders,redirect:"error",
+    fetch("https://api.github.com/user",{headers:apiHeaders,redirect:"manual",
       signal:AbortSignal.timeout(10000)}).then(jsonFromResponse),
-    fetch("https://api.github.com/user/emails",{headers:apiHeaders,redirect:"error",
+    fetch("https://api.github.com/user/emails",{headers:apiHeaders,redirect:"manual",
       signal:AbortSignal.timeout(10000)}).then(jsonFromResponse)
   ]);
   if(!Number.isSafeInteger(profile.id)||profile.id<=0||!Array.isArray(emails))
