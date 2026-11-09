@@ -37,6 +37,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-theme.css .app-sidebar-preview/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js .app-sidebar-preview/app/assets/workspace-nav.js
           cp sites/_apex/app/assets/sidebar-glass.js .app-sidebar-preview/app/assets/sidebar-glass.js
+          cp sites/_apex/app/assets/sidebar-glass-refraction.js .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
           cp sites/_apex/app/assets/sidebar-glass.css .app-sidebar-preview/app/assets/sidebar-glass.css
           cp preview/app-sidebar-bootstrap.js .app-sidebar-preview/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css .app-sidebar-preview/assets/site-foundation.css
@@ -66,6 +67,8 @@ jobs:
           grep -Fq 'sidebar-glass.js' .app-sidebar-preview/app/assets/preview-bootstrap.js
           test -s .app-sidebar-preview/app/assets/sidebar-glass.css
           test -s .app-sidebar-preview/app/assets/sidebar-glass.js
+          test -s .app-sidebar-preview/app/assets/sidebar-glass-refraction.js
+          grep -Fq 'from "./sidebar-glass-refraction.js"' .app-sidebar-preview/app/assets/sidebar-glass.js
           ! grep -Fq 'dashboard.js' .app-sidebar-preview/app/index.html
           ! grep -R -Eq 'fetch\(|api/auth|location.replace' .app-sidebar-preview/app/assets/*.js
       - name: Deploy to non-production Pages preview branch

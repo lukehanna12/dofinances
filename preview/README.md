@@ -24,18 +24,32 @@ rings, warm highlights, and teal accents. Those lines and gradients remain
 visible outside the glass behind the whole workspace, and become softened
 under the sidebar. The main workspace and topbar are intentionally
 translucent rather than blacking out the background. CSS backdrop blur,
-a rounded lens edge, fluid active-link capsule, and optional WebGL2 neutral
-specular/grazing-light highlights make the optical behavior inspectable.
+a rounded lens edge and fluid active-link capsule establish the navigation layer.
+For capable browsers, a **single Canvas2D-generated background** is now shared
+between the visible full-viewport wallpaper and a WebGL2 pane renderer. The
+glass renderer samples those **same wallpaper pixels**, blurs the samples via
+texture mip levels, bends them near a rounded-rectangle signed-distance
+silhouette, mixes in a neutral dark regular material, and adds restrained
+geometry-dependent and pointer-dependent specular light. The Lens on/off A/B
+button isolates geometric refraction from the blur/tint. No screen captures,
+DOM screenshots, third-party images, or network requests are used. The
+CSS backdrop-filter fallback remains usable without WebGL2.
 
 The preview-only Backdrop selector cycles **Gallery / Monochrome / Spectrum**
 to compare the same untinted glass material over different full-screen
 wallpapers. No actual navigation or account state is changed. CSS-only
 and accessibility fallbacks remain available.
 
-Exact Apple CA/Metal native semantics, true runtime refraction, and the
-output-color/EDR Q-stage remain unresolved in the Oracle model. These
-browser effects are constrained, design-informed approximations, not
-claims of numerical equivalence.
+This upgrade is a genuine **browser-native pixel displacement of the owned
+preview wallpaper**, but it is not the unknown actual Apple refraction kernel.
+The target-specific Oracle has proven LPH selection, reachable SDF mode4/5
+joins, and a finite compositor successor. It has NOT proven universal
+AIR→G14G semantics, all CPU scalar/downsample selection, or the runtime
+Q/EDR output chain. The browser uses an SDF *analogue*, a deterministic
+texture LOD blur and tuned lensing constants, not fabricated Apple uniform
+values or an unjustified port of the C-stage operator. Color management,
+unowned DOM/behind-window pixels, and arbitrary content cannot be guaranteed
+to match Apple's native material.
 
 Test with: `node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs`
 

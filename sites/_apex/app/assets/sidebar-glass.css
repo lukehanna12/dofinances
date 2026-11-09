@@ -4,9 +4,11 @@
  * NOT a claim of Apple Liquid Glass numerical equivalence. Original layout
  * and route mechanics are retained in workspace-theme.css/workspace-nav.js.
  *
- * Browser backdrop-filter can blur/saturate DOM pixels but cannot reliably
- * reproduce the exact undocumented CA/Metal refraction pipeline. The WebGL
- * overlay adds only specular and rounded-surface shading, never fake pixels.
+ * For the controlled preview wallpaper, one Canvas2D scene is shared by
+ * the screen and the sidebar's WebGL2 sampling shader. This enables REAL
+ * screen-space displacement of the SAME source pixels at rounded edges.
+ * Native Apple shader kernels and exact material parameters remain unknown;
+ * all browser lens coefficients are explicitly approximations.
  */
 .shell.liquid-glass-preview {
   /* The wallpaper supplies the color. The glass itself stays neutral. */
@@ -66,6 +68,20 @@
     linear-gradient(132deg, #26374b 0%, #1b233c 45%, #1b2b38 100%);
 }
 /* Remove the previous opaque near-black sheet over the workspace. */
+.shell.liquid-glass-preview .glass-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+  display: block;
+}
+.shell.liquid-glass-preview.has-glass-wallpaper::before,
+.shell.liquid-glass-preview.has-glass-wallpaper::after {
+  /* CSS scenes remain as a fallback if Canvas2D is unavailable. */
+  display: none;
+}
 .shell.liquid-glass-preview .main {
   position: relative;
   z-index: 1;
@@ -133,6 +149,22 @@
   mix-blend-mode: screen;
   opacity: .86;
 }
+/*
+ * GPU path: the refracted background IS the material. Do not apply CSS
+ * backdrop-filter underneath it (double blur/tint), or mix the opaque shader
+ * with screen blending. This scoped class is set only after a successful
+ * WebGL frame. If WebGL fails, the existing CSS-only fallback remains.
+ */
+.shell.liquid-glass-preview.has-refractive-glass .sidebar {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.shell.liquid-glass-preview.has-refractive-glass .glass-optics {
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+.shell.liquid-glass-preview .glass-optics[hidden] {display: none;}
 .shell.liquid-glass-preview .sidebar-head,
 .shell.liquid-glass-preview .sidebar-navigation,
 .shell.liquid-glass-preview .sidebar-bottom {
@@ -265,6 +297,18 @@
 }
 .shell.liquid-glass-preview.glass-scene-prism .glass-scene-dot {background:#64cfbd;}
 .shell.liquid-glass-preview.glass-scene-neutral .glass-scene-dot {background:#dee6f0;}
+.shell.liquid-glass-preview .glass-lens-toggle[aria-pressed="true"] .glass-scene-dot {
+  background: #ffffff;
+  box-shadow: 0 0 9px rgba(255,255,255,.55);
+}
+.shell.liquid-glass-preview .glass-lens-toggle[aria-pressed="false"] {
+  border-color: rgba(255,255,255,.11);
+  color: rgba(244,247,250,.63);
+}
+.shell.liquid-glass-preview .glass-lens-off .glass-scene-dot {
+  background: #94999d;
+  box-shadow: none;
+}
 @media (max-width: 930px) {
   .shell.liquid-glass-preview .glass-scene-toggle {font-size: 0; gap: 0; width: 34px; height: 34px; justify-content: center; padding: 0;}
   .shell.liquid-glass-preview .glass-scene-dot {width: 9px; height: 9px;}
@@ -289,6 +333,9 @@
     -webkit-backdrop-filter: none;
   }
   .shell.liquid-glass-preview .glass-optics {display: none;}
+  .shell.liquid-glass-preview.has-refractive-glass .sidebar {
+    background: #222629;
+  }
 }
 @media (prefers-contrast: more), (forced-colors: active) {
   .shell.liquid-glass-preview .sidebar {
@@ -299,6 +346,9 @@
     -webkit-backdrop-filter: none;
   }
   .shell.liquid-glass-preview .glass-optics {display: none;}
+  .shell.liquid-glass-preview.has-refractive-glass .sidebar {
+    background: Canvas;
+  }
   .shell.liquid-glass-preview .nav-link.active {
     background: Highlight;
     color: HighlightText;

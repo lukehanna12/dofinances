@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {glassIndicatorGeometry} from "../sites/_apex/app/assets/sidebar-glass.js";
 
+import {lensProfile,drawGlassWallpaper,BACKDROP_SCENES,createSceneBackedGlass}
+  from "../sites/_apex/app/assets/sidebar-glass-refraction.js";
+
 const read = path => readFile(new URL(path,import.meta.url),"utf8");
 
 test("glass presentation preserves the actual app route and responsive owners", async () => {
@@ -41,17 +44,24 @@ test("optical shading is progressive with reduced-transparency, contrast and mot
     "prefers-reduced-motion", "forced-colors",
     "backdrop-filter: blur(21px)", "border-radius: 0 24px 24px 0"
   ]) assert.ok(css.includes(token),token);
-  assert.match(js,/canvas\.getContext\?\.\("webgl2"/);
-  assert.match(js,/if \(!gl\) return/);
-  assert.match(js,/uniform vec2 u_pointer/);
-  assert.match(js,/gauss\(u_size\.x - p\.x, 2\.6\)/);
+  const refraction=await read("../sites/_apex/app/assets/sidebar-glass-refraction.js");
+  assert.match(js,/createSceneBackedGlass\(/);
+  assert.match(js,/optics\.setScene\(scene\)/);
+  assert.match(js,/optics\.setLens\(lensOn\)/);
+  assert.match(refraction,/getContext\("webgl2"/);
+  assert.match(refraction,/roundedRightDistance\(/);
+  assert.match(refraction,/uniform sampler2D u_wallpaper/);
+  assert.match(refraction,/textureLod\(u_wallpaper, uv/);
+  assert.match(refraction,/gl\.texImage2D/);
+  assert.match(refraction,/gl\.generateMipmap/);
   assert.match(js,/new MutationObserver\(scheduleIndicator\)/);
   assert.match(js,/new ResizeObserver\(scheduleIndicator\)/);
-  assert.match(js,/pointermove/);
-  assert.match(js,/pointerleave/);
-  assert.match(js,/visibilitychange/);
+  assert.match(refraction,/pointermove/);
+  assert.match(refraction,/pointerleave/);
+  assert.match(refraction,/visibilitychange/);
   assert.match(js,/win\.addEventListener\("pagehide",cleanup/);
   assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|sendBeacon|\.cookie|localStorage/);
+  assert.doesNotMatch(refraction,/\bfetch\s*\(|XMLHttpRequest|sendBeacon|\.cookie|localStorage/);
   assert.doesNotMatch(css,/@import|url\(https?:\/\//);
 });
 
@@ -62,6 +72,7 @@ test("the test branch alone deploys a static read-only preview with all required
   assert.match(workflow,/pages deploy .*--branch=app-sidebar-preview/);
   assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass\.js/);
   assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass\.css/);
+  assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass-refraction\.js/);
   assert.match(workflow,/test ! -e .app-sidebar-preview\/app\/assets\/dashboard\.js/);
   assert.match(workflow,/node --test tests\/dashboard-navigation\.test\.mjs tests\/sidebar-glass\.test\.mjs/);
 });
@@ -79,10 +90,177 @@ test("the preview wallpaper spans the entire viewport and glass remains color-ne
   assert.match(css,/\.shell\.liquid-glass-preview \.topbar\s*\{[^}]*background:\s*rgba\(12,\s*18,\s*22,\s*\.34\)/s);
   assert.match(css,/--glass-pane:\s*rgba\(22,\s*24,\s*26,\s*\.34\)/);
   assert.match(css,/backdrop-filter:\s*blur\(21px\) saturate\(1\.13\) brightness\(1\.04\)/);
-  assert.match(js,/vec3\(\.86,\.87,\.88\)/);
-  for(const scene of ["Gallery","Monochrome","Spectrum"])
-    assert.match(js,new RegExp('name:"'+scene+'"'));
+  const refraction=await read("../sites/_apex/app/assets/sidebar-glass-refraction.js");
+  assert.match(refraction,/vec3\(\.105,\.113,\.118\)/);
+  assert.deepEqual(BACKDROP_SCENES,["Gallery","Monochrome","Spectrum"]);
+  assert.match(css,/has-glass-wallpaper::before/);
+  assert.match(css,/has-refractive-glass \.glass-optics/);
   // No new routes, network requests, or external images are added.
   assert.doesNotMatch(css,/url\(|@import/);
   assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest/);
+});
+
+
+test("geometry-driven lens profile is bounded, declines into the pane and scales with width",()=>{
+  assert.ok(lensProfile(0,260)>lensProfile(8,260));
+  assert.ok(lensProfile(8,260)>lensProfile(32,260));
+  assert.ok(lensProfile(0,260)>lensProfile(0,74));
+  assert.equal(lensProfile(0,260,false),0);
+  assert.throws(()=>lensProfile(-1,260),RangeError);
+  assert.throws(()=>lensProfile(2,Infinity),RangeError);
+});
+
+function fakeWallpaper(){
+  const calls={linear:[],radial:[],stroke:0,arc:0,fill:0};
+  const ctx={
+    setTransform(){},clearRect(){},fillRect(){calls.fill++;},save(){},restore(){},
+    translate(){},scale(){},beginPath(){},moveTo(){},lineTo(){},
+    stroke(){calls.stroke++;},arc(){calls.arc++;},
+    createLinearGradient(){
+      const gradient={addColorStop:(p,v)=>calls.linear.push([p,v])};
+      return gradient;
+    },
+    createRadialGradient(){
+      const gradient={addColorStop:(p,v)=>calls.radial.push([p,v])};
+      return gradient;
+    },
+    set fillStyle(v){this._fill=v;},get fillStyle(){return this._fill;},
+    set strokeStyle(v){this._stroke=v;},get strokeStyle(){return this._stroke;},
+    set lineWidth(v){this._width=v;},get lineWidth(){return this._width;},
+    set globalCompositeOperation(v){this._blend=v;},get globalCompositeOperation(){return this._blend;}
+  };
+  const canvas={width:0,height:0,getContext:kind=>kind==="2d"?ctx:null,remove(){}};
+  return {canvas,calls};
+}
+
+test("one canvas supplies the entire scene for BOTH background and refracted pixels",()=>{
+  const {canvas,calls}=fakeWallpaper();
+  const win={innerWidth:1200,innerHeight:850,devicePixelRatio:2};
+  assert.equal(drawGlassWallpaper(canvas,0,win),true);
+  assert.equal(canvas.width,2100);
+  assert.equal(canvas.height,1488);
+  assert.ok(calls.fill>=4,"scene includes base plus illuminated layers");
+  assert.equal(calls.arc,4,"the same 4 hard-edged rings cross the material boundary");
+  assert.ok(calls.stroke>0);
+  assert.ok(calls.linear.some(([,s])=>s==="#273a3c"));
+  assert.equal(drawGlassWallpaper(canvas,2,win),true);
+  assert.ok(calls.linear.some(([,s])=>s==="#26374b"));
+});
+
+test("invalid or disabled WebGL safely retains the same wallpaper and CSS glass fallback",()=>{
+  const f=fakeWallpaper();
+  const classNames=new Set();
+  const shell={classList:{
+    add:(...names)=>names.forEach(n=>classNames.add(n)),
+    remove:(...names)=>names.forEach(n=>classNames.delete(n))
+  },prepend(el){this.child=el;}};
+  const canvas={hidden:false,getContext:()=>null,addEventListener(){},removeEventListener(){}};
+  const sidebar={addEventListener(){},removeEventListener(){}};
+  const doc={
+    hidden:false,createElement(name){assert.equal(name,"canvas");return f.canvas;},
+    addEventListener(){},removeEventListener(){}
+  };
+  const win={
+    innerWidth:1200,innerHeight:850,devicePixelRatio:1,
+    matchMedia:()=>({matches:false}),
+    addEventListener(){},removeEventListener(){}
+  };
+  f.canvas.className="";
+  f.canvas.setAttribute=()=>{};
+  const renderer=createSceneBackedGlass({
+    doc,win,shell,sidebar,glassCanvas:canvas,reducedMotion:{matches:false}
+  });
+  assert.equal(renderer.active,false);
+  assert.equal(canvas.hidden,true);
+  assert.ok(classNames.has("has-glass-wallpaper"));
+  assert.ok(!classNames.has("has-refractive-glass"));
+  renderer.setScene(1);
+  assert.ok(f.calls.linear.some(([,s])=>s==="#313539"));
+  renderer.setLens(false);
+  assert.throws(()=>renderer.setScene(44),RangeError);
+  renderer.dispose();
+  assert.ok(!classNames.has("has-glass-wallpaper"));
+});
+
+test("WebGL refraction is scene-texture based and optically distinct from the old glint-only overlay",async()=>{
+  const shader=await read("../sites/_apex/app/assets/sidebar-glass-refraction.js");
+  const css=await read("../sites/_apex/app/assets/sidebar-glass.css");
+  assert.match(shader,/roundedRightDistance\(p, dims, corner\)/);
+  assert.match(shader,/float warp = \(1\.1 \+ 7\.0 \* band \* band\)/);
+  assert.match(shader,/sourcePixel = u_panel\.xy \+ p - n \* warp/);
+  assert.match(shader,/textureLod\(u_wallpaper, uv, mip\)/);
+  assert.match(shader,/vec3 material = mix\(light, neutral, density\)/);
+  assert.match(shader,/gl\.pixelStorei\(gl\.UNPACK_FLIP_Y_WEBGL,true\)/);
+  assert.match(shader,/gl\.texImage2D\(gl\.TEXTURE_2D,0,gl\.RGBA,gl\.RGBA,gl\.UNSIGNED_BYTE,wallpaper\)/);
+  assert.match(css,/\.shell\.liquid-glass-preview\.has-refractive-glass \.sidebar \{[^}]*backdrop-filter: none/s);
+  assert.match(css,/\.shell\.liquid-glass-preview\.has-refractive-glass \.glass-optics \{[^}]*mix-blend-mode: normal/s);
+});
+test("GPU path uploads exactly the shared wallpaper, renders distortion and accepts scene/lens changes",()=>{
+  const f=fakeWallpaper(), calls={uploads:0,draws:0,lens:[],uniforms:[]};
+  const gl={
+    VERTEX_SHADER:1,FRAGMENT_SHADER:2,COMPILE_STATUS:3,LINK_STATUS:4,
+    MAX_TEXTURE_SIZE:5,ARRAY_BUFFER:6,STATIC_DRAW:7,FLOAT:8,
+    TEXTURE_2D:9,TEXTURE_WRAP_S:10,TEXTURE_WRAP_T:11,CLAMP_TO_EDGE:12,
+    TEXTURE_MAG_FILTER:13,TEXTURE_MIN_FILTER:14,LINEAR:15,
+    LINEAR_MIPMAP_LINEAR:16,UNPACK_FLIP_Y_WEBGL:17,
+    TEXTURE0:18,RGBA:19,UNSIGNED_BYTE:20,COLOR_BUFFER_BIT:21,TRIANGLES:22,
+    createShader:()=>({}),shaderSource(){},compileShader(){},
+    getShaderParameter:()=>true,createProgram:()=>({}),attachShader(){},linkProgram(){},
+    deleteShader(){},getProgramParameter:()=>true,createBuffer:()=>({}),
+    bindBuffer(){},bufferData(){},useProgram(){},enableVertexAttribArray(){},
+    vertexAttribPointer(){},createTexture:()=>({}),activeTexture(){},
+    bindTexture(){},texParameteri(){},pixelStorei(){},
+    getParameter:()=>8192,getUniformLocation:(_,name)=>name,
+    texImage2D(...args){calls.uploads++;assert.equal(args.at(-1),f.canvas);},
+    generateMipmap(){},uniform1i(){},viewport(){},
+    uniform2f(){},uniform4f(){},uniform3f(){},
+    uniform1f(key,value){calls.uniforms.push([key,value]);if(key==="u_lens")calls.lens.push(value);},
+    clearColor(){},clear(){},drawArrays(){calls.draws++;},
+    deleteTexture(){},deleteBuffer(){},deleteProgram(){}
+  };
+  const classNames=new Set();
+  const shell={classList:{
+    add:(...names)=>names.forEach(n=>classNames.add(n)),
+    remove:(...names)=>names.forEach(n=>classNames.delete(n))
+  },prepend(){}};
+  const canvas={
+    width:0,height:0,hidden:false,
+    getContext:type=>type==="webgl2"?gl:null,
+    addEventListener(){},removeEventListener(){}
+  };
+  const sidebar={
+    addEventListener(){},removeEventListener(){},
+    getBoundingClientRect(){return {left:0,top:0,width:260,height:800};}
+  };
+  const doc={
+    hidden:false,createElement(){return f.canvas;},
+    addEventListener(){},removeEventListener(){}
+  };
+  f.canvas.setAttribute=()=>{};
+  const frames=[];
+  const win={
+    innerWidth:1280,innerHeight:800,devicePixelRatio:1,
+    matchMedia:()=>({matches:false}),
+    addEventListener(){},removeEventListener(){},
+    requestAnimationFrame(fn){frames.push(fn);return frames.length;},
+    cancelAnimationFrame(){}
+  };
+  const renderer=createSceneBackedGlass({
+    doc,win,shell,sidebar,glassCanvas:canvas,reducedMotion:{matches:true}
+  });
+  assert.equal(renderer.active,true);
+  frames.shift()();
+  assert.equal(calls.uploads,1);
+  assert.equal(calls.draws,1);
+  assert.ok(classNames.has("has-refractive-glass"));
+  assert.equal(calls.lens.at(-1),1);
+  renderer.setLens(false);
+  frames.shift()();
+  assert.equal(calls.lens.at(-1),0);
+  renderer.setScene(2);
+  frames.shift()();
+  assert.equal(calls.uploads,2);
+  assert.ok(calls.draws>=3);
+  renderer.dispose();
+  assert.equal(classNames.has("has-refractive-glass"),false);
 });
