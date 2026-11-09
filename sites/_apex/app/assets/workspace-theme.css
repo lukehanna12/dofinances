@@ -65,7 +65,7 @@ a:hover {text-decoration: none;}
   position: relative;
   flex: none;
   height: 71px;
-  min-height: 71px;
+  min-height: 0; /* Avoid a discrete min-height clamp mid-animation. */
   transition: height 210ms var(--ui-ease);
 }
 .brand {
@@ -138,7 +138,7 @@ a:hover {text-decoration: none;}
 }
 .status-dot {width: 7px; height: 7px; background: var(--ui-secondary);}
 .sidebar-bottom .status-dot {box-shadow: none;}
-.shell.is-collapsed .sidebar {width: 74px; padding-left: 11px; padding-right: 11px;}
+.shell.is-collapsed .sidebar {width: 74px; padding-left: 12px; padding-right: 12px;}
 /* Collapse/expand should be the same animation in reverse.
    Preserve each row's position, icon size and internal display geometry.
    Fade labels instead of removing them from layout with display:none. */
@@ -150,7 +150,7 @@ a:hover {text-decoration: none;}
 .shell.is-collapsed .sidebar-head {
   display: block;
   height: 113px;
-  min-height: 113px;
+  min-height: 0;
 }
 .shell.is-collapsed .brand {
   padding: 2px 4px 17px;
@@ -349,7 +349,7 @@ input::placeholder {color: var(--ui-muted);}
   }
   .shell.is-mobile-open .sidebar {transform: translateX(0);}
   .shell.is-collapsed .sidebar {width: 274px; padding: 17px 12px 12px;}
-  .shell.is-collapsed .sidebar-head {display: block; height: 71px; min-height: 71px;}
+  .shell.is-collapsed .sidebar-head {display: block; height: 71px; min-height: 0;}
   .shell.is-collapsed .brand {transform: none;}
   .shell.is-collapsed .sidebar-toggle {top: 1px; right: 0;}
   .shell.is-collapsed .sidebar-navigation {padding-top: 0;}
