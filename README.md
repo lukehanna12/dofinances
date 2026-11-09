@@ -55,8 +55,8 @@ Main Settings retains Google/GitHub identity linking (limits: five Google, three
 The authenticated app's Home, Projects, Settings, and all six Colosseum views share
 `sites/_apex/app/assets/workspace-theme.css`, loaded after the existing
 `dashboard.css`. The presentation is adapted from a source-first reconstruction
-of the ChatGPT web interface: neutral light/dark surfaces following system appearance,
-compact sidebar rows, softly rounded controls, restrained typography, accessible
+of the ChatGPT web interface: a pure-black main canvas and sidebar, separated by a thin charcoal divider,
+with neutral grey foreground surfaces, compact sidebar rows, softly rounded controls, restrained typography, accessible
 focus indicators, and reduced-motion/high-contrast support. No reconstructed
 private runtime, preserved application bundles, or external CDN assets are loaded.
 
