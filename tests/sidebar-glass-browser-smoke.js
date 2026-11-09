@@ -73,9 +73,9 @@
       assert(getComputedStyle(sidebar).backdropFilter.includes("blur"),
         "unsupported browser retains simple blur");
     }
-    const scene=getComputedStyle(document.body,"::before");
+    const wallpaperStyle=getComputedStyle(document.body,"::before");
     const overlay=getComputedStyle(document.body,"::after");
-    assert(scene.backgroundImage!=="none"&&overlay.backgroundImage!=="none",
+    assert(wallpaperStyle.backgroundImage!=="none"&&overlay.backgroundImage!=="none",
       "one physical page-level wallpaper is behind both content and sidebar");
     const shellColor=getComputedStyle(shell).backgroundColor;
     assert(shellColor==="rgba(0, 0, 0, 0)"||shellColor==="transparent",

@@ -86,6 +86,8 @@ jobs:
         run: |
           set -euo pipefail
           command -v google-chrome
+          node --check tests/sidebar-glass-browser-smoke.js
+          node --check tests/sidebar-glass-browser-cdp.mjs
           cp tests/sidebar-glass-browser-smoke.js .app-sidebar-preview/app/assets/_ci-glass-smoke.js
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
