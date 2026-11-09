@@ -63,8 +63,13 @@ test("homepage and recovery pages preserve their links and live form controls",a
   }
   assert.match(verify,/id="verify"/);
   assert.match(verify,/\/verify\/assets\/verification\.js/);
-  assert.match(verify,/\/app\/assets\/workspace-theme\.css/);
+  assert.match(verify,/\/assets\/account-security\.css/);
+  assert.doesNotMatch(verify,/\/app\/assets\//);
   assert.match(reset,/id="reset-form"/);
   assert.match(reset,/\/reset\/assets\/reset\.js/);
-  assert.match(reset,/\/app\/assets\/workspace-theme\.css/);
+  assert.match(reset,/\/assets\/account-security\.css/);
+  assert.doesNotMatch(reset,/\/app\/assets\//);
+  const security=await read("../sites/_apex/assets/account-security.css");
+  assert.match(security,/background:\s*var\(--ui-elevated\)/);
+  assert.match(security,/background:\s*var\(--ui-field\)/);
 });
