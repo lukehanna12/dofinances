@@ -551,7 +551,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     try{worker?.terminate();}catch{}
     worker=null;workerBusy=false;
   }
-  function armEndpointPrefetch(){
+  function armEndpointWarmup(){
     if(idleTimer)win.clearTimeout(idleTimer);
     if(!worker||workerBusy||!desired)return;
     idleTimer=win.setTimeout(()=>{
@@ -601,7 +601,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         }
         if(field.prefetch)shell.dataset.oraclePrefetchedEndpoint=field.key;
         if(desired?.key!==previous)dispatchLatest();
-        else armEndpointPrefetch();
+        else armEndpointWarmup();
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -648,7 +648,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
-    if(key===previous){armEndpointPrefetch();return;}
+    if(key===previous){armEndpointWarmup();return;}
     const cached=geometryCache.get(key);
     if(cached){
       geometryCache.delete(key);
@@ -656,7 +656,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       setMaps(desired,cached);
       shell.dataset.oracleFieldCacheHits=
         String(Number(shell.dataset.oracleFieldCacheHits||0)+1);
-      armEndpointPrefetch();
+      armEndpointWarmup();
       return;
     }
     if(worker)dispatchLatest();
