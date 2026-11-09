@@ -349,7 +349,7 @@ test("exact Oracle field computation moves off the UI thread without changing ge
   assert.match(worker,/field\.inner\.buffer,field\.outer\.buffer,field\.blurMask\.buffer/);
   assert.match(browser,/new win\.Worker\(new URL\("\.\/sidebar-glass-field-worker\.js",import\.meta\.url\)/);
   assert.match(browser,/const geometryCache=new Map\(\)/);
-  assert.match(browser,/if\(field\.key===desired\?\.key\)/);
+  assert.match(browser,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
   assert.match(browser,/else syncField\(desired\)/);
   assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass-field-worker\.js/);
   assert.doesNotMatch(worker,/html2canvas|drawImage|drawGlassWallpaper|fetch\(/);
