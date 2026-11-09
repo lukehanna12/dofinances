@@ -247,26 +247,32 @@ try{
       // unchanged; compare full pane INCLUDING optical rim, not a crop.
       // Blob URLs can give Chromium different decoded-image cache semantics
       // from data URLs while representing byte-identical PNG input.
-      const images=await evaluate('(()=>{'+
-        'const f=document.getElementById("oracle-glass-native-backdrop");'+
-        'return ["innerMap","outerMap","blurMap"].map(id=>{const n=f.querySelector(\'[result="'+id+'"]\');'+
-        'return {id,url:n.getAttribute("href")};});})()');
+      const images=await evaluate(`(()=>{
+        const f=document.getElementById("oracle-glass-native-backdrop");
+        return ["innerMap","outerMap","blurMap"].map(id=>{
+          const n=f.querySelector('[result="' + id + '"]');
+          return {id,url:n.getAttribute("href")};
+        });
+      })()`);
       assert(images.length===3 && images.every(i=>i.url?.startsWith("data:image/png;base64,")),
         "Expected canonical Oracle PNG data URLs before transport experiment");
       const reference=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
       },90000)).data);
-      const blobResult=await evaluate('(()=>{'+
-        'const f=document.getElementById("oracle-glass-native-backdrop");'+
-        'window.__ciBlobURLs=[];'+
-        'for(const name of ["innerMap","outerMap","blurMap"]){'+
-        'const node=f.querySelector(\'[result="'+name+'"]\');'+
-        'const raw=atob(node.getAttribute("href").split(",")[1]);'+
-        'const data=Uint8Array.from(raw,c=>c.charCodeAt(0));'+
-        'const url=URL.createObjectURL(new Blob([data],{type:"image/png"}));'+
-        'window.__ciBlobURLs.push(url);'+
-        'node.setAttribute("href",url);node.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",url);'+
-        '}return {count:window.__ciBlobURLs.length};})()');
+      const blobResult=await evaluate(`(()=>{
+        const f=document.getElementById("oracle-glass-native-backdrop");
+        window.__ciBlobURLs=[];
+        for(const name of ["innerMap","outerMap","blurMap"]){
+          const node=f.querySelector('[result="' + name + '"]');
+          const raw=atob(node.getAttribute("href").split(",")[1]);
+          const data=Uint8Array.from(raw,c=>c.charCodeAt(0));
+          const url=URL.createObjectURL(new Blob([data],{type:"image/png"}));
+          window.__ciBlobURLs.push(url);
+          node.setAttribute("href",url);
+          node.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",url);
+        }
+        return {count:window.__ciBlobURLs.length};
+      })()`);
       await sleep(450);
       const version=decodePNG((await send("Page.captureScreenshot",{
         format:"png",captureBeyondViewport:false,fromSurface:true
@@ -276,7 +282,8 @@ try{
       for(const mode of ["blob","data"]){
         if(mode==="data"){
           await evaluate('(()=>{const f=document.getElementById("oracle-glass-native-backdrop");'+
-            'for(const record of '+JSON.stringify(images)+'){const n=f.querySelector(\'[result="'+record.id+'"]\');'+
+            'for(const record of '+JSON.stringify(images)+'){'+
+            'const n=f.querySelector("[result=\\\"" + record.id + "\\\"]");'+
             'n.setAttribute("href",record.url);'+
             'n.setAttributeNS("http://www.w3.org/1999/xlink","xlink:href",record.url);'+
             '}return true;})()');
