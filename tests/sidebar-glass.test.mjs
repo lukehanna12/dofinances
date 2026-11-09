@@ -377,3 +377,29 @@ test("oracle mode5 fields reject assumed lossless axis-invariant nine-slice tili
   assert.notEqual(sample(250,30,1),sample(250,450,1),
     "mode5 right edge must retain its full Y dependence");
 });
+
+test("probe full-height x-translation invariance of source mode5 fields",()=>{
+  const baseW=260,h=900,r=24;
+  const baseline=generateOracleField(baseW,h,r);
+  const deviations=[];
+  for(const w of [74,80,90,113,140,183,220,259]){
+    const current=generateOracleField(w,h,r);
+    const bad={width:w,inner:0,outer:0,blurMask:0,first:null};
+    for(const name of ["inner","outer","blurMask"]){
+      let n=0;
+      const a=current[name],b=baseline[name];
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const sourceX=x<w/2?x:x+(baseW-w);
+        const i=4*(y*w+x),j=4*(y*baseW+sourceX);
+        for(let c=0;c<4;c++)if(a[i+c]!==b[j+c]){
+          n++;if(!bad.first)bad.first={name,x,y,c,actual:a[i+c],source:b[j+c]};
+        }
+      }
+      bad[name]=n;
+    }
+    deviations.push(bad);
+  }
+  console.log("ORACLE_FULL_HEIGHT_X_TRANSLATION_PROBE",JSON.stringify(deviations));
+  assert.ok(deviations.every(v=>v.inner===0&&v.outer===0&&v.blurMask===0),
+    "Full-height left/right splitting must be BYTE EXACT across every channel");
+});
