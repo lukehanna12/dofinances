@@ -500,7 +500,7 @@ print("AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED")
   assert.match(result,/AIR_LINEAR_BLEND_SOURCE_430_437_VERIFIED/);
 });
 
-test("SVG PNG displacement maps encode zero exactly and bound error at native-derived amounts",()=>{
+test("SVG PNG displacement maps encode zero exactly and bound error at native-derived amounts",async()=>{
   assert.equal(encodeOracleDisplacement(0),128);
   assert.equal(decodeOracleDisplacement(128),0);
   assert.equal(SVG_DISPLACEMENT_NEUTRAL_BIAS,1/(2*255));
