@@ -540,8 +540,102 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
    * The synchronous path is retained when Worker execution is unavailable.
    */
   const geometryCache=new Map();
-  const CACHE_LIMIT=24;
+  // Exact geometry-only PNGs; 32 animation samples + two canonical
+  // endpoints. Cache is in-memory and scoped to the actual viewport height.
+  // NO webpage/backdrop pixels are ever captured or cached.
+  const CACHE_LIMIT=48;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
+  let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
+  let anticipateSignature="",anticipateCount=0;
+
+  function expectedExpandWidths(){
+    // Sample the CSS width timing-function cubic-bezier(.2,.8,.2,1)
+    // at 60Hz over its 210ms transition. These are only candidate REQUEST
+    // dimensions; each cached map still uses exact generateOracleField()
+    // math and is installed ONLY at its exact rounded pane width.
+    function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
+    function valueAt(progress){
+      let low=0,high=1;
+      for(let iteration=0;iteration<24;iteration++){
+        const mid=(low+high)/2;
+        if(bezier(mid,.2,.2)<progress)low=mid;else high=mid;
+      }
+      return bezier((low+high)/2,.8,1);
+    }
+    const widths=new Set();
+    for(let ms=1000/60;ms<210;ms+=1000/60){
+      const eased=valueAt(ms/210);
+      const center=Math.round(74+186*eased);
+      for(const delta of [-1,0,1]){
+        const w=center+delta;
+        if(w>74&&w<260)widths.add(w);
+      }
+    }
+    // Prefer the high-motion central widths, then the last few pixels
+    // before the fully expanded edge. Do not prefetch arbitrary pane sizes.
+    return [...widths].sort((a,b)=>Math.abs(a-205)-Math.abs(b-205));
+  }
+  function stopAnticipation(){
+    if(anticipateTimer){win.clearTimeout(anticipateTimer);anticipateTimer=0;}
+    try{anticipateWorker?.terminate();}catch{}
+    anticipateWorker=null;
+    anticipateQueue=[];
+  }
+  function armAnticipation(){
+    if(disposed||!worker||!desired||desired.corner!==24||
+       !(desired.w===74||desired.w===260)||
+       shell.classList.contains("is-sidebar-toggling")||
+       !win.matchMedia?.("(min-width: 761px)")?.matches){
+      stopAnticipation();return;
+    }
+    const signature=desired.h+"@24";
+    if(anticipateWorker&&anticipateSignature===signature)return;
+    if(anticipateSignature!==signature){
+      stopAnticipation();
+      anticipateSignature=signature;
+      anticipateCount=0;
+    }
+    if(anticipateTimer||anticipateCount>=32)return;
+    anticipateTimer=win.setTimeout(()=>{
+      anticipateTimer=0;
+      if(disposed||!desired||desired.h+"@24"!==signature||
+         shell.classList.contains("is-sidebar-toggling"))return;
+      const queue=expectedExpandWidths().map(w=>({
+        w,h:desired.h,corner:24,key:w+"x"+desired.h+"@24",prefetch:true
+      })).filter(request=>!geometryCache.has(request.key));
+      if(!queue.length)return;
+      try{
+        anticipateWorker=new win.Worker(
+          new URL("./sidebar-glass-field-worker.js",import.meta.url),
+          {type:"module",name:"oracle-field-prefetch"});
+        anticipateQueue=queue;
+        const sendNext=()=>{
+          if(!anticipateWorker||disposed)return;
+          const next=anticipateQueue.shift();
+          if(!next){stopAnticipation();return;}
+          try{anticipateWorker.postMessage(next);}
+          catch{stopAnticipation();}
+        };
+        anticipateWorker.addEventListener("message",event=>{
+          const response=event.data;
+          if(disposed||!response||response.error||!response.urls||
+             response.h+"@"+response.corner!==anticipateSignature){
+            stopAnticipation();return;
+          }
+          cacheField(response,response.urls);
+          anticipateCount++;
+          shell.dataset.oracleWarmFieldCount=String(anticipateCount);
+          // If the pane has reached this exact width meanwhile, install
+          // the field without interpolation or any stale-width substitution.
+          if(desired?.key===response.key&&previous!==response.key)
+            apply();
+          sendNext();
+        });
+        anticipateWorker.addEventListener("error",stopAnticipation);
+        sendNext();
+      }catch{stopAnticipation();}
+    },900);
+  }
   let lastMaterialWord=NaN,lastInputRadius=NaN;
   function setMaps(request,urls){
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
@@ -638,7 +732,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
         }
         if(field.prefetch)shell.dataset.oraclePrefetchedEndpoint=field.key;
         if(desired?.key!==previous)dispatchLatest();
-        else armEndpointWarmup();
+        else {armEndpointWarmup();armAnticipation();}
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -685,7 +779,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
-    if(key===previous){armEndpointWarmup();return;}
+    if(key===previous){armEndpointWarmup();armAnticipation();return;}
     const cached=geometryCache.get(key);
     if(cached){
       geometryCache.delete(key);
@@ -694,12 +788,14 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       shell.dataset.oracleFieldCacheHits=
         String(Number(shell.dataset.oracleFieldCacheHits||0)+1);
       armEndpointWarmup();
+      armAnticipation();
       return;
     }
     if(worker)dispatchLatest();
     else syncField(desired);
   }
   function schedule(){
+    if(shell.classList.contains("is-sidebar-toggling"))stopAnticipation();
     if(disposed||queued)return;
     // Coalesce multiple observers into one exact-current-geometry frame.
     queued=win.requestAnimationFrame(apply);
@@ -766,6 +862,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       if(queued)win.cancelAnimationFrame(queued);
       if(delay)win.clearTimeout(delay);
       stopWorker();
+      stopAnticipation();
       geometryCache.clear();
       resize?.disconnect();
       endpointObserver?.disconnect();

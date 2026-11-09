@@ -531,3 +531,15 @@ test("inset glass and screen-wide banner preserve oracle field sizes and live ba
   assert.match(oracle,/if\(disposed\|\|queued\)return;/);
   assert.doesNotMatch(oracle,/html2canvas|getDisplayMedia|createImageBitmap\(document/);
 });
+
+test("idle predictive warmups cache exact width-specific fields without caching backdrop pixels",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/function expectedExpandWidths\(\)/);
+  assert.match(code,/new URL\("\.\/sidebar-glass-field-worker\.js",import\.meta\.url\)/);
+  assert.match(code,/cacheField\(response,response\.urls\)/);
+  assert.match(code,/desired\?\.key===response\.key&&previous!==response\.key/);
+  assert.match(code,/\.filter\(request=>!geometryCache\.has\(request\.key\)\)/);
+  assert.match(code,/if\(shell\.classList\.contains\("is-sidebar-toggling"\)\)stopAnticipation\(\)/);
+  assert.match(code,/const CACHE_LIMIT=48/);
+  assert.doesNotMatch(code,/html2canvas|captureStream|getDisplayMedia/);
+});
