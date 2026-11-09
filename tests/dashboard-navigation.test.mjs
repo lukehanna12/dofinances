@@ -130,7 +130,7 @@ test("collapsed rail links actually shrink inside the sidebar and keep rounded s
   assert.match(rail,/padding:\s*9px 0 9px 15px/);
   assert.match(rail,/gap:\s*0/);
   assert.match(narrowLabel,/max-width:\s*0/);
-  assert.match(narrowLabel,/max-width 210ms/);
+  assert.match(narrowLabel,/max-width var\(--sidebar-layout-duration\)/);
   assert.match(css,/\.shell\.is-collapsed \.nav-link \.nav-icon \{width:\s*18px;\s*height:\s*18px;\}/);
   const railSize=rule(".shell.is-collapsed .sidebar");
   assert.match(railSize,/width:\s*74px/);
