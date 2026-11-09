@@ -57,7 +57,8 @@ the system UI sans-serif font stack, black canvas, charcoal cards and controls,
 greys, focus indicator, and contrast tokens. New Git-managed HTML pages should
 load `/assets/site-foundation.css` before their page-specific stylesheet.
 The protected `/app` uses it beneath `workspace-theme.css`; email verification
-and password reset use it beneath the existing dashboard styles. The public
+and password reset use it beneath a **public** account-security stylesheet so
+styles load even when the user has no active session. The public
 homepage uses `assets/site.css` for layout on the same tokens.
 
 The Studio React login uses the **same source CSS**, bundled from
