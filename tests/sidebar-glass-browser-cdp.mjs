@@ -153,54 +153,80 @@ try{
     assert(state.wall&&state.wall!=="none","Shared page wallpaper missing at "+width);
     console.log("CDP viewport verified",width,height,state.info);
     if(width===1440){
-      // Baseline performance diagnostic using REAL transitions (unlike
-      // functional tests, which intentionally use reduced motion).
-      await send("Emulation.setEmulatedMedia",{features:[
-        {name:"prefers-reduced-motion",value:"no-preference"}]});
-      await evaluate(`(()=>{
-        const shell=document.getElementById("workspace-shell");
-        const toggle=document.getElementById("sidebar-toggle");
-        const gaps=[];let last=0;let lastTasks=[];
-        const longTasks=[];
-        let observer;
-        try{
-          observer=new PerformanceObserver(list=>{
-            for(const e of list.getEntries())longTasks.push(e.duration);
-          });
-          observer.observe({entryTypes:["longtask"]});
-        }catch{}
-        let start=performance.now();
-        function frame(t){
-          if(last)gaps.push(t-last);last=t;
-          if(t-start<1200)requestAnimationFrame(frame);
-          else{
-            observer?.disconnect();
-            const sorted=gaps.toSorted((a,b)=>a-b);
-            window.__glassPerf={
-              frames:gaps.length,
-              median:sorted[Math.floor(sorted.length*.5)],
-              p95:sorted[Math.floor(sorted.length*.95)],
-              worst:sorted.at(-1),
-              stalls34:gaps.filter(t=>t>34).length,
-              stalls50:gaps.filter(t=>t>50).length,
-              longTasks,
-              builds:Number(shell.dataset.oracleFieldBuilds||0),
-              cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
-              finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
-            };
-          }
+      // Same-run controlled motion profiling, not a visual substitute:
+      // SVG oracle, standard backdrop blur, and no filter are all tested
+      // against the same page, dimensions and 210ms layout animation.
+      await send("Performance.enable");
+      const measures=[];
+      for(const mode of ["oracle","blur-only","none"]){
+        await evaluate('(()=>{const old=document.getElementById("ci-perf-filter");old?.remove();})()');
+        if(mode!=="oracle"){
+          const override=mode==="blur-only"
+            ?"blur(var(--oracle-backdrop-blur))"
+            :"none";
+          await evaluate('(()=>{const s=document.createElement("style");'+
+            's.id="ci-perf-filter";s.textContent='+JSON.stringify(
+              ".shell.liquid-glass-preview.has-oracle-backdrop .sidebar{"+
+              "backdrop-filter:"+override+" !important;"+
+              "-webkit-backdrop-filter:"+override+" !important;}")+
+            ';document.head.append(s);return true;})()');
         }
-        requestAnimationFrame(frame);
-        setTimeout(()=>toggle.click(),60);
-        setTimeout(()=>toggle.click(),390);
-        return true;
-      })()`);
-      const perf=await until(()=>evaluate("window.__glassPerf||null"),10000);
-      console.log("SIDEBAR_MOTION_BASELINE",JSON.stringify(perf));
-      assert(perf.finalWidth>250,"Perf test must restore expanded sidebar");
+        await sleep(160);
+        const pre=(await send("Performance.getMetrics")).metrics;
+        await evaluate(`(()=>{
+          const shell=document.getElementById("workspace-shell");
+          const toggle=document.getElementById("sidebar-toggle");
+          const gaps=[];let last=0;
+          const longTasks=[];
+          let observer;
+          try{
+            observer=new PerformanceObserver(list=>{
+              for(const e of list.getEntries())longTasks.push(e.duration);
+            });
+            observer.observe({entryTypes:["longtask"]});
+          }catch{}
+          const start=performance.now();
+          function frame(t){
+            if(last)gaps.push(t-last);last=t;
+            if(t-start<1200)requestAnimationFrame(frame);
+            else{
+              observer?.disconnect();
+              const sorted=gaps.toSorted((a,b)=>a-b);
+              window.__glassPerf={
+                frames:gaps.length,
+                median:sorted[Math.floor(sorted.length*.5)],
+                p95:sorted[Math.floor(sorted.length*.95)],
+                worst:sorted.at(-1),
+                stalls34:gaps.filter(t=>t>34).length,
+                stalls50:gaps.filter(t=>t>50).length,
+                longTasks,builds:Number(shell.dataset.oracleFieldBuilds||0),
+                cacheHits:Number(shell.dataset.oracleFieldCacheHits||0),
+                finalWidth:document.getElementById("workspace-sidebar").getBoundingClientRect().width
+              };
+            }
+          }
+          window.__glassPerf=null;
+          requestAnimationFrame(frame);
+          setTimeout(()=>toggle.click(),60);
+          setTimeout(()=>toggle.click(),390);
+          return true;
+        })()`);
+        const result=await until(()=>evaluate("window.__glassPerf||null"),10000);
+        const post=(await send("Performance.getMetrics")).metrics;
+        const diff={};
+        for(const metric of ["LayoutDuration","RecalcStyleDuration","ScriptDuration","TaskDuration"]){
+          diff[metric]=((post.find(m=>m.name===metric)?.value||0)-
+                        (pre.find(m=>m.name===metric)?.value||0))*1000;
+        }
+        assert(result.finalWidth>250,"Perf variant must restore expanded sidebar");
+        const data={mode,...result,mainThreadMs:diff};
+        measures.push(data);
+        console.log("SIDEBAR_MOTION_CONTROL",JSON.stringify(data));
+      }
+      await evaluate('document.getElementById("ci-perf-filter")?.remove()');
       await send("Emulation.setEmulatedMedia",{features:[
         {name:"prefers-reduced-motion",value:"reduce"}]});
-      await sleep(150);
+      await sleep(180);
     }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
