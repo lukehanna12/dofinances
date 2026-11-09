@@ -58,6 +58,8 @@ export function workspaceWallpaperForRoute(route) {
 export function applyWorkspaceWallpaper(doc,route) {
   const wallpaper=workspaceWallpaperForRoute(route);
   const name=wallpaper.sha+"."+wallpaper.ext;
+  // Navigation can be exercised against DOM mocks without a body element.
+  if(!doc.body?.style?.setProperty)return wallpaper;
   doc.body.style.setProperty("--workspace-wallpaper-image",'url("https://dofinances.com/wallpapers/'+name+'")');
   doc.body.style.setProperty("--workspace-wallpaper-position",wallpaper.position);
   doc.body.dataset.wallpaper=name;
