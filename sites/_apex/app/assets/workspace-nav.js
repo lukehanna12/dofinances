@@ -301,8 +301,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
     updateCollapse();
   };
   sidebar.addEventListener?.("click",expandFromBlank);
-  // Native button activation already supports Enter/Space and bubbles its
-  // click to the one shared expandFromBlank handler above.
+  // The real full-rail button handles its own activation. With the aside
+  // pointer-transparent, do not depend on event bubbling for expansion.
+  railExpandTarget?.addEventListener?.("click",event=>{
+    event.stopPropagation?.();
+    expandFromBlank(event);
+  });
   // A drag can continue beyond the fixed expanded minimum, but crossing
   // half that minimum collapses immediately. No pointerup/release required.
   if(resizeHandle){
