@@ -70,6 +70,32 @@ test("reconstruction-inspired adaptive presentation covers all shared workspace 
   assert.match(css,/:focus-visible/);
   assert.doesNotMatch(css,/@import|https:\/\/chatgpt\.com\/cdn/i);
 });
+test("sidebar collapse/expand keeps layout mounted and interpolates positions",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  const head=css.match(/\.sidebar-head \{([^}]*)\}/)?.[1]||"";
+  const collapsedHead=css.match(/\.shell\.is-collapsed \.sidebar-head \{([^}]*)\}/)?.[1]||"";
+  assert.match(head,/display:\s*block/,"avoid flex-direction layout switching");
+  assert.match(head,/height:\s*71px/);
+  assert.match(head,/min-height:\s*0/);
+  assert.match(head,/transition:\s*height 210ms/);
+  assert.match(collapsedHead,/display:\s*block/);
+  assert.match(collapsedHead,/height:\s*113px/);
+  assert.match(collapsedHead,/min-height:\s*0/,"min-height must not clamp the height transition");
+  assert.match(css,/\.shell\.is-collapsed \.sidebar-toggle \{top:\s*44px;\s*right:\s*7px;\}/);
+  assert.match(css,/transition:\s*top 210ms[^;]+right 210ms/);
+  for(const [selector,display] of [
+    ["brand-wordmark","flex"],["nav-label","block"],
+    ["nav-section-label","block"],["sidebar-foot-label","inline-block"]
+  ]){
+    const collapsed=new RegExp("\\.shell\\.is-collapsed \\."+selector+" \\{display: "+display+";\\}");
+    assert.match(css,collapsed,selector+" must stay mounted while fading");
+  }
+  assert.match(css,/\.shell\.is-collapsed \.nav-link \{justify-content:\s*flex-start;\s*padding:\s*9px 11px;\}/);
+  assert.match(css,/\.shell\.is-collapsed \.nav-link \.nav-icon \{width:\s*18px;\s*height:\s*18px;\}/);
+  assert.match(css,/@media \(max-width: 760px\) \{/);
+  assert.match(css,/\.shell\.is-collapsed \.sidebar-toggle \{top:\s*1px;\s*right:\s*0;\}/);
+  assert.match(css,/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.sidebar-head, \.brand, \.sidebar-toggle/);
+});
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
@@ -164,6 +190,13 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),true);
   assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
+  assert.equal(m.elements["sidebar-toggle"].getAttribute("aria-expanded"),"false");
+  m.elements["sidebar-toggle"].dispatch("click");
+  assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),false);
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"false");
+  assert.equal(m.elements["sidebar-toggle"].getAttribute("aria-expanded"),"true");
+  m.elements["sidebar-toggle"].dispatch("click");
+  assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),true);
   m.mobile(true);m.fire("resize");
   m.elements["mobile-nav-toggle"].dispatch("click");
   assert.equal(m.elements["workspace-shell"].classList.contains("is-mobile-open"),true);
