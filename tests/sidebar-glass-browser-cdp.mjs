@@ -377,6 +377,47 @@ try{
       console.log("CONTROLLED_PAGE_GRID_REFRACTION_DIFF",JSON.stringify(patternDiff));
       assert(patternDiff.different>=1400&&patternDiff.mean>=2,
         "Controlled PAGE backdrop: glass must bend a high-contrast grid, not just blur it");
+      // Optical-compositing candidate: the current 'over' on two
+      // COMPLEMENTARY premultiplied-alpha branches is not the source
+      // shader's linear image interpolation. Test W3C arithmetic sum
+      // k2=1,k3=1 without changing any optical parameter or page input.
+      await evaluate('document.getElementById("ci-compare-blur")?.remove()');
+      await sleep(360);
+      const overPicture=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const changes=await evaluate(`(()=>{
+        const filter=document.getElementById("oracle-glass-native-backdrop");
+        const nodes=["innerBlurred","outerBlurred","composited"].map(
+          key=>filter.querySelector('feComposite[result="'+key+'"]'));
+        if(nodes.some(n=>!n))return {error:"Missing SVG mix joins"};
+        nodes.forEach(n=>{
+          n.setAttribute("operator","arithmetic");
+          n.setAttribute("k1","0");
+          n.setAttribute("k2","1");
+          n.setAttribute("k3","1");
+          n.setAttribute("k4","0");
+        });
+        return {count:nodes.length,operators:nodes.map(n=>n.getAttribute("operator"))};
+      })()`);
+      assert(changes.count===3,"Missing candidate operator stages "+JSON.stringify(changes));
+      await sleep(360);
+      const arithmeticPicture=decodePNG((await send("Page.captureScreenshot",{
+        format:"png",captureBeyondViewport:false,fromSurface:true
+      },90000)).data);
+      const changed=comparePixels(overPicture,arithmeticPicture,0,260,0,880);
+      console.log("COMPLEMENTARY_WEIGHTED_BRANCH_ARITHMETIC_VS_OVER",
+        JSON.stringify(changed));
+      await evaluate(`(()=>{
+        const filter=document.getElementById("oracle-glass-native-backdrop");
+        ["innerBlurred","outerBlurred","composited"].forEach(key=>{
+          const node=filter.querySelector('feComposite[result="'+key+'"]');
+          node.setAttribute("operator","over");
+          for(const k of ["k1","k2","k3","k4"])node.removeAttribute(k);
+        });
+        return true;
+      })()`);
+
     }
   }
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
