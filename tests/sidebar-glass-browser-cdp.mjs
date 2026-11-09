@@ -635,6 +635,7 @@ try{
           const sorted=gaps.toSorted((a,b)=>a-b);
           observer.disconnect();
           const resizeErrors=observerSamples.map(x=>Math.abs(x.paneWidth-x.mapWidth));
+          const resizeMismatches=observerSamples.filter(x=>x.paneWidth!==x.mapWidth);
           window.__abMotionResult={
             frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
             worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
@@ -644,7 +645,8 @@ try{
             resizeSamples:resizeErrors.length,
             resizeStale:resizeErrors.filter(x=>x>0).length,
             resizeTotalWidthError:resizeErrors.reduce((a,b)=>a+b,0),
-            resizeMaxWidthError:Math.max(0,...resizeErrors)
+            resizeMaxWidthError:Math.max(0,...resizeErrors),
+            resizeMismatches:resizeMismatches.slice(0,12)
           };
         }
       }
@@ -660,7 +662,7 @@ try{
     console.log("SAME_BROWSER_AB_MOTION",JSON.stringify({mode,trial,...result}));
     return result;
   }
-  for(let i=0;i<2;i++)await motionTrial("baseline",i);
+  for(let i=0;i<3;i++)await motionTrial("baseline",i);
   await evaluate(`(async()=>{
     window.__abGlass.dispose();
     const {mountOracleBackdrop}=await import("/app/assets/sidebar-glass-oracle.js");
@@ -673,7 +675,7 @@ try{
   })()`);
   await until(()=>evaluate('document.getElementById("workspace-shell").classList.contains("has-oracle-backdrop")'),25000);
   await sleep(2500);
-  for(let i=0;i<2;i++)await motionTrial("optimized",i);
+  for(let i=0;i<3;i++)await motionTrial("optimized",i);
   await evaluate('window.__abGlass?.dispose()');
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
 }finally{

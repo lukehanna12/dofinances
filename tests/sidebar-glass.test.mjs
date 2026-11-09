@@ -11,7 +11,7 @@ import {
   airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField,
   ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection,
   projectOracleFieldWidth,encodeOracleDisplacement,decodeOracleDisplacement,
-  SVG_DISPLACEMENT_NEUTRAL_BIAS
+  SVG_DISPLACEMENT_NEUTRAL_BIAS,predictSidebarMotionWidths
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -600,4 +600,17 @@ test("prepaint ResizeObserver installs only cached exact fields",async()=>{
   assert.match(code,/else schedule\(\);/);
   assert.match(code,/new ResizeObserver\(onPaneResize\)/);
   assert.doesNotMatch(code,/new ResizeObserver\(schedule\)/);
+});
+
+test("idle exact-width predictor covers BOTH collapse and expansion",()=>{
+  const widths=predictSidebarMotionWidths();
+  assert.ok(widths.length>=18&&widths.length<=40);
+  for(const width of [133,201,183,151,213,121,231,103,248,86]){
+    assert.ok(widths.includes(width),
+      "Exact CSS prediction must cover both transition directions at width "+width);
+  }
+  assert.ok(widths.every(w=>Number.isInteger(w)&&w>74&&w<260));
+  const learned=predictSidebarMotionWidths([147,219,147]);
+  assert.deepEqual(learned.slice(0,2),[147,219]);
+  assert.equal(new Set(learned).size,learned.length);
 });

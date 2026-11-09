@@ -440,6 +440,40 @@ function imageDataURL(win,buffer,width,height){
   return c.toDataURL("image/png");
 }
 
+/* Predict desktop CSS width transitions at common 60Hz sample times.
+ * This function guesses CANDIDATE widths only; every generated field still
+ * comes from the exact byte-preserving oracle worker. Both directions must
+ * be included: collapse widths are not the expansion widths.
+ * No backdrop pixels, source-dependent data, or optical coefficients here.
+ */
+export function predictSidebarMotionWidths(learned=[]){
+  function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
+  function valueAt(progress){
+    let low=0,high=1;
+    for(let iteration=0;iteration<24;iteration++){
+      const mid=(low+high)/2;
+      if(bezier(mid,.2,.2)<progress)low=mid;else high=mid;
+    }
+    return bezier((low+high)/2,.8,1);
+  }
+  const widths=new Set();
+  for(let ms=1000/60;ms<210;ms+=1000/60){
+    const t=valueAt(ms/210);
+    // Same 210ms CSS cubic-bezier(.2,.8,.2,1), reversed endpoints.
+    const expand=Math.round(74+186*t);
+    const collapse=Math.round(260-186*t);
+    for(const center of [expand,collapse]){
+      if(center>74&&center<260)widths.add(center);
+      if(ms>170){
+        if(center>75)widths.add(center-1);
+        if(center<259)widths.add(center+1);
+      }
+    }
+  }
+  return [...new Set([...learned,...widths])].filter(w=>
+    Number.isInteger(w)&&w>74&&w<260);
+}
+
 export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   if(!shell||!sidebar)throw Error("Genuine /app sidebar required");
   const reduced=win.matchMedia?.("(prefers-reduced-transparency: reduce)")?.matches ||
@@ -552,33 +586,9 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   const observedWidths=new Map();
 
   function expectedExpandWidths(){
-    // Seed only the exact integer dimensions likely to occur at 60Hz on
-    // the current 210ms cubic-bezier(.2,.8,.2,1) transition, plus extra
-    // rounding coverage at the slow final edge. Every selected width is
-    // calculated by the UNCHANGED Oracle; nothing is interpolated.
-    function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
-    function valueAt(progress){
-      let low=0,high=1;
-      for(let iteration=0;iteration<24;iteration++){
-        const mid=(low+high)/2;
-        if(bezier(mid,.2,.2)<progress)low=mid;else high=mid;
-      }
-      return bezier((low+high)/2,.8,1);
-    }
-    const widths=new Set();
-    for(let ms=1000/60;ms<210;ms+=1000/60){
-      const center=Math.round(74+186*valueAt(ms/210));
-      if(center>74&&center<260)widths.add(center);
-      if(ms>170){
-        if(center>75)widths.add(center-1);
-        if(center<259)widths.add(center+1);
-      }
-    }
-    // After the first actual animation, prefer the browser's observed
-    // integer widths rather than repeatedly guessing from frame cadence.
+    // Actual per-device widths come first after the first transition.
     const learned=[...observedWidths].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-    return [...new Set([...learned,...widths])]
-      .filter(w=>w>74&&w<260);
+    return predictSidebarMotionWidths(learned);
   }
   function stopAnticipation(){
     if(anticipateTimer){win.clearTimeout(anticipateTimer);anticipateTimer=0;}
