@@ -99,6 +99,12 @@ jobs:
           node --check .app-sidebar-preview/app/assets/sidebar-glass-field-worker.js
           node --check .app-sidebar-preview/gpu-lab/gpu-renderer.js
           node --check .app-sidebar-preview/gpu-lab/gpu-lab.js
+          # A/B the optimized renderer against the EXACT production release
+          # commit inside the same Chrome session; this fixture exists only
+          # in temporary CI artifacts and is removed before Pages deployment.
+          git fetch --quiet --no-tags --depth=1 origin 28b6306d9f67b27ff545f263e6769ce9e99bf4db
+          git show 28b6306d9f67b27ff545f263e6769ce9e99bf4db:sites/_apex/app/assets/sidebar-glass-oracle.js > .app-sidebar-preview/app/assets/_oracle-baseline.js
+          test -s .app-sidebar-preview/app/assets/_oracle-baseline.js
           cp tests/sidebar-glass-browser-smoke.js .app-sidebar-preview/app/assets/_ci-glass-smoke.js
           node --input-type=module <<'NODE'
           import {readFileSync,writeFileSync} from 'node:fs';
@@ -128,9 +134,11 @@ jobs:
           if(!html.includes(tag))throw Error('CI injection vanished');
           writeFileSync(path,html.replace(tag,''));
           unlinkSync('.app-sidebar-preview/app/assets/_ci-glass-smoke.js');
+          unlinkSync('.app-sidebar-preview/app/assets/_oracle-baseline.js');
           NODE
           ! grep -Fq '_ci-glass-smoke' .app-sidebar-preview/app/index.html
           test ! -e .app-sidebar-preview/app/assets/_ci-glass-smoke.js
+          test ! -e .app-sidebar-preview/app/assets/_oracle-baseline.js
       - name: Deploy to non-production Pages preview branch
         uses: cloudflare/wrangler-action@v4
         with:

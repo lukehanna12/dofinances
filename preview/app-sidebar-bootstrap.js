@@ -25,4 +25,4 @@ for(const link of document.querySelectorAll("a[href]")){
 }
 
 // Preview-only optical material; account/network controls remain disabled.
-initLiquidGlassSidebar();
+window.__ciGlass=initLiquidGlassSidebar();

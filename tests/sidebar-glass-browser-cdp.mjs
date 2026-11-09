@@ -61,7 +61,7 @@ function send(method,params={},timeout=45000){
   });
 }
 async function evaluate(expression){
-  const response=await send("Runtime.evaluate",{expression,returnByValue:true},60000);
+  const response=await send("Runtime.evaluate",{expression,returnByValue:true,awaitPromise:true},60000);
   if(response.exceptionDetails)throw Error("Browser JS: "+
     (response.exceptionDetails.text||JSON.stringify(response.exceptionDetails)));
   return response.result?.value;
@@ -544,6 +544,100 @@ try{
 
     }
   }
+
+  // Same-session optical pixel parity and A/B headless pacing on the SAME
+  // source background. The baseline is the exact initial production release,
+  // not a re-created approximation. This is research-only; no fixture ships.
+  await send("Emulation.setDeviceMetricsOverride",{
+    width:1440,height:900,deviceScaleFactor:1,mobile:false
+  });
+  await send("Emulation.setEmulatedMedia",{
+    features:[{name:"prefers-reduced-motion",value:"no-preference"}]
+  });
+  await sleep(2500);
+  await evaluate('(()=>{document.querySelector(".glass-selection")?.style.setProperty("visibility","hidden");return true;})()');
+  const optimizedStill=decodePNG((await send("Page.captureScreenshot",{
+    format:"png",captureBeyondViewport:false,fromSurface:true
+  },90000)).data);
+  // The preview bootstrap owns only the test material and explicitly exposes
+  // cleanup. Navigation and all backdrop/source DOM stay identical.
+  const mountBaseline=await evaluate(`(async()=>{
+    const current=window.__ciGlass;
+    if(!current||!current.nativeFilterActive)throw Error("Optimized material not running");
+    current.cleanup();
+    const {mountOracleBackdrop}=await import("/app/assets/_oracle-baseline.js");
+    window.__abGlass=mountOracleBackdrop({
+      doc:document,win:window,
+      shell:document.getElementById("workspace-shell"),
+      sidebar:document.getElementById("workspace-sidebar")
+    });
+    return !!window.__abGlass;
+  })()`);
+  assert(mountBaseline,"Unable to mount pinned pre-optimization material");
+  await until(()=>evaluate('(()=>{const s=document.getElementById("workspace-shell");'+
+    'const n=document.querySelector("#oracle-glass-native-backdrop [result=innerMap]");'+
+    'return s?.classList.contains("has-oracle-backdrop")&&n?.getAttribute("href")?.startsWith("data:image/png")&&n.getAttribute("width")==="260";})()'),25000);
+  await sleep(200);
+  const baselineStill=decodePNG((await send("Page.captureScreenshot",{
+    format:"png",captureBeyondViewport:false,fromSurface:true
+  },90000)).data);
+  const opticalDelta=comparePixels(optimizedStill,baselineStill,8,268,8,892);
+  console.log("EXACT_OPTIMIZED_VS_PINNED_BASELINE_PIXEL_DELTA",JSON.stringify(opticalDelta));
+  // Same-page static pixels must match when the same Oracle byte maps and
+  // same live DOM backdrop are used. Any difference blocks deployment.
+  assert(opticalDelta.mean<.4&&opticalDelta.max<=3,
+    "The optimized SVG graph must preserve full-pane baseline pixels "+JSON.stringify(opticalDelta));
+  async function motionTrial(mode,trial){
+    await sleep(450);
+    await evaluate(`(()=>{
+      const shell=document.getElementById("workspace-shell");
+      if(shell.classList.contains("is-collapsed"))
+        document.getElementById("sidebar-toggle").click();
+      return true;
+    })()`);
+    await sleep(350);
+    await evaluate(`(()=>{
+      const gaps=[];let last=0;const start=performance.now();
+      const button=document.getElementById("sidebar-toggle");
+      function sample(t){
+        if(last)gaps.push(t-last);last=t;
+        if(t-start<1220)requestAnimationFrame(sample);
+        else {
+          const sorted=gaps.toSorted((a,b)=>a-b);
+          window.__abMotionResult={
+            frames:gaps.length,p95:sorted[Math.floor(sorted.length*.95)],
+            worst:sorted.at(-1),stalls34:gaps.filter(x=>x>34).length,
+            stalls50:gaps.filter(x=>x>50).length
+          };
+        }
+      }
+      window.__abMotionResult=null;
+      requestAnimationFrame(sample);
+      setTimeout(()=>button.click(),65);
+      setTimeout(()=>button.click(),440);
+      return true;
+    })()`);
+    const result=await until(()=>evaluate('window.__abMotionResult||null'),12000);
+    assert(await evaluate('document.getElementById("workspace-sidebar").getBoundingClientRect().width>=259'),
+      "A/B trial must restore the expanded endpoint");
+    console.log("SAME_BROWSER_AB_MOTION",JSON.stringify({mode,trial,...result}));
+    return result;
+  }
+  for(let i=0;i<2;i++)await motionTrial("baseline",i);
+  await evaluate(`(async()=>{
+    window.__abGlass.dispose();
+    const {mountOracleBackdrop}=await import("/app/assets/sidebar-glass-oracle.js");
+    window.__abGlass=mountOracleBackdrop({
+      doc:document,win:window,
+      shell:document.getElementById("workspace-shell"),
+      sidebar:document.getElementById("workspace-sidebar")
+    });
+    return true;
+  })()`);
+  await until(()=>evaluate('document.getElementById("workspace-shell").classList.contains("has-oracle-backdrop")'),25000);
+  await sleep(2500);
+  for(let i=0;i<2;i++)await motionTrial("optimized",i);
+  await evaluate('window.__abGlass?.dispose()');
   console.log("BROWSER_BACKDROP_PIXEL_AND_RESPONSIVE_VALIDATION_PASSED");
 }finally{
   try{socket?.close();}catch{}
