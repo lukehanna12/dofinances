@@ -245,8 +245,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);
   assert.match(html,/id="back-to-workspace"/);
-  assert.match(html,/<a class="rb-crumb" id="back-to-workspace" href="#projects"/);
-  assert.match(html,/<nav class="rb-breadcrumbs" id="breadcrumb"/);
+  assert.match(html,/<a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects"/);
+  assert.match(html,/<nav class="shadcn-breadcrumbs" id="breadcrumb"/);
   assert.match(html,/href="#colosseum\/utilities"/);
   assert.match(html,/aria-label="Utilities" title="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
@@ -288,14 +288,14 @@ function element(props={}){
     getAttribute:key=>attrs[key],
     removeAttribute:key=>{delete attrs[key];},
     addEventListener:(key,fn)=>{(listeners[key]??=[]).push(fn);},
-    dispatch:key=>{for(const fn of listeners[key]||[])fn({key});},
+    dispatch:(key,extra={})=>{for(const fn of listeners[key]||[])fn({key,type:key,preventDefault(){},...extra});},
     focus:()=>{}
   };
 }
 function mockNavigation(){
   const ids=["workspace-shell","workspace-sidebar","sidebar-toggle","mobile-nav-toggle",
     "sidebar-scrim","main-navigation","project-navigation",
-    "breadcrumb","location-subtitle","back-to-workspace"];
+    "breadcrumb","location-subtitle","back-to-workspace","sidebar-resize-handle"];
   const elements=Object.fromEntries(ids.map(id=>[id,element()]));
   const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x)].map(name=>
     element({dataset:{view:name}}));
@@ -368,4 +368,29 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   m.win.location.hash="#projects";m.fire("hashchange");
   assert.equal(m.elements["back-to-workspace"].hidden,true);
   assert.equal(m.elements["main-navigation"].hidden,false);
+});
+
+test("grip drag resizes, preserves preference, and collapses beyond content minimum",()=>{
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  const grip=m.elements["sidebar-resize-handle"];
+  const shell=m.elements["workspace-shell"];
+  const sidebar=m.elements["workspace-sidebar"];
+  assert.equal(grip.getAttribute("aria-valuenow"),"260");
+  grip.dispatch("pointerdown",{clientX:260,pointerId:1});
+  grip.dispatch("pointermove",{clientX:400,pointerId:1});
+  grip.dispatch("pointerup",{clientX:400,pointerId:1});
+  assert.equal(grip.getAttribute("aria-valuenow"),"400");
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.width"),"400");
+  assert.equal(shell.classList.contains("is-collapsed"),false);
+  grip.dispatch("pointerdown",{clientX:400,pointerId:2});
+  grip.dispatch("pointermove",{clientX:170,pointerId:2});
+  grip.dispatch("pointerup",{clientX:170,pointerId:2});
+  assert.equal(shell.classList.contains("is-collapsed"),true);
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
+  assert.equal(m.stored.get("dofinances.workspace.sidebar.width"),"400",
+    "Collapsed drag must not overwrite the prior useful expanded width");
+  sidebar.dispatch("click");
+  assert.equal(shell.classList.contains("is-collapsed"),false);
+  assert.equal(grip.getAttribute("aria-valuenow"),"400");
 });

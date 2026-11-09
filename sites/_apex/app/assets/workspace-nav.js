@@ -169,6 +169,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     desktopToggle.setAttribute("aria-label",isMobile()?"Close navigation":
       effectiveCollapsed?"Expand sidebar":"Collapse sidebar");
     desktopToggle.title=effectiveCollapsed?"Expand sidebar":"Collapse sidebar";
+    if(!isMobile())sidebar.title=effectiveCollapsed?
+      "Click empty sidebar space to expand":"";
+    else sidebar.title="";
   }
   function closeDrawer(animate=false){
     if(animate===true&&isMobile()&&shell.classList.contains("is-mobile-open"))
@@ -286,6 +289,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
     }
     hideHint();
+    setSidebarWidth(expandedWidth,true);
     startSidebarMotion("layout");
     updateCollapse();
   });
@@ -295,7 +299,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     let drag=null,queued=false,pendingWidth=displayedWidth,rawWidth=displayedWidth;
     const paint=()=>{
       queued=false;
-      if(drag)setSidebarWidth(pendingWidth);
+      if(drag)setSidebarWidth(pendingWidth,true);
     };
     const onMove=event=>{
       if(!drag)return;

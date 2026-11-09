@@ -10,7 +10,7 @@ test("Account signout moved after MFA into Manage Account and ahead of deletion"
   assert.ok(a>=0&&a<b&&b<c&&c<d);
   const bar=html.match(/<header class="topbar">([\s\S]*?)<\/header>/)?.[1]||"";
   assert.doesNotMatch(bar,/id="signout"/);
-  assert.match(bar,/class="rb-breadcrumbs"/);
+  assert.match(bar,/class="shadcn-breadcrumbs"/);
   assert.doesNotMatch(bar,/Colosseum project workspace|Back to Projects/);
 });
 test("two consistent header heights, viewport layers, and a stable responsive sidebar gap",()=>{
@@ -19,7 +19,9 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(html,/class="global-menu"/);
   assert.match(css,/--global-menu-height:44px/);
   assert.match(css,/--workspace-header-height:50px/);
-  assert.match(css,/--workspace-sidebar-gap:18px/);
+  assert.match(css,/--workspace-sidebar-gap:16px/);
+  assert.match(css,/--workspace-sidebar-left-gap:16px/);
+  assert.match(css,/--workspace-sidebar-bottom-gap:16px/);
   assert.match(css,/calc\(var\(--global-menu-height\) \+ var\(--workspace-header-height\) \+ var\(--workspace-sidebar-gap\)\)/);
   assert.match(css,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
@@ -27,8 +29,8 @@ test("two consistent header heights, viewport layers, and a stable responsive si
 test("sidebar admits blank-space expansion and bounded accessible pointer/keyboard resizing",()=>{
   const js=read("../sites/_apex/app/assets/workspace-nav.js");
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
-  assert.match(js,/minSidebarWidth=Math\.max\(204/);
-  assert.match(js,/Math\.floor\(\(win\.innerWidth\|\|1280\)\*\.75\)/);
+  assert.match(js,/minSidebarWidth=Math\.max\(248/);
+  assert.match(js,/Math\.floor\(\(win\.innerWidth\|\|1280\)\*\.75\)-16/);
   assert.match(js,/sidebar\.addEventListener\?\.\("click"/);
   assert.match(js,/resizeHandle\.addEventListener\("pointerdown"/);
   assert.match(js,/resizeHandle\.addEventListener\("keydown"/);
@@ -53,7 +55,7 @@ test("Studio preview mirrors production navigation without enabling account muta
   const studio=read("../studio/sidebar/index.html");
   const bootstrap=read("../studio/sidebar/preview-bootstrap.js");
   assert.match(studio,/class="global-menu"/);
-  assert.match(studio,/class="rb-breadcrumbs"/);
+  assert.match(studio,/class="shadcn-breadcrumbs"/);
   assert.match(studio,/workspace-enhancements.css/);
   assert.match(studio,/Manage Account/);
   assert.match(studio,/preview-bootstrap.js/);
@@ -69,4 +71,42 @@ test("Studio sidebar uses the production's immediate active-row selection withou
   assert.doesNotMatch(js,/glass-selection|MutationObserver|glassIndicatorGeometry|requestAnimationFrame/);
   assert.match(css,/\.shell\.liquid-glass-preview \.nav-link\.active\{/);
   assert.match(js,/glass-scene-toggle/);
+});
+
+test("actual shadcn Base breadcrumb list uses muted links and an unframed page",()=>{
+  for(const template of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(template);
+    assert.match(html,/<nav class="shadcn-breadcrumbs"[^>]+aria-label="Breadcrumb"/);
+    assert.match(html,/<ol class="shadcn-breadcrumb-list">/);
+    assert.match(html,/class="shadcn-breadcrumb-link"/);
+    assert.match(html,/class="shadcn-breadcrumb-separator"/);
+    assert.match(html,/class="shadcn-breadcrumb-page"[^>]+aria-current="page"/);
+    assert.doesNotMatch(html,/class="rb-crumb/);
+  }
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.match(css,/\.shadcn-breadcrumb-link\{color:var\(--ui-secondary\)/);
+  assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-text\)/);
+  assert.match(css,/border-radius:0;padding:0/);
+});
+test("sidebar spacing and resize grip are symmetric and never light up on hover",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(css,/var\(--workspace-sidebar-bottom-gap\) var\(--workspace-sidebar-left-gap\)/);
+  assert.match(css,/var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)/);
+  assert.match(css,/width:22px;z-index:5;cursor:ew-resize/);
+  assert.match(css,/sidebar-resize-handle:hover\{background:transparent!important;box-shadow:none!important/);
+  assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.brand\{transform:none;/);
+  assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:1px;right:0;/);
+  assert.match(nav,/Click to expand sidebar/);
+  assert.match(nav,/Drag to resize • pull left to collapse/);
+  assert.match(nav,/Release to collapse sidebar/);
+  assert.match(nav,/COLLAPSE_DRAG_EXTRA=34/);
+});
+test("end-of-page image remains visible over small reverse scrolls",()=>{
+  const scroll=read("../sites/_apex/app/assets/workspace-scroll.js");
+  const css=read("../sites/_apex/app/assets/workspace-wallpapers.css");
+  assert.match(scroll,/ENTER_END_GAP=1\.5,LEAVE_END_GAP=40/);
+  assert.match(scroll,/distanceFromEnd\(\)<=\(visible\?LEAVE_END_GAP:ENTER_END_GAP\)/);
+  assert.match(css,/::after \{transition:opacity 180ms ease-out;/);
+  assert.match(css,/\.workspace-footer \{transition:opacity 180ms ease-out;/);
 });
