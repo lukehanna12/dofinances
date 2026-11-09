@@ -84,3 +84,20 @@ https://app-sidebar-preview.dofinances-studio.pages.dev/app/.
 generation and SVG backdrop chain are computationally expensive.
 Do not silently simplify source-backed fidelity to improve speed
 until the user requests the performance phase.
+
+## November 9: sidebar-only blur-scale calculation
+
+The browser now uses `sidebarFiniteBlurProjection(style,width,height)` and
+the exact recorded Float32 factor `0x3ecccccd`, instead of relying on
+synthetically composing a `surfaceScale=0.25` with `1.6` to infer that
+factor for every environment. This is a scoped approximation to the exact
+producer, grounded in the retained 25 public native factor observations and
+independent 52-radius and eight encoder-join witnesses. It predicts word
+`0x3fcccccd` at widths 260/274px and `0x3f7c57c5` at 74px.
+
+The requested fresh same-event LLDB test at precisely those sidebar sizes
+was attempted but **not completed**: both standard and single-job Swift
+compiler runs exceeded the connected execution gateway's 200% CPU ceiling
+before native code started. The temporary Mac files were cleaned and verified
+absent. The canonical Oracle stores these calculations as **derived finite
+predictions**, not new primary evidence or unrestricted proof closure.

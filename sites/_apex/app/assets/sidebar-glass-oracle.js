@@ -75,6 +75,21 @@ export function nativePublicBlurRadius(style,width,height){
     : Math.min(10,Math.max(5,5+((m-48)/72)*5));
 }
 
+/*
+ * SIDEBAR-ONLY FINITE PROJECTION — not a new native Metal observation.
+ * 52 independent public radius readbacks + 25 finite native renderer
+ * factor=0x3ecccccd/override=0 witnesses + eight separate exact encoder
+ * joins. The 74/260/274px cross-product has NOT been replayed in native
+ * LLDB; user-facing geometry is mapped to the observed finite factor.
+ * See preview/oracle-evidence/sidebar_blur_scale_finite.json.
+ */
+export const ORACLE_SIDEBAR_FINITE_FACTOR = Math.fround(.4);
+export function sidebarFiniteBlurProjection(style,width,height){
+  const radius=nativePublicBlurRadius(style,width,height);
+  const word=Math.fround(Math.fround(radius)*ORACLE_SIDEBAR_FINITE_FACTOR);
+  return {radius,word,factor:ORACLE_SIDEBAR_FINITE_FACTOR};
+}
+
 export function observedBlurWord(radius,transformScale=1,surfaceScale=.25){
   if(![radius,transformScale,surfaceScale].every(Number.isFinite))
     throw new TypeError("Finite numeric inputs required");
@@ -431,8 +446,7 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const bounds=sidebar.getBoundingClientRect();
     const w=Math.round(bounds.width),h=Math.round(bounds.height);
     if(w<1||h<1)return;
-    const radius=nativePublicBlurRadius("regular",w,h);
-    const word=observedBlurWord(radius,1,ORACLE_FINITE_REFRACTION.surfaceScale);
+    const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
     // Converting finite downsample-space radius to CSS pixel footprint is a
     // browser adapter assumption, not a claimed equivalent Gaussian kernel.
     const scale=ORACLE_FINITE_REFRACTION.surfaceScale;

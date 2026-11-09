@@ -127,3 +127,24 @@ and intentionally excluded source features.
 The expensive SVG and full-resolution geometry rendering are left
 unchanged with respect to optimization. Optimize only after source-backed
 fidelity review, as requested.
+
+### Sidebar-specific blur-scale projection (November 9, 2026)
+
+The active code now calls `sidebarFiniteBlurProjection()`, selecting the
+observed finite native factor **0.4f32** directly and preserving the exact
+Float32 public-radius multiplication order. The accompanying
+`preview/oracle-evidence/sidebar_blur_scale_finite.json` is copied from
+canonical Oracle `model/derived_evidence/sidebar_blur_scale_finite.json`.
+It reports 52 validated native radius cases, 25 finite factor/zero-override
+cases, and eight exact existing CPU→Metal encoder joins. The expected sidebar
+regular-style words are **1.600000023841858** for 260px/274px panes and
+**0.9857142567634583** for the 74px icon rail.
+
+**Scope:** These sidebar-width values are *derived predictions*, not fresh
+native captures of their exact public-state/renderer cross-product. Attempts
+to compile a native 8-case LLDB verifier on the target Mac were terminated
+before execution by the connected gateway's enforced sustained 200% CPU
+ceiling, including when compiling with `swiftc -j 1`. All temporary source,
+compiler workspaces and launcher files were removed and cleanup confirmed.
+Neither `LG-P-SCALARS` nor exact browser Gaussian-to-Metal mip equivalence
+is closed by this projection. Optimization remains deferred.

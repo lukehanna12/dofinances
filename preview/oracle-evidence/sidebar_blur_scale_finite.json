@@ -1,0 +1,159 @@
+{
+  "schema": "liquid-plexiglass-sidebar-fixed-scope-blur-projection-v1",
+  "target": {
+    "build": "25F80",
+    "device": "Apple M2",
+    "gpu": "G14G"
+  },
+  "classification": "DERIVED_FINITE_PREDICTION_NOT_NEW_NATIVE_MEASUREMENT",
+  "scope": {
+    "style": "regular",
+    "pane_widths_px": [
+      74,
+      260,
+      274
+    ],
+    "heights_included_px": [
+      640,
+      844,
+      900
+    ],
+    "clear_style_control_only": true,
+    "renderer": "offscreen CARenderer observations on existing 25F80 target",
+    "other_environments": "not covered"
+  },
+  "source_witnesses": [
+    {
+      "path": "model/primary_evidence/scalars/live_public_geometry_radius_heldout.json",
+      "verified_samples": 52,
+      "proven": "public regular/clear radius rule exact at retained samples"
+    },
+    {
+      "path": "model/primary_evidence/scalars/live_public_container_factors.json",
+      "verified_samples": 25,
+      "proven": "selected factor 0x3ecccccd, reciprocal override 0 for 25 finite tested container states"
+    },
+    {
+      "path": "model/primary_evidence/scalars/live_public_blur_encoder_joins.json",
+      "verified_samples": 8,
+      "proven": "eight separate public CPU float32 words identical to full mapped 264-byte MTLBuffer and encoder-bound words"
+    }
+  ],
+  "radius_formula": {
+    "regular": "min(4,max(2,2+((min(width,height)-48)/112)*2))",
+    "clear": "min(10,max(5,5+((min(width,height)-48)/72)*5))"
+  },
+  "word_formula": "f32(f32(public_radius_double) * f32(0.4))",
+  "selected_factor_f32_hex": "cdcccc3e",
+  "scoped_derived_predictions": [
+    {
+      "name": "expanded",
+      "style": "regular",
+      "width": 260,
+      "height": 900,
+      "radius": 4,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "cdcccc3f",
+      "predicted_blur_word_f32": 1.600000023841858,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "compact",
+      "style": "regular",
+      "width": 74,
+      "height": 900,
+      "radius": 2.4642857142857144,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "c5577c3f",
+      "predicted_blur_word_f32": 0.9857142567634583,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "mobile",
+      "style": "regular",
+      "width": 274,
+      "height": 844,
+      "radius": 4,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "cdcccc3f",
+      "predicted_blur_word_f32": 1.600000023841858,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "expanded-short",
+      "style": "regular",
+      "width": 260,
+      "height": 640,
+      "radius": 4,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "cdcccc3f",
+      "predicted_blur_word_f32": 1.600000023841858,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "compact-short",
+      "style": "regular",
+      "width": 74,
+      "height": 640,
+      "radius": 2.4642857142857144,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "c5577c3f",
+      "predicted_blur_word_f32": 0.9857142567634583,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "mobile-short",
+      "style": "regular",
+      "width": 274,
+      "height": 640,
+      "radius": 4,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "cdcccc3f",
+      "predicted_blur_word_f32": 1.600000023841858,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "clear-expanded-control",
+      "style": "clear",
+      "width": 260,
+      "height": 900,
+      "radius": 10,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "00008040",
+      "predicted_blur_word_f32": 4,
+      "actual_native_encoder_join_observed": false
+    },
+    {
+      "name": "clear-compact-control",
+      "style": "clear",
+      "width": 74,
+      "height": 900,
+      "radius": 6.805555555555555,
+      "selected_factor_f32_hex": "cdcccc3e",
+      "predicted_blur_word_f32_hex": "e3382e40",
+      "predicted_blur_word_f32": 2.722222089767456,
+      "actual_native_encoder_join_observed": false
+    }
+  ],
+  "validation": {
+    "target_host_mac_build_readback": "25F80",
+    "existing_witness_checks": {
+      "public_geometry": 52,
+      "public_container_factors": 25,
+      "public_cpu_to_encoder": 8
+    },
+    "local_python_cross_validation_passed": true,
+    "new_native_sidebar_size_lldb_replay_attempted": true,
+    "new_native_sidebar_size_lldb_replay_completed": false,
+    "blocker": "Connected Mac script execution enforced a 200% sustained CPU ceiling during Swift compilation; serial -j 1 also exceeded ceiling before runtime; no new byte-level target results were captured",
+    "mac_cleanup": "Probe launchers and compiler workspaces explicitly deleted and confirmed absent"
+  },
+  "proof_limits": {
+    "unrestricted_final_blur_radius_scale_closed": false,
+    "LG_P_SCALARS": "OPEN",
+    "joint_public_dimension_container_factor_selection_proven": false,
+    "observed_74_260_274_native_encoder_bytes": false,
+    "ordinary_browser_window_to_private_CA_material_equivalence": false,
+    "css_gaussian_to_native_mipmap_equivalence": false
+  }
+}

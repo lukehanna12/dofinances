@@ -7,7 +7,8 @@ import {
   ORACLE_TARGET,ORACLE_FINITE_REFRACTION,nativePublicBlurRadius,
   observedBlurWord,airRefractionEnvelope,airThresholdMix,airSupercircleSDF,
   airBlurDistribution,airTextureMipLOD,oracleFaceColorMatrixValues,
-  airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField
+  airMode5SDF,ORACLE_CORNER_FLOOR,paneField,generateOracleField,
+  ORACLE_SIDEBAR_FINITE_FACTOR,sidebarFiniteBlurProjection
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -280,4 +281,31 @@ test("browser sidebar maps left square and right circular CSS corners into four 
   assert.match(js,/1\.891557216644287/);
   assert.match(js,/getComputedStyle\?\.\(sidebar\)/);
   assert.doesNotMatch(js,/drawGlassWallpaper|texImage2D/);
+});
+
+
+test("sidebar finite Float32 blur words exactly reproduce Oracle derived contract",async()=>{
+  const contract=JSON.parse(await read("../preview/oracle-evidence/sidebar_blur_scale_finite.json"));
+  assert.equal(contract.classification,"DERIVED_FINITE_PREDICTION_NOT_NEW_NATIVE_MEASUREMENT");
+  assert.equal(contract.selected_factor_f32_hex,"cdcccc3e");
+  assert.equal(ORACLE_SIDEBAR_FINITE_FACTOR,Math.fround(.4));
+  assert.equal(contract.scoped_derived_predictions.length,8);
+  const f32hex=value=>{
+    const buffer=new ArrayBuffer(4),view=new DataView(buffer);
+    view.setFloat32(0,value,true);
+    return Array.from({length:4},(_,i)=>view.getUint8(i).toString(16).padStart(2,"0")).join("");
+  };
+  for(const item of contract.scoped_derived_predictions){
+    const actual=sidebarFiniteBlurProjection(item.style,item.width,item.height);
+    assert.equal(actual.radius,item.radius,item.name+": radius");
+    assert.equal(actual.word,item.predicted_blur_word_f32,item.name+": float32 word");
+    assert.equal(f32hex(actual.word),item.predicted_blur_word_f32_hex,item.name+": encoded word");
+    assert.equal(actual.factor,ORACLE_SIDEBAR_FINITE_FACTOR);
+    assert.equal(item.actual_native_encoder_join_observed,false);
+  }
+  assert.equal(sidebarFiniteBlurProjection("regular",260,900).word,Math.fround(1.6));
+  assert.equal(sidebarFiniteBlurProjection("regular",74,900).word,0.9857142567634583);
+  assert.equal(sidebarFiniteBlurProjection("regular",274,844).word,Math.fround(1.6));
+  assert.equal(contract.proof_limits.unrestricted_final_blur_radius_scale_closed,false);
+  assert.equal(contract.validation.new_native_sidebar_size_lldb_replay_completed,false);
 });
