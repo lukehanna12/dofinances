@@ -205,6 +205,7 @@ try{
       await sleep(180);
     }
     if(width===1440){
+      await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
       // Record actual width versus installed SVG field width at every frame,
       // including the interval between layout transition and worker response.
       await evaluate(`(()=>{
@@ -235,8 +236,10 @@ try{
       assert(await evaluate('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'),
         "Transition trace must restore expanded state");
       await sleep(100);
+      await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     }
     if(width===390){
+      await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
       await evaluate(`(()=>{
         const shell=document.getElementById("workspace-shell");
         const nav=document.getElementById("mobile-nav-toggle");
@@ -263,6 +266,7 @@ try{
           Math.abs(s.left-all[i-1].left)>12||s.opacity!==all[i-1].opacity)));
       await evaluate('document.getElementById("sidebar-toggle").click()');
       await sleep(250);
+      await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
     }
     if(width===390){
       // CDP pointer events expose hit-testing and disabled overlays that
