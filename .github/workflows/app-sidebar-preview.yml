@@ -31,6 +31,8 @@ jobs:
         run: python3 preview/oracle-runtime-projection-audit.py
       - name: Source-level Oracle LPH and numerical witness audit
         run: python3 preview/oracle-exhaustive-audit.py
+      - name: Audit foreground LPH refraction and edge-light operator graph
+        run: python3 preview/oracle-foreground-audit.py
       - name: Test real workspace navigation and experimental glass
         run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs
       - name: Package actual app UI with safe preview entrypoint
