@@ -84,8 +84,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-expanded","true");
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
+  let lastRenderedRoute=null;
   function render(){
     const route=resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
+    const changingScreen=lastRenderedRoute!==null&&lastRenderedRoute!==route;
     const meta=workspaceRouteDetails(route);
     mainNav.hidden=meta.project;
     projectNav.hidden=!meta.project;
@@ -101,7 +103,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
       else link.removeAttribute("aria-current");
     }
     closeDrawer();
-    if(win.scrollTo)win.scrollTo(0,0);
+    lastRenderedRoute=route;
+    // Only reset when changing to a different screen. Avoid browser CSS
+    // smooth-scroll movement and unnecessary resets during initial hydration,
+    // repeated hash events, or history updates for the same route.
+    if(changingScreen&&win.scrollTo)
+      win.scrollTo({top:0,left:0,behavior:"instant"});
   }
 
   desktopToggle.addEventListener("click",()=>{

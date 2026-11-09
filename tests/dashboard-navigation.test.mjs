@@ -141,6 +141,34 @@ test("collapsed rail links actually shrink inside the sidebar and keep rounded s
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \{[\s\S]*?padding:\s*9px 11px;[\s\S]*?gap:\s*11px/);
   assert.match(mobile,/\.shell\.is-collapsed \.nav-link \.nav-label \{max-width:\s*24ch;\}/);
 });
+test("screen navigation has no entrance displacement or smooth-scroll jitter",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  const head=css.match(/html\s*\{([^}]*)\}/)?.[1]||"";
+  const view=css.match(/\.view\s*\{([^}]*)\}/)?.[1]||"";
+  assert.match(head,/scroll-behavior:\s*auto/,"avoid smooth scroll on hash transitions");
+  assert.match(head,/scrollbar-gutter:\s*stable/,"keep content width fixed across tall/short views");
+  assert.match(view,/animation:\s*none/,"disable page-entry animation");
+  assert.match(view,/transform:\s*none/,"remove translateY movement");
+  assert.doesNotMatch(css,/@keyframes\s+ui-page-appear/);
+  assert.match(css,/\.sidebar\s*\{[\s\S]*?transition:\s*width 210ms/,
+    "sidebar width transition should remain intact");
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  assert.deepEqual(m.scrollCalls,[],"first render should not disturb restored scroll");
+  m.win.location.hash="#projects";
+  m.fire("hashchange");
+  assert.deepEqual(m.scrollCalls,[[{top:0,left:0,behavior:"instant"}]]);
+  m.fire("hashchange");
+  m.fire("popstate");
+  assert.equal(m.scrollCalls.length,1,"same route should not reset scroll");
+  m.win.location.hash="#colosseum/settings";
+  m.fire("hashchange");
+  assert.deepEqual(m.scrollCalls[1],[{top:0,left:0,behavior:"instant"}]);
+  m.win.location.hash="#settings";
+  m.fire("hashchange");
+  assert.deepEqual(m.scrollCalls[2],[{top:0,left:0,behavior:"instant"}]);
+  assert.equal(m.elements["main-navigation"].hidden,false);
+});
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
@@ -207,15 +235,16 @@ function mockNavigation(){
   let mobile=false;
   const listeners={};
   const stored=new Map();
+  const scrollCalls=[];
   const doc={title:"",getElementById:id=>elements[id],querySelectorAll:selector=>
     selector===".view[data-view]"?views:selector===".nav-link[data-route]"?links:[],
     addEventListener:(key,fn)=>{(listeners["doc:"+key]??=[]).push(fn);}};
   const win={location:{hash:"",search:""},localStorage:{
     getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)},
-    matchMedia:()=>({matches:mobile}),scrollTo:()=>{},
+    matchMedia:()=>({matches:mobile}),scrollTo:(...args)=>{scrollCalls.push(args);},
     addEventListener:(key,fn)=>{(listeners[key]??=[]).push(fn);}};
   const fire=key=>(listeners[key]||[]).forEach(fn=>fn());
-  return {doc,win,elements,views,links,fire,stored,mobile:value=>{mobile=value;}};
+  return {doc,win,elements,views,links,fire,stored,scrollCalls,mobile:value=>{mobile=value;}};
 }
 test("sidebar changes nav scope, highlights selected view, and supports collapse and mobile drawer",()=>{
   const m=mockNavigation();

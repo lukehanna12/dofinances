@@ -32,7 +32,8 @@
   background: var(--ui-canvas);
   color: var(--ui-text);
 }
-html {scroll-behavior: smooth;}
+/* Route changes should not ease the viewport or alter content width. */
+html {scroll-behavior: auto; scrollbar-gutter: stable;}
 body {margin: 0; min-height: 100vh; background: var(--ui-canvas); color: var(--ui-text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;}
 a {color: inherit;}
 a:hover {text-decoration: none;}
@@ -249,8 +250,9 @@ button:disabled, a[aria-disabled="true"] {opacity: .5; cursor: not-allowed;}
 
 /* Content rhythm: restrained typography, calm cards, and soft borders. */
 .content {max-width: 1110px; margin: 0 auto; padding: 57px clamp(26px, 4.1vw, 58px) 96px; min-height: calc(100dvh - 66px);}
-.view {animation: ui-page-appear 170ms ease both;}
-@keyframes ui-page-appear {from {opacity: .55; transform: translateY(4px);} to {opacity: 1; transform: translateY(0);}}
+/* The old translateY(4px) entrance animation restarted on every hash route,
+   producing a visible one-frame vertical jump. Switch screens in place. */
+.view {animation: none; transform: none;}
 .page-heading .eyebrow, .eyebrow {
   color: var(--ui-muted); font-size: 11px; font-weight: 550;
   letter-spacing: .06em;
