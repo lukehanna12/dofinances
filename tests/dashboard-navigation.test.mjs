@@ -60,7 +60,7 @@ test("sidebar CSS supports mobile drawer, rail collapse, and visible focus",asyn
   assert.match(js,/\/api\/auth\/federation\/accounts/);
   assert.match(js,/\/api\/auth\/federation\/unlink/);
   assert.match(js,/\/api\/auth\/account/);
-  assert.match(js,/\/api\/auth\/mfa\/setup/);
+  assert.match(js,/authPost\("mfa\/setup"/);
 });
 function element(props={}){
   const classes=new Set();
