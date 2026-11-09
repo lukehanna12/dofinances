@@ -2,7 +2,7 @@
 import {parseCookie,sha256,sessionCookie} from "./auth-core.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
 import {federationProvider,newOAuthTransaction,oauthAuthorizeUrl,exchangeFederatedIdentity,
-  oauthCookie,expiredOAuthCookie,readOAuthCookie} from "./auth-federation.mjs";
+  oauthCookie,expiredOAuthCookie,readOAuthCookie,FederationFailure} from "./auth-federation.mjs";
 const ORIGIN="https://dofinances.com";
 const MFA_COOKIE="__Host-dofinances_oauth_mfa";
 const BASE_HEADERS={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer"};
@@ -50,10 +50,15 @@ export async function handleFederation(request,env,pathname){
   if(consumed.status!==200)return resultRedirect("signin","invalid",[clear]);
   const operation=consumed.intent;
   if(url.searchParams.has("error"))return resultRedirect(operation,"cancelled",[clear]);
+  // Distinguish failed provider exchange/verification from account persistence,
+  // without returning provider responses or any user data to the browser.
+  let stage="provider";
   try{
     const identity=await exchangeFederatedIdentity(conf,url.searchParams.get("code"),consumed);
+    stage="account";
     const done=await stub.completeFederation({intent:operation,identity,sessionToken});
     if(done.error)return resultRedirect(operation,safeError(done),[clear]);
+    stage="mail";
     if(done.delivery){
       if(!mailReady(env))return resultRedirect("signin","unavailable",[clear]);
       await sendAccountEmail(env,done.delivery);
@@ -70,7 +75,10 @@ export async function handleFederation(request,env,pathname){
     h.append("Set-Cookie",clear);
     if(done.token)h.append("Set-Cookie",sessionCookie(done.token));
     return new Response(null,{status:303,headers:h});
-  } catch {
-    return resultRedirect(operation,"unavailable",[clear]);
+  } catch (error) {
+    const code=stage==="provider"
+      ? error instanceof FederationFailure?error.code:"oauth_provider_network_error"
+      : stage==="account"?"oauth_account_store_failed":"oauth_mail_unavailable";
+    return resultRedirect(operation,code,[clear]);
   }
 }
