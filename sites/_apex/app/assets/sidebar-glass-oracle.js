@@ -627,10 +627,10 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
           anticipatedKeys.add(response.key);
           anticipateCount++;
           shell.dataset.oracleWarmFieldCount=String(anticipateCount);
-          // If the pane has reached this exact width meanwhile, install
-          // the field without interpolation or any stale-width substitution.
+          // Any exact-width match joins the SAME frame-level scheduler.
+          // Never install a map from an idle worker callback independently.
           if(desired?.key===response.key&&previous!==response.key)
-            apply();
+            schedule();
           sendNext();
         });
         anticipateWorker.addEventListener("error",stopAnticipation);
@@ -642,8 +642,13 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   function setMaps(request,urls){
     for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
       if(node.getAttribute("href")!==uri){
+        // Modern SVG feImage.href is supported in Chrome/WebKit/Firefox.
+        // Writing both href AND xlink:href invalidates the backdrop input
+        // twice for identical PNG bytes. Retain xlink for older engines only.
         node.setAttribute("href",uri);
-        node.setAttributeNS(NS,"xlink:href",uri);
+        if(!("href" in node))node.setAttributeNS(NS,"xlink:href",uri);
+        shell.dataset.oracleImageHrefWrites=String(
+          Number(shell.dataset.oracleImageHrefWrites||0)+1);
       }
       if(node.getAttribute("width")!==String(request.w))
         node.setAttribute("width",String(request.w));
@@ -652,7 +657,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }
     previous=request.key;
     usingSVG=true;
-    shell.classList.add("has-oracle-backdrop");
+    if(!shell.classList.contains("has-oracle-backdrop"))
+      shell.classList.add("has-oracle-backdrop");
   }
   function cacheField(request,urls){
     geometryCache.delete(request.key);
@@ -724,17 +730,30 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
           }
           stopWorker();if(desired)syncField(desired);return;
         }
-        // Save exact completed fields even when a resize advanced; never
-        // INSTALL stale geometry against a different pane width.
-        if(field.urls && field.key!==desired?.key)
+        // Every worker output is a byte-exact RGBA map for its own key.
+        // Cache completed PNGs first, including superseded resize widths.
+        // The central frame reconciler alone decides if/when to install.
+        if(field.urls){
           cacheField(field,field.urls);
-        if(field.key===desired?.key&&!field.prefetch){
+          if(field.key===desired?.key&&!field.prefetch){
+            shell.dataset.oracleFieldEngine="worker";
+            shell.dataset.oraclePngEngine="worker";
+            shell.dataset.oracleFieldBuilds=String(
+              Number(shell.dataset.oracleFieldBuilds||0)+1);
+            schedule();
+          }
+        }else if(field.key===desired?.key&&!field.prefetch){
+          // Legacy browsers without worker-side PNG encoding keep the
+          // prior exact raw-pixel main-thread fallback.
           try{storeField(desired,field,"worker");}
           catch{stopWorker();if(desired)syncField(desired);return;}
         }
         if(field.prefetch)shell.dataset.oraclePrefetchedEndpoint=field.key;
-        if(desired?.key!==previous)dispatchLatest();
-        else {armEndpointWarmup();armAnticipation();}
+        // Don't enqueue a duplicate worker job when the desired key is
+        // ALREADY in the cache awaiting a single animation-frame commit.
+        if(desired?.key!==previous&&!geometryCache.has(desired.key))
+          dispatchLatest();
+        else {schedule();armEndpointWarmup();armAnticipation();}
       });
       worker.addEventListener("error",event=>{
         event.preventDefault();
@@ -799,11 +818,21 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     if(worker)dispatchLatest();
     else syncField(desired);
   }
+  // One animation-frame coordinator for the entire glass geometry:
+  // ResizeObserver, width transitions, idle-worker results and viewport
+  // events converge on the same read/reconcile/commit. Keep a continuous
+  // rAF only during an explicit CSS width animation; other times no loop.
+  function frameStep(){
+    queued=0;
+    if(disposed)return;
+    apply();
+    if(shell.classList.contains("is-sidebar-toggling"))schedule();
+  }
   function schedule(){
-    if(shell.classList.contains("is-sidebar-toggling"))stopAnticipation();
     if(disposed||queued)return;
-    // Coalesce multiple observers into one exact-current-geometry frame.
-    queued=win.requestAnimationFrame(apply);
+    if(shell.classList.contains("is-sidebar-toggling")&&
+       (anticipateTimer||anticipateWorker))stopAnticipation();
+    queued=win.requestAnimationFrame(frameStep);
   }
   const resize=typeof ResizeObserver!=="undefined"?new ResizeObserver(schedule):null;
   resize?.observe(sidebar);
@@ -825,44 +854,23 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }else schedule();
   }
   win.addEventListener("resize",onViewportResize,{passive:true});
-  // A CSS transitionend event provides the earliest exact final width:
-  // do not wait for a delayed ResizeObserver/rAF after expansion.
+  // Width-transition completion is one more input to the SAME frame
+  // scheduler. The prior second rAF loop raced ResizeObserver and worker
+  // callbacks, causing redundant filter operations for a single width.
   const onWidthTransition=event=>{
-    if(event.target===sidebar&&event.propertyName==="width")apply();
+    if(event.target===sidebar&&event.propertyName==="width")schedule();
   };
   sidebar.addEventListener("transitionend",onWidthTransition);
   sidebar.addEventListener("transitioncancel",onWidthTransition);
-
-  // A ResizeObserver callback can arrive after the current frame's
-  // visible width has advanced. On explicit width transitions, check the
-  // already-encoded EXACT field for that frame in rAF. This is only cache
-  // lookup; no SDF math, PNG encoding, or backdrop capture occurs here.
-  // The normal worker/ResizeObserver route remains for uncached sizes.
-  let endpointFrame=0;
-  function watchEndpoint(){
-    endpointFrame=0;
-    if(disposed||!shell.classList.contains("is-sidebar-toggling"))return;
-    const target=shell.classList.contains("is-collapsed")?74:260;
-    const bounds=sidebar.getBoundingClientRect();
-    const w=Math.round(bounds.width),h=Math.round(bounds.height);
-    const css=win.getComputedStyle?.(sidebar);
-    const rawCorner=Number.parseFloat(css?.borderTopRightRadius||"24");
-    const corner=Math.min(Number.isFinite(rawCorner)?rawCorner:24,w*.5,h*.5);
-    const key=w+"x"+h+"@"+corner;
-    if(previous!==key&&geometryCache.has(key))apply();
-    // Stop after the final exact endpoint is installed. Keep watching only
-    // while a user-initiated transition is active and the field may advance.
-    if(Math.round(bounds.width)===target&&previous===key)return;
-    endpointFrame=win.requestAnimationFrame(watchEndpoint);
-  }
   const endpointObserver=typeof MutationObserver!=="undefined"?
     new MutationObserver(()=>{
       if(shell.classList.contains("is-sidebar-toggling")){
         stopAnticipation();
-        if(!endpointFrame)endpointFrame=win.requestAnimationFrame(watchEndpoint);
+        schedule();
       }else{
-        // A no-layout-change class removal need not fire ResizeObserver.
-        // Re-arm idle exact-map preparation when the user motion finishes.
+        // Class removal may not cause a ResizeObserver event. Reconcile the
+        // exact endpoint once, then re-arm geometry-only idle preparation.
+        schedule();
         armAnticipation();
       }
     }):null;
@@ -880,7 +888,6 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       geometryCache.clear();
       resize?.disconnect();
       endpointObserver?.disconnect();
-      if(endpointFrame)win.cancelAnimationFrame(endpointFrame);
       win.removeEventListener("resize",onViewportResize);
       sidebar.removeEventListener("transitionend",onWidthTransition);
       sidebar.removeEventListener("transitioncancel",onWidthTransition);

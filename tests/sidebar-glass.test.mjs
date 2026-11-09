@@ -432,11 +432,11 @@ test("drawer scrim is visually transparent and retains pointer interception",asy
 test("exact cached endpoint fields synchronize to CSS width-transition completion",async()=>{
   const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
   const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
-  assert.match(code,/if\(field\.urls && field\.key!==desired\?\.key\)\s*cacheField\(field,field\.urls\)/);
-  assert.match(code,/if\(field\.key===desired\?\.key&&!field\.prefetch\)/);
+  assert.match(code,/if\(field\.urls\)\{\s*cacheField\(field,field\.urls\)/);
+  assert.match(code,/field\.key===desired\?\.key&&!field\.prefetch/);
   assert.match(code,/function armEndpointWarmup\(\)/);
   assert.match(code,/geometryCache\.has\(key\)\|\|prefetchDisabled\.has\(key\)/);
-  assert.match(code,/event\.propertyName==="width"\)apply\(\)/);
+  assert.match(code,/event\.propertyName==="width"\)schedule\(\)/);
   assert.match(code,/sidebar\.addEventListener\("transitionend",onWidthTransition\)/);
   assert.match(code,/sidebar\.removeEventListener\("transitionend",onWidthTransition\)/);
   assert.match(worker,/prefetch:!!request\.prefetch/);
@@ -444,12 +444,12 @@ test("exact cached endpoint fields synchronize to CSS width-transition completio
 
 test("exact cached endpoint fields synchronize on final width animation frame",async()=>{
   const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
-  assert.match(code,/function watchEndpoint\(\)/);
-  assert.match(code,/Math\.round\(bounds\.width\)===target/);
-  assert.match(code,/previous!==key&&geometryCache\.has\(key\)/);
+  assert.match(code,/function frameStep\(\)/);
+  assert.match(code,/queued=win\.requestAnimationFrame\(frameStep\)/);
+  assert.match(code,/if\(shell\.classList\.contains\("is-sidebar-toggling"\)\)schedule\(\)/);
+  assert.doesNotMatch(code,/function watchEndpoint\(\)|endpointFrame/);
   assert.match(code,/endpointObserver\?\.observe\(shell/);
   assert.match(code,/endpointObserver\?\.disconnect\(\)/);
-  assert.match(code,/win\.cancelAnimationFrame\(endpointFrame\)/);
 });
 
 test("source complementary blur and refraction branches use linear-addition joins",async()=>{
@@ -539,7 +539,17 @@ test("idle predictive warmups cache exact width-specific fields without caching 
   assert.match(code,/cacheField\(response,response\.urls\)/);
   assert.match(code,/desired\?\.key===response\.key&&previous!==response\.key/);
   assert.match(code,/\.filter\(request=>!geometryCache\.has\(request\.key\)\)/);
-  assert.match(code,/if\(shell\.classList\.contains\("is-sidebar-toggling"\)\)stopAnticipation\(\)/);
+  assert.match(code,/if\(shell\.classList\.contains\("is-sidebar-toggling"\)\)\{/);
   assert.match(code,/const CACHE_LIMIT=48/);
   assert.doesNotMatch(code,/html2canvas|captureStream|getDisplayMedia/);
+});
+
+test("single rAF owner and filter input writes are de-duplicated",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/function frameStep\(\)/);
+  assert.match(code,/queued=win\.requestAnimationFrame\(frameStep\)/);
+  assert.equal((code.match(/win\.requestAnimationFrame\(/g)||[]).length,1);
+  assert.match(code,/if\(!\("href" in node\)\)node\.setAttributeNS\(NS,"xlink:href",uri\)/);
+  assert.match(code,/if\(!shell\.classList\.contains\("has-oracle-backdrop"\)\)/);
+  assert.match(code,/if\(desired\?\.key!==previous&&!geometryCache\.has\(desired\.key\)\)/);
 });
