@@ -9,6 +9,7 @@
  * original block reside in Auth3.jsx, not in handcrafted approximations here.
  */
 @import "tailwindcss";
+@import "../sites/_apex/assets/site-foundation.css";
 
 /* The original Tailwind 4.1.17 CSS uses :is(.dark *), not :where(...).
  * :where lowers specificity, allowing hover:bg-neutral-50 to override a dark
@@ -100,7 +101,7 @@ html, body, #root {
 
 /* In the original, the Auth-3 outer wrapper is transparent and the page
  * background comes from body. Preserve that computed relationship. */
-body { background-color: #0a0a0a; }
+body { background-color: var(--ui-canvas); }
 body:has(.auth3-root:not(.dark)) { background-color: #fff; }
 .auth3-root {
   min-height: 100vh;

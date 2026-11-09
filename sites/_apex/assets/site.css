@@ -1,5 +1,61 @@
-:root{color-scheme:light;font-family:system-ui,-apple-system,sans-serif;background:#f5f7f9;color:#192d3a}
-*{box-sizing:border-box}body{margin:0}main{max-width:740px;padding:clamp(26px,6vw,60px);margin:12vh auto}
-.eyebrow{font-size:.76rem;letter-spacing:.18em;color:#386e72;font-weight:700}
-h1{font-size:clamp(2.8rem,8vw,5rem);line-height:1.04;letter-spacing:-.06em;margin:20px 0 25px}
-p{font-size:1.08rem;line-height:1.7;color:#465b69;max-width:560px}
+/* Public homepage: same core palette and typography as the private app. */
+* {box-sizing: border-box;}
+body {margin: 0; min-height: 100dvh; background: var(--ui-canvas); color: var(--ui-text);}
+main {
+  max-width: 860px;
+  padding: clamp(28px, 5.4vw, 72px);
+  margin: clamp(42px, 9vh, 100px) auto 0;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 22px 0 20px;
+  color: var(--ui-text);
+  font-size: clamp(40px, 6.2vw, 68px);
+  font-weight: 620;
+  line-height: 1.06;
+  letter-spacing: -.045em;
+}
+p {max-width: 620px; color: var(--ui-secondary); font-size: 15px; line-height: 1.65;}
+.home-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 31px 0;
+}
+.home-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 39px;
+  padding: 9px 17px;
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.home-actions a:hover {background: var(--ui-hover); border-color: var(--ui-border-strong);}
+.home-actions a:active {background: var(--ui-selected);}
+.home-actions a:first-child {background: var(--ui-elevated);}
+.main-note {
+  max-width: 620px;
+  padding-top: 24px;
+  margin-top: 32px;
+  border-top: 1px solid var(--ui-divider);
+  color: var(--ui-muted);
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-actions a {transition: none;}
+}

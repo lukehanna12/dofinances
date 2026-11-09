@@ -50,6 +50,31 @@ The authenticated `/app` dashboard has a collapsible sidebar with three main vie
 
 Main Settings retains Google/GitHub identity linking (limits: five Google, three GitHub), email verification, MFA, and account deletion. Navigation uses in-page hash routes such as `/app#projects` and `/app#colosseum/diagnostics`; no additional public Worker routes or permissions are introduced. The sidebar can collapse to an icon rail on desktop, with the preference stored locally in the browser; on phones it becomes an accessible slide-out navigation drawer. OAuth callbacks that return to `/app?federation_linked=1` or `/app?federation_error=...` automatically show the main Settings view.
 
+## Default site-wide visual system
+
+`sites/_apex/assets/site-foundation.css` is the shared source of truth for
+the system UI sans-serif font stack, black canvas, charcoal cards and controls,
+greys, focus indicator, and contrast tokens. New Git-managed HTML pages should
+load `/assets/site-foundation.css` before their page-specific stylesheet.
+The protected `/app` uses it beneath `workspace-theme.css`; email verification
+and password reset use it beneath a **public** account-security stylesheet so
+styles load even when the user has no active session. The public
+homepage uses `assets/site.css` for layout on the same tokens.
+
+The Studio React login uses the **same source CSS**, bundled from
+`src/styles.css` by Vite. This compiled experience is deployed both to
+`stu.dofinances.com/` and `dofinances.com/login`. Its default is dark, with
+the existing explicit light-mode toggle preserved. The standalone Studio 404
+uses equivalent fallback styling so the error page is still legible without
+loading application JavaScript. The `www` host redirects to the apex for
+pages without independent content. Unconfigured wildcard subdomains still
+return 404; this theme does not invent or modify independently hosted sites.
+
+The reconstructed ChatGPT archive establishes the system-style aesthetic,
+but it does **not** contain an authoritative primary font file or font-face
+definition. The current implementation uses native system sans-serif fonts
+rather than claiming pixel-identical proprietary typography.
+
 ## Workspace visual system
 
 The authenticated app's Home, Projects, Settings, and all six Colosseum views share

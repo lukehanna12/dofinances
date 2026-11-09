@@ -38,6 +38,10 @@ jobs:
           test ! -e dist/login/index.html
           grep -Fq 'await fetch' src/components/Auth3.jsx
           test -s sites/_apex/app/index.html
+          test -s sites/_apex/assets/site-foundation.css
+          test -s sites/_apex/assets/account-security.css
+          grep -Fq -- '--ui-canvas: #000000' sites/_apex/assets/site-foundation.css
+          grep -R -Fq -- '--ui-font-sans' dist/assets
           test -s sites/_apex/app/assets/dashboard.js
           grep -Fq 'https://send.api.mailtrap.io/api/send' edge/auth-mail.mjs
           ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs

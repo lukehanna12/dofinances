@@ -12,6 +12,8 @@ const mock = {
       "/_apex/app/assets/dashboard.js":"dashboard-script",
       "/_apex/login/index.html":"<h1>Sign in · Dofinances</h1>",
       "/_apex/assets/app-compiled.js":"compiled-preview",
+      "/_apex/assets/site-foundation.css":"--ui-canvas: #000000",
+      "/_apex/assets/account-security.css":".panel{background:var(--ui-elevated)}",
       "/_apex/notes/2026/index.html":"<h1>Notes</h1>",
       "/_www/independent.html":"<h1>Independent www page</h1>",
       "/ci-probe/index.html":"<h1>Probe works</h1>",
@@ -55,6 +57,18 @@ test("apex /login resolves the built preview without changing hostname",async()=
   const asset=await handleRequest(new Request("https://dofinances.com/assets/app-compiled.js"),mock);
   assert.equal(asset.status,200);
   assert.equal(await asset.text(),"compiled-preview");
+});
+test("anonymous recovery links receive public dark CSS without exposing protected app assets",async()=>{
+  for(const [path,content] of [
+    ["/assets/site-foundation.css","--ui-canvas: #000000"],
+    ["/assets/account-security.css","var(--ui-elevated)"]]){
+    const res=await handleRequest(new Request("https://dofinances.com"+path),mock);
+    assert.equal(res.status,200,path);
+    assert.ok((await res.text()).includes(content),path);
+  }
+  const denied=await handleRequest(new Request("https://dofinances.com/app/assets/dashboard.css"),authed);
+  assert.equal(denied.status,302);
+  assert.equal(denied.headers.get("Location"),"/login");
 });
 test("www can have independent files or redirect to apex",async()=>{
   const page=await handleRequest(new Request("https://www.dofinances.com/independent.html"),mock);
