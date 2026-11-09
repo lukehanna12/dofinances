@@ -211,9 +211,11 @@ try{
         const p=await evaluate('(()=>{const s=document.getElementById("workspace-shell");return {'+
           'count:Number(s.dataset.oracleWarmFieldCount||0),'+
           'hits:Number(s.dataset.oracleAnticipatedFieldHits||0)};})()');
-        return p.count>=20?p:null;
+        return p.count>=10?p:null;
       },20000);
       console.log("EXACT_GEOMETRY_ONLY_IDLE_PREFETCH",JSON.stringify(warming));
+      assert(warming.count<=24,
+        "Bound geometry warmup count; avoid background-independent CPU waste");
       await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
       // Record actual width versus installed SVG field width at every frame,
       // including the interval between layout transition and worker response.

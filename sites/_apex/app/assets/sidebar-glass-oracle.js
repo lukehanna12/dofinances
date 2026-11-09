@@ -540,20 +540,22 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
    * The synchronous path is retained when Worker execution is unavailable.
    */
   const geometryCache=new Map();
-  // Exact geometry-only PNGs; 32 animation samples + two canonical
-  // endpoints. Cache is in-memory and scoped to the actual viewport height.
-  // NO webpage/backdrop pixels are ever captured or cached.
-  const CACHE_LIMIT=48;
+  // Retain bounded exact geometry-only PNGs (no webpage pixels). The
+  // 32-entry LRU covers responsive endpoints and a selectively warmed path;
+  // stale height-specific maps are retired when the window height changes.
+  const CACHE_LIMIT=32;
+  const SPECULATIVE_BURST=14, SPECULATIVE_TOTAL_LIMIT=24;
   let worker=null,workerBusy=false,desired=null,idleTimer=0;
   let anticipateWorker=null,anticipateTimer=0,anticipateQueue=[];
-  let anticipateSignature="",anticipateCount=0;
+  let anticipateSignature="",anticipateCount=0,cacheHeight=0;
   const anticipatedKeys=new Set();
+  const observedWidths=new Map();
 
   function expectedExpandWidths(){
-    // Sample the CSS width timing-function cubic-bezier(.2,.8,.2,1)
-    // at 60Hz over its 210ms transition. These are only candidate REQUEST
-    // dimensions; each cached map still uses exact generateOracleField()
-    // math and is installed ONLY at its exact rounded pane width.
+    // Seed only the exact integer dimensions likely to occur at 60Hz on
+    // the current 210ms cubic-bezier(.2,.8,.2,1) transition, plus extra
+    // rounding coverage at the slow final edge. Every selected width is
+    // calculated by the UNCHANGED Oracle; nothing is interpolated.
     function bezier(t,a,b){const u=1-t;return 3*u*u*t*a+3*u*t*t*b+t*t*t;}
     function valueAt(progress){
       let low=0,high=1;
@@ -565,16 +567,18 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     }
     const widths=new Set();
     for(let ms=1000/60;ms<210;ms+=1000/60){
-      const eased=valueAt(ms/210);
-      const center=Math.round(74+186*eased);
-      for(const delta of [-1,0,1]){
-        const w=center+delta;
-        if(w>74&&w<260)widths.add(w);
+      const center=Math.round(74+186*valueAt(ms/210));
+      if(center>74&&center<260)widths.add(center);
+      if(ms>170){
+        if(center>75)widths.add(center-1);
+        if(center<259)widths.add(center+1);
       }
     }
-    // Prefer the high-motion central widths, then the last few pixels
-    // before the fully expanded edge. Do not prefetch arbitrary pane sizes.
-    return [...widths].sort((a,b)=>Math.abs(a-205)-Math.abs(b-205));
+    // After the first actual animation, prefer the browser's observed
+    // integer widths rather than repeatedly guessing from frame cadence.
+    const learned=[...observedWidths].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+    return [...new Set([...learned,...widths])]
+      .filter(w=>w>74&&w<260);
   }
   function stopAnticipation(){
     if(anticipateTimer){win.clearTimeout(anticipateTimer);anticipateTimer=0;}
@@ -595,15 +599,18 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       stopAnticipation();
       anticipateSignature=signature;
       anticipateCount=0;
+      observedWidths.clear();
+      anticipatedKeys.clear();
     }
-    if(anticipateTimer||anticipateCount>=32)return;
+    if(anticipateTimer||anticipateCount>=SPECULATIVE_TOTAL_LIMIT)return;
     anticipateTimer=win.setTimeout(()=>{
       anticipateTimer=0;
       if(disposed||!desired||desired.h+"@24"!==signature||
          shell.classList.contains("is-sidebar-toggling"))return;
       const queue=expectedExpandWidths().map(w=>({
         w,h:desired.h,corner:24,key:w+"x"+desired.h+"@24",prefetch:true
-      })).filter(request=>!geometryCache.has(request.key));
+      })).filter(request=>!geometryCache.has(request.key))
+        .slice(0,Math.min(SPECULATIVE_BURST,SPECULATIVE_TOTAL_LIMIT-anticipateCount));
       if(!queue.length)return;
       try{
         anticipateWorker=new win.Worker(
@@ -661,10 +668,22 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       shell.classList.add("has-oracle-backdrop");
   }
   function cacheField(request,urls){
+    if(desired&&request.h!==desired.h)return;
+    if(cacheHeight&&cacheHeight!==request.h){
+      // A resized viewport invalidates the entire old-height PNG cohort.
+      // No optical bytes are approximated or retained with wrong geometry.
+      geometryCache.clear();
+      anticipatedKeys.clear();
+      observedWidths.clear();
+    }
+    cacheHeight=request.h;
     geometryCache.delete(request.key);
     geometryCache.set(request.key,urls);
-    while(geometryCache.size>CACHE_LIMIT)
-      geometryCache.delete(geometryCache.keys().next().value);
+    while(geometryCache.size>CACHE_LIMIT){
+      const evicted=geometryCache.keys().next().value;
+      geometryCache.delete(evicted);
+      anticipatedKeys.delete(evicted);
+    }
   }
   function storeField(request,field,engine){
     const urls=field.urls||[
@@ -800,6 +819,10 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
     const key=w+"x"+h+"@"+corner;
     desired={key,w,h,corner};
+    if(shell.classList.contains("is-sidebar-toggling")&&
+       corner===24&&w>74&&w<260){
+      observedWidths.set(w,(observedWidths.get(w)||0)+1);
+    }
     if(key===previous){armEndpointWarmup();armAnticipation();return;}
     const cached=geometryCache.get(key);
     if(cached){

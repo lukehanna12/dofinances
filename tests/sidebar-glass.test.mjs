@@ -540,7 +540,7 @@ test("idle predictive warmups cache exact width-specific fields without caching 
   assert.match(code,/desired\?\.key===response\.key&&previous!==response\.key/);
   assert.match(code,/\.filter\(request=>!geometryCache\.has\(request\.key\)\)/);
   assert.match(code,/if\(shell\.classList\.contains\("is-sidebar-toggling"\)\)\{/);
-  assert.match(code,/const CACHE_LIMIT=48/);
+  assert.match(code,/const CACHE_LIMIT=32/);
   assert.doesNotMatch(code,/html2canvas|captureStream|getDisplayMedia/);
 });
 
@@ -552,4 +552,15 @@ test("single rAF owner and filter input writes are de-duplicated",async()=>{
   assert.match(code,/if\(!\("href" in node\)\)node\.setAttributeNS\(NS,"xlink:href",uri\)/);
   assert.match(code,/if\(!shell\.classList\.contains\("has-oracle-backdrop"\)\)/);
   assert.match(code,/if\(desired\?\.key!==previous&&!geometryCache\.has\(desired\.key\)\)/);
+});
+
+test("geometry speculation is bounded, adapts to actual widths, and retires old heights",async()=>{
+  const code=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  assert.match(code,/const SPECULATIVE_BURST=14, SPECULATIVE_TOTAL_LIMIT=24/);
+  assert.match(code,/\.slice\(0,Math\.min\(SPECULATIVE_BURST,SPECULATIVE_TOTAL_LIMIT-anticipateCount\)\)/);
+  assert.match(code,/const learned=\[\.\.\.observedWidths\]/);
+  assert.match(code,/observedWidths\.set\(w,\(observedWidths\.get\(w\)\|\|0\)\+1\)/);
+  assert.match(code,/if\(cacheHeight&&cacheHeight!==request\.h\)/);
+  assert.match(code,/anticipatedKeys\.delete\(evicted\)/);
+  assert.doesNotMatch(code,/getDisplayMedia|html2canvas|createImageBitmap\(document/);
 });
