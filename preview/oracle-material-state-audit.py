@@ -80,7 +80,7 @@ for ix,row in enumerate(joined.get("rows",[])[:8]):
 print("=== LIVE MODE4/5 SDF48 DISTINCT ===",flush=True)
 distinct={}
 for row in joined["rows"]:
- src=row["producer_return"].get("cpu48_hex")
+ src=row["producer_return"].get("cpu48_hex") or row["upload"].get("source48_hex")
  dst=row["upload"].get("source48_hex")
  binding=row["draw_binding"]
  case=row.get("parameter_case")
