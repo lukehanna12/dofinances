@@ -100,6 +100,11 @@ jobs:
             if ! grep -Fq 'data-glass-browser-smoke="pass"' "$file"; then
               echo "Browser glass smoke failed at $viewport" >&2
               grep -o 'data-glass-browser-info="[^"]*"' "$file" | head -2 >&2 || true
+              grep -o 'data-glass-browser-smoke="[^"]*"' "$file" | head -2 >&2 || true
+              grep -o '<title>[^<]*</title>' "$file" | head -2 >&2 || true
+              echo "DOM beginning:" >&2
+              head -c 1300 "$file" >&2 || true
+              echo >&2
               tail -30 "$error" >&2
               exit 1
             fi

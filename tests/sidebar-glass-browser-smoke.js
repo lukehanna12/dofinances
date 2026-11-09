@@ -5,8 +5,9 @@
 (async()=>{
   const checks=[];
   function assert(ok,message){checks.push({message,ok:!!ok});if(!ok)throw Error(message);}
-  async function frame(){await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));}
-  async function tick(ms=230){await new Promise(resolve=>setTimeout(resolve,ms));await frame();}
+  // Headless Chrome virtual-time tests may throttle requestAnimationFrame; a
+  // fixed timer avoids hanging forever before the result marker is written.
+  async function tick(ms=230){await new Promise(resolve=>setTimeout(resolve,ms));}
   try {
     await tick(500);
     const shell=document.getElementById("workspace-shell");
