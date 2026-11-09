@@ -459,6 +459,82 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
   defs.append(filter);svg.append(defs);doc.body.append(svg);
   const supported=!!win.CSS?.supports?.("backdrop-filter",'url("#'+id+'")');
   const canUse=!!supported&&!reduced;
+
+  /*
+   * Exact field math is still generateOracleField(), unchanged. Dedicated
+   * module Worker execution moves the expensive mode5 four-corner evaluation
+   * off the UI thread. A single in-flight request coalesces intermediate
+   * resize widths; the latest actual dimensions always win. Cache stores
+   * identical encoded field bytes for repeat sizes, never a resampled field.
+   * The synchronous path is retained when Worker execution is unavailable.
+   */
+  const geometryCache=new Map();
+  const CACHE_LIMIT=6;
+  let worker=null,workerBusy=false,desired=null;
+  function setMaps(request,urls){
+    for(const [node,uri]of [[innerMap,urls[0]],[outerMap,urls[1]],[blurMap,urls[2]]]){
+      node.setAttribute("href",uri);
+      node.setAttributeNS(NS,"xlink:href",uri);
+      node.setAttribute("width",String(request.w));
+      node.setAttribute("height",String(request.h));
+    }
+    previous=request.key;
+    usingSVG=true;
+    shell.classList.add("has-oracle-backdrop");
+  }
+  function storeField(request,field){
+    const urls=[
+      imageDataURL(win,field.inner,request.w,request.h),
+      imageDataURL(win,field.outer,request.w,request.h),
+      imageDataURL(win,field.blurMask,request.w,request.h)
+    ];
+    if(urls.some(uri=>!uri))throw Error("Canvas2D geometry encoding unavailable");
+    geometryCache.delete(request.key);
+    geometryCache.set(request.key,urls);
+    while(geometryCache.size>CACHE_LIMIT){
+      geometryCache.delete(geometryCache.keys().next().value);
+    }
+    setMaps(request,urls);
+  }
+  function syncField(request){
+    try{storeField(request,generateOracleField(request.w,request.h,request.corner));}
+    catch{usingSVG=false;shell.classList.remove("has-oracle-backdrop");}
+  }
+  function stopWorker(){
+    try{worker?.terminate();}catch{}
+    worker=null;workerBusy=false;
+  }
+  function dispatchLatest(){
+    if(!worker||workerBusy||!desired||desired.key===previous)return;
+    workerBusy=true;
+    try{worker.postMessage(desired);}
+    catch{stopWorker();syncField(desired);}
+  }
+  if(canUse&&typeof win.Worker==="function"){
+    try{
+      worker=new win.Worker(new URL("./sidebar-glass-field-worker.js",import.meta.url),
+        {type:"module",name:"oracle-sidebar-field"});
+      worker.addEventListener("message",event=>{
+        workerBusy=false;
+        if(disposed)return;
+        const field=event.data;
+        if(!field||field.error){stopWorker();if(desired)syncField(desired);return;}
+        // Do not spend main-thread PNG encoding time on obsolete animation
+        // widths. The latest request gets an exact fresh field instead.
+        if(field.key===desired?.key){
+          try{storeField(desired,field);}
+          catch{stopWorker();if(desired)syncField(desired);return;}
+        }
+        if(desired?.key!==previous)dispatchLatest();
+      });
+      worker.addEventListener("error",event=>{
+        event.preventDefault();
+        stopWorker();
+        if(!disposed&&desired)syncField(desired);
+      });
+    }catch{stopWorker();}
+  }
+
   function apply(){
     queued=0;
     if(disposed)return;
@@ -466,14 +542,11 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     const w=Math.round(bounds.width),h=Math.round(bounds.height);
     if(w<1||h<1)return;
     const {radius,word}=sidebarFiniteBlurProjection("regular",w,h);
-    // Converting finite downsample-space radius to CSS pixel footprint is a
-    // browser adapter assumption, not a claimed equivalent Gaussian kernel.
+    // Exact LOD word; Gaussian sigma remains the original stated browser
+    // approximation. These material parameters are NOT changed for speed.
     const scale=ORACLE_FINITE_REFRACTION.surfaceScale;
     const farLOD=airTextureMipLOD(word,1);
     const nearLOD=airTextureMipLOD(word,.5);
-    // The LODs are source-exact. Mapping mip-filter footprint into CSS
-    // Gaussian sigma is NOT source-exact (browser sampling limitation).
-    // The two sigma levels retain the observed LOD ordering and ratio.
     const effective=word/scale;
     const nearSigma=effective*.5;
     const farSigma=effective;
@@ -485,32 +558,22 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
     blurFar.setAttribute("stdDeviation",String(farSigma));
     blurNear.setAttribute("stdDeviation",String(nearSigma));
     if(!canUse)return;
-    const key=w+"x"+h+"@"+radius;
+    // Read the actual CSS corner, not a geometry-only blur radius.
+    const style=win.getComputedStyle?.(sidebar);
+    const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");
+    const corner=Math.min(Number.isFinite(actualRadius)?actualRadius:24,w*.5,h*.5);
+    const key=w+"x"+h+"@"+corner;
+    desired={key,w,h,corner};
     if(key===previous)return;
-    try{
-      // Match the actual DOM sidebar corner geometry rather than inventing
-      // a fixed SDF radius. CSS border radius is part of app layout state.
-      const style=win.getComputedStyle?.(sidebar);
-      const actualRadius=Number.parseFloat(style?.borderTopRightRadius||"24");
-      const corner=Number.isFinite(actualRadius)?actualRadius:24;
-      const field=generateOracleField(w,h,Math.min(corner,w*.5,h*.5));
-      const a=imageDataURL(win,field.inner,w,h);
-      const b=imageDataURL(win,field.outer,w,h);
-      const c=imageDataURL(win,field.blurMask,w,h);
-      if(!a||!b||!c)throw Error("Canvas2D geometry encoding unavailable");
-      for(const [node,uri]of [[innerMap,a],[outerMap,b],[blurMap,c]]){
-        node.setAttribute("href",uri);
-        node.setAttributeNS(NS,"xlink:href",uri);
-        node.setAttribute("width",String(w));
-        node.setAttribute("height",String(h));
-      }
-      previous=key;
-      usingSVG=true;
-      shell.classList.add("has-oracle-backdrop");
-    }catch{
-      usingSVG=false;
-      shell.classList.remove("has-oracle-backdrop");
+    const cached=geometryCache.get(key);
+    if(cached){
+      geometryCache.delete(key);
+      geometryCache.set(key,cached);
+      setMaps(desired,cached);
+      return;
     }
+    if(worker)dispatchLatest();
+    else syncField(desired);
   }
   function schedule(){
     if(disposed)return;
@@ -528,6 +591,8 @@ export function mountOracleBackdrop({doc=document,win=window,shell,sidebar}){
       disposed=true;
       if(queued)win.cancelAnimationFrame(queued);
       if(delay)win.clearTimeout(delay);
+      stopWorker();
+      geometryCache.clear();
       resize?.disconnect();
       win.removeEventListener("resize",schedule);
       shell.classList.remove("has-oracle-backdrop");

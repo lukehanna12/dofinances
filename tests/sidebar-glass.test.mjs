@@ -338,3 +338,18 @@ test("mobile drawer scrim remains interactive and cannot darken the sampled glas
   assert.match(css,/\.sidebar-scrim:not\(\[hidden\]\)\{[^}]*clip-path:inset\(0 0 0 274px\)/s);
   assert.match(css,/pointer-events:auto/);
 });
+
+test("exact Oracle field computation moves off the UI thread without changing geometry",async()=>{
+  const worker=await read("../sites/_apex/app/assets/sidebar-glass-field-worker.js");
+  const browser=await read("../sites/_apex/app/assets/sidebar-glass-oracle.js");
+  const workflow=await read("../.github/workflows/app-sidebar-preview.yml");
+  assert.match(worker,/import \{generateOracleField\} from "\.\/sidebar-glass-oracle\.js"/);
+  assert.match(worker,/field=generateOracleField\(request\.w,request\.h,request\.corner\)/);
+  assert.match(worker,/field\.inner\.buffer,field\.outer\.buffer,field\.blurMask\.buffer/);
+  assert.match(browser,/new win\.Worker\(new URL\("\.\/sidebar-glass-field-worker\.js",import\.meta\.url\)/);
+  assert.match(browser,/const geometryCache=new Map\(\)/);
+  assert.match(browser,/if\(field\.key===desired\?\.key\)/);
+  assert.match(browser,/else syncField\(desired\)/);
+  assert.match(workflow,/cp sites\/_apex\/app\/assets\/sidebar-glass-field-worker\.js/);
+  assert.doesNotMatch(worker,/html2canvas|drawImage|drawGlassWallpaper|fetch\(/);
+});
