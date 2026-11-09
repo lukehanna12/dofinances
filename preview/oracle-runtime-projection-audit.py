@@ -17,7 +17,7 @@ fields=["inner_refraction_amount","inner_refraction_inv_height","outer_refractio
   "sdr_shadow_dist0","sdr_shadow_dist1","clamp_limit","preserve_hue",
   "sdr_white_value","x86_workaround","complex_refraction"]
 def value(b,name):
- r=layout[name];i=r["byte_offset"];t=r["llvm_type"]
+ r=layout[name];i=48+r["byte_offset"];t=r["llvm_type"]
  if i+(2 if t=="half" else 4)>len(b):return None
  return struct.unpack_from("<e" if t=="half" else "<f",b,i)[0]
 out=[]
@@ -30,6 +30,7 @@ for row in rows:
   name=row.get("binding",{}).get("case") or row.get("case_id")
   out.append(dict(name=name,hexlen=len(hx)//2,mode=row.get("sdf_mode"),
                   fragment=row.get("binding",{}).get("fragment"),values=a))
+print("GLASS_ABI_OFFSET",48,"SDF_ABI_LENGTH",48,flush=True)
 print("RETAINED_UNIFORM_UPLOADS",len(rows),"FULLY_DECODED",len(out),flush=True)
 families=collections.Counter(x.get("fragment") for x in out)
 print("FRAGMENT_COUNTS",dict(families),flush=True)

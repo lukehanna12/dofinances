@@ -38,13 +38,14 @@ for name in ["primitive_oracle.json.xz","direct_execution.json.xz",
   print("LIST",len(o),[compact(x,1000) for x in o[:5]],flush=True)
 
 print("=== DIRECT UNIFORM FIELD VALUES + VARIANT DIFFS ===",flush=True)
+print("GLASS_ABI_OFFSET",48,"SDF_ABI_LENGTH",48,"SOURCE_TOTAL_LENGTH",272,flush=True)
 fields=[json.loads(s) for s in (root/"uniform_field_layouts.jsonl").read_text().splitlines()]
 layout=[x for x in fields if x.get("struct_name")=="GlassBackgroundUniforms" and x.get("byte_offset") is not None]
 uniforms={n:unpack(n) for n in [
   "base_uniform.bin","color_matrices_uniform.bin","holding_tone_uniform.bin",
   "clamp_limit_uniform.bin","shadow_face_opacity_uniform.bin"]}
 def values(raw,entry):
- offset=entry["byte_offset"];kind=entry["llvm_type"]
+ offset=48+entry["byte_offset"];kind=entry["llvm_type"]
  if kind=="float":return struct.unpack_from("<f",raw,offset)[0]
  if kind=="half":return struct.unpack_from("<e",raw,offset)[0]
  if kind=="<4 x half>":return list(struct.unpack_from("<4e",raw,offset))
