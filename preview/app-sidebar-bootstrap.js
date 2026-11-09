@@ -1,5 +1,6 @@
 // Preview only: production /app HTML and CSS with navigation but NO account operations.
 import {initWorkspaceNavigation} from "./workspace-nav.js";
+import {initLiquidGlassSidebar} from "./sidebar-glass.js";
 initWorkspaceNavigation();
 for(const id of ["account-email","account-email-detail"]){
   const element=document.getElementById(id);
@@ -22,3 +23,6 @@ for(const link of document.querySelectorAll("a[href]")){
   link.removeAttribute("href");
   link.setAttribute("aria-disabled","true");
 }
+
+// Preview-only optical material; account/network controls remain disabled.
+initLiquidGlassSidebar();

@@ -25,8 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test real workspace navigation
-        run: node --test tests/dashboard-navigation.test.mjs
+      - name: Test real workspace navigation and experimental glass
+        run: node --test tests/dashboard-navigation.test.mjs tests/sidebar-glass.test.mjs
       - name: Package actual app UI with safe preview entrypoint
         shell: bash
         run: |
@@ -36,6 +36,8 @@ jobs:
           cp sites/_apex/app/assets/dashboard.css .app-sidebar-preview/app/assets/dashboard.css
           cp sites/_apex/app/assets/workspace-theme.css .app-sidebar-preview/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js .app-sidebar-preview/app/assets/workspace-nav.js
+          cp sites/_apex/app/assets/sidebar-glass.js .app-sidebar-preview/app/assets/sidebar-glass.js
+          cp sites/_apex/app/assets/sidebar-glass.css .app-sidebar-preview/app/assets/sidebar-glass.css
           cp preview/app-sidebar-bootstrap.js .app-sidebar-preview/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css .app-sidebar-preview/assets/site-foundation.css
           node --input-type=module <<'NODE'
@@ -60,6 +62,10 @@ jobs:
           test ! -e .app-sidebar-preview/app/assets/dashboard.js
           grep -Fq 'preview-bootstrap.js' .app-sidebar-preview/app/index.html
           grep -Fq 'workspace-theme.css' .app-sidebar-preview/app/index.html
+          grep -Fq 'sidebar-glass.css' .app-sidebar-preview/app/index.html
+          grep -Fq 'sidebar-glass.js' .app-sidebar-preview/app/assets/preview-bootstrap.js
+          test -s .app-sidebar-preview/app/assets/sidebar-glass.css
+          test -s .app-sidebar-preview/app/assets/sidebar-glass.js
           ! grep -Fq 'dashboard.js' .app-sidebar-preview/app/index.html
           ! grep -R -Eq 'fetch\(|api/auth|location.replace' .app-sidebar-preview/app/assets/*.js
       - name: Deploy to non-production Pages preview branch
