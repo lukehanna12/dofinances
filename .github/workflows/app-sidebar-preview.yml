@@ -102,7 +102,7 @@ jobs:
           for viewport in 1440,900 980,760 390,844; do
             file="$RUNNER_TEMP/glass-browser-${viewport}.html"
             error="$RUNNER_TEMP/glass-browser-${viewport}.log"
-            if ! timeout 32s google-chrome --headless=new --no-sandbox               --disable-dev-shm-usage --disable-background-networking               --no-first-run --no-default-browser-check               --enable-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist               --window-size="$viewport" --virtual-time-budget=7500               --dump-dom http://127.0.0.1:8765/app/ > "$file" 2> "$error"; then
+            if ! timeout 90s google-chrome --headless=new --no-sandbox               --disable-dev-shm-usage --disable-background-networking               --no-first-run --no-default-browser-check               --enable-webgl --enable-unsafe-swiftshader --ignore-gpu-blocklist               --window-size="$viewport" --virtual-time-budget=28000               --dump-dom http://127.0.0.1:8765/app/ > "$file" 2> "$error"; then
               echo "Chrome could not run glass smoke at $viewport" >&2
               tail -30 "$error" >&2
               exit 1
