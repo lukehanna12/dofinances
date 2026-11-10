@@ -100,6 +100,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
           cp sites/_apex/app/assets/workspace-enhancements.css dist/app/assets/workspace-enhancements.css
           cp sites/_apex/app/assets/diagnostics.css dist/app/assets/diagnostics.css
+          cp sites/_apex/app/assets/providers.css dist/app/assets/providers.css
           cp sites/_apex/app/assets/home-rice-terraces-hq.jpg dist/app/assets/home-rice-terraces-hq.jpg
           cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
           cp sites/_apex/app/assets/sidebar-glass-field-worker.js dist/app/assets/sidebar-glass-field-worker.js
