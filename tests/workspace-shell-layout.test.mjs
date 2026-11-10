@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {initWorkspaceScroll} from "../sites/_apex/app/assets/workspace-scroll.js";
+import {initWorkspaceScroll,sidebarEndShrink} from "../sites/_apex/app/assets/workspace-scroll.js";
 const read=path=>readFileSync(new URL(path,import.meta.url),"utf8");
 
 test("production and Studio use one document-scrolling page beneath sticky navigation",()=>{
@@ -61,6 +61,42 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::before/);
   assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::after/);
 });
+test("sticky sidebar contracts at footer boundary without changing its top edge",()=>{
+  assert.equal(sidebarEndShrink(900,950),0);
+  assert.equal(sidebarEndShrink(900,900),0);
+  assert.equal(sidebarEndShrink(900,880),20);
+  assert.equal(sidebarEndShrink(900,860),40);
+  assert.equal(sidebarEndShrink(900,899.37),0.75);
+  assert.equal(sidebarEndShrink(0,860),0);
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.match(css,/height:calc\(100dvh - var\(--global-menu-height\) - var\(--workspace-header-height\) - var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\) - var\(--workspace-sidebar-end-shrink,0px\)\)/);
+  assert.match(css,/bottom:calc\(var\(--workspace-sidebar-bottom-gap\) \+ 22px \+ var\(--workspace-sidebar-end-shrink,0px\)\)/);
+  const handlers={},frames=[],writes=[];
+  let shellBottom=1100;
+  const shell={getBoundingClientRect:()=>({bottom:shellBottom}),
+    style:{setProperty:(key,value)=>writes.push([key,value])}};
+  const doc={scrollingElement:{scrollTop:0,scrollHeight:1000,clientHeight:900},
+    getElementById:key=>key==="workspace-shell"?shell:null};
+  const win={innerHeight:900,addEventListener:(name,handler)=>handlers[name]=handler,
+    requestAnimationFrame:fn=>frames.push(fn),
+    matchMedia:()=>({matches:false})};
+  const {sync}=initWorkspaceScroll(doc,win);
+  assert.equal(frames.length,1);
+  frames.shift()();
+  assert.deepEqual(writes.at(-1),["--workspace-sidebar-end-shrink","0px"]);
+  shellBottom=880;
+  handlers.scroll();handlers.scroll();
+  assert.equal(frames.length,1,"coalesce scroll measurements into one frame");
+  frames.shift()();
+  assert.deepEqual(writes.at(-1),["--workspace-sidebar-end-shrink","20px"]);
+  handlers.scroll();frames.shift()();
+  assert.equal(writes.length,2,"skip redundant style mutations");
+  shellBottom=860;handlers.resize();frames.shift()();
+  assert.deepEqual(writes.at(-1),["--workspace-sidebar-end-shrink","40px"]);
+  shellBottom=1200;sync();frames.shift()();
+  assert.deepEqual(writes.at(-1),["--workspace-sidebar-end-shrink","0px"]);
+});
+
 test("root scrolling guards top, bottom, and right edges while preserving back swipe",()=>{
   const events={};let cancelled=0,scrollCalls=0;
   const root={scrollTop:0,scrollLeft:0,scrollHeight:1600,clientHeight:700,scrollWidth:900,clientWidth:900};

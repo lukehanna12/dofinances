@@ -268,6 +268,41 @@ try{
     "Bottom photo must span the viewport: "+JSON.stringify(strip));
   assert.ok(strip.background.includes("url("),"Bottom photo must use route wallpaper");
   assert.equal(strip.opacity,"1","Bottom photo must not fade in after reaching end");
+  // The end photo sits outside the sticky sidebar's containing block.
+  // Verify the bottom edge compresses while the D badge/top edge remains at
+  // its original viewport coordinate, including on reverse scroll.
+  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="home"]\').hidden',"Home view before sidebar contraction");
+  const uncompressed=await evaluate(String.raw`(()=>{
+    const r=document.querySelector(".sidebar").getBoundingClientRect();
+    return {top:r.top,height:r.height,bottom:r.bottom};
+  })()`);
+  await evaluate('window.scrollTo(0,document.scrollingElement.scrollHeight);true');
+  await until('Math.abs(document.querySelector(".workspace-footer").getBoundingClientRect().bottom-innerHeight)<4',
+    "footer reached after shell boundary");
+  await until('parseFloat(getComputedStyle(document.getElementById("workspace-shell")).getPropertyValue("--workspace-sidebar-end-shrink"))>1',
+    "end-of-page sidebar height adjustment");
+  const compressed=await evaluate(String.raw`(()=>{
+    const s=document.querySelector(".sidebar").getBoundingClientRect();
+    const f=document.querySelector(".workspace-footer").getBoundingClientRect();
+    const sh=document.getElementById("workspace-shell").getBoundingClientRect();
+    return {top:s.top,height:s.height,bottom:s.bottom,footerTop:f.top,
+      shellBottom:sh.bottom,shrink:parseFloat(getComputedStyle(document.getElementById("workspace-shell")).getPropertyValue("--workspace-sidebar-end-shrink")),
+      gripBottom:document.getElementById("sidebar-resize-handle").getBoundingClientRect().bottom};
+  })()`);
+  assert.ok(Math.abs(compressed.top-uncompressed.top)<1.5,
+    "Sidebar must not slide upward at the lower boundary: "+JSON.stringify({uncompressed,compressed}));
+  assert.ok(Math.abs((uncompressed.height-compressed.height)-compressed.shrink)<2,
+    "Only the sidebar HEIGHT should contract by the footer overlap: "+JSON.stringify({uncompressed,compressed}));
+  assert.ok(compressed.bottom<=compressed.footerTop-12,
+    "Compressed sidebar must keep its bottom buffer to the photo strip: "+JSON.stringify(compressed));
+  assert.ok(compressed.gripBottom<=compressed.footerTop-12,
+    "Resize grip should contract with the sidebar and stay out of the photo footer: "+JSON.stringify(compressed));
+  await evaluate('window.scrollTo(0,0);true');
+  await until('Math.abs(document.querySelector(".sidebar").getBoundingClientRect().height-'+String(uncompressed.height)+')<2',
+    "restore sidebar height on upward scroll");
+  console.log("PASS: sidebar keeps its top pinned and contracts smoothly into bottom photo boundary");
+
   console.log("PASS: in-flow lower photo strip and lower bar frost above scrolling content");
 
   console.log("PASS: single document scroll, moving wallpaper and content, fixed bars/sidebar, in-flow footer");

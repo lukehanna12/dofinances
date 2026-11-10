@@ -118,7 +118,10 @@ body:has(> #workspace-shell) .content{
   .shell.liquid-glass-preview .sidebar{
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));
     margin:calc(var(--workspace-header-height) + var(--workspace-sidebar-gap)) 0 var(--workspace-sidebar-bottom-gap) var(--workspace-sidebar-left-gap);
-    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - var(--workspace-sidebar-bottom-gap));
+    /* Never let the sticky parent push the glass pane upward at the footer.
+       The lower boundary reduces its height instead; the top remains fixed. */
+    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - var(--workspace-sidebar-bottom-gap) - var(--workspace-sidebar-end-shrink,0px));
+    min-height:0;
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-rail-expanded .sidebar{width:var(--sidebar-expanded-width,260px);}
@@ -177,7 +180,7 @@ body:has(> #workspace-shell) .content{
     display:block;position:fixed;
     left:calc(var(--workspace-sidebar-left-gap) + var(--sidebar-expanded-width) - 14px);
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 22px);
-    bottom:calc(var(--workspace-sidebar-bottom-gap) + 22px);
+    bottom:calc(var(--workspace-sidebar-bottom-gap) + 22px + var(--workspace-sidebar-end-shrink,0px));
     right:auto;width:28px;height:auto;z-index:39;
     cursor:ew-resize!important;touch-action:none;
     border:0;border-radius:0;outline-offset:-3px;

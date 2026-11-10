@@ -27,6 +27,14 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(read("../sites/_apex/app/assets/workspace-wallpapers.css"),/\.topbar::before \{[\s\S]*?z-index:0;/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
 });
+test("sidebar height and resize grip honor the shared lower-boundary contraction",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const js=read("../sites/_apex/app/assets/workspace-scroll.js");
+  assert.match(css,/var\(--workspace-sidebar-end-shrink,0px\)/);
+  assert.match(js,/sidebarEndShrink\(viewportHeight,shell.getBoundingClientRect\(\).bottom\)/);
+  assert.match(js,/win.addEventListener\("scroll",sync,\{passive:true\}\)/);
+  assert.match(js,/new Resize\(sync\)/);
+});
 test("sidebar admits blank-space expansion and bounded accessible pointer/keyboard resizing",()=>{
   const js=read("../sites/_apex/app/assets/workspace-nav.js");
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
