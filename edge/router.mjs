@@ -314,6 +314,7 @@ const WORKSPACE_VIEW_PATHS = new Set([
   "/app/colosseum/collections", "/app/colosseum/providers",
   "/app/colosseum/permissions", "/app/colosseum/diagnostics",
   "/app/colosseum/settings",
+  "/app/apple-hig-reader", "/app/apple-hig-reader/overview",
 ]);
 
 export async function handleRequest(request,env={}) {
