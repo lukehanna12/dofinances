@@ -464,3 +464,35 @@ test("Apple HIG Reader opens as an independent project without activating Coloss
   assert.equal(m.elements["project-navigation"].hidden,false);
   assert.equal(m.elements["apple-hig-navigation"].hidden,true);
 });
+
+test("Apple HIG Reader showcases its Google Apps Script API rather than presenting Apple documentation as the project",async()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=await read(path);
+    const start=html.indexOf('<section class="view project-view" data-view="apple-hig-reader/overview"');
+    const end=html.indexOf('<section class="view project-view" data-view="colosseum/utilities"',start);
+    assert.ok(start>0 && end>start,"dedicated Apple HIG project view exists");
+    const page=html.slice(start,end);
+    assert.match(page,/<div class="page-heading"><h1 id="apple-hig-reader-title">Apple HIG Reader<\/h1><\/div>/,
+      "existing native page-heading position must be unchanged");
+    assert.match(page,/INDEPENDENT SOFTWARE PROJECT/);
+    assert.match(page,/GOOGLE APPS SCRIPT/);
+    assert.match(page,/A read-only API I built with Google Apps Script/);
+    assert.match(page,/v1\.1\.0/);
+    assert.match(page,/POST/);
+    assert.match(page,/\/exec/);
+    for(const capability of ["hig.list","hig.search","hig.read"])assert.ok(page.includes(capability),capability);
+    for(const key of ["chunkSize","offset","Markdown","source links","image and video references"])
+      assert.ok(page.includes(key),"API feature missing: "+key);
+    assert.match(page,/Apple HIG \/ DocC[\s\S]*Google Apps Script[\s\S]*Colosseum MCP/);
+    assert.match(page,/Illustrative contract, not a live API response/);
+    assert.match(page,/live token-authenticated availability is not asserted here/);
+    assert.doesNotMatch(page,/OFFICIAL DOCUMENTATION|Colosseum cloud reader<\/h2>/,
+      "the project page must not revert to the earlier generic references layout");
+    assert.match(html,/Apple HIG Reader<\/strong><span>Google Apps Script · Live documentation reader/);
+  }
+  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.match(css,/\.hig-showcase-intro\{display:grid/);
+  assert.match(css,/\.hig-operation\[open\]/);
+  assert.match(css,/@media\(max-width:760px\)\{/);
+  assert.doesNotMatch(css,/\.hig-project-panel/);
+});
