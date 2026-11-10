@@ -3,10 +3,19 @@
  * the real page backdrop; no wallpaper is copied inside the glass surface. */
 :root {
   --workspace-header-height:66px;
-  --workspace-banner-height:168px; /* Identical across all workspace routes. */
+  --workspace-banner-height:202.65625px; /* Non-Home: static D-bubble spacing measured on desktop. */
   --workspace-top-overpull:96px;
   --workspace-content-leading:26px;
   --workspace-bottom-strip-height:calc(var(--workspace-header-height) * .8);
+}
+/* Desktop measurement: lower bar ends at y=94px; the 34px sidebar D badge
+ * occupies y=131.328125..165.328125px. With a 202.65625px image boundary,
+ * each gap is 37.328125px. Home originally exposed 168-(44+50)=74px;
+ * six times this visible portion is 444px, ending at y=538px.
+ * Depend on the displayed view, not asynchronously decoded wallpaper data,
+ * to keep strip geometry synchronous with navigation. */
+body:has(> #workspace-shell .view[data-view="home"]:not([hidden])) {
+  --workspace-banner-height:538px;
 }
 html:has(body > #workspace-shell),
 body:has(> #workspace-shell) {

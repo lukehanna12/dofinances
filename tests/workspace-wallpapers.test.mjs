@@ -17,7 +17,12 @@ test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
 });
 test("wallpaper geometry derives both the image and spacer from header height",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
-  assert.match(css,/--workspace-banner-height:168px/);
+  assert.match(css,/--workspace-banner-height:202\.65625px/);
+  assert.match(css,/body:has\(> #workspace-shell \.view\[data-view="home"\]:not\(\[hidden\]\)\) \{\s*--workspace-banner-height:538px/);
+  // Both bars hide 94px; sixfold applies only to the exposed 74px.
+  assert.equal(538-(44+50),6*(168-(44+50)));
+  // Match the static spacing on either side of the desktop D badge.
+  assert.equal(202.65625-165.328125,131.328125-(44+50));
   assert.match(css,/padding-top:calc\(var\(--workspace-banner-height\) - var\(--workspace-header-height\) \+ var\(--workspace-content-leading\)\)/);
   assert.match(css,/backdrop-filter:blur\(18px\)/);
 });

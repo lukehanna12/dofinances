@@ -24,7 +24,8 @@ test("workspace dark gray, clean image edges, full-width header shader and stati
   const foundation=read("../sites/_apex/assets/site-foundation.css");
   assert.match(foundation,/--ui-canvas:\s*#171717/);
   assert.match(theme,/font-size: clamp\(36px, 4vw, 48px\)/);
-  assert.match(css,/--workspace-banner-height:168px/);
+  assert.match(css,/--workspace-banner-height:202\.65625px/);
+  assert.match(css,/--workspace-banner-height:538px/);
   assert.match(css,/--workspace-top-overpull:96px/);
   assert.match(css,/position:fixed;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
   assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
