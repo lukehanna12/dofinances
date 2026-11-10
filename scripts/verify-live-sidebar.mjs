@@ -311,7 +311,8 @@ try{
   await until('Math.abs(document.querySelector(".sidebar").getBoundingClientRect().top-'+String(beforeFooter.top)+')<2',
     "sidebar remains pinned on reverse scroll");
   // Compare each page H1's line-box center with the actual D badge after
-  // navigation settles. The subtitles remain at their normal flow positions.
+  // navigation settles. Reuse the desktop reference to verify mobile Y.
+  let desktopTitleCenter=null;
   for(const width of [900,1280]){
     await metrics(width,680);
     await until('Math.abs(document.documentElement.clientWidth-'+String(width)+')<20',
@@ -338,6 +339,7 @@ try{
       })()`);
       assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<0.75,
         "Title isn't centered on the D bubble for "+route+" at "+width+": "+JSON.stringify(heading));
+      if(desktopTitleCenter===null)desktopTitleCenter=heading.bubbleCenter;
       assert.ok(heading.subtitleTop>heading.titleCenter+45,
         "Subtitle moved upward with the title for "+route+": "+JSON.stringify(heading));
       assert.ok(heading.scrollY<1,"Title navigation should start at document top");
@@ -361,6 +363,21 @@ try{
     await evaluate('location.hash="#settings";window.scrollTo(0,0);true');
     await until('document.querySelector(".view[data-view=settings]")?.hidden===false',
       "mobile Settings view at "+mobileWidth);
+    await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
+      "mobile title arrival settles at "+mobileWidth);
+    const mobileTitle=await evaluate(String.raw`(()=>{
+      const view=document.querySelector(".content > .view:not([hidden])");
+      const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
+      const lead=view.querySelector(".page-heading > .lead").getBoundingClientRect();
+      return {center:(h1.top+h1.bottom)/2,subtitleTop:lead.top,
+        scrollY:document.scrollingElement.scrollTop,
+        titleFont:getComputedStyle(view.querySelector(".page-heading > h1")).fontSize};
+    })()`);
+    assert.ok(Math.abs(mobileTitle.center-desktopTitleCenter)<1,
+      "Mobile Settings title reverted from the desktop D-bubble Y: "+JSON.stringify({mobileWidth,desktopTitleCenter,mobileTitle}));
+    assert.ok(mobileTitle.subtitleTop>mobileTitle.center+45,
+      "Mobile subtitle should remain in its original flow position: "+JSON.stringify(mobileTitle));
+    assert.ok(mobileTitle.scrollY<1,"Mobile route starts at the top");
     const beforeDrawer=await evaluate(String.raw`(()=>{
       const bar=document.querySelector(".topbar").getBoundingClientRect();
       return {barBottom:bar.bottom,pageHeight:document.scrollingElement.scrollHeight,
@@ -416,7 +433,7 @@ try{
     "desktop rail restored");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
-  console.log("PASS: all non-Home titles aligned to D bubble; subtitles and Home unaffected");
+  console.log("PASS: all non-Home titles aligned to D-bubble Y on desktop and mobile; subtitles and Home unaffected");
 
   console.log("PASS: fixed-height sidebar overlaps bottom photo strip without moving or shrinking");
 

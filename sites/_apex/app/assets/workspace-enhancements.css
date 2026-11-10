@@ -90,20 +90,21 @@ body:has(> #workspace-shell) .top-actions{margin-left:auto;}
 body:has(> #workspace-shell) .content{
   padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));
 }
-/* Align only the non-Home screen titles with the fixed sidebar D bubble.
- * At the initial scroll position the bubble's center is:
- *   global bar + lower bar + sidebar gap + border(1) + padding(17)
- *   + brand padding(2) + half of the 34px D mark(17) + .328125px
- *   for vertical centering inside the two-line brand wordmark row.
- * The title's normal top is banner-height + content-leading; half of its
- * 1.2 line-height is .6em. Position the title's VISUAL center at the D center,
- * without taking it out of flow or moving the subtitle, cards, or page.
- * The title still scrolls normally; the D bubble remains viewport-fixed.
- * Mobile does not show the reference bubble unless its drawer is open. */
-@media(min-width:761px){
+/* Non-Home headings share one viewport Y-level on desktop AND mobile.
+ * At zero scroll their line-box center matches the desktop sidebar D mark.
+ * Relative positioning moves only the title's painted position; it keeps
+ * subtitles/cards in normal flow and the heading scrolls with the document.
+ * Mobile hides the D mark in the drawer, but retains its desktop reference
+ * Y coordinate rather than reverting to the old banner-height placement. */
+body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
+  position:relative;
+  top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
+}
+@media(max-width:760px){
+  /* Mobile uses a 63px header variable vs 66px on desktop. Restore the
+   * 3px difference so both breakpoints use the same title-center Y-level. */
   body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
-    position:relative;
-    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
+    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 41.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
   }
 }
 #location-subtitle{display:none!important;}

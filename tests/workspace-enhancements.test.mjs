@@ -42,13 +42,17 @@ test("account deletion disclosure has a subtly richer coral tone without changin
     assert.ok(html.includes('<summary>Delete my account</summary>'));
   }
 });
-test("only non-Home H1 titles rise to the fixed D-bubble center",()=>{
+test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
   assert.ok(css.includes('.view:not([data-view="home"]) > .page-heading > h1'),
-    "limit the alignment to the primary H1 on non-Home pages");
+    "only the primary H1 on non-Home pages is moved");
   assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
-    "center title's line box on the measured D bubble without a runtime scroll rule");
-  assert.match(css,/@media\(min-width:761px\)/,"the reference D bubble is visible on desktop");
+    "desktop heading remains centered on the sidebar D");
+  assert.match(css,/@media\(max-width:760px\)\{[\s\S]*?\.view:not\(\[data-view="home"\]\) > \.page-heading > h1 \{[\s\S]*?41\.328125px/,
+    "mobile heading preserves the desktop Y coordinate despite its 3px shorter header variable");
+  assert.match(wallpapers,/--workspace-header-height:66px/);
+  assert.match(wallpapers,/@media \(max-width:760px\) \{\s*:root \{--workspace-header-height:63px/);
   assert.doesNotMatch(css,/\.page-heading > \.lead\s*\{[^}]*top:/);
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
