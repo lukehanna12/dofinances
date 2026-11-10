@@ -13,8 +13,8 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     assert.ok(html.includes('<section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">\\n          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>'.replace('\\n','\n')),
       "Diagnostics title must use the same shared heading position as other screens");
     const diagnostics=html.slice(html.indexOf('data-view="colosseum/diagnostics"'));
-    assert.ok(diagnostics.indexOf('aria-labelledby="dg-overview-title"')<diagnostics.indexOf('aria-labelledby="dg-clock-title"'),
-      "health overview must come before the clocks");
+    assert.ok(diagnostics.indexOf('aria-labelledby="dg-clock-title"')<diagnostics.indexOf('aria-labelledby="dg-overview-title"'),
+      "restored clock section must precede quota overview");
 
     for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-localtime","dg-utctime","dg-quotas","dg-workers","dg-local"])
       assert.ok(html.includes('id="'+id+'"'),path+" missing "+id);
@@ -22,8 +22,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
   }
   const css=await read("../sites/_apex/app/assets/diagnostics.css");
   assert.match(css,/prefers-reduced-motion/);
-  assert.ok(css.includes("font-weight:740;"),"the native title uses a confident weight");
-  assert.ok(css.includes("--dg-accent:#a9b8f5;"),"restrained accent is locally scoped");
+  assert.doesNotMatch(css,/font-weight:740;/,"no Diagnostics-specific override of the native page title");
   assert.match(css,/data-view="colosseum\/diagnostics"/);
 });
 test("Diagnostics initializes an on-demand, owner-gated system.status client",async()=>{
