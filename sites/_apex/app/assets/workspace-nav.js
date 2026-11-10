@@ -241,7 +241,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     }
-    doc.title=meta.label+" · "+(meta.project?"Colosseum · ":"")+"DoFinances";
+    doc.title=meta.label+" · "+(meta.projectKey==="colosseum"?"Colosseum · ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader · ":"")+"DoFinances";
     // One Settings DOM view for both Workspace and every project.
     const visibleView=route==="colosseum/settings"?"settings":route;
     for(const view of views)view.hidden=view.dataset.view!==visibleView;
