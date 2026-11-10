@@ -240,7 +240,7 @@ try{
   assert.equal(header.gripCursor,"ew-resize","Visible grip must have two-way resize cursor");
   assert.notEqual(header.gripDisplay,"none","Resize grip should be visible in expanded compact rail");
   assert.ok(Math.abs(header.gripCenter-header.sidebarRight)<2,
-    "The 28px hover target must straddle the actual sidebar edge");
+    "The 28px hover target must straddle the actual sidebar edge: "+JSON.stringify(header));
   await move(header.gripCenter,header.gripY);
   assert.equal(await evaluate('document.querySelector(".sidebar-interaction-tooltip")'),null,
     "no custom resize tooltip should be mounted");
