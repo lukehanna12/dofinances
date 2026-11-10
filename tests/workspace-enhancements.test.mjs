@@ -62,6 +62,7 @@ test("Studio preview mirrors production navigation without enabling account muta
   assert.doesNotMatch(studio,/src="\/app\/assets\/dashboard.js"/);
   assert.match(bootstrap,/global-menu-toggle/);
   assert.match(bootstrap,/global-search-toggle/);
+  assert.match(bootstrap,/sidebar-rail-expand-target/);
 });
 
 test("Studio sidebar uses the production's immediate active-row selection without delayed geometry",()=>{
