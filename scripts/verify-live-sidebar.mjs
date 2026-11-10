@@ -105,6 +105,33 @@ try{
   assert.ok(compactTopbar.viewport-compactTopbar.actionsRight<50,
     "Search and Menu must anchor the right: "+JSON.stringify(compactTopbar));
 
+  // Public Studio preview uses the same navigation and showcase markup as /app.
+  // Check the actual route and responsive geometry, without invoking the private API.
+  await evaluate('window.location.hash="#apple-hig-reader/overview";true');
+  await until('document.querySelector(\'[data-view="apple-hig-reader/overview"]\')?.hidden===false',
+    "Apple HIG Reader project route");
+  const higPage=await evaluate(String.raw`(()=>{
+    const view=document.querySelector('[data-view="apple-hig-reader/overview"]');
+    const story=view.querySelector(".hig-showcase-story");
+    const consoleCard=view.querySelector(".hig-showcase-console");
+    const rect=consoleCard.getBoundingClientRect();
+    return {heading:view.querySelector(".page-heading > h1")?.textContent,
+      story:story?.textContent,consoleVisible:rect.width>200&&rect.height>200,
+      viewWidth:document.documentElement.clientWidth,consoleLeft:rect.left,consoleRight:rect.right,
+      colosseumNavHidden:document.getElementById("project-navigation").hidden,
+      higNavVisible:!document.getElementById("apple-hig-navigation").hidden};
+  })()`);
+  assert.equal(higPage.heading,"Apple HIG Reader","native project title unchanged");
+  assert.ok(higPage.story.includes("GOOGLE APPS SCRIPT"),"showcase must foreground the authored technology");
+  assert.ok(higPage.consoleVisible,"API showcase console must render");
+  assert.ok(higPage.consoleLeft>=0&&higPage.consoleRight<higPage.viewWidth+3,
+    "showcase must fit the compact content area: "+JSON.stringify(higPage));
+  assert.equal(higPage.colosseumNavHidden,true,"the separate project must not activate Colosseum sidebar");
+  assert.equal(higPage.higNavVisible,true,"Apple HIG Reader sidebar context must activate");
+  await evaluate('window.location.hash="#home";true');
+  await until('document.querySelector(\'[data-view="home"]\')?.hidden===false',"Home route restored");
+
+
   const blank=await evaluate(String.raw`(()=>{
     const sidebar=document.getElementById("workspace-sidebar");
     const r=sidebar.getBoundingClientRect();
