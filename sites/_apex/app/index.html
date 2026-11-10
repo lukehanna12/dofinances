@@ -338,24 +338,24 @@
               <div>
                 <p class="pv-kicker">COLOSSEUM / CONNECTIONS &amp; ACCESS</p>
                 <h2>One place for your providers.</h2>
-                <p>Manage federated connections and inspect the local provider gateway. Connection approval and local execution permissions are separate, enforced authorities.</p>
+                <p>Configure hosted connections, approve individual MCP tools, and regulate independently registered Mac providers—all against the actual authorization systems.</p>
               </div>
-              <a class="pv-portal-link" href="https://router.colosseum.workers.dev/account/connections" target="_blank" rel="noopener noreferrer">Open connection manager <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
+              <span class="pv-portal-link" aria-label="Owner-secured management">Owner-secured control plane</span>
             </div>
             <div class="pv-toolbar">
               <div class="pv-switch" role="tablist" aria-label="Provider category">
-                <button id="pv-federated-tab" class="pv-mode active" type="button" role="tab" aria-selected="true" aria-controls="pv-browser">Federated <span class="pv-mode-count" id="pv-cloud-count">13 registered</span></button>
+                <button id="pv-federated-tab" class="pv-mode active" type="button" role="tab" aria-selected="true" aria-controls="pv-browser">Federated <span class="pv-mode-count" id="pv-cloud-count">Not checked</span></button>
                 <button id="pv-local-tab" class="pv-mode" type="button" role="tab" aria-selected="false" aria-controls="pv-browser">Local <span class="pv-mode-count" id="pv-local-count">Not checked</span></button>
               </div>
               <button id="pv-refresh" class="pv-refresh" type="button"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-refresh"></use></svg><span>Check live</span></button>
             </div>
-            <p class="pv-status" id="pv-status" role="status" aria-live="polite">Federated connections are managed in the Colosseum account portal. The local inventory is collected on demand.</p>
+            <p class="pv-status" id="pv-status" role="status" aria-live="polite">Retrieving current account connections and effective local permissions…</p>
             <div class="pv-browser" id="pv-browser" role="tabpanel" aria-labelledby="pv-federated-tab">
               <aside class="pv-index" aria-label="Provider selector">
-                <div class="pv-index-heading"><span id="pv-index-title">Registered federated sources</span><span id="pv-index-total">13</span></div>
+                <div class="pv-index-heading"><span id="pv-index-title">Federated connections</span><span id="pv-index-total">—</span></div>
                 <label class="pv-search-field"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-search"></use></svg><input type="search" id="pv-search" aria-label="Filter providers" autocomplete="off" placeholder="Search providers"></label>
                 <div class="pv-provider-list" id="pv-list">
-                  <button type="button" class="pv-provider-item is-active" aria-pressed="true"><span class="pv-provider-icon">P</span><span><strong>Penpot MCP</strong><small>Federated MCP · Select to manage</small></span><span class="pv-chevron" aria-hidden="true">›</span></button>
+                  <p class="pv-empty-list">Checking registered providers…</p>
                 </div>
               </aside>
               <div class="pv-inspector" id="pv-detail" aria-label="Selected provider details">
@@ -363,8 +363,8 @@
               </div>
             </div>
             <div class="pv-boundary">
-              <div><strong>Federated access</strong><p>Credentials and tool approvals are handled by the authenticated Colosseum account portal. Connection status is not inferred from catalog registration.</p></div>
-              <div><strong>Local access</strong><p>Independent provider profiles set the local ceiling. Google Sheets still governs filesystem and script execution. This screen does not silently override either.</p></div>
+              <div><strong>Federated access</strong><p>Configure encrypted credentials, verify connections, authorize OAuth, and grant or revoke individual tools here. Changes are enforced by the existing Colosseum vault and router.</p></div>
+              <div><strong>Local access</strong><p>Review, confirm, and apply revision-bound provider profiles on the Mac. Google Sheets remains authoritative for filesystem and script-execution restrictions.</p></div>
             </div>
           </div>
         </section>
