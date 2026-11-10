@@ -131,6 +131,33 @@ try{
   await evaluate('window.location.hash="#home";true');
   await until('document.querySelector(\'[data-view="home"]\')?.hidden===false',"Home route restored");
 
+  // Live Studio visual geometry for 0001c8-inspired Providers, no credential calls.
+  await evaluate('window.location.hash="#colosseum/providers";true');
+  await until('document.querySelector(\'[data-view="colosseum/providers"]\')?.hidden===false',
+    "Providers workspace route");
+  const pvGeometry=await evaluate(String.raw`(()=>{
+    const view=document.querySelector('[data-view="colosseum/providers"]');
+    const index=view.querySelector(".pv-index").getBoundingClientRect();
+    const detail=view.querySelector(".pv-inspector").getBoundingClientRect();
+    const title=view.querySelector(".page-heading > h1");
+    return {title:title?.textContent,outerWidth:document.documentElement.clientWidth,
+      indexWidth:index.width,detailWidth:detail.width,indexRight:index.right,detailLeft:detail.left,
+      detailRight:detail.right,projectNavigation:document.getElementById("project-navigation").hidden,
+      providerCards:document.querySelectorAll("#pv-list .pv-provider-item").length,
+      background:getComputedStyle(view.querySelector(".pv-browser")).display};
+  })()`);
+  assert.equal(pvGeometry.title,"Providers","Canonical Providers title remains intact");
+  assert.equal(pvGeometry.projectNavigation,false,"Colosseum sidebar remains selected");
+  assert.ok(pvGeometry.indexWidth>190&&pvGeometry.detailWidth>200,
+    "Both selector and detail panes must be visible: "+JSON.stringify(pvGeometry));
+  assert.ok(pvGeometry.indexRight<pvGeometry.detailLeft,
+    "Provider list must precede detail pane on tablet: "+JSON.stringify(pvGeometry));
+  assert.ok(pvGeometry.detailRight<=pvGeometry.outerWidth+3,
+    "Provider content must not clip horizontally: "+JSON.stringify(pvGeometry));
+  await evaluate('window.location.hash="#home";true');
+  await until('document.querySelector(\'[data-view="home"]\')?.hidden===false',"Home restored after Providers");
+
+
 
   const blank=await evaluate(String.raw`(()=>{
     const sidebar=document.getElementById("workspace-sidebar");
