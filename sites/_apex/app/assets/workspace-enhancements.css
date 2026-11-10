@@ -408,3 +408,28 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .global-menu-actions{gap:5px}
   .clock-custom-entry{flex-direction:column}
 }
+
+/* Apple HIG Reader project — standalone, scoped page styling.
+ * Reuses the site's canonical page-heading H1 without positional overrides. */
+.view[data-view="projects"] .project-card + .project-card{margin-top:14px}
+.view[data-view="home"] .project-row + .project-row{margin-top:12px}
+.hig-project{max-width:1000px;margin-top:48px;min-width:0}
+.hig-project-lead{max-width:650px;color:var(--ui-secondary);font-size:15px;line-height:1.75;margin:0 0 30px}
+.hig-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.hig-project-panel{display:flex;flex-direction:column;min-width:0;padding:30px;border:1px solid var(--ui-divider);border-radius:17px;background:color-mix(in srgb,var(--ui-elevated) 81%,transparent)}
+.hig-project-kicker{font-size:10px;letter-spacing:.14em;font-weight:630;color:var(--ui-muted);margin-bottom:22px}
+.hig-project-panel h2{font-size:22px;letter-spacing:-.035em;font-weight:630;line-height:1.2;margin:0 0 13px}
+.hig-project-panel p{font-size:13px;line-height:1.7;color:var(--ui-secondary);margin:0;max-width:48ch}
+.hig-project-action{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;margin-top:auto;padding:22px 0 0;color:var(--ui-text);font-size:13px;font-weight:620;text-decoration:none}
+.hig-project-action:hover{color:var(--ui-link);text-decoration:none}
+.hig-project-action .nav-icon{width:16px;height:16px}
+.hig-project-details{border-top:1px solid var(--ui-divider);margin:24px 0 0;padding:12px 0 0}
+.hig-project-details div{display:flex;justify-content:space-between;align-items:baseline;gap:15px;padding:7px 0}
+.hig-project-details dt{font-size:12px;color:var(--ui-muted)}
+.hig-project-details dd{font-size:12px;color:var(--ui-text);font-variant-numeric:tabular-nums;text-align:right;margin:0}
+@media(max-width:750px){
+  .hig-project{margin-top:32px}
+  .hig-project-grid{grid-template-columns:1fr}
+  .hig-project-panel{padding:24px}
+}
+@media(prefers-reduced-motion:reduce){.hig-project-action{transition:none}}
