@@ -13,6 +13,18 @@ test("Account signout moved after MFA into Manage Account and ahead of deletion"
   assert.match(bar,/class="shadcn-breadcrumbs"/);
   assert.doesNotMatch(bar,/Colosseum project workspace|Back to Projects/);
 });
+test("account deletion disclosure has a subtly richer coral tone without changing other destructive UI",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-theme.css");
+  const foundation=read("../sites/_apex/assets/site-foundation.css");
+  assert.match(css,/\\.danger summary \\{color: #ff858c; font-size: 13px; font-weight: 550;\\}/);
+  assert.match(foundation,/--ui-danger: #ff9698;/,"shared destructive action token stays unchanged");
+  assert.match(css,/\\.destructive \\{color: var\\(--ui-danger\\)/,
+    "actual destructive buttons retain their existing appearance");
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    assert.match(html,/<details class="danger">\\s*<summary>Delete my account<\\/summary>/);
+  }
+});
 test("two consistent header heights, viewport layers, and a stable responsive sidebar gap",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const html=read("../sites/_apex/app/index.html");

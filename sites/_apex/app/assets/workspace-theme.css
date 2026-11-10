@@ -385,7 +385,8 @@ input::placeholder {color: var(--ui-muted);}
 .security-setup {margin: 18px 0; padding: 19px; background: var(--ui-surface);}
 .secret {background: var(--ui-surface); color: var(--ui-text); border: 1px solid var(--ui-border); border-radius: 10px; font-size: 12px;}
 .danger {border-top: 1px solid var(--ui-border); margin-top: 25px; padding-top: 18px;}
-.danger summary {color: var(--ui-danger); font-size: 13px; font-weight: 550;}
+/* A modestly richer coral accent for the account-deletion disclosure only. */
+.danger summary {color: #ff858c; font-size: 13px; font-weight: 550;}
 .danger p {color: var(--ui-secondary);}
 #linked-identity-list > div {padding: 10px 0; border-bottom: 1px solid var(--ui-border);}
 #linked-identity-list > div:last-child {border-bottom: 0;}
