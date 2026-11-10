@@ -10,6 +10,7 @@
   --sidebar-expanded-width:260px;
 }
 .global-menu{
+  display:block; /* Prevent broad dashboard.css nav{display:grid} from controlling the top bar. */
   position:fixed;
   inset:0 0 auto;
   height:var(--global-menu-height);
@@ -393,9 +394,13 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .global-menu-links{display:none}
   .global-menu.is-open .global-menu-links{display:flex}
   .global-menu-actions .global-menu-account{display:none}
-  .global-menu-inner{justify-content:flex-end}
+  .global-menu-inner{width:100%;box-sizing:border-box;justify-content:flex-end}
   .global-clock{left:50%;right:auto;transform:translate(-50%,-50%)}
-  .global-menu-actions{margin-left:auto}
+  .global-menu-actions{
+    position:absolute;top:50%;right:clamp(14px,2.1vw,32px);
+    transform:translateY(-50%);
+    margin:0;z-index:2;justify-content:flex-end;
+  }
 }
 @media(max-width:450px){
   .global-clock{gap:6px;font-size:13px}
