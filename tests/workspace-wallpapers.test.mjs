@@ -123,7 +123,9 @@ test("artwork scrolls in document flow, without a fixed bottom overlay",()=>{
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{
   const router=readFileSync(new URL("../edge/router.mjs",import.meta.url),"utf8");
   const wrangler=JSON.parse(readFileSync(new URL("../edge/wrangler.jsonc",import.meta.url),"utf8"));
-  assert.deepEqual(wrangler.services,[{binding:"LIBRARY_III",service:"library-iii"}]);
+  assert.ok(wrangler.services.some(binding=>binding.binding==="LIBRARY_III"&&binding.service==="library-iii"));
+  assert.ok(wrangler.services.some(binding=>binding.binding==="COLOSSEUM_ROUTER"&&binding.service==="router"));
+  assert.equal(new Set(wrangler.services.map(binding=>binding.binding)).size,wrangler.services.length);
   assert.match(router,/WALLPAPER_ALLOWLIST\.get\(key\)/);
   assert.match(router,/library-iii\.internal\/objects\//);
 });
