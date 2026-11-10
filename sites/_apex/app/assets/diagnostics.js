@@ -42,15 +42,62 @@ function ring(percent,value,unit){const outer=make("div","dg-ring"),inner=make("
  inner.append(make("strong","",value),make("span","",unit));outer.append(inner);return outer;
 }
 function renderOverview(report){
- const top=clear("dg-top"),w=sectionOf(report,"workers")?.account?.requests,
-   d=sectionOf(report,"d1")?.account,
-   o=sectionOf(report,"durable_objects")?.account;
- top.append(
-   metricCard("Worker requests",w,compact(w?.used),integer(w?.remaining)+" remaining"),
-   metricCard("D1 rows read",d?.rows_read,compact(d?.rows_read?.used),integer(d?.rows_read?.remaining)+" remaining"),
-   metricCard("D1 rows written",d?.rows_written,compact(d?.rows_written?.used),integer(d?.rows_written?.remaining)+" remaining"),
-   metricCard("DO SQLite writes",o?.sqlite_rows_written,compact(o?.sqlite_rows_written?.used),integer(o?.sqlite_rows_written?.remaining)+" remaining")
- );
+ const host=clear("dg-top");
+ host.classList.add("dg-overview-layout");
+ const health=report.status||"unknown";
+ const hero=make("div","dg-overview-hero");
+ hero.dataset.health=health;
+ const head=make("div");
+ const heading=make("div","dg-hero-kicker","System overview");
+ const mark=make("span","dg-health-mark");
+ mark.setAttribute("aria-hidden","true");
+ mark.textContent=health==="healthy"?"✓":health==="degraded"?"!":health==="unhealthy"?"×":"·";
+ const label=health==="healthy"?"Systems reporting normally":
+   health==="degraded"?"Some readings need attention":
+   health==="unhealthy"?"A system needs attention":"Status unavailable";
+ const title=make("div","dg-hero-title",label);
+ const issues=Array.isArray(report.issues)?report.issues.length:0;
+ const sub=make("p","dg-hero-copy",
+   health==="healthy"?"The requested checks completed without reporting issues. Explore resource pressure and local telemetry below.":
+   issues?issues+" collection issue"+(issues===1?"":"s")+" reported. Review the details before interpreting missing measurements.":
+   "One or more selected services returned a degraded or incomplete diagnostic result.");
+ head.append(heading,mark,title,sub);
+ const footer=make("div","dg-hero-footer");
+ const labels=Array.isArray(report.available_sections)?report.available_sections.length:
+   Object.keys(report.sections||{}).filter(k=>report.sections[k]?.status!=="unavailable").length;
+ const count=make("span","",String(labels)+" sections available");
+ const mode=make("span","","Read-only · on demand");
+ footer.append(count,mode);
+ hero.append(head,footer);
+ const watch=make("div","dg-capacity");
+ const caphead=make("div","dg-capacity-title");
+ caphead.append(make("strong","","Capacity watch"),make("span","","Highest daily utilization"));
+ watch.append(caphead);
+ const metrics=[
+  ["Worker requests",report.sections?.workers?.account?.requests],
+  ["KV reads",report.sections?.kv?.account?.reads],
+  ["KV writes",report.sections?.kv?.account?.writes],
+  ["KV deletes",report.sections?.kv?.account?.deletes],
+  ["KV lists",report.sections?.kv?.account?.lists],
+  ["D1 rows read",report.sections?.d1?.account?.rows_read],
+  ["D1 rows written",report.sections?.d1?.account?.rows_written],
+  ["Durable Object requests",report.sections?.durable_objects?.account?.requests],
+  ["DO SQLite rows read",report.sections?.durable_objects?.account?.sqlite_rows_read],
+  ["DO SQLite rows written",report.sections?.durable_objects?.account?.sqlite_rows_written]
+ ].filter(([,q])=>typeof q?.used==="number"&&typeof q?.limit==="number"&&q.limit>0)
+  .map(([name,q])=>({name,q,pct:100*q.used/q.limit}))
+  .sort((a,b)=>b.pct-a.pct)
+  .slice(0,3);
+ if(!metrics.length)watch.append(make("div","dg-empty","No daily quota readings in this report."));
+ for(const item of metrics){
+   const row=make("div","dg-watch-row");
+   row.dataset.level=item.pct>=90?"critical":item.pct>=75?"warning":"normal";
+   row.append(make("span","dg-watch-row-name",item.name),
+     make("strong","dg-watch-row-number",quantity(item.pct,1)+"%"),
+     progress(item.q));
+   watch.append(row);
+ }
+ host.append(hero,watch);
 }
 function renderQuotas(report){
  const host=clear("dg-quotas"),w=sectionOf(report,"workers"),kv=sectionOf(report,"kv"),
