@@ -4,83 +4,71 @@ import {readFileSync} from "node:fs";
 import {initWorkspaceScroll} from "../sites/_apex/app/assets/workspace-scroll.js";
 const read=path=>readFileSync(new URL(path,import.meta.url),"utf8");
 
-test("production app and Studio share stationary shell and copyright band",()=>{
-  for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
-    const html=read(file);
+test("production and Studio use one document-scrolling page beneath sticky navigation",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-wallpapers.css");
+  const enhanced=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const theme=read("../sites/_apex/app/assets/workspace-theme.css");
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
     assert.match(html,/<header class="topbar">/);
     assert.match(html,/id="workspace-scroll"/);
-    assert.match(html,/class="workspace-scroll-end"/);
+    assert.doesNotMatch(html,/workspace-scroll-end|workspace-home-art-bottom/);
     assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
-    assert.doesNotMatch(html,/class="eyebrow"/);
+    assert.ok(html.indexOf('id="workspace-scroll"')<html.indexOf('id="workspace-footer"'));
+    assert.ok(html.indexOf('id="workspace-footer"')<html.lastIndexOf('</div>'));
     assert.equal((html.match(/data-view="settings"/g)||[]).length,1);
-    assert.doesNotMatch(html,/data-view="colosseum\/settings"/);
     assert.equal((html.match(/class="workspace-footer"/g)||[]).length,1);
   }
-});
-
-test("workspace dark gray, clean image edges, full-width header shader and stationary navigation",()=>{
-  const css=read("../sites/_apex/app/assets/workspace-wallpapers.css");
-  const theme=read("../sites/_apex/app/assets/workspace-theme.css");
-  const foundation=read("../sites/_apex/assets/site-foundation.css");
-  assert.match(foundation,/--ui-canvas:\s*#171717/);
-  assert.match(theme,/font-size: clamp\(36px, 4vw, 48px\)/);
   assert.match(css,/--workspace-banner-height:202\.65625px/);
   assert.match(css,/--workspace-banner-height:538px/);
   assert.match(css,/--workspace-top-overpull:96px/);
-  assert.match(css,/position:fixed;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
-  assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
-  assert.doesNotMatch(css,/--workspace-seam/);
-  assert.doesNotMatch(css,/border-(?:top|bottom):1px solid/);
-  assert.match(css,/background-position:center,center bottom/);
-  // Home photo's side mask is intentional; the toolbar shader itself is unmasked.
+  assert.match(css,/--ui-canvas,#171717/);
+  assert.match(css,/overscroll-behavior-y:none/);
+  assert.match(css,/position:absolute;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
+  assert.doesNotMatch(css,/body:has\(> #workspace-shell\)::after|workspace-at-end|background-position:center,center bottom/);
+  assert.match(css,/\.workspace-scroll \{[\s\S]*?overflow:visible;/);
+  assert.match(css,/\.topbar \{\s*position:sticky;/);
+  assert.match(css,/\.main,\s*body:has\(> #workspace-shell\.liquid-glass-preview\) \.main \{[\s\S]*?overflow:visible;/);
+  assert.match(css,/\.workspace-footer \{[\s\S]*?position:relative;/);
+  assert.doesNotMatch(css,/\.workspace-footer \{transition:opacity|opacity:0/);
+  assert.match(theme,/\.sidebar \{[\s\S]*?position: sticky;/);
+  assert.match(enhanced,/--global-menu-height:44px/);
+  assert.match(enhanced,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
   const toolbar=css.match(/> \.workspace-topbar-backdrop \{([^}]*)\}/)?.[1]||"";
-  assert.match(css,/> \.workspace-topbar-backdrop \{/);
   assert.match(toolbar,/position:fixed/);
-  assert.match(toolbar,/inset:0 0 auto/);
+  assert.match(toolbar,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
   assert.doesNotMatch(toolbar,/mask-image|transform/);
-  assert.match(css,/\.topbar::before \{content:none\}/);
-  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
-    const html=read(path);
-    const glass=html.indexOf('class="workspace-topbar-backdrop"');
-    const shell=html.indexOf('id="workspace-shell"');
-    assert.ok(glass>0&&glass<shell,"blur must be outside animated main and shell");
-    assert.match(html,/class="workspace-home-art workspace-home-art-top"/);
-    assert.match(html,/class="workspace-home-art workspace-home-art-bottom"/);
-  }
-  assert.doesNotMatch(css,/--workspace-sidebar-fade-width/);
-  assert.match(css,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
-  assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
-  assert.match(css,/\.main,\s*body:has\(> #workspace-shell\.liquid-glass-preview\) \.main \{[\s\S]*?display:flex;[\s\S]*?overflow:hidden;/);
 });
-
-test("only content scrolls: bottom overpull prevented while top overpull remains possible",()=>{
-  const states=new Set();
-  const events={};
-  const scroller={
-    scrollTop:0,scrollHeight:1200,clientHeight:600,
-    addEventListener:(key,fn)=>events[key]=fn,
-    scrollTo:({top})=>{scroller.scrollTop=top}
-  };
-  const body={classList:{toggle:(x,flag)=>flag?states.add(x):states.delete(x)}};
-  const doc={body,getElementById:(id)=>id==="workspace-scroll"?scroller:null};
-  const win={addEventListener:()=>{}};
+test("root scrolling guards top, bottom, and right edges while preserving back swipe",()=>{
+  const events={};let cancelled=0,scrollCalls=0;
+  const root={scrollTop:0,scrollLeft:0,scrollHeight:1600,clientHeight:700,scrollWidth:900,clientWidth:900};
+  const doc={scrollingElement:root};
+  const win={addEventListener:(name,fn)=>events[name]=fn,scrollTo:({top})=>{scrollCalls++;root.scrollTop=top}};
   const controls=initWorkspaceScroll(doc,win);
-  assert.equal(states.has("workspace-at-end"),false);
-  let cancelled=0;
-  const event=(dy)=>({deltaY:dy,cancelable:true,preventDefault:()=>cancelled++});
-  events.wheel(event(-40));
-  assert.equal(cancelled,0);
-  scroller.scrollTop=600;
-  events.scroll();
-  assert.equal(states.has("workspace-at-end"),true);
-  events.wheel(event(80));
-  assert.equal(cancelled,1);
-  events.wheel(event(-80));
-  assert.equal(cancelled,1);
-  events.touchstart({touches:[{clientY:100}]});
-  events.touchmove({touches:[{clientY:70}],cancelable:true,preventDefault:()=>cancelled++});
-  assert.equal(cancelled,2);
+  const wheel=(deltaY,deltaX=0)=>({deltaX,deltaY,cancelable:true,preventDefault:()=>cancelled++});
+  events.wheel(wheel(-25));assert.equal(cancelled,1,"top upward overpull blocked");
+  events.wheel(wheel(25));assert.equal(cancelled,1,"normal downward scrolling allowed");
+  root.scrollTop=450;
+  events.wheel(wheel(-25));events.wheel(wheel(25));
+  assert.equal(cancelled,1,"interior scrolling must not be blocked");
+  root.scrollTop=900;
+  events.wheel(wheel(25));assert.equal(cancelled,2,"bottom overpull blocked");
+  events.wheel(wheel(-25));assert.equal(cancelled,2,"normal upward scrolling allowed");
+  events.wheel(wheel(0,35));assert.equal(cancelled,3,"rightward overflow blocked");
+  events.wheel(wheel(0,-35));assert.equal(cancelled,3,"back gesture remains available");
+  root.scrollTop=0;
+  const touch=(x,y)=>({touches:[{clientX:x,clientY:y}],cancelable:true,preventDefault:()=>cancelled++});
+  events.touchstart(touch(100,100));events.touchmove(touch(100,110));
+  assert.equal(cancelled,4,"top touch rubber-band blocked");
+  events.touchmove(touch(110,110));
+  assert.equal(cancelled,4,"rightward back swipe allowed");
+  events.touchmove(touch(95,110));
+  assert.equal(cancelled,5,"outward right-edge swipe blocked");
+  events.touchend();
+  root.scrollTop=900;
+  events.touchstart(touch(100,120));events.touchmove(touch(100,80));
+  assert.equal(cancelled,6,"bottom touch rubber-band blocked");
   controls.reset();
-  assert.equal(scroller.scrollTop,0);
-  assert.equal(states.has("workspace-at-end"),false);
+  assert.equal(scrollCalls,1);
+  assert.equal(root.scrollTop,0);
 });

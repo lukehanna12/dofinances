@@ -1,46 +1,51 @@
-/* Workspace-wide wallpaper presentation, shared by the authenticated app and
- * standalone Studio. The sidebar's native optical effect continues to sample
- * the real page backdrop; no wallpaper is copied inside the glass surface. */
+/* Shared workspace artwork and document-flow presentation.
+ * The entire document (wallpaper, neutral canvas, and content) scrolls together.
+ * Only the global bar, sticky inner bar, and sticky glass sidebar stay in place.
+ * All wallpapers remain the actual backdrop sampled by the glass sidebar. */
 :root {
   --workspace-header-height:66px;
-  --workspace-banner-height:202.65625px; /* Non-Home: static D-bubble spacing measured on desktop. */
-  --workspace-top-overpull:96px;
+  --workspace-banner-height:202.65625px; /* Non-Home: retained measured D-bubble spacing. */
+  --workspace-top-overpull:96px; /* Retained image crop/composition, not scroll allowance. */
   --workspace-content-leading:26px;
-  --workspace-bottom-strip-height:calc(var(--workspace-header-height) * .8);
+  --workspace-footer-height:calc(var(--workspace-header-height) * .8);
 }
-/* Desktop measurement: lower bar ends at y=94px; the 34px sidebar D badge
- * occupies y=131.328125..165.328125px. With a 202.65625px image boundary,
- * each gap is 37.328125px. Home originally exposed 168-(44+50)=74px;
- * six times this visible portion is 444px, ending at y=538px.
- * Depend on the displayed view, not asynchronously decoded wallpaper data,
- * to keep strip geometry synchronous with navigation. */
+/* Preserve sixfold exposed Home strip and non-Home measurements from the
+ * previous release. The selected view, not pending image decode, sets geometry. */
 body:has(> #workspace-shell .view[data-view="home"]:not([hidden])) {
   --workspace-banner-height:538px;
 }
-html:has(body > #workspace-shell),
-body:has(> #workspace-shell) {
-  height:100%;
-  overflow:hidden; /* The document itself never rubber-bands. */
+html:has(body > #workspace-shell) {
+  height:auto;
+  min-height:100%;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-x:auto; /* Preserve browser back-swipe on the left. */
+  overscroll-behavior-y:none; /* No top/bottom elastic overscroll. */
   background:var(--ui-canvas,#171717);
 }
 body:has(> #workspace-shell) {
   position:relative;
   isolation:isolate;
-  height:100dvh;
+  height:auto;
+  min-height:100dvh;
+  overflow-x:clip;
+  overscroll-behavior-y:none;
+  background:var(--ui-canvas,#171717);
 }
+/* This artwork is part of the document's scroll coordinate system. Its
+ * viewport-wide extent remains behind the glass sidebar, not clipped to
+ * the content column or independently pinned to the screen. */
 body:has(> #workspace-shell)::before,
 body:has(> #workspace-shell.liquid-glass-preview)::before,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::before,
 body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   content:"";
-  position:fixed;
+  position:absolute;
   inset:calc(-1 * var(--workspace-top-overpull)) 0 auto;
   width:100%;
   height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
   z-index:0;
   pointer-events:none;
-  /* Extra artwork above the viewport remains the SAME source image. When
-     the inner scroller bounces downward it reveals a continuing scene. */
   background-image:
     linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
     var(--workspace-wallpaper-image,none);
@@ -48,40 +53,14 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
   background-position:center,var(--workspace-wallpaper-position,center 46%);
   background-repeat:no-repeat;
 }
-/* A fixed, viewport-wide strip is exposed only when the CONTENT scroller
-   reaches its real end. This does not move on wheel/touch overscroll. */
-body:has(> #workspace-shell)::after,
-body:has(> #workspace-shell.liquid-glass-preview)::after,
-body:has(> #workspace-shell.liquid-glass-preview.glass-scene-neutral)::after,
-body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::after {
-  content:"";
-  position:fixed;
-  inset:auto 0 0;
-  height:var(--workspace-bottom-strip-height);
-  width:100%;
-  z-index:0;
-  pointer-events:none;
-  background-image:
-    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
-    var(--workspace-wallpaper-image,none);
-  background-size:cover,cover;
-  background-position:center,center bottom;
-  background-repeat:no-repeat;
-  opacity:0;
-}
-body.workspace-at-end:has(> #workspace-shell)::after {opacity:1}
-body:has(> #workspace-shell)::after {transition:opacity 180ms ease-out;}
-
-/* Home uses the user's higher-resolution 1280 x 854 photograph, served
- * as a Git-managed Cloudflare Pages asset instead of the previous 976px image.
- * Center its photographic composition within the soft side mask. */
-body[data-wallpaper-route="home"]::before,
-body[data-wallpaper-route="home"]::after {
+/* Home keeps the original soft side fade and its higher-resolution photograph.
+ * Both backdrop and unblurred foreground now scroll with the page. */
+body[data-wallpaper-route="home"]::before {
   filter:blur(10px);
   clip-path:inset(0);
 }
 body[data-wallpaper-route="home"] > .workspace-home-art {
-  position:fixed;
+  position:absolute;
   left:50%;
   width:min(100%,1100px);
   z-index:0;
@@ -100,39 +79,32 @@ body[data-wallpaper-route="home"] > .workspace-home-art-top {
   height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
   background-position:center,var(--workspace-wallpaper-position,center 46%);
 }
-body[data-wallpaper-route="home"] > .workspace-home-art-bottom {
-  bottom:0;
-  height:var(--workspace-bottom-strip-height);
-  background-position:center,center bottom;
-  opacity:0;
-}
-body[data-wallpaper-route="home"].workspace-at-end > .workspace-home-art-bottom {opacity:1}
-body[data-wallpaper-route="home"] > .workspace-home-art-bottom {transition:opacity 180ms ease-out;}
 @media (max-width:1100px) {
-  body[data-wallpaper-route="home"]::before,
-  body[data-wallpaper-route="home"]::after {filter:none}
+  body[data-wallpaper-route="home"]::before {filter:none}
   body[data-wallpaper-route="home"] > .workspace-home-art {
     -webkit-mask-image:none;
     mask-image:none;
   }
 }
+/* Root document is the sole page scroller. Sticky bars/rail keep their
+ * existing geometry; main views and grey canvas advance with the artwork. */
 body:has(> #workspace-shell) .shell {
-  height:100dvh;
-  min-height:0;
+  height:auto;
+  min-height:100dvh;
   background:transparent;
 }
 body:has(> #workspace-shell) .main,
 body:has(> #workspace-shell.liquid-glass-preview) .main {
   display:flex;
   flex-direction:column;
-  height:100dvh;
-  min-height:0;
-  overflow:hidden;
+  height:auto;
+  min-height:calc(100dvh - var(--global-menu-height,44px));
+  overflow:visible;
   background:transparent;
 }
 body:has(> #workspace-shell) .topbar {
-  position:relative;
-  top:auto;
+  position:sticky;
+  top:var(--global-menu-height,44px);
   flex:0 0 var(--workspace-header-height);
   height:var(--workspace-header-height);
   min-height:var(--workspace-header-height);
@@ -140,8 +112,8 @@ body:has(> #workspace-shell) .topbar {
   border:0;
   isolation:isolate;
 }
-/* Fixed descendants of the animated main column follow its transform.
- * The actual frosted plane lives at body level and stays viewport anchored. */
+/* Leave the header's existing viewport-fixed frosting (not its content) in
+ * place, spanning the full width behind both the sidebar and main column. */
 body:has(> #workspace-shell) .topbar::before {content:none}
 body:has(> #workspace-shell) > .workspace-topbar-backdrop {
   position:fixed;
@@ -155,16 +127,12 @@ body:has(> #workspace-shell) > .workspace-topbar-backdrop {
   backdrop-filter:blur(18px) saturate(120%);
 }
 body:has(> #workspace-shell) .workspace-scroll {
-  flex:1 1 auto;
+  flex:1 0 auto;
   min-height:0;
   width:100%;
   display:flex;
   flex-direction:column;
-  overflow-x:hidden;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  overscroll-behavior-y:contain; /* Allow top elastic pull, never chain to body. */
-  scrollbar-gutter:stable;
+  overflow:visible;
   scroll-behavior:auto;
   background:transparent;
 }
@@ -174,22 +142,18 @@ body:has(> #workspace-shell) .content {
   width:100%;
   max-width:1110px;
   margin-inline:auto;
-  min-height:calc(100% - var(--workspace-bottom-strip-height));
+  min-height:calc(100dvh - var(--global-menu-height,44px) - var(--workspace-header-height) - var(--workspace-footer-height));
   background:transparent;
   padding-top:calc(var(--workspace-banner-height) - var(--workspace-header-height) + var(--workspace-content-leading));
   padding-bottom:36px;
 }
-body:has(> #workspace-shell) .workspace-scroll-end {
-  flex:none;
-  height:var(--workspace-bottom-strip-height);
-  pointer-events:none;
-}
-/* Footer copy stays attached to the viewport-wide final image slice. */
+/* Copyright is a normal last element in the scrolling document, not an
+ * independently revealed image strip or a fixed/fading overlay. */
 body:has(> #workspace-shell) .workspace-footer {
-  position:fixed;
-  inset:auto 0 0;
-  z-index:2;
-  height:var(--workspace-bottom-strip-height);
+  position:relative;
+  flex:0 0 var(--workspace-footer-height);
+  width:100%;
+  height:var(--workspace-footer-height);
   display:flex;
   align-items:center;
   justify-content:flex-end;
@@ -199,10 +163,7 @@ body:has(> #workspace-shell) .workspace-footer {
   font:500 12px/1.3 var(--ui-font-sans,system-ui);
   letter-spacing:.01em;
   text-shadow:0 1px 8px rgba(16,17,18,.36);
-  opacity:0;
 }
-body.workspace-at-end:has(> #workspace-shell) .workspace-footer {opacity:1}
-body:has(> #workspace-shell) .workspace-footer {transition:opacity 180ms ease-out;}
 @media (max-width:760px) {
   :root {--workspace-header-height:63px;--workspace-content-leading:24px}
   body:has(> #workspace-shell) .workspace-footer {padding-inline:19px}

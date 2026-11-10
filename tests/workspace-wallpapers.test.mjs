@@ -108,17 +108,15 @@ test("route changes decode new wallpaper outside the immediate navigation turn a
   assert.equal(writes.filter(([key])=>key==="--workspace-wallpaper-image").length,imageWrites,
     "repeated route should not dirty the full-width wallpaper layer");
 });
-test("bottom wallpaper is a document-end slice of the image's lower edge",()=>{
+test("artwork scrolls in document flow, without a fixed bottom overlay",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
-  assert.match(css,/--workspace-bottom-strip-height:calc\(var\(--workspace-header-height\) \* \.8\)/);
-  assert.match(css,/height:var\(--workspace-bottom-strip-height\)/);
-  assert.match(css,/background-position:center,center bottom/);
-  assert.match(css,/body:has\(> #workspace-shell\.liquid-glass-preview\)::after/);
-  assert.match(css,/position:fixed;\s*inset:auto 0 0/);
-  assert.doesNotMatch(css,/--workspace-seam/);
-  assert.doesNotMatch(css,/border-(?:top|bottom):1px solid/);
-  assert.doesNotMatch(css,/linear-gradient\(180deg,#000/);
+  assert.match(css,/position:absolute;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
+  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-home-art-top/);
+  assert.match(css,/width:min\(100%,1100px\)/);
+  assert.match(css,/background-position:center,var\(--workspace-wallpaper-position,center 46%\)/);
+  assert.doesNotMatch(css,/workspace-home-art-bottom|workspace-at-end|::after/);
 });
+
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{
   const router=readFileSync(new URL("../edge/router.mjs",import.meta.url),"utf8");
   const wrangler=JSON.parse(readFileSync(new URL("../edge/wrangler.jsonc",import.meta.url),"utf8"));

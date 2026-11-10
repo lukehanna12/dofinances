@@ -193,6 +193,39 @@ try{
   const before=await evaluate('Math.round(document.querySelector(".sidebar").getBoundingClientRect().height)');
   await metrics(900,680);
   await until('Math.round(document.querySelector(".sidebar").getBoundingClientRect().height)<'+String(before-100),"vertical sidebar resizing");
+  // The actual browser must scroll ONE root document: art and content move,
+  // while the two headers and the sidebar remain anchored to the viewport.
+  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="home"]\').hidden && document.scrollingElement.scrollHeight-document.scrollingElement.clientHeight>160',
+    "Home document scroll range");
+  const beforeScroll=await evaluate(String.raw`(()=>{
+    const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+    return {page:document.scrollingElement.scrollTop,
+      global:rect(".global-menu").top,topbar:rect(".topbar").top,
+      sidebar:rect(".sidebar").top,main:rect("#main-content").top,
+      background:getComputedStyle(document.body,"::before").position,
+      footer:getComputedStyle(document.querySelector(".workspace-footer")).position,
+      innerOverflow:getComputedStyle(document.getElementById("workspace-scroll")).overflowY};
+  })()`);
+  assert.equal(beforeScroll.background,"absolute","Wallpapers must follow document scroll");
+  assert.equal(beforeScroll.footer,"relative","Footer must be normal flow, never a fixed fade");
+  assert.equal(beforeScroll.innerOverflow,"visible","Do not create another independent content scroller");
+  await evaluate('window.scrollTo(0,180);true');
+  await until('document.scrollingElement.scrollTop>=150',"root document scroll");
+  const afterScroll=await evaluate(String.raw`(()=>{
+    const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+    return {page:document.scrollingElement.scrollTop,
+      global:rect(".global-menu").top,topbar:rect(".topbar").top,
+      sidebar:rect(".sidebar").top,main:rect("#main-content").top};
+  })()`);
+  const distance=afterScroll.page-beforeScroll.page;
+  assert.ok(Math.abs((beforeScroll.main-afterScroll.main)-distance)<2,
+    "Main content did not scroll with the document: "+JSON.stringify({beforeScroll,afterScroll}));
+  for(const bar of ["global","topbar","sidebar"])
+    assert.ok(Math.abs(afterScroll[bar]-beforeScroll[bar])<2,
+      bar+" moved during page scroll: "+JSON.stringify({beforeScroll,afterScroll}));
+  console.log("PASS: single document scroll, moving wallpaper and content, fixed bars/sidebar, in-flow footer");
+
   console.log("PASS: rail expand cursor, hover tooltip, external drag cursor, no D/toggle overlap, horizontal and vertical resizing");
 } finally {
   try{socket?.close();}catch{}

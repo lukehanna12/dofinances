@@ -1,63 +1,55 @@
-/* Scroll only page content: the topbar and Liquid Glass sidebar are outside
- * this container, so rubber-band movement cannot displace their controls.
- * The top remains elastically scrollable. Only attempts to pull PAST the
- * document's bottom are cancelled (wheel and touch), without scroll traps. */
+/* Keep the browser's root document as the single page scroller so its
+ * artwork, gray background, text, and controls have one scroll coordinate.
+ * The two header bars and Liquid Glass sidebar are sticky/fixed outside the
+ * moving page; never transform them to imitate scrolling.
+ *
+ * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
+ * boundary gestures, including Safari rubber-banding, while deliberately
+ * allowing the left-edge browser-history back gesture (rightward swipe). */
 export function initWorkspaceScroll(doc=document,win=window) {
-  const scroll=doc.getElementById("workspace-scroll");
-  if(!scroll||!doc.body?.classList)return {sync(){},reset(){}};
-  const maxScroll=()=>Math.max(0,scroll.scrollHeight-scroll.clientHeight);
-  const ENTER_END_GAP=1.5,LEAVE_END_GAP=40;
-  const distanceFromEnd=()=>Math.max(0,maxScroll()-scroll.scrollTop);
-  const atEnd=()=>distanceFromEnd()<=ENTER_END_GAP;
-  const syncNow=()=>{
-    // A tiny reverse scroll or rubber-band motion must not remove the photo.
-    const visible=doc.body.classList.contains?.("workspace-at-end")??false;
-    doc.body.classList.toggle("workspace-at-end",
-      distanceFromEnd()<=(visible?LEAVE_END_GAP:ENTER_END_GAP));
-  };
-  let queued=false;
-  const sync=()=>{
-    // Reading scrollHeight immediately after toggling multiple hidden views
-    // forces a costly synchronous layout on every navigation. Measure once
-    // in the next frame, sharing the result with scroll and ResizeObserver.
-    if(typeof win.requestAnimationFrame!=="function"){
-      syncNow();
+  const root=doc.scrollingElement||doc.documentElement;
+  if(!root||typeof win.addEventListener!=="function")return {sync(){},reset(){}};
+  const scrollTop=()=>Math.max(0,root.scrollTop||0);
+  const maxY=()=>Math.max(0,root.scrollHeight-root.clientHeight);
+  const maxX=()=>Math.max(0,(root.scrollWidth||0)-(root.clientWidth||0));
+  const atTop=()=>scrollTop()<=1;
+  const atBottom=()=>scrollTop()>=maxY()-1;
+  const atRight=()=>Math.max(0,root.scrollLeft||0)>=maxX()-1;
+  const shouldIgnore=event=>!!event?.target?.closest?.(".sidebar-navigation");
+  const cancel=event=>{if(event.cancelable)event.preventDefault();};
+  win.addEventListener("wheel",event=>{
+    if(event.ctrlKey||shouldIgnore(event))return;
+    // Do not intercept the rightward swipe that navigates back in history.
+    if(Math.abs(event.deltaX)>Math.abs(event.deltaY)){
+      if(event.deltaX>0&&atRight())cancel(event);
       return;
     }
-    if(queued)return;
-    queued=true;
-    win.requestAnimationFrame(()=>{
-      queued=false;
-      syncNow();
-    });
-  };
-  const reset=()=>{
-    if(scroll.scrollTop>0)scroll.scrollTo?.({top:0,left:0,behavior:"instant"});
-    sync();
-  };
-  scroll.addEventListener("scroll",sync,{passive:true});
-  scroll.addEventListener("wheel",event=>{
-    if(event.deltaY>0&&atEnd()&&event.cancelable)event.preventDefault();
+    if((event.deltaY<0&&atTop())||(event.deltaY>0&&atBottom()))cancel(event);
   },{passive:false});
-  let lastTouchY=null;
-  scroll.addEventListener("touchstart",event=>{
-    lastTouchY=event.touches?.[0]?.clientY??null;
+  let lastTouch=null;
+  win.addEventListener("touchstart",event=>{
+    const touch=event.touches?.[0];
+    lastTouch=touch?{x:touch.clientX,y:touch.clientY}:null;
   },{passive:true});
-  scroll.addEventListener("touchmove",event=>{
-    const y=event.touches?.[0]?.clientY;
-    if(y===undefined)return;
-    if(lastTouchY!==null&&y<lastTouchY&&atEnd()&&event.cancelable)
-      event.preventDefault();
-    lastTouchY=y;
+  win.addEventListener("touchmove",event=>{
+    const touch=event.touches?.[0];
+    if(!touch||!lastTouch)return;
+    const dx=touch.clientX-lastTouch.x,dy=touch.clientY-lastTouch.y;
+    lastTouch={x:touch.clientX,y:touch.clientY};
+    if(shouldIgnore(event))return;
+    if(Math.abs(dx)>Math.abs(dy)){
+      if(dx<0&&atRight())cancel(event); // Right-edge outward pull.
+      return; // Rightward back-swipe on the left remains browser-owned.
+    }
+    if((dy>0&&atTop())||(dy<0&&atBottom()))cancel(event);
   },{passive:false});
-  scroll.addEventListener("touchend",()=>{lastTouchY=null},{passive:true});
-  win.addEventListener?.("resize",sync);
-  const Resize=win.ResizeObserver??(typeof ResizeObserver==="function"?ResizeObserver:null);
-  if(Resize){
-    const observer=new Resize(sync);
-    const content=doc.getElementById("main-content");
-    if(content)observer.observe(content);
-  }
-  sync();
-  return {sync,reset};
+  win.addEventListener("touchend",()=>{lastTouch=null},{passive:true});
+  win.addEventListener("touchcancel",()=>{lastTouch=null},{passive:true});
+  const reset=()=>{
+    if(scrollTop()>0){
+      if(typeof win.scrollTo==="function")win.scrollTo({top:0,left:0,behavior:"instant"});
+      else root.scrollTop=0;
+    }
+  };
+  return {sync(){},reset};
 }

@@ -104,13 +104,12 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   assert.match(nav,/COLLAPSE_DRAG_FRACTION=\.5/);
   assert.match(nav,/rawWidth<minSidebarWidth\*COLLAPSE_DRAG_FRACTION/);
 });
-test("end-of-page image remains visible over small reverse scrolls",()=>{
+test("footer is in normal scroll flow with no end-of-page appearance animation",()=>{
   const scroll=read("../sites/_apex/app/assets/workspace-scroll.js");
   const css=read("../sites/_apex/app/assets/workspace-wallpapers.css");
-  assert.match(scroll,/ENTER_END_GAP=1\.5,LEAVE_END_GAP=40/);
-  assert.match(scroll,/distanceFromEnd\(\)<=\(visible\?LEAVE_END_GAP:ENTER_END_GAP\)/);
-  assert.match(css,/::after \{transition:opacity 180ms ease-out;/);
-  assert.match(css,/\.workspace-footer \{transition:opacity 180ms ease-out;/);
+  assert.doesNotMatch(scroll,/workspace-at-end|ENTER_END_GAP|LEAVE_END_GAP/);
+  assert.doesNotMatch(css,/opacity 180ms ease-out|workspace-at-end|workspace-home-art-bottom/);
+  assert.match(css,/\.workspace-footer \{[\s\S]*?position:relative;/);
 });
 
 test("resize grip is outside clipped sidebar and exposes both hover affordances",()=>{
