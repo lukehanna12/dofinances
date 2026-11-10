@@ -32,6 +32,12 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(css,/\.workspace-footer \{[\s\S]*?position:relative;/);
   assert.doesNotMatch(css,/\.workspace-footer \{transition:opacity|opacity:0/);
   assert.match(theme,/\.sidebar \{[\s\S]*?position: sticky;/);
+  const studioMaterial=read("../studio/sidebar/sidebar-glass.css");
+  assert.doesNotMatch(studioMaterial,/position:fixed;\s*inset:0;/,
+    "Studio must not paint a separate fixed decorative page behind the real wallpaper");
+  assert.match(studioMaterial,/glass-scene-neutral\) \{[\s\S]*?--workspace-wallpaper-image:/);
+  assert.match(studioMaterial,/glass-scene-prism\) \{[\s\S]*?--workspace-wallpaper-image:/);
+  assert.doesNotMatch(studioMaterial,/background:linear-gradient\(90deg,rgba\(7,13,17/);
   assert.match(enhanced,/--global-menu-height:44px/);
   assert.match(enhanced,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
   const toolbar=css.match(/> \.workspace-topbar-backdrop \{([^}]*)\}/)?.[1]||"";
