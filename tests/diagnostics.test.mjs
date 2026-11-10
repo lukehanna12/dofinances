@@ -21,7 +21,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
 
     for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-zone","clock-zone-select","clock-custom-zone"])
       assert.ok(html.includes('id="'+id+'"'),path+" missing "+id);
-    assert.match(html,/\\/app\\/assets\\/diagnostics\\.css/);
+    assert.ok(html.includes('/app/assets/diagnostics.css'));
     assert.doesNotMatch(html, /class="global-brand"|class="global-brand-mark"/,"remove only uppermost DoFinances branding");
     assert.doesNotMatch(html,/data-dg-section value="(?:rate_limiting|static_assets|configuration|api_limits)"/);
     for(const zone of ["local","utc","central","custom"])
