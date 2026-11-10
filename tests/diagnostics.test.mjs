@@ -85,7 +85,7 @@ test("Global clock uses exactly one persisted, validated timezone selection",asy
   initWorkspaceClock(doc,win);
   const select=elements["clock-zone-select"],clock=elements["global-clock"],
     zone=elements["global-clock-zone"],custom=elements["clock-custom-zone"];
-  assert.match(elements["global-clock-time"].textContent,/^\\d{2}:\\d{2}:\\d{2}$/);
+  assert.match(elements["global-clock-time"].textContent,/^\d{2}:\d{2}:\d{2}$/);
   select.value="utc";select.events.change();
   assert.equal(zone.textContent,"UTC");
   select.value="central";select.events.change();
