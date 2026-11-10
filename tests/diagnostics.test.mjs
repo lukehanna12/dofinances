@@ -67,3 +67,37 @@ test("Studio cannot fetch private diagnostics or perform account operations",asy
   assert.doesNotMatch(script,/previewClocks|dg-utctime|dg-localtime/);
   assert.match(script,/single topbar clock/);
 });
+test("Global clock uses exactly one persisted, validated timezone selection",async()=>{
+  const {initWorkspaceClock}=await import("../sites/_apex/app/assets/workspace-nav.js");
+  const elements={};
+  for(const name of ["global-clock","global-clock-time","global-clock-zone","clock-zone-select",
+    "clock-custom-row","clock-custom-zone","clock-custom-apply","clock-settings-feedback"]){
+    const events={},attrs={};
+    elements[name]={events,attrs,dataset:{},value:"",hidden:false,textContent:"",title:"",
+      addEventListener(type,fn){events[type]=fn;},
+      setAttribute(key,value){attrs[key]=value;},removeAttribute(key){delete attrs[key];},
+      focus(){}};
+  }
+  const stored=new Map(),events={};
+  const win={localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},
+    setInterval:()=>1,clearInterval(){},addEventListener:(type,fn)=>events[type]=fn};
+  const doc={getElementById:id=>elements[id]||null};
+  initWorkspaceClock(doc,win);
+  const select=elements["clock-zone-select"],clock=elements["global-clock"],
+    zone=elements["global-clock-zone"],custom=elements["clock-custom-zone"];
+  assert.match(elements["global-clock-time"].textContent,/^\\d{2}:\\d{2}:\\d{2}$/);
+  select.value="utc";select.events.change();
+  assert.equal(zone.textContent,"UTC");
+  select.value="central";select.events.change();
+  assert.equal(clock.title.startsWith("America/Chicago"),true);
+  select.value="custom";select.events.change();
+  assert.equal(elements["clock-custom-row"].hidden,false);
+  custom.value="Invalid/Timezone";elements["clock-custom-apply"].events.click();
+  assert.equal(custom.attrs["aria-invalid"],"true");
+  assert.equal(clock.title.startsWith("America/Chicago"),true,"invalid zones must not take effect");
+  custom.value="Asia/Tokyo";elements["clock-custom-apply"].events.click();
+  assert.equal(clock.title.startsWith("Asia/Tokyo"),true);
+  assert.equal(JSON.parse(stored.get("dofinances.clock.timezone.v1")).mode,"custom");
+  assert.equal(JSON.parse(stored.get("dofinances.clock.timezone.v1")).custom,"Asia/Tokyo");
+  assert.equal(select.value,"custom");
+});
