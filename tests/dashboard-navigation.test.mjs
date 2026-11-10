@@ -263,7 +263,7 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/<a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects"/);
   assert.match(html,/<nav class="shadcn-breadcrumbs" id="breadcrumb"/);
   assert.match(html,/href="#colosseum\/utilities"/);
-  assert.match(html,/aria-label="Utilities" title="Utilities"/);
+  assert.match(html,/aria-label="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
   assert.doesNotMatch(html,/aria-label="Capabilities"/);
   for(const id of ["account-email","account-email-detail","signout","linked-accounts",

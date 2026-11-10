@@ -2,6 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const read=path=>readFileSync(new URL(path,import.meta.url),"utf8");
+test("workspace and Studio controls expose accessible labels without browser-native or custom tooltips",()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    assert.doesNotMatch(html,/ title="/,"native browser hover bubbles should not be emitted");
+    assert.match(html,/id="sidebar-toggle"[^>]*aria-label="Collapse sidebar"/);
+    assert.match(html,/id="sidebar-rail-expand-target"[^>]*aria-label="Expand sidebar"/);
+    assert.match(html,/id="sidebar-resize-handle"[^>]*aria-label="Resize sidebar"/);
+  }
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.doesNotMatch(nav,/sidebar-interaction-tooltip|showHint|hideHint|onRailHover|onGripHover/);
+  assert.doesNotMatch(css,/sidebar-interaction-tooltip/);
+  assert.match(nav,/sidebar\.addEventListener\?\.\("click",expandFromBlank\)/);
+});
 test("Account signout moved after MFA into Manage Account and ahead of deletion",()=>{
   const html=read("../sites/_apex/app/index.html");
   assert.equal((html.match(/id="signout"/g)||[]).length,1);
@@ -57,15 +71,15 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(read("../sites/_apex/app/assets/workspace-wallpapers.css"),/\.topbar::before \{[\s\S]*?z-index:0;/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
 });
-test("mobile drawer clears both bars and hides the desktop rail hover tooltip",()=>{
+test("mobile drawer clears both bars without adding hover tooltips",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");
   const mobile=css.slice(css.indexOf("@media(max-width:760px){"));
   assert.ok(mobile.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));"));
   assert.ok(mobile.includes("height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - 8px);"));
-  assert.ok(mobile.includes(".sidebar-interaction-tooltip{display:none!important;}"));
+  assert.ok(!css.includes(".sidebar-interaction-tooltip"),"no custom tooltip CSS remains");
   assert.ok(mobile.includes(".sidebar-rail-expand-target{display:none!important;}"));
-  assert.ok(nav.includes('if(nowMobile)hideHint();'));
+  assert.ok(!nav.includes("hideHint"),"no unused tooltip hide hooks remain");
   assert.ok(nav.includes('if(railExpandTarget)railExpandTarget.hidden=isMobile()||!effectiveCollapsed;'));
   for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(file);
@@ -155,9 +169,7 @@ test("sidebar spacing and resize grip are symmetric and never light up on hover"
   assert.match(css,/cursor:ew-resize!important;background:transparent!important;box-shadow:none!important/);
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.brand\{transform:none;/);
   assert.match(css,/\.shell\.is-compact-rail\.is-rail-expanded \.sidebar-toggle\{top:auto;right:auto;/);
-  assert.match(nav,/Click to expand sidebar/);
-  assert.match(nav,/Drag to resize • collapse past half minimum width/);
-  assert.match(nav,/collapse past half minimum width/);
+  assert.doesNotMatch(nav,/Click to expand sidebar|Drag to resize • collapse past half minimum width/);
   assert.match(nav,/COLLAPSE_DRAG_FRACTION=\.5/);
   assert.match(nav,/rawWidth<minSidebarWidth\*COLLAPSE_DRAG_FRACTION/);
 });
@@ -169,7 +181,7 @@ test("footer is in normal scroll flow with no end-of-page appearance animation",
   assert.match(css,/\.workspace-footer \{[\s\S]*?position:relative;/);
 });
 
-test("resize grip is outside clipped sidebar and exposes both hover affordances",()=>{
+test("resize grip is outside clipped sidebar and stays draggable without hover prompts",()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
     const asideEnd=html.indexOf("</aside>");
@@ -183,16 +195,16 @@ test("resize grip is outside clipped sidebar and exposes both hover affordances"
   assert.match(css,/cursor:ew-resize!important;touch-action:none/);
   assert.match(css,/\.shell\.is-collapsed \.sidebar \*\{cursor:e-resize!important;/);
   assert.match(css,/grid-template-columns:minmax\(0,1fr\) 34px/);
-  assert.match(js,/pointerover",onRailHover/);
-  assert.match(js,/resizeHandle\.addEventListener\("pointerenter",onGripHover/);
-  assert.match(js,/else onGripHover\(event\)/);
+  assert.doesNotMatch(js,/onRailHover|onGripHover|sidebar-interaction-tooltip/);
+  assert.match(js,/resizeHandle\.addEventListener\("pointermove",onMove\)/);
 });
 
-test("blank rail expands from a dedicated pointer region and icons use centered geometry",()=>{
+test("blank rail expands from a dedicated pointer region without hover tooltips",()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
     assert.match(html,/id="sidebar-rail-expand-target"/);
-    assert.match(html,/aria-label="Expand sidebar" title="Click to expand sidebar"/);
+    assert.match(html,/aria-label="Expand sidebar"/);
+    assert.doesNotMatch(html,/ title="/,"do not show browser-native title popups");
   }
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");

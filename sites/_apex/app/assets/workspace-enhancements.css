@@ -247,13 +247,6 @@ body:has(> #workspace-shell) .content{
     -webkit-backdrop-filter:blur(var(--oracle-backdrop-blur))!important;
     backdrop-filter:blur(var(--oracle-backdrop-blur))!important;
   }
-  /* Pointer cue floats above the page instead of brightening the glass. */
-  .sidebar-interaction-tooltip{position:fixed;z-index:100;pointer-events:none;opacity:0;
-    padding:6px 10px;border-radius:7px;background:rgba(36,36,39,.97);
-    border:1px solid rgba(255,255,255,.18);color:#f6f6f7;
-    font:500 12px/1.25 var(--ui-font-sans,system-ui);white-space:nowrap;
-    box-shadow:0 6px 18px rgba(0,0,0,.22);}
-  .sidebar-interaction-tooltip[data-visible="true"]{opacity:1;}
   .shell.is-rail-expanded .nav-link{
     justify-content:flex-start;padding:9px 11px;gap:11px;
   }
@@ -294,9 +287,6 @@ body:has(> #workspace-shell) .content{
     width:274px!important;
     height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - 8px);
   }
-  /* Desktop hover tooltip is still appended to body on mobile. Without
-     its desktop-only position styles it becomes a visible footer line. */
-  .sidebar-interaction-tooltip{display:none!important;}
   .shell > .sidebar-resize-handle{display:none!important;}
   .shell.liquid-glass-preview .sidebar-rail-expand-target{display:none!important;}
   /* Mobile drawer is always fully laid out regardless of desktop preference. */

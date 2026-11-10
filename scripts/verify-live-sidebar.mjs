@@ -101,6 +101,8 @@ try{
   })()`);
   assert.ok(blank,"No hit-testable unoccupied rail space found");
   assert.equal(blank.cursor,"e-resize","Empty collapsed rail must show the expand cursor");
+  assert.equal(await evaluate('document.querySelectorAll("[title],.sidebar-interaction-tooltip").length'),0,
+    "no native or custom tooltip should exist in the workspace");
   // The rail's icon and row should both center on the actual pane, not an
   // asymmetrically padded grid track.
   const railAlignment=await evaluate(String.raw`(()=>{
@@ -136,7 +138,8 @@ try{
   const afterLinkCursor=await evaluate(`getComputedStyle(document.elementFromPoint(${blank.x},${blank.y})).cursor`);
   assert.equal(afterLinkCursor,"e-resize",
     "After clicking a link, blank rail space must return to the expand cursor");
-  await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
+  assert.equal(await evaluate('document.querySelector(".sidebar-interaction-tooltip")'),null,
+    "no custom expansion tooltip should be mounted");
   await down(blank.x,blank.y);await up(blank.x,blank.y);
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
@@ -163,7 +166,8 @@ try{
   assert.ok(Math.abs(header.gripCenter-header.sidebarRight)<2,
     "The 28px hover target must straddle the actual sidebar edge");
   await move(header.gripCenter,header.gripY);
-  await until('document.querySelector(".sidebar-interaction-tooltip")?.textContent?.includes("Drag to resize")',"grip hover tooltip");
+  assert.equal(await evaluate('document.querySelector(".sidebar-interaction-tooltip")'),null,
+    "no custom resize tooltip should be mounted");
   const startWidth=await evaluate('Math.round(document.querySelector(".sidebar").getBoundingClientRect().width)');
   await down(header.gripCenter,header.gripY);
   for(let step=1;step<=5;step++){
@@ -359,14 +363,12 @@ try{
       "mobile Settings view at "+mobileWidth);
     const beforeDrawer=await evaluate(String.raw`(()=>{
       const bar=document.querySelector(".topbar").getBoundingClientRect();
-      const hint=document.querySelector(".sidebar-interaction-tooltip");
       return {barBottom:bar.bottom,pageHeight:document.scrollingElement.scrollHeight,
-        tooltipDisplay:hint?getComputedStyle(hint).display:null,
-        tooltipHeight:hint?.getBoundingClientRect().height??0};
+        tooltipCount:document.querySelectorAll(".sidebar-interaction-tooltip").length,
+        nativeTitleCount:document.querySelectorAll("[title]").length};
     })()`);
-    assert.equal(beforeDrawer.tooltipDisplay,"none",
-      "desktop hint exposed at mobile width: "+JSON.stringify(beforeDrawer));
-    assert.equal(beforeDrawer.tooltipHeight,0);
+    assert.equal(beforeDrawer.tooltipCount,0,"no custom tooltip in mobile document");
+    assert.equal(beforeDrawer.nativeTitleCount,0,"no native title attributes in mobile document");
     const mobileButton=await evaluate(String.raw`(()=>{
       const r=document.getElementById("mobile-nav-toggle").getBoundingClientRect();
       return {x:r.left+r.width/2,y:r.top+r.height/2};
@@ -380,12 +382,11 @@ try{
       const pane=document.querySelector(".sidebar"),r=pane.getBoundingClientRect();
       const bar=document.querySelector(".topbar").getBoundingClientRect();
       const probe=document.elementFromPoint(24,(bar.top+bar.bottom)/2);
-      const hint=document.querySelector(".sidebar-interaction-tooltip");
       return {top:r.top,bottom:r.bottom,height:r.height,left:r.left,width:r.width,
         viewportHeight:innerHeight,barBottom:bar.bottom,
         headerHit:!!probe?.closest?.(".topbar"),
         panePosition:getComputedStyle(pane).position,
-        hintDisplay:hint?getComputedStyle(hint).display:null,
+        tooltipCount:document.querySelectorAll(".sidebar-interaction-tooltip").length,
         pageHeight:document.scrollingElement.scrollHeight};
     })()`);
     assert.equal(openDrawer.panePosition,"fixed");
@@ -395,7 +396,7 @@ try{
       "mobile pane extends below viewport: "+JSON.stringify(openDrawer));
     assert.ok(Math.abs(openDrawer.height-(openDrawer.bottom-openDrawer.top))<1);
     assert.equal(openDrawer.headerHit,true,"lower bar no longer hit-testable");
-    assert.equal(openDrawer.hintDisplay,"none");
+    assert.equal(openDrawer.tooltipCount,0,"opening mobile drawer must not create a tooltip");
     assert.equal(openDrawer.pageHeight,beforeDrawer.pageHeight,
       "drawer opening introduced unwanted page height");
     await evaluate('window.scrollTo(0,180);true');
@@ -413,7 +414,7 @@ try{
   await metrics(900,820);
   await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',
     "desktop rail restored");
-  console.log("PASS: mobile drawer clears both bars, retains viewport height and hides desktop hint");
+  console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
   console.log("PASS: all non-Home titles aligned to D bubble; subtitles and Home unaffected");
 
@@ -423,7 +424,7 @@ try{
 
   console.log("PASS: single document scroll, moving wallpaper and content, fixed bars/sidebar, in-flow footer");
 
-  console.log("PASS: rail expand cursor, hover tooltip, external drag cursor, no D/toggle overlap, horizontal and vertical resizing");
+  console.log("PASS: rail expansion and resize cursors, no tooltips, no D/toggle overlap, and drag resizing");
 } finally {
   try{socket?.close();}catch{}
   chrome.kill("SIGKILL");

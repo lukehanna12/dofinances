@@ -169,9 +169,6 @@ export function initWorkspaceNavigation(doc=document,win=window){
     desktopToggle.setAttribute("aria-expanded",String(!effectiveCollapsed));
     desktopToggle.setAttribute("aria-label",isMobile()?"Close navigation":
       effectiveCollapsed?"Expand sidebar":"Collapse sidebar");
-    desktopToggle.title=effectiveCollapsed?"Expand sidebar":"Collapse sidebar";
-    // Never inherit the expansion hint over real navigation links.
-    sidebar.title="";
     if(railExpandTarget)railExpandTarget.hidden=isMobile()||!effectiveCollapsed;
   }
   function closeDrawer(animate=false){
@@ -251,39 +248,8 @@ export function initWorkspaceNavigation(doc=document,win=window){
     try{win.localStorage.setItem(PREFERENCE_KEY,String(collapsed));}catch{}
     updateCollapse();
   });
-  // Distinct hover guidance for empty-rail expansion and edge dragging.
-  // The tooltip is body-mounted and cannot light up the optical glass edge.
-  const hint=typeof doc.createElement==="function"&&doc.body?.append
-    ?doc.createElement("div"):null;
-  if(hint){
-    hint.className="sidebar-interaction-tooltip";
-    hint.setAttribute("role","tooltip");
-    hint.setAttribute("aria-hidden","true");
-    doc.body.append(hint);
-  }
-  const hideHint=()=>{if(hint)hint.dataset.visible="false";};
-  const showHint=(event,message)=>{
-    if(!hint||isMobile())return;
-    if(hint.textContent!==message)hint.textContent=message;
-    const x=Number.isFinite(event.clientX)?event.clientX:0;
-    const y=Number.isFinite(event.clientY)?event.clientY:0;
-    hint.style.left=Math.max(8,Math.min((win.innerWidth||1280)-260,x+14))+"px";
-    hint.style.top=Math.max(8,Math.min((win.innerHeight||800)-40,y+16))+"px";
-    hint.dataset.visible="true";
-  };
+  // Preserve click-to-expand on empty rail pixels without any hover popup.
   const blankSurface=target=>!target?.closest?.('a,button,input,[role="separator"]');
-  if(railExpandTarget)railExpandTarget.title="Click to expand sidebar";
-  const onRailHover=event=>{
-    if(isMobile()){hideHint();return;}
-    if(shell.classList.contains("is-collapsed")&&blankSurface(event.target))
-      showHint(event,"Click to expand sidebar");
-    else hideHint();
-  };
-  // pointerover fires even when the pointer enters a nested empty element;
-  // pointermove tracks the tooltip while the pointer stays in that element.
-  sidebar.addEventListener?.("pointerover",onRailHover,{passive:true});
-  sidebar.addEventListener?.("pointermove",onRailHover,{passive:true});
-  sidebar.addEventListener?.("pointerleave",hideHint);
   const expandFromBlank=event=>{
     if(isMobile()||!shell.classList.contains("is-collapsed")||!blankSurface(event.target))return;
     if(isCompactRail())railExpanded=true;
@@ -291,7 +257,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       collapsed=false;
       try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
     }
-    hideHint();
+
     setSidebarWidth(expandedWidth,true);
     startSidebarMotion("layout");
     updateCollapse();
@@ -319,7 +285,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(isCompactRail())railExpanded=false;
       else collapsed=true;
       try{win.localStorage.setItem(PREFERENCE_KEY,"true");}catch{}
-      hideHint();
+
       startSidebarMotion("layout");
       updateCollapse();
       // Release capture after state is settled. Do not wait for pointerup.
@@ -333,7 +299,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
         return;
       }
       pendingWidth=clampWidth(rawWidth);
-      showHint(event,"Drag to resize • collapse past half minimum width");
+
       if(queued)return;
       queued=true;
       if(typeof win.requestAnimationFrame==="function")win.requestAnimationFrame(paint);
@@ -350,7 +316,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       drag=null;
       queued=false;
       shell.classList.remove("is-sidebar-resizing");
-      hideHint();
+
     };
     resizeHandle.addEventListener("pointerdown",event=>{
       if(isMobile()||shell.classList.contains("is-collapsed"))return;
@@ -360,17 +326,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
       rawWidth=pendingWidth=displayedWidth;
       shell.classList.add("is-sidebar-resizing");
       resizeHandle.setPointerCapture?.(event.pointerId);
-      showHint(event,"Drag to resize • collapse past half minimum width");
+
     });
-    const onGripHover=event=>{
-      if(isMobile()||shell.classList.contains("is-collapsed")){hideHint();return;}
-      if(!drag)showHint(event,"Drag to resize • collapse past half minimum width");
-    };
-    resizeHandle.addEventListener("pointerenter",onGripHover,{passive:true});
-    resizeHandle.addEventListener("pointermove",event=>{
-      if(drag)onMove(event);else onGripHover(event);
-    });
-    resizeHandle.addEventListener("pointerleave",()=>{if(!drag)hideHint();});
+    resizeHandle.addEventListener("pointermove",onMove);
     resizeHandle.addEventListener("pointerup",onEnd);
     resizeHandle.addEventListener("pointercancel",onEnd);
     resizeHandle.addEventListener("lostpointercapture",onEnd);
@@ -469,7 +427,6 @@ export function initWorkspaceNavigation(doc=document,win=window){
     const nowMobile=isMobile();
     const nowCompactRail=isCompactRail();
     if(!nowMobile)setSidebarWidth(expandedWidth,true);
-    if(nowMobile)hideHint();
     if(nowMobile!==wasMobile){
       stopSidebarMotion();
       stopRailEntry();
