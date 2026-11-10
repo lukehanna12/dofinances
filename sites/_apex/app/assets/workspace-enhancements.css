@@ -329,3 +329,67 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .shadcn-breadcrumb-link,.global-menu a,.global-menu-icon{transition:none;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }
+
+/* Global clock — replaces the former brand and its boxed D in the uppermost bar.
+ * Desktop with visible navigation: far left. Smaller widths: precise center.
+ * Only the search and menu controls anchor the right edge. */
+.global-menu-inner{max-width:none;padding-inline:clamp(14px,2.1vw,32px);position:relative}
+.global-menu .global-mobile-toggle{display:grid}
+.global-clock{
+  display:inline-flex;align-items:baseline;gap:9px;flex:none;
+  min-width:119px;white-space:nowrap;
+  color:#f4f4f6;font-size:15px;font-weight:620;line-height:1;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+}
+.global-clock-zone{font-size:10px;color:#a0a0a7;font-weight:550;letter-spacing:.01em}
+.global-menu-links{min-width:0;max-width:810px;margin-inline:auto;justify-content:space-between}
+.global-menu-actions{margin-left:auto;gap:9px}
+.global-menu-actions .global-menu-icon{width:29px;height:30px}
+.global-menu-actions .global-menu-account{margin-right:7px}
+.global-clock:focus-visible{outline:2px solid var(--ui-focus);outline-offset:4px}
+.clock-settings{margin-top:32px;margin-bottom:24px}
+.clock-settings h2{margin:0 0 9px;font-size:18px;font-weight:630}
+.clock-settings .note{font-size:12px;line-height:1.65;color:var(--ui-secondary)}
+.clock-settings-fields{display:grid;gap:9px;max-width:480px;margin-top:20px}
+.clock-settings-fields label{font-size:12px;font-weight:570;color:var(--ui-secondary)}
+.clock-settings-fields select,.clock-custom-entry input{
+  min-height:38px;background:var(--ui-field);border:1px solid var(--ui-border-strong);
+  border-radius:9px;color:var(--ui-text);font-size:12.5px;padding:8px 12px;
+  font-family:inherit;min-width:0;
+}
+.clock-custom-row{display:grid;gap:9px;margin-top:6px}
+.clock-custom-row[hidden]{display:none}
+.clock-custom-entry{display:flex;gap:9px}
+.clock-custom-entry input{flex:1}
+.clock-custom-entry button{padding:8px 15px;border:1px solid var(--ui-border-strong);border-radius:9px}
+.clock-custom-entry input[aria-invalid="true"]{border-color:var(--ui-danger)}
+#clock-settings-feedback{min-height:1.1rem;margin:2px 0 0}
+@media(min-width:1001px){
+  .global-clock{margin-right:clamp(16px,3vw,48px)}
+  .global-menu.is-open .global-menu-links{
+    position:absolute;top:calc(var(--global-menu-height) + 8px);
+    right:clamp(14px,2.1vw,32px);z-index:2;
+    width:225px;max-width:calc(100vw - 28px);
+    display:flex;flex-direction:column;align-items:stretch;
+    margin:0;padding:9px;gap:0;
+    background:rgba(29,30,32,.985);border:1px solid rgba(255,255,255,.17);
+    border-radius:13px;box-shadow:0 16px 44px rgba(0,0,0,.33);
+  }
+  .global-menu.is-open .global-menu-links a{padding:10px 12px;border-radius:8px}
+  .global-menu.is-open .global-menu-links a:hover{background:rgba(255,255,255,.08)}
+}
+@media(max-width:1000px){
+  .global-clock{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    min-width:0;justify-content:center;
+    font-size:14px;pointer-events:auto;
+  }
+  .global-menu-actions{margin-left:auto;z-index:1}
+}
+@media(max-width:450px){
+  .global-clock{gap:6px;font-size:13px}
+  .global-clock-zone{font-size:9px}
+  .global-menu-actions{gap:5px}
+  .clock-custom-entry{flex-direction:column}
+}
