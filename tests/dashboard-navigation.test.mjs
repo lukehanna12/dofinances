@@ -6,6 +6,21 @@ import {MAIN_ROUTES,COLOSSEUM_ROUTES,resolveWorkspaceRoute,workspaceRouteDetails
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
+test("Settings uses the same toothed gear glyph in both workspaces",async()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=await read(path);
+    const start=html.indexOf('<symbol id="icon-settings"');
+    const end=html.indexOf('</symbol>',start);
+    assert.ok(start>=0 && end>start,"Settings symbol must exist");
+    const symbol=html.slice(start,end);
+    assert.ok(symbol.includes('M10 2h4l.7 2.6'),"Settings must be a toothed gear");
+    assert.ok(symbol.includes('<circle cx="12" cy="12" r="3"/>'),"Gear must have a circular center");
+    assert.equal(html.split('<use href="#icon-settings"></use>').length-1,3,
+      "Both Settings navigation links and the Home Settings card share the same gear");
+  }
+});
+
+
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
   assert.deepEqual(COLOSSEUM_ROUTES,["utilities","collections","providers","permissions","diagnostics","settings"]);
