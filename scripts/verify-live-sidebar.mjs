@@ -333,17 +333,22 @@ try{
         const mark=document.querySelector(".sidebar .mark").getBoundingClientRect();
         const view=document.querySelector(".content > .view:not([hidden])");
         const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
-        const subtitle=view.querySelector(".page-heading .lead").getBoundingClientRect();
+        const subtitle=view.querySelector(".page-heading .lead");
         const content=document.getElementById("main-content").getBoundingClientRect();
         return {bubbleCenter:(mark.top+mark.bottom)/2,titleCenter:(h1.top+h1.bottom)/2,
-          subtitleTop:subtitle.top,contentTop:content.top,titleHeight:h1.height,
+          subtitleTop:subtitle?.getBoundingClientRect().top??null,contentTop:content.top,titleHeight:h1.height,
           scrollY:document.scrollingElement.scrollTop};
       })()`);
       assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<0.75,
         "Title isn't centered on the D bubble for "+route+" at "+width+": "+JSON.stringify(heading));
       if(desktopTitleCenter===null)desktopTitleCenter=heading.bubbleCenter;
-      assert.ok(heading.subtitleTop>heading.titleCenter+45,
-        "Subtitle moved upward with the title for "+route+": "+JSON.stringify(heading));
+      if(route.startsWith("colosseum/")&&route!=="colosseum/settings"){
+        assert.equal(heading.subtitleTop,null,
+          "Requested Colosseum page should not show a subtitle: "+route);
+      }else{
+        assert.ok(heading.subtitleTop>heading.titleCenter+45,
+          "Unchanged subtitle moved upward for "+route+": "+JSON.stringify(heading));
+      }
       assert.ok(heading.scrollY<1,"Title navigation should start at document top");
     }
   }
@@ -435,7 +440,7 @@ try{
     "desktop rail restored");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
-  console.log("PASS: all non-Home titles aligned to D-bubble Y on desktop and mobile; subtitles and Home unaffected");
+  console.log("PASS: non-Home titles aligned to D-bubble Y; five Colosseum subtitles absent, other subtitles and Home unchanged");
 
   console.log("PASS: fixed-height sidebar overlaps bottom photo strip without moving or shrinking");
 

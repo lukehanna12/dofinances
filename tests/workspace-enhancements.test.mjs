@@ -42,6 +42,22 @@ test("account deletion disclosure has a subtly richer coral tone without changin
     assert.ok(html.includes('<summary>Delete my account</summary>'));
   }
 });
+test("five Colosseum screens omit their subtitles without changing other page headings",()=>{
+  const removed=["utilities","collections","providers","permissions","diagnostics"];
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    for(const slug of removed){
+      const name=slug[0].toUpperCase()+slug.slice(1);
+      assert.ok(html.includes('<div class="page-heading"><h1 id="project-'+slug+'-title">'+name+'</h1></div>'),
+        slug+" must retain only its heading on "+path);
+      assert.ok(!html.includes('<p class="lead">Colosseum · '+name+'</p>'),
+        slug+" subtitle must be fully removed on "+path);
+    }
+    assert.match(html,/<h1 id="projects-title">Projects<\/h1><p class="lead">/);
+    assert.match(html,/<h1 id="settings-title">Settings<\/h1><p class="lead">/);
+    assert.match(html,/<h1 id="home-title">Your workspace, all in one place\.<\/h1>/);
+  }
+});
 test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
