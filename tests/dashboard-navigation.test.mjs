@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {MAIN_ROUTES,COLOSSEUM_ROUTES,resolveWorkspaceRoute,workspaceRouteDetails,initWorkspaceNavigation}
+import {MAIN_ROUTES,COLOSSEUM_ROUTES,APPLE_HIG_ROUTES,resolveWorkspaceRoute,workspaceRouteDetails,initWorkspaceNavigation}
   from "../sites/_apex/app/assets/workspace-nav.js";
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -41,6 +41,11 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   }
   assert.equal(workspaceRouteDetails("settings").project,false);
   assert.equal(workspaceRouteDetails("colosseum/settings").label,"Settings");
+  assert.deepEqual(APPLE_HIG_ROUTES,["overview"]);
+  assert.equal(resolveWorkspaceRoute("#apple-hig-reader"),"apple-hig-reader/overview");
+  assert.equal(resolveWorkspaceRoute("#apple-hig-reader/overview"),"apple-hig-reader/overview");
+  assert.equal(workspaceRouteDetails("apple-hig-reader/overview").projectKey,"apple-hig-reader");
+  assert.equal(resolveWorkspaceRoute("#apple-hig-reader/missing"),"home");
   assert.equal(resolveWorkspaceRoute("#colosseum/unknown"),"home");
   assert.equal(resolveWorkspaceRoute("#javascript:evil"),"home");
 });
@@ -62,6 +67,9 @@ test("direct nested app paths resolve the same screens as hash navigation",()=>{
   assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/home"),"settings");
   assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"home");
   assert.equal(resolveWorkspaceRoute("","","/app/colosseum/unknown"),"home");
+  assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader"),"apple-hig-reader/overview");
+  assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader/overview"),"apple-hig-reader/overview");
+  assert.equal(resolveWorkspaceRoute("","","/dashboard/apple-hig-reader/overview"),"apple-hig-reader/overview");
 });
 test("reconstruction-inspired adaptive presentation covers all shared workspace views",async()=>{
   const html=await read("../sites/_apex/app/index.html");
@@ -252,11 +260,15 @@ test("dashboard HTML provides every requested view and preserves existing authen
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
   for(const name of COLOSSEUM_ROUTES.filter(name=>name!=="settings"))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
-  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1);
+  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1+APPLE_HIG_ROUTES.length);
   assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
   assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
   assert.match(html,/id="project-navigation"/);
+  assert.match(html,/id="apple-hig-navigation"/);
+  assert.match(html,/data-view="apple-hig-reader\/overview"/);
+  assert.match(html,/<span class="count-label">2 projects<\/span>/);
+  assert.match(html,/href="#apple-hig-reader\/overview"/);
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);
   assert.match(html,/id="back-to-workspace"/);
@@ -313,12 +325,12 @@ function element(props={}){
 }
 function mockNavigation(){
   const ids=["workspace-shell","workspace-sidebar","sidebar-toggle","mobile-nav-toggle",
-    "sidebar-scrim","main-navigation","project-navigation",
+    "sidebar-scrim","main-navigation","project-navigation","apple-hig-navigation",
     "breadcrumb","location-subtitle","back-to-workspace","sidebar-resize-handle"];
   const elements=Object.fromEntries(ids.map(id=>[id,element()]));
-  const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x)].map(name=>
+  const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({dataset:{view:name}}));
-  const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x)].map(name=>
+  const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
   let mobile=false;
   let compactRail=false;
@@ -435,4 +447,20 @@ test("hover wiring is registered before a drag and uses captured resize semantic
   assert.equal(shell.classList.contains("is-collapsed"),true);
   sidebar.dispatch("click");
   assert.equal(shell.classList.contains("is-collapsed"),false);
+});
+
+test("Apple HIG Reader opens as an independent project without activating Colosseum navigation",()=>{
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  const target=m.links.find(x=>x.href.endsWith("#apple-hig-reader/overview"));
+  target.dispatch("click");
+  assert.equal(m.elements["main-navigation"].hidden,true);
+  assert.equal(m.elements["project-navigation"].hidden,true);
+  assert.equal(m.elements["apple-hig-navigation"].hidden,false);
+  assert.equal(m.views.find(x=>x.dataset.view==="apple-hig-reader/overview").hidden,false);
+  assert.equal(target.getAttribute("aria-current"),"page");
+  assert.match(m.doc.title,/Apple HIG Reader · DoFinances/);
+  m.win.location.hash="#colosseum/utilities";m.fire("hashchange");
+  assert.equal(m.elements["project-navigation"].hidden,false);
+  assert.equal(m.elements["apple-hig-navigation"].hidden,true);
 });
