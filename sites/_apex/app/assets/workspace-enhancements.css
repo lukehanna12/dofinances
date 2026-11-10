@@ -255,7 +255,7 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .shell.is-compact-rail.is-rail-expanded .nav-link{justify-content:flex-start;padding:9px 11px;gap:11px;}
   .shell.is-compact-rail.is-rail-expanded .nav-link .nav-label{max-width:24ch;opacity:1;visibility:visible;}
 }
-@media(max-width:1000px){
+@media(max-width:1279px){
   .global-mobile-toggle{display:grid;}
   .global-menu-links{
     display:none;position:absolute;top:calc(var(--global-menu-height) + 7px);
@@ -364,7 +364,7 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
 .clock-custom-entry button{padding:8px 15px;border:1px solid var(--ui-border-strong);border-radius:9px}
 .clock-custom-entry input[aria-invalid="true"]{border-color:var(--ui-danger)}
 #clock-settings-feedback{min-height:1.1rem;margin:2px 0 0}
-@media(min-width:1001px){
+@media(min-width:1280px){
   .global-clock{margin-right:clamp(16px,3vw,48px)}
   .global-menu.is-open .global-menu-links{
     position:absolute;top:calc(var(--global-menu-height) + 8px);
@@ -378,7 +378,7 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .global-menu.is-open .global-menu-links a{padding:10px 12px;border-radius:8px}
   .global-menu.is-open .global-menu-links a:hover{background:rgba(255,255,255,.08)}
 }
-@media(max-width:1000px){
+@media(max-width:1279px){
   .global-clock{
     position:absolute;left:50%;top:50%;
     transform:translate(-50%,-50%);
@@ -386,6 +386,16 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
     font-size:14px;pointer-events:auto;
   }
   .global-menu-actions{margin-left:auto;z-index:1}
+}
+/* Compact-sidebar mode (761–1279px) and mobile: the clock alone is
+ * centered in the top bar. All page links and Account live in the menu. */
+@media(max-width:1279px){
+  .global-menu-links{display:none}
+  .global-menu.is-open .global-menu-links{display:flex}
+  .global-menu-actions .global-menu-account{display:none}
+  .global-menu-inner{justify-content:flex-end}
+  .global-clock{left:50%;right:auto;transform:translate(-50%,-50%)}
+  .global-menu-actions{margin-left:auto}
 }
 @media(max-width:450px){
   .global-clock{gap:6px;font-size:13px}
