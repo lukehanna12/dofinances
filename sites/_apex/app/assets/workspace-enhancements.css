@@ -112,15 +112,31 @@ body:has(> #workspace-shell) .content{
 }
 .settings-panel .manage-account h3{margin:0;}
 .settings-panel .manage-account #signout{min-width:100px;}
-/* Sidebar begins below the entire two-level header, with a measured gap.
- * Its 74px rail and draggable expanded width share the same optical pane. */
+/* Desktop: the pane is viewport-fixed, so neither the grey shell's lower
+ * boundary nor the separately scrolling photo footer can dislodge it.
+ * A layout-only flex spacer keeps the main column in exactly the same
+ * position, including when the rail expands, collapses or is dragged. */
 @media(min-width:761px){
+  .shell {
+    --workspace-rail-space-width:var(--sidebar-expanded-width,260px);
+  }
+  .shell.is-collapsed,
+  .shell.is-compact-rail:not(.is-rail-expanded) {
+    --workspace-rail-space-width:74px;
+  }
+  .shell::before {
+    content:"";
+    display:block;
+    flex:0 0 calc(var(--workspace-sidebar-left-gap) + var(--workspace-rail-space-width));
+    pointer-events:none;
+    visibility:hidden;
+  }
   .shell.liquid-glass-preview .sidebar{
+    position:fixed;
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));
-    margin:calc(var(--workspace-header-height) + var(--workspace-sidebar-gap)) 0 var(--workspace-sidebar-bottom-gap) var(--workspace-sidebar-left-gap);
-    /* Never let the sticky parent push the glass pane upward at the footer.
-       The lower boundary reduces its height instead; the top remains fixed. */
-    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - var(--workspace-sidebar-bottom-gap) - var(--workspace-sidebar-end-shrink,0px));
+    left:var(--workspace-sidebar-left-gap);
+    margin:0;
+    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - var(--workspace-sidebar-bottom-gap));
     min-height:0;
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
@@ -180,7 +196,7 @@ body:has(> #workspace-shell) .content{
     display:block;position:fixed;
     left:calc(var(--workspace-sidebar-left-gap) + var(--sidebar-expanded-width) - 14px);
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 22px);
-    bottom:calc(var(--workspace-sidebar-bottom-gap) + 22px + var(--workspace-sidebar-end-shrink,0px));
+    bottom:calc(var(--workspace-sidebar-bottom-gap) + 22px);
     right:auto;width:28px;height:auto;z-index:39;
     cursor:ew-resize!important;touch-action:none;
     border:0;border-radius:0;outline-offset:-3px;

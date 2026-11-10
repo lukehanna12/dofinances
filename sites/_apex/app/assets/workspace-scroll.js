@@ -6,13 +6,6 @@
  * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
  * boundary gestures, including Safari rubber-banding, while deliberately
  * allowing the left-edge browser-history back gesture (rightward swipe). */
-/* At the document's end the shell stops above the scrolling photo footer.
- * Contract the sticky rail by precisely that exposed distance instead of
- * allowing sticky containment to translate its top edge offscreen. */
-export function sidebarEndShrink(viewportHeight,shellBottom){
-  if(!Number.isFinite(viewportHeight)||!Number.isFinite(shellBottom)||viewportHeight<=0)return 0;
-  return Math.round(Math.max(0,viewportHeight-shellBottom)*4)/4;
-}
 export function initWorkspaceScroll(doc=document,win=window) {
   const root=doc.scrollingElement||doc.documentElement;
   if(!root||typeof win.addEventListener!=="function")return {sync(){},reset(){}};
@@ -22,39 +15,6 @@ export function initWorkspaceScroll(doc=document,win=window) {
   const atTop=()=>scrollTop()<=1;
   const atBottom=()=>scrollTop()>=maxY()-1;
   const atRight=()=>Math.max(0,root.scrollLeft||0)>=maxX()-1;
-  const shell=doc.getElementById?.("workspace-shell");
-  let scheduled=false,lastSidebarShrink=null;
-  const updateSidebarBoundary=()=>{
-    if(!shell?.getBoundingClientRect||!shell.style?.setProperty)return;
-    const viewportHeight=win.innerHeight||doc.documentElement?.clientHeight;
-    const shrink=win.matchMedia?.("(max-width: 760px)")?.matches?0:
-      sidebarEndShrink(viewportHeight,shell.getBoundingClientRect().bottom);
-    if(shrink===lastSidebarShrink)return;
-    lastSidebarShrink=shrink;
-    shell.style.setProperty("--workspace-sidebar-end-shrink",shrink+"px");
-  };
-  const sync=()=>{
-    if(scheduled)return;
-    if(typeof win.requestAnimationFrame!=="function"){
-      updateSidebarBoundary();
-      return;
-    }
-    scheduled=true;
-    win.requestAnimationFrame(()=>{
-      scheduled=false;
-      updateSidebarBoundary();
-    });
-  };
-  // Only the small end-of-page overlap changes. Reconcile in one frame
-  // during scroll, resizing and route/content growth; no layout animation
-  // or transform is applied to the glass pane or its children.
-  win.addEventListener("scroll",sync,{passive:true});
-  win.addEventListener("resize",sync,{passive:true});
-  const Resize=win.ResizeObserver??(typeof ResizeObserver==="function"?ResizeObserver:null);
-  if(shell&&Resize){
-    const observer=new Resize(sync);
-    observer.observe(shell);
-  }
   const shouldIgnore=event=>!!event?.target?.closest?.(".sidebar-navigation");
   const cancel=event=>{if(event.cancelable)event.preventDefault();};
   win.addEventListener("wheel",event=>{
@@ -90,8 +50,8 @@ export function initWorkspaceScroll(doc=document,win=window) {
       if(typeof win.scrollTo==="function")win.scrollTo({top:0,left:0,behavior:"instant"});
       else root.scrollTop=0;
     }
-    sync();
   };
-  sync();
-  return {sync,reset};
+  // The sidebar is fixed on desktop, so the root scroll only needs overscroll
+  // protection; no per-frame pane geometry or ResizeObserver is necessary.
+  return {sync(){},reset};
 }
