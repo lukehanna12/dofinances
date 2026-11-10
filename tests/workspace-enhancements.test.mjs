@@ -42,8 +42,8 @@ test("account deletion disclosure has a subtly richer coral tone without changin
     assert.ok(html.includes('<summary>Delete my account</summary>'));
   }
 });
-test("five Colosseum screens omit their subtitles without changing other page headings",()=>{
-  const removed=["utilities","collections","providers","permissions","diagnostics"];
+test("four placeholder Colosseum screens keep compact headings; Diagnostics is a working screen",()=>{
+  const removed=["utilities","collections","providers","permissions"];
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
     for(const slug of removed){
