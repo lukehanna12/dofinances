@@ -451,6 +451,108 @@ export function initWorkspaceNavigation(doc=document,win=window){
     updateCollapse();
   });
   updateCollapse();
+  initWorkspaceClock(doc,win);
   render();
   return {render,closeDrawer};
+}
+
+
+// One global clock, independent of routes and Colosseum telemetry.
+// Local preference stays on this browser; it is never sent to the server.
+export function initWorkspaceClock(doc=document,win=window){
+  const clock=doc.getElementById?.("global-clock");
+  const time=doc.getElementById?.("global-clock-time");
+  const suffix=doc.getElementById?.("global-clock-zone");
+  if(!clock||!time||!suffix)return;
+  if(clock.dataset.clockReady==="true")return;
+  clock.dataset.clockReady="true";
+  const select=doc.getElementById?.("clock-zone-select");
+  const customRow=doc.getElementById?.("clock-custom-row");
+  const customInput=doc.getElementById?.("clock-custom-zone");
+  const apply=doc.getElementById?.("clock-custom-apply");
+  const feedback=doc.getElementById?.("clock-settings-feedback");
+  const STORAGE_KEY="dofinances.clock.timezone.v1";
+  const modes=new Set(["local","utc","central","custom"]);
+  const validZone=zone=>{
+    if(typeof zone!=="string"||!zone.trim()||zone.length>100)return false;
+    try{new Intl.DateTimeFormat("en-US",{timeZone:zone}).format(new Date());return true;}catch{return false;}
+  };
+  const detected=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";}catch{return "UTC";}};
+  let preference={mode:"local",custom:""};
+  const load=()=>{try{
+    const saved=JSON.parse(win.localStorage?.getItem(STORAGE_KEY)||"null");
+    if(saved&&modes.has(saved.mode)){
+      if(saved.mode!=="custom"||validZone(saved.custom))
+        preference={mode:saved.mode,custom:validZone(saved.custom)?saved.custom:""};
+    }
+  }catch{}};
+  const store=()=>{try{win.localStorage?.setItem(STORAGE_KEY,JSON.stringify(preference));}catch{}};
+  const zone=()=>preference.mode==="utc"?"UTC":preference.mode==="central"?"America/Chicago":
+    preference.mode==="custom"?preference.custom:detected();
+  const paint=()=>{
+    const now=new Date(),name=zone();
+    try{
+      time.textContent=new Intl.DateTimeFormat("en-GB",{
+        timeZone:name,hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"
+      }).format(now);
+      const tz=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"}).formatToParts(now)
+        .find(p=>p.type==="timeZoneName")?.value||name;
+      suffix.textContent=preference.mode==="utc"?"UTC":tz;
+      clock.title=name+" · "+new Intl.DateTimeFormat("en-US",{timeZone:name,
+        weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now);
+      clock.setAttribute("datetime",now.toISOString());
+    }catch{
+      time.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:"UTC",
+        hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(now);
+      suffix.textContent="UTC";
+      clock.title="UTC";
+    }
+  };
+  const sync=()=>{
+    if(select)select.value=preference.mode;
+    if(customInput)customInput.value=preference.custom;
+    if(customRow)customRow.hidden=preference.mode!=="custom";
+    if(feedback)feedback.textContent="";
+    paint();
+  };
+  load();
+  sync();
+  const chooseMode=()=>{
+    const mode=select?.value;
+    if(!modes.has(mode))return;
+    if(customRow)customRow.hidden=mode!=="custom";
+    if(feedback)feedback.textContent="";
+    if(mode==="custom"){
+      if(customInput)customInput.value=preference.custom;
+      customInput?.focus?.();
+      return;
+    }
+    preference={...preference,mode};
+    store();
+    paint();
+    if(feedback)feedback.textContent="Top-bar clock updated.";
+  };
+  select?.addEventListener?.("change",chooseMode);
+  const applyCustom=()=>{
+    const name=customInput?.value?.trim();
+    if(!validZone(name)){
+      if(feedback)feedback.textContent="Unsupported time zone. Enter a valid IANA name, such as Europe/London.";
+      customInput?.setAttribute?.("aria-invalid","true");
+      return;
+    }
+    customInput?.removeAttribute?.("aria-invalid");
+    preference={mode:"custom",custom:name};
+    store();sync();
+    if(feedback)feedback.textContent="Top-bar clock updated to "+name+".";
+  };
+  apply?.addEventListener?.("click",applyCustom);
+  customInput?.addEventListener?.("keydown",event=>{if(event.key==="Enter"){event.preventDefault();applyCustom();}});
+  customInput?.addEventListener?.("input",()=>{customInput.removeAttribute("aria-invalid");if(feedback)feedback.textContent="";});
+  win.addEventListener?.("storage",event=>{if(event.key===STORAGE_KEY){load();sync();}});
+  // Date.now is sampled each tick; no second clock, no telemetry polling.
+  paint();
+  if(win.setInterval){
+    const timer=win.setInterval(paint,1000);
+    win.addEventListener?.("pagehide",()=>win.clearInterval?.(timer),{once:true});
+  }
 }
