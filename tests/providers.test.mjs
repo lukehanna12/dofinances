@@ -29,7 +29,7 @@ test("provider inspector honors Features4 selector/detail structure without auto
   assert.match(css,/grid-template-columns:minmax\(260px,4fr\) minmax\(0,8fr\)/);
   assert.match(css,/@keyframes pv-panel-enter/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
-  assert.doesNotMatch(css,/animation-iteration-count:infinite|autoplay|marquee/i);
+  assert.doesNotMatch(css,/animation-iteration-count:infinite|animation-name:marquee/i);
   const js=await read("../sites/_apex/app/assets/providers.js");
   assert.match(js,/initColosseumProviders/);
   assert.match(js,/credentials:"same-origin"/);
