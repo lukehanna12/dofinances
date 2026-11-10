@@ -498,14 +498,14 @@ export function initWorkspaceClock(doc=document,win=window){
       const tz=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"}).formatToParts(now)
         .find(p=>p.type==="timeZoneName")?.value||name;
       suffix.textContent=preference.mode==="utc"?"UTC":tz;
-      clock.title=name+" · "+new Intl.DateTimeFormat("en-US",{timeZone:name,
-        weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now);
+      clock.setAttribute("aria-label",name+" · "+new Intl.DateTimeFormat("en-US",{timeZone:name,
+        weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now));
       clock.setAttribute("datetime",now.toISOString());
     }catch{
       time.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:"UTC",
         hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(now);
       suffix.textContent="UTC";
-      clock.title="UTC";
+      clock.setAttribute("aria-label","UTC");
     }
   };
   const sync=()=>{
