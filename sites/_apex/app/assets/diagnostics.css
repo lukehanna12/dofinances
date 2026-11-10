@@ -96,7 +96,7 @@
 #diagnostics-root .dg-sr{position:absolute;height:1px;width:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
 #diagnostics-root .dg-updating{opacity:.73}
 @keyframes dg-spin{to{transform:rotate(360deg)}}
-@media(min-width:1280px){body:has(#diagnostics-root:not([hidden])) .content{max-width:1310px}}
+@media(min-width:1280px){body:has([data-view="colosseum/diagnostics"]:not([hidden])) .content{max-width:1310px}}
 @media(max-width:1050px){#diagnostics-root .dg-top{grid-template-columns:repeat(2,minmax(0,1fr))}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:780px){#diagnostics-root .dg-header{align-items:flex-start;flex-direction:column}#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-controls-body{grid-template-columns:1fr}#diagnostics-root .dg-section-head{align-items:flex-start;flex-direction:column;gap:4px}#diagnostics-root .dg-actions{width:100%;justify-content:space-between}}
 @media(max-width:480px){#diagnostics-root .dg-top{gap:8px}#diagnostics-root .dg-card{padding:15px 14px}#diagnostics-root .dg-card-num{font-size:25px}#diagnostics-root .dg-panel{padding:17px}#diagnostics-root .dg-clock{padding:16px}#diagnostics-root .dg-clock-time{font-size:24px}#diagnostics-root .dg-clock-grid{gap:8px}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}#diagnostics-root .dg-pairs{gap:18px 10px}}
