@@ -48,6 +48,7 @@
         <a data-global-route href="#colosseum/permissions">Permissions</a>
         <a data-global-route href="#colosseum/diagnostics">Diagnostics</a>
         <a data-global-route href="#colosseum/settings">Colosseum Settings</a>
+        <a data-global-route href="#apple-hig-reader/overview">Apple HIG Reader</a>
       </div>
     </div>
   </nav>
@@ -67,6 +68,7 @@
     <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
     <symbol id="icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
     <symbol id="icon-layer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5zm-9 9 9 5 9-5m-18 5 9 5 9-5"/></symbol>
+    <symbol id="icon-docs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h4M8 12h7M8 16h7"/></symbol>
     <symbol id="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M8 6h10v10"/></symbol>
   </svg>
   <div class="shell" id="workspace-shell">
@@ -90,6 +92,10 @@
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
           <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
           <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
+        </nav>
+        <nav id="apple-hig-navigation" class="nav-stack" aria-label="Apple HIG Reader navigation" hidden>
+          <div class="nav-section-label">APPLE HIG READER</div>
+          <a class="nav-link" data-route="apple-hig-reader/overview" href="#apple-hig-reader/overview" aria-label="Apple HIG Reader overview"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-docs"></use></svg><span class="nav-label"><span class="nav-label-text">Overview</span></span></a>
         </nav>
       </div>
       <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
@@ -134,12 +140,18 @@
           <a class="project-row" href="#colosseum/utilities" aria-label="Open Colosseum">
             <span class="project-emblem">C</span><span class="project-row-copy"><strong>Colosseum</strong><span>Project workspace</span></span><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg>
           </a>
+          <a class="project-row" href="#apple-hig-reader/overview" aria-label="Open Apple HIG Reader">
+            <span class="project-emblem">H</span><span class="project-row-copy"><strong>Apple HIG Reader</strong><span>Design reference workspace</span></span><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg>
+          </a>
         </section>
         <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
           <div class="page-heading"><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
-          <div class="section-subheading"><h2>All projects</h2><span class="count-label">1 project</span></div>
+          <div class="section-subheading"><h2>All projects</h2><span class="count-label">2 projects</span></div>
           <a class="project-card" href="#colosseum/utilities" aria-label="Open Colosseum project">
             <span class="project-emblem large">C</span><span class="project-card-copy"><strong>Colosseum</strong><span>Open project workspace</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
+          </a>
+          <a class="project-card" href="#apple-hig-reader/overview" aria-label="Open Apple HIG Reader project">
+            <span class="project-emblem large">H</span><span class="project-card-copy"><strong>Apple HIG Reader</strong><span>Apple design guidance · read-only cloud source</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
           </a>
         </section>
         <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
@@ -237,7 +249,31 @@
         </section>
 
         </section>
-        <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
+        <section class="view project-view" data-view="apple-hig-reader/overview" hidden aria-labelledby="apple-hig-reader-title">
+          <div class="page-heading"><h1 id="apple-hig-reader-title">Apple HIG Reader</h1></div>
+          <div class="hig-project">
+            <p class="hig-project-lead">A dedicated reference for Apple's Human Interface Guidelines, connected to your existing read-only Colosseum cloud source.</p>
+            <div class="hig-project-grid">
+              <section class="hig-project-panel" aria-labelledby="hig-reference-title">
+                <span class="hig-project-kicker">OFFICIAL DOCUMENTATION</span>
+                <h2 id="hig-reference-title">Human Interface Guidelines</h2>
+                <p>Design principles, foundations, patterns, components, inputs, and platform-specific guidance directly from Apple.</p>
+                <a class="hig-project-action" href="https://developer.apple.com/design/human-interface-guidelines/" target="_blank" rel="noopener noreferrer">Open Apple's guidelines <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
+              </section>
+              <section class="hig-project-panel" aria-labelledby="hig-cloud-title">
+                <span class="hig-project-kicker">CONNECTED SOURCE</span>
+                <h2 id="hig-cloud-title">Colosseum cloud reader</h2>
+                <p>Your existing Apple HIG Reader v1.1.0 provides on-demand topic discovery, search, and article retrieval as Markdown through owner-authorized tools.</p>
+                <dl class="hig-project-details">
+                  <div><dt>Catalog item</dt><dd>0001cd</dd></div>
+                  <div><dt>Operations</dt><dd>List · Search · Read</dd></div>
+                  <div><dt>Access</dt><dd>Read-only · Cloud</dd></div>
+                </dl>
+              </section>
+            </div>
+          </div>
+        </section>
+                <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
