@@ -28,6 +28,21 @@ test("account deletion disclosure has a subtly richer coral tone without changin
     assert.ok(html.includes('<summary>Delete my account</summary>'));
   }
 });
+test("only non-Home H1 titles rise to the fixed D-bubble center",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.ok(css.includes('.view:not([data-view="home"]) > .page-heading > h1'),
+    "limit the alignment to the primary H1 on non-Home pages");
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 37px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
+    "center title's line box on the measured D bubble without a runtime scroll rule");
+  assert.match(css,/@media\(min-width:761px\)/,"the reference D bubble is visible on desktop");
+  assert.doesNotMatch(css,/\.page-heading > \.lead\s*\{[^}]*top:/);
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(path);
+    const headings=[...html.matchAll(/<section class="view[^"]*"[^>]*data-view="([^"]+)"[^>]*>[\s\S]*?<div class="page-heading"><h1 /g)];
+    assert.ok(headings.length>=2,"pages retain individually targeted headings");
+    assert.match(html,/<section class="view" data-view="home"[^>]*>[\s\S]*?<div class="page-heading"><h1 id="home-title"/);
+  }
+});
 test("two consistent header heights, viewport layers, and a stable responsive sidebar gap",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const html=read("../sites/_apex/app/index.html");

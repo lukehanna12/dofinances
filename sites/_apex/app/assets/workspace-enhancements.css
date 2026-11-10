@@ -90,6 +90,21 @@ body:has(> #workspace-shell) .top-actions{margin-left:auto;}
 body:has(> #workspace-shell) .content{
   padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));
 }
+/* Align only the non-Home screen titles with the fixed sidebar D bubble.
+ * At the initial scroll position the bubble's center is:
+ *   global bar + lower bar + sidebar gap + border(1) + padding(17)
+ *   + brand padding(2) + half of the 34px D mark(17).
+ * The title's normal top is banner-height + content-leading; half of its
+ * 1.2 line-height is .6em. Position the title's VISUAL center at the D center,
+ * without taking it out of flow or moving the subtitle, cards, or page.
+ * The title still scrolls normally; the D bubble remains viewport-fixed.
+ * Mobile does not show the reference bubble unless its drawer is open. */
+@media(min-width:761px){
+  body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
+    position:relative;
+    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 37px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
+  }
+}
 #location-subtitle{display:none!important;}
 /* shadcn/ui Base Breadcrumb hierarchy, locally styled in the workspace font. */
 .shadcn-breadcrumbs{min-width:0;overflow:hidden;font:inherit;font-size:12.5px;}

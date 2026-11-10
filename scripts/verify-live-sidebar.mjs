@@ -306,6 +306,48 @@ try{
   await evaluate('window.scrollTo(0,0);true');
   await until('Math.abs(document.querySelector(".sidebar").getBoundingClientRect().top-'+String(beforeFooter.top)+')<2',
     "sidebar remains pinned on reverse scroll");
+  // Compare each page H1's line-box center with the actual D badge after
+  // navigation settles. The subtitles remain at their normal flow positions.
+  for(const width of [900,1280]){
+    await metrics(width,680);
+    await until('Math.abs(document.documentElement.clientWidth-'+String(width)+')<20',
+      "responsive viewport settles for heading geometry");
+    for(const route of ["projects","settings","colosseum/utilities","colosseum/collections",
+      "colosseum/providers","colosseum/permissions","colosseum/diagnostics","colosseum/settings"]){
+      await evaluate('location.hash="#'+route+'";window.scrollTo(0,0);true');
+      const viewName=route==="colosseum/settings"?"settings":route;
+      await until('!document.querySelector(\'[data-view="'+viewName+'"]\').hidden',
+        "non-Home title route "+route);
+      await pause(210); // Wait for the content-only 170ms arrival.
+      const heading=await evaluate(String.raw`(()=>{
+        const mark=document.querySelector(".sidebar .mark").getBoundingClientRect();
+        const view=document.querySelector(".content > .view:not([hidden])");
+        const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
+        const subtitle=view.querySelector(".page-heading .lead").getBoundingClientRect();
+        const content=document.getElementById("main-content").getBoundingClientRect();
+        return {bubbleCenter:(mark.top+mark.bottom)/2,titleCenter:(h1.top+h1.bottom)/2,
+          subtitleTop:subtitle.top,contentTop:content.top,titleHeight:h1.height,
+          scrollY:document.scrollingElement.scrollTop};
+      })()`);
+      assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<1.6,
+        "Title isn't centered on the D bubble for "+route+" at "+width+": "+JSON.stringify(heading));
+      assert.ok(heading.subtitleTop>heading.titleCenter+45,
+        "Subtitle moved upward with the title for "+route+": "+JSON.stringify(heading));
+      assert.ok(heading.scrollY<1,"Title navigation should start at document top");
+    }
+  }
+  // Home's H1 remains at its original position, below its taller banner.
+  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="home"]\').hidden',"Home remains separate");
+  const homeHeading=await evaluate(String.raw`(()=>{
+    const title=document.getElementById("home-title").getBoundingClientRect();
+    const bubble=document.querySelector(".sidebar .mark").getBoundingClientRect();
+    return {titleTop:title.top,bubbleCenter:(bubble.top+bubble.bottom)/2};
+  })()`);
+  assert.ok(homeHeading.titleTop>homeHeading.bubbleCenter+100,
+    "Home heading was incorrectly elevated: "+JSON.stringify(homeHeading));
+  console.log("PASS: all non-Home titles aligned to D bubble; subtitles and Home unaffected");
+
   console.log("PASS: fixed-height sidebar overlaps bottom photo strip without moving or shrinking");
 
   console.log("PASS: in-flow lower photo strip and lower bar frost above scrolling content");
