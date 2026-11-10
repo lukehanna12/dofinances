@@ -147,7 +147,18 @@ try{
   assert.equal(afterLinkCursor,"e-resize",
     "After clicking a link, blank rail space must return to the expand cursor");
   await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
+  const beforeClick=await evaluate(String.raw`(()=>{
+    const e=document.elementFromPoint(0,0);
+    return {target:e?.id,outer:e?.outerHTML?.slice(0,200),
+      collapsed:document.getElementById("workspace-shell").classList.contains("is-collapsed"),
+      expanded:document.getElementById("workspace-shell").classList.contains("is-rail-expanded"),
+      overlayHidden:document.getElementById("sidebar-rail-expand-target").hidden};
+  })()`);
+  await evaluate(`window.__railEvents=[];for(const k of ["pointerdown","pointerup","mousedown","mouseup","click"]){document.addEventListener(k,e=>window.__railEvents.push({type:k,id:e.target.id,tag:e.target.tagName,phase:e.eventPhase}),{capture:true,once:true})}`);
   await down(blank.x,blank.y);await up(blank.x,blank.y);
+  await pause(120);
+  const afterClick=await evaluate('({events:window.__railEvents,classes:document.querySelector("#workspace-shell").className,overlayHidden:document.querySelector("#sidebar-rail-expand-target").hidden})');
+  console.log("RAIL DEBUG before",JSON.stringify(beforeClick),"after",JSON.stringify(afterClick));
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
   const header=await evaluate(String.raw`(()=>{
