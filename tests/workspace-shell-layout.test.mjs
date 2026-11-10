@@ -39,6 +39,10 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(studioMaterial,/glass-scene-prism\) \{[\s\S]*?--workspace-wallpaper-image:/);
   assert.doesNotMatch(studioMaterial,/background:linear-gradient\(90deg,rgba\(7,13,17/);
   assert.match(enhanced,/--global-menu-height:44px/);
+  assert.match(enhanced,/body:has\(> #workspace-shell\) \.shell\{[\s\S]*?height:auto;/);
+  assert.match(enhanced,/body:has\(> #workspace-shell\) \.main,[\s\S]*?height:auto;/);
+  assert.doesNotMatch(enhanced,/\.shell\{padding-top:var\(--global-menu-height\);height:100dvh;/);
+
   assert.match(enhanced,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
   const toolbar=css.match(/> \.workspace-topbar-backdrop \{([^}]*)\}/)?.[1]||"";
   assert.match(toolbar,/position:fixed/);

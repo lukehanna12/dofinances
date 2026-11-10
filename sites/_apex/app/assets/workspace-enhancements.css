@@ -62,8 +62,21 @@
 .global-search-results{display:grid;gap:3px;max-height:260px;overflow:auto;margin-top:10px;}
 .global-search-results a{padding:9px 10px;color:#dedee1;border-radius:8px;font-size:12px;}
 .global-search-results a:hover,.global-search-results a.is-current{background:rgba(255,255,255,.1);}
-body:has(> #workspace-shell) .shell{padding-top:var(--global-menu-height);height:100dvh;box-sizing:border-box;}
-body:has(> #workspace-shell) .main,body:has(> #workspace-shell.liquid-glass-preview) .main{height:calc(100dvh - var(--global-menu-height));min-height:0;}
+/* The shell must grow with document content or the sidebar's sticky
+ * containing block ends after one viewport and the rail scrolls away.
+ * The lower topbar and glass sidebar remain sticky in this taller shell. */
+body:has(> #workspace-shell) .shell{
+  padding-top:var(--global-menu-height);
+  height:auto;
+  min-height:100dvh;
+  box-sizing:border-box;
+}
+body:has(> #workspace-shell) .main,
+body:has(> #workspace-shell.liquid-glass-preview) .main{
+  height:auto;
+  min-height:calc(100dvh - var(--global-menu-height));
+  overflow:visible;
+}
 body:has(> #workspace-shell) > .workspace-topbar-backdrop{inset:var(--global-menu-height) 0 auto;height:var(--workspace-header-height);}
 body:has(> #workspace-shell) .topbar{
   height:var(--workspace-header-height);
