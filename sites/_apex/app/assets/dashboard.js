@@ -7,7 +7,9 @@ if(new URLSearchParams(location.search).get("colosseum")==="connected"){
 }
 
 import {initWorkspaceNavigation} from "./workspace-nav.js";
+import {initColosseumDiagnostics} from "./diagnostics.js";
 initWorkspaceNavigation();
+initColosseumDiagnostics();
 
 const account = document.getElementById("account-email");
 const detail = document.getElementById("account-email-detail");
