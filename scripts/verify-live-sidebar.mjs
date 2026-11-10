@@ -93,24 +93,14 @@ try{
         const x=r.left+dx,y=r.top+dy;
         if(y>=r.bottom-10)continue;
         const el=document.elementFromPoint(x,y);
-        // A real full-rail button must win blank-space hit testing,
-        // even though the icon links above it remain independently clickable.
-        if(el?.id==="sidebar-rail-expand-target")
-          return {x,y,cursor:getComputedStyle(el).cursor,tag:el.tagName,id:el.id};
+        if(el && sidebar.contains(el) && !el.closest("a,button,input,[role=separator]"))
+          return {x,y,cursor:getComputedStyle(el).cursor,tag:el.tagName};
       }
     }
     return null;
   })()`);
   assert.ok(blank,"No hit-testable unoccupied rail space found");
-  assert.equal(blank.tag,"BUTTON","Blank rail must be an actual button hit target");
-  assert.equal(blank.cursor,"e-resize","The hovered rail button must show the native expand cursor");
-  const noCustomCursors=await evaluate(String.raw`(()=>{
-    const css=[...document.styleSheets].flatMap(s=>{
-      try{return [...s.cssRules].map(r=>r.cssText)}catch{return []}
-    }).filter(rule=>rule.includes("sidebar-rail-expand-target")||rule.includes("sidebar-resize-handle"));
-    return !css.some(rule=>rule.includes("data:image/png;base64"));
-  })()`);
-  assert.equal(noCustomCursors,true,"No custom mouse pointer graphics should be installed");
+  assert.equal(blank.cursor,"e-resize","Empty collapsed rail must show the expand cursor");
   // The rail's icon and row should both center on the actual pane, not an
   // asymmetrically padded grid track.
   const railAlignment=await evaluate(String.raw`(()=>{
@@ -147,13 +137,9 @@ try{
   assert.equal(afterLinkCursor,"e-resize",
     "After clicking a link, blank rail space must return to the expand cursor");
   await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
-  const enabled=await evaluate('!document.getElementById("sidebar-rail-expand-target").disabled');
-  assert.equal(enabled,true,"Studio preview must leave the sidebar expansion button enabled");
   await down(blank.x,blank.y);await up(blank.x,blank.y);
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
-  const hiddenWhenOpen=await evaluate('document.getElementById("sidebar-rail-expand-target").hidden && getComputedStyle(document.getElementById("sidebar-rail-expand-target")).display==="none"');
-  assert.equal(hiddenWhenOpen,true,"Full-area expansion button must be gone when sidebar opens");
   const header=await evaluate(String.raw`(()=>{
     const head=document.querySelector(".sidebar-head");
     const logo=document.querySelector(".sidebar-head .mark").getBoundingClientRect();

@@ -172,10 +172,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     desktopToggle.title=effectiveCollapsed?"Expand sidebar":"Collapse sidebar";
     // Never inherit the expansion hint over real navigation links.
     sidebar.title="";
-    if(railExpandTarget){
-      railExpandTarget.hidden=isMobile()||!effectiveCollapsed;
-      railExpandTarget.setAttribute("aria-expanded",String(!effectiveCollapsed));
-    }
+    if(railExpandTarget)railExpandTarget.hidden=isMobile()||!effectiveCollapsed;
   }
   function closeDrawer(animate=false){
     if(animate===true&&isMobile()&&shell.classList.contains("is-mobile-open"))
@@ -274,8 +271,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     hint.style.top=Math.max(8,Math.min((win.innerHeight||800)-40,y+16))+"px";
     hint.dataset.visible="true";
   };
-  const blankSurface=target=>target===railExpandTarget||
-    !target?.closest?.('a,button,input,[role="separator"]');
+  const blankSurface=target=>!target?.closest?.('a,button,input,[role="separator"]');
   if(railExpandTarget)railExpandTarget.title="Click to expand sidebar";
   const onRailHover=event=>{
     if(isMobile()){hideHint();return;}
@@ -301,11 +297,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
     updateCollapse();
   };
   sidebar.addEventListener?.("click",expandFromBlank);
-  // The real full-rail button handles its own activation. With the aside
-  // pointer-transparent, do not depend on event bubbling for expansion.
-  railExpandTarget?.addEventListener?.("click",event=>{
-    event.stopPropagation?.();
-    expandFromBlank(event);
+  railExpandTarget?.addEventListener?.("keydown",event=>{
+    if(event.key!=="Enter"&&event.key!==" ")return;
+    event.preventDefault?.();
+    expandFromBlank({target:railExpandTarget});
   });
   // A drag can continue beyond the fixed expanded minimum, but crossing
   // half that minimum collapses immediately. No pointerup/release required.

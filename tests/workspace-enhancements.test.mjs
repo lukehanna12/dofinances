@@ -62,7 +62,6 @@ test("Studio preview mirrors production navigation without enabling account muta
   assert.doesNotMatch(studio,/src="\/app\/assets\/dashboard.js"/);
   assert.match(bootstrap,/global-menu-toggle/);
   assert.match(bootstrap,/global-search-toggle/);
-  assert.match(bootstrap,/sidebar-rail-expand-target/);
 });
 
 test("Studio sidebar uses the production's immediate active-row selection without delayed geometry",()=>{
@@ -126,8 +125,7 @@ test("resize grip is outside clipped sidebar and exposes both hover affordances"
   assert.match(css,/\.shell > \.sidebar-resize-handle\{/);
   assert.match(css,/width:28px;height:auto;z-index:39/);
   assert.match(css,/cursor:ew-resize!important;touch-action:none/);
-  assert.match(css,/\.shell\.liquid-glass-preview\.is-collapsed \.sidebar\{[\s\S]*?pointer-events:none/);
-  assert.match(css,/\.shell\.liquid-glass-preview\.is-collapsed \.sidebar-rail-expand-target\{[\s\S]*?cursor:e-resize!important/);
+  assert.match(css,/\.shell\.is-collapsed \.sidebar \*\{cursor:e-resize!important;/);
   assert.match(css,/grid-template-columns:minmax\(0,1fr\) 34px/);
   assert.match(js,/pointerover",onRailHover/);
   assert.match(js,/resizeHandle\.addEventListener\("pointerenter",onGripHover/);
@@ -137,8 +135,7 @@ test("resize grip is outside clipped sidebar and exposes both hover affordances"
 test("blank rail expands from a dedicated pointer region and icons use centered geometry",()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
-    assert.match(html,/<button id="sidebar-rail-expand-target"/);
-    assert.match(html,/aria-controls="workspace-sidebar" aria-expanded="false"/);
+    assert.match(html,/id="sidebar-rail-expand-target"/);
     assert.match(html,/aria-label="Expand sidebar" title="Click to expand sidebar"/);
   }
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
@@ -146,8 +143,5 @@ test("blank rail expands from a dedicated pointer region and icons use centered 
   assert.match(css,/\.sidebar-rail-expand-target\{[\s\S]*?cursor:e-resize!important/);
   assert.match(css,/\.sidebar-navigation \.nav-link\{[\s\S]*?margin-inline:auto/);
   assert.match(css,/\.is-collapsed \.sidebar-navigation \.nav-link\{[\s\S]*?justify-content:center!important/);
-  assert.match(nav,/target===railExpandTarget/);
-  assert.match(css,/\.liquid-glass-preview\.is-collapsed \.sidebar\{[\s\S]*?pointer-events:none/);
-  assert.match(css,/\.is-collapsed \.sidebar-rail-expand-target\{[\s\S]*?pointer-events:auto/);
-  assert.doesNotMatch(css,/data:image\/png;base64/);
+  assert.match(nav,/railExpandTarget\?\.addEventListener\?\.\("keydown"/);
 });

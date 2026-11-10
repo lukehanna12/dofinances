@@ -109,36 +109,23 @@ body:has(> #workspace-shell) .content{
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-rail-expanded .sidebar{width:var(--sidebar-expanded-width,260px);}
-  /* Mirror ChatGPT's collapsed-rail hit testing:
-     the entire rail is pointer-transparent, a real full-inset button takes
-     blank-space hovers and clicks, and links/buttons above it opt in again.
-     No cursor JS, pointer art, or manual hover-state tracking is necessary. */
-  .shell.liquid-glass-preview.is-collapsed .sidebar{
-    pointer-events:none;
-    cursor:e-resize;
-  }
+  /* Cursor applies to the actual hovered descendants, not just the aside:
+     most empty rail pixels belong to the head, nav, or footer children. */
+  .shell.is-collapsed .sidebar,
+  .shell.is-collapsed .sidebar *{cursor:e-resize!important;}
+  .shell.is-collapsed .sidebar :is(a,button),
+  .shell.is-collapsed .sidebar :is(a,button) *{cursor:pointer!important;}
   .shell.is-collapsed > .sidebar-resize-handle{display:none!important;}
+  /* A transparent, keyboard-accessible layer receives only blank-rail
+     interaction. Link and header descendants stay above it. */
   .shell.liquid-glass-preview .sidebar-rail-expand-target{display:none;}
   .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target{
     display:block;position:absolute;inset:0;z-index:1;
-    appearance:none;border:0;padding:0;background:transparent;
-    cursor:e-resize!important;pointer-events:auto;
-    outline-offset:-3px;
+    cursor:e-resize!important;background:transparent;pointer-events:auto;
   }
   .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target[hidden]{display:none!important;}
-  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head,.sidebar-navigation,.sidebar-bottom,.nav-stack,.nav-section-label){
-    pointer-events:none;
-  }
-  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head a,.sidebar-head button,.nav-link){
-    pointer-events:auto;
-    cursor:pointer;
-  }
-  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head a,.sidebar-head button,.nav-link) *{
-    cursor:pointer;
-  }
-  .shell.liquid-glass-preview.is-collapsed .sidebar-rail-expand-target:focus-visible{
-    outline:2px solid var(--ui-secondary);
-  }
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head,.sidebar-navigation,.sidebar-bottom,.nav-stack,.nav-section-label){pointer-events:none;}
+  .shell.liquid-glass-preview.is-collapsed .sidebar :is(.sidebar-head a,.sidebar-head button,.nav-link){pointer-events:auto;}
   /* Precisely centered rows and icons; do not use asymmetric 15px rail padding. */
   .shell.liquid-glass-preview .sidebar-navigation .nav-link{
     display:flex;align-items:center;width:calc(100% - 2px);margin-inline:auto;
