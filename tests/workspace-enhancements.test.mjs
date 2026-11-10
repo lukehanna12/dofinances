@@ -23,7 +23,8 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(css,/--workspace-sidebar-left-gap:16px/);
   assert.match(css,/--workspace-sidebar-bottom-gap:16px/);
   assert.match(css,/calc\(var\(--global-menu-height\) \+ var\(--workspace-header-height\) \+ var\(--workspace-sidebar-gap\)\)/);
-  assert.match(css,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
+  assert.doesNotMatch(html,/workspace-topbar-backdrop/);
+  assert.match(read("../sites/_apex/app/assets/workspace-wallpapers.css"),/\.topbar::before \{[\s\S]*?z-index:0;/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
 });
 test("sidebar admits blank-space expansion and bounded accessible pointer/keyboard resizing",()=>{

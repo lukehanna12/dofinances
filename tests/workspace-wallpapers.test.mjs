@@ -114,7 +114,10 @@ test("artwork scrolls in document flow, without a fixed bottom overlay",()=>{
   assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-home-art-top/);
   assert.match(css,/width:min\(100%,1100px\)/);
   assert.match(css,/background-position:center,var\(--workspace-wallpaper-position,center 46%\)/);
-  assert.doesNotMatch(css,/workspace-home-art-bottom|workspace-at-end|::after/);
+  assert.doesNotMatch(css,/workspace-home-art-bottom|workspace-at-end/);
+  assert.match(css,/> \.workspace-footer \{[\s\S]*?background-image:/);
+  assert.match(css,/\.workspace-footer::after/);
+  assert.match(css,/background-position:center,center bottom/);
 });
 
 test("Worker proxies only the selected wallpaper paths via library-iii",()=>{

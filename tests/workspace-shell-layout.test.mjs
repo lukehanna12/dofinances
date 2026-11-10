@@ -15,7 +15,8 @@ test("production and Studio use one document-scrolling page beneath sticky navig
     assert.doesNotMatch(html,/workspace-scroll-end|workspace-home-art-bottom/);
     assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
     assert.ok(html.indexOf('id="workspace-scroll"')<html.indexOf('id="workspace-footer"'));
-    assert.ok(html.indexOf('id="workspace-footer"')<html.lastIndexOf('</div>'));
+    assert.ok(html.indexOf('id="workspace-footer"')>html.lastIndexOf('</div>'),"bottom photo footer follows page shell");
+    assert.doesNotMatch(html,/workspace-topbar-backdrop/);
     assert.equal((html.match(/data-view="settings"/g)||[]).length,1);
     assert.equal((html.match(/class="workspace-footer"/g)||[]).length,1);
   }
@@ -25,7 +26,8 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(css,/--ui-canvas,#171717/);
   assert.match(css,/overscroll-behavior-y:none/);
   assert.match(css,/position:absolute;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
-  assert.doesNotMatch(css,/body:has\(> #workspace-shell\)::after|workspace-at-end|background-position:center,center bottom/);
+  assert.doesNotMatch(css,/body:has\(> #workspace-shell\)::after|workspace-at-end/);
+  assert.match(css,/background-position:center,center bottom/);
   assert.match(css,/\.workspace-scroll \{[\s\S]*?overflow:visible;/);
   assert.match(css,/\.topbar \{\s*position:sticky;/);
   assert.match(css,/\.main,\s*body:has\(> #workspace-shell\.liquid-glass-preview\) \.main \{[\s\S]*?overflow:visible;/);
@@ -43,11 +45,21 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(enhanced,/body:has\(> #workspace-shell\) \.main,[\s\S]*?height:auto;/);
   assert.doesNotMatch(enhanced,/\.shell\{padding-top:var\(--global-menu-height\);height:100dvh;/);
 
-  assert.match(enhanced,/body:has\(> #workspace-shell\) > \.workspace-topbar-backdrop/);
-  const toolbar=css.match(/> \.workspace-topbar-backdrop \{([^}]*)\}/)?.[1]||"";
-  assert.match(toolbar,/position:fixed/);
-  assert.match(toolbar,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
-  assert.doesNotMatch(toolbar,/mask-image|transform/);
+  const header=css.match(/body:has\(> #workspace-shell\) \.topbar \{([^}]*)\}/)?.[1]||"";
+  assert.match(header,/position:sticky/);
+  assert.match(header,/z-index:20/);
+  const frost=css.match(/body:has\(> #workspace-shell\) \.topbar::before \{([^}]*)\}/)?.[1]||"";
+  assert.match(frost,/position:absolute/);
+  assert.match(frost,/width:100vw/);
+  assert.match(frost,/backdrop-filter:blur\(18px\) saturate\(120%\)/);
+  assert.match(css,/\.topbar > \* \{\s*position:relative;\s*z-index:1;/);
+  assert.doesNotMatch(css,/\.workspace-topbar-backdrop/);
+  const footer=css.match(/> \.workspace-footer \{([^}]*)\}/)?.[1]||"";
+  assert.match(footer,/position:relative/);
+  assert.match(footer,/background-image:[\s\S]*?--workspace-wallpaper-image/);
+  assert.match(footer,/background-position:center,center bottom/);
+  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::before/);
+  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::after/);
 });
 test("root scrolling guards top, bottom, and right edges while preserving back swipe",()=>{
   const events={};let cancelled=0,scrollCalls=0;
