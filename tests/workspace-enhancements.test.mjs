@@ -102,7 +102,7 @@ test("actual shadcn Base breadcrumb list uses muted links and an unframed page",
 test("sidebar spacing and resize grip are symmetric and never light up on hover",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");
-  assert.match(css,/var\(--workspace-sidebar-bottom-gap\) var\(--workspace-sidebar-left-gap\)/);
+  assert.match(css,/height:calc\(100dvh - var\(--global-menu-height\) - var\(--workspace-header-height\) - var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)\)/);
   assert.match(css,/var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)/);
   assert.match(css,/width:28px;height:auto;z-index:39/);
   assert.match(css,/sidebar-resize-handle:hover,/);
