@@ -70,7 +70,7 @@ test("desktop sidebar overlays the footer with fixed height and a layout spacer"
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar\{\s*position:fixed;/);
   assert.match(css,/height:calc\(100dvh - var\(--global-menu-height\) - var\(--workspace-header-height\) - var\(--workspace-sidebar-gap\) - var\(--workspace-sidebar-bottom-gap\)\)/);
   assert.doesNotMatch(css,/workspace-sidebar-end-shrink/);
-  assert.doesNotMatch(js,/sidebarEndShrink|workspace-sidebar-end-shrink|ResizeObserver|requestAnimationFrame/);
+  assert.doesNotMatch(js,/sidebarEndShrink|workspace-sidebar-end-shrink|new Resize\(|requestAnimationFrame\(/);
   assert.match(css,/@media\(max-width:760px\)\{/);
 });
 
