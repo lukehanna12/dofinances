@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="/app/assets/sidebar-glass.css">
   <link rel="stylesheet" href="/app/assets/workspace-wallpapers.css">
   <link rel="stylesheet" href="/app/assets/workspace-enhancements.css">
+  <link rel="stylesheet" href="/app/assets/diagnostics.css">
   <script src="/app/assets/preview-bootstrap.js" type="module"></script>
 </head>
 <body>
@@ -233,8 +234,43 @@
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
-          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+          <div id="diagnostics-root" data-health="unknown">
+  <div class="dg-header">
+    <div><div class="dg-eyebrow">COLOSSEUM / OBSERVABILITY</div><h1 id="project-diagnostics-title">Diagnostics</h1><p class="dg-lead">A precise view of cloud consumption, runtime health and your local gateway. All measurements are retrieved on demand.</p></div>
+    <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><button class="dg-btn" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l1 5a7.5 7.5 0 0 0 13.4-2"/></svg><span>Refresh</span></button></div>
+  </div>
+  <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window · On demand</span></div>
+  <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
+  <section class="dg-section" aria-labelledby="dg-clock-title"><div class="dg-section-head"><h2 id="dg-clock-title">Current time</h2><p>Live clocks · your browser's detected time zone</p></div>
+    <div class="dg-clock-grid"><div class="dg-clock"><div class="dg-clock-label">Local time <span id="dg-tz">Detecting…</span></div><div class="dg-clock-time" id="dg-localtime">--:--:--</div><div class="dg-clock-date" id="dg-localdate">—</div></div>
+    <div class="dg-clock"><div class="dg-clock-label">Coordinated Universal Time <span>UTC</span></div><div class="dg-clock-time" id="dg-utctime">--:--:--</div><div class="dg-clock-date" id="dg-utcdate">—</div></div></div>
+  </section>
+  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">At a glance</h2><p>Cloudflare account-wide quotas, UTC day</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance · account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Per-service invocations and execution cost</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local environment</h2><p>Gateway telemetry only · provider configuration lives in Local Port Broker</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-config-title"><div class="dg-section-head"><h2 id="dg-config-title">Platform configuration</h2><p>Service and asset limits</p></div><div class="dg-grid" id="dg-config"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-query-title"><div class="dg-controls"><div class="dg-controls-top"><h2 id="dg-query-title">Diagnostic query</h2><span class="dg-small" id="dg-query-summary">All 9 sections · Gateway · Quick</span></div><details id="dg-query"><summary>Configure sections and local health check</summary>
+    <div class="dg-controls-body"><fieldset style="border:0;padding:0;margin:0;min-width:0"><legend class="dg-small" style="margin-bottom:12px">Include sections</legend><div class="dg-checks">
+      <label class="dg-check"><input type="checkbox" data-dg-section value="workers" checked> Workers</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="kv" checked> Workers KV</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="d1" checked> D1</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="durable_objects" checked> Durable Objects</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="rate_limiting" checked> Rate limits</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="static_assets" checked> Static assets</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="configuration" checked> Configuration</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="api_limits" checked> API limits</label>
+      <label class="dg-check"><input type="checkbox" data-dg-section value="local" checked> Local gateway</label>
+    </div></fieldset><div class="dg-field-row">
+      <div class="dg-field"><label for="dg-check">Local health check</label><select id="dg-check">
+        <option value="gateway">Gateway</option><option value="ping">Ping</option><option value="oauth">OAuth</option><option value="ingress">Ingress</option><option value="registry">Registry</option><option value="providers">Providers</option><option value="browser">Browser</option><option value="filesystem">Filesystem</option><option value="execution">Execution</option><option value="policy">Policy</option><option value="sync">Sync</option><option value="artifacts">Artifacts</option><option value="full">Full</option>
+      </select></div><div class="dg-field"><label for="dg-depth">Check depth</label><select id="dg-depth"><option value="quick">Quick</option><option value="standard">Standard</option><option value="deep">Deep</option></select></div>
+    </div></div></details><div class="dg-controls-foot"><button id="dg-run" class="dg-btn" type="button">Run diagnostics</button><span class="dg-small">No scheduled polling · each run uses one fresh query</span></div></div>
+  </section>
+  <section class="dg-section" aria-labelledby="dg-issues-title"><div class="dg-section-head"><h2 id="dg-issues-title">Report integrity</h2><p>Collection status, limitations and diagnostics</p></div><div class="dg-panel" id="dg-issues"><div class="dg-empty">No report received yet.</div></div>
+    <p class="dg-footnote">Source: Colosseum <code>system.status</code>. Cloudflare analytics may be sampled or delayed and are not authoritative billing counters. A dash means not reported; it never means zero. The browser clocks are live, but system measurements change only when refreshed.</p>
+  </section>
+</div>
         </section>
               </main>
       </div>
