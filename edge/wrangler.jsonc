@@ -37,6 +37,10 @@
     {
       "binding": "LIBRARY_III",
       "service": "library-iii"
+    },
+    {
+      "binding": "COLOSSEUM_ROUTER",
+      "service": "router"
     }
   ]
 }

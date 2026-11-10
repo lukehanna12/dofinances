@@ -179,3 +179,27 @@ test("Colosseum owner endpoints fail closed if session or Access configuration i
   const redirect=await handleRequest(new Request("https://www.dofinances.com/api/colosseum/connect"),mock);
   assert.equal(redirect.status,301);
 });
+
+
+test("Colosseum catalog API does not expose mutation access without site sign-in",async()=>{
+  const req=new Request("https://dofinances.com/api/colosseum/catalog/add",{
+    method:"POST",headers:{"Content-Type":"application/json","Origin":"https://dofinances.com"},body:'{"uid":"0001cc"}'
+  });
+  const result=await handleRequest(req,mock);
+  assert.equal(result.status,401);
+});
+test("Colosseum catalog API rejects an invalid origin before calling the router",async()=>{
+  const req=new Request("https://dofinances.com/api/colosseum/catalog/remove",{
+    method:"POST",headers:{"Content-Type":"application/json","Origin":"https://untrusted.invalid",
+      "Cookie":"__Host-dofinances_session="+VALID_TOKEN},body:'{"uid":"0001cc"}'
+  });
+  const result=await handleRequest(req,authed);
+  assert.equal(result.status,403);
+});
+test("DoFinances catalog proxy does not accept unrecognized operation paths",async()=>{
+  const req=new Request("https://dofinances.com/api/colosseum/catalog/escalate",{
+    method:"POST",headers:{"Content-Type":"application/json"},body:"{}"
+  });
+  const result=await handleRequest(req,mock);
+  assert.equal(result.status,404);
+});
