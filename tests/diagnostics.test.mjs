@@ -14,12 +14,18 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     assert.ok(html.includes('<section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">\\n          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>'.replace('\\n','\n')),
       "Diagnostics title must use the same shared heading position as other screens");
     const diagnostics=html.slice(html.indexOf('data-view="colosseum/diagnostics"'));
-    assert.ok(diagnostics.indexOf('aria-labelledby="dg-clock-title"')<diagnostics.indexOf('aria-labelledby="dg-overview-title"'),
-      "restored clock section must precede quota overview");
+    assert.ok(diagnostics.indexOf('aria-labelledby="dg-query-title"')<diagnostics.indexOf('aria-labelledby="dg-overview-title"'),
+      "Diagnostic query must be first");
+    for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks ·","Source: Colosseum"])
+      assert.ok(!diagnostics.includes(removed),"Diagnostics must not show "+removed);
 
-    for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-localtime","dg-utctime","dg-quotas","dg-workers","dg-local"])
+    for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-zone","clock-zone-select","clock-custom-zone"])
       assert.ok(html.includes('id="'+id+'"'),path+" missing "+id);
-    assert.match(html,/\/app\/assets\/diagnostics\.css/);
+    assert.match(html,/\\/app\\/assets\\/diagnostics\\.css/);
+    assert.doesNotMatch(html, /class="global-brand"|class="global-brand-mark"/,"remove only uppermost DoFinances branding");
+    assert.doesNotMatch(html,/data-dg-section value="(?:rate_limiting|static_assets|configuration|api_limits)"/);
+    for(const zone of ["local","utc","central","custom"])
+      assert.ok(html.includes('<option value="'+zone+'">'),"Missing clock preference "+zone);
   }
   const css=await read("../sites/_apex/app/assets/diagnostics.css");
   assert.match(css,/prefers-reduced-motion/);
@@ -35,6 +41,7 @@ test("Diagnostics initializes an on-demand, owner-gated system.status client",as
   assert.match(js,/\/api\/colosseum\/diagnostics/);
   assert.match(js,/credentials:"same-origin"/);
   assert.match(js,/data-dg-section/);
+  assert.doesNotMatch(js,/renderConfig|renderIntegrity|dg-localtime|dg-utcdate/);
   assert.match(js,/check:byId\("dg-check"\)\.value/);
   assert.match(js,/depth:byId\("dg-depth"\)\.value/);
   assert.doesNotMatch(js,/Math\.random\(|demoData|sampleData|mockData/);
@@ -57,5 +64,6 @@ test("Studio cannot fetch private diagnostics or perform account operations",asy
   const script=await read("../studio/sidebar/preview-bootstrap.js");
   assert.match(script,/This is a static layout preview/);
   assert.doesNotMatch(script,/fetch\(/);
-  assert.match(script,/previewClocks/);
+  assert.doesNotMatch(script,/previewClocks|dg-utctime|dg-localtime/);
+  assert.match(script,/single topbar clock/);
 });
