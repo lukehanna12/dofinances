@@ -143,6 +143,8 @@ try{
   await down(blank.x,blank.y);await up(blank.x,blank.y);
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
+  await until('document.querySelector(".sidebar").getBoundingClientRect().width>=248 && !document.querySelector("#workspace-shell").classList.contains("is-collapsed")',
+    "expanded pane actual width settles before geometry checks");
   const header=await evaluate(String.raw`(()=>{
     const head=document.querySelector(".sidebar-head");
     const logo=document.querySelector(".sidebar-head .mark").getBoundingClientRect();
