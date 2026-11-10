@@ -113,45 +113,6 @@ function renderLocal(report){
  if(Array.isArray(local.layers)&&local.layers.length>1){const layers=local.layers.map(x=>x.layer+": "+statusText(x.status)).join(" · ");gateway.append(make("p","dg-footnote",layers));}
  host.append(gateway);
 }
-function renderConfig(report){
- const host=clear("dg-config"),config=sectionOf(report,"configuration"),assets=sectionOf(report,"static_assets"),rate=sectionOf(report,"rate_limiting"),api=sectionOf(report,"api_limits");
- const a=panel("Deployed capacity","Workers & bindings");
- if(config&&config.status!=="unavailable"){
-  a.append(quota("Worker scripts",config.workers),quota("Durable Object classes",config.durable_object_classes),
-    quota("D1 databases",config.d1_databases),quota("KV namespaces",config.kv_namespaces));
-  a.append(make("p","dg-footnote",integer(config.router_binding_count)+" router bindings · "+integer(config.cron_triggers?.used)+" cron triggers"));
- }else a.append(make("p","dg-small",missing("configuration")));
- host.append(a);
- const b=panel("Static asset libraries","Deployment inventory");
- if(assets&&Array.isArray(assets.libraries)){
-   const grid=pairs([["Library Workers",integer(assets.libraries.length)],["File cap per Worker",integer(assets.per_worker_file_limit)],["Maximum file size",bytes(assets.per_file_limit_bytes)],["Daily static requests","Unlimited"]]);
-   b.append(grid);
-   const wrap=make("div","dg-table-scroll");wrap.style.marginTop="19px";const table=make("table","dg-table");
-   const t=make("tr");["Library","Asset binding","Public subdomain"].forEach(v=>t.append(make("th","",v)));
-   const head=make("thead");head.append(t);const body=make("tbody");
-   assets.libraries.forEach(row=>{const line=make("tr");[row.name,row.assets_bound===true?"Bound":row.assets_bound===false?"Not bound":"—",row.public_subdomain||"—"].forEach(v=>line.append(make("td","",v)));body.append(line)});
-   table.append(head,body);wrap.append(table);b.append(wrap);
-   b.append(make("p","dg-footnote","Deployed file counts are not reported without authoritative manifests."));
- }else b.append(make("p","dg-small",missing("static_assets")));
- host.append(b);
- const c=panel("Request controls","Configuration, not usage");
- if(rate?.configured)c.append(pairs([["Limiter",rate.configured.name||"—"],["Requests per period",integer(rate.configured.limit)],["Window",integer(rate.configured.period_seconds)+" seconds"],["Live remaining","Not exposed"]]));
- else c.append(make("p","dg-small",missing("rate_limiting")));
- host.append(c);
- const d=panel("Management API","Independent of daily resource quotas");
- if(api)d.append(pairs([["GraphQL / 5 min",integer(api.graphql_queries_per_five_minutes)],["REST / 5 min",integer(api.rest_requests_per_five_minutes)],["Queries for this report",integer(api.graphql_queries_issued_by_this_report)],["Window consumption","Not exposed"]]));
- else d.append(make("p","dg-small",missing("api_limits")));
- host.append(d);
-}
-function renderIntegrity(report){
- const host=clear("dg-issues");
- const rows=pairs([["Result",statusText(report.status)],["Collection",report.collection_mode||"—"],["D1 queries",integer(report.resource_queries?.d1_queries)],["D1 writes",integer(report.resource_queries?.d1_rows_written)],["Worker requests",integer(report.resource_queries?.worker_requests)],["Extra KV operations",integer(report.resource_queries?.extra_kv_operations)]]);
- host.append(rows);
- if(Array.isArray(report.issues)&&report.issues.length){
-  const h=make("p","dg-footnote",report.issues.length+" collection issues reported");host.append(h);
-  const list=make("ul","dg-issues");report.issues.forEach(x=>list.append(make("li","",(x.section||"Report")+": "+(x.error||"Unavailable"))));host.append(list);
- }else host.append(make("p","dg-footnote","No report collection issues. Analytics can still be delayed or sampled."));
-}
 function renderReport(report){
  byId("dg-health").dataset.health=report.status||"unknown";
  byId("diagnostics-root").dataset.health=report.status||"unknown";
@@ -162,22 +123,8 @@ function renderReport(report){
  byId("dg-window").textContent="UTC daily window · "+(Number.isFinite(reset)?"Resets "+new Date(reset).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC":"Reset time unavailable");
  const notice=byId("dg-notice");
  if(report.status==="healthy"&&!report.issues?.length){notice.hidden=true;}
- else {notice.hidden=false;notice.dataset.tone=report.status==="unhealthy"?"error":"info";notice.textContent=report.issues?.length?"Some measurements were unavailable or partially reported; see report integrity below.":"Report status: "+statusText(report.status);}
- renderOverview(report);renderQuotas(report);renderWorkers(report);renderLocal(report);renderConfig(report);renderIntegrity(report);
-}
-function timeTick(){
- let zone="Local";try{zone=Intl.DateTimeFormat().resolvedOptions().timeZone||"Local";}catch{}
- byId("dg-tz").textContent=zone;
- const t=new Date(),format=(zone,opts)=>new Intl.DateTimeFormat(undefined,{...opts,timeZone:zone}).format(t);
- try{
-  byId("dg-localtime").textContent=format(zone,{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
-  byId("dg-localdate").textContent=format(zone,{weekday:"long",month:"short",day:"numeric",year:"numeric"});
- }catch{
-  byId("dg-localtime").textContent=t.toLocaleTimeString();
-  byId("dg-localdate").textContent=t.toLocaleDateString();
- }
- byId("dg-utctime").textContent=format("UTC",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
- byId("dg-utcdate").textContent=format("UTC",{weekday:"long",month:"short",day:"numeric",year:"numeric"});
+ else {notice.hidden=false;notice.dataset.tone=report.status==="unhealthy"?"error":"info";notice.textContent=report.issues?.length?"Some measurements were unavailable or partially reported.":"Report status: "+statusText(report.status);}
+ renderOverview(report);renderQuotas(report);renderWorkers(report);renderLocal(report);
 }
 function optionsFromForm(){
  const sections=[...document.querySelectorAll("[data-dg-section]:checked")].map(x=>x.value);
@@ -185,13 +132,10 @@ function optionsFromForm(){
 }
 function optionsLabel(o){
  const checks=byId("dg-query-summary");
- checks.textContent=(o.sections.length===9?"All 9 sections":o.sections.length+" selected")+" · "+o.check.replace(/_/g," ")+" · "+o.depth;
+ checks.textContent=(o.sections.length===5?"All 5 sections":o.sections.length+" selected")+" · "+o.check.replace(/_/g," ")+" · "+o.depth;
 }
 export function initColosseumDiagnostics(){
  if(!byId("diagnostics-root"))return;
- timeTick();
- const clock=window.setInterval(timeTick,1000);
- window.addEventListener("pagehide",()=>window.clearInterval(clock),{once:true});
  let busy=false,requested=false,previous=null,selected=optionsFromForm();
  const refresh=byId("dg-refresh"),run=byId("dg-run");
  const query=byId("dg-query"),notice=byId("dg-notice");
