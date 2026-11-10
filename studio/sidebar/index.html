@@ -19,7 +19,7 @@
 <body>
   <nav class="global-menu" id="global-menu" aria-label="Global navigation">
     <div class="global-menu-inner">
-      <a class="global-brand" data-global-route href="#home" aria-label="DoFinances Home"><span class="global-brand-mark" aria-hidden="true">D</span><span>DoFinances</span></a>
+      <time id="global-clock" class="global-clock" aria-label="Current time"><span id="global-clock-time">--:--:--</span><span id="global-clock-zone" class="global-clock-zone">Local</span></time>
       <div class="global-menu-links" id="global-menu-links">
         <a data-global-route href="#home">Workspace</a>
         <a data-global-route href="#projects">Projects</a>
@@ -29,8 +29,9 @@
         <a data-global-route href="#settings">Settings</a>
       </div>
       <div class="global-menu-actions">
-        <button id="global-search-toggle" class="global-menu-icon" type="button" aria-label="Search navigation" aria-controls="global-search-panel" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.3 15.3 5 5"/></svg></button>
         <a class="global-menu-account" data-global-route href="#settings">Account</a>
+        <button id="global-search-toggle" class="global-menu-icon" type="button" aria-label="Search navigation" aria-controls="global-search-panel" aria-expanded="false"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.4"/><path d="m15.3 15.3 5 5"/></svg></button>
+        
         <button id="global-menu-toggle" class="global-menu-icon global-mobile-toggle" type="button" aria-label="Open global menu" aria-controls="global-menu-links" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
     </div>
@@ -143,6 +144,25 @@
         </section>
         <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
           <div class="page-heading"><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
+        <section class="panel settings-panel clock-settings" aria-labelledby="clock-settings-heading">
+          <h2 id="clock-settings-heading">Clock & time zone</h2>
+          <p class="note">Choose the single time zone shown in the global top bar.</p>
+          <div class="clock-settings-fields">
+            <label for="clock-zone-select">Display time zone</label>
+            <select id="clock-zone-select">
+              <option value="local">Your current time zone (automatic)</option>
+              <option value="utc">UTC</option>
+              <option value="central">Central Time (CST / CDT)</option>
+              <option value="custom">Custom time zone…</option>
+            </select>
+            <div id="clock-custom-row" class="clock-custom-row" hidden>
+              <label for="clock-custom-zone">IANA time zone</label>
+              <div class="clock-custom-entry"><input id="clock-custom-zone" type="text" autocomplete="off" spellcheck="false" maxlength="100" placeholder="e.g. Asia/Tokyo"><button id="clock-custom-apply" class="secondary" type="button">Apply</button></div>
+              <p class="note">Use a supported IANA name such as America/New_York or Europe/London.</p>
+            </div>
+            <p id="clock-settings-feedback" class="note" role="status" aria-live="polite"></p>
+          </div>
+        </section>
         <section id="account" class="panel settings-panel" aria-label="Account and security settings">
           <h2>Account & security</h2>
           <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
@@ -236,33 +256,12 @@
         <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
           <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>
           <div id="diagnostics-root" data-health="unknown">
-  <div class="dg-header">
-    
-    <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><button class="dg-btn" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l1 5a7.5 7.5 0 0 0 13.4-2"/></svg><span>Refresh</span></button></div>
-  </div>
-  <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window · On demand</span></div>
-  <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
-  
-  <section class="dg-section" aria-labelledby="dg-clock-title"><div class="dg-section-head"><h2 id="dg-clock-title">Current time</h2><p>Live clocks · your browser's detected time zone</p></div>
-    <div class="dg-clock-grid"><div class="dg-clock"><div class="dg-clock-label">Local time <span id="dg-tz">Detecting…</span></div><div class="dg-clock-time" id="dg-localtime">--:--:--</div><div class="dg-clock-date" id="dg-localdate">—</div></div>
-    <div class="dg-clock"><div class="dg-clock-label">Coordinated Universal Time <span>UTC</span></div><div class="dg-clock-time" id="dg-utctime">--:--:--</div><div class="dg-clock-date" id="dg-utcdate">—</div></div></div>
-  </section>
-  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">At a glance</h2><p>Cloudflare account-wide quotas, UTC day</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
-  
-  <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance · account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Per-service invocations and execution cost</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local environment</h2><p>Gateway telemetry only · provider configuration lives in Local Port Broker</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-config-title"><div class="dg-section-head"><h2 id="dg-config-title">Platform configuration</h2><p>Service and asset limits</p></div><div class="dg-grid" id="dg-config"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-query-title"><div class="dg-controls"><div class="dg-controls-top"><h2 id="dg-query-title">Diagnostic query</h2><span class="dg-small" id="dg-query-summary">All 9 sections · Gateway · Quick</span></div><details id="dg-query"><summary>Configure sections and local health check</summary>
+  <section class="dg-section" aria-labelledby="dg-query-title"><div class="dg-controls"><div class="dg-controls-top"><h2 id="dg-query-title">Diagnostic query</h2><span class="dg-small" id="dg-query-summary">All 5 sections · Gateway · Quick</span></div><details id="dg-query"><summary>Configure sections and local health check</summary>
     <div class="dg-controls-body"><fieldset style="border:0;padding:0;margin:0;min-width:0"><legend class="dg-small" style="margin-bottom:12px">Include sections</legend><div class="dg-checks">
       <label class="dg-check"><input type="checkbox" data-dg-section value="workers" checked> Workers</label>
       <label class="dg-check"><input type="checkbox" data-dg-section value="kv" checked> Workers KV</label>
       <label class="dg-check"><input type="checkbox" data-dg-section value="d1" checked> D1</label>
       <label class="dg-check"><input type="checkbox" data-dg-section value="durable_objects" checked> Durable Objects</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="rate_limiting" checked> Rate limits</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="static_assets" checked> Static assets</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="configuration" checked> Configuration</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="api_limits" checked> API limits</label>
       <label class="dg-check"><input type="checkbox" data-dg-section value="local" checked> Local gateway</label>
     </div></fieldset><div class="dg-field-row">
       <div class="dg-field"><label for="dg-check">Local health check</label><select id="dg-check">
@@ -270,9 +269,22 @@
       </select></div><div class="dg-field"><label for="dg-depth">Check depth</label><select id="dg-depth"><option value="quick">Quick</option><option value="standard">Standard</option><option value="deep">Deep</option></select></div>
     </div></div></details><div class="dg-controls-foot"><button id="dg-run" class="dg-btn" type="button">Run diagnostics</button><span class="dg-small">No scheduled polling · each run uses one fresh query</span></div></div>
   </section>
-  <section class="dg-section" aria-labelledby="dg-issues-title"><div class="dg-section-head"><h2 id="dg-issues-title">Report integrity</h2><p>Collection status, limitations and diagnostics</p></div><div class="dg-panel" id="dg-issues"><div class="dg-empty">No report received yet.</div></div>
-    <p class="dg-footnote">Source: Colosseum <code>system.status</code>. Cloudflare analytics may be sampled or delayed and are not authoritative billing counters. A dash means not reported; it never means zero. The browser clocks are live, but system measurements change only when refreshed.</p>
-  </section>
+    <div class="dg-header">
+    
+    <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><button class="dg-btn" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l1 5a7.5 7.5 0 0 0 13.4-2"/></svg><span>Refresh</span></button></div>
+  </div>
+  <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window · On demand</span></div>
+  <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
+  
+  
+  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">At a glance</h2><p>Cloudflare account-wide quotas, UTC day</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  
+  <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance · account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Per-service invocations and execution cost</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local environment</h2><p>Gateway telemetry only · provider configuration lives in Local Port Broker</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  
+  
+  
 </div>
         </section>
               </main>
