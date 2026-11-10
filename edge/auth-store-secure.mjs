@@ -28,6 +28,23 @@ export class AuthStore extends BaseAuthStore {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS mfa_recovery (
       user_id TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY(user_id,hash)
     )`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS colosseum_owner (
+      singleton TEXT PRIMARY KEY CHECK(singleton='colosseum'),
+      user_id TEXT NOT NULL, access_subject TEXT NOT NULL, created_at INTEGER NOT NULL
+    )`);
+  }
+  colosseumOwnerStatus({userId,accessSubject}){
+    const owner=this.sql.exec("SELECT user_id,access_subject FROM colosseum_owner WHERE singleton='colosseum'").toArray()[0];
+    return {linked:!!owner,owner:!!owner&&owner.user_id===userId&&owner.access_subject===accessSubject};
+  }
+  colosseumOwnerBind({userId,accessSubject}){
+    if(typeof userId!=="string"||!userId||typeof accessSubject!=="string"||!accessSubject)
+      return {linked:false,owner:false};
+    // A single SQLite-Durable-Object primary key prevents concurrent first-owner
+    // enrollment from ever assigning a second account.
+    this.sql.exec("INSERT OR IGNORE INTO colosseum_owner(singleton,user_id,access_subject,created_at) VALUES('colosseum',?,?,?)",
+      userId,accessSubject,now());
+    return this.colosseumOwnerStatus({userId,accessSubject});
   }
   security(userId){
     return this.sql.exec("SELECT * FROM account_security WHERE user_id=?",userId).toArray()[0];

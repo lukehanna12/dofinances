@@ -265,6 +265,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/href="#colosseum\/utilities"/);
   assert.match(html,/aria-label="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
+  assert.match(html,/id="connect-cloudflare-owner" href="\/api\/colosseum\/connect"/);
+  assert.match(html,/id="colosseum-owner-feedback"/);
   assert.doesNotMatch(html,/aria-label="Capabilities"/);
   for(const id of ["account-email","account-email-detail","signout","linked-accounts",
     "linked-identity-list","add-identity-buttons","federation-feedback",

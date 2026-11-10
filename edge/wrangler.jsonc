@@ -28,7 +28,9 @@
     "not_found_handling": "none"
   },
   "vars": {
-    "AUTH_EMAIL_FROM": "noreply@dofinances.com"
+    "AUTH_EMAIL_FROM": "noreply@dofinances.com",
+    "COLOSSEUM_ACCESS_ISSUER": "https://luke-inc.cloudflareaccess.com",
+    "COLOSSEUM_ACCESS_AUD": "a219b092a0fad93c9cac89fa2881f15116e9b4e9fbc4c0402161d013112f2014"
   },
   "keep_vars": true,
   "services": [

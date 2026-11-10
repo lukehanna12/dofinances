@@ -157,3 +157,25 @@ test("auth endpoints fail closed and reject cross-origin mutations",async()=>{
   }),{...mock,AUTH_STORE:{idFromName:()=>({}),get:()=>({})}});
   assert.equal(denial.status,403);
 });
+
+test("Colosseum owner endpoints fail closed if session or Access configuration is missing",async()=>{
+  const missing=await handleRequest(new Request("https://dofinances.com/api/colosseum/status"),mock);
+  assert.equal(missing.status,401);
+  const valid=new Request("https://dofinances.com/api/colosseum/status",{
+    headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN}});
+  const unconfigured=await handleRequest(valid,authed);
+  assert.equal(unconfigured.status,503);
+  assert.equal((await unconfigured.json()).error,"Colosseum owner authentication is not configured.");
+  const forbidden=await handleRequest(new Request("https://dofinances.com/api/colosseum/connect",{
+    method:"POST",headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN,
+      "Origin":"https://evil.invalid"}}),authed);
+  assert.equal(forbidden.status,403);
+  const method=await handleRequest(new Request("https://dofinances.com/api/colosseum/status",{
+    method:"POST",headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN}}),authed);
+  assert.equal(method.status,405);
+  const other=await handleRequest(new Request("https://dofinances.com/api/colosseum/dangerous",{
+    headers:{"Cookie":"__Host-dofinances_session="+VALID_TOKEN}}),authed);
+  assert.equal(other.status,404,"unimplemented administrative operations cannot be invoked");
+  const redirect=await handleRequest(new Request("https://www.dofinances.com/api/colosseum/connect"),mock);
+  assert.equal(redirect.status,301);
+});

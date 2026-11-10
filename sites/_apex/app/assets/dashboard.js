@@ -1,3 +1,11 @@
+// The owner enrollment endpoint returns here after both Cloudflare Access
+// and the DoFinances session have been verified server-side.
+if(new URLSearchParams(location.search).get("colosseum")==="connected"){
+  const msg=document.getElementById("colosseum-owner-feedback");
+  if(msg)msg.hidden=false;
+  history.replaceState(history.state,"",location.pathname+location.hash);
+}
+
 import {initWorkspaceNavigation} from "./workspace-nav.js";
 initWorkspaceNavigation();
 

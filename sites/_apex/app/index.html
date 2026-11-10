@@ -191,6 +191,12 @@
               <p id="mfa-disable-feedback" role="alert"></p>
             </form>
           </div>
+          <section id="colosseum-owner-connection" class="settings-divider" aria-labelledby="colosseum-owner-connection-title">
+            <h3 id="colosseum-owner-connection-title">Colosseum administration</h3>
+            <p class="note">Bind Colosseum administrator permissions to this DoFinances account. Cloudflare Access verifies the owner separately, and no Cloudflare credentials are stored in your browser.</p>
+            <a class="secondary" id="connect-cloudflare-owner" href="/api/colosseum/connect" style="display:inline-block;margin-top:14px;padding:10px 17px;border:1px solid var(--ui-border-strong);border-radius:10px">Connect Cloudflare</a>
+            <p id="colosseum-owner-feedback" class="note" role="status" hidden>Colosseum ownership is now connected to this DoFinances account.</p>
+          </section>
           <section class="manage-account settings-divider" aria-labelledby="manage-account-title">
             <h3 id="manage-account-title">Manage Account</h3>
             <button id="signout" type="button" class="secondary">Sign out</button>

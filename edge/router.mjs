@@ -1,6 +1,7 @@
 import {WORKSPACE_WALLPAPERS} from "../sites/_apex/app/assets/workspace-wallpapers.js";
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
+import {verifyColosseumOwnerJwt} from "./colosseum-owner.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
 import {federationAvailability} from "./auth-federation.mjs";
 import {handleFederation,readFederatedMfaCookie,expireFederatedMfaCookie} from "./auth-federation-routes.mjs";
@@ -177,6 +178,55 @@ async function api(request,env,pathname) {
   delete safe.delivery;delete safe.token;delete safe.status;
   return json(safe,result.status);
 }
+// Only this narrow path is protected by the sole-owner Cloudflare Access app.
+// Every request also requires the existing signed-in DoFinances account cookie.
+// No catalog or resource mutation operation is exposed here.
+async function colosseumOwnerApi(request,env,pathname) {
+  const method=request.method;
+  const allowed=pathname==="/api/colosseum/connect"||pathname==="/api/colosseum/status";
+  if(!allowed)return json({error:"Not found."},404);
+  if(method!=="GET"&&!(method==="POST"&&pathname==="/api/colosseum/connect"))
+    return json({error:"Method not allowed."},405,{Allow:pathname.endsWith("/connect")?"GET, POST":"GET"});
+  const user=await getUser(request,env);
+  if(!user)return pathname.endsWith("/connect")&&method==="GET"?
+    redirect("/login"):json({error:"DoFinances sign-in required."},401);
+  if(method==="POST"&&request.headers.get("Origin")!=="https://dofinances.com")
+    return json({error:"Forbidden origin."},403);
+  let identity;
+  try {identity=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),env);}
+  catch {return json({error:"Colosseum owner authentication is not configured."},503);}
+  if(!identity)return json({error:"Cloudflare owner verification required."},403);
+  const stub=store(env);
+  if(!stub)return json({error:"Account store unavailable."},503);
+  const argument={userId:user.id,accessSubject:identity.subject};
+  if(pathname==="/api/colosseum/status"){
+    const state=await stub.colosseumOwnerStatus(argument);
+    return json({authenticated:true,owner:state.owner,linked:state.linked});
+  }
+  if(method==="POST"){
+    const state=await stub.colosseumOwnerBind(argument);
+    if(!state.owner)return json({error:"Colosseum ownership is already bound to a different identity."},409);
+    return redirect("/app/?colosseum=connected#settings",303);
+  }
+  const state=await stub.colosseumOwnerStatus(argument);
+  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Colosseum owner authorization</title>
+<style>body{margin:0;min-height:100vh;background:#0c1018;color:#f2f4f9;display:grid;place-items:center;font-family:system-ui,sans-serif}
+main{width:min(420px,calc(100% - 40px));padding:30px;border:1px solid #354056;border-radius:16px;background:#141b29}
+p{color:#bac5d5;line-height:1.6;font-size:14px}button,a{border-radius:10px;padding:11px 17px;font:inherit}
+button{background:#a7c6f6;border:0;color:#101827;cursor:pointer;font-weight:650}
+a{color:#c5d9fa}form{margin-top:24px}</style></head>
+<body><main><h1>Colosseum administrator</h1>
+<p>Cloudflare has verified your owner identity. Bind this DoFinances account as Colosseum's sole administrator. This cannot be claimed by another registered user.</p>
+${state.owner?'<p>This account is already connected.</p><a href="/app/#settings">Return to Settings</a>':
+  state.linked?'<p>This administrator is already linked to a different account. No changes were made.</p>':
+  '<form action="/api/colosseum/connect" method="post"><button type="submit">Authorize this account</button></form>'}
+</main></body></html>`;
+  return new Response(html,{status:200,headers:{...NO_STORE,"Content-Type":"text/html; charset=utf-8",
+    "X-Frame-Options":"DENY","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"}});
+}
+
 async function serveAsset(request,env,folder,path,privatePage=false) {
   if(!env.ASSETS?.fetch) return new Response("Static assets not configured",{status:503,headers:NO_STORE});
   for(const file of assetCandidates(folder,path)){
@@ -210,7 +260,7 @@ export async function handleRequest(request,env={}) {
   const folder=siteFolder(url.hostname);
   if(folder===null) return new Response("Unknown host",{status:404,headers:NO_STORE});
   // www has no authentication cookies; preserve canonical apex origin for all auth routes.
-  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||url.pathname.startsWith("/api/auth/"))) {
+  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")))) {
     url.hostname=ROOT;
     return redirect(url.href,301);
   }
@@ -221,6 +271,10 @@ export async function handleRequest(request,env={}) {
       return await api(request,env,url.pathname);
     }
     catch{return json({error:"Authentication service unavailable."},503);}
+  }
+  if(folder==="_apex" && url.pathname.startsWith("/api/colosseum/")) {
+    try {return await colosseumOwnerApi(request,env,url.pathname);}
+    catch {return json({error:"Colosseum owner service unavailable."},503);}
   }
   if(request.method!=="GET" && request.method!=="HEAD")
     return new Response("Method not allowed",{status:405,headers:{...NO_STORE,Allow:"GET, HEAD"}});
