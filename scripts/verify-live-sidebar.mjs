@@ -230,6 +230,8 @@ try{
   await until('!document.querySelector(\'[data-view="settings"]\').hidden',"Settings route for header overlap");
   await evaluate('window.scrollTo(0,400);true');
   await until('document.scrollingElement.scrollTop>=150',"Settings header overlap scroll");
+  // CSS viewport units exclude the reserved scrollbar gutter on this page.
+  // Compare widths to the document's usable viewport, not window.innerWidth.
   const overlap=await evaluate(String.raw`(()=>{
     const bar=document.querySelector(".topbar");
     const rect=bar.getBoundingClientRect();
@@ -240,7 +242,7 @@ try{
       hitHeader:!!hit?.closest?.(".topbar"),
       frostPosition:frost.position,frostWidth:parseFloat(frost.width),
       frostFilter:frost.backdropFilter||frost.webkitBackdropFilter,
-      viewportWidth:window.innerWidth};
+      viewportWidth:document.documentElement.clientWidth};
   })()`);
   assert.equal(overlap.hitHeader,true,
     "Scrolled page is layered above the sticky header: "+JSON.stringify(overlap));
@@ -257,7 +259,7 @@ try{
     const el=document.querySelector(".workspace-footer");
     const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
     return {top:rect.top,bottom:rect.bottom,width:rect.width,
-      viewportWidth:window.innerWidth,position:style.position,
+      viewportWidth:document.documentElement.clientWidth,position:style.position,
       background:style.backgroundImage,opacity:style.opacity,
       transition:style.transitionProperty};
   })()`);
