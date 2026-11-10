@@ -100,13 +100,6 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   position:relative;
   top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
 }
-@media(max-width:760px){
-  /* Mobile uses a 63px header variable vs 66px on desktop. Restore the
-   * 3px difference so both breakpoints use the same title-center Y-level. */
-  body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
-    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 41.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
-  }
-}
 #location-subtitle{display:none!important;}
 /* shadcn/ui Base Breadcrumb hierarchy, locally styled in the workspace font. */
 .shadcn-breadcrumbs{min-width:0;overflow:hidden;font:inherit;font-size:12.5px;}

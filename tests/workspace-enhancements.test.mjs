@@ -49,8 +49,8 @@ test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",
     "only the primary H1 on non-Home pages is moved");
   assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
     "desktop heading remains centered on the sidebar D");
-  assert.match(css,/@media\(max-width:760px\)\{[\s\S]*?\.view:not\(\[data-view="home"\]\) > \.page-heading > h1 \{[\s\S]*?41\.328125px/,
-    "mobile heading preserves the desktop Y coordinate despite its 3px shorter header variable");
+  assert.equal((css.match(/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/g)||[]).length,1,
+    "the same title-centering rule applies on both mobile and desktop");
   assert.match(wallpapers,/--workspace-header-height:66px/);
   assert.match(wallpapers,/@media \(max-width:760px\) \{\s*:root \{--workspace-header-height:63px/);
   assert.doesNotMatch(css,/\.page-heading > \.lead\s*\{[^}]*top:/);
