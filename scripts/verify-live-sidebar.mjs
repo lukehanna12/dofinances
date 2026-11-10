@@ -224,6 +224,50 @@ try{
   for(const bar of ["global","topbar","sidebar"])
     assert.ok(Math.abs(afterScroll[bar]-beforeScroll[bar])<2,
       bar+" moved during page scroll: "+JSON.stringify({beforeScroll,afterScroll}));
+  // Confirm the sticky lower bar itself paints the full-width frost ABOVE
+  // page components, and the restored bottom photograph travels with the page.
+  await evaluate('location.hash="#settings";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="settings"]\').hidden',"Settings route for header overlap");
+  await evaluate('window.scrollTo(0,400);true');
+  await until('document.scrollingElement.scrollTop>=150',"Settings header overlap scroll");
+  const overlap=await evaluate(String.raw`(()=>{
+    const bar=document.querySelector(".topbar");
+    const rect=bar.getBoundingClientRect();
+    const x=rect.right-35,y=rect.top+rect.height/2;
+    const hit=document.elementFromPoint(x,y);
+    const frost=getComputedStyle(bar,"::before");
+    return {headerZ:getComputedStyle(bar).zIndex,
+      hitHeader:!!hit?.closest?.(".topbar"),
+      frostPosition:frost.position,frostWidth:parseFloat(frost.width),
+      frostFilter:frost.backdropFilter||frost.webkitBackdropFilter,
+      viewportWidth:window.innerWidth};
+  })()`);
+  assert.equal(overlap.hitHeader,true,
+    "Scrolled page is layered above the sticky header: "+JSON.stringify(overlap));
+  assert.ok(Number(overlap.headerZ)>=20,"Header must have higher z-order than content");
+  assert.equal(overlap.frostPosition,"absolute","Frost must belong to sticky header");
+  assert.ok(Math.abs(overlap.frostWidth-overlap.viewportWidth)<3,
+    "Lower bar frost should span viewport width: "+JSON.stringify(overlap));
+  assert.ok(overlap.frostFilter.includes("blur(18px)"),
+    "Lower bar must actually blur scrolling text and cards: "+JSON.stringify(overlap));
+  await evaluate('window.scrollTo(0,document.scrollingElement.scrollHeight);true');
+  await until('Math.abs(document.querySelector(".workspace-footer").getBoundingClientRect().bottom-innerHeight)<4',
+    "photo footer at the document bottom");
+  const strip=await evaluate(String.raw`(()=>{
+    const el=document.querySelector(".workspace-footer");
+    const rect=el.getBoundingClientRect(),style=getComputedStyle(el);
+    return {top:rect.top,bottom:rect.bottom,width:rect.width,
+      viewportWidth:window.innerWidth,position:style.position,
+      background:style.backgroundImage,opacity:style.opacity,
+      transition:style.transitionProperty};
+  })()`);
+  assert.equal(strip.position,"relative","Bottom photo must move with document");
+  assert.ok(Math.abs(strip.width-strip.viewportWidth)<3,
+    "Bottom photo must span the viewport: "+JSON.stringify(strip));
+  assert.ok(strip.background.includes("url("),"Bottom photo must use route wallpaper");
+  assert.equal(strip.opacity,"1","Bottom photo must not fade in after reaching end");
+  console.log("PASS: in-flow lower photo strip and lower bar frost above scrolling content");
+
   console.log("PASS: single document scroll, moving wallpaper and content, fixed bars/sidebar, in-flow footer");
 
   console.log("PASS: rail expand cursor, hover tooltip, external drag cursor, no D/toggle overlap, horizontal and vertical resizing");
