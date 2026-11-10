@@ -147,8 +147,8 @@ try{
   assert.equal(afterLinkCursor,"e-resize",
     "After clicking a link, blank rail space must return to the expand cursor");
   await until('document.querySelector(".sidebar-interaction-tooltip")?.dataset.visible==="true"',"expand hover tooltip after link navigation");
-  const beforeClick=await evaluate(String.raw`(()=>{
-    const e=document.elementFromPoint(0,0);
+  const beforeClick=await evaluate(`(()=>{
+    const e=document.elementFromPoint(${blank.x},${blank.y});
     return {target:e?.id,outer:e?.outerHTML?.slice(0,200),
       collapsed:document.getElementById("workspace-shell").classList.contains("is-collapsed"),
       expanded:document.getElementById("workspace-shell").classList.contains("is-rail-expanded"),
