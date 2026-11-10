@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {portalUrl,parseProviderHealth,initColosseumProviders}
+import {parseProviderHealth,initColosseumProviders}
   from "../sites/_apex/app/assets/providers.js";
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -19,7 +19,7 @@ test("provider inspector honors Features4 selector/detail structure without auto
       assert.ok(fragment.includes('id="'+id+'"'),"Missing "+id);
     assert.match(fragment,/role="tablist"/);
     assert.match(fragment,/role="tabpanel"/);
-    assert.match(fragment,/https:\/\/router\.colosseum\.workers\.dev\/account\/connections/);
+    assert.doesNotMatch(fragment,/router\.colosseum\.workers\.dev\/account\/providers\/|router\.colosseum\.workers\.dev\/account\/connections/);
     assert.doesNotMatch(fragment,/Nothing here yet|This section is ready for future/);
     assert.ok(html.includes('/app/assets/providers.css'));
     assert.doesNotMatch(fragment,/type="password"|name="token"/,
@@ -33,9 +33,11 @@ test("provider inspector honors Features4 selector/detail structure without auto
   const js=await read("../sites/_apex/app/assets/providers.js");
   assert.match(js,/initColosseumProviders/);
   assert.match(js,/credentials:"same-origin"/);
-  assert.match(js,/sections:\["local"\],check:"providers",depth:"standard"/);
-  assert.match(js,/\/api\/colosseum\/status/);
-  assert.match(js,/\/api\/colosseum\/diagnostics/);
+  assert.match(js,/\/api\/colosseum\/providers/);
+  for(const capability of ["oauth_start","local.prepare","local.commit","configure","grant","revoke","disconnect","refresh","verify"])
+    assert.ok(js.includes(capability),"Missing real provider action "+capability);
+  assert.match(js,/revision-bound change|expected_revision/);
+  assert.match(js,/actual\.profile/);
   assert.doesNotMatch(js,/localStorage\.setItem|setInterval\(|Math\.random|sampleData|demoData/);
   assert.equal(typeof initColosseumProviders,"function");
   const dashboard=await read("../sites/_apex/app/assets/dashboard.js");
@@ -45,13 +47,18 @@ test("provider inspector honors Features4 selector/detail structure without auto
   assert.doesNotMatch(workflow,/cp sites\/_apex\/app\/assets\/providers\.js dist\/app\/assets\/providers\.js/,
     "Public Studio should not copy private data client");
 });
-test("Penpot and cloud reader actions use the real owner-managed portal",()=>{
- assert.equal(portalUrl("000008","configure"),
-   "https://router.colosseum.workers.dev/account/providers/configure?uid=000008");
- assert.equal(portalUrl("000008","tools"),
-   "https://router.colosseum.workers.dev/account/providers/tools?uid=000008");
- assert.throws(()=>portalUrl("000008&x=1","tools"),/Invalid provider/);
- assert.throws(()=>portalUrl("000008","disconnect"),/Invalid provider/);
+test("Provider management is single-origin, double-authorized and never stores credentials in the browser",async()=>{
+ const router=await read("../edge/router.mjs");
+ assert.match(router,/pathname==="\/api\/colosseum\/providers"/);
+ assert.match(router,/pathname==="\/api\/colosseum\/providers\/callback"/);
+ assert.match(router,/colosseumOwnerStatus\(argument\)/);
+ assert.match(router,/verifyColosseumOwnerJwt/);
+ assert.match(router,/Cross-site provider management request denied/);
+ assert.match(router,/"provider\.admin"/);
+ const ui=await read("../sites/_apex/app/assets/providers.js");
+ assert.doesNotMatch(ui,/localStorage\.setItem|sessionStorage\.setItem|document\.cookie/);
+ assert.match(ui,/confirm\(/);
+ assert.match(ui,/actual\.profile/);
 });
 test("provider health parses real gateway check shape without overstating authorization",()=>{
  const revision="a".repeat(64);
