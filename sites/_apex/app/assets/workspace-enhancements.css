@@ -284,14 +284,19 @@ body:has(> #workspace-shell) .content{
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}
+  /* Start BELOW both stationary bars with the regular sidebar gap,
+     rather than overlaying the lower bar with an over-tall drawer. */
   .shell.liquid-glass-preview .sidebar{
-    top:var(--global-menu-height);
+    top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));
     left:8px;
     bottom:8px;
     margin:0;
     width:274px!important;
-    height:calc(100dvh - var(--global-menu-height) - 8px);
+    height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - 8px);
   }
+  /* Desktop hover tooltip is still appended to body on mobile. Without
+     its desktop-only position styles it becomes a visible footer line. */
+  .sidebar-interaction-tooltip{display:none!important;}
   .shell > .sidebar-resize-handle{display:none!important;}
   .shell.liquid-glass-preview .sidebar-rail-expand-target{display:none!important;}
   /* Mobile drawer is always fully laid out regardless of desktop preference. */

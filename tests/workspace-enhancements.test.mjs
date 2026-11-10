@@ -57,6 +57,22 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(read("../sites/_apex/app/assets/workspace-wallpapers.css"),/\.topbar::before \{[\s\S]*?z-index:0;/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
 });
+test("mobile drawer clears both bars and hides the desktop rail hover tooltip",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  const mobile=css.slice(css.indexOf("@media(max-width:760px){"));
+  assert.ok(mobile.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));"));
+  assert.ok(mobile.includes("height:calc(100dvh - var(--global-menu-height) - var(--workspace-header-height) - var(--workspace-sidebar-gap) - 8px);"));
+  assert.ok(mobile.includes(".sidebar-interaction-tooltip{display:none!important;}"));
+  assert.ok(mobile.includes(".sidebar-rail-expand-target{display:none!important;}"));
+  assert.ok(nav.includes('if(nowMobile)hideHint();'));
+  assert.ok(nav.includes('if(railExpandTarget)railExpandTarget.hidden=isMobile()||!effectiveCollapsed;'));
+  for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(file);
+    assert.ok(html.includes('id="mobile-nav-toggle"'));
+    assert.ok(html.includes('id="sidebar-rail-expand-target"'));
+  }
+});
 test("desktop pane stays fixed and reserves its responsive width",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const js=read("../sites/_apex/app/assets/workspace-scroll.js");

@@ -349,6 +349,72 @@ try{
   })()`);
   assert.ok(homeHeading.titleTop>homeHeading.bubbleCenter+100,
     "Home heading was incorrectly elevated: "+JSON.stringify(homeHeading));
+  // Verify mobile drawer and desktop-tooltip suppression at small and breakpoint widths.
+  for(const [mobileWidth,mobileHeight] of [[375,667],[390,740],[760,740]]){
+    await metrics(mobileWidth,mobileHeight);
+    await until('window.matchMedia("(max-width: 760px)").matches && document.getElementById("mobile-nav-toggle")?.getBoundingClientRect().width>0',
+      "mobile breakpoint at "+mobileWidth);
+    await evaluate('location.hash="#settings";window.scrollTo(0,0);true');
+    await until('document.querySelector(".view[data-view=settings]")?.hidden===false',
+      "mobile Settings view at "+mobileWidth);
+    const beforeDrawer=await evaluate(String.raw`(()=>{
+      const bar=document.querySelector(".topbar").getBoundingClientRect();
+      const hint=document.querySelector(".sidebar-interaction-tooltip");
+      return {barBottom:bar.bottom,pageHeight:document.scrollingElement.scrollHeight,
+        tooltipDisplay:hint?getComputedStyle(hint).display:null,
+        tooltipHeight:hint?.getBoundingClientRect().height??0};
+    })()`);
+    assert.equal(beforeDrawer.tooltipDisplay,"none",
+      "desktop hint exposed at mobile width: "+JSON.stringify(beforeDrawer));
+    assert.equal(beforeDrawer.tooltipHeight,0);
+    const mobileButton=await evaluate(String.raw`(()=>{
+      const r=document.getElementById("mobile-nav-toggle").getBoundingClientRect();
+      return {x:r.left+r.width/2,y:r.top+r.height/2};
+    })()`);
+    await down(mobileButton.x,mobileButton.y);await up(mobileButton.x,mobileButton.y);
+    await until('document.querySelector("#workspace-shell").classList.contains("is-mobile-open")',
+      "drawer opened at "+mobileWidth);
+    await until('!document.querySelector("#workspace-shell").classList.contains("is-drawer-toggling")',
+      "drawer transition finished at "+mobileWidth);
+    const openDrawer=await evaluate(String.raw`(()=>{
+      const pane=document.querySelector(".sidebar"),r=pane.getBoundingClientRect();
+      const bar=document.querySelector(".topbar").getBoundingClientRect();
+      const probe=document.elementFromPoint(24,(bar.top+bar.bottom)/2);
+      const hint=document.querySelector(".sidebar-interaction-tooltip");
+      return {top:r.top,bottom:r.bottom,height:r.height,left:r.left,width:r.width,
+        viewportHeight:innerHeight,barBottom:bar.bottom,
+        headerHit:!!probe?.closest?.(".topbar"),
+        panePosition:getComputedStyle(pane).position,
+        hintDisplay:hint?getComputedStyle(hint).display:null,
+        pageHeight:document.scrollingElement.scrollHeight};
+    })()`);
+    assert.equal(openDrawer.panePosition,"fixed");
+    assert.ok(openDrawer.top>=openDrawer.barBottom+7,
+      "mobile pane extends behind lower bar: "+JSON.stringify(openDrawer));
+    assert.ok(openDrawer.bottom<=openDrawer.viewportHeight-6,
+      "mobile pane extends below viewport: "+JSON.stringify(openDrawer));
+    assert.ok(Math.abs(openDrawer.height-(openDrawer.bottom-openDrawer.top))<1);
+    assert.equal(openDrawer.headerHit,true,"lower bar no longer hit-testable");
+    assert.equal(openDrawer.hintDisplay,"none");
+    assert.equal(openDrawer.pageHeight,beforeDrawer.pageHeight,
+      "drawer opening introduced unwanted page height");
+    await evaluate('window.scrollTo(0,180);true');
+    const afterScroll=await evaluate(String.raw`(()=>{
+      const r=document.querySelector(".sidebar").getBoundingClientRect();
+      return {top:r.top,bottom:r.bottom};
+    })()`);
+    assert.ok(Math.abs(afterScroll.top-openDrawer.top)<1.5,
+      "drawer moved with page scroll: "+JSON.stringify({openDrawer,afterScroll}));
+    await down(mobileButton.x,mobileButton.y);await up(mobileButton.x,mobileButton.y);
+    await until('!document.querySelector("#workspace-shell").classList.contains("is-mobile-open")',
+      "drawer closes at "+mobileWidth);
+    await evaluate('window.scrollTo(0,0);true');
+  }
+  await metrics(900,820);
+  await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',
+    "desktop rail restored");
+  console.log("PASS: mobile drawer clears both bars, retains viewport height and hides desktop hint");
+
   console.log("PASS: all non-Home titles aligned to D bubble; subtitles and Home unaffected");
 
   console.log("PASS: fixed-height sidebar overlaps bottom photo strip without moving or shrinking");
