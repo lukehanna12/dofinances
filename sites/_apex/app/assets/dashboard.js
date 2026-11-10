@@ -8,8 +8,10 @@ if(new URLSearchParams(location.search).get("colosseum")==="connected"){
 
 import {initWorkspaceNavigation} from "./workspace-nav.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
+import {initColosseumProviders} from "./providers.js";
 initWorkspaceNavigation();
 initColosseumDiagnostics();
+initColosseumProviders();
 
 const account = document.getElementById("account-email");
 const detail = document.getElementById("account-email-detail");
