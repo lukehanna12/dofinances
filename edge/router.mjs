@@ -192,7 +192,7 @@ async function colosseumCatalogForward(request,env,name){
   if(!env.COLOSSEUM_ROUTER?.fetch||!env.COLOSSEUM_ADMIN_CALL_SECRET)
     return json({error:"Colosseum administration is not connected."},503);
   const body=await request.text();
-  if(body.length>190000)return json({error:"Catalog request too large."},413);
+  if(body.length>11500000)return json({error:"Catalog request too large."},413);
   let argumentsObject;
   try{argumentsObject=JSON.parse(body);}
   catch{return json({error:"Invalid JSON."},400);}
