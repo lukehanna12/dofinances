@@ -91,3 +91,33 @@
  #pv-root .pv-mode-count{display:none}
 }
 @media(prefers-reduced-motion:reduce){#pv-root .pv-inspector.is-changing{animation:none}#pv-root .pv-mode,#pv-root .pv-provider-item{transition:none}}
+
+/* Live authorization controls: scoped, deliberately not simulated. */
+#pv-root .pv-provider-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:19px 0 15px}
+#pv-root .pv-provider-form>p{grid-column:1/-1;font-size:12px;line-height:1.7;color:var(--pv-muted);margin:0 0 6px}
+#pv-root .pv-form-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+#pv-root .pv-form-label{font-size:11px;color:#bdbdc5;font-weight:570}
+#pv-root .pv-input{width:100%;min-width:0;min-height:39px;padding:9px 11px;border-radius:8px;border:1px solid #50505b;background:#25252b;color:#f1f1f4;font-family:inherit;font-size:12px;line-height:1.5}
+#pv-root .pv-input:focus-visible{border-color:#aeb8ee;outline:2px solid rgba(177,187,243,.22)}
+#pv-root .pv-input:disabled{color:#8d8d96;opacity:.78;cursor:not-allowed}
+#pv-root .pv-provider-form>.pv-detail-action{justify-self:start;grid-column:1/-1;cursor:pointer;font-family:inherit}
+#pv-root .pv-detail-action{cursor:pointer;font-family:inherit;line-height:1.4}
+#pv-root .pv-detail-action:disabled{opacity:.5;cursor:not-allowed}
+#pv-root .pv-form-error{color:#e9b3b6!important}
+#pv-root .pv-tool-entry{border-top:1px solid var(--pv-border);padding:17px 0;margin-top:12px}
+#pv-root .pv-tool-entry .pv-tool-heading{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+#pv-root .pv-tool-heading>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+#pv-root .pv-tool-heading strong{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:590;font-size:12.5px;overflow-wrap:anywhere}
+#pv-root .pv-tool-effect{font-size:11px;color:var(--pv-muted)}
+#pv-root .pv-tool-entry p{margin:12px 0 0;color:#a5a5ae;font-size:11.5px;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
+#pv-root .pv-tool-entry button{margin-top:13px}
+#pv-root .pv-confirm-panel{border:1px solid #8b8ca5;border-radius:12px;padding:19px;margin-top:21px;background:rgba(158,165,213,.09)}
+#pv-root .pv-confirm-panel strong{font-size:14px}
+#pv-root .pv-confirm-panel>p{font-size:12px;line-height:1.65}
+#pv-root .pv-confirm-panel .pv-detail-grid{margin-bottom:13px}
+#pv-root .pv-confirm-panel button{margin:8px 8px 0 0}
+@media(max-width:680px){
+ #pv-root .pv-provider-form{grid-template-columns:1fr}
+ #pv-root .pv-tool-entry .pv-tool-heading{align-items:flex-start}
+ #pv-root .pv-confirm-panel{padding:14px}
+}
