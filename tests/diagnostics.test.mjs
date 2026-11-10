@@ -10,6 +10,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     const html=await read(path);
     assert.match(html,/data-view="colosseum\/diagnostics"/);
     assert.match(html,/id="diagnostics-root"/);
+    assert.doesNotMatch(html,/COLOSSEUM \/ OBSERVABILITY|Cloud consumption, runtime health, and your local gateway/,"Diagnostics intro must remain absent");
     assert.ok(html.includes('<section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">\\n          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>'.replace('\\n','\n')),
       "Diagnostics title must use the same shared heading position as other screens");
     const diagnostics=html.slice(html.indexOf('data-view="colosseum/diagnostics"'));
@@ -23,7 +24,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
   const css=await read("../sites/_apex/app/assets/diagnostics.css");
   assert.match(css,/prefers-reduced-motion/);
   assert.doesNotMatch(css,/font-weight:740;/,"no Diagnostics-specific override of the native page title");
-  assert.match(css,/data-view="colosseum\/diagnostics"/);
+  assert.match(css,/#diagnostics-root \.dg-header/);
 });
 test("Diagnostics initializes an on-demand, owner-gated system.status client",async()=>{
   const mod=await import("../sites/_apex/app/assets/diagnostics.js");
