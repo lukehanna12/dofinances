@@ -251,29 +251,76 @@
         </section>
         <section class="view project-view" data-view="apple-hig-reader/overview" hidden aria-labelledby="apple-hig-reader-title">
           <div class="page-heading"><h1 id="apple-hig-reader-title">Apple HIG Reader</h1></div>
-          <div class="hig-project">
-            <p class="hig-project-lead">A dedicated reference for Apple's Human Interface Guidelines, connected to your existing read-only Colosseum cloud source.</p>
-            <div class="hig-project-grid">
-              <section class="hig-project-panel" aria-labelledby="hig-reference-title">
-                <span class="hig-project-kicker">OFFICIAL DOCUMENTATION</span>
-                <h2 id="hig-reference-title">Human Interface Guidelines</h2>
-                <p>Design principles, foundations, patterns, components, inputs, and platform-specific guidance directly from Apple.</p>
-                <a class="hig-project-action" href="https://developer.apple.com/design/human-interface-guidelines/" target="_blank" rel="noopener noreferrer">Open Apple's guidelines <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
-              </section>
-              <section class="hig-project-panel" aria-labelledby="hig-cloud-title">
-                <span class="hig-project-kicker">CONNECTED SOURCE</span>
-                <h2 id="hig-cloud-title">Colosseum cloud reader</h2>
-                <p>Your existing Apple HIG Reader v1.1.0 provides on-demand topic discovery, search, and article retrieval as Markdown through owner-authorized tools.</p>
-                <dl class="hig-project-details">
-                  <div><dt>Catalog item</dt><dd>0001cd</dd></div>
-                  <div><dt>Operations</dt><dd>List · Search · Read</dd></div>
-                  <div><dt>Access</dt><dd>Read-only · Cloud</dd></div>
-                </dl>
-              </section>
+          <div class="hig-showcase">
+            <div class="hig-showcase-intro">
+              <div class="hig-showcase-story">
+                <div class="hig-overline"><span class="hig-overline-dot" aria-hidden="true"></span> INDEPENDENT SOFTWARE PROJECT <span aria-hidden="true">/</span> GOOGLE APPS SCRIPT</div>
+                <h2>Design documentation, made programmatically readable.</h2>
+                <p class="hig-showcase-summary">A read-only API I built with Google Apps Script that turns Apple's live Human Interface Guidelines into discoverable topics, searchable results, and paginated Markdown—ready for developer tools and automated workflows.</p>
+                <div class="hig-showcase-links">
+                  <a class="hig-main-link" href="https://github.com/lukehanna12/colosseum/blob/main/cloudflare/worker/APPLE-HIG-READER.md" target="_blank" rel="noopener noreferrer">Explore the integration <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
+                  <a class="hig-quiet-link" href="https://developer.apple.com/design/human-interface-guidelines/" target="_blank" rel="noopener noreferrer">Original documentation <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
+                </div>
+              </div>
+              <div class="hig-showcase-console" aria-label="Illustrative Google Apps Script API request">
+                <div class="hig-console-header"><span class="hig-console-title"><span class="hig-console-dot" aria-hidden="true"></span> HIG READER <span class="hig-console-muted">/ REQUEST EXAMPLE</span></span><span class="hig-console-version">v1.1.0</span></div>
+                <div class="hig-console-method"><span>POST</span><code>/exec</code><span class="hig-console-method-note">JSON</span></div>
+                <pre class="hig-console-code"><code>{
+  <span class="hig-code-key">"action"</span>: <span class="hig-code-value">"read"</span>,
+  <span class="hig-code-key">"slug"</span>: <span class="hig-code-value">"materials"</span>,
+  <span class="hig-code-key">"offset"</span>: <span class="hig-code-number">0</span>,
+  <span class="hig-code-key">"chunkSize"</span>: <span class="hig-code-number">12000</span>
+}</code></pre>
+                <div class="hig-console-separator"></div>
+                <div class="hig-console-output"><span class="hig-console-output-label">STRUCTURED RESPONSE</span><div><span>Markdown content</span><span class="hig-code-symbol" aria-hidden="true">✓</span></div><div><span>Source &amp; media references</span><span class="hig-code-symbol" aria-hidden="true">✓</span></div><div><span>Continuation offset</span><span class="hig-code-symbol" aria-hidden="true">✓</span></div></div>
+                <p class="hig-console-disclaimer">Illustrative contract, not a live API response. Authentication is supplied server-side.</p>
+              </div>
             </div>
+            <div class="hig-showcase-specs" aria-label="Project specifications">
+              <div><span>PLATFORM</span><strong>Google Apps Script</strong></div>
+              <div><span>RELEASE</span><strong>v1.1.0</strong></div>
+              <div><span>INTERFACE</span><strong>HTTPS · JSON</strong></div>
+              <div><span>OPERATIONS</span><strong>3 read-only</strong></div>
+            </div>
+            <section class="hig-showcase-section" aria-labelledby="hig-operations-title">
+              <div class="hig-section-intro"><span class="hig-section-number">01 / API CAPABILITIES</span><h3 id="hig-operations-title">Find it. Search it. Read it.</h3><p>Three focused operations make Apple's HIG practical to consume without maintaining a separate documentation mirror.</p></div>
+              <div class="hig-operation-list">
+                <details class="hig-operation" open>
+                  <summary><span class="hig-operation-index">01</span><span class="hig-operation-name">List topics <code>hig.list</code></span><span class="hig-operation-descriptor">Browse available topics with pagination</span><span class="hig-operation-plus" aria-hidden="true"></span></summary>
+                  <div class="hig-operation-body"><p>Discover the current topic inventory in bounded batches.</p><pre><code>{"action":"list","offset":0,"limit":50}</code></pre></div>
+                </details>
+                <details class="hig-operation">
+                  <summary><span class="hig-operation-index">02</span><span class="hig-operation-name">Search documentation <code>hig.search</code></span><span class="hig-operation-descriptor">Locate a topic by name, slug, or section</span><span class="hig-operation-plus" aria-hidden="true"></span></summary>
+                  <div class="hig-operation-body"><p>Find relevant guidance before retrieving an article.</p><pre><code>{"action":"search","query":"materials","limit":20}</code></pre></div>
+                </details>
+                <details class="hig-operation">
+                  <summary><span class="hig-operation-index">03</span><span class="hig-operation-name">Read articles <code>hig.read</code></span><span class="hig-operation-descriptor">Retrieve Markdown in resumable chunks</span><span class="hig-operation-plus" aria-hidden="true"></span></summary>
+                  <div class="hig-operation-body"><p>Retrieve Markdown with source links, media references, warnings, and continuation information.</p><pre><code>{"action":"read","slug":"materials","offset":0,"chunkSize":12000}</code></pre></div>
+                </details>
+              </div>
+            </section>
+            <section class="hig-showcase-section hig-architecture" aria-labelledby="hig-architecture-title">
+              <div class="hig-section-intro"><span class="hig-section-number">02 / SYSTEM DESIGN</span><h3 id="hig-architecture-title">A small service, not a mirror.</h3><p>Live documentation stays at the source. The application handles retrieval and formatting; a separate private integration makes its operations available to Colosseum.</p></div>
+              <div class="hig-pipeline" aria-label="Source to consumer architecture">
+                <div class="hig-pipeline-node"><span class="hig-pipeline-step">SOURCE</span><strong>Apple HIG / DocC</strong><p>Original design documentation</p></div>
+                <span class="hig-pipeline-arrow" aria-hidden="true">→</span>
+                <div class="hig-pipeline-node hig-pipeline-focus"><span class="hig-pipeline-step">APPLICATION</span><strong>Google Apps Script</strong><p>On-demand JSON and Markdown delivery</p></div>
+                <span class="hig-pipeline-arrow" aria-hidden="true">→</span>
+                <div class="hig-pipeline-node"><span class="hig-pipeline-step">INTEGRATION</span><strong>Colosseum MCP</strong><p>Owner-only list, search, and read tools</p></div>
+              </div>
+              <div class="hig-build-notes">
+                <div><strong>Live, not duplicated</strong><p>Fetch articles on demand; no bulk HIG copy in application storage.</p></div>
+                <div><strong>Complete context</strong><p>Preserve original source links, image and video references, and chunk continuation metadata.</p></div>
+                <div><strong>Secret stays private</strong><p>The Colosseum adapter injects credentials server-side and restricts upstream redirects; the browser never receives the token.</p></div>
+              </div>
+            </section>
+            <footer class="hig-project-footer">
+              <span>Built with Google Apps Script <span aria-hidden="true">·</span> Integrated with Colosseum as catalog item <code>0001cd</code></span>
+              <span>Cloud integration is read-only; live token-authenticated availability is not asserted here.</span>
+            </footer>
           </div>
         </section>
-                <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
+        <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
