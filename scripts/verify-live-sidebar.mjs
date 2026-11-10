@@ -85,6 +85,26 @@ try{
   await command("Page.navigate",{url:"https://stu.dofinances.com/app/"});
   await until('document.readyState==="complete" && !!document.querySelector("#workspace-shell.liquid-glass-preview")',"Studio glass initialization",25000);
   await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',"responsive compact rail");
+
+  // Thin mode must show one clock centered, not a row of top-level links.
+  const compactTopbar=await evaluate(String.raw`(()=>{
+    const clock=document.getElementById("global-clock");
+    const rect=clock.getBoundingClientRect();
+    const links=document.getElementById("global-menu-links");
+    const account=document.querySelector(".global-menu-actions .global-menu-account");
+    const actions=document.querySelector(".global-menu-actions");
+    const actionRect=actions.getBoundingClientRect();
+    return {clockX:rect.left+rect.width/2,viewport:document.documentElement.clientWidth,
+      links:getComputedStyle(links).display,account:getComputedStyle(account).display,
+      actionsRight:actionRect.right};
+  })()`);
+  assert.ok(Math.abs(compactTopbar.clockX-compactTopbar.viewport/2)<2,
+    "Thin-mode clock must be centered independently of navigation: "+JSON.stringify(compactTopbar));
+  assert.equal(compactTopbar.links,"none","Top-level links must hide in thin mode");
+  assert.equal(compactTopbar.account,"none","Account button must hide in thin mode");
+  assert.ok(compactTopbar.viewport-compactTopbar.actionsRight<50,
+    "Search and Menu must anchor the right: "+JSON.stringify(compactTopbar));
+
   const blank=await evaluate(String.raw`(()=>{
     const sidebar=document.getElementById("workspace-sidebar");
     const r=sidebar.getBoundingClientRect();
