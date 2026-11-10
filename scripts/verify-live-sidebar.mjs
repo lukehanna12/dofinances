@@ -318,7 +318,10 @@ try{
       const viewName=route==="colosseum/settings"?"settings":route;
       await until('!document.querySelector(\'[data-view="'+viewName+'"]\').hidden',
         "non-Home title route "+route);
-      await pause(210); // Wait for the content-only 170ms arrival.
+      // A route can activate between animation frames. Wait for its actual
+      // animation completion instead of measuring the initial translateY(4px).
+      await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
+        "non-Home title animation settles for "+route);
       const heading=await evaluate(String.raw`(()=>{
         const mark=document.querySelector(".sidebar .mark").getBoundingClientRect();
         const view=document.querySelector(".content > .view:not([hidden])");
@@ -329,7 +332,7 @@ try{
           subtitleTop:subtitle.top,contentTop:content.top,titleHeight:h1.height,
           scrollY:document.scrollingElement.scrollTop};
       })()`);
-      assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<1.6,
+      assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<0.75,
         "Title isn't centered on the D bubble for "+route+" at "+width+": "+JSON.stringify(heading));
       assert.ok(heading.subtitleTop>heading.titleCenter+45,
         "Subtitle moved upward with the title for "+route+": "+JSON.stringify(heading));

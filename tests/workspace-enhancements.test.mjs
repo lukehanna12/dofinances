@@ -32,7 +32,7 @@ test("only non-Home H1 titles rise to the fixed D-bubble center",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.ok(css.includes('.view:not([data-view="home"]) > .page-heading > h1'),
     "limit the alignment to the primary H1 on non-Home pages");
-  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 37px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
     "center title's line box on the measured D bubble without a runtime scroll rule");
   assert.match(css,/@media\(min-width:761px\)/,"the reference D bubble is visible on desktop");
   assert.doesNotMatch(css,/\.page-heading > \.lead\s*\{[^}]*top:/);
