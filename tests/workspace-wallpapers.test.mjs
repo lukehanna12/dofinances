@@ -63,7 +63,7 @@ test("Home keeps its original pixels and a near-native desktop foreground",()=>{
   assert.match(css,/data-wallpaper-route="home"/);
   assert.match(css,/filter:blur\(10px\)/);
   assert.match(css,/\.workspace-home-art-top/);
-  assert.match(css,/\.workspace-home-art-bottom/);
+  assert.doesNotMatch(css,/\.workspace-home-art-bottom/);
   assert.equal(WORKSPACE_WALLPAPERS.home.sha,
     "656a4d103f5dd4dd4450a9da0954099c686b0e7d6d60f6fbfc35b3e14b2fe4a6");
   assert.equal(WORKSPACE_WALLPAPERS.home.path,"/app/assets/home-rice-terraces-hq.jpg");
