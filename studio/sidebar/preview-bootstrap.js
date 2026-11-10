@@ -10,13 +10,13 @@ for(const form of document.querySelectorAll("form")){
   form.addEventListener("submit",event=>event.preventDefault());
   for(const field of form.querySelectorAll("button,input,select,textarea")){
     field.disabled=true;
-    field.title="Disabled in this static preview";
+    field.setAttribute("aria-description","Unavailable in this static preview");
   }
 }
 for(const button of document.querySelectorAll("button")){
   if(button.id==="sidebar-toggle"||button.id==="mobile-nav-toggle"||button.id==="sidebar-scrim"||button.id==="global-menu-toggle"||button.id==="global-search-toggle")continue;
   button.disabled=true;
-  button.title="Disabled in this static preview";
+  button.setAttribute("aria-description","Unavailable in this static preview");
 }
 for(const link of document.querySelectorAll("a[href]")){
   if(link.getAttribute("href")?.startsWith("#"))continue;

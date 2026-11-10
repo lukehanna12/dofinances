@@ -284,6 +284,8 @@ test("sidebar CSS supports mobile drawer, rail collapse, and visible focus",asyn
   assert.match(css,/:focus-visible/);
   assert.match(css,/\[hidden\]\{display:none!important\}/);
   assert.match(js,/initWorkspaceNavigation\(\)/);
+  assert.doesNotMatch(js,/remove\.title|add\.title|setAttribute\(["']title["']/,
+    "Disabled account actions should convey their reason to assistive technology without hover tooltips");
   assert.match(js,/\/api\/auth\/federation\/accounts/);
   assert.match(js,/\/api\/auth\/federation\/unlink/);
   assert.match(js,/\/api\/auth\/account/);

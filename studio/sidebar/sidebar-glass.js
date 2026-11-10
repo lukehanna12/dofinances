@@ -35,7 +35,7 @@ export function initLiquidGlassSidebar(doc=document,win=window){
   const toggle=doc.createElement("button");
   toggle.type="button";
   toggle.className="glass-scene-toggle";
-  toggle.title="Change the full-page backdrop for glass comparison";
+
   const dot=doc.createElement("span");
   dot.className="glass-scene-dot";
   dot.setAttribute("aria-hidden","true");

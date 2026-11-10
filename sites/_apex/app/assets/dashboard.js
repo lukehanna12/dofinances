@@ -179,7 +179,7 @@ async function loadFederatedAccounts(){
       const remove=document.createElement("button");
       remove.type="button";remove.className="secondary";remove.textContent="Remove";
       remove.disabled=!accounts.hasPassword&&total<=1;
-      if(remove.disabled)remove.title="You must keep at least one sign-in method.";
+      if(remove.disabled)remove.setAttribute("aria-description","You must keep at least one sign-in method.");
       remove.addEventListener("click",async()=>{
         if(!confirm("Unlink this "+(PROVIDER_NAMES[item.provider]||item.provider)+" account? Other sessions will be signed out."))return;
         remove.disabled=true;
@@ -211,8 +211,8 @@ async function loadFederatedAccounts(){
         add.removeAttribute("href");
         add.setAttribute("aria-disabled","true");
         add.style.opacity=".55";
-        add.title=count>=max?"Maximum linked accounts reached.":
-          "OAuth application credentials are not configured.";
+        add.setAttribute("aria-description",count>=max?"Maximum linked accounts reached.":
+          "OAuth application credentials are not configured.");
       }
       buttons.append(add);
     }

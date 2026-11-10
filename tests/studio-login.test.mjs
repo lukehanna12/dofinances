@@ -33,6 +33,11 @@ test("Studio root displays isolated Liquid Glass workspace while apex /login kee
   assert.match(bootstrap, /initWorkspaceNavigation\(\)/);
   assert.match(bootstrap, /initLiquidGlassSidebar\(\)/);
   assert.match(bootstrap, /field\.disabled=true|field\.disabled = true/);
+  assert.doesNotMatch(bootstrap,/\.title\s*=|setAttribute\(["']title["']/,
+    "Preview controls must not create native hover tooltips");
+  assert.doesNotMatch(glassJS,/\.title\s*=|setAttribute\(["']title["']/,
+    "Backdrop toggle must rely on accessible labeling, not native tooltips");
+  assert.match(bootstrap,/aria-description/);
   assert.doesNotMatch(bootstrap, /fetch\(|api\/auth|location\.replace/);
   assert.match(glassCSS, /glass-scene-neutral|glass-scene-prism/);
   assert.match(glassJS, /glass-scene-toggle/);
