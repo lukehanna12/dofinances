@@ -4,11 +4,13 @@ import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
 export const COLOSSEUM_ROUTES=Object.freeze(["utilities","collections","providers","permissions","diagnostics","settings"]);
+export const APPLE_HIG_ROUTES=Object.freeze(["overview"]);
 const MAIN_SET=new Set(MAIN_ROUTES);
 const PROJECT_SET=new Set(COLOSSEUM_ROUTES);
+const APPLE_HIG_SET=new Set(APPLE_HIG_ROUTES);
 const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",
   utilities:"Utilities",collections:"Collections",providers:"Providers",
-  permissions:"Permissions",diagnostics:"Diagnostics"};
+  permissions:"Permissions",diagnostics:"Diagnostics",overview:"Overview"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
 const WIDTH_KEY="dofinances.workspace.sidebar.width";
 const RESIZE_CAP=440;
@@ -18,6 +20,11 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   if(MAIN_SET.has(raw))return raw;
   if(raw==="account")return "settings"; // old dashboard deep-link
   if(raw==="colosseum")return "colosseum/utilities";
+  if(raw==="apple-hig-reader")return "apple-hig-reader/overview";
+  if(raw.startsWith("apple-hig-reader/")){
+    const section=raw.slice("apple-hig-reader/".length);
+    if(APPLE_HIG_SET.has(section))return "apple-hig-reader/"+section;
+  }
   if(raw.startsWith("colosseum/")){
     const section=raw.slice("colosseum/".length);
     if(section==="capabilities")return "colosseum/utilities"; // legacy hash link
@@ -32,6 +39,9 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   if(MAIN_SET.has(slug))return slug;
   if(slug==="account")return "settings";
   if(slug==="colosseum")return "colosseum/utilities";
+  if(slug==="apple-hig-reader")return "apple-hig-reader/overview";
+  if(slug.startsWith("apple-hig-reader/")&&APPLE_HIG_SET.has(slug.slice("apple-hig-reader/".length)))
+    return slug;
   if(slug==="colosseum/capabilities")return "colosseum/utilities"; // legacy deep link
   if(slug.startsWith("colosseum/")&&PROJECT_SET.has(slug.slice("colosseum/".length)))
     return slug;
@@ -41,12 +51,17 @@ export function workspaceRouteDetails(route){
   const selected=resolveWorkspaceRoute("#"+route);
   if(selected.startsWith("colosseum/")){
     const section=selected.split("/")[1];
-    return {route:selected,project:true,label:TITLE_CASE[section],
+    return {route:selected,project:true,projectKey:"colosseum",label:TITLE_CASE[section],
       breadcrumb:"Projects / Colosseum / "+TITLE_CASE[section],
       subtitle:"Colosseum project workspace"};
   }
+  if(selected.startsWith("apple-hig-reader/")){
+    return {route:selected,project:true,projectKey:"apple-hig-reader",label:"Overview",
+      breadcrumb:"Projects / Apple HIG Reader / Overview",
+      subtitle:"Apple HIG Reader project workspace"};
+  }
   const label=TITLE_CASE[selected];
-  return {route:selected,project:false,label,
+  return {route:selected,project:false,projectKey:null,label,
     breadcrumb:"Workspace / "+label,
     subtitle:selected==="settings"?"Manage account & security":
       selected==="projects"?"Your projects":"Your personal workspace"};
@@ -59,6 +74,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const scrim=doc.getElementById("sidebar-scrim");
   const mainNav=doc.getElementById("main-navigation");
   const projectNav=doc.getElementById("project-navigation");
+  const appleHigNav=doc.getElementById("apple-hig-navigation");
   const breadcrumb=doc.getElementById("breadcrumb");
   const subtitle=doc.getElementById("location-subtitle");
   const back=doc.getElementById("back-to-workspace");
@@ -200,11 +216,18 @@ export function initWorkspaceNavigation(doc=document,win=window){
     const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
     mainNav.hidden=meta.project;
-    projectNav.hidden=!meta.project;
+    projectNav.hidden=meta.projectKey!=="colosseum";
+    if(appleHigNav)appleHigNav.hidden=meta.projectKey!=="apple-hig-reader";
     back.hidden=!meta.project;
     if(projectCrumbItem)projectCrumbItem.hidden=!meta.project;
     if(colosseumCrumbItem)colosseumCrumbItem.hidden=!meta.project;
-    if(colosseumCrumb)colosseumCrumb.hidden=!meta.project;
+    if(colosseumCrumb){
+      colosseumCrumb.hidden=!meta.project;
+      if(meta.project){
+        colosseumCrumb.textContent=meta.projectKey==="apple-hig-reader"?"Apple HIG Reader":"Colosseum";
+        colosseumCrumb.href=meta.projectKey==="apple-hig-reader"?"#apple-hig-reader/overview":"#colosseum/utilities";
+      }
+    }
     if(currentCrumb){
       currentCrumb.textContent=meta.label;
       if(projectArrow)projectArrow.hidden=!meta.project;
