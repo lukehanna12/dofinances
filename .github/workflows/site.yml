@@ -260,7 +260,9 @@ jobs:
           curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.js -o "$source_js"
           curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://stu.dofinances.com/app/assets/workspace-wallpapers.css -o "$source_css"
           grep -Fq -- '--workspace-header-height' "$source_css"
-          grep -Fq -- '--workspace-bottom-strip-height' "$source_css"
+          grep -Fq -- '--workspace-footer-height' "$source_css"
+          grep -Fq -- 'position:absolute;' "$source_css"
+          ! grep -Fq -- 'workspace-at-end' "$source_css"
           python3 - "$source_js" <<'PY'
           import re, sys, subprocess, tempfile, struct, os
 
