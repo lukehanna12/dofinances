@@ -82,11 +82,18 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-entry{--cs-entry-border:0px}
 #cs-root .cs-entry+.cs-entry{border-top:1px solid var(--cs-border);--cs-entry-border:1px}
 #cs-root .cs-entry h2{margin:0}
-#cs-root .cs-trigger{display:flex;align-items:baseline;gap:16px;width:100%;min-height:calc(62.4px - var(--cs-entry-border));border:0;background:transparent;color:var(--cs-muted);padding:24px 0;text-align:left;cursor:pointer;transition:padding .45s cubic-bezier(.22,1,.36,1)}
+#cs-root .cs-trigger{display:flex;align-items:center;gap:16px;width:100%;min-height:calc(62.4px - var(--cs-entry-border));border:0;background:transparent;color:var(--cs-muted);padding:24px 0;text-align:left;cursor:pointer;transition:padding .45s cubic-bezier(.22,1,.36,1)}
 /* Let the closing header padding and the panel shrink together over 450ms.
    Keep the same open padding/wrapping and compact final closed height. */
 #cs-root .cs-entry:not(.cs-open) .cs-trigger{padding:0;align-items:center;transition-timing-function:cubic-bezier(.4,0,.2,1)}
-#cs-root .cs-entry:not(.cs-open) .cs-entry-title{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+/* Two copies share a grid track: only the compact title has an ellipsis.
+   The track proportions interpolate in both directions, so a multi-line
+   expanded name cannot snap into one line at the start of collapse. */
+#cs-root .cs-entry-title{display:grid;grid-template-rows:0fr 1fr;transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1)}
+#cs-root .cs-entry:not(.cs-open) .cs-entry-title{grid-template-rows:1fr 0fr;transition-timing-function:cubic-bezier(.4,0,.2,1)}
+#cs-root .cs-entry-title > span{min-height:0;min-width:0;overflow:hidden}
+#cs-root .cs-entry-title .cs-title-compact{white-space:nowrap;text-overflow:ellipsis}
+#cs-root .cs-entry-title .cs-title-expanded{white-space:normal}
 #cs-root .cs-trigger .cs-num{flex:none;width:28px;font-size:12px;font-weight:500;color:var(--cs-dim);font-variant-numeric:tabular-nums}
 #cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s}
 #cs-root .cs-trigger:hover .cs-entry-title,#cs-root .cs-entry.cs-open .cs-entry-title{color:var(--cs-text)}
