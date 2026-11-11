@@ -1,5 +1,6 @@
 /* Live, source-derived Olympus provider controls. The upstream MCP, not this
  * interface, defines the available tools, resource templates, and prompts. */
+import {mountProviderAdapterControl} from "./provider-adapters.js";
 const cache=new Map(),loading=new Map(),editors=new Map(),filters=new Map(),pending=new Map();
 const FIELDS=["targets","targetArrays","readTargetArrays","sourceTargets","destinationTargets","forbiddenFields","effectTargets"];
 const CHECKS=["openWorld","filesystemSensitive","scriptSensitive","destructive","allowTargetless"];
@@ -49,6 +50,8 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
   if(!record){add(region,"p","pv-provision-loading","Discovering the current tool, resource and prompt schemas…");if(!loading.has(id))void load();return;}
   if(record.error){add(region,"p","pv-provision-error",record.error);return;}
   const s=record.data,items=s.tools||[];
+  mountProviderAdapterControl({id,data:s,container:region,request,notify,
+   onChanged:fresh=>{cache.set(id,{data:fresh,error:null});draw();}});
   const available=items.filter(t=>t.available).length;
   const disabled=items.filter(t=>t.disabled).length;
   const unprepared=items.filter(t=>!t.available&&!t.disabled).length;
