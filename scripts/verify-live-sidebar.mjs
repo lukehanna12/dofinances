@@ -218,7 +218,22 @@ try{
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
   await until('document.querySelector(".sidebar").getBoundingClientRect().width>=248 && !document.querySelector("#workspace-shell").classList.contains("is-collapsed")',
-    "expanded pane actual width settles before geometry checks");
+    "expanded pane becomes visible");
+  // State and width thresholds can clear before the CSS transition reaches
+  // its final pixel. Wait for the actual pane edge and fixed 28px sibling
+  // target to coincide; do not loosen the strict geometry assertion.
+  await until(String.raw`(()=>{
+    const shell=document.getElementById("workspace-shell");
+    const sidebar=document.querySelector(".sidebar");
+    const grip=document.getElementById("sidebar-resize-handle");
+    if(!shell||!sidebar||!grip||shell.classList.contains("is-sidebar-toggling"))return false;
+    const targetWidth=Number.parseFloat(getComputedStyle(shell).getPropertyValue("--sidebar-expanded-width"));
+    const s=sidebar.getBoundingClientRect(),g=grip.getBoundingClientRect();
+    return Number.isFinite(targetWidth)&&
+      Math.abs(s.width-targetWidth)<0.5&&
+      Math.abs(g.width-28)<0.5&&
+      Math.abs(g.left+g.width/2-s.right)<0.5;
+  })()`, "settled sidebar width and aligned 28px resize target",4000);
   const header=await evaluate(String.raw`(()=>{
     const head=document.querySelector(".sidebar-head");
     const logo=document.querySelector(".sidebar-head .mark").getBoundingClientRect();
