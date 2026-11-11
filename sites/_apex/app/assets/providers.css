@@ -170,7 +170,7 @@
 @media(max-width:650px){#pv-root .pv-provision-form-grid{grid-template-columns:1fr}#pv-root .pv-provision-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#pv-root .pv-provision-tool-list{max-height:70vh}#pv-root .pv-provision-head{align-items:flex-start}#pv-root .pv-provision-toolbar{align-items:flex-start;flex-direction:column}#pv-root .pv-provision-filter{max-width:none;width:100%}}
 
 
-/* Olympus adapter source configuration; scoped to Providers inspector. */
+/* Colosseum adapter source configuration; scoped to Providers inspector. */
 #pv-root .pv-adapter-section{border-top:1px solid var(--pv-border);padding:22px 0;margin:18px 0 22px}
 #pv-root .pv-adapter-state{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#26262b;border:1px solid #41414a;border-radius:9px;padding:13px}
 #pv-root .pv-adapter-state strong{font-size:12px;font-weight:620;color:#ececf2}

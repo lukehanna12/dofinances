@@ -1,4 +1,4 @@
-/* Dynamically discovered Olympus adapter source control. This module never
+/* Dynamically discovered Colosseum adapter source control. This module never
  * presumes a package-specific tool name or fixed API surface. */
 const expanded=new Set(),sourceCache=new Map(),loading=new Set(),pending=new Map();
 const el=(tag,cls,text)=>{
