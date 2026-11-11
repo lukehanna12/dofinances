@@ -168,3 +168,21 @@
 #pv-root .pv-provision-protocol-item p{font-size:11px;color:#a8a8b1;margin:5px 0 0}
 #pv-root .pv-provision-empty{color:#9999a4;font-size:12px;margin:12px}
 @media(max-width:650px){#pv-root .pv-provision-form-grid{grid-template-columns:1fr}#pv-root .pv-provision-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#pv-root .pv-provision-tool-list{max-height:70vh}#pv-root .pv-provision-head{align-items:flex-start}#pv-root .pv-provision-toolbar{align-items:flex-start;flex-direction:column}#pv-root .pv-provision-filter{max-width:none;width:100%}}
+
+
+/* Olympus adapter source configuration; scoped to Providers inspector. */
+#pv-root .pv-adapter-section{border-top:1px solid var(--pv-border);padding:22px 0;margin:18px 0 22px}
+#pv-root .pv-adapter-state{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#26262b;border:1px solid #41414a;border-radius:9px;padding:13px}
+#pv-root .pv-adapter-state strong{font-size:12px;font-weight:620;color:#ececf2}
+#pv-root .pv-adapter-state small{font-size:11px;color:#aaaab5;line-height:1.5}
+#pv-root .pv-adapter-form{padding:14px;border:1px solid #41414a;border-radius:10px;background:#222227;display:grid;gap:12px}
+#pv-root .pv-adapter-fields{display:grid;gap:12px}
+#pv-root .pv-adapter-field{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#c1c1ca;min-width:0}
+#pv-root .pv-adapter-field>.pv-provision-input{width:100%;font-size:12px;min-height:38px}
+#pv-root .pv-adapter-field>textarea.pv-provision-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;min-height:68px;line-height:1.6;resize:vertical}
+#pv-root .pv-adapter-field small{font-size:10px;color:#92939d;line-height:1.5;overflow-wrap:anywhere}
+#pv-root .pv-adapter-browse{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#pv-root .pv-adapter-browse>.pv-provision-input{flex:1 1 180px}
+#pv-root .pv-adapter-browse>.pv-provision-button{flex:none}
+#pv-root .pv-adapter-form .pv-provision-actions{margin-top:2px}
+@media(min-width:850px){#pv-root .pv-adapter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}#pv-root .pv-adapter-fields>.pv-adapter-field:has(textarea){grid-column:span 2}#pv-root .pv-adapter-fields>.pv-adapter-browse{grid-column:span 2}}
