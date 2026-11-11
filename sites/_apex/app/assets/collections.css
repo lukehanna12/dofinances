@@ -75,7 +75,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-description{max-width:448px;margin:0;color:var(--cs-muted);font-size:clamp(14px,1.35vw,16px);line-height:1.65;overflow-wrap:anywhere;white-space:pre-line}
 #cs-root .cs-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:22px}
 #cs-root .cs-actions .cs-button{min-height:35px}
-#cs-root .cs-pagination{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:20px}
+#cs-root .cs-pagination{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:25px}
 #cs-root .cs-page{width:36px;height:36px;border:1px solid var(--cs-border);border-radius:999px;background:var(--cs-weak);color:var(--cs-muted);display:grid;place-items:center;font-size:12px;position:relative;transition:background .2s,color .2s,transform .2s}
 #cs-root .cs-page:hover:not(:disabled){background:#262626;color:var(--cs-text)}
 #cs-root .cs-page[aria-current="page"]{background:#fff;border-color:#fff;color:#171717;font-weight:600;transform:scale(1.03)}
