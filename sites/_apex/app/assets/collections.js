@@ -22,7 +22,7 @@ export function initColosseumCollections(){
  const $=id=>root.querySelector("#"+id);
  const state={
    collections:[],loaded:false,activeId:null,detail:null,
-   page:1,pageSize:4,selecting:false,selected:new Set(),
+   page:1,pageSize:7,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");

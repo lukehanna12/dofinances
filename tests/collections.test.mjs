@@ -33,7 +33,7 @@ test("Exact recovered accordion behavior includes direct collapse and exclusive 
  assert.match(css,/\.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
 });
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
- assert.match(js,/pageSize:4/);
+ assert.match(js,/pageSize:7/);
  assert.match(js,/data-cs-page="prev"/);
  assert.match(js,/data-cs-page="next"/);
  assert.match(js,/aria-current="page"/);
@@ -226,4 +226,15 @@ test("Collections update time inherits the shared unpadded-hour convention",asyn
  assert.ok(js.includes('import {formatWorkspaceTime} from "./workspace-nav.js"'));
  assert.ok(js.includes('formatWorkspaceTime(updatedAt,{hour12:true})'));
  assert.ok(!js.includes('updatedAt.toLocaleTimeString('));
+});
+
+test("Eleven collections paginate as seven on the first page and four on the second",()=>{
+ const pageSize=7;
+ const collections=Array.from({length:11},(_,i)=>({collection_id:"c"+i}));
+ assert.match(js,/page:1,pageSize:7,selecting:false/);
+ assert.match(js,/Math\.ceil\(state\.collections\.length\/state\.pageSize\)/);
+ assert.match(js,/state\.collections\.slice\(\(state\.page-1\)\*state\.pageSize,state\.page\*state\.pageSize\)/);
+ assert.equal(Math.ceil(collections.length/pageSize),2);
+ assert.equal(collections.slice(0,pageSize).length,7);
+ assert.equal(collections.slice(pageSize,2*pageSize).length,4);
 });
