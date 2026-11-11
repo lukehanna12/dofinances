@@ -91,7 +91,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    if(!shown.length)add(list,"p","pv-provision-empty","No upstream tools match this filter.");
   }
   drawTools();
-  for(const [title,key] of [["Resources","resources"],["Resource templates","resource_templates"],["Prompts","prompts"],["Installed skills","skills"]]){
+  for(const [title,key] of [["Resources","resources"],["Resource templates","resource_templates"],["Prompts","prompts"],["Installed skills","skills"],["Skill supporting files","skill_files"]]){
    const group=s[key]||{};
    const panel=add(region,"section","pv-provision-mcp");
    add(panel,"h5","",title+" · "+(group.items?.length||0));
@@ -103,6 +103,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
     if(item.uri||item.uriTemplate||item.relative_path)
      add(row,"code","",item.uri||item.uriTemplate||item.relative_path);
     if(item.description)add(row,"p","",item.description);
+    if(key==="skill_files")add(row,"p","pv-provision-muted",String(item.size_bytes||0)+" bytes · "+String(item.mime_type||"application/octet-stream")+" · Parent: "+String(item.skill_relative_path||"unknown"));
     add(row,"p","pv-provision-tool-state",item.disabled?"Excluded by provider regulation":"Available from upstream");
     const actions=add(row,"div","pv-provision-actions");
     actions.append(button(item.disabled?"Allow":"Exclude",
@@ -116,6 +117,38 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
       preview.textContent=String(result.content||"").slice(0,90000)||"Skill document is empty.";
      }catch(error){preview.textContent="Skill read unavailable: "+String(error.message||error);}
     },true));
+    if(key==="skill_files")actions.append(button("Download file",async()=>{
+     const status=add(row,"p","pv-provision-muted","Downloading the discovered skill file…");
+     try{
+      let offset=0,size=null;
+      const parts=[];
+      do{
+       const chunk=await request({action:"local.skill.file",uid:id,relative_path:keyName,
+        offset,length:262144});
+       if(chunk.encoding!=="base64"||typeof chunk.content!=="string")
+        throw Error("Gateway did not return a verified file chunk.");
+       const raw=atob(chunk.content);
+       const bytes=new Uint8Array(raw.length);
+       for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+       parts.push(bytes);
+       size=chunk.size_bytes;
+       if(chunk.next_offset===null){offset=null;break;}
+       if(!Number.isSafeInteger(chunk.next_offset)||chunk.next_offset<=offset)
+        throw Error("Non-progressing skill-file chunk.");
+       offset=chunk.next_offset;
+       status.textContent="Downloaded "+offset+" of "+size+" bytes…";
+      }while(offset!==null);
+      const blob=new Blob(parts,{type:item.mime_type||"application/octet-stream"});
+      if(blob.size!==size)throw Error("Download size mismatch.");
+      const url=URL.createObjectURL(blob);
+      try{
+       const a=document.createElement("a");
+       a.href=url;a.download=item.name||"skill-file";a.hidden=true;
+       document.body.append(a);a.click();a.remove();
+       status.textContent="Verified: "+blob.size+" bytes downloaded.";
+      }finally{setTimeout(()=>URL.revokeObjectURL(url),30000);}
+     }catch(error){status.textContent="Download unavailable: "+String(error.message||error);}
+    },true));
     if(pending.get(id)?.kind===key&&pending.get(id)?.name===keyName)
      drawItemConfirmation(row,s);
    }
@@ -124,7 +157,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
  }
  function provisionKey(kind,item){
   return kind==="resources"?item.uri:kind==="resource_templates"?item.uriTemplate:
-   kind==="skills"?item.relative_path:item.name;
+   ["skills","skill_files"].includes(kind)?item.relative_path:item.name;
  }
  async function prepareItem(snapshot,kind,name,rule){
   try{
