@@ -88,3 +88,14 @@ test("Collections title uses the shared non-Home heading contract without custom
  const common=src("sites/_apex/app/assets/workspace-enhancements.css");
  assert.match(common,/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
 });
+
+test("Collections uses one route-scoped black canvas without an overlay",()=>{
+ const styles=src("sites/_apex/app/assets/collections.css");
+ const wallpapers=src("sites/_apex/app/assets/workspace-wallpapers.css");
+ const foundation=src("sites/_apex/assets/site-foundation.css");
+ assert.match(styles,/html:has\(body > #workspace-shell \.view\[data-view="colosseum\/collections"\]:not\(\[hidden\]\)\)\s*\{\s*--ui-canvas:#0a0a0a;/);
+ assert.doesNotMatch(styles,/#cs-root\s*\{[^}]*background:/);
+ assert.match(wallpapers,/html:has\(body > #workspace-shell\)[\s\S]*?background:var\(--ui-canvas,#171717\)/);
+ assert.match(wallpapers,/body:has\(> #workspace-shell\)[\s\S]*?background:var\(--ui-canvas,#171717\)/);
+ assert.match(foundation,/--ui-canvas: #171717;/);
+});
