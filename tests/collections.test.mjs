@@ -82,7 +82,9 @@ test("Collections title uses the shared non-Home heading contract without custom
  assert.doesNotMatch(section,/<div class="cs-head-copy">[\s\S]*?<h1/);
  assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
  assert.doesNotMatch(css,/padding-top:0/);
- assert.match(css,/\.content > \.view\[data-view="colosseum\/collections"\] > \.page-heading/);
+ assert.doesNotMatch(css,/\.content:has\(> \.view\[data-view="colosseum\/collections"/);
+ assert.doesNotMatch(css,/\.content > \.view\[data-view="colosseum\/collections"\] > \.page-heading/);
+ assert.match(css,/#cs-root\{[\s\S]*?width:min\(1536px/);
  const common=src("sites/_apex/app/assets/workspace-enhancements.css");
  assert.match(common,/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
 });

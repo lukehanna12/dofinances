@@ -127,17 +127,15 @@
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
-/* Keep the Collections workbench's wide layout independent of the shared
-   non-Home page title. The title itself uses the same .page-heading > h1
-   markup, typography, and Y-position rule as Providers and Diagnostics.
-   Its containing box mirrors standard .content at every viewport width. */
-.content:has(> .view[data-view="colosseum/collections"]:not([hidden])){
-  max-width:1536px;
-  padding-inline:0;
-}
-.content > .view[data-view="colosseum/collections"] > .page-heading{
-  max-width:1110px;
-  box-sizing:border-box;
-  margin-inline:auto;
-  padding-inline:clamp(26px,4.1vw,58px);
+/* The shared .content container owns title alignment for every non-Home
+   view, including Collections. Do not override its max-width or padding.
+   Keep only the Collections workbench wide, centered within the available
+   workspace pane without affecting the shared .page-heading. */
+@media(min-width:761px){
+  #cs-root{
+    width:min(1536px, calc(100vw - var(--workspace-sidebar-left-gap,16px) - var(--workspace-rail-space-width,260px) - 12px));
+    position:relative;
+    left:50%;
+    transform:translateX(-50%);
+  }
 }
