@@ -152,6 +152,12 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   }
   .shell:not(.is-collapsed) .sidebar{width:var(--sidebar-expanded-width,260px);}
   .shell.is-rail-expanded .sidebar{width:var(--sidebar-expanded-width,260px);}
+  /* The base theme places a toggle 44px below the D on collapse, while its
+     original display:none covered only the 761–1279px compact breakpoint.
+     Hide it in every collapsed DESKTOP rail, including wide manual collapse.
+     Empty-rail click and keyboard expand target remain available; the mobile
+     DRAWER (max-width:760px) still shows its functional close button. */
+  .shell.liquid-glass-preview.is-collapsed .sidebar-head > .sidebar-toggle{display:none;}
   /* Cursor applies to the actual hovered descendants, not just the aside:
      most empty rail pixels belong to the head, nav, or footer children. */
   .shell.is-collapsed .sidebar,

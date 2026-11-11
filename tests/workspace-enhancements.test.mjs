@@ -179,6 +179,24 @@ test("actual shadcn Base breadcrumb list uses muted links and an unframed page",
   assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-text\)/);
   assert.match(css,/border-radius:0;padding:0/);
 });
+test("collapsed desktop sidebar never renders the header toggle at compact or wide widths",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const theme=read("../sites/_apex/app/assets/workspace-theme.css");
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  const desktop=css.slice(css.indexOf("@media(min-width:761px){"),css.indexOf("@media(min-width:761px) and (max-width:1279px){"));
+  const mobile=css.slice(css.indexOf("@media(max-width:760px){"));
+  // Diagnose the precise wide-width regression: old collapsed positioning
+  // is unconditional, but the prior hiding rule was only in compact mode.
+  assert.match(theme,/\\.shell\\.is-collapsed \\.sidebar-toggle \\{top: 44px; right: 7px;\\}/);
+  assert.match(theme,/@media \\(min-width: 761px\\) and \\(max-width: 1279px\\) \\{[\\s\\S]*?\\.shell\\.is-compact-rail \\.sidebar-toggle \\{display: none;\\}/);
+  assert.match(desktop,/\\.shell\\.liquid-glass-preview\\.is-collapsed \\.sidebar-head > \\.sidebar-toggle\\{display:none;\\}/);
+  assert.doesNotMatch(mobile,/\\.is-collapsed \\.sidebar-head > \\.sidebar-toggle\\{display:none/);
+  assert.match(mobile,/\\.shell\\.liquid-glass-preview \\.sidebar-head > \\.sidebar-toggle\\{[\\s\\S]*?display:inline-grid/);
+  assert.match(desktop,/\\.shell\\.liquid-glass-preview\\.is-collapsed \\.sidebar-rail-expand-target\\{/);
+  assert.match(nav,/sidebar\\.addEventListener\\?\\.\\("click",expandFromBlank\\)/);
+  assert.match(nav,/railExpandTarget\\?\\.addEventListener\\?\\.\\("keydown"/);
+});
+
 test("sidebar spacing and resize grip are symmetric and never light up on hover",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");

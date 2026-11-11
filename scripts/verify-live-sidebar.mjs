@@ -550,6 +550,35 @@ try{
   await metrics(900,820);
   await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',
     "desktop rail restored");
+  // The collapsed toggle used to reappear below the D at >=1280px because
+  // the old display:none was scoped to compact widths only.
+  for(const width of [1280,1920]){
+    await metrics(width,820);
+    await until('window.innerWidth>='+String(width)+' && !document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',
+      "wide desktop breakpoint at "+width);
+    const collapsedToggle=await evaluate(String.raw`(()=>{
+      const shell=document.getElementById("workspace-shell");
+      const button=document.getElementById("sidebar-toggle");
+      if(shell.classList.contains("is-collapsed"))return {unexpectedInitialCollapse:true};
+      button.click();
+      const box=button.getBoundingClientRect();
+      return {collapsed:shell.classList.contains("is-collapsed"),
+        display:getComputedStyle(button).display,buttonWidth:box.width,
+        expandTargetVisible:!document.getElementById("sidebar-rail-expand-target").hidden,
+        ariaExpanded:button.getAttribute("aria-expanded")};
+    })()`);
+    assert.equal(collapsedToggle.collapsed,true,"wide sidebar failed to collapse: "+JSON.stringify({width,collapsedToggle}));
+    assert.equal(collapsedToggle.display,"none","Collapsed desktop toggle visible at "+width+": "+JSON.stringify(collapsedToggle));
+    assert.equal(collapsedToggle.buttonWidth,0,"Hidden toggle still takes space at "+width);
+    assert.equal(collapsedToggle.expandTargetVisible,true,"Blank rail keyboard expansion missing at "+width);
+    assert.equal(collapsedToggle.ariaExpanded,"false");
+    await evaluate('document.getElementById("workspace-sidebar").click();true');
+    await until('!document.querySelector("#workspace-shell").classList.contains("is-collapsed") && !document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',
+      "wide blank-rail re-expansion at "+width);
+    assert.equal(await evaluate('getComputedStyle(document.getElementById("sidebar-toggle")).display'),
+      "inline-grid","Expanded desktop must restore its collapse button at "+width);
+  }
+  console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
   console.log("PASS: non-Home titles aligned to D-bubble Y; five Colosseum subtitles absent, other subtitles and Home unchanged");
