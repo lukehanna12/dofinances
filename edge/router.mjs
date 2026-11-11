@@ -341,9 +341,11 @@ async function cloudflareAccountApi(request,env,pathname){
     return json({error:"Method not allowed."},405);
   const user=await getUser(request,env);
   if(!user)return pathname.endsWith("/connect")?redirect("/login"):json({error:"DoFinances sign-in required."},401);
-  if(!env.CLOUDFLARE_CONNECTION_ACCESS_AUD||!env.COLOSSEUM_OWNER_ACCESS_EMAIL)
+  const ownerEmail=env.CLOUDFLARE_OWNER_ACCESS_EMAIL||env.COLOSSEUM_OWNER_ACCESS_EMAIL;
+  if(!env.CLOUDFLARE_CONNECTION_ACCESS_AUD||!ownerEmail)
     return json({error:"Cloudflare owner access is not configured."},503);
-  const accessEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD};
+  const accessEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD,
+    COLOSSEUM_OWNER_ACCESS_EMAIL:ownerEmail};
   let owner;
   try{owner=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),accessEnv);}
   catch{return json({error:"Cloudflare authentication is unavailable."},503);}
@@ -381,7 +383,7 @@ async function cloudflareAccountApi(request,env,pathname){
     let policy,verified,ciphertext;
     try {
       policy=normalizedCloudflarePolicy(body.policy||DEFAULT_CLOUDFLARE_POLICY);
-      verified=await verifyCloudflareIdentity(body.token,env.COLOSSEUM_OWNER_ACCESS_EMAIL);
+      verified=await verifyCloudflareIdentity(body.token,ownerEmail);
       ciphertext=await sealCloudflareToken(body.token,env.MFA_ENCRYPTION_KEY,user.id);
     }catch(error){return json({error:error.message||"Cloudflare verification failed."},400);}
     const outcome=await stub.cloudflareConnectionSave({

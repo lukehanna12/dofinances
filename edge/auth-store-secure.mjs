@@ -57,10 +57,8 @@ export class AuthStore extends BaseAuthStore {
 
   cloudflareConnectionState({userId,includeCredential=false}){
     if(typeof userId!=="string"||!userId)return {status:401,error:"Sign-in required."};
-    const projectOwner=this.sql.exec("SELECT user_id FROM colosseum_owner WHERE singleton='colosseum'").toArray()[0];
-    if(projectOwner && projectOwner.user_id!==userId)
-      return {status:403,error:"This connection is reserved for the verified account owner."};
-    const record=this.sql.exec("SELECT * FROM cloudflare_account_connection WHERE singleton='owner'").toArray()[0];
+    // This account-wide owner claim is independent of project-specific ownership.
+    // Only the first verified owner may claim it; a disconnected claim persists.    const record=this.sql.exec("SELECT * FROM cloudflare_account_connection WHERE singleton='owner'").toArray()[0];
     if(record && record.user_id!==userId)
       return {status:403,error:"Cloudflare access is already assigned to a different DoFinances user."};
     if(!record)return {status:200,connected:false,policy:{mode:"read",accounts:"*",zones:"*",user:false}};

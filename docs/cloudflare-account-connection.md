@@ -5,7 +5,7 @@ The main Settings page at https://dofinances.com/app/settings manages a durable,
 ## Security
 
 - Cloudflare Access protects only /api/cloudflare/* with a separate self-hosted application, an allow policy for the verified Cloudflare owner, and expiring signed Access JWTs.
-- The DoFinances Worker additionally requires its Secure, HttpOnly account session and permanently binds the single Cloudflare owner identity to one immutable DoFinances user ID. When an existing Colosseum ownership record is present, the account ID must match it.
+- The DoFinances Worker additionally requires its Secure, HttpOnly account session and permanently binds the single Cloudflare owner identity to one immutable DoFinances user ID. Cloudflare account ownership is independent of all project-specific owner records.
 - An entered Cloudflare *user API token* is verified using /user/tokens/verify and /user. The token requires User Details Read so its owner can be verified against the server's configured Cloudflare owner email.
 - The token is encrypted with AES-256-GCM in the existing SQLite Durable Object. The existing MFA_ENCRYPTION_KEY is reused with a distinct authenticated-data context bound to the DoFinances user ID. The plaintext token is never returned to Settings.
 - Every API request requires both signed-in identities; the request is forwarded exclusively to https://api.cloudflare.com/client/v4 after policy checks.
@@ -23,6 +23,6 @@ The integrated JSON API console is for specific Cloudflare API requests. Non-JSO
 
 ## Deployment
 
-Cloudflare Access application: DoFinances Cloudflare account access, path dofinances.com/api/cloudflare/*, 8-hour session, exact owner email allow policy. The audience is set in edge/wrangler.jsonc as CLOUDFLARE_CONNECTION_ACCESS_AUD. Preserve the existing secret COLOSSEUM_OWNER_ACCESS_EMAIL, Access issuer and MFA_ENCRYPTION_KEY. Do not place API tokens in GitHub.
+Cloudflare Access application: DoFinances Cloudflare account access, path dofinances.com/api/cloudflare/*, 8-hour session, exact owner email allow policy. The audience is set in edge/wrangler.jsonc as CLOUDFLARE_CONNECTION_ACCESS_AUD. The independent owner email may be stored as CLOUDFLARE_OWNER_ACCESS_EMAIL; until configured, the existing verified-owner email secret COLOSSEUM_OWNER_ACCESS_EMAIL is used. Preserve the Access issuer and MFA_ENCRYPTION_KEY. Do not place API tokens in GitHub.
 
 Automated tests cover encryption, path and scope denial, verification, owner route checks, and static UI wiring. End-to-end authentication and token provisioning require the owner's browser login and user-issued token.
