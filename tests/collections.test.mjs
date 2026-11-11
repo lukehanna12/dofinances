@@ -148,10 +148,10 @@ test("Collections primary content typography scales continuously with window wid
 });
 
 test("Collections does not duplicate the live count and refresh time below the header",()=>{
- assert.doesNotMatch(js,/announce\\("Live Colosseum · "/);
- assert.match(js,/summary\\.textContent=formatCollectionSummary\\(refreshedAt,state\\.collections\\.length\\)/);
- assert.match(js,/announce\\("";?\\)/);
- assert.match(css,/#cs-root \\.cs-source:empty\\{display:none\\}/);
- assert.match(css,/#cs-root \\.cs-source\\[data-error="true"\\]/);
- assert.match(html,/id="cs-status"[^>]*role="status" aria-live="polite"/);
+ assert.ok(!js.includes('announce("Live Colosseum · "'));
+ assert.ok(js.includes('summary.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
+ assert.ok(js.includes('announce("");'));
+ assert.ok(css.includes("#cs-root .cs-source:empty{display:none}"));
+ assert.ok(css.includes('#cs-root .cs-source[data-error="true"]'));
+ assert.ok(html.includes('id="cs-status" class="cs-source" role="status" aria-live="polite"'));
 });
