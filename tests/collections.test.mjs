@@ -109,7 +109,7 @@ test("Collections summary uses the visitor's last successful refresh time and co
    "TOTAL 11 / UPDATED 2:02 AM");
  assert.equal(formatCollectionSummary(new Date(2026,10,11,14,7),0),
    "TOTAL 0 / UPDATED 2:07 PM");
- assert.match(html,/<span class="cs-eyebrow" id="cs-summary">TOTAL — / UPDATED —<\/span>/);
+ assert.match(html,/<span class="cs-eyebrow" id="cs-summary">TOTAL — \/ UPDATED —<\/span>/);
  assert.doesNotMatch(html,/COLOSSEUM \/ COLLECTION LIBRARY/);
  assert.match(js,/summary\.textContent=formatCollectionSummary\(refreshedAt,state\.collections\.length\)/);
  assert.match(js,/state\.collections=good\.filter/);
