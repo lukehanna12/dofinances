@@ -177,3 +177,33 @@ test("signed owner can connect, scope, execute and disconnect without exposing c
     assert.ok(upstream.filter(x=>x.authorization).every(x=>x.url.startsWith("https://api.cloudflare.com/client/v4/")));
   }finally{globalThis.fetch=prior;}
 });
+
+
+test("Cloudflare account status calls the real Durable Object lookup after an owner signs in",async()=>{
+  // The production regression was an executable declaration swallowed by a // comment.
+  // Test the actual method body, not a mock implementation of cloudflareConnectionState.
+  const source=await readFile(new URL("../edge/auth-store-secure.mjs",import.meta.url),"utf8");
+  const match=source.match(/  cloudflareConnectionState\(\{userId,includeCredential=false\}\)\{([\s\S]*?)\n  \}\n  cloudflareConnectionSave\(/);
+  assert.ok(match,"Cloudflare connection status method must exist in the deployed Durable Object");
+  assert.match(match[1],/^\s*const record=this\.sql\.exec\("SELECT \* FROM cloudflare_account_connection WHERE singleton='owner'"\)/m);
+  assert.doesNotMatch(match[1],/^\s*\/\/[^\n]*const record=/m);
+  const actualStatusMethod=new Function("return function({userId,includeCredential=false}){"+match[1]+"\n}")();
+  const reads=[];
+  const emptyStore={sql:{exec(query){reads.push(query);return {toArray:()=>[]}}}};
+  assert.deepEqual(actualStatusMethod.call(emptyStore,{userId:"verified-do-user"}),{
+    status:200,connected:false,policy:{mode:"read",accounts:"*",zones:"*",user:false}
+  });
+  assert.equal(reads.length,1);
+  const liveRecord={user_id:"verified-do-user",cloudflare_user_id:"verified-cf-user",
+    email:"verified@example.test",token_ciphertext:"v1:encrypted-placeholder",
+    token_id:"token-id",expires_on:null,policy_json:JSON.stringify({mode:"full",accounts:"*",zones:"*",user:true}),
+    connected_at:1234,updated_at:1235,disconnected_at:0};
+  const linkedStore={sql:{exec(){return {toArray:()=>[liveRecord]}}}};
+  const owner=actualStatusMethod.call(linkedStore,{userId:"verified-do-user"});
+  assert.equal(owner.connected,true);
+  assert.equal(owner.policy.mode,"full");
+  assert.ok(!Object.hasOwn(owner,"ciphertext"),"credentials must never be included in normal status");
+  assert.equal(actualStatusMethod.call(linkedStore,{userId:"another-user"}).status,403);
+  assert.equal(actualStatusMethod.call(linkedStore,{userId:"verified-do-user",includeCredential:true}).ciphertext,
+    "v1:encrypted-placeholder");
+});
