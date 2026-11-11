@@ -11,6 +11,10 @@ const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 const REFRESH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l-1 5a7.5 7.5 0 0 0 13.4 2"/></svg>';
 const FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></svg>';
 const isUid=value=>/^[0-9a-f]{6}$/.test(value);
+export function formatCollectionSummary(updatedAt,count){
+  const localTime=updatedAt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).replace(/\u202f/g," ");
+  return "UPDATED: "+localTime+" · REGISTERED: "+count;
+}
 
 export function initColosseumCollections(){
  const root=document.getElementById("cs-root");
@@ -23,7 +27,7 @@ export function initColosseumCollections(){
    busy:false,loadSeq:0,detailSeq:0
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
- const status=$("cs-status"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
+ const status=$("cs-status"),summary=$("cs-summary"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog");
  let formMode="create";
  function announce(message,error=false){
@@ -237,7 +241,9 @@ export function initColosseumCollections(){
      if(chosen)state.page=Math.floor(state.collections.indexOf(chosen)/state.pageSize)+1;
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
-     announce("Live Colosseum · "+state.collections.length+" collections · refreshed "+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
+     const refreshedAt=new Date();
+     summary.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
+     announce("Live Colosseum · "+state.collections.length+" collections · refreshed "+refreshedAt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
      if(chosen)await loadDetail(chosen.collection_id);
    }catch(error){if(seq===state.loadSeq)announce(error.message,true);}
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy;}

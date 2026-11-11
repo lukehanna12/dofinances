@@ -99,3 +99,24 @@ test("Collections uses one route-scoped black canvas without an overlay",()=>{
  assert.match(wallpapers,/body:has\(> #workspace-shell\)[\s\S]*?background:var\(--ui-canvas,#171717\)/);
  assert.match(foundation,/--ui-canvas: #171717;/);
 });
+
+test("Collections summary uses the visitor's last successful refresh time and complete live count",async()=>{
+ const {formatCollectionSummary}=await import("../sites/_apex/app/assets/collections.js");
+ assert.equal(formatCollectionSummary(new Date(2026,10,11,2,2),11),
+   "UPDATED: 02:02 AM · REGISTERED: 11");
+ assert.equal(formatCollectionSummary(new Date(2026,10,11,14,7),0),
+   "UPDATED: 02:07 PM · REGISTERED: 0");
+ assert.match(html,/<span class="cs-eyebrow" id="cs-summary">UPDATED: — · REGISTERED: —<\/span>/);
+ assert.doesNotMatch(html,/COLOSSEUM \/ COLLECTION LIBRARY/);
+ assert.match(js,/summary\.textContent=formatCollectionSummary\(refreshedAt,state\.collections\.length\)/);
+ assert.match(js,/state\.collections=good\.filter/);
+ assert.match(js,/if\(seq!==state\.loadSeq\)return/);
+ assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*text-transform:uppercase/);
+});
+test("Collections content rises while maintaining a margin and the shared title position",()=>{
+ assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
+ assert.match(css,/#cs-root\{margin-top:-28px;padding:/);
+ assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
+ assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
+ assert.doesNotMatch(css,/#cs-root\{[^}]*position:absolute/);
+});
