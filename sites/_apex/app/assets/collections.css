@@ -14,7 +14,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   --cs-card:#0a0a0a;--cs-strong:#fff;--cs-strong-ink:#171717;
   --cs-red:#f87171;--cs-red-border:#87373b;--cs-red-surface:#2b1518;
   color:var(--cs-text);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:-44px;padding:0 0 88px;
+  -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:-44px;padding:0;
 }
 #cs-root *{box-sizing:border-box}
 #cs-root button,#cs-root input,#cs-root textarea{font:inherit}
@@ -70,7 +70,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    follow the actual final-page rows while the black document canvas keeps
    the full-page bottom edge. 25px navigation gap + 36px controls + 12px
    count margin + 18px count line + 12px trailing margin + 40px spare space;
-   the root's existing 88px (66px mobile) bottom padding adds further buffer.
+   the shared workspace content keeps its separate bottom padding.
    This is a minimum, so expanded content can increase document height. */
 #cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:64px;align-items:start;min-height:calc(626px + 25px + 36px + 12px + 18px + 12px + 40px)}
 #cs-root .cs-accordion{border-top:1px solid var(--cs-border);border-bottom:1px solid var(--cs-border);min-width:0}
@@ -149,7 +149,6 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-mobile-detail{display:block}
 }
 @media(max-width:639px){
- #cs-root{padding-bottom:66px}
  #cs-root .cs-head{flex-direction:column;align-items:stretch;gap:18px}
  #cs-root .cs-top-actions{justify-content:flex-start}
  #cs-root .cs-head p{margin-top:15px}
