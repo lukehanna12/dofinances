@@ -112,3 +112,68 @@ test("main Settings exposes the independent Cloudflare integration",async()=>{
   assert.ok(config.includes("CLOUDFLARE_CONNECTION_ACCESS_AUD"));
   assert.ok(!html.includes("token_ciphertext"));
 });
+
+test("signed owner can connect, scope, execute and disconnect without exposing credentials",async()=>{
+  const keys=await crypto.subtle.generateKey({name:"RSASSA-PKCS1-v1_5",modulusLength:2048,
+    publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},true,["sign","verify"]);
+  const jwk=await crypto.subtle.exportKey("jwk",keys.publicKey);
+  const issuer="https://cloudflare-account-unit.cloudflareaccess.com",aud="cf-account-audience";
+  const t=Math.floor(Date.now()/1000),enc=x=>Buffer.from(JSON.stringify(x)).toString("base64url");
+  const raw=enc({alg:"RS256",kid:"cf-owner-key"})+"."+enc({iss:issuer,aud,sub:"owner-sub",
+    email:"owner@example.test",iat:t,exp:t+3600});
+  const sig=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",keys.privateKey,new TextEncoder().encode(raw));
+  const jwt=raw+"."+Buffer.from(sig).toString("base64url");
+  const prior=globalThis.fetch, upstream=[];
+  globalThis.fetch=async(url,options={})=>{
+    upstream.push({url,authorization:options.headers?.Authorization});
+    const pathname=new URL(url).pathname;
+    const body=pathname.endsWith("/cdn-cgi/access/certs")?{keys:[{...jwk,kid:"cf-owner-key"}]}:
+      pathname.endsWith("/user/tokens/verify")?{success:true,result:{id:"token-id",status:"active"}}:
+      pathname.endsWith("/user")?{success:true,result:{id:"cf-owner-id",email:"owner@example.test"}}:
+      {success:true,result:{ok:true}};
+    return new Response(JSON.stringify(body),{status:200,headers:{"Content-Type":"application/json"}});
+  };
+  let record;
+  function exposed(includeCredential=false){
+    if(!record)return {status:200,connected:false,policy:DEFAULT_CLOUDFLARE_POLICY};
+    const {ciphertext,...rest}=record;
+    return {...rest,status:200,connected:!!ciphertext,...(includeCredential?{ciphertext}:{})};
+  }
+  const stub={
+    session:async()=>({id:"owner-uid",email:"owner@example.test"}),
+    cloudflareConnectionState:async({includeCredential})=>exposed(includeCredential),
+    cloudflareConnectionSave:async data=>{record={...data};return exposed();},
+    cloudflareConnectionSetPolicy:async({policy})=>{record.policy=policy;return exposed();},
+    cloudflareConnectionRemove:async()=>{record.ciphertext=null;return exposed();}
+  };
+  const env={AUTH_STORE:{idFromName:()=>1,get:()=>stub},
+    COLOSSEUM_ACCESS_ISSUER:issuer,CLOUDFLARE_CONNECTION_ACCESS_AUD:aud,
+    COLOSSEUM_OWNER_ACCESS_EMAIL:"owner@example.test",MFA_ENCRYPTION_KEY:secret};
+  const headers={Cookie:"__Host-dofinances_session="+"x".repeat(43),
+    "Cf-Access-Jwt-Assertion":jwt,Origin:"https://dofinances.com"};
+  async function call(method,route,body){
+    const req=new Request("https://dofinances.com/api/cloudflare/"+route,{
+      method,headers:{...headers,...(body===undefined?{}:{"Content-Type":"application/json"})},
+      body:body===undefined?undefined:JSON.stringify(body)});
+    const res=await handleRequest(req,env);
+    return {status:res.status,result:await res.json()};
+  }
+  try{
+    const initially=await call("GET","connection");
+    assert.equal(initially.status,200);assert.equal(initially.result.connected,false);
+    const connected=await call("POST","connection",{token,policy:DEFAULT_CLOUDFLARE_POLICY});
+    assert.equal(connected.status,200);assert.equal(connected.result.connected,true);
+    assert.ok(record.ciphertext.startsWith("v1:"));
+    assert.ok(!JSON.stringify(connected).includes(token));
+    assert.equal((await call("POST","request",{method:"POST",path:"/accounts/"+account})).status,400);
+    assert.equal((await call("POST","request",{method:"GET",path:"/accounts"})).status,200);
+    const scoped=await call("PUT","scope",full);
+    assert.equal(scoped.status,200);assert.equal(scoped.result.policy.mode,"full");
+    assert.equal((await call("POST","request",{method:"POST",path:"/accounts/"+account,body:{name:"test"}})).status,200);
+    const removed=await call("DELETE","connection");
+    assert.equal(removed.status,200);assert.equal(removed.result.connected,false);
+    assert.equal(record.ciphertext,null);
+    assert.equal((await call("POST","request",{method:"GET",path:"/accounts"})).status,409);
+    assert.ok(upstream.filter(x=>x.authorization).every(x=>x.url.startsWith("https://api.cloudflare.com/client/v4/")));
+  }finally{globalThis.fetch=prior;}
+});
