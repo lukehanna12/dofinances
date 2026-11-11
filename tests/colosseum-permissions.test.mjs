@@ -71,3 +71,10 @@ test("web client uses same-origin credentials, does not embed tokens, and keeps 
  assert.ok(!script.includes("apiKey"));
  assert.match(index,/original Sheet and web app will stay intact/);
 });
+
+test("Permissions loads when reached via sidebar hash or direct pathname and respects a different hash",()=>{
+ assert.match(script,/const hash=location\.hash\.replace/);
+ assert.match(script,/return hash\?hash==="colosseum\/permissions":/);
+ assert.match(script,/location\.pathname\.replace/);
+ assert.match(script,/==="\/app\/colosseum\/permissions"/);
+});

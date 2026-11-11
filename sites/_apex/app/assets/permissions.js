@@ -172,7 +172,11 @@ export function initColosseumPermissions(){
   }catch(error){$("pm-pin-error").textContent=error.message;}
  });
  $("pm-refresh").addEventListener("click",()=>void load());
- const routeActive=()=>location.hash.replace(/^#/,"").replace(/\/$/,"")==="colosseum/permissions";
+ const routeActive=()=>{
+  const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
+  return hash?hash==="colosseum/permissions":
+    location.pathname.replace(/\/+$/,"").toLowerCase()==="/app/colosseum/permissions";
+ };
  window.addEventListener("hashchange",()=>{if(routeActive())void load();});
  if(routeActive())void load();
  else show("Open Permissions to load live gateway policy.");
