@@ -32,6 +32,23 @@ test("Exact recovered accordion behavior includes direct collapse and exclusive 
  assert.match(css,/grid-template-rows:0fr/);
  assert.match(css,/\.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
 });
+test("Closing an expanded Collections row shrinks continuously for 450ms",()=>{
+ // The old height:62.4px on the parent abruptly clipped the animated panel
+ // and jumped the next row upward on the first frame of button collapse.
+ assert.doesNotMatch(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:/);
+ assert.doesNotMatch(css,/#cs-root \.cs-entry:not\(\.cs-open\) h2\{height:100%/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*transition:padding \.45s cubic-bezier\(\.22,1,\.36,1\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{[^}]*transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)/);
+ assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\),opacity \.45s/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-accordion-panel\{transition-timing-function:cubic-bezier\(\.4,0,\.2,1\),cubic-bezier\(\.4,0,\.2,1\),ease\}/);
+ assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr;opacity:1;visibility:visible\}/);
+ // Expanded rows still have automatic header height and natural text wrapping.
+ assert.doesNotMatch(css,/#cs-root \.cs-entry\.cs-open\{height:/);
+ assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*overflow-wrap:anywhere/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 0\}/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?transition-duration:\.01ms!important/);
+});
+
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
  assert.match(js,/pageSize:10/);
  assert.match(js,/data-cs-page="prev"/);
@@ -160,9 +177,10 @@ test("Collapsed Collections rows retain the former mobile height at all widths",
  // The former mobile rule: vertical padding 20px on both sides, 16px text, line-height 1.4.
  const mobileSingleLineHeight=20*2+16*1.4;
  assert.equal(mobileSingleLineHeight,62.4);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:62\.4px\}/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) h2\{height:100%\}/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{height:100%;padding:0;align-items:center\}/);
+ assert.match(css,/#cs-root \.cs-entry\{--cs-entry-border:0px\}/);
+ assert.match(css,/#cs-root \.cs-entry\+\.cs-entry\{border-top:1px solid var\(--cs-border\);--cs-entry-border:1px\}/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{padding:0;align-items:center;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{overflow:hidden;white-space:nowrap;text-overflow:ellipsis\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(16px,1\.7vw,20px\);line-height:1\.4/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
@@ -302,7 +320,7 @@ test("Collections canvas retains ten-row capacity with about fifteen percent mor
  assert.equal(previousGap,38);
  assert.equal(newGap,44);
  assert.ok(Math.abs((newGap-previousGap)/previousGap-.15)<.01);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:62\.4px\}/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
  assert.match(css,/#cs-root \.cs-pagination\{[^}]*margin-top:25px/);
  assert.match(css,/#cs-root \.cs-page\{[^}]*height:36px/);
  assert.match(css,/#cs-root \.cs-countline\{[^}]*margin-top:12px/);

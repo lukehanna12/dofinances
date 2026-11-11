@@ -76,15 +76,16 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    (~15.8% more). The 729px full-page layout reserve stays unchanged. */
 html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
 #cs-root .cs-accordion{border-top:1px solid var(--cs-border);border-bottom:1px solid var(--cs-border);min-width:0}
-#cs-root .cs-entry+.cs-entry{border-top:1px solid var(--cs-border)}
+/* Each closed row is exactly 62.4px including a possible 1px divider.
+   Size the HEADER, never the entire entry: fixing the entry height used to
+   cut off its 450ms panel-collapse animation on the very first frame. */
+#cs-root .cs-entry{--cs-entry-border:0px}
+#cs-root .cs-entry+.cs-entry{border-top:1px solid var(--cs-border);--cs-entry-border:1px}
 #cs-root .cs-entry h2{margin:0}
-#cs-root .cs-trigger{display:flex;align-items:baseline;gap:16px;width:100%;border:0;background:transparent;color:var(--cs-muted);padding:24px 0;text-align:left;cursor:pointer}
-/* The existing sub-640px one-line height was 20px + (16px * 1.4) + 20px.
-   Keep the whole collapsed row, including its 1px top divider, at 62.4px.
-   Expansion retains natural height and wrapping, including mobile padding. */
-#cs-root .cs-entry:not(.cs-open){height:62.4px}
-#cs-root .cs-entry:not(.cs-open) h2{height:100%}
-#cs-root .cs-entry:not(.cs-open) .cs-trigger{height:100%;padding:0;align-items:center}
+#cs-root .cs-trigger{display:flex;align-items:baseline;gap:16px;width:100%;min-height:calc(62.4px - var(--cs-entry-border));border:0;background:transparent;color:var(--cs-muted);padding:24px 0;text-align:left;cursor:pointer;transition:padding .45s cubic-bezier(.22,1,.36,1)}
+/* Let the closing header padding and the panel shrink together over 450ms.
+   Keep the same open padding/wrapping and compact final closed height. */
+#cs-root .cs-entry:not(.cs-open) .cs-trigger{padding:0;align-items:center;transition-timing-function:cubic-bezier(.4,0,.2,1)}
 #cs-root .cs-entry:not(.cs-open) .cs-entry-title{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #cs-root .cs-trigger .cs-num{flex:none;width:28px;font-size:12px;font-weight:500;color:var(--cs-dim);font-variant-numeric:tabular-nums}
 #cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s}
@@ -92,6 +93,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-chevron{flex:none;width:16px;height:16px;align-self:center;color:var(--cs-dim);transition:transform .3s cubic-bezier(.22,1,.36,1),color .2s}
 #cs-root .cs-entry.cs-open .cs-chevron{transform:rotate(180deg);color:var(--cs-text)}
 #cs-root .cs-accordion-panel{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1),opacity .45s cubic-bezier(.22,1,.36,1),visibility .45s}
+/* The incoming collapsed state eases its height/opacity more gently, without
+   changing the .45s duration or the existing opening curve. */
+#cs-root .cs-entry:not(.cs-open) .cs-accordion-panel{transition-timing-function:cubic-bezier(.4,0,.2,1),cubic-bezier(.4,0,.2,1),ease}
 #cs-root .cs-entry.cs-open .cs-accordion-panel{grid-template-rows:1fr;opacity:1;visibility:visible}
 #cs-root .cs-panel-clip{overflow:hidden;min-height:0}
 #cs-root .cs-panel-inner{padding:0 32px 28px 44px}
