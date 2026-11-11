@@ -91,20 +91,76 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    if(!shown.length)add(list,"p","pv-provision-empty","No upstream tools match this filter.");
   }
   drawTools();
-  for(const [title,key] of [["Resources","resources"],["Resource templates","resource_templates"],["Prompts","prompts"]]){
+  for(const [title,key] of [["Resources","resources"],["Resource templates","resource_templates"],["Prompts","prompts"],["Installed skills","skills"]]){
    const group=s[key]||{};
    const panel=add(region,"section","pv-provision-mcp");
    add(panel,"h5","",title+" · "+(group.items?.length||0));
    if(group.error)add(panel,"p","pv-provision-muted","Upstream discovery: "+group.error);
    else if(!group.items?.length)add(panel,"p","pv-provision-muted","No "+title.toLowerCase()+" advertised.");
    for(const item of group.items||[]){
-    const row=add(panel,"div","pv-provision-protocol-item");
-    add(row,"strong","",item.name||item.uri||item.uriTemplate||"Unnamed provision");
-    if(item.uri||item.uriTemplate)add(row,"code","",item.uri||item.uriTemplate);
+    const keyName=provisionKey(key,item),row=add(panel,"div","pv-provision-protocol-item");
+    add(row,"strong","",item.name||keyName||"Unnamed provision");
+    if(item.uri||item.uriTemplate||item.relative_path)
+     add(row,"code","",item.uri||item.uriTemplate||item.relative_path);
     if(item.description)add(row,"p","",item.description);
+    add(row,"p","pv-provision-tool-state",item.disabled?"Excluded by provider regulation":"Available from upstream");
+    const actions=add(row,"div","pv-provision-actions");
+    actions.append(button(item.disabled?"Allow":"Exclude",
+     ()=>void prepareItem(s,key,keyName,{enabled:!!item.disabled})));
+    if(item.override)actions.append(button("Restore baseline",
+     ()=>void prepareItem(s,key,keyName,null),true));
+    if(key==="skills")actions.append(button("Read skill",async()=>{
+     const preview=add(row,"pre","pv-provision-tool-meta","Reading skill document…");
+     try{
+      const result=await request({action:"local.skill",uid:id,relative_path:keyName});
+      preview.textContent=String(result.content||"").slice(0,90000)||"Skill document is empty.";
+     }catch(error){preview.textContent="Skill read unavailable: "+String(error.message||error);}
+    },true));
+    if(pending.get(id)?.kind===key&&pending.get(id)?.name===keyName)
+     drawItemConfirmation(row,s);
    }
-   if(group.more)add(panel,"p","pv-provision-warning","The upstream reported additional pages; this view shows the first 200 entries.");
+   if(group.more)add(panel,"p","pv-provision-warning","The upstream inventory exceeded its configured inspection bound; some entries may be missing.");
   }
+ }
+ function provisionKey(kind,item){
+  return kind==="resources"?item.uri:kind==="resource_templates"?item.uriTemplate:
+   kind==="skills"?item.relative_path:item.name;
+ }
+ async function prepareItem(snapshot,kind,name,rule){
+  try{
+   const reply=await request({action:"local.item.prepare",uid:id,kind,name,rule,
+     expected_revision:snapshot.provisions_revision});
+   if(reply.status!=="prepared"||!reply.receipt)
+    throw Error(reply.error||reply.summary||"Gateway rejected the provision change.");
+   pending.set(id,{kind,name,rule,receipt:reply.receipt,effects:reply.effects||[]});
+   draw();
+   notify("Review the provision change, then confirm.");
+  }catch(error){notify(String(error.message||error),"error");}
+ }
+ function drawItemConfirmation(row,snapshot){
+  const approval=pending.get(id);
+  const panel=add(row,"div","pv-provision-confirm");
+  add(panel,"strong","","Confirm live "+approval.kind+" regulation");
+  add(panel,"pre","",JSON.stringify({name:approval.name,rule:approval.rule,effects:approval.effects},null,2));
+  const actions=add(panel,"div","pv-provision-actions");
+  actions.append(button("Apply to running gateway",()=>void commitItem(approval)));
+  actions.append(button("Cancel",()=>{pending.delete(id);draw();},true));
+ }
+ async function commitItem(approval){
+  try{
+   const result=await request({action:"local.commit",receipt:approval.receipt});
+   if(result.status!=="completed"||result.results?.some(x=>x.status!=="ok"))
+    throw Error(result.summary||"The gateway did not apply the new rule.");
+   pending.delete(id);
+   const fresh=await request({action:"local.surface",uid:id});
+   const actual=fresh[approval.kind]?.items?.find(x=>provisionKey(approval.kind,x)===approval.name);
+   if(!actual||(approval.rule===null?actual.override!==null:
+      JSON.stringify(actual.override)!==JSON.stringify(approval.rule)))
+    throw Error("Live provision regulation verification failed.");
+   cache.set(id,{data:fresh,error:null});
+   draw();
+   notify("Verified: provision regulation is active in the running gateway.");
+  }catch(error){notify(String(error.message||error),"error");}
  }
  function control(form,label,current,{options=null,type="text",hint=""}={}){
   const wrap=add(form,"label","pv-provision-form-item");
