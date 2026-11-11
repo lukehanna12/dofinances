@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/app/assets/workspace-enhancements.css">
   <link rel="stylesheet" href="/app/assets/diagnostics.css">
   <link rel="stylesheet" href="/app/assets/providers.css">
+  <link rel="stylesheet" href="/app/assets/permissions.css">
   <script src="/app/assets/dashboard.js" type="module"></script>
 </head>
 <body>
@@ -428,8 +429,48 @@
           </div>
         </section>
         <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
-          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1><p class="lead">Manage the local gateway's filesystem access and script execution rules.</p></div>
+          <div id="pm-root" class="pm-screen">
+            <div class="pm-summary"><strong id="pm-source" class="pm-source">Loading permission authority…</strong><span id="pm-revision" class="pm-small"></span><span id="pm-count" class="pm-small"></span><button type="button" id="pm-refresh" class="pm-btn">Refresh</button></div>
+            <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
+            <section id="pm-migration" class="pm-migration" hidden>
+              <h2>Replace Google Sheets as the permission authority</h2>
+              <p>Colosseum will authenticate and compare every approved Sheet row, including dormant paths and execution limits, before switching the gateway to local policy storage. The original Sheet and web app will stay intact for evaluation and possible rollback.</p>
+              <button type="button" id="pm-activate" class="pm-btn pm-primary">Activate independent local authority</button>
+            </section>
+            <div class="pm-heading"><div><h2>Filesystem paths</h2><span class="pm-quiet">The most-specific enabled rule controls the requested path.</span></div><input type="search" id="pm-filter" class="pm-filter" placeholder="Find path or alias…" aria-label="Filter filesystem paths"></div>
+            <div class="pm-cards" id="pm-cards" aria-live="polite"></div>
+            <section class="pm-add" aria-label="Add filesystem path">
+              <h3>Add a path</h3><p class="pm-quiet">Set an optional alias and explicitly grant only the required operations.</p>
+              <form id="pm-add-form">
+                <div class="pm-add-fields"><label>Filesystem path<input id="pm-new-path" required placeholder="HOME/Projects" spellcheck="false"></label><label>Env Var alias<input id="pm-new-alias" placeholder="PROJECTS" spellcheck="false"></label></div>
+                <div class="pm-perm-line"><span>Enabled</span><label class="pm-switch"><input id="pm-add-enabled" type="checkbox" checked><span class="pm-track"></span></label></div>
+                <div class="pm-perm-line"><span>Read</span><label class="pm-switch"><input id="pm-add-read" type="checkbox"><span class="pm-track"></span></label></div>
+                <div class="pm-perm-line"><span>Write</span><label class="pm-switch"><input id="pm-add-write" type="checkbox"><span class="pm-track"></span></label></div>
+                <div class="pm-perm-line"><span>Script</span><label class="pm-switch"><input id="pm-add-script" type="checkbox"><span class="pm-track"></span></label></div>
+                <div class="pm-perm-line"><span>Add</span><label class="pm-switch"><input id="pm-add-add" type="checkbox"><span class="pm-track"></span></label></div>
+                <div class="pm-perm-line"><span>Delete</span><label class="pm-switch"><input id="pm-add-delete" type="checkbox"><span class="pm-track"></span></label></div>
+                <button type="submit" class="pm-btn pm-primary">Add path</button>
+              </form>
+            </section>
+            <hr class="pm-divider">
+            <section id="pm-exec" class="pm-exec" hidden>
+              <div class="pm-heading"><div><h2>Execution controls</h2><span class="pm-quiet">Limits and execution gates remain distinct from filesystem permissions.</span></div><div class="pm-actions"><span id="pm-pin-status" class="pm-small"></span><button type="button" id="pm-pin-edit" class="pm-btn">Manage hazard PIN</button></div></div>
+              <details><summary>Review and edit execution settings</summary><div id="pm-execution-fields" class="pm-exec-grid"></div></details>
+            </section>
+            <dialog id="pm-confirm" aria-labelledby="pm-confirm-title">
+              <span id="pm-confirm-kind" class="pm-small"></span><h3 id="pm-confirm-title">Review permission change</h3><p id="pm-confirm-copy"></p>
+              <label id="pm-confirm-pin-label" hidden>Four-digit hazard PIN<input type="password" id="pm-confirm-pin" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+              <p id="pm-confirm-error" role="alert"></p><div class="pm-dialog-foot"><button type="button" id="pm-confirm-cancel" class="pm-btn">Go back</button><button type="button" id="pm-confirm-apply" class="pm-btn pm-primary">Confirm</button></div>
+            </dialog>
+            <dialog id="pm-pin-dialog" aria-label="Configure hazard PIN">
+              <h3>Hazard PIN</h3><p>Hazardous permission changes require a separate four-digit PIN. The local gateway stores only a salted hash.</p>
+              <label>Current PIN (if configured)<input type="password" id="pm-pin-current" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+              <label>New PIN<input type="password" id="pm-pin-new" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+              <p id="pm-pin-error" role="alert"></p><div class="pm-dialog-foot"><button type="button" id="pm-pin-cancel" class="pm-btn">Go back</button><button type="button" id="pm-pin-save" class="pm-btn pm-primary">Save PIN</button></div>
+            </dialog>
+            <div id="pm-toast" role="status" aria-live="polite" hidden></div>
+          </div>
         </section>
         <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
           <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>
