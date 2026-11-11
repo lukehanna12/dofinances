@@ -157,13 +157,17 @@ test("Collections does not duplicate the live count and refresh time below the h
 });
 
 test("Collections refresh icon has one clean clockwise arc and consistent arrowhead",()=>{
- const button=html.match(/<button class="cs-button" id="cs-refresh"[^>]*>([\s\S]*?)<\/button>/)?.[1]||"";
- assert.match(button,/<svg class="cs-refresh-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"/);
- assert.match(button,/<path d="M21 12a9 9 0 1 1-9-9 9\\.75 9\\.75 0 0 1 6\\.74 2\\.74L21 8"\/>/);
- assert.match(button,/<path d="M21 3v5h-5"\/>/);
- assert.doesNotMatch(button,/M4 12l-1 5/);
- assert.match(button,/Refresh$/);
- assert.match(css,/#cs-root #cs-refresh \\.cs-refresh-icon\{width:17px;height:17px;stroke-width:1\\.9\}/);
- assert.match(js,/refreshButton\\.addEventListener\("click"/);
- assert.doesNotMatch(js,/const REFRESH=/);
+ const start=html.indexOf('<button class="cs-button" id="cs-refresh"');
+ assert.ok(start>=0,"Refresh control exists");
+ const button=html.slice(start,html.indexOf("</button>",start)+9);
+ assert.ok(button.includes('class="cs-refresh-icon"'));
+ assert.ok(button.includes('viewBox="0 0 24 24"'));
+ assert.ok(button.includes('aria-hidden="true" focusable="false"'));
+ assert.ok(button.includes('<path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>'));
+ assert.ok(button.includes('<path d="M21 3v5h-5"/>'));
+ assert.ok(!button.includes("M4 12l-1 5"));
+ assert.ok(button.endsWith("Refresh</button>"));
+ assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.9}"));
+ assert.ok(js.includes('refreshButton.addEventListener("click"'));
+ assert.ok(!js.includes("const REFRESH="));
 });
