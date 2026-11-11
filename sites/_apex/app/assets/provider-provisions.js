@@ -28,7 +28,6 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
  async function load(force=false){
   if(loading.has(id))return loading.get(id);
   if(force)cache.delete(id);
-  if(!cache.has(id))draw();
   const task=(async()=>{
    try{
     const data=await request({action:"local.surface",uid:id});
@@ -189,6 +188,5 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    notify("Verified: the new provider regulation is effective in the running gateway.");
   }catch(error){notify(String(error.message||error),"error");}
  }
- if(!cache.has(id))void load();
- else draw();
+ draw();
 }
