@@ -10,10 +10,12 @@ import {initWorkspaceNavigation} from "./workspace-nav.js";
 import {initCloudflareConnection} from "./cloudflare-settings.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
 import {initColosseumProviders} from "./providers.js";
+import {initColosseumPermissions} from "./permissions.js";
 initWorkspaceNavigation();
 initCloudflareConnection();
 initColosseumDiagnostics();
 initColosseumProviders();
+initColosseumPermissions();
 
 const account = document.getElementById("account-email");
 const detail = document.getElementById("account-email-detail");
