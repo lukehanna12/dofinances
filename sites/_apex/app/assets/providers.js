@@ -219,7 +219,9 @@ export function initColosseumProviders(){
   remoteDetail(remote);
  }
  function remoteDetail(d){
-  header(detail,"FEDERATED CONNECTION",d.name,(d.name||"?")[0],
+  const linkedinOAuth=d.route_mode==="local"&&d.local_provider_id==="linkedin";
+  header(detail,linkedinOAuth?"FEDERATED HOST / LINKEDIN OAUTH":"FEDERATED CONNECTION",d.name,(d.name||"?")[0],
+   linkedinOAuth?"LinkedIn authorization uses the shared encrypted Colosseum account vault. The provider's local MCP tool permissions remain in Local.":
    d.kind==="builtin"?"Native, read-only cloud adapter; authorization is per tool.":
     "Hosted MCP connection managed by your existing Colosseum credential vault.");
   const tags=e("div","pv-detail-state");
@@ -247,18 +249,25 @@ export function initColosseumProviders(){
     if(d.status==="pending")section.append(action("Verify saved key",()=>void reloadAfter({action:"verify",uid:d.uid}),{secondary:true}));
    }else{
     const form=e("form","pv-provider-form"),cfg=d.oauth||{};
-    append(form,"p","", "Configure OAuth on the source provider, then authorize its use here. Updating configuration disconnects the previous authorization.");
+    append(form,"p","",linkedinOAuth?
+      "Configure your LinkedIn Developer app here, then authorize through this shared Colosseum account vault. Local tools and their permissions remain managed separately.":
+      "Configure OAuth on the source provider, then authorize its use here. Updating configuration disconnects the previous authorization.");
     const schema=[
      ["Client ID","client_id"],["Authorization URL","authorize_url"],["Token URL","token_url"],
      ["Issuer URL (optional)","issuer"],["Resource URL (optional)","resource_url"],
      ["Revocation URL (optional)","revocation_url"],["Scopes (space-delimited)","scopes"]];
     const controls={};
-    for(const [label,k] of schema){const input=field(label,k==="scopes"?(cfg.scopes||[]).join(" "):cfg[k]||"",{maxLength:k==="client_id"?256:2048});
+    const linkedInDefaults=linkedinOAuth?{authorize_url:"https://www.linkedin.com/oauth/v2/authorization",
+      token_url:"https://www.linkedin.com/oauth/v2/accessToken",
+      scopes:"openid profile email w_member_social"}:{};
+    for(const [label,k] of schema){const initial=k==="scopes"?(cfg.scopes?.length?cfg.scopes.join(" "):linkedInDefaults.scopes||""):
+      cfg[k]||linkedInDefaults[k]||"";
+      const input=field(label,initial,{maxLength:k==="client_id"?256:2048});
       form.append(input.wrap);controls[k]=input.control;}
     const typeWrap=e("label","pv-form-field");append(typeWrap,"span","pv-form-label","Client authentication");
     const authSelect=e("select","pv-input");
     for(const method of ["none","client_secret_post","client_secret_basic"]){const option=e("option","",method);option.value=method;authSelect.append(option);}
-    authSelect.value=cfg.client_auth_method||"none";typeWrap.append(authSelect);form.append(typeWrap);
+    authSelect.value=cfg.client_auth_method||(linkedinOAuth?"client_secret_post":"none");typeWrap.append(authSelect);form.append(typeWrap);
     const secret=field(cfg.client_secret_configured?"Client secret (leave blank to retain existing)":"Client secret","",{password:true});
     form.append(secret.wrap);
     const submit=e("button","pv-detail-action","Save OAuth configuration");submit.type="submit";form.append(submit);
@@ -281,6 +290,19 @@ export function initColosseumProviders(){
     if(d.kind==="oauth")section.append(action("Refresh OAuth token",()=>void reloadAfter({action:"refresh",uid:d.uid}),{secondary:true}));
    }
    detail.append(section);
+  }
+  if(linkedinOAuth){
+   const local=e("section","pv-detail-section");
+   append(local,"h4","","Local provider tools");
+   append(local,"p","",
+     "This connection authorizes the LinkedIn account. Tool discovery and provider-specific permissions remain in the Local providers section, with general local-work restrictions in Permissions.");
+   if(d.status==="connected")local.append(action("Verify LinkedIn profile",()=>void busy(async()=>{
+    const value=await request({action:"local.linkedin.profile",uid:"linkedin"});
+    if(value.provider_id!=="linkedin"||value.shared_vault!==true||value.credential_values_exposed!==false)
+     throw Error("The shared-vault profile verification did not pass.");
+    setStatus("Verified LinkedIn connection through Colosseum account vault.");
+   }),{secondary:true}));
+   detail.append(local);return;
   }
   const section=e("section","pv-detail-section");
   append(section,"h4","","Tools & authorization");

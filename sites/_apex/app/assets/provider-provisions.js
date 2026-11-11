@@ -22,50 +22,6 @@ export function invalidateLocalProviderProvisions(provider_id){cache.delete(prov
 export function mountLocalProviderProvisions({provider,container,request,notify}){
  const id=provider.provider_id;
  const region=add(container,"section","pv-provision-section");
- const linkedIn={started:false,loading:false,data:null,error:null,profile:null};
- async function refreshLinkedIn(verify=false){
-  if(linkedIn.loading)return;
-  linkedIn.loading=true;linkedIn.error=null;
-  try{
-   const data=await request({action:verify?"local.linkedin.profile":"local.linkedin.status",uid:"linkedin"});
-   if(data.provider_id!=="linkedin"||data.shared_vault!==true||data.credential_values_exposed!==false)
-    throw Error("LinkedIn connection was not verified against the shared account vault.");
-   linkedIn.data=data;
-   if(verify)linkedIn.profile=data.profile||null;
-  }catch(err){linkedIn.error=String(err.message||err);}
-  finally{linkedIn.loading=false;if(region.isConnected)draw();}
- }
- function drawLinkedInVault(){
-  const panel=add(region,"section","pv-provision-mcp");
-  add(panel,"h5","","LinkedIn OAuth · Shared account vault");
-  add(panel,"p","pv-provision-muted","Uses Colosseum's existing encrypted OAuth and revocation records shared with federated and ported connections. No LinkedIn tokens are stored by the local provider.");
-  if(linkedIn.loading&&!linkedIn.data)add(panel,"p","pv-provision-muted","Checking authorization…");
-  if(linkedIn.data){
-   const d=linkedIn.data;
-   add(panel,"p","pv-provision-tool-state",
-    d.connected?"Connected to shared vault":d.configured?"OAuth configured · Not connected":"OAuth setup required");
-   if(d.expires_at)add(panel,"p","pv-provision-muted","Authorization expires: "+d.expires_at);
-   if(d.connection_setup_url){
-    try{
-     const url=new URL(d.connection_setup_url);
-     if(url.origin==="https://router.colosseum.workers.dev"&&
-      url.pathname==="/account/providers/configure"&&
-      /^(?:[0-9a-f]{6}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/.test(url.searchParams.get("uid")||"")){
-      const link=add(panel,"a","pv-provision-button","Configure / connect with LinkedIn");
-      link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";
-     }
-    }catch{}
-   }
-   if(linkedIn.profile)add(panel,"p","pv-provision-muted",
-    "Verified LinkedIn profile: "+String(linkedIn.profile.name||linkedIn.profile.sub||"Connected"));
-  }
-  if(linkedIn.error)add(panel,"p","pv-provision-warning",linkedIn.error);
-  const actions=add(panel,"div","pv-provision-actions");
-  actions.append(button(linkedIn.loading?"Checking…":"Refresh connection",()=>void refreshLinkedIn(false),true));
-  if(linkedIn.data?.connected)
-   actions.append(button("Verify profile",()=>void refreshLinkedIn(true),true));
-  if(!linkedIn.started){linkedIn.started=true;void refreshLinkedIn(false);}
- }
  if(provider.author==="self"){
   add(region,"p","pv-provision-intro","This separately maintained provider has its own authorization controls.");
   return;
@@ -94,7 +50,6 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
   if(!record){add(region,"p","pv-provision-loading","Discovering the current tool, resource and prompt schemas…");if(!loading.has(id))void load();return;}
   if(record.error){add(region,"p","pv-provision-error",record.error);return;}
   const s=record.data,items=s.tools||[];
-  if(id==="linkedin")drawLinkedInVault();
   mountProviderAdapterControl({id,data:s,container:region,request,notify,
    onChanged:fresh=>{cache.set(id,{data:fresh,error:null});draw();}});
   const available=items.filter(t=>t.available).length;
