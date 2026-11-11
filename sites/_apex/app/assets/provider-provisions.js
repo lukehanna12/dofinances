@@ -50,7 +50,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
      const url=new URL(d.connection_setup_url);
      if(url.origin==="https://router.colosseum.workers.dev"&&
       url.pathname==="/account/providers/configure"&&
-      /^[0-9a-f-]{36}$/.test(url.searchParams.get("uid")||"")){
+      /^(?:[0-9a-f]{6}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/.test(url.searchParams.get("uid")||"")){
       const link=add(panel,"a","pv-provision-button","Configure / connect with LinkedIn");
       link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";
      }
