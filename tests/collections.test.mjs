@@ -179,8 +179,10 @@ test("Collections loading summary uses two synchronized, text-colored circular s
  assert.ok(summary.includes('class="cs-summary-skeleton" aria-hidden="true"'));
  assert.equal((summary.match(/class="cs-summary-dot"/g)||[]).length,2);
  assert.ok(summary.includes('class="cs-summary-divider">/</span>'));
- assert.ok(css.includes('width:1em;height:1em;border-radius:50%;background:currentColor;animation:cs-summary-pulse 1200ms ease-in-out infinite'));
- assert.equal((css.match(/animation:cs-summary-pulse 1200ms/g)||[]).length,1);
+ assert.ok(css.includes('width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 1000ms linear infinite'));
+ assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
+ assert.equal((css.match(/animation:cs-summary-spin 1000ms/g)||[]).length,1);
+ assert.ok(!css.includes('background:currentColor;animation:cs-summary-pulse'));
  assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{display:none}'));
  assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
  assert.ok(css.includes('#cs-root .cs-summary-dot{animation:none!important;opacity:.65}'));
