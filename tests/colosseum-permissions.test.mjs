@@ -12,7 +12,9 @@ const dashboard=await fs.readFile(new URL("../sites/_apex/app/assets/dashboard.j
 test("Permissions is an integrated DoFinances project screen, not an isolated standalone panel",()=>{
  assert.match(index, /data-view="colosseum\/permissions"/);
  assert.match(index,/id="pm-root"/);
- assert.ok(!index.includes("Nothing here yet"));
+ const start=index.indexOf('data-view="colosseum/permissions"');
+ const end=index.indexOf('data-view="colosseum/diagnostics"',start);
+ assert.ok(!index.slice(start,end).includes("Nothing here yet"));
  assert.match(index,/app\/assets\/permissions\.css/);
  assert.match(dashboard,/initColosseumPermissions\(\)/);
  assert.match(dashboard,/from "\.\/permissions\.js"/);
