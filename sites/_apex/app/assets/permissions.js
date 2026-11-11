@@ -38,9 +38,9 @@ export function initColosseumPermissions(){
   try{
    const reply=await request("status",{},"GET");
    if(seq!==loadSeq)return;
-   state=reply;loaded=true;render();show(state.source==="local"?
-    "Local policy is authoritative. Google Sheet edits no longer affect gateway permissions.":
-    "Google Sheet is still authoritative. Review the migration before activation.");
+   state=reply;loaded=true;render();show(state.source==="local"&&state.policyCurrent?
+    "The local permission authority is active and the gateway enforces its policy.":
+    "The local permission authority is unavailable or stale; edits are disabled.",!(state.source==="local"&&state.policyCurrent));
   }catch(error){if(seq===loadSeq)show(error.message,true);}
  }
  const toggle=(name,checked,disabled=false)=>'<label class="pm-switch" title="'+esc(name)+'"><input type="checkbox" data-bit="'+esc(name)+'"'+
@@ -62,11 +62,10 @@ export function initColosseumPermissions(){
  function render(){
   if(!state)return;
   const active=state.source==="local";
-  $("pm-source").textContent=active?"Independent local authority":"Google Sheets";
+  $("pm-source").textContent=active?"Independent local authority":"Local authority unavailable";
   $("pm-source").dataset.local=active?"true":"false";
   $("pm-revision").textContent=active?"Revision "+state.revision:"Legacy authorization";
   $("pm-count").textContent=(state.rows?.filter(x=>x.values[0]).length||0)+" active · "+(state.rows?.length||0)+" configured";
-  $("pm-migration").hidden=active;
   $("pm-pin-status").textContent=state.pinConfigured?"Hazard PIN configured":"Hazard PIN not configured";
   $("pm-pin-edit").disabled=!active;
   $("pm-add-form").querySelectorAll("input,button").forEach(input=>input.disabled=!active);
@@ -156,11 +155,6 @@ export function initColosseumPermissions(){
    show("The local gateway applied the confirmed policy revision.");
   }catch(error){$("pm-confirm-error").textContent=error.message;}
   finally{working=false;}
- });
- $("pm-activate").addEventListener("click",async()=>{
-  if(!confirm("Activate the independent local authority? The original Sheet and web app will be retained but will stop controlling local permissions."))return;
-  try{const reply=await request("activate");state=reply;render();show("Local authority activated. The Google Sheet is retained but no longer controls permissions.");}
-  catch(error){show(error.message,true);}
  });
  $("pm-pin-edit").addEventListener("click",()=>{
   $("pm-pin-current").value="";$("pm-pin-new").value="";$("pm-pin-error").textContent="";$("pm-pin-dialog").showModal();

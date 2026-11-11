@@ -37,7 +37,7 @@ test("Access Control 0001c7 individual cards retain isolated translucent outline
 
 test("path creation/removal, five file operations and all three confirmation levels are reachable",()=>{
  for(const field of ["read","write","script","add","delete"])assert.match(index,new RegExp('id="pm-add-'+field+'"'));
- for(const action of ['"prepare"','"confirm"','"cancel"','"activate"','"set_pin"'])
+ for(const action of ['"prepare"','"confirm"','"cancel"','"set_pin"'])
   assert.ok(script.includes(action),action);
  assert.match(script,/row:0,values/);
  assert.match(script,/remove:true/);
@@ -61,7 +61,7 @@ test("DoFinances enforces its current immutable owner identity and Cloudflare Ac
  assert.match(router,/\["catalog\.add"[^\n]*"permissions\.manage"/);
 });
 
-test("web client uses same-origin credentials, does not embed tokens, and keeps Sheet untouched",()=>{
+test("web client uses same-origin credentials and retains no Google Sheets workflow",()=>{
  assert.match(script,/credentials:"same-origin"/);
  assert.match(script,/\/api\/colosseum\/permissions/);
  assert.ok(!script.includes("script.google.com"));
@@ -69,7 +69,10 @@ test("web client uses same-origin credentials, does not embed tokens, and keeps 
  assert.ok(!script.includes("localStorage"));
  assert.ok(!script.includes("sessionStorage"));
  assert.ok(!script.includes("apiKey"));
- assert.match(index,/original Sheet and web app will stay intact/);
+ assert.ok(!index.includes("id=\"pm-migration\""));
+ assert.ok(!script.includes('request("activate")'));
+ assert.ok(!script.includes("Google Sheet is still authoritative"));
+ assert.ok(!index.includes("Google Sheets remains authoritative"));
 });
 
 test("Permissions loads when reached via sidebar hash or direct pathname and respects a different hash",()=>{
