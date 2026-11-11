@@ -49,7 +49,8 @@ export function initColosseumCollections(){
    }catch{return null;} // Storage can be disabled; the live API is unaffected.
  }
  let activeGeometry=null;
- let storedGeometry=readStoredGeometry();
+ const initialGeometry=readStoredGeometry();
+ let storedGeometry=initialGeometry?JSON.stringify(initialGeometry):null;
  function applyGeometry(geometry,persist=false){
    if(!validSummaryGeometry(geometry))return;
    const encoded=JSON.stringify(geometry);
@@ -66,7 +67,7 @@ export function initColosseumCollections(){
      }catch{}
    }
  }
- if(storedGeometry)applyGeometry(storedGeometry);
+ if(initialGeometry)applyGeometry(initialGeometry);
  function measureSeparator(value){
    const text=value?.firstChild;
    const index=text?.nodeType===3?text.textContent.indexOf(" / "):-1;

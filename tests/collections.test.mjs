@@ -137,6 +137,8 @@ test("Collections positions both ring centers symmetrically around the complete 
  assert.match(js,/range\.setEnd\(text,index\+2\)/);
  assert.match(js,/window\.localStorage\.getItem\(SUMMARY_GEOMETRY_KEY\)/);
  assert.match(js,/window\.localStorage\.setItem\(SUMMARY_GEOMETRY_KEY,encoded\)/);
+ assert.match(js,/let storedGeometry=initialGeometry\?JSON\.stringify\(initialGeometry\):null/);
+ assert.match(js,/if\(persist&&encoded!==storedGeometry\)/);
  assert.match(js,/LEGACY_SUMMARY_SHIFT_KEY/);
  assert.match(js,/const oldSlash=shift\/em\+1\.75/);
  assert.match(js,/applyGeometry\(measureSeparator\(summaryValue\),true\)/);
