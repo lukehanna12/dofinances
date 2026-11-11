@@ -118,7 +118,7 @@ test("Collections summary uses the visitor's last successful refresh time and co
 });
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
  assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
- assert.match(css,/#cs-root\{margin-top:-28px;padding:/);
+ assert.match(css,/#cs-root\{margin-top:-28px;padding-bottom:66px\}/);
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
  assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
  assert.doesNotMatch(css,/#cs-root\{[^}]*position:absolute/);
