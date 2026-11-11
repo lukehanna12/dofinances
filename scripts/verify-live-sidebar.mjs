@@ -71,13 +71,24 @@ try{
   const metrics=async(width,height)=>command("Emulation.setDeviceMetricsOverride",{
     width,height,deviceScaleFactor:1,mobile:false
   });
-  const move=async(x,y)=>command("Input.dispatchMouseEvent",{type:"mouseMoved",x,y});
-  const down=async(x,y)=>command("Input.dispatchMouseEvent",{
-    type:"mousePressed",x,y,button:"left",clickCount:1
+  // CDP does not infer the held-buttons bitmask from prior synthetic events.
+  // Preserve left-button state across the move sequence, as a real drag does.
+  let heldButtons=0;
+  const move=async(x,y)=>command("Input.dispatchMouseEvent",{
+    type:"mouseMoved",x,y,buttons:heldButtons
   });
-  const up=async(x,y)=>command("Input.dispatchMouseEvent",{
-    type:"mouseReleased",x,y,button:"left",clickCount:1
-  });
+  const down=async(x,y)=>{
+    await command("Input.dispatchMouseEvent",{
+      type:"mousePressed",x,y,button:"left",buttons:1,clickCount:1
+    });
+    heldButtons=1;
+  };
+  const up=async(x,y)=>{
+    await command("Input.dispatchMouseEvent",{
+      type:"mouseReleased",x,y,button:"left",buttons:0,clickCount:1
+    });
+    heldButtons=0;
+  };
 
   await command("Runtime.enable");
   await command("Page.enable");
@@ -259,6 +270,18 @@ try{
   await move(header.gripCenter,header.gripY);
   assert.equal(await evaluate('document.querySelector(".sidebar-interaction-tooltip")'),null,
     "no custom resize tooltip should be mounted");
+  const gripHit=await evaluate(String.raw`(()=>{
+    const grip=document.getElementById("sidebar-resize-handle");
+    const rect=grip.getBoundingClientRect(),x=rect.left+rect.width/2,
+      y=rect.top+Math.min(110,rect.height/2);
+    const hit=document.elementFromPoint(x,y);
+    return {onTarget:hit===grip,hitTag:hit?.tagName,hitId:hit?.id,
+      hitClass:hit?.className,gripPointerEvents:getComputedStyle(grip).pointerEvents,
+      gripZIndex:getComputedStyle(grip).zIndex,
+      topLayers:document.elementsFromPoint(x,y).slice(0,6).map(el=>el.id||el.className)};
+  })()`);
+  assert.ok(gripHit.onTarget,
+    "The resize grip must receive pointer events at its visible center: "+JSON.stringify(gripHit));
   const startWidth=await evaluate('Math.round(document.querySelector(".sidebar").getBoundingClientRect().width)');
   await down(header.gripCenter,header.gripY);
   for(let step=1;step<=5;step++){
