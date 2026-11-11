@@ -2,6 +2,7 @@
  * One explicit provider selection, one animated inspector, never autoplay.
  * Authority: the double-authenticated DoFinances owner route, Colosseum vault,
  * invoke grants and independently enforced local registry. */
+import {mountLocalProviderProvisions,invalidateLocalProviderProvisions} from "./provider-provisions.js";
 const API="/api/colosseum/providers";
 const ROUTE='[data-view="colosseum/providers"]';
 const FIELDS=["connection","operations","resources","effects","credentials"];
@@ -351,6 +352,7 @@ export function initColosseumProviders(){
    section.append(panel);
   }
   detail.append(section);
+  mountLocalProviderProvisions({provider:p,container:detail,request,notify:(message,tone)=>setStatus(message,tone)});
  }
  async function prepareLocal(provider_id,profile){
   await busy(async()=>{
@@ -373,6 +375,7 @@ export function initColosseumProviders(){
    if(!actual||FIELDS.some(k=>actual.profile?.[k]!==pending.profile[k]))
     throw Error("The gateway did not verify the requested effective provider profile.");
    state.local=verified.providers.map(x=>({...x,name:title(x.provider_id)}));
+   invalidateLocalProviderProvisions(pending.provider_id);
    state.localRevision=verified.revision;state.choices=verified.choices||FALLBACK_CHOICES;
    renderList();renderDetails();
    setStatus("Local provider contract changed and verified against the authoritative registry.");
