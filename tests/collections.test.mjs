@@ -148,7 +148,8 @@ test("Collections positions both ring centers symmetrically around the complete 
 
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
  assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
- assert.match(css,/#cs-root\{padding-bottom:66px\}/);
+ assert.match(css,/#cs-root\{[^}]*min-height:70vh;margin-top:-44px;padding:0;/);
+ assert.doesNotMatch(css,/#cs-root\{padding-bottom:66px\}/);
  assert.doesNotMatch(css,/#cs-root\{margin-top:-28px/);
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
  assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
@@ -298,8 +299,10 @@ test("Collections canvas retains ten-row capacity and footer buffer on short las
  assert.match(css,/#cs-root \.cs-pagination\{[^}]*margin-top:25px/);
  assert.match(css,/#cs-root \.cs-page\{[^}]*height:36px/);
  assert.match(css,/#cs-root \.cs-countline\{[^}]*margin-top:12px/);
- assert.match(css,/#cs-root\{[^}]*padding:0 0 88px/);
- assert.match(css,/#cs-root\{padding-bottom:66px\}/);
+ assert.match(css,/#cs-root\{[^}]*padding:0;/);
+ assert.doesNotMatch(css,/#cs-root\{[^}]*padding:0 0 88px/);
+ const mobile=css.slice(css.indexOf("@media(max-width:639px){"),css.indexOf("@media(prefers-reduced-motion:reduce){"));
+ assert.doesNotMatch(mobile,/#cs-root\{padding-bottom:/);
  // Crucial: do not reserve rows inside the accordion (would pin navigation).
  assert.doesNotMatch(css,/#cs-root \.cs-accordion\{[^}]*min-height:/);
  assert.doesNotMatch(css,/#cs-root \.cs-collection-column\{[^}]*min-height:/);
