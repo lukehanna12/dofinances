@@ -46,8 +46,9 @@ test("Closing an expanded Collections row shrinks continuously for 450ms",()=>{
  assert.doesNotMatch(css,/#cs-root \.cs-entry\.cs-open\{height:/);
  assert.match(css,/#cs-root \.cs-trigger\{display:flex;align-items:center/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*overflow-wrap:anywhere/);
- assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr;transition:grid-template-rows \.45s/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr\}/);
+ assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*transition:color \.2s,grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
  assert.match(css,/#cs-root \.cs-entry-title > span\{min-height:0;min-width:0;overflow:hidden\}/);
  assert.match(css,/#cs-root \.cs-entry-title \.cs-title-expanded\{white-space:normal\}/);
  assert.match(js,/<span class="cs-title-compact" aria-hidden="true"/);
@@ -189,8 +190,9 @@ test("Collapsed Collections rows retain the former mobile height at all widths",
  assert.match(css,/#cs-root \.cs-entry\+\.cs-entry\{border-top:1px solid var\(--cs-border\);--cs-entry-border:1px\}/);
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{padding:0;align-items:center;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
- assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr;transition:grid-template-rows \.45s/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr\}/);
+ assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*transition:color \.2s,grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
  assert.match(css,/#cs-root \.cs-entry-title \.cs-title-compact\{white-space:nowrap;text-overflow:ellipsis\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(16px,1\.7vw,20px\);line-height:1\.4/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);

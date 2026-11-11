@@ -89,13 +89,13 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Two copies share a grid track: only the compact title has an ellipsis.
    The track proportions interpolate in both directions, so a multi-line
    expanded name cannot snap into one line at the start of collapse. */
-#cs-root .cs-entry-title{display:grid;grid-template-rows:0fr 1fr;transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1)}
-#cs-root .cs-entry:not(.cs-open) .cs-entry-title{grid-template-rows:1fr 0fr;transition-timing-function:cubic-bezier(.4,0,.2,1)}
+#cs-root .cs-entry-title{display:grid;grid-template-rows:0fr 1fr}
+#cs-root .cs-entry:not(.cs-open) .cs-entry-title{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier(.4,0,.2,1)}
 #cs-root .cs-entry-title > span{min-height:0;min-width:0;overflow:hidden}
 #cs-root .cs-entry-title .cs-title-compact{white-space:nowrap;text-overflow:ellipsis}
 #cs-root .cs-entry-title .cs-title-expanded{white-space:normal}
 #cs-root .cs-trigger .cs-num{flex:none;width:28px;font-size:12px;font-weight:500;color:var(--cs-dim);font-variant-numeric:tabular-nums}
-#cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s}
+#cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s,grid-template-rows .45s cubic-bezier(.22,1,.36,1)}
 #cs-root .cs-trigger:hover .cs-entry-title,#cs-root .cs-entry.cs-open .cs-entry-title{color:var(--cs-text)}
 #cs-root .cs-chevron{flex:none;width:16px;height:16px;align-self:center;color:var(--cs-dim);transition:transform .3s cubic-bezier(.22,1,.36,1),color .2s}
 #cs-root .cs-entry.cs-open .cs-chevron{transform:rotate(180deg);color:var(--cs-text)}
