@@ -130,3 +130,10 @@
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+/* Expand only the Collections workspace to the proportions of the Servus
+   1400px layout; keep all other views and the Permissions screen unchanged. */
+.content:has(> .view[data-view="colosseum/collections"]:not([hidden])){
+  max-width:1536px;
+  padding-top:0;
+  padding-inline:clamp(16px,2.2vw,32px);
+}
