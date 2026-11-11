@@ -28,6 +28,14 @@ export class AuthStore extends BaseAuthStore {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS mfa_recovery (
       user_id TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY(user_id,hash)
     )`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS cloudflare_account_connection (
+      singleton TEXT PRIMARY KEY CHECK(singleton='owner'),
+      user_id TEXT NOT NULL, cloudflare_user_id TEXT NOT NULL,
+      email TEXT NOT NULL, token_ciphertext TEXT,
+      token_id TEXT, expires_on TEXT, policy_json TEXT NOT NULL,
+      connected_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+      disconnected_at INTEGER NOT NULL DEFAULT 0
+    )`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS colosseum_owner (
       singleton TEXT PRIMARY KEY CHECK(singleton='colosseum'),
       user_id TEXT NOT NULL, access_subject TEXT NOT NULL, created_at INTEGER NOT NULL
@@ -45,6 +53,65 @@ export class AuthStore extends BaseAuthStore {
     this.sql.exec("INSERT OR IGNORE INTO colosseum_owner(singleton,user_id,access_subject,created_at) VALUES('colosseum',?,?,?)",
       userId,accessSubject,now());
     return this.colosseumOwnerStatus({userId,accessSubject});
+  }
+
+  cloudflareConnectionState({userId,includeCredential=false}){
+    if(typeof userId!=="string"||!userId)return {status:401,error:"Sign-in required."};
+    // This account-wide owner claim is independent of project-specific ownership.
+    // Only the first verified owner may claim it; a disconnected claim persists.    const record=this.sql.exec("SELECT * FROM cloudflare_account_connection WHERE singleton='owner'").toArray()[0];
+    if(record && record.user_id!==userId)
+      return {status:403,error:"Cloudflare access is already assigned to a different DoFinances user."};
+    if(!record)return {status:200,connected:false,policy:{mode:"read",accounts:"*",zones:"*",user:false}};
+    const result={status:200,connected:!!record.token_ciphertext,
+      email:record.email,cloudflareUserId:record.cloudflare_user_id,
+      tokenId:record.token_id,expiresOn:record.expires_on,
+      connectedAt:record.connected_at,updatedAt:record.updated_at,
+      disconnectedAt:record.disconnected_at,policy:JSON.parse(record.policy_json)};
+    if(includeCredential)result.ciphertext=record.token_ciphertext||null;
+    return result;
+  }
+  cloudflareConnectionSave({userId,cloudflareUserId,email,tokenId,expiresOn,ciphertext,policy}){
+    const current=this.cloudflareConnectionState({userId});
+    if(current.status!==200)return current;
+    if(typeof cloudflareUserId!=="string"||!cloudflareUserId||
+       typeof ciphertext!=="string"||ciphertext.length<60 ||
+       typeof email!=="string"||!email||typeof policy!=="object")
+      return {status:400,error:"Invalid Cloudflare connection."};
+    const existing=this.sql.exec("SELECT cloudflare_user_id FROM cloudflare_account_connection WHERE singleton='owner'").toArray()[0];
+    if(existing && existing.cloudflare_user_id!==cloudflareUserId)
+      return {status:403,error:"A different Cloudflare owner cannot replace this connection."};
+    const timestamp=Math.floor(Date.now()/1000);
+    this.sql.exec(`INSERT INTO cloudflare_account_connection(
+      singleton,user_id,cloudflare_user_id,email,token_ciphertext,token_id,expires_on,
+      policy_json,connected_at,updated_at,disconnected_at)
+      VALUES('owner',?,?,?,?,?,?,?,?,?,0)
+      ON CONFLICT(singleton) DO UPDATE SET
+        token_ciphertext=excluded.token_ciphertext,
+        token_id=excluded.token_id,expires_on=excluded.expires_on,
+        policy_json=excluded.policy_json,connected_at=excluded.connected_at,
+        updated_at=excluded.updated_at,disconnected_at=0
+      WHERE cloudflare_account_connection.user_id=excluded.user_id
+        AND cloudflare_account_connection.cloudflare_user_id=excluded.cloudflare_user_id`,
+      userId,cloudflareUserId,email,ciphertext,tokenId,expiresOn,
+      JSON.stringify(policy),timestamp,timestamp);
+    return this.cloudflareConnectionState({userId});
+  }
+  cloudflareConnectionSetPolicy({userId,policy}){
+    const state=this.cloudflareConnectionState({userId});
+    if(state.status!==200)return state;
+    if(!state.connected)return {status:409,error:"Connect Cloudflare before changing permissions."};
+    this.sql.exec("UPDATE cloudflare_account_connection SET policy_json=?,updated_at=? WHERE singleton='owner' AND user_id=? AND token_ciphertext IS NOT NULL",
+      JSON.stringify(policy),Math.floor(Date.now()/1000),userId);
+    return this.cloudflareConnectionState({userId});
+  }
+  cloudflareConnectionRemove({userId}){
+    const state=this.cloudflareConnectionState({userId});
+    if(state.status!==200)return state;
+    if(!state.connected)return {status:409,error:"Cloudflare is not connected."};
+    const timestamp=Math.floor(Date.now()/1000);
+    this.sql.exec("UPDATE cloudflare_account_connection SET token_ciphertext=NULL,token_id=NULL,expires_on=NULL,updated_at=?,disconnected_at=? WHERE singleton='owner' AND user_id=?",
+      timestamp,timestamp,userId);
+    return this.cloudflareConnectionState({userId});
   }
   security(userId){
     return this.sql.exec("SELECT * FROM account_security WHERE user_id=?",userId).toArray()[0];
@@ -267,6 +334,7 @@ export class AuthStore extends BaseAuthStore {
     const result=await super.deleteAccount({token,password});
     if(result.status!==204)return result;
     this.ctx.storage.transactionSync(()=>{
+      this.sql.exec("DELETE FROM cloudflare_account_connection WHERE user_id=?",user.id);
       this.sql.exec("DELETE FROM account_security WHERE user_id=?",user.id);
       this.sql.exec("DELETE FROM mail_tokens WHERE user_id=?",user.id);
       this.sql.exec("DELETE FROM mfa_challenges WHERE user_id=?",user.id);

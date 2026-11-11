@@ -178,6 +178,61 @@
             <p id="clock-settings-feedback" class="note" role="status" aria-live="polite"></p>
           </div>
         </section>
+        <section id="cloudflare-account-connection" class="panel settings-panel cf-panel" aria-labelledby="cf-heading">
+          <div class="cf-heading">
+            <div><p class="cf-eyebrow">ACCOUNT INTEGRATIONS</p><h2 id="cf-heading">Cloudflare</h2>
+              <p class="note">Connect your own Cloudflare account once, manage its effective permissions here, and disconnect whenever you choose. This is separate from project-specific provider permissions.</p></div>
+            <span class="cf-connection-status" id="cf-connection-status" role="status" aria-live="polite">Checking…</span>
+          </div>
+          <div class="cf-status-summary">
+            <div><span>Verified account</span><strong id="cf-owner-email">Not connected</strong></div>
+            <div><span>Permission level</span><strong id="cf-active-scope">—</strong></div>
+            <div><span>Token expiry</span><strong id="cf-expiry">—</strong></div>
+          </div>
+          <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Authenticate with Cloudflare</a>
+            <button type="button" class="secondary" id="cf-refresh">Refresh status</button></div>
+          <p class="cf-message" id="cf-feedback" role="status" aria-live="polite"></p>
+          <form class="cf-connect-form" id="cf-connect-form">
+            <div class="cf-form-heading"><h3 id="cf-connect-title">Add a connection</h3><p class="note">Use a Cloudflare user API token. It must allow <strong>User Details Read</strong> to verify ownership; its other permissions determine which API operations are available. The token is encrypted on the server and is never returned to this page.</p></div>
+            <label for="cf-token">Cloudflare API token</label>
+            <input id="cf-token" type="password" name="token" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Paste your Cloudflare API token" required>
+            <div class="cf-actions"><button type="submit" class="secondary" id="cf-connect-button">Connect Cloudflare</button>
+              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer">Manage tokens in Cloudflare</a></div>
+          </form>
+          <form class="cf-scope-form" id="cf-scope-form">
+            <div class="cf-form-heading"><h3>Effective permissions</h3><p class="note">These settings can only restrict your token, never expand the privileges Cloudflare grants it. An asterisk permits all resources within that token's permissions; IDs restrict access to specific resources.</p></div>
+            <div class="cf-form-grid">
+              <label for="cf-mode">Allowed operations
+                <select id="cf-mode"><option value="read">Read-only · GET</option><option value="full">Full · GET, POST, PUT, PATCH, DELETE</option></select>
+              </label>
+              <label for="cf-accounts">Account IDs
+                <input id="cf-accounts" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
+              </label>
+              <label for="cf-zones">Zone IDs
+                <input id="cf-zones" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
+              </label>
+            </div>
+            <label class="cf-checkbox"><input id="cf-user" type="checkbox"> Allow Cloudflare user-level API endpoints</label>
+            <p class="note">Global endpoints outside accounts, zones and user require full operations, unrestricted resources, and user API access. Narrow scopes block collection listing where the resulting list would expose other resources.</p>
+            <div class="cf-actions"><button type="submit" class="secondary" id="cf-save-scope" disabled>Save permission scope</button>
+              <button type="button" class="secondary" id="cf-full-scope">Select full access</button></div>
+          </form>
+          <details class="cf-explorer" id="cf-explorer" hidden>
+            <summary>Cloudflare API console</summary>
+            <p class="note">Issue requests using your stored, server-side connection. Requests are validated against the scope above, and are sent only to Cloudflare's official API endpoint.</p>
+            <form id="cf-api-form">
+              <div class="cf-api-target"><label for="cf-api-method">Method<select id="cf-api-method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></label>
+                <label for="cf-api-path">API path<input id="cf-api-path" spellcheck="false" value="/accounts" placeholder="/accounts/{account_id}/workers/scripts"></label></div>
+              <label for="cf-api-body">JSON request body (optional)</label>
+              <textarea id="cf-api-body" spellcheck="false" rows="4" placeholder='{"example":"value"}'></textarea>
+              <div class="cf-actions"><button type="submit" class="secondary" id="cf-api-send">Send request</button></div>
+            </form>
+            <pre class="cf-api-output" id="cf-api-output" aria-live="polite" tabindex="0">No request sent.</pre>
+          </details>
+          <div class="cf-disconnect" id="cf-disconnect-area" hidden><div><strong>Disconnect Cloudflare</strong>
+            <p class="note">Remove the encrypted credential from DoFinances immediately. This does not delete the token in Cloudflare, which you can revoke separately.</p></div>
+            <button type="button" class="destructive" id="cf-disconnect">Remove connection</button></div>
+        </section>
         <section id="account" class="panel settings-panel" aria-label="Account and security settings">
           <h2>Account & security</h2>
           <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
@@ -228,9 +283,9 @@
             </form>
           </div>
           <section id="colosseum-owner-connection" class="settings-divider" aria-labelledby="colosseum-owner-connection-title">
-            <h3 id="colosseum-owner-connection-title">Colosseum administration</h3>
-            <p class="note">Bind Colosseum administrator permissions to this DoFinances account. Cloudflare Access verifies the owner separately, and no Cloudflare credentials are stored in your browser.</p>
-            <a class="secondary" id="connect-cloudflare-owner" href="/api/colosseum/connect" style="display:inline-block;margin-top:14px;padding:10px 17px;border:1px solid var(--ui-border-strong);border-radius:10px">Connect Cloudflare</a>
+            <h3 id="colosseum-owner-connection-title">Project-specific authorization</h3>
+            <p class="note">Existing Colosseum administration is independently protected by Cloudflare Access. This project-specific enrollment does not manage the Cloudflare account connection above.</p>
+            <a class="secondary" id="connect-cloudflare-owner" href="/api/colosseum/connect" style="display:inline-block;margin-top:14px;padding:10px 17px;border:1px solid var(--ui-border-strong);border-radius:10px">Connect project administrator</a>
             <p id="colosseum-owner-feedback" class="note" role="status" hidden>Colosseum ownership is now connected to this DoFinances account.</p>
           </section>
           <section class="manage-account settings-divider" aria-labelledby="manage-account-title">

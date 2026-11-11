@@ -2,6 +2,7 @@ import {WORKSPACE_WALLPAPERS} from "../sites/_apex/app/assets/workspace-wallpape
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {verifyColosseumOwnerJwt} from "./colosseum-owner.mjs";
+import {cloudflareRequest,verifyCloudflareIdentity,normalizedCloudflarePolicy,DEFAULT_CLOUDFLARE_POLICY,sealCloudflareToken,openCloudflareToken} from "./cloudflare-connection.mjs";
 import {mailReady,sendAccountEmail} from "./auth-mail.mjs";
 import {federationAvailability} from "./auth-federation.mjs";
 import {handleFederation,readFederatedMfaCookie,expireFederatedMfaCookie} from "./auth-federation-routes.mjs";
@@ -324,6 +325,99 @@ ${state.owner?'<p>This account is already connected.</p><a href="/app/#settings"
     "X-Frame-Options":"DENY","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"}});
 }
 
+
+// Account-level Cloudflare access is distinct from project authorization.
+// Cloudflare Access validates the owner identity, the DoFinances session binds
+// the immutable user ID, and the stored user-issued token is encrypted in DO SQLite.
+async function cloudflareAccountApi(request,env,pathname){
+  const allowed=new Set(["/api/cloudflare/connect","/api/cloudflare/connection",
+    "/api/cloudflare/scope","/api/cloudflare/request"]);
+  if(!allowed.has(pathname))return json({error:"Not found."},404);
+  const method=request.method;
+  if(pathname==="/api/cloudflare/connect"&&method!=="GET"||
+     pathname==="/api/cloudflare/connection"&&!["GET","POST","DELETE"].includes(method)||
+     pathname==="/api/cloudflare/scope"&&method!=="PUT"||
+     pathname==="/api/cloudflare/request"&&method!=="POST")
+    return json({error:"Method not allowed."},405);
+  const user=await getUser(request,env);
+  if(!user)return pathname.endsWith("/connect")?redirect("/login"):json({error:"DoFinances sign-in required."},401);
+  const ownerEmail=env.CLOUDFLARE_OWNER_ACCESS_EMAIL||env.COLOSSEUM_OWNER_ACCESS_EMAIL;
+  if(!env.CLOUDFLARE_CONNECTION_ACCESS_AUD||!ownerEmail)
+    return json({error:"Cloudflare owner access is not configured."},503);
+  const accessEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD,
+    COLOSSEUM_OWNER_ACCESS_EMAIL:ownerEmail};
+  let owner;
+  try{owner=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),accessEnv);}
+  catch{return json({error:"Cloudflare authentication is unavailable."},503);}
+  if(!owner)return json({error:"Cloudflare owner verification required."},403);
+  const stub=store(env);
+  if(!stub)return json({error:"Account store unavailable."},503);
+  const state=await stub.cloudflareConnectionState({userId:user.id});
+  if(state.status!==200)return json({error:state.error},state.status);
+  if(pathname==="/api/cloudflare/connect")
+    return redirect("/app/?cloudflare=verified#settings",303);
+  if(method==="GET")return json(state);
+  if(request.headers.get("Origin")!=="https://dofinances.com"||
+     request.headers.get("Sec-Fetch-Site")&&!["same-origin","none"].includes(request.headers.get("Sec-Fetch-Site")))
+    return json({error:"Forbidden request origin."},403);
+  if(method==="DELETE") {
+    const outcome=await stub.cloudflareConnectionRemove({userId:user.id});
+    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+  }
+  if((request.headers.get("Content-Type")||"").split(";")[0].trim().toLowerCase()!=="application/json")
+    return json({error:"Expected JSON."},415);
+  const length=Number(request.headers.get("Content-Length")||"0");
+  if(!Number.isFinite(length)||length>100000)return json({error:"Request too large."},413);
+  let body;
+  try {
+    const raw=await request.text();
+    if(raw.length>100000)throw Error("too large");
+    body=JSON.parse(raw);
+    if(!body||typeof body!=="object"||Array.isArray(body))throw Error("invalid body");
+  }catch{return json({error:"Invalid JSON payload."},400);}
+  if(pathname==="/api/cloudflare/connection"){
+    if(Object.keys(body).some(k=>!["token","policy"].includes(k)))
+      return json({error:"Unrecognized connection field."},400);
+    if(!env.MFA_ENCRYPTION_KEY)
+      return json({error:"Encrypted connection storage is not configured."},503);
+    let policy,verified,ciphertext;
+    try {
+      policy=normalizedCloudflarePolicy(body.policy||DEFAULT_CLOUDFLARE_POLICY);
+      verified=await verifyCloudflareIdentity(body.token,ownerEmail);
+      ciphertext=await sealCloudflareToken(body.token,env.MFA_ENCRYPTION_KEY,user.id);
+    }catch(error){return json({error:error.message||"Cloudflare verification failed."},400);}
+    const outcome=await stub.cloudflareConnectionSave({
+      userId:user.id,cloudflareUserId:verified.cloudflareUserId,email:verified.email,
+      tokenId:verified.tokenId,expiresOn:verified.expiresOn,
+      ciphertext,policy
+    });
+    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+  }
+  if(pathname==="/api/cloudflare/scope"){
+    let policy;
+    try{policy=normalizedCloudflarePolicy(body);}
+    catch(error){return json({error:error.message},400);}
+    const outcome=await stub.cloudflareConnectionSetPolicy({userId:user.id,policy});
+    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+  }
+  if(pathname==="/api/cloudflare/request"){
+    if(Object.keys(body).some(k=>!["method","path","body"].includes(k)))
+      return json({error:"Unrecognized Cloudflare API argument."},400);
+    if(!state.connected)return json({error:"Connect Cloudflare first."},409);
+    if(!env.MFA_ENCRYPTION_KEY)return json({error:"Connection encryption unavailable."},503);
+    const credential=await stub.cloudflareConnectionState({userId:user.id,includeCredential:true});
+    if(credential.status!==200||!credential.ciphertext)return json({error:"Connection is no longer available."},409);
+    if(credential.expiresOn&&Date.parse(credential.expiresOn)<=Date.now())
+      return json({error:"The Cloudflare token has expired. Reconnect using a new token."},401);
+    try {
+      const token=await openCloudflareToken(credential.ciphertext,env.MFA_ENCRYPTION_KEY,user.id);
+      const result=await cloudflareRequest(token,{method:body.method,path:body.path,body:body.body},credential.policy);
+      return json({status:result.status,result:result.body},result.ok?200:result.status>=400&&result.status<=599?result.status:502);
+    }catch(error){return json({error:error.message||"Cloudflare request failed."},400);}
+  }
+  return json({error:"Not found."},404);
+}
+
 async function serveAsset(request,env,folder,path,privatePage=false) {
   if(!env.ASSETS?.fetch) return new Response("Static assets not configured",{status:503,headers:NO_STORE});
   for(const file of assetCandidates(folder,path)){
@@ -358,7 +452,7 @@ export async function handleRequest(request,env={}) {
   const folder=siteFolder(url.hostname);
   if(folder===null) return new Response("Unknown host",{status:404,headers:NO_STORE});
   // www has no authentication cookies; preserve canonical apex origin for all auth routes.
-  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")))) {
+  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")))) {
     url.hostname=ROOT;
     return redirect(url.href,301);
   }
@@ -369,6 +463,10 @@ export async function handleRequest(request,env={}) {
       return await api(request,env,url.pathname);
     }
     catch{return json({error:"Authentication service unavailable."},503);}
+  }
+  if(folder==="_apex" && url.pathname.startsWith("/api/cloudflare/")) {
+    try{return await cloudflareAccountApi(request,env,url.pathname);}
+    catch{return json({error:"Cloudflare account service unavailable."},503);}
   }
   if(folder==="_apex" && url.pathname.startsWith("/api/colosseum/")) {
     try {return await colosseumOwnerApi(request,env,url.pathname);}
