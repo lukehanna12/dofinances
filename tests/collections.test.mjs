@@ -289,12 +289,18 @@ test("Collections display ten live items per page and keep ordinary last-page pa
  assert.match(js,/Math\.min\(first\+state\.pageSize-1,state\.collections\.length\)/);
 });
 
-test("Collections canvas retains ten-row capacity and footer buffer on short last pages",()=>{
+test("Collections canvas retains ten-row capacity with nine-sixteenths less bottom breathing room",()=>{
  const row=62.4,capacity=10,borders=2,navMargin=25,navHeight=36;
- const countMargin=12,countLine=18,countTrailing=12,extra=40;
- const reservedHeight=row*capacity+borders+navMargin+navHeight+countMargin+countLine+countTrailing+extra;
- assert.equal(reservedHeight,769);
- assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(626px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px \+ 40px\)/);
+ const countMargin=12,countLine=18,countTrailing=12;
+ const reservedHeight=row*capacity+borders+navMargin+navHeight+countMargin+countLine+countTrailing;
+ assert.equal(reservedHeight,729);
+ assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(626px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px\)/);
+ assert.match(css,/body:has\(> #workspace-shell\) \.content:has\(> \.view\[data-view="colosseum\/collections"\]:not\(\[hidden\]\)\)\{padding-bottom:26px\}/);
+ const sharedWallpaper=src("sites/_apex/app/assets/workspace-wallpapers.css");
+ assert.match(sharedWallpaper,/body:has\(> #workspace-shell\) \.content \{[\s\S]*?padding-bottom:36px/);
+ const oldGap=12+40+36,newGap=12+26;
+ assert.equal(oldGap-newGap,50);
+ assert.ok(Math.abs((oldGap-newGap)/oldGap-9/16)<0.01);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:62\.4px\}/);
  assert.match(css,/#cs-root \.cs-pagination\{[^}]*margin-top:25px/);
  assert.match(css,/#cs-root \.cs-page\{[^}]*height:36px/);
