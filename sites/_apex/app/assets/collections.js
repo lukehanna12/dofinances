@@ -243,7 +243,7 @@ export function initColosseumCollections(){
      renderRows();renderCard();
      const refreshedAt=new Date();
      summary.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
-     announce("Live Colosseum · "+state.collections.length+" collections · refreshed "+refreshedAt.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
+     announce(""); // The eyebrow already displays the live count and refresh time.
      if(chosen)await loadDetail(chosen.collection_id);
    }catch(error){if(seq===state.loadSeq)announce(error.message,true);}
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy;}

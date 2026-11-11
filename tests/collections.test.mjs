@@ -146,3 +146,12 @@ test("Collections primary content typography scales continuously with window wid
  assert.doesNotMatch(css,/\.cs-trigger \.cs-entry-title\{font-size:18px/);
  assert.doesNotMatch(css,/\.cs-card-label\{font-size:16px/);
 });
+
+test("Collections does not duplicate the live count and refresh time below the header",()=>{
+ assert.doesNotMatch(js,/announce\\("Live Colosseum · "/);
+ assert.match(js,/summary\\.textContent=formatCollectionSummary\\(refreshedAt,state\\.collections\\.length\\)/);
+ assert.match(js,/announce\\("";?\\)/);
+ assert.match(css,/#cs-root \\.cs-source:empty\\{display:none\\}/);
+ assert.match(css,/#cs-root \\.cs-source\\[data-error="true"\\]/);
+ assert.match(html,/id="cs-status"[^>]*role="status" aria-live="polite"/);
+});
