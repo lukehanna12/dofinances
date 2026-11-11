@@ -347,7 +347,7 @@ async function cloudflareAccountApi(request,env,pathname){
   const accessEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD,
     COLOSSEUM_OWNER_ACCESS_EMAIL:ownerEmail};
   let owner;
-  try{owner=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),accessEnv);}
+  try{owner=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),accessEnv,fetch,30*24*60*60);}
   catch{return json({error:"Cloudflare authentication is unavailable."},503);}
   if(!owner)return json({error:"Cloudflare owner verification required."},403);
   const stub=store(env);

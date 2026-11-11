@@ -30,3 +30,7 @@ Automated tests cover encryption, path and scope denial, verification, owner rou
 ## Two distinct connections (important)
 
 Cloudflare Access authentication confirms the owner's identity for a short session. It does **not** mint, expose, or grant a Cloudflare management API token. Settings shows "Identity verified · token required" until the owner creates a user API token and connects it in the second step. The effective Cloudflare management connection is marked "API connected" only after the token passes Cloudflare verification and its encrypted record is saved. The account owner can then update its effective scope or disconnect it from Settings. Cloudflare API token issuance is an explicit owner action in the Cloudflare dashboard; self-hosted Access sign-in cannot silently authorize it.
+
+## Cloudflare Access session duration
+
+This dedicated Cloudflare account Access application is configured for `30d` (30 days), the longest supported month-scale session setting, rather than `8h`. Its owner JWT verification explicitly accepts a token lifetime up to 30 days; the project-specific Colosseum JWT verification retains its original 24-hour maximum. Cloudflare may require reauthentication after 30 days, on revocation, or sooner if a stricter policy/client session or identity-provider setting applies. The Cloudflare API token stored in the DoFinances Durable Object continues to persist independently of Access browser session expiry. DoFinances account login sessions are separately managed.

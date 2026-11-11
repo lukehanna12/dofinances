@@ -11,7 +11,11 @@ function bytes(base64url) {
   return Uint8Array.from(atob(base64+"=".repeat((4-base64.length%4)%4)),c=>c.charCodeAt(0));
 }
 function parse(encoded) {return JSON.parse(new TextDecoder().decode(bytes(encoded)));}
-export async function verifyColosseumOwnerJwt(raw,env,fetchJwks=fetch) {
+// Colosseum retains the original 24-hour limit. The independent Cloudflare account
+// route explicitly opts in to a maximum 30-day JWT lifetime.
+export async function verifyColosseumOwnerJwt(raw,env,fetchJwks=fetch,maxSessionSeconds=86400) {
+  if(!Number.isInteger(maxSessionSeconds)||maxSessionSeconds<1||maxSessionSeconds>2592000)
+    throw Error("Invalid Access session lifetime limit");
   const issuer=String(env.COLOSSEUM_ACCESS_ISSUER||"").replace(/\/$/,"");
   const audience=String(env.COLOSSEUM_ACCESS_AUD||"");
   const ownerEmail=normalizedEmail(env.COLOSSEUM_OWNER_ACCESS_EMAIL);
@@ -29,7 +33,7 @@ export async function verifyColosseumOwnerJwt(raw,env,fetchJwks=fetch) {
        !(payload.aud===audience||(Array.isArray(payload.aud)&&payload.aud.includes(audience))))return null;
     const t=Math.floor(Date.now()/1000);
     if(!Number.isInteger(payload.exp)||payload.exp<=t||
-       !Number.isInteger(payload.iat)||payload.iat>t+60||payload.exp-payload.iat>86400 ||
+       !Number.isInteger(payload.iat)||payload.iat>t+60||payload.exp-payload.iat>maxSessionSeconds ||
        (payload.nbf!==undefined&&(!Number.isInteger(payload.nbf)||payload.nbf>t+60)))return null;
     if(typeof payload.sub!=="string"||payload.sub.length<1||payload.sub.length>256)return null;
     if(!constantTimeEqual(normalizedEmail(payload.email)||"",ownerEmail))return null;
