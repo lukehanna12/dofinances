@@ -295,7 +295,7 @@ test("Collections canvas retains ten-row capacity with nine-sixteenths less bott
  const reservedHeight=row*capacity+borders+navMargin+navHeight+countMargin+countLine+countTrailing;
  assert.equal(reservedHeight,729);
  assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(626px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px\)/);
- assert.match(css,/body:has\(> #workspace-shell\) \.content:has\(> \.view\[data-view="colosseum\/collections"\]:not\(\[hidden\]\)\)\{padding-bottom:26px\}/);
+ assert.match(css,/html:has\(body > #workspace-shell \.view\[data-view="colosseum\/collections"\]:not\(\[hidden\]\)\) body:has\(> #workspace-shell\) \.content\{padding-bottom:26px\}/);
  const sharedWallpaper=src("sites/_apex/app/assets/workspace-wallpapers.css");
  assert.match(sharedWallpaper,/body:has\(> #workspace-shell\) \.content \{[\s\S]*?padding-bottom:36px/);
  const oldGap=12+40+36,newGap=12+26;

@@ -74,7 +74,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Collections only: 26px rather than the shared workspace's 36px bottom
    padding. Together with removing the former 40px layout spare space, this
    trims ~50px (about 9/16) from the full-page count-to-background gap. */
-body:has(> #workspace-shell) .content:has(> .view[data-view="colosseum/collections"]:not([hidden])){padding-bottom:26px}
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:26px}
 #cs-root .cs-accordion{border-top:1px solid var(--cs-border);border-bottom:1px solid var(--cs-border);min-width:0}
 #cs-root .cs-entry+.cs-entry{border-top:1px solid var(--cs-border)}
 #cs-root .cs-entry h2{margin:0}
