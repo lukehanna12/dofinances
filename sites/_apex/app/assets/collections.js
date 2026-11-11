@@ -5,13 +5,17 @@ import {formatWorkspaceTime} from "./workspace-nav.js";
  * Inventory admission (+) is intentionally disabled until separately designed.
  */
 const COLLECTIONS_API="/api/colosseum/collections";
-const SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
-const MAX_SUMMARY_SHIFT=256;
-// Measured from actual slash glyph positions: no guessed count or font width.
-export function collectionSummarySkeletonShift(actualSlashOffset,skeletonSlashOffset){
-  if(!Number.isFinite(actualSlashOffset)||!Number.isFinite(skeletonSlashOffset))return null;
-  const offset=actualSlashOffset-skeletonSlashOffset;
-  return offset>=0&&offset<=MAX_SUMMARY_SHIFT?Math.round(offset*100)/100:null;
+const SUMMARY_GEOMETRY_KEY="dofinances.collections.summary-divider-geometry.v2";
+const LEGACY_SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
+const validSummaryGeometry=value=>Array.isArray(value)&&value.length===3&&
+  value.every(n=>Number.isFinite(n)&&n>=0&&n<=1024)&&
+  value[0]<value[2]&&value[2]<value[1];
+// Store em-based [left edge of " / ", right edge of " / ", left edge of "/"].
+// The three tiny scalars survive new page loads and scale with fluid typography.
+export function collectionSummaryGeometry(start,end,slash,fontSize){
+  if(!Number.isFinite(fontSize)||fontSize<=0)return null;
+  const result=[start,end,slash].map(px=>Math.round(px/fontSize*100000)/100000);
+  return validSummaryGeometry(result)?result:null;
 }
 
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
@@ -37,53 +41,72 @@ export function initColosseumCollections(){
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog");
- const skeleton=summary.querySelector(".cs-summary-skeleton");
- const skeletonDivider=skeleton.querySelector(".cs-summary-divider");
- function readRememberedShift(){
+ function readStoredGeometry(){
    try{
-     const raw=window.localStorage.getItem(SUMMARY_SHIFT_KEY);
-     if(raw===null||raw==="")return null;
-     const value=Number(raw);
-     return Number.isFinite(value)&&value>=0&&value<=MAX_SUMMARY_SHIFT?value:null;
-   }catch{return null;} // Storage may be blocked; live Collections must still work.
+     const raw=window.localStorage.getItem(SUMMARY_GEOMETRY_KEY);
+     const value=raw===null?null:JSON.parse(raw);
+     return validSummaryGeometry(value)?value:null;
+   }catch{return null;} // Storage can be disabled; the live API is unaffected.
  }
- let rememberedShift=readRememberedShift();
- function applyShift(shift,persist=false){
-   if(shift===null)return;
-   summary.style.setProperty("--cs-summary-skeleton-shift",shift+"px");
-   rememberedShift=shift;
-   if(persist)try{window.localStorage.setItem(SUMMARY_SHIFT_KEY,String(shift));}catch{}
+ let activeGeometry=null;
+ let storedGeometry=readStoredGeometry();
+ function applyGeometry(geometry,persist=false){
+   if(!validSummaryGeometry(geometry))return;
+   const encoded=JSON.stringify(geometry);
+   if(encoded!==activeGeometry){
+     summary.style.setProperty("--cs-summary-group-start",geometry[0]+"em");
+     summary.style.setProperty("--cs-summary-group-end",geometry[1]+"em");
+     summary.style.setProperty("--cs-summary-slash-left",geometry[2]+"em");
+     activeGeometry=encoded;
+   }
+   if(persist&&encoded!==storedGeometry){
+     try{
+       window.localStorage.setItem(SUMMARY_GEOMETRY_KEY,encoded);
+       storedGeometry=encoded;
+     }catch{}
+   }
  }
- if(rememberedShift!==null)applyShift(rememberedShift);
- function slashOffset(value){
+ if(storedGeometry)applyGeometry(storedGeometry);
+ function measureSeparator(value){
    const text=value?.firstChild;
    const index=text?.nodeType===3?text.textContent.indexOf(" / "):-1;
    if(index<0||!value.getClientRects().length)return null;
    const range=document.createRange();
+   const origin=value.getBoundingClientRect().left; // Same left boundary as TOTAL.
+   range.setStart(text,index);
+   range.setEnd(text,index+3); // Both spaces AND the slash.
+   const group=range.getBoundingClientRect();
    range.setStart(text,index+1);
    range.setEnd(text,index+2);
    const glyph=range.getBoundingClientRect();
-   const origin=value.getBoundingClientRect();
-   return glyph.width>0&&origin.width>0?glyph.left-origin.left:null;
+   const fontSize=parseFloat(getComputedStyle(summary).fontSize);
+   return group.width>0&&glyph.width>0?
+     collectionSummaryGeometry(group.left-origin,group.right-origin,glyph.left-origin,fontSize):null;
  }
- function skeletonSlashOffset(){
-   const origin=skeleton.getBoundingClientRect();
-   const glyph=skeletonDivider.getBoundingClientRect();
-   return origin.width>0&&glyph.width>0?glyph.left-origin.left:null;
- }
- function alignSkeletonTo(actualSlashOffset){
-   applyShift(collectionSummarySkeletonShift(actualSlashOffset,skeletonSlashOffset()));
- }
- function approximateColdStart(){
-   // No saved measurement yet: measure the static placeholder in this font,
-   // rather than guessing how many digits Colosseum will return.
+ function ensureInitialGeometry(){
+   if(activeGeometry!==null)return;
+   // Only on the first uncached visit: measure the existing placeholder once.
    const probe=document.createElement("span");
    probe.textContent=summaryValue.textContent;
    probe.style.cssText="position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none";
    summary.append(probe);
-   const offset=slashOffset(probe);
+   let geometry=measureSeparator(probe);
    probe.remove();
-   alignSkeletonTo(offset);
+   if(!geometry)return;
+   try{
+     const raw=window.localStorage.getItem(LEGACY_SUMMARY_SHIFT_KEY);
+     const shift=raw===null?NaN:Number(raw);
+     if(Number.isFinite(shift)&&shift>=0&&shift<=256){
+       // Old flex layout: 1em ring + .75em gap before the slash glyph.
+       // Reuse its saved expected position, then add the measured widths of
+       // the preceding space, slash, and following space.
+       const em=parseFloat(getComputedStyle(summary).fontSize);
+       const oldSlash=shift/em+1.75;
+       const delta=oldSlash-geometry[2];
+       geometry=geometry.map(value=>Math.round((value+delta)*100000)/100000);
+     }
+   }catch{}
+   applyGeometry(geometry);
  }
  let formMode="create";
  function announce(message,error=false,visible=false){
@@ -92,16 +115,11 @@ export function initColosseumCollections(){
    status.dataset.visible=error||visible?"true":"false";
  }
  function setSummaryLoading(loading){
-   // On refresh, capture the already-rendered slash before hiding the value.
-   const previousSlash=loading&&state.loaded?slashOffset(summaryValue):null;
+   if(loading)ensureInitialGeometry();
    summary.classList.toggle("cs-summary-loading",loading);
    summary.setAttribute("aria-busy",String(loading));
    refreshButton.classList.toggle("cs-refreshing",loading);
    refreshButton.setAttribute("aria-busy",String(loading));
-   if(loading){
-     if(previousSlash!==null)alignSkeletonTo(previousSlash);
-     else if(rememberedShift===null)approximateColdStart();
-   }
  }
  function setBusy(value){
    state.busy=value;
@@ -312,12 +330,11 @@ export function initColosseumCollections(){
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
      const refreshedAt=new Date();
-     // Capture the skeleton's unshifted slash advance while it is still visible.
-     const skeletonBaseline=skeletonSlashOffset();
      summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
      setSummaryLoading(false);
-     // Save just the measured pixel shift; never persist collection data.
-     applyShift(collectionSummarySkeletonShift(slashOffset(summaryValue),skeletonBaseline),true);
+     // One measurement after the load, when the skeleton is hidden.
+     // No measurements, reads, observers, or timers in the animation loop.
+     applyGeometry(measureSeparator(summaryValue),true);
      announce(""); // The eyebrow already displays the live count and refresh time.
      if(chosen)await loadDetail(chosen.collection_id);
    }catch(error){

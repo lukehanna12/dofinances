@@ -116,22 +116,32 @@ test("Collections summary uses the visitor's last successful refresh time and co
  assert.match(js,/if\(seq!==state\.loadSeq\)return/);
  assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*text-transform:uppercase/);
 });
-test("Collections keeps the loading slash aligned using a persisted measured offset",async()=>{
- const {collectionSummarySkeletonShift}=await import("../sites/_apex/app/assets/collections.js");
- assert.equal(collectionSummarySkeletonShift(67.75,19.25),48.5);
- assert.equal(collectionSummarySkeletonShift(82,19.25),62.75);
- assert.equal(collectionSummarySkeletonShift(10,19.25),null);
- assert.equal(collectionSummarySkeletonShift(null,19.25),null);
- assert.equal(collectionSummarySkeletonShift(500,19.25),null);
- assert.match(css,/\.cs-summary-skeleton\{[^}]*margin-left:var\(--cs-summary-skeleton-shift,0px\)/);
- assert.match(js,/window\.localStorage\.getItem\(SUMMARY_SHIFT_KEY\)/);
- assert.match(js,/window\.localStorage\.setItem\(SUMMARY_SHIFT_KEY,String\(shift\)\)/);
- assert.match(js,/const previousSlash=loading&&state\.loaded\?slashOffset\(summaryValue\):null/);
- assert.match(js,/if\(previousSlash!==null\)alignSkeletonTo\(previousSlash\)/);
- assert.match(js,/const skeletonBaseline=skeletonSlashOffset\(\)/);
- assert.match(js,/applyShift\(collectionSummarySkeletonShift\(slashOffset\(summaryValue\),skeletonBaseline\),true\)/);
- assert.match(js,/probe\.textContent=summaryValue\.textContent/);
+test("Collections positions both ring centers symmetrically around the complete space/slash/space delimiter",async()=>{
+ const {collectionSummaryGeometry}=await import("../sites/_apex/app/assets/collections.js");
+ const geometry=collectionSummaryGeometry(56.3,70.9,62.1,10);
+ assert.deepEqual(geometry,[5.63,7.09,6.21]); // Stored in em for fluid font sizes.
+ assert.equal(collectionSummaryGeometry(70,60,65,10),null);
+ assert.equal(collectionSummaryGeometry(10,30,40,10),null);
+ assert.equal(collectionSummaryGeometry(10,30,20,0),null);
+ for(const [A,B] of [[5.63,7.09],[6.4,7.8],[9.2,10.9]]){
+   const first=B/2,second=A+B/2,dividerMiddle=(A+B)/2;
+   assert.equal(first,B/2);                 // TOTAL left (0) to delimiter right B
+   assert.ok(Math.abs((first+second)/2-dividerMiddle)<1e-12); // Reflection
+   assert.ok(Math.abs((dividerMiddle-first)-(second-dividerMiddle))<1e-12);
+ }
+ assert.match(css,/\.cs-summary-dot\{[^}]*left:calc\(var\(--cs-summary-group-end,8em\) \/ 2 - \.5em\)/);
+ assert.match(css,/\.cs-summary-dot:last-child\{left:calc\(var\(--cs-summary-group-start,6em\) \+ var\(--cs-summary-group-end,8em\) \/ 2 - \.5em\)/);
+ assert.match(css,/\.cs-summary-divider\{[^}]*left:var\(--cs-summary-slash-left,7em\)/);
+ assert.doesNotMatch(css,/\.cs-summary-skeleton\{[^}]*gap:/);
+ assert.match(js,/range\.setEnd\(text,index\+3\); \/\/ Both spaces AND the slash/);
+ assert.match(js,/range\.setEnd\(text,index\+2\)/);
+ assert.match(js,/window\.localStorage\.getItem\(SUMMARY_GEOMETRY_KEY\)/);
+ assert.match(js,/window\.localStorage\.setItem\(SUMMARY_GEOMETRY_KEY,encoded\)/);
+ assert.match(js,/LEGACY_SUMMARY_SHIFT_KEY/);
+ assert.match(js,/const oldSlash=shift\/em\+1\.75/);
+ assert.match(js,/applyGeometry\(measureSeparator\(summaryValue\),true\)/);
  assert.doesNotMatch(js,/localStorage\.setItem\([^\n]*state\.collections/);
+ assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
 });
 
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
