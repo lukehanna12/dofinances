@@ -102,7 +102,7 @@ export function mountProviderAdapterControl({id,data,container,request,notify,on
      const sel=row(fields,"Verified installation",{options:[["","Choose a registered installation"],...candidates.map((x,i)=>[String(i),x.component+" · "+x.version+" · "+x.variant])],
        hint:saved.truncated?"Inventory is truncated; narrow the search.":candidates.length+" verified candidates"});
      sel.addEventListener("change",()=>{
-      const x=candidates[Number(sel.value)];if(!x)return;
+      if(sel.value==="")return;const x=candidates[Number(sel.value)];if(!x)return;
       component.value=x.component;version.value=x.version;variant.value=x.variant;
       kind.value=x.manager==="pnpm"?"npm-bin":"native";
      });
