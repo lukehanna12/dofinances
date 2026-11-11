@@ -575,8 +575,14 @@ try{
     await evaluate('document.getElementById("workspace-sidebar").click();true');
     await until('!document.querySelector("#workspace-shell").classList.contains("is-collapsed") && !document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',
       "wide blank-rail re-expansion at "+width);
-    assert.equal(await evaluate('getComputedStyle(document.getElementById("sidebar-toggle")).display'),
-      "inline-grid","Expanded desktop must restore its collapse button at "+width);
+    const restoredToggle=await evaluate(String.raw`(()=>{
+      const button=document.getElementById("sidebar-toggle");
+      const rect=button.getBoundingClientRect();
+      return {display:getComputedStyle(button).display,width:rect.width,height:rect.height};
+    })()`);
+    assert.notEqual(restoredToggle.display,"none","Expanded desktop must restore its collapse button at "+width);
+    assert.ok(restoredToggle.width>=30&&restoredToggle.height>=30,
+      "Restored collapse control must have a usable hit area: "+JSON.stringify({width,restoredToggle}));
   }
   console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
