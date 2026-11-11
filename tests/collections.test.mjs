@@ -73,3 +73,16 @@ test("Source data is never fabricated and Refresh asks Colosseum for live data",
  assert.match(js,/page\.next_cursor/);
  assert.match(js,/refreshButton\.addEventListener/);
 });
+
+test("Collections title uses the shared non-Home heading contract without custom offsets",()=>{
+ const section=html.match(/<section class="view project-view" data-view="colosseum\/collections"[^>]*>([\s\S]*?)<\/section>/)?.[1]||"";
+ assert.match(section,/^\s*<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
+ assert.equal((section.match(/id="project-collections-title"/g)||[]).length,1);
+ assert.match(section,/<div id="cs-root" class="cs-screen">/);
+ assert.doesNotMatch(section,/<div class="cs-head-copy">[\s\S]*?<h1/);
+ assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
+ assert.doesNotMatch(css,/padding-top:0/);
+ assert.match(css,/\.content > \.view\[data-view="colosseum\/collections"\] > \.page-heading/);
+ const common=src("sites/_apex/app/assets/workspace-enhancements.css");
+ assert.match(common,/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
+});

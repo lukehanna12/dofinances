@@ -7,7 +7,7 @@
   --cs-card:#0a0a0a;--cs-strong:#fff;--cs-strong-ink:#171717;
   --cs-red:#f87171;--cs-red-border:#87373b;--cs-red-surface:#2b1518;
   color:var(--cs-text);background:var(--cs-bg);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  -webkit-font-smoothing:antialiased;min-height:70vh;padding:52px 0 88px;
+  -webkit-font-smoothing:antialiased;min-height:70vh;padding:0 clamp(16px,2.2vw,32px) 88px;
 }
 #cs-root *{box-sizing:border-box}
 #cs-root button,#cs-root input,#cs-root textarea{font:inherit}
@@ -21,7 +21,6 @@
 #cs-root .cs-head{display:flex;align-items:start;justify-content:space-between;gap:24px}
 #cs-root .cs-head-copy{max-width:700px}
 #cs-root .cs-eyebrow{display:block;color:var(--cs-muted);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
-#cs-root .cs-head h1{margin:20px 0 0;font-size:48px;line-height:1.1;letter-spacing:-.035em;font-weight:600;color:var(--cs-text)}
 #cs-root .cs-head p{margin:20px 0 0;max-width:580px;font-size:18px;line-height:1.6;color:var(--cs-muted)}
 #cs-root .cs-top-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:end;align-items:center}
 #cs-root .cs-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--cs-border);border-radius:10px;background:var(--cs-weak);color:var(--cs-text);padding:9px 14px;min-height:36px;font-size:12px!important;font-weight:500!important;line-height:1.3!important;transition:color .2s,background .2s,border-color .2s,transform .2s;white-space:nowrap;text-decoration:none}
@@ -103,14 +102,12 @@
  #cs-root .cs-layout{grid-template-columns:1fr;gap:40px}
  #cs-root .cs-desktop-detail{display:none}
  #cs-root .cs-mobile-detail{display:block}
- #cs-root .cs-head h1{font-size:40px}
 }
 @media(max-width:639px){
- #cs-root{padding:36px 0 66px}
+ #cs-root{padding:0 clamp(16px,2.2vw,32px) 66px}
  #cs-root .cs-wrap{padding:0 16px}
  #cs-root .cs-head{flex-direction:column;align-items:stretch;gap:18px}
  #cs-root .cs-top-actions{justify-content:flex-start}
- #cs-root .cs-head h1{font-size:30px}
  #cs-root .cs-head p{font-size:16px;margin-top:15px}
  #cs-root .cs-layout{margin-top:38px}
  #cs-root .cs-trigger{padding:20px 0}
@@ -130,34 +127,17 @@
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
-/* Expand only the Collections workspace to the proportions of the Servus
-   1400px layout; keep all other views and the Permissions screen unchanged. */
+/* Keep the Collections workbench's wide layout independent of the shared
+   non-Home page title. The title itself uses the same .page-heading > h1
+   markup, typography, and Y-position rule as Providers and Diagnostics.
+   Its containing box mirrors standard .content at every viewport width. */
 .content:has(> .view[data-view="colosseum/collections"]:not([hidden])){
   max-width:1536px;
-  padding-top:0;
-  padding-inline:clamp(16px,2.2vw,32px);
+  padding-inline:0;
 }
-
-/* Collections uses its own heading markup instead of .page-heading.
-   Position only its h1 at the shared non-Home D-mark center, accounting
-   for the workspace content padding, the Collections inset, eyebrow and
-   its original margin. Leave the eyebrow, description and controls in flow. */
-#cs-root .cs-head h1{
-  position:relative;
-  top:calc(
-    var(--global-menu-height) + var(--workspace-header-height)
-    + var(--workspace-sidebar-gap) + 38.328125px
-    - var(--workspace-banner-height) - var(--workspace-content-leading)
-    - 52px - 16.5px - 20px - .55em
-  );
-}
-@media(max-width:639px){
-  #cs-root .cs-head h1{
-    top:calc(
-      var(--global-menu-height) + var(--workspace-header-height)
-      + var(--workspace-sidebar-gap) + 38.328125px
-      - var(--workspace-banner-height) - var(--workspace-content-leading)
-      - 36px - 16.5px - 20px - .55em
-    );
-  }
+.content > .view[data-view="colosseum/collections"] > .page-heading{
+  max-width:1110px;
+  box-sizing:border-box;
+  margin-inline:auto;
+  padding-inline:clamp(26px,4.1vw,58px);
 }
