@@ -37,7 +37,8 @@ export function initColosseumCollections(){
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
-       (button.dataset.csAction==="edit"&&!state.detail);
+       ((button.dataset.csAction==="edit"||button.dataset.csAction==="select")&&!state.detail)||
+       (button.dataset.csAction==="select"&&!state.detail?.item_uids?.length);
    });
  }
  async function request(action,data={},firstList=false){
