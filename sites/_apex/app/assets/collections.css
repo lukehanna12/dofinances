@@ -137,3 +137,19 @@
   padding-top:0;
   padding-inline:clamp(16px,2.2vw,32px);
 }
+
+/* Collections title shares the workspace's non-Home heading anchor.
+   The small collection-library eyebrow follows the title so raising the
+   heading does not overlap it; the action buttons and panels stay in flow. */
+#cs-root .cs-head-copy{display:flex;flex-direction:column}
+#cs-root .cs-head h1{
+  order:-1;
+  margin:0;
+  position:relative;
+  top:calc(var(--workspace-sidebar-gap,16px) + 38.328125px - clamp(21.6px,2.4vw,28.8px) - 52px);
+}
+@media(max-width:639px){
+  #cs-root .cs-head h1{
+    top:calc(var(--workspace-sidebar-gap,16px) + 38.328125px - clamp(21.6px,2.4vw,28.8px) - 36px);
+  }
+}
