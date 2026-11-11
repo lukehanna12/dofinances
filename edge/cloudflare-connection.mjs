@@ -68,6 +68,7 @@ export function cloudflareApiPath(raw,method,policy){
   if(url.origin!=="https://api.cloudflare.com"||!url.pathname.startsWith("/client/v4/"))
     throw Error("Invalid Cloudflare API destination.");
   const segments=url.pathname.slice("/client/v4/".length).split("/");
+  // Read-only verification never widens the user-configured effective permissions.
   const type=segments[0],id=segments[1]||"";
   if(type==="accounts"||type==="zones"){
     const allow=policy[type],validId=HEX.test(id);
