@@ -159,7 +159,9 @@ test("Collapsed Collections rows retain the former mobile height at all widths",
  // The former mobile rule: vertical padding 20px on both sides, 16px text, line-height 1.4.
  const mobileSingleLineHeight=20*2+16*1.4;
  assert.equal(mobileSingleLineHeight,62.4);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{height:62\.4px;padding:0;align-items:center\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:62\.4px\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) h2\{height:100%\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{height:100%;padding:0;align-items:center\}/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{overflow:hidden;white-space:nowrap;text-overflow:ellipsis\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(16px,1\.7vw,20px\);line-height:1\.4/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);

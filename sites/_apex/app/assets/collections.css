@@ -71,9 +71,11 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-entry h2{margin:0}
 #cs-root .cs-trigger{display:flex;align-items:baseline;gap:16px;width:100%;border:0;background:transparent;color:var(--cs-muted);padding:24px 0;text-align:left;cursor:pointer}
 /* The existing sub-640px one-line height was 20px + (16px * 1.4) + 20px.
-   Keep that 62.4px collapsed trigger footprint at every viewport width.
+   Keep the whole collapsed row, including its 1px top divider, at 62.4px.
    Expansion retains natural height and wrapping, including mobile padding. */
-#cs-root .cs-entry:not(.cs-open) .cs-trigger{height:62.4px;padding:0;align-items:center}
+#cs-root .cs-entry:not(.cs-open){height:62.4px}
+#cs-root .cs-entry:not(.cs-open) h2{height:100%}
+#cs-root .cs-entry:not(.cs-open) .cs-trigger{height:100%;padding:0;align-items:center}
 #cs-root .cs-entry:not(.cs-open) .cs-entry-title{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #cs-root .cs-trigger .cs-num{flex:none;width:28px;font-size:12px;font-weight:500;color:var(--cs-dim);font-variant-numeric:tabular-nums}
 #cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s}
