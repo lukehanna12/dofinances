@@ -473,7 +473,7 @@
             </div>
             <div class="pv-boundary">
               <div><strong>Federated access</strong><p>Configure encrypted credentials, verify connections, authorize OAuth, and grant or revoke individual tools here. Changes are enforced by the existing Colosseum vault and router.</p></div>
-              <div><strong>Local access</strong><p>Review, confirm, and apply revision-bound provider profiles on the Mac. Google Sheets remains authoritative for filesystem and script-execution restrictions.</p></div>
+              <div><strong>Local access</strong><p>Review, confirm, and apply revision-bound provider profiles on the Mac. The Permissions Screen is authoritative for filesystem and script-execution restrictions.</p></div>
             </div>
           </div>
         </section>
@@ -482,11 +482,6 @@
           <div id="pm-root" class="pm-screen">
             <div class="pm-summary"><strong id="pm-source" class="pm-source">Loading permission authority…</strong><span id="pm-revision" class="pm-small"></span><span id="pm-count" class="pm-small"></span><button type="button" id="pm-refresh" class="pm-btn">Refresh</button></div>
             <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
-            <section id="pm-migration" class="pm-migration" hidden>
-              <h2>Replace Google Sheets as the permission authority</h2>
-              <p>Colosseum will authenticate and compare every approved Sheet row, including dormant paths and execution limits, before switching the gateway to local policy storage. The original Sheet and web app will stay intact for evaluation and possible rollback.</p>
-              <button type="button" id="pm-activate" class="pm-btn pm-primary">Activate independent local authority</button>
-            </section>
             <div class="pm-heading"><div><h2>Filesystem paths</h2><span class="pm-quiet">The most-specific enabled rule controls the requested path.</span></div><input type="search" id="pm-filter" class="pm-filter" placeholder="Find path or alias…" aria-label="Filter filesystem paths"></div>
             <div class="pm-cards" id="pm-cards" aria-live="polite"></div>
             <section class="pm-add" aria-label="Add filesystem path">
