@@ -31,7 +31,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Two hollow 1em/currentColor loading rings share one compositor-friendly
    transform animation, synchronized without timers, observers, or extra paints. */
 #cs-root .cs-summary-skeleton{display:inline-flex;align-items:center;gap:.75em;vertical-align:middle}
-#cs-root .cs-summary-dot{display:inline-block;flex:none;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 1000ms linear infinite}
+#cs-root .cs-summary-dot{display:inline-block;flex:none;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-summary-loading .cs-summary-value{display:none}
 #cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}
 @keyframes cs-summary-spin{to{transform:rotate(360deg)}}
@@ -46,8 +46,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-button.cs-danger:hover:not(:disabled){background:#3e191e;border-color:#bb4a50}
 #cs-root .cs-button.cs-add{width:36px;min-width:36px;padding:0;font-size:19px!important;line-height:1!important}
 #cs-root .cs-button svg{width:15px;height:15px;flex:none}
-#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.9}
-#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:cs-summary-spin 1000ms linear infinite}
+/* Lucide rotate-cw at a subtler Apple-like line weight while idle.
+   During a fetch, replace its arrow with a plain hollow ring: same 17px
+   footprint and currentColor, no additional markup or scripting. */
+#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}
+#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}
+#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-source{font-size:12px;color:var(--cs-muted);margin:20px 0 0;min-height:20px;line-height:1.55}
 #cs-root .cs-source[data-error="true"]{color:var(--cs-red)}
 /* Routine load messages remain accessible but occupy no layout space.
@@ -143,5 +147,5 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
  #cs-root .cs-summary-dot{animation:none!important;opacity:.65}
- #cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:none!important}
+ #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
 }

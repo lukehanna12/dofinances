@@ -156,21 +156,20 @@ test("Collections does not duplicate the live count and refresh time below the h
  assert.ok(html.includes('<p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>'));
 });
 
-test("Collections refresh icon has one clean clockwise arc and consistent arrowhead",()=>{
+test("Collections idle refresh icon uses Lucide rotate-cw with Apple-like stroke",()=>{
  const start=html.indexOf('<button class="cs-button" id="cs-refresh"');
- assert.ok(start>=0,"Refresh control exists");
+ assert.ok(start>=0);
  const button=html.slice(start,html.indexOf("</button>",start)+9);
- assert.ok(button.includes('class="cs-refresh-icon"'));
- assert.ok(button.includes('viewBox="0 0 24 24"'));
- assert.ok(button.includes('aria-hidden="true" focusable="false"'));
- assert.ok(button.includes('<path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>'));
+ assert.ok(button.includes('class="cs-refresh-icon lucide lucide-rotate-cw"'));
+ assert.ok(button.includes('stroke="currentColor" stroke-width="1.7"'));
+ assert.ok(button.includes('stroke-linecap="round" stroke-linejoin="round"'));
+ assert.ok(button.includes('<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>'));
  assert.ok(button.includes('<path d="M21 3v5h-5"/>'));
- assert.ok(!button.includes("M4 12l-1 5"));
  assert.ok(button.endsWith("Refresh</button>"));
- assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.9}"));
+ assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}"));
  assert.ok(js.includes('refreshButton.addEventListener("click"'));
- assert.ok(!js.includes("const REFRESH="));
 });
+
 
 test("Collections loading summary uses two synchronized, text-colored circular skeletons",()=>{
  const start=html.indexOf('id="cs-summary"');
@@ -179,9 +178,9 @@ test("Collections loading summary uses two synchronized, text-colored circular s
  assert.ok(summary.includes('class="cs-summary-skeleton" aria-hidden="true"'));
  assert.equal((summary.match(/class="cs-summary-dot"/g)||[]).length,2);
  assert.ok(summary.includes('class="cs-summary-divider">/</span>'));
- assert.ok(css.includes('width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 1000ms linear infinite'));
+ assert.ok(css.includes('width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite'));
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
- assert.equal((css.match(/animation:cs-summary-spin 1000ms/g)||[]).length,2); // Both share one keyframe.
+ assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2); // Both share one keyframe.
  assert.ok(!css.includes('background:currentColor;animation:cs-summary-pulse'));
  assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{display:none}'));
  assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
@@ -200,19 +199,18 @@ test("Collections legacy live-status skeleton occupies no space, while failures 
  assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });
 
-test("Collections Refresh icon reuses the summary ring spin and current text color while loading",()=>{
+test("Collections refresh shows a fast arrow-free ring while both skeletons remain synchronized",()=>{
  assert.ok(js.includes('refreshButton.classList.toggle("cs-refreshing",loading)'));
  assert.ok(js.includes('refreshButton.setAttribute("aria-busy",String(loading))'));
  assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
  assert.ok(js.includes('setSummaryLoading(true);'));
  assert.ok(js.includes('setSummaryLoading(false);'));
- assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:cs-summary-spin 1000ms linear infinite}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{animation:none!important}'));
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
- assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:none!important}'));
- const at=html.indexOf('id="cs-refresh"');
- const button=html.slice(at,html.indexOf('</button>',at));
- assert.ok(button.includes('stroke="currentColor"'));
- assert.ok(!button.includes('stroke="#'));
+ assert.ok(!css.includes('cs-refreshing .cs-refresh-icon{animation:'));
  assert.equal((css.match(/@keyframes cs-summary-spin/g)||[]).length,1);
+ assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2);
  assert.ok(!js.includes('setInterval('));
 });
