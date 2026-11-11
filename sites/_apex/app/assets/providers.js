@@ -316,7 +316,7 @@ export function initColosseumProviders(){
    ["Discovered tool count",p.tool_count],["Registry revision",state.localRevision?.slice(0,18)+"…"]]);
   const section=e("section","pv-detail-section");
   append(section,"h4","","Provider-specific regulation");
-  append(section,"p","","These five fields are the authoritative local permission ceiling. Google Sheets still controls filesystem and script execution. A reviewed profile cannot automatically approve unclassified upstream tools.");
+  append(section,"p","","These five fields are the authoritative provider-specific local permission ceiling. The persistent local Colosseum Permissions authority controls filesystem and script execution. A reviewed profile cannot automatically approve unclassified upstream tools.");
   if(!p.configured||!p.profile){
    append(section,"p","pv-form-error","The independent registry does not contain a profile for this provider. No editing is permitted.");
    detail.append(section);return;
@@ -344,7 +344,7 @@ export function initColosseumProviders(){
   if(state.pending?.provider_id===p.provider_id){
    const panel=e("div","pv-confirm-panel");
    append(panel,"strong","","Confirm effective provider permission change");
-   append(panel,"p","","You are changing a real independent provider profile. Existing gateway restrictions and Google Sheets rules continue to apply. The prepared authorization expires shortly.");
+   append(panel,"p","","You are changing an independent provider profile. Existing gateway restrictions and locally enforced Permissions rules continue to apply. The prepared authorization expires shortly.");
    pairs(panel,FIELDS.map(k=>[title(k),state.pending.profile[k]]));
    panel.append(action("Apply confirmed change",()=>void commitLocal(),{}));
    panel.append(action("Cancel",()=>{state.pending=null;renderDetails();},{secondary:true}));
