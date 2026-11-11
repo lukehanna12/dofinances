@@ -148,10 +148,25 @@ test("Collections positions both ring centers symmetrically around the complete 
 
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
  assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
- assert.match(css,/#cs-root\{margin-top:-28px;padding-bottom:66px\}/);
+ assert.match(css,/#cs-root\\{padding-bottom:66px\\}/);
+ assert.doesNotMatch(css,/#cs-root\\{margin-top:-28px/);
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
  assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
  assert.doesNotMatch(css,/#cs-root\{[^}]*position:absolute/);
+});
+
+test("Collapsed Collections rows retain the former mobile height at all widths",()=>{
+ // The former mobile rule: vertical padding 20px on both sides, 16px text, line-height 1.4.
+ const mobileSingleLineHeight=20*2+16*1.4;
+ assert.equal(mobileSingleLineHeight,62.4);
+ assert.match(css,/#cs-root \\.cs-entry:not\\(\\.cs-open\\) \\.cs-trigger\\{height:62\\.4px;padding:0;align-items:center\\}/);
+ assert.match(css,/#cs-root \\.cs-entry:not\\(\\.cs-open\\) \\.cs-entry-title\\{overflow:hidden;white-space:nowrap;text-overflow:ellipsis\\}/);
+ assert.match(css,/#cs-root \\.cs-trigger \\.cs-entry-title\\{[^}]*font-size:clamp\\(16px,1\\.7vw,20px\\);line-height:1\\.4/);
+ assert.match(css,/#cs-root \\.cs-entry\\.cs-open \\.cs-accordion-panel\\{grid-template-rows:1fr/);
+ assert.match(css,/@media\\(max-width:639px\\)\\{[\\s\\S]*?#cs-root \\.cs-trigger\\{padding:20px 0\\}/);
+ // No global height limit on expanded rows; long titles remain readable there.
+ assert.doesNotMatch(css,/#cs-root \\.cs-trigger\\{[^}]*height:62\\.4px/);
+ assert.doesNotMatch(css,/#cs-root \\.cs-entry\\.cs-open \\.cs-trigger\\{[^}]*height:/);
 });
 
 test("Collections inherits the shared horizontal content alignment without independent centering",()=>{
