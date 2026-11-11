@@ -59,6 +59,8 @@ export function initColosseumCollections(){
        const codes={
          collection_revision_conflict:"This collection changed in another session. Refresh before trying again.",
          collection_exists:"A collection with that name already exists.",
+         collection_name_taken:"A collection with that name already exists.",
+         collection_not_found:"That collection no longer exists. Refresh to see the current list.",
          unauthorized:"Collection access was denied by Colosseum.",
          invalid_request:"The requested collection change was rejected.",
          temporarily_unavailable:"The Colosseum collection service is temporarily unavailable."
