@@ -109,9 +109,9 @@ test("Collections summary uses the visitor's last successful refresh time and co
    "TOTAL 11 / UPDATED 2:02 AM");
  assert.equal(formatCollectionSummary(new Date(2026,10,11,14,7),0),
    "TOTAL 0 / UPDATED 2:07 PM");
- assert.match(html,/<span class="cs-eyebrow" id="cs-summary">TOTAL — \/ UPDATED —<\/span>/);
+ assert.ok(html.includes('<span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true">'));
  assert.doesNotMatch(html,/COLOSSEUM \/ COLLECTION LIBRARY/);
- assert.match(js,/summary\.textContent=formatCollectionSummary\(refreshedAt,state\.collections\.length\)/);
+ assert.ok(js.includes('summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
  assert.match(js,/state\.collections=good\.filter/);
  assert.match(js,/if\(seq!==state\.loadSeq\)return/);
  assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*text-transform:uppercase/);
@@ -149,11 +149,11 @@ test("Collections primary content typography scales continuously with window wid
 
 test("Collections does not duplicate the live count and refresh time below the header",()=>{
  assert.ok(!js.includes('announce("Live Colosseum · "'));
- assert.ok(js.includes('summary.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
+ assert.ok(js.includes('summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
  assert.ok(js.includes('announce("");'));
  assert.ok(css.includes("#cs-root .cs-source:empty{display:none}"));
  assert.ok(css.includes('#cs-root .cs-source[data-error="true"]'));
- assert.ok(html.includes('id="cs-status" class="cs-source" role="status" aria-live="polite"'));
+ assert.ok(html.includes('<p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>'));
 });
 
 test("Collections refresh icon has one clean clockwise arc and consistent arrowhead",()=>{
@@ -170,4 +170,30 @@ test("Collections refresh icon has one clean clockwise arc and consistent arrowh
  assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.9}"));
  assert.ok(js.includes('refreshButton.addEventListener("click"'));
  assert.ok(!js.includes("const REFRESH="));
+});
+
+test("Collections loading summary uses two synchronized, text-colored circular skeletons",()=>{
+ const start=html.indexOf('id="cs-summary"');
+ const summary=html.slice(start,html.indexOf("</span></span>",start)+14);
+ assert.ok(summary.includes('aria-busy="true"'));
+ assert.ok(summary.includes('class="cs-summary-skeleton" aria-hidden="true"'));
+ assert.equal((summary.match(/class="cs-summary-dot"/g)||[]).length,2);
+ assert.ok(summary.includes('class="cs-summary-divider">/</span>'));
+ assert.ok(css.includes('width:1em;height:1em;border-radius:50%;background:currentColor;animation:cs-summary-pulse 1200ms ease-in-out infinite'));
+ assert.equal((css.match(/animation:cs-summary-pulse 1200ms/g)||[]).length,1);
+ assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{display:none}'));
+ assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
+ assert.ok(css.includes('#cs-root .cs-summary-dot{animation:none!important;opacity:.65}'));
+ assert.ok(js.includes('setSummaryLoading(true);'));
+ assert.ok(js.includes('setSummaryLoading(false);'));
+ assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
+ assert.ok(js.includes('summary.setAttribute("aria-busy",String(loading))'));
+ assert.ok(!js.includes("setInterval("));
+});
+test("Collections legacy live-status skeleton occupies no space, while failures can surface",()=>{
+ assert.ok(html.includes('<p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>'));
+ assert.ok(css.includes('#cs-root .cs-source:not([data-visible="true"]){position:absolute;width:1px;height:1px;min-height:0;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}'));
+ assert.ok(js.includes('status.dataset.visible=error||visible?"true":"false"'));
+ assert.ok(!js.includes('announce("Live Colosseum · "'));
+ assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });

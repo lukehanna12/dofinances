@@ -26,12 +26,17 @@ export function initColosseumCollections(){
    busy:false,loadSeq:0,detailSeq:0
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
- const status=$("cs-status"),summary=$("cs-summary"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
+ const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog");
  let formMode="create";
- function announce(message,error=false){
+ function announce(message,error=false,visible=false){
    status.textContent=message;
    status.dataset.error=error?"true":"false";
+   status.dataset.visible=error||visible?"true":"false";
+ }
+ function setSummaryLoading(loading){
+   summary.classList.toggle("cs-summary-loading",loading);
+   summary.setAttribute("aria-busy",String(loading));
  }
  function setBusy(value){
    state.busy=value;
@@ -214,6 +219,7 @@ export function initColosseumCollections(){
  async function loadList({focusName=null,focusId=null}={}){
    const seq=++state.loadSeq;
    refreshButton.disabled=true;
+   setSummaryLoading(true);
    announce("Refreshing live collections from Colosseum…");
    try{
      let page=await request("list",{},true);
@@ -241,10 +247,16 @@ export function initColosseumCollections(){
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
      const refreshedAt=new Date();
-     summary.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
+     summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
+     setSummaryLoading(false);
      announce(""); // The eyebrow already displays the live count and refresh time.
      if(chosen)await loadDetail(chosen.collection_id);
-   }catch(error){if(seq===state.loadSeq)announce(error.message,true);}
+   }catch(error){
+     if(seq===state.loadSeq){
+       setSummaryLoading(false); // Preserve last successful values if this refresh failed.
+       announce(error.message,true);
+     }
+   }
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy;}
  }
  function openForm(mode){
@@ -300,7 +312,7 @@ export function initColosseumCollections(){
      await request("destroy",{name:col.name,expected_revision:revision});
      deleteDialog.close();
      state.activeId=null;state.detail=null;await loadList();
-     announce('Collection "'+col.name+'" deleted. Its utilities remain in the catalog.');
+     announce('Collection "'+col.name+'" deleted. Its utilities remain in the catalog.',false,true);
    }catch(error){$("cs-delete-error").textContent=error.message;announce(error.message,true);}
    finally{setBusy(false);}
  }
@@ -315,7 +327,7 @@ export function initColosseumCollections(){
      await request("evict",{name:col.name,item_uids:uids,expected_revision:revision});
      state.selecting=false;state.selected.clear();
      await loadList({focusId:col.collection_id});
-     announce(uids.length+" "+(uids.length===1?"utility evicted":"utilities evicted")+" from "+col.name+". Catalog items preserved.");
+     announce(uids.length+" "+(uids.length===1?"utility evicted":"utilities evicted")+" from "+col.name+". Catalog items preserved.",false,true);
    }catch(error){
      announce(error.message,true);
      if(/changed|conflict/i.test(error.message))void loadList({focusId:col.collection_id});
