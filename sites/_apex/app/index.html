@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="/app/assets/diagnostics.css">
   <link rel="stylesheet" href="/app/assets/providers.css">
   <link rel="stylesheet" href="/app/assets/permissions.css">
+  <link rel="stylesheet" href="/app/assets/collections.css">
   <script src="/app/assets/dashboard.js" type="module"></script>
 </head>
 <body>
@@ -388,8 +389,56 @@
           <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
         </section>
         <section class="view project-view" data-view="colosseum/collections" hidden aria-labelledby="project-collections-title">
-          <div class="page-heading"><h1 id="project-collections-title">Collections</h1></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+          <div id="cs-root" class="cs-screen">
+            <div class="cs-wrap">
+              <header class="cs-head">
+                <div class="cs-head-copy">
+                  <span class="cs-eyebrow">COLOSSEUM / COLLECTION LIBRARY</span>
+                  <h1 id="project-collections-title">Collections</h1>
+                  <p>Organize your utilities into collections, inspect their live memberships, and manage what belongs together.</p>
+                </div>
+                <div class="cs-top-actions">
+                  <button class="cs-button cs-primary" id="cs-create" type="button"><span aria-hidden="true">+</span> New collection</button>
+                  <button class="cs-button" id="cs-refresh" type="button" aria-label="Refresh collections directly from Colosseum"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l-1 5a7.5 7.5 0 0 0 13.4 2"/></svg>Refresh</button>
+                </div>
+              </header>
+              <p id="cs-status" class="cs-source" role="status" aria-live="polite">Open Collections to retrieve live data.</p>
+              <div class="cs-layout">
+                <div class="cs-collection-column">
+                  <div class="cs-accordion" id="cs-list" aria-label="Collections"><p class="cs-loading">Awaiting live collections…</p></div>
+                  <nav class="cs-pagination" id="cs-pagination" aria-label="Collections pages"></nav>
+                  <p class="cs-countline" id="cs-countline"></p>
+                </div>
+                <div class="cs-desktop-detail cs-empty" id="cs-detail" aria-label="Expanded collection utilities" aria-hidden="true"></div>
+              </div>
+            </div>
+            <dialog class="cs-modal" id="cs-form-dialog" aria-labelledby="cs-form-title">
+              <h2 id="cs-form-title">New collection</h2>
+              <p id="cs-form-copy">Create an empty Colosseum collection.</p>
+              <form id="cs-form" method="dialog">
+                <label class="cs-field">Collection name<input id="cs-name" name="name" required maxlength="100" autocomplete="off"></label>
+                <label class="cs-field">Description<textarea id="cs-description" name="description" maxlength="2000" rows="4"></textarea></label>
+                <p id="cs-form-error" class="cs-form-error" role="alert"></p>
+                <div class="cs-modal-actions">
+                  <button type="button" id="cs-delete-open" data-danger="true" class="cs-button cs-danger" hidden>Delete collection</button>
+                  <button type="button" id="cs-form-cancel" class="cs-button">Cancel</button>
+                  <button type="submit" id="cs-form-save" class="cs-button cs-primary">Save</button>
+                </div>
+              </form>
+            </dialog>
+            <dialog class="cs-modal" id="cs-delete-dialog" aria-labelledby="cs-delete-title">
+              <h2 id="cs-delete-title">Delete collection?</h2>
+              <p id="cs-delete-copy"></p>
+              <label class="cs-field">Type <strong id="cs-delete-name"></strong> to confirm
+                <input type="text" id="cs-delete-confirm-name" autocomplete="off" spellcheck="false">
+              </label>
+              <p id="cs-delete-error" class="cs-form-error" role="alert"></p>
+              <div class="cs-modal-actions">
+                <button type="button" id="cs-delete-cancel" class="cs-button">Cancel</button>
+                <button type="button" id="cs-delete-apply" class="cs-button cs-danger" disabled>Delete collection</button>
+              </div>
+            </dialog>
+          </div>
         </section>
         <section class="view project-view" data-view="colosseum/providers" hidden aria-labelledby="project-providers-title">
           <div class="page-heading"><h1 id="project-providers-title">Providers</h1></div>
