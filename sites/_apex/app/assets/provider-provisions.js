@@ -1,4 +1,4 @@
-/* Live, source-derived Olympus provider controls. The upstream MCP, not this
+/* Live, source-derived Colosseum provider controls. The upstream MCP, not this
  * interface, defines the available tools, resource templates, and prompts. */
 import {mountProviderAdapterControl} from "./provider-adapters.js";
 const cache=new Map(),loading=new Map(),editors=new Map(),filters=new Map(),pending=new Map();
@@ -22,8 +22,8 @@ export function invalidateLocalProviderProvisions(provider_id){cache.delete(prov
 export function mountLocalProviderProvisions({provider,container,request,notify}){
  const id=provider.provider_id;
  const region=add(container,"section","pv-provision-section");
- if(!id.startsWith("olympus-")){
-  add(region,"p","pv-provision-intro","This separately maintained provider is outside the Olympus provider-control migration.");
+ if(!id.startsWith("local-")){
+  add(region,"p","pv-provision-intro","This separately maintained provider is outside the Colosseum provider-control migration.");
   return;
  }
  async function load(force=false){
@@ -148,7 +148,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    for(const bit of CHECKS)rule[bit]=values[bit].checked;
    for(const key of FIELDS)rule[key]=trimArray(values[key].value);
    if(kind==="mutation"&&!rule.effectTargets.length)
-    rule.effectTargets=["Olympus "+id+" / "+tool.name];
+    rule.effectTargets=["Colosseum "+id+" / "+tool.name];
    if(current.kind==="mutation"&&kind==="read"&&
       !window.confirm("This upstream tool was previously classified as a mutation. Are you certain it is genuinely read-only?"))
     return;
