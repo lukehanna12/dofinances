@@ -138,18 +138,26 @@
   padding-inline:clamp(16px,2.2vw,32px);
 }
 
-/* Collections title shares the workspace's non-Home heading anchor.
-   The small collection-library eyebrow follows the title so raising the
-   heading does not overlap it; the action buttons and panels stay in flow. */
-#cs-root .cs-head-copy{display:flex;flex-direction:column}
+/* Collections uses its own heading markup instead of .page-heading.
+   Position only its h1 at the shared non-Home D-mark center, accounting
+   for the workspace content padding, the Collections inset, eyebrow and
+   its original margin. Leave the eyebrow, description and controls in flow. */
 #cs-root .cs-head h1{
-  order:-1;
-  margin:0;
   position:relative;
-  top:calc(var(--workspace-sidebar-gap,16px) + 38.328125px - clamp(21.6px,2.4vw,28.8px) - 52px);
+  top:calc(
+    var(--global-menu-height) + var(--workspace-header-height)
+    + var(--workspace-sidebar-gap) + 38.328125px
+    - var(--workspace-banner-height) - var(--workspace-content-leading)
+    - 52px - 16.5px - 20px - .55em
+  );
 }
 @media(max-width:639px){
   #cs-root .cs-head h1{
-    top:calc(var(--workspace-sidebar-gap,16px) + 38.328125px - clamp(21.6px,2.4vw,28.8px) - 36px);
+    top:calc(
+      var(--global-menu-height) + var(--workspace-header-height)
+      + var(--workspace-sidebar-gap) + 38.328125px
+      - var(--workspace-banner-height) - var(--workspace-content-leading)
+      - 36px - 16.5px - 20px - .55em
+    );
   }
 }
