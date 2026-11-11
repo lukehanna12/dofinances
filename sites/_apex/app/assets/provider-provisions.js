@@ -22,8 +22,8 @@ export function invalidateLocalProviderProvisions(provider_id){cache.delete(prov
 export function mountLocalProviderProvisions({provider,container,request,notify}){
  const id=provider.provider_id;
  const region=add(container,"section","pv-provision-section");
- if(!id.startsWith("local-")){
-  add(region,"p","pv-provision-intro","This separately maintained provider is outside the Colosseum provider-control migration.");
+ if(provider.author==="self"){
+  add(region,"p","pv-provision-intro","This separately maintained provider has its own authorization controls.");
   return;
  }
  async function load(force=false){

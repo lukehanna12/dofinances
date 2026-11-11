@@ -160,7 +160,13 @@ export function initColosseumProviders(){
    }else{
     if(!/^[a-f0-9]{64}$/.test(result.revision)||!Array.isArray(result.providers))
      throw Error("The local gateway did not return an authoritative provider contract.");
-    state.local=result.providers.map(x=>({...x,name:title(x.provider_id)}));
+    state.local=result.providers.map(x=>{
+     if(typeof x.name!=="string"||!x.name.trim()||/^Local\s/i.test(x.name)||
+        !["self","official","third_party"].includes(x.author)||
+        x.profile?.author!==x.author)
+       throw Error("Provider identity or author metadata was not verified upstream.");
+     return {...x,name:x.name};
+    });
     state.choices=result.choices||FALLBACK_CHOICES;
     state.localRevision=result.revision;
     localCount.textContent=state.local.length+" registered";
@@ -314,7 +320,7 @@ export function initColosseumProviders(){
   tags.append(marker(p.configured?"Independent profile present":"Not configured"));
   detail.append(tags);
   pairs(detail,[["Provider ID",p.provider_id],["Connection type",p.connection_type],
-   ["Discovered tool count",p.tool_count],["Registry revision",state.localRevision?.slice(0,18)+"…"]]);
+   ["Author",p.author],["Discovered tool count",p.tool_count],["Registry revision",state.localRevision?.slice(0,18)+"…"]]);
   const section=e("section","pv-detail-section");
   append(section,"h4","","Provider-specific regulation");
   append(section,"p","","These five fields are the authoritative provider-specific local permission ceiling. The persistent local Colosseum Permissions authority controls filesystem and script execution. A reviewed profile cannot automatically approve unclassified upstream tools.");
@@ -337,7 +343,7 @@ export function initColosseumProviders(){
   const save=e("button","pv-detail-action","Review permission change");save.type="submit";form.append(save);
   form.addEventListener("submit",event=>{
    event.preventDefault();
-   const profile=Object.fromEntries(FIELDS.map(k=>[k,controls[k].value]));
+   const profile={...Object.fromEntries(FIELDS.map(k=>[k,controls[k].value])),author:p.profile.author};
    if(FIELDS.every(k=>profile[k]===p.profile[k])){setStatus("No permission fields have changed.");return;}
    void prepareLocal(p.provider_id,profile);
   });
@@ -374,7 +380,7 @@ export function initColosseumProviders(){
    const actual=verified.providers?.find(x=>x.provider_id===pending.provider_id);
    if(!actual||FIELDS.some(k=>actual.profile?.[k]!==pending.profile[k]))
     throw Error("The gateway did not verify the requested effective provider profile.");
-   state.local=verified.providers.map(x=>({...x,name:title(x.provider_id)}));
+   state.local=verified.providers.map(x=>{if(!x.name||x.profile?.author!==x.author)throw Error("Provider author verification failed");return {...x,name:x.name};});
    invalidateLocalProviderProvisions(pending.provider_id);
    state.localRevision=verified.revision;state.choices=verified.choices||FALLBACK_CHOICES;
    renderList();renderDetails();
