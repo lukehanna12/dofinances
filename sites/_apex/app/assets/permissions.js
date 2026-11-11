@@ -166,6 +166,37 @@ export function initColosseumPermissions(){
   }catch(error){$("pm-pin-error").textContent=error.message;}
  });
  $("pm-refresh").addEventListener("click",()=>void load());
+
+ // Non-provider-specific live authority inspector: answers from the gateway,
+ // never by reimplementing filesystem rule precedence in the browser.
+ const inspector=document.createElement("section");
+ inspector.className="pm-effective-inspector";
+ inspector.innerHTML='<div class="pm-effective-title"><div><h3>Effective local-work access</h3><p>Ask the active gateway which rule governs a filesystem or execution operation.</p></div></div>'+
+  '<form class="pm-effective-form"><label>Absolute path<input name="path" type="text" spellcheck="false" placeholder="/Users/…/project" required></label>'+
+  '<label>Operation<select name="operation">'+["read","write","add","delete","write_or_add","execute"].map(x=>'<option value="'+x+'">'+x.replace("_"," ")+'</option>').join("")+'</select></label>'+
+  '<button type="submit" class="pm-btn pm-primary">Explain effective permission</button></form>'+
+  '<pre class="pm-effective-result" aria-live="polite"></pre>';
+ root.append(inspector);
+ inspector.querySelector("form").addEventListener("submit",async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,button=form.querySelector('button[type="submit"]'),result=inspector.querySelector(".pm-effective-result");
+  const path=form.elements.namedItem("path").value.trim();
+  const operation=form.elements.namedItem("operation").value;
+  button.disabled=true;result.textContent="Consulting the active Permissions authority…";
+  try{
+   const data=await request("explain",{path,operation});
+   const d=data.decision||{};
+   result.textContent=[
+    d.allowed?"ALLOWED":"DENIED",
+    "Operation: "+operation,
+    "Resolved path: "+(d.target||path),
+    "Reason: "+(d.reason||"No explanatory reason returned"),
+    "Winning rule: "+(d.policyRule?.path||"None"),
+    "Authority revision: "+(data.revision??"unknown")
+   ].join("\n");
+  }catch(err){result.textContent=String(err.message||err);}
+  finally{button.disabled=false;}
+ });
  const routeActive=()=>{
   const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
   return hash?hash==="colosseum/permissions":
