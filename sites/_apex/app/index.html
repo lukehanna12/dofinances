@@ -181,23 +181,27 @@
         <section id="cloudflare-account-connection" class="panel settings-panel cf-panel" aria-labelledby="cf-heading">
           <div class="cf-heading">
             <div><p class="cf-eyebrow">ACCOUNT INTEGRATIONS</p><h2 id="cf-heading">Cloudflare</h2>
-              <p class="note">Connect your own Cloudflare account once, manage its effective permissions here, and disconnect whenever you choose. This is separate from project-specific provider permissions.</p></div>
+              <p class="note">Verify your Cloudflare identity, then authorize API access with a token you control. Once connected, manage permissions and disconnect here without affecting project-specific providers.</p></div>
             <span class="cf-connection-status" id="cf-connection-status" role="status" aria-live="polite">Checking…</span>
           </div>
-          <div class="cf-status-summary">
-            <div><span>Verified account</span><strong id="cf-owner-email">Not connected</strong></div>
-            <div><span>Permission level</span><strong id="cf-active-scope">—</strong></div>
-            <div><span>Token expiry</span><strong id="cf-expiry">—</strong></div>
+          <div class="cf-onboarding" aria-label="Cloudflare connection setup">
+            <div class="cf-onboarding-step"><span class="cf-onboarding-number" aria-hidden="true">1</span><div><h3>Verify identity</h3><p class="note">Cloudflare Access confirms that you are the account owner. Authentication alone does not grant Cloudflare API permissions.</p></div></div>
+            <div class="cf-onboarding-step"><span class="cf-onboarding-number" aria-hidden="true">2</span><div><h3>Authorize API access</h3><p class="note">Create a Cloudflare <strong>user API token</strong> with <strong>User Details Read</strong> and the permissions you want, then paste it below. Your token is encrypted and never returned to the browser.</p></div></div>
           </div>
-          <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Authenticate with Cloudflare</a>
+          <div class="cf-status-summary">
+            <div><span>Verified Cloudflare identity</span><strong id="cf-owner-email">Checking…</strong></div>
+            <div><span>Effective API permissions</span><strong id="cf-active-scope">—</strong></div>
+            <div><span>API token expiry</span><strong id="cf-expiry">—</strong></div>
+          </div>
+          <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Verify Cloudflare identity</a>
             <button type="button" class="secondary" id="cf-refresh">Refresh status</button></div>
           <p class="cf-message" id="cf-feedback" role="status" aria-live="polite"></p>
           <form class="cf-connect-form" id="cf-connect-form">
-            <div class="cf-form-heading"><h3 id="cf-connect-title">Add a connection</h3><p class="note">Use a Cloudflare user API token. It must allow <strong>User Details Read</strong> to verify ownership; its other permissions determine which API operations are available. The token is encrypted on the server and is never returned to this page.</p></div>
+            <div class="cf-form-heading"><h3 id="cf-connect-title">Authorize API access</h3><p class="note">After verifying your identity above, paste a Cloudflare <strong>user API token</strong> created in your Cloudflare profile. It must include <strong>User Details Read</strong>, plus the API permissions you intend to use. Choose your initial effective scope before connecting. Identity verification alone cannot create this token.</p></div>
             <label for="cf-token">Cloudflare API token</label>
             <input id="cf-token" type="password" name="token" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Paste your Cloudflare API token" required>
-            <div class="cf-actions"><button type="submit" class="secondary" id="cf-connect-button">Connect Cloudflare</button>
-              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer">Manage tokens in Cloudflare</a></div>
+            <div class="cf-actions"><button type="submit" class="secondary" id="cf-connect-button" disabled>Authorize API connection</button>
+              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer">Create a user API token in Cloudflare</a></div>
           </form>
           <form class="cf-scope-form" id="cf-scope-form">
             <div class="cf-form-heading"><h3>Effective permissions</h3><p class="note">These settings can only restrict your token, never expand the privileges Cloudflare grants it. An asterisk permits all resources within that token's permissions; IDs restrict access to specific resources.</p></div>

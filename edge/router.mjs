@@ -356,13 +356,16 @@ async function cloudflareAccountApi(request,env,pathname){
   if(state.status!==200)return json({error:state.error},state.status);
   if(pathname==="/api/cloudflare/connect")
     return redirect("/app/?cloudflare=verified#settings",303);
-  if(method==="GET")return json(state);
+  // Access authentication establishes identity, not an API credential.
+  // Return separate signals so Settings never presents verification as a completed connection.
+  const withIdentity=connection=>({...connection,authenticated:true,verifiedEmail:ownerEmail});
+  if(method==="GET")return json(withIdentity(state));
   if(request.headers.get("Origin")!=="https://dofinances.com"||
      request.headers.get("Sec-Fetch-Site")&&!["same-origin","none"].includes(request.headers.get("Sec-Fetch-Site")))
     return json({error:"Forbidden request origin."},403);
   if(method==="DELETE") {
     const outcome=await stub.cloudflareConnectionRemove({userId:user.id});
-    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+    return json(outcome.status===200?withIdentity(outcome):{error:outcome.error},outcome.status);
   }
   if((request.headers.get("Content-Type")||"").split(";")[0].trim().toLowerCase()!=="application/json")
     return json({error:"Expected JSON."},415);
@@ -391,14 +394,14 @@ async function cloudflareAccountApi(request,env,pathname){
       tokenId:verified.tokenId,expiresOn:verified.expiresOn,
       ciphertext,policy
     });
-    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+    return json(outcome.status===200?withIdentity(outcome):{error:outcome.error},outcome.status);
   }
   if(pathname==="/api/cloudflare/scope"){
     let policy;
     try{policy=normalizedCloudflarePolicy(body);}
     catch(error){return json({error:error.message},400);}
     const outcome=await stub.cloudflareConnectionSetPolicy({userId:user.id,policy});
-    return json(outcome.status===200?outcome:{error:outcome.error},outcome.status);
+    return json(outcome.status===200?withIdentity(outcome):{error:outcome.error},outcome.status);
   }
   if(pathname==="/api/cloudflare/request"){
     if(Object.keys(body).some(k=>!["method","path","body"].includes(k)))

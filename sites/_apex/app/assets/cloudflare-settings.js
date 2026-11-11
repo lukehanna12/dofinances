@@ -33,13 +33,16 @@ export function initCloudflareConnection(){
   }
   function show(next){
     state=next;
-    status.textContent=next.connected?"Connected":"Not connected";
-    status.dataset.state=next.connected?"connected":"disconnected";
-    email.textContent=next.email||"Not connected";
-    activeScope.textContent=next.connected?(next.policy?.mode==="full"?"Full · user-scoped":"Read-only"):"—";
-    expiry.textContent=next.connected?fmtTime(next.expiresOn):"—";
-    connectTitle.textContent=next.connected?"Replace connection token":"Add a connection";
-    connectButton.textContent=next.connected?"Replace token":"Connect Cloudflare";
+    const verified=next.authenticated===true;
+    status.textContent=next.connected?"API connected":verified?"Identity verified · token required":"Verification required";
+    status.dataset.state=next.connected?"connected":verified?"verified":"disconnected";
+    email.textContent=verified?(next.email||next.verifiedEmail||"Verified owner"):"Not verified";
+    activeScope.textContent=next.connected?(next.policy?.mode==="full"?"Full · subject to token grants":"Read-only"):"API token required";
+    expiry.textContent=next.connected?fmtTime(next.expiresOn):"No token installed";
+    connectTitle.textContent=next.connected?"Replace connection token":"Authorize API access";
+    connectButton.textContent=next.connected?"Replace token":"Authorize API connection";
+    id("authenticate").textContent=verified?"Reverify Cloudflare identity":"Verify Cloudflare identity";
+    connectButton.disabled=busy||!verified;
     saveScope.disabled=!next.connected||busy;
     disconnect.hidden=!next.connected;
     disconnectArea.hidden=!next.connected;
@@ -48,7 +51,8 @@ export function initCloudflareConnection(){
   }
   function setBusy(value){
     busy=value;
-    for(const el of [connectButton,disconnect,id("refresh"),id("api-send")])el.disabled=value;
+    for(const el of [disconnect,id("refresh"),id("api-send")])el.disabled=value;
+    connectButton.disabled=value||state.authenticated!==true;
     saveScope.disabled=value||!state.connected;
   }
   async function call(path,method="GET",body){
@@ -62,12 +66,20 @@ export function initCloudflareConnection(){
     return data;
   }
   async function refresh(){
-    try{const fresh=await call("connection");show(fresh);message(fresh.connected?"Cloudflare authorization is available.":"No token connected yet.");}
-    catch(e){status.textContent="Authentication needed";status.dataset.state="unauthorized";message(errorText(e),true);}
+    try{
+      const fresh=await call("connection");show(fresh);
+      message(fresh.connected?"Cloudflare API connection is active. Your permission settings are enforced server-side.":
+        "Identity verified. API access is not connected yet. Create a Cloudflare user API token using the link below, paste it, and select Authorize API connection.");
+    }catch(e){
+      show({connected:false,authenticated:false});
+      status.textContent="Identity verification required";status.dataset.state="unauthorized";
+      message("Verify your Cloudflare identity above before authorizing API access. "+errorText(e),true);
+    }
   }
   id("refresh").addEventListener("click",refresh);
   form.addEventListener("submit",async event=>{
     event.preventDefault();if(busy)return;
+    if(state.authenticated!==true){message("Verify your Cloudflare identity first.",true);return;}
     const value=token.value.trim();
     setBusy(true);message("Verifying Cloudflare identity and storing encrypted connection…");
     try{
@@ -110,7 +122,7 @@ export function initCloudflareConnection(){
   });
   if(new URLSearchParams(location.search).get("cloudflare")==="verified"){
     history.replaceState(history.state,"",location.pathname+location.hash);
-    message("Cloudflare owner identity verified. You may connect or manage your token.");
+    message("Cloudflare identity verified. Finish step 2: add a user API token to authorize management API access.");
   }
   refresh();
 }
