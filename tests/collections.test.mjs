@@ -116,6 +116,24 @@ test("Collections summary uses the visitor's last successful refresh time and co
  assert.match(js,/if\(seq!==state\.loadSeq\)return/);
  assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*text-transform:uppercase/);
 });
+test("Collections keeps the loading slash aligned using a persisted measured offset",async()=>{
+ const {collectionSummarySkeletonShift}=await import("../sites/_apex/app/assets/collections.js");
+ assert.equal(collectionSummarySkeletonShift(67.75,19.25),48.5);
+ assert.equal(collectionSummarySkeletonShift(82,19.25),62.75);
+ assert.equal(collectionSummarySkeletonShift(10,19.25),null);
+ assert.equal(collectionSummarySkeletonShift(null,19.25),null);
+ assert.equal(collectionSummarySkeletonShift(500,19.25),null);
+ assert.match(css,/\.cs-summary-skeleton\{[^}]*margin-left:var\(--cs-summary-skeleton-shift,0px\)/);
+ assert.match(js,/window\.localStorage\.getItem\(SUMMARY_SHIFT_KEY\)/);
+ assert.match(js,/window\.localStorage\.setItem\(SUMMARY_SHIFT_KEY,String\(shift\)\)/);
+ assert.match(js,/const previousSlash=loading&&state\.loaded\?slashOffset\(summaryValue\):null/);
+ assert.match(js,/if\(previousSlash!==null\)alignSkeletonTo\(previousSlash\)/);
+ assert.match(js,/const skeletonBaseline=skeletonSlashOffset\(\)/);
+ assert.match(js,/applyShift\(collectionSummarySkeletonShift\(slashOffset\(summaryValue\),skeletonBaseline\),true\)/);
+ assert.match(js,/probe\.textContent=summaryValue\.textContent/);
+ assert.doesNotMatch(js,/localStorage\.setItem\([^\n]*state\.collections/);
+});
+
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
  assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
  assert.match(css,/#cs-root\{margin-top:-28px;padding-bottom:66px\}/);

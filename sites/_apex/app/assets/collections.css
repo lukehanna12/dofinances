@@ -30,7 +30,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-eyebrow{display:block;color:var(--cs-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase}
 /* Two hollow 1em/currentColor loading rings share one compositor-friendly
    transform animation, synchronized without timers, observers, or extra paints. */
-#cs-root .cs-summary-skeleton{display:inline-flex;align-items:center;gap:.75em;vertical-align:middle}
+#cs-root .cs-summary-skeleton{display:inline-flex;align-items:center;gap:.75em;vertical-align:middle;margin-left:var(--cs-summary-skeleton-shift,0px)}
 #cs-root .cs-summary-dot{display:inline-block;flex:none;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-summary-loading .cs-summary-value{display:none}
 #cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}

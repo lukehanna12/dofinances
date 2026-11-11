@@ -1,10 +1,19 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
-/* Live Colosseum Collections — no local cache, demo records, or polling.
+/* Live Colosseum Collections — no cached collection records, demo data, or polling.
  * The only write surface is /api/colosseum/collections behind the existing
  * DoFinances session + Cloudflare Access + bound owner + HMAC Router bridge.
  * Inventory admission (+) is intentionally disabled until separately designed.
  */
 const COLLECTIONS_API="/api/colosseum/collections";
+const SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
+const MAX_SUMMARY_SHIFT=256;
+// Measured from actual slash glyph positions: no guessed count or font width.
+export function collectionSummarySkeletonShift(actualSlashOffset,skeletonSlashOffset){
+  if(!Number.isFinite(actualSlashOffset)||!Number.isFinite(skeletonSlashOffset))return null;
+  const offset=actualSlashOffset-skeletonSlashOffset;
+  return offset>=0&&offset<=MAX_SUMMARY_SHIFT?Math.round(offset*100)/100:null;
+}
+
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
@@ -28,6 +37,54 @@ export function initColosseumCollections(){
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog");
+ const skeleton=summary.querySelector(".cs-summary-skeleton");
+ const skeletonDivider=skeleton.querySelector(".cs-summary-divider");
+ function readRememberedShift(){
+   try{
+     const raw=window.localStorage.getItem(SUMMARY_SHIFT_KEY);
+     if(raw===null||raw==="")return null;
+     const value=Number(raw);
+     return Number.isFinite(value)&&value>=0&&value<=MAX_SUMMARY_SHIFT?value:null;
+   }catch{return null;} // Storage may be blocked; live Collections must still work.
+ }
+ let rememberedShift=readRememberedShift();
+ function applyShift(shift,persist=false){
+   if(shift===null)return;
+   summary.style.setProperty("--cs-summary-skeleton-shift",shift+"px");
+   rememberedShift=shift;
+   if(persist)try{window.localStorage.setItem(SUMMARY_SHIFT_KEY,String(shift));}catch{}
+ }
+ if(rememberedShift!==null)applyShift(rememberedShift);
+ function slashOffset(value){
+   const text=value?.firstChild;
+   const index=text?.nodeType===3?text.textContent.indexOf(" / "):-1;
+   if(index<0||!value.getClientRects().length)return null;
+   const range=document.createRange();
+   range.setStart(text,index+1);
+   range.setEnd(text,index+2);
+   const glyph=range.getBoundingClientRect();
+   const origin=value.getBoundingClientRect();
+   return glyph.width>0&&origin.width>0?glyph.left-origin.left:null;
+ }
+ function skeletonSlashOffset(){
+   const origin=skeleton.getBoundingClientRect();
+   const glyph=skeletonDivider.getBoundingClientRect();
+   return origin.width>0&&glyph.width>0?glyph.left-origin.left:null;
+ }
+ function alignSkeletonTo(actualSlashOffset){
+   applyShift(collectionSummarySkeletonShift(actualSlashOffset,skeletonSlashOffset()));
+ }
+ function approximateColdStart(){
+   // No saved measurement yet: measure the static placeholder in this font,
+   // rather than guessing how many digits Colosseum will return.
+   const probe=document.createElement("span");
+   probe.textContent=summaryValue.textContent;
+   probe.style.cssText="position:fixed;left:0;top:0;visibility:hidden;white-space:pre;pointer-events:none";
+   summary.append(probe);
+   const offset=slashOffset(probe);
+   probe.remove();
+   alignSkeletonTo(offset);
+ }
  let formMode="create";
  function announce(message,error=false,visible=false){
    status.textContent=message;
@@ -35,10 +92,16 @@ export function initColosseumCollections(){
    status.dataset.visible=error||visible?"true":"false";
  }
  function setSummaryLoading(loading){
+   // On refresh, capture the already-rendered slash before hiding the value.
+   const previousSlash=loading&&state.loaded?slashOffset(summaryValue):null;
    summary.classList.toggle("cs-summary-loading",loading);
    summary.setAttribute("aria-busy",String(loading));
    refreshButton.classList.toggle("cs-refreshing",loading);
    refreshButton.setAttribute("aria-busy",String(loading));
+   if(loading){
+     if(previousSlash!==null)alignSkeletonTo(previousSlash);
+     else if(rememberedShift===null)approximateColdStart();
+   }
  }
  function setBusy(value){
    state.busy=value;
@@ -249,8 +312,12 @@ export function initColosseumCollections(){
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
      const refreshedAt=new Date();
+     // Capture the skeleton's unshifted slash advance while it is still visible.
+     const skeletonBaseline=skeletonSlashOffset();
      summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
      setSummaryLoading(false);
+     // Save just the measured pixel shift; never persist collection data.
+     applyShift(collectionSummarySkeletonShift(slashOffset(summaryValue),skeletonBaseline),true);
      announce(""); // The eyebrow already displays the live count and refresh time.
      if(chosen)await loadDetail(chosen.collection_id);
    }catch(error){
