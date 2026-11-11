@@ -65,7 +65,14 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    Errors and explicit mutation confirmations can still appear normally. */
 #cs-root .cs-source:not([data-visible="true"]){position:absolute;width:1px;height:1px;min-height:0;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #cs-root .cs-source:empty{display:none}
-#cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:64px;align-items:start}
+/* A full collapsed page is 10 × 62.4px plus 2px accordion borders.
+   Reserve its space on the layout, NOT the accordion/column: pagination must
+   follow the actual final-page rows while the black document canvas keeps
+   the full-page bottom edge. 25px navigation gap + 36px controls + 12px
+   count margin + 18px count line + 12px trailing margin + 40px spare space;
+   the root's existing 88px (66px mobile) bottom padding adds further buffer.
+   This is a minimum, so expanded content can increase document height. */
+#cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:64px;align-items:start;min-height:calc(626px + 25px + 36px + 12px + 18px + 12px + 40px)}
 #cs-root .cs-accordion{border-top:1px solid var(--cs-border);border-bottom:1px solid var(--cs-border);min-width:0}
 #cs-root .cs-entry+.cs-entry{border-top:1px solid var(--cs-border)}
 #cs-root .cs-entry h2{margin:0}

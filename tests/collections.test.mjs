@@ -33,7 +33,7 @@ test("Exact recovered accordion behavior includes direct collapse and exclusive 
  assert.match(css,/\.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
 });
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
- assert.match(js,/pageSize:7/);
+ assert.match(js,/pageSize:10/);
  assert.match(js,/data-cs-page="prev"/);
  assert.match(js,/data-cs-page="next"/);
  assert.match(js,/aria-current="page"/);
@@ -275,13 +275,34 @@ test("Collections update time inherits the shared unpadded-hour convention",asyn
  assert.ok(!js.includes('updatedAt.toLocaleTimeString('));
 });
 
-test("Eleven collections paginate as seven on the first page and four on the second",()=>{
- const pageSize=7;
+test("Collections display ten live items per page and keep ordinary last-page pagination",()=>{
+ const pageSize=10;
  const collections=Array.from({length:11},(_,i)=>({collection_id:"c"+i}));
- assert.match(js,/page:1,pageSize:7,selecting:false/);
+ assert.match(js,/page:1,pageSize:10,selecting:false/);
  assert.match(js,/Math\.ceil\(state\.collections\.length\/state\.pageSize\)/);
  assert.match(js,/state\.collections\.slice\(\(state\.page-1\)\*state\.pageSize,state\.page\*state\.pageSize\)/);
  assert.equal(Math.ceil(collections.length/pageSize),2);
- assert.equal(collections.slice(0,pageSize).length,7);
- assert.equal(collections.slice(pageSize,2*pageSize).length,4);
+ assert.equal(collections.slice(0,pageSize).length,10);
+ assert.equal(collections.slice(pageSize,2*pageSize).length,1);
+ assert.match(js,/const first=\(state\.page-1\)\*state\.pageSize\+1/);
+ assert.match(js,/Math\.min\(first\+state\.pageSize-1,state\.collections\.length\)/);
+});
+
+test("Collections canvas retains ten-row capacity and footer buffer on short last pages",()=>{
+ const row=62.4,capacity=10,borders=2,navMargin=25,navHeight=36;
+ const countMargin=12,countLine=18,countTrailing=12,extra=40;
+ const reservedHeight=row*capacity+borders+navMargin+navHeight+countMargin+countLine+countTrailing+extra;
+ assert.equal(reservedHeight,769);
+ assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(626px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px \+ 40px\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\)\{height:62\.4px\}/);
+ assert.match(css,/#cs-root \.cs-pagination\{[^}]*margin-top:25px/);
+ assert.match(css,/#cs-root \.cs-page\{[^}]*height:36px/);
+ assert.match(css,/#cs-root \.cs-countline\{[^}]*margin-top:12px/);
+ assert.match(css,/#cs-root\{[^}]*padding:0 0 88px/);
+ assert.match(css,/#cs-root\{padding-bottom:66px\}/);
+ // Crucial: do not reserve rows inside the accordion (would pin navigation).
+ assert.doesNotMatch(css,/#cs-root \.cs-accordion\{[^}]*min-height:/);
+ assert.doesNotMatch(css,/#cs-root \.cs-collection-column\{[^}]*min-height:/);
+ assert.match(css,/#cs-root \.cs-layout\{[^}]*align-items:start/);
+ assert.doesNotMatch(js,/pageSize:7/);
 });
