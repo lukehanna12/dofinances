@@ -482,3 +482,53 @@ input::placeholder {color: var(--ui-muted);}
   .nav-link.active, .feature-card, .project-card, .project-row, .panel, .security-setup {border: 1px solid var(--ui-border-strong);}
   .sidebar {border-right: 1px solid var(--ui-border-strong);}
 }
+
+
+/* Account-wide Cloudflare access: part of ordinary Settings, not the Colosseum workspace. */
+.cf-panel {display:grid;gap:19px;}
+.cf-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:18px;}
+.cf-heading h2 {margin:3px 0 10px;}
+.cf-heading .note {max-width:670px;}
+.cf-eyebrow {margin:0;color:var(--ui-secondary);font-size:11px;font-weight:720;letter-spacing:.11em;}
+.cf-connection-status {flex:none;min-width:92px;padding:7px 11px;border:1px solid var(--ui-border);
+  border-radius:999px;color:var(--ui-secondary);text-align:center;font-size:12px;font-weight:650;}
+.cf-connection-status[data-state="connected"] {color:var(--ui-text);border-color:var(--ui-border-strong);}
+.cf-status-summary {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--ui-border);border-radius:13px;overflow:hidden;}
+.cf-status-summary>div {display:flex;flex-direction:column;gap:9px;padding:18px 16px;min-width:0;}
+.cf-status-summary>div+div {border-left:1px solid var(--ui-border);}
+.cf-status-summary span {font-size:12px;color:var(--ui-secondary);}
+.cf-status-summary strong {font-size:13px;font-weight:620;overflow-wrap:anywhere;}
+.cf-actions {display:flex;align-items:center;gap:11px;flex-wrap:wrap;}
+.cf-actions a:not(.secondary) {color:var(--ui-secondary);font-size:12px;text-decoration:underline;text-underline-offset:3px;}
+.cf-message {min-height:17px;color:var(--ui-secondary);font-size:13px;margin:0;}
+.cf-message[data-error="true"] {color:#ef9b92;}
+.cf-form-heading {margin-bottom:15px;}
+.cf-form-heading h3 {margin:0 0 6px;font-size:15px;}
+.cf-form-heading p {line-height:1.6;}
+.cf-connect-form,.cf-scope-form {padding-top:22px;border-top:1px solid var(--ui-border);display:grid;gap:12px;}
+.cf-connect-form label,.cf-scope-form label,.cf-api-target label {display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ui-secondary);}
+.cf-panel input,.cf-panel select,.cf-panel textarea {width:100%;border:1px solid var(--ui-border-strong);border-radius:9px;
+  padding:11px;background:var(--ui-elevated);color:var(--ui-text);font:inherit;font-size:13px;}
+.cf-panel textarea {resize:vertical;min-height:80px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
+.cf-panel input:focus-visible,.cf-panel textarea:focus-visible,.cf-panel select:focus-visible {outline:2px solid currentColor;outline-offset:2px;}
+.cf-panel button:disabled {opacity:.45;cursor:not-allowed;}
+.cf-form-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.cf-form-grid>label:first-child {grid-column:1 / -1;}
+.cf-panel .cf-checkbox {display:flex;align-items:center;gap:10px;flex-direction:row;color:var(--ui-text);}
+.cf-checkbox input {width:17px;height:17px;accent-color:var(--ui-text);margin:0;}
+.cf-explorer {border:1px solid var(--ui-border);border-radius:12px;padding:16px;}
+.cf-explorer>summary {cursor:pointer;font-size:14px;font-weight:640;list-style-position:outside;}
+.cf-explorer form {display:grid;gap:12px;margin:16px 0;}
+.cf-api-target {display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;}
+.cf-api-output {padding:16px;border:1px solid var(--ui-border);border-radius:9px;background:var(--ui-elevated);
+  white-space:pre-wrap;overflow-wrap:anywhere;max-height:380px;overflow:auto;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;}
+.cf-disconnect {display:flex;justify-content:space-between;align-items:center;gap:20px;padding-top:20px;border-top:1px solid var(--ui-border);}
+.cf-disconnect strong {font-size:14px;}
+.cf-disconnect .note {margin:8px 0 0;}
+@media(max-width:640px) {
+  .cf-heading,.cf-disconnect {flex-direction:column;align-items:stretch;}
+  .cf-connection-status {align-self:flex-start;}
+  .cf-status-summary,.cf-form-grid,.cf-api-target {grid-template-columns:minmax(0,1fr);}
+  .cf-status-summary>div+div {border-left:0;border-top:1px solid var(--ui-border);}
+}
+@media(prefers-reduced-motion:reduce) {.cf-panel * {scroll-behavior:auto;}}
