@@ -162,7 +162,6 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    notify("Verified: provision regulation is active in the running gateway.");
   }catch(error){notify(String(error.message||error),"error");}
  }
- }
  function control(form,label,current,{options=null,type="text",hint=""}={}){
   const wrap=add(form,"label","pv-provision-form-item");
   add(wrap,"span","",label);
