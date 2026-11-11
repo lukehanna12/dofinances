@@ -84,7 +84,10 @@ test("Collections title uses the shared non-Home heading contract without custom
  assert.doesNotMatch(css,/padding-top:0/);
  assert.doesNotMatch(css,/\.content:has\(> \.view\[data-view="colosseum\/collections"/);
  assert.doesNotMatch(css,/\.content > \.view\[data-view="colosseum\/collections"\] > \.page-heading/);
- assert.match(css,/#cs-root\{[\s\S]*?width:min\(1536px/);
+ assert.doesNotMatch(css,/width:min\(1536px/);
+ assert.doesNotMatch(css,/left:50%/);
+ assert.doesNotMatch(css,/transform:translateX\(-50%\)/);
+ assert.match(css,/#cs-root \.cs-wrap\{width:100%;margin:0;padding:0\}/);
  const common=src("sites/_apex/app/assets/workspace-enhancements.css");
  assert.match(common,/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
 });
@@ -103,10 +106,10 @@ test("Collections uses one route-scoped black canvas without an overlay",()=>{
 test("Collections summary uses the visitor's last successful refresh time and complete live count",async()=>{
  const {formatCollectionSummary}=await import("../sites/_apex/app/assets/collections.js");
  assert.equal(formatCollectionSummary(new Date(2026,10,11,2,2),11),
-   "UPDATED: 02:02 AM · REGISTERED: 11");
+   "TOTAL 11 / UPDATED 2:02 AM");
  assert.equal(formatCollectionSummary(new Date(2026,10,11,14,7),0),
-   "UPDATED: 02:07 PM · REGISTERED: 0");
- assert.match(html,/<span class="cs-eyebrow" id="cs-summary">UPDATED: — · REGISTERED: —<\/span>/);
+   "TOTAL 0 / UPDATED 2:07 PM");
+ assert.match(html,/<span class="cs-eyebrow" id="cs-summary">TOTAL — / UPDATED —<\/span>/);
  assert.doesNotMatch(html,/COLOSSEUM \/ COLLECTION LIBRARY/);
  assert.match(js,/summary\.textContent=formatCollectionSummary\(refreshedAt,state\.collections\.length\)/);
  assert.match(js,/state\.collections=good\.filter/);
@@ -119,4 +122,27 @@ test("Collections content rises while maintaining a margin and the shared title 
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
  assert.doesNotMatch(css,/#cs-root \.cs-head h1/);
  assert.doesNotMatch(css,/#cs-root\{[^}]*position:absolute/);
+});
+
+test("Collections inherits the shared horizontal content alignment without independent centering",()=>{
+ assert.doesNotMatch(css,/width:min\(1536px/);
+ assert.doesNotMatch(css,/#cs-root\s*\{[^}]*padding:0 clamp\(/);
+ assert.doesNotMatch(css,/#cs-root \.cs-wrap\{[^}]*padding:0 24px/);
+ assert.doesNotMatch(css,/#cs-root \.cs-wrap\{[^}]*max-width:1400px/);
+ assert.match(css,/#cs-root \.cs-wrap\{width:100%;margin:0;padding:0\}/);
+ const shared=src("sites/_apex/app/assets/workspace-wallpapers.css");
+ assert.match(shared,/body:has\(> #workspace-shell\) \.content \{/);
+ assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
+});
+test("Collections primary content typography scales continuously with window width",()=>{
+ for(const selector of [
+  "#cs-root .cs-eyebrow", "#cs-root .cs-head p",
+  "#cs-root .cs-trigger .cs-entry-title", "#cs-root .cs-description",
+  "#cs-root .cs-card-label", "#cs-root .cs-utility-name"
+ ]){
+  const declarations=css.slice(css.indexOf(selector+"{")).match(/^[^}]*\}/)?.[0]||"";
+  assert.match(declarations,/font-size:clamp\(/,selector+" must use fluid sizing");
+ }
+ assert.doesNotMatch(css,/\.cs-trigger \.cs-entry-title\{font-size:18px/);
+ assert.doesNotMatch(css,/\.cs-card-label\{font-size:16px/);
 });

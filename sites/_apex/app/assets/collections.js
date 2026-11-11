@@ -12,8 +12,8 @@ const REFRESH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></svg>';
 const isUid=value=>/^[0-9a-f]{6}$/.test(value);
 export function formatCollectionSummary(updatedAt,count){
-  const localTime=updatedAt.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true}).replace(/\u202f/g," ");
-  return "UPDATED: "+localTime+" · REGISTERED: "+count;
+  const localTime=updatedAt.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true}).replace(/[\u202f\u00a0]/g," ");
+  return "TOTAL "+count+" / UPDATED "+localTime;
 }
 
 export function initColosseumCollections(){
