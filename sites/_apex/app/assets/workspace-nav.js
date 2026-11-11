@@ -15,6 +15,18 @@ const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
 const WIDTH_KEY="dofinances.workspace.sidebar.width";
 const RESIZE_CAP=440;
 
+/* One hour-formatting convention for the 24-hour top bar and the 12-hour
+ * Collections update stamp. Minutes/seconds remain two digits, but a single-
+ * digit hour is never padded with zero. No extra clock or timer is created. */
+export function formatWorkspaceTime(date,{timeZone,hour12=false,seconds=false}={}){
+  const options={hour:"2-digit",minute:"2-digit",hourCycle:hour12?"h12":"h23"};
+  if(timeZone)options.timeZone=timeZone;
+  if(seconds)options.second="2-digit";
+  return new Intl.DateTimeFormat(hour12?"en-US":"en-GB",options).format(date)
+    .replace(/^0(?=\d:)/,"").replace(/[\u202f\u00a0]/g," ");
+}
+
+
 export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
   if(MAIN_SET.has(raw))return raw;
@@ -515,9 +527,7 @@ export function initWorkspaceClock(doc=document,win=window){
   const paint=()=>{
     const now=new Date(),name=zone();
     try{
-      time.textContent=new Intl.DateTimeFormat("en-GB",{
-        timeZone:name,hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"
-      }).format(now);
+      time.textContent=formatWorkspaceTime(now,{timeZone:name,seconds:true});
       const tz=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"}).formatToParts(now)
         .find(p=>p.type==="timeZoneName")?.value||name;
       suffix.textContent=preference.mode==="utc"?"UTC":tz;
@@ -525,8 +535,7 @@ export function initWorkspaceClock(doc=document,win=window){
         weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now));
       clock.setAttribute("datetime",now.toISOString());
     }catch{
-      time.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:"UTC",
-        hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).format(now);
+      time.textContent=formatWorkspaceTime(now,{timeZone:"UTC",seconds:true});
       suffix.textContent="UTC";
       clock.setAttribute("aria-label","UTC");
     }

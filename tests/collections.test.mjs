@@ -214,3 +214,16 @@ test("Collections refresh shows a fast arrow-free ring while both skeletons rema
  assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2);
  assert.ok(!js.includes('setInterval('));
 });
+
+test("Collections update time inherits the shared unpadded-hour convention",async()=>{
+ const {formatWorkspaceTime}=await import("../sites/_apex/app/assets/workspace-nav.js");
+ const {formatCollectionSummary}=await import("../sites/_apex/app/assets/collections.js");
+ const first=new Date(2026,10,11,2,43,9);
+ assert.equal(formatWorkspaceTime(first,{hour12:true}),"2:43 AM");
+ assert.equal(formatCollectionSummary(first,11),"TOTAL 11 / UPDATED 2:43 AM");
+ const afternoon=new Date(2026,10,11,14,5,9);
+ assert.equal(formatCollectionSummary(afternoon,7),"TOTAL 7 / UPDATED 2:05 PM");
+ assert.ok(js.includes('import {formatWorkspaceTime} from "./workspace-nav.js"'));
+ assert.ok(js.includes('formatWorkspaceTime(updatedAt,{hour12:true})'));
+ assert.ok(!js.includes('updatedAt.toLocaleTimeString('));
+});

@@ -85,7 +85,7 @@ test("Global clock uses exactly one persisted, validated timezone selection",asy
   initWorkspaceClock(doc,win);
   const select=elements["clock-zone-select"],clock=elements["global-clock"],
     zone=elements["global-clock-zone"],custom=elements["clock-custom-zone"];
-  assert.match(elements["global-clock-time"].textContent,/^\d{2}:\d{2}:\d{2}$/);
+  assert.match(elements["global-clock-time"].textContent,/^(?:\d|1\d|2[0-3]):[0-5]\d:[0-5]\d$/);
   select.value="utc";select.events.change();
   assert.equal(zone.textContent,"UTC");
   select.value="central";select.events.change();
@@ -101,4 +101,21 @@ test("Global clock uses exactly one persisted, validated timezone selection",asy
   assert.equal(JSON.parse(stored.get("dofinances.clock.timezone.v1")).custom,"Asia/Tokyo");
   assert.equal(select.value,"custom");
   assert.equal(clock.attrs.title,undefined,"clock must not introduce a native tooltip");
+});
+
+test("Shared workspace clock never zero-pads a 24-hour hour, including at midnight",async()=>{
+ const {formatWorkspaceTime}=await import("../sites/_apex/app/assets/workspace-nav.js");
+ const at=(hour,minute=5,second=9)=>new Date(Date.UTC(2026,10,11,hour,minute,second));
+ assert.equal(formatWorkspaceTime(at(0),{timeZone:"UTC",seconds:true}),"0:05:09");
+ assert.equal(formatWorkspaceTime(at(1),{timeZone:"UTC",seconds:true}),"1:05:09");
+ assert.equal(formatWorkspaceTime(at(9),{timeZone:"UTC",seconds:true}),"9:05:09");
+ assert.equal(formatWorkspaceTime(at(10),{timeZone:"UTC",seconds:true}),"10:05:09");
+ assert.equal(formatWorkspaceTime(at(13),{timeZone:"UTC",seconds:true}),"13:05:09");
+ assert.equal(formatWorkspaceTime(at(23),{timeZone:"UTC",seconds:true}),"23:05:09");
+ // Still honors alternate selected zones without inserting a padded hour.
+ assert.equal(formatWorkspaceTime(at(0),{timeZone:"America/Chicago",seconds:true}),"18:05:09");
+ assert.equal(formatWorkspaceTime(at(0),{timeZone:"Asia/Tokyo",seconds:true}),"9:05:09");
+ const navigation=await read("../sites/_apex/app/assets/workspace-nav.js");
+ assert.ok(navigation.includes('formatWorkspaceTime(now,{timeZone:name,seconds:true})'));
+ assert.ok(navigation.includes('formatWorkspaceTime(now,{timeZone:"UTC",seconds:true})'));
 });
