@@ -199,3 +199,20 @@ test("Collections legacy live-status skeleton occupies no space, while failures 
  assert.ok(!js.includes('announce("Live Colosseum · "'));
  assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });
+
+test("Collections Refresh icon reuses the summary ring spin and current text color while loading",()=>{
+ assert.ok(js.includes('refreshButton.classList.toggle("cs-refreshing",loading)'));
+ assert.ok(js.includes('refreshButton.setAttribute("aria-busy",String(loading))'));
+ assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
+ assert.ok(js.includes('setSummaryLoading(true);'));
+ assert.ok(js.includes('setSummaryLoading(false);'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:cs-summary-spin 1000ms linear infinite}'));
+ assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{animation:none!important}'));
+ const at=html.indexOf('id="cs-refresh"');
+ const button=html.slice(at,html.indexOf('</button>',at));
+ assert.ok(button.includes('stroke="currentColor"'));
+ assert.ok(!button.includes('stroke="#'));
+ assert.equal((css.match(/@keyframes cs-summary-spin/g)||[]).length,1);
+ assert.ok(!js.includes('setInterval('));
+});

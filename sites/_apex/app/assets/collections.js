@@ -37,6 +37,8 @@ export function initColosseumCollections(){
  function setSummaryLoading(loading){
    summary.classList.toggle("cs-summary-loading",loading);
    summary.setAttribute("aria-busy",String(loading));
+   refreshButton.classList.toggle("cs-refreshing",loading);
+   refreshButton.setAttribute("aria-busy",String(loading));
  }
  function setBusy(value){
    state.busy=value;
