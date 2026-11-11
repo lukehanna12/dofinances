@@ -42,9 +42,9 @@ test("account deletion disclosure has a subtly richer coral tone without changin
     assert.ok(html.includes('<summary>Delete my account</summary>'));
   }
 });
-test("unbuilt Colosseum screens keep compact headings; Permissions works on DoFinances",()=>{
+test("unfinished Colosseum screens keep compact headings; Collections and Permissions use dedicated interfaces",()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
-    const removed=path.includes("studio")?["utilities","collections","providers","permissions"]:["utilities","collections","providers"];
+    const removed=path.includes("studio")?["utilities","collections","providers","permissions"]:["utilities","providers"];
     const html=read(path);
     for(const slug of removed){
       const name=slug[0].toUpperCase()+slug.slice(1);
