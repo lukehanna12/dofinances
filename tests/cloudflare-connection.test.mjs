@@ -161,8 +161,11 @@ test("signed owner can connect, scope, execute and disconnect without exposing c
   try{
     const initially=await call("GET","connection");
     assert.equal(initially.status,200);assert.equal(initially.result.connected,false);
+    assert.equal(initially.result.authenticated,true);
+    assert.equal(initially.result.verifiedEmail,"owner@example.test");
     const connected=await call("POST","connection",{token,policy:DEFAULT_CLOUDFLARE_POLICY});
     assert.equal(connected.status,200);assert.equal(connected.result.connected,true);
+    assert.equal(connected.result.authenticated,true);
     assert.ok(record.ciphertext.startsWith("v1:"));
     assert.ok(!JSON.stringify(connected).includes(token));
     assert.equal((await call("POST","request",{method:"POST",path:"/accounts/"+account})).status,400);
@@ -172,6 +175,7 @@ test("signed owner can connect, scope, execute and disconnect without exposing c
     assert.equal((await call("POST","request",{method:"POST",path:"/accounts/"+account,body:{name:"test"}})).status,200);
     const removed=await call("DELETE","connection");
     assert.equal(removed.status,200);assert.equal(removed.result.connected,false);
+    assert.equal(removed.result.authenticated,true);
     assert.equal(record.ciphertext,null);
     assert.equal((await call("POST","request",{method:"GET",path:"/accounts"})).status,409);
     assert.ok(upstream.filter(x=>x.authorization).every(x=>x.url.startsWith("https://api.cloudflare.com/client/v4/")));
@@ -206,4 +210,18 @@ test("Cloudflare account status calls the real Durable Object lookup after an ow
   assert.equal(actualStatusMethod.call(linkedStore,{userId:"another-user"}).status,403);
   assert.equal(actualStatusMethod.call(linkedStore,{userId:"verified-do-user",includeCredential:true}).ciphertext,
     "v1:encrypted-placeholder");
+});
+
+test("Cloudflare onboarding separates Access verification from an actual API grant",async()=>{
+  const html=await readFile(new URL("../sites/_apex/app/index.html",import.meta.url),"utf8");
+  const js=await readFile(new URL("../sites/_apex/app/assets/cloudflare-settings.js",import.meta.url),"utf8");
+  const router=await readFile(new URL("../edge/router.mjs",import.meta.url),"utf8");
+  assert.match(html,/Verify Cloudflare identity/);
+  assert.match(html,/Authorize API access/);
+  assert.match(html,/Create a user API token in Cloudflare/);
+  assert.match(html,/id="cf-connect-button" disabled/);
+  assert.match(js,/Identity verified · token required/);
+  assert.match(js,/state\.authenticated!==true/);
+  assert.match(js,/API access is not connected yet/);
+  assert.match(router,/authenticated:true,verifiedEmail:ownerEmail/);
 });

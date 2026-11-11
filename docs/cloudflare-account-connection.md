@@ -26,3 +26,7 @@ The integrated JSON API console is for specific Cloudflare API requests. Non-JSO
 Cloudflare Access application: DoFinances Cloudflare account access, path dofinances.com/api/cloudflare/*, 8-hour session, exact owner email allow policy. The audience is set in edge/wrangler.jsonc as CLOUDFLARE_CONNECTION_ACCESS_AUD. The independent owner email may be stored as CLOUDFLARE_OWNER_ACCESS_EMAIL; until configured, the existing verified-owner email secret COLOSSEUM_OWNER_ACCESS_EMAIL is used. Preserve the Access issuer and MFA_ENCRYPTION_KEY. Do not place API tokens in GitHub.
 
 Automated tests cover encryption, path and scope denial, verification, owner route checks, and static UI wiring. End-to-end authentication and token provisioning require the owner's browser login and user-issued token.
+
+## Two distinct connections (important)
+
+Cloudflare Access authentication confirms the owner's identity for a short session. It does **not** mint, expose, or grant a Cloudflare management API token. Settings shows "Identity verified · token required" until the owner creates a user API token and connects it in the second step. The effective Cloudflare management connection is marked "API connected" only after the token passes Cloudflare verification and its encrypted record is saved. The account owner can then update its effective scope or disconnect it from Settings. Cloudflare API token issuance is an explicit owner action in the Cloudflare dashboard; self-hosted Access sign-in cannot silently authorize it.
