@@ -15,7 +15,7 @@ const ease=t=>smooth(0,1,t);
 const number=n=>Number.isFinite(n)?n:0;
 
 /**
- * Pure scroll model, independently unit-testable without a DOM or screenshots.
+ * Pure scroll model, independently unit-testable without a DOM or image inspection.
  * partnerDistances[i]: the fixed horizontal distance from title i to title i-1.
  * arrowCrossings[i-1]: fractional travel where title i passes its left chevron.
  */
@@ -24,13 +24,13 @@ export function collectionsTitleFrame(scrollDistance,partnerDistances=[0,100,100
   const intro=clamp(y/INTRO_DISTANCE);
   const handoff=clamp((y-INTRO_DISTANCE)/HANDOFF_DISTANCE);
   // Start at the rightmost title, then work back toward the stationary root.
-  const starts=[0,.19,.095,0];
-  const travel=[0,1,2,3].map(i=>i===0?0:ease(clamp((handoff-starts[i])/.76)));
+  const starts=[0,.30,.16,0];
+  const travel=[0,1,2,3].map(i=>i===0?0:ease(clamp((handoff-starts[i])/.70)));
   const crumbs=[
     {x:0,opacity:1-smooth(.22,.83,handoff)},
-    {x:-number(partnerDistances[1])*travel[1],opacity:1-smooth(.10,.98,travel[1])},
-    {x:-number(partnerDistances[2])*travel[2],opacity:1-smooth(.06,.75,travel[2])},
-    {x:-number(partnerDistances[3])*travel[3],opacity:1-smooth(.06,.75,travel[3])}
+    {x:travel[1]===0?0:-number(partnerDistances[1])*travel[1],opacity:1-smooth(.10,.98,travel[1])},
+    {x:travel[2]===0?0:-number(partnerDistances[2])*travel[2],opacity:1-smooth(.06,.75,travel[2])},
+    {x:travel[3]===0?0:-number(partnerDistances[3])*travel[3],opacity:1-smooth(.06,.75,travel[3])}
   ];
   const arrows=[1,2,3].map(i=>{
     const crossed=clamp(number(arrowCrossings[i-1]),.12,.46);
