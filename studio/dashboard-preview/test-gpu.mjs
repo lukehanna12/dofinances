@@ -58,7 +58,7 @@ test("real-mip architecture explicit compute, LOD and textureLoad",()=>{
   assert.match(js,/scenePending=false/);
   assert.match(js,/if\(scenePending\)buildScene\(\)/);
   assert.doesNotMatch(js,/getImageData\(|drawImage\(|html2canvas/);
-  assert.doesNotMatch(mip,/feGaussianBlur\\s*\\(/);
+  assert.doesNotMatch(mip,/feGaussianBlur\s*\(/);
 });
 test("oracle-provenance remains finite, native and browser assumptions labeled",()=>{
   const js=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
