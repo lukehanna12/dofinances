@@ -6,9 +6,21 @@
  * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
  * boundary gestures, including Safari rubber-banding, while deliberately
  * allowing the left-edge browser-history back gesture (rightward swipe). */
+/* The duration follows the distance measured on the click, in viewport units.
+ * Smoothstep has a continuous accelerating phase and decelerates to exactly
+ * zero velocity; it avoids the sudden arrival of a fixed-speed scroll. */
+export function topScrollEase(progress){
+  const t=Math.max(0,Math.min(1,Number(progress)||0));
+  return t*t*(3-2*t);
+}
+export function topScrollDuration(distance,viewportHeight){
+  const screens=Math.max(0,Number(distance)||0)/Math.max(1,Number(viewportHeight)||768);
+  return Math.round(Math.min(1050,Math.max(240,235+205*Math.sqrt(screens))));
+}
+
 export function initWorkspaceScroll(doc=document,win=window) {
   const root=doc.scrollingElement||doc.documentElement;
-  if(!root||typeof win.addEventListener!=="function")return {sync(){},reset(){}};
+  if(!root||typeof win.addEventListener!=="function")return {sync(){},reset(){},animateToTop(){}};
   const scrollTop=()=>Math.max(0,root.scrollTop||0);
   const maxY=()=>Math.max(0,root.scrollHeight-root.clientHeight);
   const maxX=()=>Math.max(0,(root.scrollWidth||0)-(root.clientWidth||0));
@@ -45,7 +57,66 @@ export function initWorkspaceScroll(doc=document,win=window) {
   },{passive:false});
   win.addEventListener("touchend",()=>{lastTouch=null},{passive:true});
   win.addEventListener("touchcancel",()=>{lastTouch=null},{passive:true});
+  let scrollAnimation=null;
+  const cancelTopAnimation=()=>{
+    const animation=scrollAnimation;
+    if(!animation)return;
+    animation.cancelled=true;
+    scrollAnimation=null;
+    if(animation.frame!==null)win.cancelAnimationFrame?.(animation.frame);
+  };
+  const animateToTop=()=>{
+    // Capture the live scroll position at the click, not on page load.
+    // Clicking the same route twice restarts smoothly from the new position.
+    cancelTopAnimation();
+    const startY=scrollTop();
+    if(startY<=1){
+      root.scrollTop=0;return;
+    }
+    if(win.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ||
+       typeof win.requestAnimationFrame!=="function"){
+      root.scrollTop=0;return;
+    }
+    const duration=topScrollDuration(startY,root.clientHeight||win.innerHeight||768);
+    const now=win.performance?.now?.();
+    const animation={
+      cancelled:false,frame:null,startTime:Number.isFinite(now)?now:null,
+      previousTime:null,lastWrittenY:startY,disturbance:0
+    };
+    scrollAnimation=animation;
+    const tick=timestamp=>{
+      if(scrollAnimation!==animation||animation.cancelled)return;
+      // RAF timestamps and performance.now() share a monotonic clock.
+      // Without performance.now(), count the first frame as progress.
+      if(animation.startTime===null)animation.startTime=timestamp-16.67;
+      const t=Math.min(1,Math.max(0,(timestamp-animation.startTime)/duration));
+      const dt=animation.previousTime===null?16.67:
+        Math.max(0,Math.min(80,timestamp-animation.previousTime));
+      animation.previousTime=timestamp;
+      // Let wheel/touch/keyboard input temporarily displace the page instead
+      // of blocking it. Its influence fades and becomes exactly zero at the
+      // endpoint, so user input does not cancel the animation or its landing.
+      const userDelta=scrollTop()-animation.lastWrittenY;
+      if(Math.abs(userDelta)>.5){
+        const limit=Math.max(48,Math.min(260,startY*.35));
+        animation.disturbance=Math.max(-limit,Math.min(limit,animation.disturbance+userDelta));
+      }
+      animation.disturbance*=Math.exp(-dt/180);
+      const release=1-topScrollEase((t-.62)/.38);
+      const position=Math.max(0,Math.min(maxY(),
+        startY*(1-topScrollEase(t))+animation.disturbance*release));
+      root.scrollTop=position;
+      animation.lastWrittenY=scrollTop();
+      if(t>=1){
+        root.scrollTop=0;
+        scrollAnimation=null;
+      }else animation.frame=win.requestAnimationFrame(tick);
+    };
+    animation.frame=win.requestAnimationFrame(tick);
+  };
   const reset=()=>{
+    // Any real route navigation immediately supersedes the prior animation.
+    cancelTopAnimation();
     if(scrollTop()>0){
       if(typeof win.scrollTo==="function")win.scrollTo({top:0,left:0,behavior:"instant"});
       else root.scrollTop=0;
@@ -53,5 +124,5 @@ export function initWorkspaceScroll(doc=document,win=window) {
   };
   // The sidebar is fixed on desktop, so the root scroll only needs overscroll
   // protection; no per-frame pane geometry or ResizeObserver is necessary.
-  return {sync(){},reset};
+  return {sync(){},reset,animateToTop};
 }

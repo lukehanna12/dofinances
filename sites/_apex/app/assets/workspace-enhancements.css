@@ -45,7 +45,9 @@
 .global-menu-links{display:flex;align-items:center;justify-content:space-between;flex:1;gap:clamp(8px,2.2vw,34px);max-width:810px;}
 .global-menu-links a,.global-menu-account{color:rgba(230,230,235,.8);white-space:nowrap;transition:color 125ms ease;}
 .global-menu a:hover,.global-menu a.is-current{color:#fff;text-decoration:none;}
-.global-menu a.is-current{font-weight:570;}
+.global-menu a.is-current{font-weight:570;cursor:pointer;}
+/* Active route links remain interactive across desktop and compact menus. */
+.global-menu a.is-current:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px;}
 .global-menu-actions{display:flex;align-items:center;gap:11px;flex:none;}
 .global-menu-icon{border:0;background:transparent;color:rgba(230,230,235,.82);display:grid;place-items:center;width:28px;height:30px;cursor:pointer;border-radius:7px;padding:0;}
 .global-menu-icon:hover,.global-menu-icon[aria-expanded="true"]{color:#fff;background:rgba(255,255,255,.09);}
