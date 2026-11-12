@@ -78,8 +78,19 @@ try{
   assert.ok(mobile.widths.every(w=>w>175&&w<=390),JSON.stringify(mobile));
   assert.ok(mobile.scroll<=mobile.viewport+2,JSON.stringify(mobile));
   console.log("PASS: responsive 390px viewport without overflow");
+  const optical=await evalJS('[...document.querySelectorAll("[data-oracle-surface]")].map(x=>x.dataset.opticalStatus)');
+  assert.equal(optical.length,5);
+  assert.ok(optical.every(x=>["native-derived","pending","css-fallback"].includes(x)),
+    "All five specimens must declare an optical status");
+  console.log("Optical status (browser-specific): "+JSON.stringify(optical));
 }finally{
   try{socket?.close();}catch{}
   try{chrome.kill("SIGTERM");}catch{}
-  rmSync(profile,{recursive:true,force:true});
+  await new Promise(resolve=>{
+    if(chrome.exitCode!==null)return resolve();
+    const limit=setTimeout(resolve,2000);
+    chrome.once("exit",()=>{clearTimeout(limit);resolve();});
+  });
+  try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:120});}
+  catch(error){console.warn("Browser profile cleanup could not finish: "+String(error.message));}
 }
