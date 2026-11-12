@@ -74,6 +74,18 @@ test("desktop sidebar overlays the footer with fixed height and a layout spacer"
   assert.match(css,/@media\(max-width:760px\)\{/);
 });
 
+test("sidebar flex spacer interpolates with the pane only for user-triggered toggles",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const theme=read("../sites/_apex/app/assets/workspace-theme.css");
+  assert.match(css,/\.shell::before \{[\s\S]*?transition:flex-basis var\(--sidebar-layout-duration\) var\(--ui-ease\)/);
+  assert.match(theme,/\.shell\.is-sidebar-toggling \{\s*--sidebar-layout-duration: 210ms;/);
+  assert.match(css,/\.shell\.is-sidebar-resizing::before\{transition:none;\}/,
+    "Direct manual resizing must not ease or lag behind the pointer");
+  assert.match(css,/@media\(min-width:761px\) and \(prefers-reduced-motion:reduce\)\{\s*\.shell::before\{transition:none;\}/);
+  assert.doesNotMatch(css,/(?:requestAnimationFrame|setInterval|ResizeObserver)/,
+    "The CSS alignment fix must not introduce any layout polling");
+});
+
 test("xl content keeps the 1280px left inset without detaching from the sidebar spacer",()=>{
   const enhanced=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const wallpaper=read("../sites/_apex/app/assets/workspace-wallpapers.css");

@@ -149,9 +149,14 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
     content:"";
     display:block;
     flex:0 0 calc(var(--workspace-sidebar-left-gap) + var(--workspace-rail-space-width));
+    /* Match the pane's 210ms toggle animation. Without this, the main column
+       jumps to its final position while the fixed sidebar is still shrinking. */
+    transition:flex-basis var(--sidebar-layout-duration) var(--ui-ease);
     pointer-events:none;
     visibility:hidden;
   }
+  /* A direct drag changes the width every pointer frame; don't ease behind it. */
+  .shell.is-sidebar-resizing::before{transition:none;}
   .shell.liquid-glass-preview .sidebar{
     position:fixed;
     top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));
@@ -285,6 +290,10 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   .global-menu.is-open .global-menu-links{display:flex;}
   .global-menu-links a{padding:10px 12px;border-radius:8px;}
   .global-menu-links a:hover,.global-menu-links a.is-current{background:rgba(255,255,255,.08);}
+}
+/* The spacer is a real layout item: honor reduced-motion preferences too. */
+@media(min-width:761px) and (prefers-reduced-motion:reduce){
+  .shell::before{transition:none;}
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}

@@ -679,6 +679,65 @@ try{
       assert.ok(Math.abs(screen.titleLeft-screen.contentStart)<1,
         "Screen title lost its shared left boundary: "+JSON.stringify({route,screen}));
   }
+  // Check *intermediate animation frames*, not just the settled endpoints.
+  // The fixed glass sidebar and in-flow spacer must travel together while
+  // the 1280px+ content inset remains unchanged throughout the 210ms toggle.
+  await metrics(1600,820);
+  await until('window.innerWidth===1600 && !document.getElementById("workspace-shell").classList.contains("is-compact-rail")',
+    "wide toggle animation viewport");
+  const sampleWideToggle=target=>evaluate(`(async()=>{
+    const shell=document.getElementById("workspace-shell");
+    const side=document.getElementById("workspace-sidebar");
+    const main=document.querySelector(".main");
+    const content=document.getElementById("main-content");
+    const sample=()=>{
+      const pane=side.getBoundingClientRect(),column=main.getBoundingClientRect();
+      const body=content.getBoundingClientRect();
+      return {sidebarRight:pane.right,sidebarWidth:pane.width,
+        mainLeft:column.left,
+        contentStart:body.left+Number.parseFloat(getComputedStyle(content).paddingLeft),
+        collapsed:shell.classList.contains("is-collapsed")};
+    };
+    const before=sample();
+    document.getElementById("${target}").click();
+    const immediate=sample();
+    const frames=[];
+    for(let i=0;i<18;i++){
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      frames.push(sample());
+    }
+    return {before,immediate,frames,after:frames[frames.length-1]};
+  })()`);
+  const assertSmoothToggle=(data,name)=>{
+    const delta=Math.abs(data.before.mainLeft-data.after.mainLeft);
+    assert.ok(delta>100,"Expected substantial "+name+" sidebar movement: "+JSON.stringify(data));
+    assert.ok(Math.abs(data.immediate.mainLeft-data.before.mainLeft)<2,
+      "Main content jumped on "+name+" instead of beginning a smooth transition: "+
+      JSON.stringify({before:data.before,immediate:data.immediate}));
+    for(const frame of [data.before,data.immediate,...data.frames]){
+      assert.ok(Math.abs(frame.mainLeft-frame.sidebarRight)<2,
+        "Main column and sidebar edge desynchronized during "+name+": "+
+        JSON.stringify(frame));
+      assert.ok(Math.abs((frame.contentStart-frame.mainLeft)-52.48)<1,
+        "Content's fixed wide-screen inset drifted during "+name+": "+
+        JSON.stringify(frame));
+    }
+    assert.ok(data.frames.some(frame=>
+      Math.abs(frame.mainLeft-data.before.mainLeft)>10 &&
+      Math.abs(frame.mainLeft-data.after.mainLeft)>10),
+      "Missing interpolated "+name+" frames (possible snap): "+
+      JSON.stringify({before:data.before,after:data.after,frames:data.frames}));
+  };
+  const collapseFrames=await sampleWideToggle("sidebar-toggle");
+  assertSmoothToggle(collapseFrames,"collapse");
+  assert.equal(collapseFrames.after.collapsed,true);
+  await until('!document.getElementById("workspace-shell").classList.contains("is-sidebar-toggling")',
+    "wide collapse animation cleanup");
+  const expandFrames=await sampleWideToggle("workspace-sidebar");
+  assertSmoothToggle(expandFrames,"expansion");
+  assert.equal(expandFrames.after.collapsed,false);
+  console.log("PASS: 1600px sidebar collapse and expansion interpolate in sync with the main column, including intermediate frames");
+
   console.log("PASS: desktop 1280/1600/1920 content inset fixed; sidebar collapse, expansion, drag and screen boundaries preserved");
   console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
