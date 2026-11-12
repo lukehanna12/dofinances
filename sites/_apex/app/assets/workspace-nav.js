@@ -250,8 +250,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
     for(const link of globalLinks){
       const selected=link.href?.split("#")[1]===route;
       link.classList.toggle("is-current",selected);
-      if(selected)link.setAttribute("aria-current","page");
-      else link.removeAttribute("aria-current");
+      if(selected){
+        link.setAttribute("aria-current","page");
+        // Same-page navigation is a button-like return-to-top action.
+        link.setAttribute("role","button");
+        link.setAttribute("aria-label","Scroll to top of "+(link.textContent?.trim()||meta.label));
+      }else{
+        link.removeAttribute("aria-current");
+        link.removeAttribute("role");
+        link.removeAttribute("aria-label");
+      }
     }
     doc.title=meta.label+" · "+(meta.projectKey==="colosseum"?"Colosseum · ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader · ":"")+"DoFinances";
     // One Settings DOM view for both Workspace and every project.
@@ -410,11 +418,34 @@ export function initWorkspaceNavigation(doc=document,win=window){
     const q=searchInput.value.trim().toLowerCase();
     for(const a of searchable)a.hidden=!a.textContent.toLowerCase().includes(q);
   });
-  for(const link of globalLinks)link.addEventListener("click",()=>{
-    const route=link.href?.split("#")[1];
-    if(route)render(route);
-    closeGlobal();
-  });
+  for(const link of globalLinks){
+    const targetRoute=()=>resolveWorkspaceRoute("#"+(link.href?.split("#")[1]||""));
+    const activateCurrent=()=>{
+      if(targetRoute()!==lastRenderedRoute)return false;
+      closeGlobal();
+      workspaceScroll.animateToTop();
+      return true;
+    };
+    link.addEventListener("click",event=>{
+      // Don't intercept middle clicks or modified links opening a new tab.
+      if(event.defaultPrevented||event.button>0||
+         event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+      if(activateCurrent()){
+        // Prevent native same-hash scrolling and redundant route renders.
+        event.preventDefault?.();
+        return;
+      }
+      const route=link.href?.split("#")[1];
+      if(route)render(route);
+      closeGlobal();
+    });
+    link.addEventListener("keydown",event=>{
+      if((event.key!==" "&&event.code!=="Space")||
+         !link.classList.contains("is-current"))return;
+      event.preventDefault?.();
+      activateCurrent();
+    });
+  }
   for(const link of links){
     const label=link.querySelector?.(".nav-label");
     const inner=link.querySelector?.(".nav-label-text");
