@@ -198,10 +198,22 @@ export function initColosseumCollections(){
          '<div class="cs-mobile-detail" data-cs-mobile></div>'+
        '</div></div></div></article>';
  }
+ // Avoid deleting and rebuilding identical pagination controls on refresh:
+ // replacing live nodes can disturb focus and browser scroll anchoring.
+ let previousPaginationMarkup=null;
+ function showPagination(markup){
+   if(previousPaginationMarkup===markup)return;
+   previousPaginationMarkup=markup;
+   pagination.innerHTML=markup;
+ }
+ function showCount(text){
+   const line=$("cs-countline");
+   if(line.textContent!==text)line.textContent=text;
+ }
  function renderPages(){
    const pages=pageCount();state.page=Math.min(Math.max(1,state.page),pages);
-   if(pages===1){pagination.innerHTML='';$("cs-countline").textContent=state.loaded?
-       state.collections.length+' '+(state.collections.length===1?"collection":"collections")+' · directly from Colosseum':"";return;}
+   if(pages===1){showPagination("");showCount(state.loaded?
+       state.collections.length+' '+(state.collections.length===1?"collection":"collections")+' · directly from Colosseum':"");return;}
    const from=Math.max(1,Math.min(state.page-2,pages-4)),to=Math.min(pages,from+4);
    const numbers=new Set([1,pages]);for(let p=from;p<=to;p++)numbers.add(p);
    let last=0;
@@ -211,15 +223,33 @@ export function initColosseumCollections(){
      return gap+'<button type="button" class="cs-page" data-cs-page="'+n+'" aria-label="Page '+n+'"'+
        (state.page===n?' aria-current="page"':'')+'>'+n+'</button>';
    }).join("");
-   pagination.innerHTML='<button class="cs-page" type="button" data-cs-page="prev" aria-label="Previous collections page"'+(state.page===1?' disabled':'')+'>'+LEFT+'</button>'+
-     cells+'<button class="cs-page" type="button" data-cs-page="next" aria-label="Next collections page"'+(state.page===pages?' disabled':'')+'>'+RIGHT+'</button>';
+   showPagination('<button class="cs-page" type="button" data-cs-page="prev" aria-label="Previous collections page"'+(state.page===1?' disabled':'')+'>'+LEFT+'</button>'+
+     cells+'<button class="cs-page" type="button" data-cs-page="next" aria-label="Next collections page"'+(state.page===pages?' disabled':'')+'>'+RIGHT+'</button>');
    const first=(state.page-1)*state.pageSize+1;
-   $("cs-countline").textContent=first+'–'+Math.min(first+state.pageSize-1,state.collections.length)+' of '+state.collections.length+' collections · directly from Colosseum';
+   showCount(first+'–'+Math.min(first+state.pageSize-1,state.collections.length)+' of '+state.collections.length+' collections · directly from Colosseum');
  }
  function renderRows(){
    if(!state.loaded){list.innerHTML='<p class="cs-loading">Reading collections directly from Colosseum…</p>';renderPages();return;}
    if(!state.collections.length){list.innerHTML='<p class="cs-loading">No collections yet. Use New collection to create one.</p>';renderPages();return;}
-   list.innerHTML=pageItems().map(rowMarkup).join("");
+   const items=pageItems(),existing=[...list.querySelectorAll(":scope > .cs-entry")];
+   const unchanged=existing.length===items.length &&
+     items.every((item,index)=>existing[index].dataset.csId===item.collection_id);
+   if(unchanged){
+     // A live refresh of the same page must NOT recreate focused buttons,
+     // titles, descriptions or the expanding panel. Even a visually identical
+     // innerHTML rewrite can restart CSS layout and browser scroll anchoring.
+     items.forEach((item,index)=>{
+       const row=existing[index],title=row.querySelector(".cs-title-expanded");
+       if(title.textContent!==item.name)
+         row.querySelectorAll(".cs-entry-title > span").forEach(span=>{span.textContent=item.name;});
+       const description=item.description||"No description provided.";
+       const paragraph=row.querySelector(".cs-description");
+       if(paragraph.textContent!==description)paragraph.textContent=description;
+     });
+   }else{
+     // Only page changes or a genuinely different row set need new elements.
+     list.innerHTML=items.map(rowMarkup).join("");
+   }
    renderPages();syncAccordion();
  }
  function syncAccordion(){
@@ -231,9 +261,16 @@ export function initColosseumCollections(){
    });
    syncActions();
  }
+ // Avoid replacing the action strip under the description when its
+ // actual controls have not changed. This retains keyboard focus as well.
+ const actionMarkupByElement=new WeakMap();
  function syncActions(){
    const open=list.querySelector(".cs-entry.cs-open [data-cs-actions]");
-   if(open)open.innerHTML=actionMarkup();
+   if(!open)return;
+   const markup=actionMarkup();
+   if(actionMarkupByElement.get(open)===markup)return;
+   if(open.innerHTML!==markup)open.innerHTML=markup;
+   actionMarkupByElement.set(open,markup);
  }
  function cardMarkup(){
    const col=activeCollection(),current=state.detail;
@@ -290,7 +327,14 @@ export function initColosseumCollections(){
      const result=await request("get",{name:col.name});
      if(seq!==state.detailSeq||state.activeId!==id)return;
      if(!result.found||result.collection_id!==id)throw Error("Collection changed while loading. Refresh to see its current state.");
-     state.detail=result;syncActions();renderCard();
+     const previous=state.detail;
+     state.detail=result;syncActions();
+     // A fresh GET with the same revision and membership leaves its existing
+     // card in place; replacing equal markup would resize the mobile panel.
+     const unchanged=previous&&previous.collection_id===result.collection_id&&
+       previous.revision===result.revision&&
+       JSON.stringify(previous.item_uids||[])===JSON.stringify(result.item_uids||[]);
+     if(!unchanged||state.selecting)renderCard();
    }catch(error){
      if(seq===state.detailSeq&&state.activeId===id){
        state.detail=null;syncActions();
@@ -327,11 +371,22 @@ export function initColosseumCollections(){
      let chosen=focusId?state.collections.find(x=>x.collection_id===focusId):null;
      if(!chosen&&focusName)chosen=state.collections.find(x=>x.name.toLocaleLowerCase()===focusName.toLocaleLowerCase());
      if(!chosen&&state.activeId)chosen=state.collections.find(x=>x.collection_id===state.activeId);
+     const previousDetail=state.detail,previousActiveId=state.activeId;
+     const wasSelecting=state.selecting;
      state.activeId=chosen?.collection_id||null;
-     state.selecting=false;state.selected.clear();state.detail=null;++state.detailSeq;
+     // Preserve the last live membership view while revalidating an unchanged
+     // revision. Do not replace it with a temporary loading card on refresh.
+     // If the revision/selection changed, continue to show live loading state.
+     const sameDetail=!!chosen&&!focusName&&!focusId&&!!previousDetail&&
+       previousActiveId===chosen.collection_id&&
+       previousDetail.collection_id===chosen.collection_id&&
+       previousDetail.revision===chosen.revision;
+     state.selecting=false;state.selected.clear();
+     state.detail=sameDetail?previousDetail:null;++state.detailSeq;
      if(chosen)state.page=Math.floor(state.collections.indexOf(chosen)/state.pageSize)+1;
      state.page=Math.min(Math.max(1,state.page),pageCount());
-     renderRows();renderCard();
+     renderRows();
+     if(!sameDetail||wasSelecting)renderCard();
      const refreshedAt=new Date();
      summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length);
      setSummaryLoading(false);
