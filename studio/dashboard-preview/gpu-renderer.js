@@ -362,6 +362,28 @@ async function initialize(){
   // errors before removing the CSS fallback background.
   if(root)root.dataset.gpuPhase="wait-first-gpu-frame";
   await device.queue.onSubmittedWorkDone();
+  if(OFFSCREEN_CI){
+    // CI-only GPU byte-level output proof (NOT screenshot acceptance and
+    // NOT a CPU backdrop copy). Verify that the actual fragment result
+    // reaches a nontransparent output attachment on a software GPU.
+    const readback=device.createBuffer({
+      size:256,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ
+    });
+    const encoder=device.createCommandEncoder({label:"One-pixel CI byte proof"});
+    encoder.copyTextureToBuffer(
+      {texture:offscreenFrame,
+       origin:{x:Math.floor(physicalWidth/2),y:Math.floor(physicalHeight/2),z:0}},
+      {buffer:readback,bytesPerRow:256,rowsPerImage:1},
+      {width:1,height:1,depthOrArrayLayers:1}
+    );
+    device.queue.submit([encoder.finish()]);
+    await readback.mapAsync(GPUMapMode.READ);
+    const rgba=Array.from(new Uint8Array(readback.getMappedRange()).slice(0,4));
+    readback.unmap();
+    readback.destroy();
+    if(rgba[3]!==255)throw Error("GPU offscreen output alpha proof failed: "+rgba);
+    audit.offscreenPixelProof=rgba;
+  }
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
@@ -393,6 +415,13 @@ async function initialize(){
       try{engine.rebuild();requestRender()}catch(error){fallback(error)}
     });
   };
+  // The explicit invalidation contract for future moving squares/content:
+  // reflowTiles rewrites only tile positions; invalidateBackdrop triggers
+  // the scene+mip rebuild. Neither action reads rendered DOM pixels.
+  window.__dashboardGpuControls=Object.freeze({
+    reflowTiles:()=>{if(!stopped){engine.rebuild();requestRender()}},
+    invalidateBackdrop:()=>{if(!stopped){scenePending=true;requestRender()}}
+  });
   window.addEventListener("resize",onSize,{passive:true});
   const resizeObserver=new ResizeObserver(onSize);
   resizeObserver.observe(root);
