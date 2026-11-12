@@ -28,6 +28,23 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-wrap{width:100%;margin:0;padding:0}
 #cs-root .cs-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
 #cs-root .cs-head-copy{flex:1 1 auto;min-width:0;max-width:700px}
+/* ChatGPT composer reconstruction: a shell around Add, Edit, Select only.
+   Source-guided but the sampled reconstruction flags these visual tokens as
+   estimates, NOT live ChatGPT computed-style measurements. The ProseMirror
+   input itself is transparent; the composer shell owns its fill/border/shadow. */
+#cs-root .cs-control-center{
+ display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;
+ width:max-content;max-width:100%;min-height:53px;margin-top:16px;
+ padding:7px 8px 8px;border:1px solid rgba(255,255,255,.065);
+ border-radius:28px;background:#303030;
+ box-shadow:0 1px 2px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.015);
+ transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease;
+}
+#cs-root .cs-control-center:hover{border-color:rgba(255,255,255,.09)}
+#cs-root .cs-control-center:focus-within{border-color:rgba(255,255,255,.115)}
+#cs-root .cs-control-center > .cs-create-control,
+#cs-root .cs-control-center > .cs-edit-control,
+#cs-root .cs-control-center > .cs-select-control{margin:0;vertical-align:middle}
 #cs-root .cs-eyebrow{display:block;position:relative;color:var(--cs-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase}
 /* Two hollow 1em/currentColor loading rings share one compositor-friendly
    transform animation, synchronized without timers, observers, or extra paints. */
@@ -209,9 +226,18 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 #cs-root .cs-utility-name{color:var(--cs-muted);font-size:clamp(12px,1.15vw,14px);line-height:1.45;font-weight:500;overflow-wrap:anywhere}
 #cs-root .cs-utility-uid{font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cs-dim);font-variant-numeric:tabular-nums}
-/* Scale all four route SVGs to 80% of their former height while retaining
-   intrinsic aspect ratios. Flex placement pins them right and centers vertically. */
-#cs-root .cs-utility-route-icon{display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain}
+/* The external/ported SVG is the geometric reference. Its viewBox is
+   32.1 x 26.9: rendered width / rendered height = 1.19330855. A fixed
+   reference slot sits flush against the utility box's content-right edge;
+   every icon's CENTER is placed exactly half a ported width from that edge,
+   retaining each route image's individual height and aspect ratio. */
+#cs-root .cs-utility-route-slot{
+ --cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px);
+ display:flex;align-items:center;justify-content:center;
+ width:calc(var(--cs-ported-route-height) * 1.19330855);
+ height:var(--cs-ported-route-height);flex:none;margin-left:auto;align-self:center;
+}
+#cs-root .cs-utility-route-icon{display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);width:auto;max-width:none;flex:none;align-self:center;object-fit:contain}
 /* Route-specific optical sizes relative to the existing 80%-scaled SVGs.
    No transform: width:auto preserves each SVG's intrinsic viewBox geometry. */
 #cs-root .cs-utility-route-icon--cloud{height:calc(clamp(10.8px,1.08vw,12.96px) + 10.08px)}
@@ -266,6 +292,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-utility-route-icon--direct{height:calc(clamp(10.2px,1.02vw,12.24px) + 6.8px)}
  #cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 6.4px)}
  #cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}
+ #cs-root .cs-utility-route-slot{--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}
  #cs-root .cs-summary{font-size:11px;margin-top:22px;padding-top:16px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -302,8 +329,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Select collections: white unframed icon, no shortcut, no hover capsule.
    Follows Edit in the Collections header and reuses its tooltip metrics. */
 #cs-root .cs-select-control{position:relative;display:inline-flex;vertical-align:top;margin:16px 0 0 10px}
-#cs-root .cs-select-icon-button{position:relative;display:inline-grid;place-items:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:0;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,transform .12s ease}
-#cs-root .cs-select-icon-button:hover:not(:disabled){color:#fff}
+#cs-root .cs-select-icon-button{position:relative;display:inline-grid;place-items:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,background-color .15s ease,transform .12s ease}
+#cs-root .cs-select-icon-button:hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
 #cs-root .cs-select-icon-button:active:not(:disabled){transform:scale(.95)}
 #cs-root .cs-select-icon-button svg{position:absolute;width:19px;height:19px;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
 #cs-root .cs-select-glyph{opacity:1;transform:scale(1) rotate(0)}

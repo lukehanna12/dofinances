@@ -325,7 +325,7 @@ export function initColosseumCollections(){
        '<span class="cs-dot" aria-hidden="true"></span>')+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
        '<span class="cs-utility-uid">'+uid+'</span></span>'+
-       (routeIcon?'<img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'">':'');
+       (routeIcon?'<span class="cs-utility-route-slot"><img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'"></span>':'');
      return state.selecting?
        '<label class="cs-utility-row">'+content+'</label>':
        '<div class="cs-utility-row">'+content+'</div>';
