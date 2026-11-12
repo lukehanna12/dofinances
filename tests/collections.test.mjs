@@ -74,6 +74,26 @@ test("Collection title pixels remain visible and loading rings cannot reflow lay
  assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
 });
 
+test("Expanded-row membership skeleton resolves without shifting the header and description",()=>{
+ // The client does a single GET for the expanded collection; no polling.
+ assert.match(js,/if\(next\)void loadDetail\(next\)/);
+ assert.match(js,/const result=await request\("get",\{name:col\.name\}\)/);
+ assert.match(js,/if\(seq!==state\.detailSeq\|\|state\.activeId!==id\)return/);
+ assert.match(js,/state\.detail=result;syncActions\(\);renderCard\(\)/);
+ assert.match(js,/mobile\.classList\.toggle\("cs-members-ready",selected&&!!state\.detail\)/);
+ assert.match(css,/#cs-root \.cs-mobile-detail\{display:none;margin-top:24px;overflow-anchor:none\}/);
+ assert.match(css,/#cs-root \.cs-desktop-detail\{[^}]*overflow-anchor:none\}/);
+ assert.match(css,/@media\(max-width:1023px\)\{[\s\S]*?\.cs-mobile-detail\{display:block;overflow:hidden;max-height:150px;transition:max-height \.45s cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-mobile-detail\.cs-members-ready\{max-height:540px\}/);
+ assert.match(js,/oldButtons\.every\(\(button,i\)=>button\.dataset\.csAction===newButtons\[i\]\.dataset\.csAction\)/);
+ assert.match(js,/if\(button\.disabled!==newButtons\[i\]\.disabled\)button\.disabled=newButtons\[i\]\.disabled/);
+ assert.doesNotMatch(js,/ResizeObserver|MutationObserver|requestAnimationFrame|setInterval/);
+ assert.doesNotMatch(js,/setTimeout\([^\n]*(?:renderCard|loadDetail|syncActions|cs-members-ready)/);
+ // The 450ms collapse, compact row height, and naturally-sized card remain.
+ assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px/);
+ assert.doesNotMatch(css,/#cs-root \.cs-card\{[^}]*min-height:/);
+});
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
  assert.match(js,/pageSize:10/);
  assert.match(js,/data-cs-page="prev"/);
@@ -295,39 +315,14 @@ test("Collections legacy live-status skeleton occupies no space, while failures 
  assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });
 
-test("Live refresh preserves expanded row, focus, and membership DOM without polling",()=>{
- assert.match(js,/const unchanged=existing\.length===items\.length/);
- assert.match(js,/items\.every\(\(item,index\)=>existing\[index\]\.dataset\.csId===item\.collection_id\)/);
- assert.match(js,/if\(unchanged\)\{/);
- assert.match(js,/row\.querySelectorAll\("\.cs-entry-title > span"\)/);
- assert.match(js,/if\(paragraph\.textContent!==description\)paragraph\.textContent=description/);
- assert.match(js,/list\.innerHTML=items\.map\(rowMarkup\)\.join\(""\)/);
- assert.match(js,/if\(previousPaginationMarkup===markup\)return/);
- assert.match(js,/if\(line\.textContent!==text\)line\.textContent=text/);
- assert.match(js,/const actionMarkupByElement=new WeakMap\(\)/);
- assert.match(js,/if\(actionMarkupByElement\.get\(open\)===markup\)return/);
- assert.match(js,/const sameDetail=!!chosen&&!focusName&&!focusId&&!!previousDetail/);
- assert.match(js,/previousDetail\.revision===chosen\.revision/);
- assert.match(js,/state\.detail=sameDetail\?previousDetail:null/);
- assert.match(js,/if\(!sameDetail\|\|wasSelecting\)renderCard\(\)/);
- assert.match(js,/if\(!unchanged\|\|state\.selecting\)renderCard\(\)/);
- assert.doesNotMatch(js,/ResizeObserver|MutationObserver|requestAnimationFrame|setInterval/);
- assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*min-height:1lh;white-space:nowrap/);
- assert.match(css,/#cs-root #cs-refresh\{position:relative\}/);
- assert.match(css,/#cs-root #cs-refresh\.cs-refreshing \.cs-refresh-icon\{visibility:hidden\}/);
- assert.match(css,/#cs-root #cs-refresh\.cs-refreshing::before\{[^}]*position:absolute;left:15px;top:calc\(50% - 8\.5px\)/);
- assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
-});
-
 test("Collections refresh shows a fast arrow-free ring while both skeletons remain synchronized",()=>{
  assert.ok(js.includes('refreshButton.classList.toggle("cs-refreshing",loading)'));
  assert.ok(js.includes('refreshButton.setAttribute("aria-busy",String(loading))'));
  assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
  assert.ok(js.includes('setSummaryLoading(true);'));
  assert.ok(js.includes('setSummaryLoading(false);'));
- assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{visibility:hidden}'));
- assert.doesNotMatch(css,/#cs-root #cs-refresh\.cs-refreshing \.cs-refresh-icon\{display:none\}/);
- assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{content:"";position:absolute;left:15px;top:calc(50% - 8.5px);box-sizing:border-box;width:17px;height:17px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}'));
  assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{animation:none!important}'));
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
  assert.ok(!css.includes('cs-refreshing .cs-refresh-icon{animation:'));
