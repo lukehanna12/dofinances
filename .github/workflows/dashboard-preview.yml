@@ -73,6 +73,33 @@ jobs:
           grep -Fq 'dashboard-structural-bottom' dist/app/assets/dashboard-home.css
           grep -Fq 'pointermove' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'dashboard-paused' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'const unit=microZone?30:58' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'acceptance=Math.min' dist/app/assets/dashboard-mosaic.js
+          grep -Fq '0%,47%,100% {opacity:.09}' dist/app/assets/dashboard-home.css
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          class Tree(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.stack=[]
+                  self.parent={}
+              def handle_starttag(self,tag,attrs):
+                  attrs=dict(attrs)
+                  if attrs.get('id') in ('dashboard-atmosphere','workspace-shell'):
+                      self.parent[attrs['id']]=tuple(self.stack)
+                  if tag not in ('meta','link','img','input','br','hr','source','area','base','embed','param','wbr'):
+                      self.stack.append((tag,attrs.get('id')))
+              def handle_endtag(self,tag):
+                  while self.stack:
+                      t,_=self.stack.pop()
+                      if t==tag:break
+          parsed=Tree()
+          parsed.feed(Path('dist/index.html').read_text())
+          assert parsed.parent['dashboard-atmosphere'][-1]==('div','workspace-shell'),parsed.parent
+          assert ('div','workspace-shell') not in parsed.parent['workspace-shell']
+          PY
+
           node --check dist/app/assets/dashboard-mosaic.js
           node --check dist/app/assets/dashboard-preview.js
           grep -Fq 'id="sidebar-resize-handle"' dist/index.html
