@@ -630,12 +630,16 @@ test("Eye icons reveal promptly after the rearrangement animation completes",()=
  assert.ok(css.includes("--cs-control-swap:480ms"));
 });
 test("Visibility eyes fade into view before rearrangement handles finish entering",()=>{
- assert.match(css,/#cs-root\\.cs-editing\\.cs-entering-edit \\.cs-visibility-toggle:disabled\\{[\\s\\S]*?animation:cs-eye-reveal-with-grip var\\(--cs-control-swap\\) linear both/);
- assert.match(css,/@keyframes cs-eye-reveal-with-grip\\{\\s*0%,25%\\{opacity:0\\}\\s*80%,100%\\{opacity:1\\}\\s*\\}/);
- assert.match(css,/#cs-root\\.cs-editing\\.cs-entering-edit \\.cs-visibility-toggle:disabled\\{[\\s\\S]*?pointer-events:none/);
- assert.match(css,/#cs-root \\.cs-visibility-toggle:disabled\\{opacity:0\\}/);
- assert.match(js,/control\\.disabled=!state\\.editing\\|\\|state\\.editTransitioning/);
- assert.match(css,/--cs-control-swap:480ms/);
+ const selector="#cs-root.cs-editing.cs-entering-edit .cs-visibility-toggle:disabled{";
+ const beginning=css.indexOf(selector);
+ assert.ok(beginning>=0,"Entry overlap rule present");
+ const rule=css.slice(beginning,css.indexOf("}",beginning)+1);
+ assert.ok(rule.includes("visibility:visible;pointer-events:none"),"Eyes visible but inert during animation");
+ assert.ok(rule.includes("animation:cs-eye-reveal-with-grip var(--cs-control-swap) linear both"),"Animation shares grip's 480ms timeline");
+ assert.ok(css.includes("@keyframes cs-eye-reveal-with-grip{\n 0%,25%{opacity:0}\n 80%,100%{opacity:1}\n}"),"Eye fade completes before 480ms");
+ assert.ok(css.includes("#cs-root .cs-visibility-toggle:disabled{opacity:0}"),"Hidden while not entering edit mode");
+ assert.ok(js.includes("control.disabled=!state.editing||state.editTransitioning"),"Eye remains disabled during transition");
+ assert.ok(css.includes("--cs-control-swap:480ms"));
 });
 test("Opening edit mode closes an expanded row with the white pencil-position ring",()=>{
  assert.match(js,/async function enterEditMode\(\)/);
