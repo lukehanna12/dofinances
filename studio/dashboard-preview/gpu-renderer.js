@@ -20,7 +20,8 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 
-const OFFSCREEN_CI=location.search.includes("webgpu-offscreen-ci=1");
+const OFFSCREEN_CI=typeof location!=="undefined" &&
+  new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
 const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
