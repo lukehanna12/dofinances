@@ -23,10 +23,15 @@ export function collectionsTitleFrame(scrollDistance,maxScrollDistance){
   const passed=threshold>0 && scroll>=threshold;
   return {
     threshold,passed,intro,
-    largeBlur:11*intro,
+    // UIKit applies no direct label blur; retain only a subtle, authored
+    // blur to honor the Collections-specific design requirement.
+    largeBlur:1.25*intro,
     largeOpacity:1-smooth(.62,1,intro),
     stripHeight:64*intro,
-    stripBlur:4+20*intro,
+    // Native masked variableBlur exposes inputRadius=1, not a 24px
+    // CSS Gaussian radius. A soft 2px maximum is an approximation,
+    // not a claim of identical GPU filter semantics.
+    stripBlur:2*intro,
     stripOpacity:smooth(0,.86,intro)
   };
 }
@@ -85,7 +90,9 @@ export function initCollectionsTitleTransition(doc=document,win=window){
       prop(items[i],"--collections-crumb-distance",(-distance).toFixed(3)+"px");
       // Rightmost goes first; the leftmost only fades without moving.
       const outDelay=[92,66,33,0][i];
-      const inDelay=[120,130,164,198][i];
+      // Reverse: compact-title fade-out must finish before any old
+      // breadcrumb comes back, so the two states never coexist.
+      const inDelay=[240,250,282,315][i];
       prop(items[i],"--collections-out-delay",outDelay+"ms");
       prop(items[i],"--collections-in-delay",inDelay+"ms");
       if(i===0)continue;
@@ -96,7 +103,7 @@ export function initCollectionsTitleTransition(doc=document,win=window){
       const flip=Math.max(0,Math.round(outDelay+280*breadcrumbCrossingTime(fraction)-41));
       prop(arrow,"--collections-arrow-out-flip",flip+"ms");
       prop(arrow,"--collections-arrow-out-fade",(flip+84)+"ms");
-      const reverse=120+(i-1)*31;
+      const reverse=242+(i-1)*31;
       prop(arrow,"--collections-arrow-in-fade",reverse+"ms");
       prop(arrow,"--collections-arrow-in-flip",(reverse+15)+"ms");
     }

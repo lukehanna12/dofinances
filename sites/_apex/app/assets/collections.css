@@ -614,9 +614,11 @@ body.collections-title-transition #workspace-shell .topbar::after{
   -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
   mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
 }
-/* The inline title waits until the LAST breadcrumb and chevron are fully
-   gone. On reverse it fades OUT before any breadcrumb can fade back IN.
-   There is never an overlapping global breadcrumb and compact title. */
+/* UIKit's compact title is an independent 17pt Semibold label. The real
+   Catalyst runtime switches its label container at the collapse boundary;
+   this intentionally softened 220ms opacity fade follows the requested
+   Apple-like appearance instead of pretending to reproduce an unexposed
+   proprietary fade curve. Breadcrumbs clear first, without overlap. */
 body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
   position:absolute;
   z-index:2;
@@ -632,11 +634,11 @@ body.collections-title-transition #workspace-shell .topbar > .collections-inline
   font:600 17px/21px -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
   letter-spacing:0;
   opacity:0;
-  transition:opacity 85ms linear 0ms;
+  transition:opacity 180ms cubic-bezier(.4,0,.2,1) 0ms;
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .topbar > .collections-inline-title{
   opacity:1;
-  transition-delay:280ms;
+  transition:opacity 220ms cubic-bezier(.4,0,.2,1) 280ms;
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
   transform:translate3d(0,0,0);

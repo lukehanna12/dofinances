@@ -26,7 +26,8 @@ test("Collections handoff is a single binary threshold, never partial",()=>{
   const at=collectionsTitleFrame(threshold,max);
   assert.equal(at.largeOpacity,0);
   assert.equal(at.stripHeight,64);
-  assert.equal(at.stripBlur,24);
+  assert.equal(at.stripBlur,2);
+  assert.equal(at.largeBlur,1.25);
   assert.equal(at.stripOpacity,1);
 });
 
@@ -153,14 +154,15 @@ test("Small document uses a lower threshold, allowing a complete handoff before 
 test("CSS guarantees nonoverlapping centered title and breadcrumbs in both directions",()=>{
   const css=source("sites/_apex/app/assets/collections.css");
   const intro=css.slice(css.indexOf("/* Collections only: scroll-dependent large-title/edge treatment"));
-  assert.match(intro,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition-delay:280ms/);
-  assert.match(intro,/collections-inline-title\{[\s\S]*?opacity:0;\s*transition:opacity 85ms linear 0ms/);
+  assert.match(intro,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 280ms/);
+  assert.match(intro,/collections-inline-title\{[\s\S]*?opacity:0;\s*transition:opacity 180ms cubic-bezier\(\.4,0,\.2,1\) 0ms/);
   assert.match(intro,/\.shadcn-breadcrumb-item\{[\s\S]*?opacity:1;[\s\S]*?opacity 112ms linear/);
   assert.match(intro,/collections-title-passed #workspace-shell \.shadcn-breadcrumb-item\{[\s\S]*?opacity:0/);
   assert.match(intro,/transform:rotateY\(180deg\)/);
   // Last breadcrumb fades by 92+112=204 ms. Last arrow fades before 280ms.
   assert.ok(92+112<280);
-  assert.ok(85<120,"Reverse must hide centered title before first breadcrumb restores");
+  assert.ok(180<240,"Reverse must hide centered title before first breadcrumb restores");
+  assert.match(intro,/--collections-arrow-in-fade/);
   assert.match(intro,/--collections-arrow-out-fade/);
 });
 
@@ -186,4 +188,30 @@ test("No polling or scroll-driven translation remains; Studio stays isolated",()
 
 test("Missing markup safely declines to mount transition",()=>{
   assert.doesNotThrow(()=>initCollectionsTitleTransition({querySelector:()=>null,getElementById:()=>null},{}).setRoute("colosseum/collections"));
+});
+
+
+test("Native reference optics constrain Collections blur and title fade behavior",()=>{
+  const js=source("sites/_apex/app/assets/collections-title-transition.js");
+  const css=source("sites/_apex/app/assets/collections.css");
+  const start=collectionsTitleFrame(0,500);
+  const mid=collectionsTitleFrame(38,500);
+  const end=collectionsTitleFrame(76,500);
+  assert.equal(start.largeBlur,0);
+  assert.equal(start.stripBlur,0);
+  assert.ok(mid.largeBlur>0&&mid.largeBlur<end.largeBlur);
+  assert.ok(mid.stripBlur>0&&mid.stripBlur<end.stripBlur);
+  assert.equal(end.largeBlur,1.25);
+  assert.equal(end.stripBlur,2);
+  assert.ok(end.stripBlur<4,"Do not substitute a strong 24px uniform Gaussian for the native variable blur");
+  assert.ok(js.includes("inputRadius=1"),"Document verified filter parameter, not guessed equivalence");
+  const incoming=css.match(/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
+  const outgoing=css.match(/\.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
+  assert.match(incoming,/opacity:1/);
+  assert.match(incoming,/transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 280ms/);
+  assert.match(outgoing,/transition:opacity 180ms cubic-bezier\(\.4,0,\.2,1\) 0ms/);
+  assert.ok(280>92+112,"Incoming compact title starts after all breadcrumb fades");
+  assert.ok(240>180,"Reverse breadcrumbs wait until compact title is hidden");
+  assert.match(js,/const inDelay=\[240,250,282,315\]/);
+  assert.match(js,/const reverse=242\+\(i-1\)\*31/);
 });
