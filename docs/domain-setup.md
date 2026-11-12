@@ -50,7 +50,7 @@ The apex Worker uses a transactional email API with private server-side credenti
 
 ## Control-plane service boundaries
 
-The Worker has independent bindings for static assets, the account store, Colosseum administration and an allowlisted wallpaper service. Separate owner-restricted access policies protect administrative operations; their precise account identifiers and session parameters are not included in public documentation.
+The Worker has independent bindings for static assets, the account store, Colosseum administration and an allowlisted wallpaper service. One shared owner-restricted Cloudflare Access application protects the `/api/cloudflare/*` and `/api/colosseum/*` administration prefixes. Independent Worker-side owner records and operation policies still govern their separate capabilities; private identifiers are not included in public documentation.
 
 ## Mailtrap migration DNS baseline (2026-11-06)
 

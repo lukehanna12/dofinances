@@ -11,7 +11,7 @@ test("only a signed, unexpired Cloudflare Access owner token is accepted",async(
   const pub=await webcrypto.subtle.exportKey("jwk",keys.publicKey);
   const kid="owner-key";
   const issuer="https://test-owner.cloudflareaccess.com";
-  const env={COLOSSEUM_ACCESS_ISSUER:issuer,COLOSSEUM_ACCESS_AUD:"owner-audience",
+  const env={COLOSSEUM_ACCESS_ISSUER:issuer,CLOUDFLARE_CONNECTION_ACCESS_AUD:"owner-audience",
     COLOSSEUM_OWNER_ACCESS_EMAIL:"owner@example.invalid"};
   const now=Math.floor(Date.now()/1000);
   const encode=o=>Buffer.from(JSON.stringify(o)).toString("base64url");

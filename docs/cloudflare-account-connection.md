@@ -25,7 +25,7 @@ The integrated JSON API console is for specific Cloudflare API requests. Non-JSO
 
 ## Deployment
 
-The Cloudflare account connection is protected by an independent, owner-restricted Access application. Its policy, identity, credential identifiers and live session limits are maintained in protected Cloudflare settings.
+The Cloudflare account connection and Colosseum owner APIs are protected by a **single, owner-restricted 30-day Cloudflare Access application**, covering `/api/cloudflare/*` and `/api/colosseum/*`. Their independent server-side authorization, credential storage and owner-binding rules are unchanged. Access policy and credentials remain managed in Cloudflare.
 
 Automated tests cover encryption, path and scope denial, verification, owner route checks, and static UI wiring. End-to-end authentication and token provisioning require the owner's browser login and user-issued token.
 

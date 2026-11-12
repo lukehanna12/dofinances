@@ -5,11 +5,11 @@ _Architecture reviewed 2026-11-11. This public document omits owner identities, 
 ## Two independent authentication requirements
 
 1. A secure Dofinances account session identifies the authenticated user through the server-side account store.
-2. A separate owner-restricted Cloudflare Access application validates signed administrative identity assertions. Exact identities, credential configuration and session lifetimes remain private.
+2. The shared owner-restricted Cloudflare Access application validates signed administrative identity assertions for both `/api/colosseum/*` and `/api/cloudflare/*`. Exact identities and credentials remain private.
 
 Both verified identities must match the application's single-owner binding; enrollment is restricted and protected against cross-site requests.
 
-Cloudflare Access protects **only the Colosseum management API prefix**, not all Dofinances pages and not the separate Cloudflare account connection under `/api/cloudflare/*`. An Access login does not authorize a second Dofinances account.
+Cloudflare Access protects **both owner API prefixes within a single 30-day Access application**, not all Dofinances pages. The Colosseum and Cloudflare account management APIs retain distinct owner-binding records and permissions. An Access login does not authorize another Dofinances account.
 
 ## Implemented management endpoints
 

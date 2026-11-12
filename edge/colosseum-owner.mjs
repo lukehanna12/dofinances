@@ -11,13 +11,13 @@ function bytes(base64url) {
   return Uint8Array.from(atob(base64+"=".repeat((4-base64.length%4)%4)),c=>c.charCodeAt(0));
 }
 function parse(encoded) {return JSON.parse(new TextDecoder().decode(bytes(encoded)));}
-// Colosseum retains the original 24-hour limit. The independent Cloudflare account
-// route explicitly opts in to a maximum 30-day JWT lifetime.
-export async function verifyColosseumOwnerJwt(raw,env,fetchJwks=fetch,maxSessionSeconds=86400) {
+// Both owner-only API families share one 30-day Access application. JWTs must
+// still satisfy signature, trusted issuer, pinned audience, expiry and email.
+export async function verifyColosseumOwnerJwt(raw,env,fetchJwks=fetch,maxSessionSeconds=2592000) {
   if(!Number.isInteger(maxSessionSeconds)||maxSessionSeconds<1||maxSessionSeconds>2592000)
     throw Error("Invalid Access session lifetime limit");
   const issuer=String(env.COLOSSEUM_ACCESS_ISSUER||"").replace(/\/$/,"");
-  const audience=String(env.COLOSSEUM_ACCESS_AUD||"");
+  const audience=String(env.CLOUDFLARE_CONNECTION_ACCESS_AUD||"");
   const ownerEmail=normalizedEmail(env.COLOSSEUM_OWNER_ACCESS_EMAIL);
   if(!issuer||!audience||!ownerEmail)throw Error("Colosseum owner authentication is not configured");
   const trusted=new URL(issuer);

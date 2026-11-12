@@ -27,7 +27,7 @@ The apex's `/app` and `/dashboard` paths require a valid server-side session; un
 
 ## Colosseum administration and protected routes
 
-Protected Colosseum operations require independently verified identity and authorization before forwarding restricted calls to the separate control plane. This includes collection, provider, permission, catalog and diagnostic APIs. The provider/permission authorities and credential vault remain upstream, not in this Worker. `/api/cloudflare/*` uses a separate Cloudflare Access policy and encrypted Cloudflare user token stored in `AUTH_STORE`; it is not interchangeable with project authorization. See [owner authorization](../docs/colosseum-owner-auth.md) and [Cloudflare connection](../docs/cloudflare-account-connection.md).
+Protected Colosseum operations require independently verified identity and authorization before forwarding restricted calls to the separate control plane. This includes collection, provider, permission, catalog and diagnostic APIs. The provider/permission authorities and credential vault remain upstream, not in this Worker. `/api/cloudflare/*` and `/api/colosseum/*` now share the same owner-only 30-day Cloudflare Access application, while their server-side owner records, operation restrictions, and encrypted credentials remain independently enforced. A Cloudflare account token is not interchangeable with Colosseum provider authorization. See [owner authorization](../docs/colosseum-owner-auth.md) and [Cloudflare connection](../docs/cloudflare-account-connection.md).
 
 A `LIBRARY_III` service binding streams only the eight SHA-addressed wallpapers explicitly allowlisted by `workspace-wallpapers.js`; the full private Colosseum library is not exposed.
 

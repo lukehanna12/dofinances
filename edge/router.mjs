@@ -232,7 +232,7 @@ async function colosseumCatalogForward(request,env,name){
   return json(result,response.status);
 }
 
-// Only this narrow path is protected by the sole-owner Cloudflare Access app.
+// The shared owner-only Access app protects this Colosseum route family too.
 // Every request also requires the existing signed-in DoFinances account cookie.
 // No catalog or resource mutation operation is exposed here.
 async function colosseumOwnerApi(request,env,pathname) {
@@ -259,13 +259,9 @@ async function colosseumOwnerApi(request,env,pathname) {
     return json({error:"Forbidden origin."},403);
   let identity;
   try {
-    // During the Access app cutover, accept either signed owner assertion:
-    // shared Cloudflare app (30 days) or legacy Colosseum app (24h max).
-    // Both are still signature-, audience-, issuer-, email- and owner-bound.
-    const jwt=request.headers.get("Cf-Access-Jwt-Assertion");
-    const sharedEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD};
-    identity=await verifyColosseumOwnerJwt(jwt,sharedEnv,fetch,30*24*60*60);
-    if(!identity)identity=await verifyColosseumOwnerJwt(jwt,env);
+    // The single owner-restricted Access application covers both API families.
+    // Colosseum uses its own immutable account binding after JWT verification.
+    identity=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),env,fetch,30*24*60*60);
   }catch {return json({error:"Colosseum owner authentication is not configured."},503);}
   if(!identity)return json({error:"Cloudflare owner verification required."},403);
   const stub=store(env);
@@ -342,7 +338,7 @@ async function colosseumOwnerApi(request,env,pathname) {
     return redirect("/app/?colosseum=connected#settings",303);
   }
   const state=await stub.colosseumOwnerStatus(argument);
-  // Renew the separate Cloudflare Access API session via explicit navigation.
+  // Renew the shared Cloudflare Access owner session via explicit navigation.
   // Only the already-bound owner may return directly to Collections.
   if(state.owner&&new URL(request.url).searchParams.get("return")==="collections")
     return redirect("/app/#colosseum/collections",303);
@@ -383,8 +379,7 @@ async function cloudflareAccountApi(request,env,pathname){
   const ownerEmail=env.CLOUDFLARE_OWNER_ACCESS_EMAIL||env.COLOSSEUM_OWNER_ACCESS_EMAIL;
   if(!env.CLOUDFLARE_CONNECTION_ACCESS_AUD||!ownerEmail)
     return json({error:"Cloudflare owner access is not configured."},503);
-  const accessEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD,
-    COLOSSEUM_OWNER_ACCESS_EMAIL:ownerEmail};
+  const accessEnv={...env,COLOSSEUM_OWNER_ACCESS_EMAIL:ownerEmail};
   let owner;
   try{owner=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),accessEnv,fetch,30*24*60*60);}
   catch{return json({error:"Cloudflare authentication is unavailable."},503);}

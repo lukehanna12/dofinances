@@ -85,7 +85,6 @@ test("DoFinances Cloudflare routes require a session and owner Access JWT",async
     cloudflareConnectionState:async()=>({status:200,connected:false,policy:DEFAULT_CLOUDFLARE_POLICY})};
   const env={AUTH_STORE:{idFromName:()=>1,get:()=>stub},
     COLOSSEUM_ACCESS_ISSUER:"https://test-cloudflare.cloudflareaccess.com",
-    COLOSSEUM_ACCESS_AUD:"old-project-audience",
     CLOUDFLARE_CONNECTION_ACCESS_AUD:"new-cloudflare-audience",
     COLOSSEUM_OWNER_ACCESS_EMAIL:"owner@example.test"};
   const cookie="__Host-dofinances_session="+"a".repeat(43);

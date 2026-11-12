@@ -30,8 +30,7 @@
   "vars": {
     "AUTH_EMAIL_FROM": "noreply@dofinances.com",
     "COLOSSEUM_ACCESS_ISSUER": "https://luke-inc.cloudflareaccess.com",
-    "CLOUDFLARE_CONNECTION_ACCESS_AUD": "92e47cfd0af16da882598d859617f518ce66276fde45e33fdd6be69a42aad593",
-    "COLOSSEUM_ACCESS_AUD": "a219b092a0fad93c9cac89fa2881f15116e9b4e9fbc4c0402161d013112f2014"
+    "CLOUDFLARE_CONNECTION_ACCESS_AUD": "92e47cfd0af16da882598d859617f518ce66276fde45e33fdd6be69a42aad593"
   },
   "keep_vars": true,
   "services": [
