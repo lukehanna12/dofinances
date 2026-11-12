@@ -365,39 +365,26 @@ function mockNavigation(){
   return {doc,win,elements,views,links,globalLinks,scrollRoot,fire,stored,scrollCalls,
     mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
-test("current global-menu route scrolls to top on click and Space while other routes still navigate",()=>{
+test("upper global-menu retains original navigation instead of scrolling on current-route clicks",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
   const home=m.globalLinks.find(link=>link.href.endsWith("#home"));
   const projects=m.globalLinks.find(link=>link.href.endsWith("#projects"));
-  assert.equal(home.getAttribute("role"),"button");
   assert.equal(home.getAttribute("aria-current"),"page");
-  assert.equal(home.getAttribute("aria-label"),"Scroll to top of home");
-  assert.equal(projects.getAttribute("role"),undefined);
-  m.scrollRoot.scrollTop=1200;
+  assert.equal(home.getAttribute("role"),undefined,"Upper menu stays a link, not a button");
+  assert.equal(home.getAttribute("aria-label"),undefined);
+  m.scrollRoot.scrollTop=1250;
   let prevented=0;
   home.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,1,"Same-route click stops default fragment navigation");
-  assert.equal(m.scrollRoot.scrollTop,0,"RAF-less test fixture uses immediate accessible fallback");
-  assert.equal(m.views.find(v=>v.dataset.view==="home").hidden,false);
-  assert.equal(m.win.location.hash,"","Same-page click must not add a hash/history entry");
-  m.scrollRoot.scrollTop=350;
+  assert.equal(prevented,0,"Original current-link click does not override native fragment handling");
+  assert.equal(m.scrollRoot.scrollTop,1250,"Upper menu click must not start return-to-top");
   home.dispatch("keydown",{key:" ",code:"Space",preventDefault(){prevented++;}});
-  assert.equal(prevented,2,"Space invokes button-like keyboard action");
-  assert.equal(m.scrollRoot.scrollTop,0);
-  m.scrollRoot.scrollTop=400;
+  assert.equal(prevented,0,"Original upper-menu links have no custom Space handler");
   projects.dispatch("click");
-  assert.equal(m.views.find(v=>v.dataset.view==="projects").hidden,false,"Different link still renders its route");
-  assert.equal(m.scrollRoot.scrollTop,0,"Different route preserves immediate reset");
-  assert.equal(projects.getAttribute("role"),"button");
+  assert.equal(m.views.find(v=>v.dataset.view==="projects").hidden,false);
+  assert.equal(m.scrollRoot.scrollTop,0,"Different page still immediately resets scroll");
   assert.equal(projects.getAttribute("aria-current"),"page");
-  assert.equal(home.getAttribute("role"),undefined,"Previous route becomes a normal link again");
-  assert.equal(home.getAttribute("aria-label"),undefined);
-  m.scrollRoot.scrollTop=90;
-  let modifiedPrevented=0;
-  projects.dispatch("click",{metaKey:true,preventDefault(){modifiedPrevented++;}});
-  assert.equal(modifiedPrevented,0,"Command-click should retain native new-tab behavior");
-  assert.equal(m.scrollRoot.scrollTop,90,"Modified navigation should not start scroll animation");
+  assert.equal(projects.getAttribute("role"),undefined);
 });
 
 test("current Permissions breadcrumb is a pointer button that returns to top without navigation",async()=>{
