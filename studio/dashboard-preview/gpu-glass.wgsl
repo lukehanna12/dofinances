@@ -255,9 +255,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Exact CPU predicate: mode4 iff four NORMALIZED private lanes compare
   // equal using AArch64 FCMP/FCCMP; any inequality/NaN selects mode5.
   // Browser CSS-to-private-lane normalization remains a documented GAP.
-  let field=select(mode5SDF(in.local,dimensions,tile.cornerRadii),
-                   mode4SDF(in.local,dimensions,tile.properties.x),
-                   tile.properties.w==4.0);
+  // AIR branches rather than evaluating both branches under eager select:
+  // native compute_sdf_with_mode uses an i32 mode gate, so only the selected
+  // path participates in arithmetic and its half-return rounding.
+  var field:vec3<f32>;
+  if(tile.properties.w==4.0){
+    field=mode4SDF(in.local,dimensions,tile.properties.x);
+  }else{
+    field=mode5SDF(in.local,dimensions,tile.cornerRadii);
+  }
   let signed=field.x;
   let coverage=clamp(0.5-signed/max(fwidth(signed),0.0001),0.0,1.0);
   if(coverage<=0.0){discard;}
