@@ -125,6 +125,19 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 14px)'));
   assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 10px)'));
 });
+test("Collections API session expiry exposes safe owner-only reauthorization",()=>{
+ assert.ok(js.includes('const COLLECTIONS_ACCESS_REAUTH="/api/colosseum/connect?return=collections"'));
+ assert.match(js,/error instanceof TypeError\)throw accessReauthorizationError/);
+ assert.ok(js.includes('error?.name==="AbortError"'),"Network timeout must remain distinct from expired Access");
+ assert.ok(js.includes('response.status===403&&/Cloudflare owner verification required/i.test(body.error||"")'));
+ assert.ok(js.includes('status.append(" ",link)'));
+ assert.equal((js.match(/announce\(error.message,true,false,error.reauthorize===true\)/g)||[]).length,2);
+ assert.ok(css.includes('#cs-root .cs-access-reauthorize'));
+ assert.ok(edge.includes('if(state.owner&&new URL(request.url).searchParams.get("return")==="collections")'));
+ assert.ok(edge.includes('return redirect("/app/#colosseum/collections",303);'));
+ assert.ok(!js.includes("setInterval("),"No polling or repeated fetch on authentication failure");
+});
+
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
  assert.match(js,/pageSize:10/);
  assert.match(js,/data-cs-page="prev"/);

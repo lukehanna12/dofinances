@@ -5,6 +5,12 @@ import {formatWorkspaceTime} from "./workspace-nav.js";
  * Inventory admission (+) is intentionally disabled until separately designed.
  */
 const COLLECTIONS_API="/api/colosseum/collections";
+const COLLECTIONS_ACCESS_REAUTH="/api/colosseum/connect?return=collections";
+const accessReauthorizationError=message=>{
+ const error=Error(message);
+ error.reauthorize=true;
+ return error;
+};
 const COLLECTION_ROUTE_ICONS=Object.freeze({
   cloud:{src:"/app/assets/cloud-utility.v2.svg",label:"Cloud utility"},
   direct:{src:"/app/assets/direct-utility.v1.svg",label:"Direct utility"},
@@ -116,8 +122,15 @@ export function initColosseumCollections(){
    applyGeometry(geometry);
  }
  let formMode="create";
- function announce(message,error=false,visible=false){
+ function announce(message,error=false,visible=false,reauthorize=false){
    status.textContent=message;
+   if(reauthorize){
+     const link=document.createElement("a");
+     link.href=COLLECTIONS_ACCESS_REAUTH;
+     link.className="cs-access-reauthorize";
+     link.textContent="Reauthorize Colosseum";
+     status.append(" ",link);
+   }
    status.dataset.error=error?"true":"false";
    status.dataset.visible=error||visible?"true":"false";
  }
@@ -149,10 +162,19 @@ export function initColosseumCollections(){
      options.body=JSON.stringify({action,...data});
    }
    try{
-     const response=await fetch(COLLECTIONS_API,options);
+     let response;
+     try{response=await fetch(COLLECTIONS_API,options);}
+     catch(error){
+       if(error?.name==="AbortError")throw Error("The Collections request timed out. Try Refresh.");
+       if(error instanceof TypeError)throw accessReauthorizationError(
+         "Could not reach Colosseum. Your Cloudflare Access session may have expired.");
+       throw error;
+     }
      if(!(response.headers.get("content-type")||"").includes("application/json"))
-       throw Error("Colosseum owner verification is required. Connect the project administrator in Settings, then refresh.");
+       throw accessReauthorizationError("Colosseum owner verification is required. Reauthorize Cloudflare Access to continue.");
      const body=await response.json();
+     if(response.status===403&&/Cloudflare owner verification required/i.test(body.error||""))
+       throw accessReauthorizationError("Cloudflare owner authorization is required.");
      if(!response.ok||body.ok!==true){
        const codes={
          collection_revision_conflict:"This collection changed in another session. Refresh before trying again.",
@@ -323,7 +345,7 @@ export function initColosseumCollections(){
        detail.innerHTML=err;
        const mobile=list.querySelector(".cs-entry.cs-open [data-cs-mobile]");
        if(mobile)mobile.innerHTML=err;
-       announce(error.message,true);
+       announce(error.message,true,false,error.reauthorize===true);
      }
    }
  }
@@ -368,7 +390,7 @@ export function initColosseumCollections(){
    }catch(error){
      if(seq===state.loadSeq){
        setSummaryLoading(false); // Preserve last successful values if this refresh failed.
-       announce(error.message,true);
+       announce(error.message,true,false,error.reauthorize===true);
      }
    }
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy;}

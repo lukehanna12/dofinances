@@ -335,6 +335,10 @@ async function colosseumOwnerApi(request,env,pathname) {
     return redirect("/app/?colosseum=connected#settings",303);
   }
   const state=await stub.colosseumOwnerStatus(argument);
+  // Renew the separate Cloudflare Access API session via explicit navigation.
+  // Only the already-bound owner may return directly to Collections.
+  if(state.owner&&new URL(request.url).searchParams.get("return")==="collections")
+    return redirect("/app/#colosseum/collections",303);
   const html=`<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Colosseum owner authorization</title>
