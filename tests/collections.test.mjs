@@ -122,8 +122,12 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   assert.ok(js.includes("routeIcon.label"),"Route mode must retain a screen-reader label");
   assert.ok(!js.includes('class="cs-utility-route"'),"Text capsules must be removed");
   assert.ok(!css.includes(".cs-utility-route{"),"Capsule styling must be removed");
-  assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 14px)'));
-  assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 10px)'));
+  assert.ok(css.includes('height:calc(clamp(12px,1.2vw,14.4px) + 11.2px)'));
+  assert.ok(css.includes('height:calc(clamp(12px,1.2vw,14.4px) + 8px)'));
+  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain/);
+  // The desktop and compact/mobile values are exactly 80% of the old size.
+  for(const [previous,reduced] of [[15,12],[18,14.4],[14,11.2],[10,8]])
+    assert.ok(Math.abs(reduced/previous-.8)<1e-10);
 });
 test("Collections API session expiry exposes safe owner-only reauthorization",()=>{
  assert.ok(js.includes('const COLLECTIONS_ACCESS_REAUTH="/api/colosseum/connect?return=collections"'));
@@ -471,12 +475,14 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     assert.ok(navCss.includes('nav-icon-asset--'+icon),'Missing vector mask for '+icon);
 });
 
-test("New collection uses its 85%-height SVG beneath the description with 7.5px inset",()=>{
+test("New collection stays beneath the live summary with its 7.5px inset after removing intro text",()=>{
   const desc="Organize your utilities into collections, inspect their live memberships, and manage what belongs together.";
-  const start=html.indexOf(desc),btn=html.indexOf('id="cs-create"'),refresh=html.indexOf('id="cs-refresh"');
-  assert.ok(start>=0&&btn>start&&refresh>btn,'New collection must follow description and precede Refresh');
+  assert.ok(!html.includes(desc),"Requested descriptive text must not appear");
+  const start=html.indexOf('id="cs-summary"'),btn=html.indexOf('id="cs-create"'),refresh=html.indexOf('id="cs-refresh"');
+  assert.ok(start>=0&&btn>start&&refresh>btn,'New collection must follow live summary and precede Refresh');
   const copy=html.slice(html.lastIndexOf('<div class="cs-head-copy">',start),html.indexOf('</div>',start));
-  assert.ok(copy.includes('id="cs-create"'),'Creation action must sit below description in the intro column');
+  assert.ok(copy.includes('id="cs-create"'),'Creation action must remain below the live summary');
+  assert.doesNotMatch(copy,/<p>/,"Removed introduction must not leave an empty paragraph");
   assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="New collection"/);
   assert.match(copy,/src="\/app\/assets\/add-collection\.v1\.svg" alt=""/);
   assert.doesNotMatch(html,/<button class="cs-button cs-primary" id="cs-create"/);
