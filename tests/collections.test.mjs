@@ -619,6 +619,8 @@ test("Collection names use a gray inline pencil, live-width underline, and caret
   assert.match(css,/#cs-root \.cs-underline-extended \.cs-name-underline\{transform:scaleX\(1\)\}/);
   assert.match(css,/#cs-root \.cs-caret-pending \.cs-inline-name\{caret-color:transparent\}/);
   assert.match(js,/underline\.addEventListener\("transitionend",event=>/);
+  assert.match(js,/state\.renameEpoch===renameEpoch&&field\.isConnected/,"A stale animation cannot reveal the next editor's caret");
+  assert.match(css,/#cs-root \.cs-name-field\{[^}]*right:calc\(25% \+ 18px\)/,"Keep pencil clear of eye icon");
   assert.match(js,/event\.propertyName==="transform"\)revealCaret\(\)/);
   assert.match(js,/input\.focus\(\{preventScroll:true\}\)/);
   assert.match(js,/input\.setSelectionRange\(input\.value\.length,input\.value\.length\)/);

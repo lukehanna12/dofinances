@@ -397,12 +397,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    input, never per animation frame. */
 #cs-root .cs-name-field{
  position:absolute;z-index:3;top:50%;
- left:calc(36px + var(--cs-depth,0) * 17px);right:26%;
+ left:calc(36px + var(--cs-depth,0) * 17px);right:calc(25% + 18px);
  transform:translateY(-50%);height:34px;display:flex;align-items:center;gap:6px;
  min-width:0;white-space:nowrap;font-size:clamp(14px,1.35vw,16px);
  font-weight:500;line-height:1.4;letter-spacing:-.025em;
  opacity:0;visibility:hidden;pointer-events:none;
- transition:opacity 160ms ease,visibility 0s linear 160ms;
+ transition:opacity var(--cs-control-swap) var(--cs-control-ease),visibility 0s linear var(--cs-control-swap);
 }
 #cs-root.cs-editing .cs-name-field{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 #cs-root.cs-editing .cs-entry.cs-is-hidden .cs-name-field{opacity:.65}
@@ -530,7 +530,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-drag-handle svg{width:13px;height:13px}
  #cs-root .cs-visibility-toggle{left:78%;width:26px;height:26px}
  #cs-root .cs-visibility-toggle svg{width:14px;height:14px}
- #cs-root .cs-name-field{left:calc(32px + var(--cs-depth,0) * 17px);right:23%;font-size:clamp(12.5px,2.7vw,14px)}
+ #cs-root .cs-name-field{left:calc(32px + var(--cs-depth,0) * 17px);right:calc(22% + 16px);font-size:clamp(12.5px,2.7vw,14px)}
  #cs-root .cs-inline-name{font-size:clamp(12.5px,2.7vw,14px);height:27px}
 }
 @media(prefers-reduced-motion:reduce){

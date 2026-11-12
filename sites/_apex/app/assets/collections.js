@@ -61,7 +61,7 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
-   nameDrafts:new Map(),renamingId:null,renameInitialValue:"",draggingId:null,editTransitioning:false,
+   nameDrafts:new Map(),renamingId:null,renameEpoch:0,renameInitialValue:"",draggingId:null,editTransitioning:false,
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
@@ -536,6 +536,7 @@ export function initColosseumCollections(){
    // Clear authority before disabling the active input, which can itself
    // cause a focusout; that event must not recursively finish the same edit.
    state.renamingId=null;
+   state.renameEpoch++;
    const field=list.querySelector('[data-cs-name-field="'+id+'"]');
    const input=field?.querySelector(".cs-inline-name");
    if(input){
@@ -557,6 +558,7 @@ export function initColosseumCollections(){
    if(!id||!input||!underline)return;
    finishInlineRename();
    state.renamingId=id;
+   const renameEpoch=++state.renameEpoch;
    state.renameInitialValue=input.value;
    sizeInlineName(field);
    input.disabled=false;input.tabIndex=0;
@@ -566,7 +568,7 @@ export function initColosseumCollections(){
    // not a frame loop, gives a deterministic left-to-right start.
    void underline.offsetWidth;
    const revealCaret=()=>{
-     if(state.renamingId===id&&field.isConnected)
+     if(state.renamingId===id&&state.renameEpoch===renameEpoch&&field.isConnected)
        field.classList.remove("cs-caret-pending");
    };
    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
