@@ -34,7 +34,7 @@ test("Three exclusive background environments, real bundled photograph and respo
     assert.match(html,new RegExp('data-background="'+mode+'"'));
     assert.match(css,new RegExp('body\\[data-scene="'+mode+'"\\]'));
   }
-  assert.equal((html.match(/class="environment-option(?:\\s|")/g)||[]).length,3);
+  assert.equal((html.match(/class="environment-option(?: |")/g)||[]).length,3);
   assert.equal((html.match(/aria-pressed="true"/g)||[]).length,2,
     "Default background and default segmented selection are the only pressed options");
   assert.match(css,/home-rice-terraces-hq\.jpg/);
