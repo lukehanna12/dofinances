@@ -68,7 +68,7 @@ test("Collection title pixels remain visible and loading rings cannot reflow lay
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-expanded\{opacity:1\}/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-title-compact\{transition-delay:0s\}/);
  assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:hidden\}/);
- assert.match(css,/#cs-root \.cs-summary-skeleton\{[^}]*position:absolute;left:0;top:\.25em/);
+ assert.match(css,/#cs-root \.cs-summary-skeleton\{[^}]*position:absolute;left:0;top:\.32em/);
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*transition:padding \.45s/);
  assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
  assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
@@ -278,7 +278,7 @@ test("Collections loading summary uses two synchronized, text-colored circular s
  assert.ok(!css.includes('background:currentColor;animation:cs-summary-pulse'));
  assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}'));
  assert.doesNotMatch(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{display:none/);
- assert.match(css,/#cs-root \.cs-summary-skeleton\{display:block;position:absolute;left:0;top:\.25em/);
+ assert.match(css,/#cs-root \.cs-summary-skeleton\{display:block;position:absolute;left:0;top:\.32em/);
  assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
  assert.ok(css.includes('#cs-root .cs-summary-dot{animation:none!important;opacity:.65}'));
  assert.ok(js.includes('setSummaryLoading(true);'));

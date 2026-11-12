@@ -38,7 +38,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Loading rings overlay the normally laid-out summary rather than replacing
    its inline box. The eyebrow and all content below it keep identical geometry
    during refresh, including when its live value is temporarily hidden. */
-#cs-root .cs-summary-skeleton{display:block;position:absolute;left:0;top:.25em;height:1em;line-height:1em;width:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 + .5em);pointer-events:none}
+#cs-root .cs-summary-skeleton{display:block;position:absolute;left:0;top:.32em;height:1em;line-height:1em;width:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 + .5em);pointer-events:none}
 #cs-root .cs-summary-dot{position:absolute;top:0;left:calc(var(--cs-summary-group-end,8em) / 2 - .5em);display:inline-block;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-summary-divider{position:absolute;top:0;left:var(--cs-summary-slash-left,7em);white-space:nowrap}
 #cs-root .cs-summary-dot:last-child{left:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 - .5em)}
