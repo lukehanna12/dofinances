@@ -132,18 +132,35 @@ async function initialize(){
   canvas.setAttribute("aria-hidden","true");
   document.body.insertBefore(canvas,document.getElementById("workspace-shell"));
   const url="/app/assets/home-rice-terraces-hq.jpg";
-  const response=await fetch(url);
-  if(!response.ok)throw new Error("Backdrop image HTTP "+response.status);
-  if(root)root.dataset.gpuPhase="decode-scene";
-  const bitmap=await createImageBitmap(await response.blob());
-  const photoWidth=bitmap.width,photoHeight=bitmap.height;
+  // HTMLImageElement onload works without a CPU-side Blob/ImageBitmap
+  // re-encode. The GPU still owns all downstream scene/mip operations.
+  if(root)root.dataset.gpuPhase="load-scene-image";
+  const img=new Image();
+  img.decoding="sync";
+  const ready=new Promise((resolve,reject)=>{
+    img.onload=resolve;
+    img.onerror=()=>reject(new Error("Backdrop image load failed"));
+  });
+  img.src=url;
+  await ready;
+  const photoWidth=img.naturalWidth,photoHeight=img.naturalHeight;
+  if(!photoWidth||!photoHeight)throw new Error("Empty decoded backdrop");
   const photo=device.createTexture({
     size:[photoWidth,photoHeight,1],format:"rgba8unorm",
     usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST
   });
-  device.queue.copyExternalImageToTexture({source:bitmap},
-    {texture:photo},[photoWidth,photoHeight]);
-  bitmap.close();
+  if(root)root.dataset.gpuPhase="upload-scene-image";
+  try{
+    device.queue.copyExternalImageToTexture({source:img},
+      {texture:photo},[photoWidth,photoHeight]);
+  }catch(error){
+    // Browser capability gap (some Safari builds accept ImageBitmap but not
+    // direct HTMLImageElement sources), not a CPU background snapshot.
+    const bitmap=await createImageBitmap(img);
+    device.queue.copyExternalImageToTexture({source:bitmap},
+      {texture:photo},[photoWidth,photoHeight]);
+    bitmap.close();
+  }
 
   const base="/app/assets/";
   const sources=await Promise.all([
