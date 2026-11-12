@@ -925,3 +925,30 @@ test("Add, Edit, Select live inside the reconstructed ChatGPT composer backgroun
    assert.ok(css.includes(".cs-control-center > ."+name),"Control positions stay inside the existing shell");
  assert.ok(css.includes("Measured source: archived ui-decomposition.json"),"Reference the measured composer surface rather than the speculative reconstruction");
 });
+
+test("Collections anchors its top and bottom photo strips under the moving black surface only on this route",()=>{
+  const shared=src("sites/_apex/app/assets/workspace-wallpapers.css");
+  const start=css.indexOf("/* Collections only: pin the existing wallpaper crops");
+  const end=css.indexOf("/* Collections screen:",start);
+  assert.ok(start>0 && end>start);
+  const scoped=css.slice(start,end);
+  const route='html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden]))';
+  const rules=[...scoped.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  assert.equal(rules.length,5,"Only the five Collections-specific layout overrides are introduced");
+  const get=ending=>{
+    const matches=rules.filter(([,selector])=>selector.includes(route)&&selector.trim().endsWith(ending));
+    assert.equal(matches.length,1,"Expected one Collections-only rule for "+ending);
+    return matches[0][2];
+  };
+  // Shared artwork and footer retain their established document-flow layout.
+  assert.match(shared,/position:absolute;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
+  assert.match(shared,/> \.workspace-footer \{\s*position:relative;/);
+  assert.match(get("body:has(> #workspace-shell)"),/padding-bottom:var\(--workspace-footer-height\)/);
+  assert.match(get("body:has(> #workspace-shell)::before"),/position:fixed/);
+  assert.match(get("body:has(> #workspace-shell) > #workspace-shell"),/position:relative;\s*z-index:1/);
+  assert.match(get("body:has(> #workspace-shell) > #workspace-shell::after"),
+    /content:"";\s*position:absolute;\s*inset:var\(--workspace-banner-height\) 0 0;\s*z-index:-1;\s*pointer-events:none;\s*background:var\(--ui-canvas,#0a0a0a\)/);
+  assert.match(get("body:has(> #workspace-shell) > .workspace-footer"),
+    /position:fixed;\s*inset:auto 0 0;\s*z-index:0/);
+  assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
+});

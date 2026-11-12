@@ -5,6 +5,33 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   --ui-canvas:#0a0a0a;
 }
 
+/* Collections only: pin the existing wallpaper crops and copyright behind
+   the scrolling black surface. Keep the footer's exact former scroll space,
+   so its image and text emerge only when the canvas clears at page end. */
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell){
+  padding-bottom:var(--workspace-footer-height);
+}
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell)::before{
+  position:fixed;
+}
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell) > #workspace-shell{
+  position:relative;
+  z-index:1;
+}
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell) > #workspace-shell::after{
+  content:"";
+  position:absolute;
+  inset:var(--workspace-banner-height) 0 0;
+  z-index:-1;
+  pointer-events:none;
+  background:var(--ui-canvas,#0a0a0a);
+}
+html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden])) body:has(> #workspace-shell) > .workspace-footer{
+  position:fixed;
+  inset:auto 0 0;
+  z-index:0;
+}
+
 /* Collections screen: isolated rendition of Colosseum 0001cb custom Quiet Hours
    (expanded full-size panel, enlarged contents, reversible accordion) with
    Showcase 4-style sliding pagination pills. No permissions/shared UI overrides. */
