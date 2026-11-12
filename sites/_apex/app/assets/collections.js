@@ -38,10 +38,18 @@ const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 const GRIP='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 const PICK_CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>';
 const NAME_PENCIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.8 4.7 3.5 3.5M4 20l4.8-1.1L19.6 8.1a2.45 2.45 0 0 0-3.5-3.5L5.3 15.4 4 20Z"/></svg>';
+const NAME_APPLY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg>';
+const NAME_CANCEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 // Clamp a measured glyph width without ever letting it overlap the eye icon.
 export function collectionInlineNameWidth(textWidth,availableWidth){
   const available=Math.max(24,Number(availableWidth)||24);
   return Math.min(Math.max(24,available-26),Math.max(24,Math.ceil((Number(textWidth)||0)+10)));
+}
+// Only names that differ after the same normalization used by Done count
+// as changes: adding/removing meaningless spacing does not show a checkmark.
+export function collectionInlineNameChanged(initial,draft){
+  const canonical=value=>String(value??"").normalize("NFKC").trim().replace(/\s+/gu," ");
+  return canonical(initial)!==canonical(draft);
 }
 const EYE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.6-6.2 9.5-6.2 9.5 6.2 9.5 6.2-3.6 6.2-9.5 6.2S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>';
 const EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10 5.9a10.6 10.6 0 0 1 2-.2c5.9 0 9.5 6.3 9.5 6.3a16.8 16.8 0 0 1-2.8 3.2M6.1 7.4C3.8 9.2 2.5 12 2.5 12s3.6 6.3 9.5 6.3c1.1 0 2.2-.2 3.1-.6M10 10a2.8 2.8 0 0 0 3.8 3.8"/></svg>';
@@ -254,7 +262,11 @@ export function initColosseumCollections(){
            '<span class="cs-name-measure" aria-hidden="true">'+esc(draft||" ")+'</span>'+
            '<input class="cs-inline-name" type="text" data-cs-name="'+uuid+'" value="'+esc(draft)+'" aria-label="Rename '+esc(collection.name)+'" maxlength="100" autocomplete="off" spellcheck="false" disabled tabindex="-1" aria-hidden="true">'+
            '<span class="cs-name-underline" aria-hidden="true"></span></span>'+
-         '<button class="cs-name-pencil" type="button" data-cs-start-rename="'+uuid+'" aria-label="Rename '+esc(collection.name)+'" title="Rename collection"'+off+'>'+NAME_PENCIL+'</button></span>'+
+         '<button class="cs-name-pencil" type="button" data-cs-start-rename="'+uuid+'" aria-label="Rename '+esc(collection.name)+'" title="Rename collection"'+off+'>'+NAME_PENCIL+'</button>'+
+         '<span class="cs-name-actions" hidden>'+
+           '<button class="cs-name-action cs-name-confirm" type="button" data-cs-confirm-rename="'+uuid+'" aria-label="Apply name change" title="Apply name change" disabled tabindex="-1" hidden>'+NAME_APPLY+'</button>'+
+           '<button class="cs-name-action cs-name-cancel" type="button" data-cs-cancel-rename="'+uuid+'" aria-label="Cancel name change" title="Cancel name change" disabled tabindex="-1">'+NAME_CANCEL+'</button>'+
+         '</span></span>'+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
@@ -525,28 +537,44 @@ export function initColosseumCollections(){
    const measure=field?.querySelector(".cs-name-measure");
    if(!input||!measure)return;
    measure.textContent=input.value||" ";
-   // Inheriting the input's font and letter spacing yields true glyph width.
-   // Only run on edit-mode entry and actual user input, never per animation frame.
+   // Only measure when typing; keep circle actions clear of the eye icon.
+   const reserved=field.classList.contains("cs-renaming")
+     ?(field.classList.contains("cs-name-changed")?60:32):26;
    field.style.setProperty("--cs-inline-name-width",
-     collectionInlineNameWidth(measure.getBoundingClientRect().width,field.clientWidth)+"px");
+     collectionInlineNameWidth(measure.getBoundingClientRect().width,
+       field.clientWidth-(reserved-26))+"px");
+ }
+ function syncInlineRenameActions(field){
+   if(!field||!state.renamingId)return;
+   const input=field.querySelector(".cs-inline-name");
+   const confirm=field.querySelector(".cs-name-confirm");
+   if(!input||!confirm)return;
+   const changed=collectionInlineNameChanged(state.renameInitialValue,input.value);
+   field.classList.toggle("cs-name-changed",changed);
+   confirm.hidden=!changed;
+   sizeInlineName(field);
  }
  function finishInlineRename(restore=false){
    const id=state.renamingId;
    if(!id)return;
-   // Clear authority before disabling the active input, which can itself
-   // cause a focusout; that event must not recursively finish the same edit.
+   // Clear authority before disabling the input, which can trigger focusout.
    state.renamingId=null;
    state.renameEpoch++;
    const field=list.querySelector('[data-cs-name-field="'+id+'"]');
    const input=field?.querySelector(".cs-inline-name");
+   const actions=field?.querySelector(".cs-name-actions");
    if(input){
      if(restore)input.value=state.renameInitialValue;
      state.nameDrafts.set(id,input.value);
-     sizeInlineName(field);
      input.disabled=true;input.tabIndex=-1;
      input.setAttribute("aria-hidden","true");
    }
-   field?.classList.remove("cs-renaming","cs-caret-pending","cs-underline-extended");
+   if(actions){
+     actions.hidden=true;
+     actions.querySelectorAll("button").forEach(button=>{button.disabled=true;button.tabIndex=-1;});
+   }
+   field?.classList.remove("cs-renaming","cs-caret-pending","cs-underline-extended","cs-name-changed");
+   if(input)sizeInlineName(field);
    state.renameInitialValue="";
  }
  function beginInlineRename(button){
@@ -555,15 +583,18 @@ export function initColosseumCollections(){
    const field=button.closest(".cs-name-field");
    const input=field?.querySelector(".cs-inline-name");
    const underline=field?.querySelector(".cs-name-underline");
-   if(!id||!input||!underline)return;
+   const actions=field?.querySelector(".cs-name-actions");
+   if(!id||!input||!underline||!actions)return;
    finishInlineRename();
    state.renamingId=id;
    const renameEpoch=++state.renameEpoch;
    state.renameInitialValue=input.value;
-   sizeInlineName(field);
+   actions.hidden=false;
+   actions.querySelectorAll("button").forEach(action=>{action.disabled=false;action.tabIndex=0;});
    input.disabled=false;input.tabIndex=0;
    input.removeAttribute("aria-hidden");
    field.classList.add("cs-renaming","cs-caret-pending");
+   syncInlineRenameActions(field);
    // Establish the collapsed line before animating; a one-time style read,
    // not a frame loop, gives a deterministic left-to-right start.
    void underline.offsetWidth;
@@ -844,12 +875,16 @@ export function initColosseumCollections(){
    const input=event.target.closest(".cs-inline-name");
    if(input&&state.editing){
      state.nameDrafts.set(input.dataset.csName,input.value);
-     sizeInlineName(input.closest(".cs-name-field"));
+     const field=input.closest(".cs-name-field");
+     if(state.renamingId===input.dataset.csName)syncInlineRenameActions(field);
+     else sizeInlineName(field);
    }
  });
  list.addEventListener("focusout",event=>{
    const input=event.target.closest?.(".cs-inline-name");
-   if(input&&state.renamingId===input.dataset.csName)finishInlineRename();
+   if(!input||state.renamingId!==input.dataset.csName)return;
+   if(input.closest(".cs-name-field")?.contains(event.relatedTarget))return;
+   finishInlineRename();
  });
  list.addEventListener("keydown",event=>{
    const input=event.target.closest?.(".cs-inline-name");
@@ -928,6 +963,14 @@ export function initColosseumCollections(){
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
    if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}
    if(button.hasAttribute("data-cs-start-rename")){beginInlineRename(button);return;}
+   if(button.hasAttribute("data-cs-confirm-rename")&&state.renamingId===button.dataset.csConfirmRename){
+     const pencil=button.closest(".cs-name-field")?.querySelector(".cs-name-pencil");
+     finishInlineRename();pencil?.focus({preventScroll:true});return;
+   }
+   if(button.hasAttribute("data-cs-cancel-rename")&&state.renamingId===button.dataset.csCancelRename){
+     const pencil=button.closest(".cs-name-field")?.querySelector(".cs-name-pencil");
+     finishInlineRename(true);pencil?.focus({preventScroll:true});return;
+   }
    if(button.hasAttribute("data-cs-visibility")){toggleCollectionVisibility(button.dataset.csVisibility);return;}
    if(button.hasAttribute("data-cs-drag"))return;
    if(button.hasAttribute("data-cs-jump-child")){jumpToChild(button.dataset.csJumpChild);return;}

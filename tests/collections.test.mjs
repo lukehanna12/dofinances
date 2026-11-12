@@ -637,9 +637,55 @@ test("Click-away or Enter commits a row draft locally; Escape restores it before
   assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
   assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(\)/);
   assert.match(js,/request\("edit",\{\s*original_name:collection\.name,name,expected_revision:collection\.revision/);
-  assert.match(js,/sizeInlineName\(input\.closest\("\.cs-name-field"\)\)/);
+  assert.match(js,/if\(state\.renamingId===input\.dataset\.csName\)syncInlineRenameActions\(field\)/);
   assert.match(js,/measure\.textContent=input\.value\|\|" "/);
   assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
+});
+
+test("Rename circles: conditional white checkmark, persistent gray X, and safe focus behavior",async()=>{
+ const {collectionInlineNameChanged}=await import("../sites/_apex/app/assets/collections.js");
+ assert.equal(collectionInlineNameChanged("Projects","Projects"),false);
+ assert.equal(collectionInlineNameChanged("Projects","  Projects  "),false);
+ assert.equal(collectionInlineNameChanged("My   projects","My projects"),false);
+ assert.equal(collectionInlineNameChanged("Projects","New Projects"),true);
+ assert.equal(collectionInlineNameChanged("Projects","Projects!"),true);
+ assert.equal(collectionInlineNameChanged("Projects",""),true);
+ assert.match(js,/const NAME_APPLY='<svg[^']+<path d="m5 12\.5/);
+ assert.match(js,/const NAME_CANCEL='<svg[^']+<path d="M18 6 6 18M6 6l12 12"/);
+ assert.match(js,/class="cs-name-actions" hidden/);
+ assert.match(js,/class="cs-name-confirm"[^\n]*hidden|class="cs-name-action cs-name-confirm"[^\n]*hidden/);
+ assert.match(js,/class="cs-name-action cs-name-cancel"/);
+ assert.match(js,/confirm\.hidden=!changed/);
+ assert.match(js,/actions\.hidden=false/);
+ assert.match(js,/actions\.hidden=true/);
+ assert.match(js,/field\.classList\.toggle\("cs-name-changed",changed\)/);
+ assert.match(js,/finishInlineRename\(true\);pencil\?\.focus/);
+ assert.match(js,/finishInlineRename\(\);pencil\?\.focus/);
+ assert.match(js,/\.contains\(event\.relatedTarget\)\)return/);
+ assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
+ assert.match(css,/#cs-root \.cs-name-action\{[^}]*border:1px solid var\(--cs-border\);border-radius:50%;background:var\(--cs-weak\)/);
+ assert.match(css,/#cs-root \.cs-name-confirm\{background:#fff;border-color:#fff;color:#101010\}/);
+ assert.match(css,/#cs-root \.cs-name-cancel svg\{stroke-width:1\.9\}/);
+ assert.match(css,/#cs-root \.cs-renaming \.cs-name-pencil\{display:none\}/);
+ assert.match(css,/#cs-root \.cs-renaming\.cs-name-changed \.cs-name-editor\{max-width:calc\(100% - 60px\)\}/);
+ assert.match(js,/collectionInlineNameWidth\(measure\.getBoundingClientRect\(\)\.width,/);
+ assert.match(js,/field\.clientWidth-\(reserved-26\)/);
+ assert.match(js,/input\.setSelectionRange\(input\.value\.length,input\.value\.length\)/);
+ assert.match(js,/event\.propertyName==="transform"\)revealCaret\(\)/);
+});
+
+test("Refresh has an icon-only button with an anchored hover and keyboard-focus tooltip",()=>{
+ const start=html.indexOf('<span class="cs-refresh-control">');
+ assert.ok(start>=0,"Tooltip must be anchored to the refresh icon, not a shared menu");
+ const wrap=html.slice(start,html.indexOf("</span></span>",start)+14);
+ assert.ok(wrap.includes('id="cs-refresh"'));
+ assert.ok(wrap.includes('aria-describedby="cs-refresh-tooltip"'));
+ assert.ok(wrap.includes('id="cs-refresh-tooltip" role="tooltip"'));
+ assert.ok(wrap.includes('>Refresh collections</span>'));
+ assert.match(css,/#cs-root \.cs-refresh-control\{position:relative;display:inline-flex;width:36px;height:36px/);
+ assert.match(css,/#cs-root \.cs-refresh-control \.cs-create-tooltip\{left:auto;right:0/);
+ assert.match(css,/#cs-root \.cs-refresh-control:hover \.cs-create-tooltip/);
+ assert.match(css,/#cs-root #cs-refresh:focus-visible \+ \.cs-create-tooltip/);
 });
 
 test("Collections control swap uses synchronized 20px local fades at the list right edge",()=>{
