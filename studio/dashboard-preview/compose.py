@@ -27,21 +27,27 @@ assert 'id="sidebar-resize-handle"' in html
 # Keep the field inside the workspace stacking context, but fixed to
 # the viewport. This avoids the old sibling-layer rendering ambiguity.
 stage = """<div id="dashboard-atmosphere" class="dashboard-atmosphere" aria-hidden="true">
-  <div class="dashboard-atmosphere-grain"></div>
+  <div class="dashboard-scene-photo"></div>
+  <div class="dashboard-scene-veil"></div>
   <div id="dashboard-tiles-small" class="dashboard-tiles dashboard-tiles-small"></div>
   <div id="dashboard-tiles-main" class="dashboard-tiles dashboard-tiles-main"></div>
-  <div class="dashboard-structural-side dashboard-structural-side-left"></div>
-  <div class="dashboard-structural-side dashboard-structural-side-right"></div>
-  <div class="dashboard-structural-top">
-    <span class="dashboard-slit dashboard-slit-a"></span>
-    <span class="dashboard-slit dashboard-slit-b"></span>
-    <span class="dashboard-slit dashboard-slit-c"></span>
+  <span class="dashboard-rail dashboard-rail-left"></span>
+  <span class="dashboard-rail dashboard-rail-right"></span>
+  <div class="dashboard-bottom-fade"></div>
+  <div class="dashboard-frame dashboard-frame-top">
+    <span class="dashboard-frame-endcap dashboard-frame-endcap-left"></span>
+    <span class="dashboard-frame-endcap dashboard-frame-endcap-right"></span>
+    <span class="dashboard-frame-track dashboard-frame-track-left"></span>
+    <span class="dashboard-frame-track dashboard-frame-track-right"></span>
+    <span class="dashboard-frame-jewel"></span>
   </div>
-  <div class="dashboard-structural-bottom">
-    <span class="dashboard-base-rule"></span>
-    <span class="dashboard-base-rule dashboard-base-rule-inner"></span>
+  <div class="dashboard-frame dashboard-frame-bottom">
+    <span class="dashboard-frame-lug dashboard-frame-lug-left"></span>
+    <span class="dashboard-frame-lug dashboard-frame-lug-right"></span>
+    <span class="dashboard-frame-sill dashboard-frame-sill-left"></span>
+    <span class="dashboard-frame-sill dashboard-frame-sill-right"></span>
+    <span class="dashboard-frame-plinth"></span>
   </div>
-  <div class="dashboard-atmosphere-vignette"></div>
 </div>
 """
 shell_start = '<div class="shell" id="workspace-shell">'
@@ -49,6 +55,9 @@ assert html.count(shell_start) == 1
 html = html.replace(shell_start, shell_start + stage, 1)
 assert 'id="dashboard-tiles-small"' in html
 assert 'id="dashboard-tiles-main"' in html
+assert 'dashboard-scene-photo' in html
+assert 'dashboard-frame-top' in html
+assert 'dashboard-frame-bottom' in html
 assert 'Workspace</h1>' not in html
 out = Path("dist/index.html")
 out.parent.mkdir(parents=True, exist_ok=True)
