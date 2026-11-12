@@ -45,20 +45,60 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}
 #cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}
 @keyframes cs-summary-spin{to{transform:rotate(360deg)}}
-/* The original New collection control was 36px tall. Render the supplied
-   SVG at exactly 85% (30.6px), preserving its own 31.9317:23.3643 geometry.
-   Position 7.5px to the right of the intro copy's left edge. */
+/* ChatGPT's 36px send control geometry, with its recovered 20px
+   composer-plus path. Shift the old 7.5px left inset left by exactly 4px.
+   The tooltip follows the reconstructed ChatGPT tooltip metrics and timing. */
+#cs-root .cs-create-control{
+  position:relative;display:inline-flex;vertical-align:top;
+  margin:16px 0 0 3.5px;
+}
 #cs-root .cs-create-icon-button{
   display:inline-flex;align-items:center;justify-content:center;
-  margin:16px 0 0 7.5px;padding:0;border:0;background:transparent;
-  border-radius:8px;min-height:0;line-height:0;vertical-align:top;
-  transition:opacity .18s ease,transform .18s ease;
+  box-sizing:border-box;width:36px;min-width:36px;height:36px;min-height:36px;
+  margin:0;padding:0;gap:0;border:0;border-radius:999px;
+  background:#fff;color:#101010;line-height:0;
+  box-shadow:0 1px 2px rgba(0,0,0,.18);
+  transition:background-color .12s ease,color .12s ease,transform .08s ease,box-shadow .12s ease;
 }
-#cs-root .cs-create-icon-button img{
-  display:block;height:30.6px;width:auto;max-width:none;object-fit:contain;
+#cs-root .cs-create-plus-icon{
+  display:block;width:20px;height:20px;flex:none;fill:currentColor;
 }
-#cs-root .cs-create-icon-button:hover:not(:disabled){opacity:.82;}
-#cs-root .cs-create-icon-button:active:not(:disabled){transform:scale(.98);}
+#cs-root .cs-create-icon-button:hover:not(:disabled){background:#f1f1f1;box-shadow:0 2px 6px rgba(0,0,0,.22)}
+#cs-root .cs-create-icon-button:active:not(:disabled){transform:scale(.96)}
+/* Radix-tooltip-like hover/focus disclosure: 150ms mouse delay, immediate
+   keyboard focus, 250ms scale/opacity transitions, 5px anchor offset,
+   and no arrow or background polling. */
+#cs-root .cs-create-tooltip{
+  position:absolute;top:calc(100% + 5px);left:0;z-index:80;
+  display:inline-flex;align-items:center;gap:0;
+  width:max-content;max-width:calc(100vw - 30px);padding:7px 10px;
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  background:#101010;color:#f6f6f6;
+  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:12px;font-weight:520;line-height:1.25;letter-spacing:0;
+  white-space:nowrap;pointer-events:none;
+  box-shadow:0 5px 17px rgba(0,0,0,.29);
+  opacity:0;visibility:hidden;transform-origin:top left;
+  transform:translateY(-2px) scale(.94);
+  transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility 0s linear .25s;
+}
+#cs-root .cs-create-tooltip-label{display:inline-block;white-space:nowrap}
+#cs-root .cs-create-tooltip-shortcut{
+  display:inline-flex;align-items:center;gap:2px;margin-left:14px;
+  color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25;
+}
+#cs-root .cs-create-tooltip-shortcut kbd{
+  display:inline-block;margin:0;padding:0;border:0;background:none;
+  color:inherit;font:inherit;line-height:inherit;
+}
+#cs-root .cs-create-icon-button:hover + .cs-create-tooltip,
+#cs-root .cs-create-icon-button:focus-visible + .cs-create-tooltip{
+  opacity:1;visibility:visible;transform:translateY(0) scale(1);
+  transition-delay:.15s,.15s,.15s;
+}
+#cs-root .cs-create-icon-button:focus-visible + .cs-create-tooltip{
+  transition-delay:0s,0s,0s;
+}
 
 #cs-root .cs-top-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:end;align-items:center}
 #cs-root .cs-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--cs-border);border-radius:10px;background:var(--cs-weak);color:var(--cs-text);padding:9px 14px;min-height:36px;font-size:12px!important;font-weight:500!important;line-height:1.3!important;transition:color .2s,background .2s,border-color .2s,transform .2s;white-space:nowrap;text-decoration:none}
@@ -224,4 +264,5 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
  #cs-root .cs-summary-dot{animation:none!important;opacity:.65}
  #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
+ #cs-root .cs-create-tooltip{transition-delay:0s!important}
 }

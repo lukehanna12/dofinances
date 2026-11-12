@@ -528,18 +528,40 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     assert.ok(navCss.includes('nav-icon-asset--'+icon),'Missing vector mask for '+icon);
 });
 
-test("New collection stays beneath the live summary with its 7.5px inset after removing intro text",()=>{
+test("Add collection uses ChatGPT's 36px white send-control geometry and black plus glyph",()=>{
   const desc="Organize your utilities into collections, inspect their live memberships, and manage what belongs together.";
-  assert.ok(!html.includes(desc),"Requested descriptive text must not appear");
+  assert.ok(!html.includes(desc),"Removed introduction must remain absent");
   const start=html.indexOf('id="cs-summary"'),btn=html.indexOf('id="cs-create"'),refresh=html.indexOf('id="cs-refresh"');
-  assert.ok(start>=0&&btn>start&&refresh>btn,'New collection must follow live summary and precede Refresh');
+  assert.ok(start>=0&&btn>start&&refresh>btn,"New collection remains beneath the live summary");
   const copy=html.slice(html.lastIndexOf('<div class="cs-head-copy">',start),html.indexOf('</div>',start));
-  assert.ok(copy.includes('id="cs-create"'),'Creation action must remain below the live summary');
-  assert.doesNotMatch(copy,/<p>/,"Removed introduction must not leave an empty paragraph");
-  assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="New collection"/);
-  assert.match(copy,/src="\/app\/assets\/add-collection\.v1\.svg" alt=""/);
-  assert.doesNotMatch(html,/<button class="cs-button cs-primary" id="cs-create"/);
-  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*margin:16px 0 0 7\.5px/);
-  assert.match(css,/#cs-root \.cs-create-icon-button img\{[^}]*height:30\.6px;width:auto/);
+  assert.ok(copy.includes('id="cs-create"'));
+  assert.doesNotMatch(copy,/<p>/);
+  assert.match(copy,/class="cs-create-control"/);
+  assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="Add collection" aria-keyshortcuts="Meta\+Shift\+N"/);
+  assert.match(copy,/class="cs-create-plus-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"/);
+  assert.ok(copy.includes('M12 3.59998C12.5891 3.59998 13.0666 4.07754 13.0666 4.66664V10.9333H19.3333C19.9224 10.9333 20.4 11.4109 20.4 12C20.4 12.5891 19.9224 13.0666 19.3333 13.0666H13.0666V19.3333C13.0666 19.9224 12.5891 20.4 12 20.4C11.4109 20.4 10.9333 19.9224 10.9333 19.3333V13.0666H4.66664C4.07754 13.0666 3.59998 12.5891 3.59998 12C3.59998 11.4109 4.07754 10.9333 4.66664 10.9333H10.9333V4.66664C10.9333 4.07754 11.4109 3.59998 12 3.59998Z'),"Original 20px ChatGPT composer plus path must be preserved");
+  assert.doesNotMatch(copy,/add-collection\.v1\.svg/);
+  assert.match(css,/#cs-root \.cs-create-control\{[^}]*margin:16px 0 0 3\.5px/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:36px;min-width:36px;height:36px;min-height:36px/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*border-radius:999px/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:#fff;color:#101010/);
   assert.match(js,/createButton\.addEventListener\("click",\(\)=>openForm\("create"\)\)/);
+});
+
+test("Add collection tooltip mirrors ChatGPT timing and displays the Shift-Command-N shortcut",()=>{
+  assert.match(html,/id="cs-create-tooltip" role="tooltip"/);
+  assert.match(html,/>Add collection<\/span><span class="cs-create-tooltip-shortcut" aria-label="Shift Command N">/);
+  assert.match(html,/<kbd>⇧<\/kbd><kbd>⌘<\/kbd><kbd>N<\/kbd>/);
+  assert.match(css,/#cs-root \.cs-create-tooltip\{[^}]*top:calc\(100% \+ 5px\)/);
+  assert.match(css,/#cs-root \.cs-create-tooltip\{[^}]*padding:7px 10px/);
+  assert.match(css,/#cs-root \.cs-create-tooltip\{[^}]*border-radius:10px/);
+  assert.match(css,/#cs-root \.cs-create-tooltip\{[^}]*font-size:12px;font-weight:520/);
+  assert.match(css,/transition:opacity \.25s cubic-bezier\(\.16,1,\.3,1\)/);
+  assert.match(css,/transition-delay:\.15s,\.15s,\.15s/);
+  assert.match(css,/#cs-root \.cs-create-icon-button:focus-visible \+ \.cs-create-tooltip/);
+  assert.match(js,/window\.addEventListener\("keydown",event=>\{/);
+  assert.match(js,/!event\.shiftKey\|\|!event\.metaKey/);
+  assert.match(js,/!routeActive\(\)\|\|root\.closest\("\.view"\)\?\.hidden\|\|state\.busy/);
+  assert.match(js,/document\.querySelector\("dialog\[open\]"\)/);
+  assert.match(js,/event\.preventDefault\(\);\s*openForm\("create"\)/);
 });

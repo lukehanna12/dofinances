@@ -503,6 +503,20 @@ export function initColosseumCollections(){
  });
  refreshButton.addEventListener("click",()=>{if(!state.busy)void loadList();});
  createButton.addEventListener("click",()=>openForm("create"));
+ // Match the tooltip's ⇧⌘N hint without interfering with inputs, other
+ // workspace routes, open dialogs, or in-flight Colosseum mutations.
+ window.addEventListener("keydown",event=>{
+   if(event.defaultPrevented||event.isComposing||event.repeat||
+      !event.shiftKey||!event.metaKey||event.altKey||event.ctrlKey)return;
+   if(event.code!=="KeyN"&&event.key?.toLowerCase()!=="n")return;
+   if(!routeActive()||root.closest(".view")?.hidden||state.busy||
+      createButton.disabled||document.querySelector("dialog[open]"))return;
+   const target=event.target;
+   if(target instanceof Element&&
+      target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+   event.preventDefault();
+   openForm("create");
+ },{capture:true});
  $("cs-form").addEventListener("submit",event=>void saveForm(event));
  $("cs-form-cancel").addEventListener("click",editClose);
  $("cs-delete-open").addEventListener("click",beginDelete);
