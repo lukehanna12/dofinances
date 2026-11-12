@@ -124,7 +124,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   assert.ok(!css.includes(".cs-utility-route{"),"Capsule styling must be removed");
   assert.ok(css.includes('height:calc(clamp(12px,1.2vw,14.4px) + 11.2px)'));
   assert.ok(css.includes('height:calc(clamp(12px,1.2vw,14.4px) + 8px)'));
-  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain/);
+  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;align-self:center;object-fit:contain/);
   // The desktop and compact/mobile values are exactly 80% of the old size.
   for(const [previous,reduced] of [[15,12],[18,14.4],[14,11.2],[10,8]])
     assert.ok(Math.abs(reduced/previous-.8)<1e-10);
@@ -153,7 +153,7 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   // Route is selected from a fixed allowlist before adding the variant class.
   assert.match(js,/Object\.hasOwn\(COLLECTION_ROUTE_ICONS,routes\)/);
   assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" src='));
-  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain/);
+  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;align-self:center;object-fit:contain/);
 });
 
 test("Collections API session expiry exposes safe owner-only reauthorization",()=>{
@@ -773,4 +773,60 @@ test("Collection Edit and Select cannot overlap, selected rows survive paginatio
  assert.ok(exit.includes('root.classList.add("cs-leaving-selection")'));
  assert.ok(exit.includes('root.classList.remove("cs-leaving-selection")'));
  assert.ok(!exit.includes('request('),"Done should never submit selection to server");
+});
+
+
+test("Utility icon centers share the exact External SVG-derived right-side reference axis",()=>{
+ const external=src("sites/_apex/app/assets/external-provider.v1.svg");
+ const match=external.match(/viewBox="([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)"/);
+ assert.ok(match,"External route SVG must preserve its intrinsic viewBox");
+ const [, , , width,height]=match.map(Number);
+ const referenceRatio=width/height;
+ assert.ok(Math.abs(referenceRatio-1.19330855)<1e-7,"Slot must derive from External viewBox, not an estimated optical offset");
+ const slotStart=css.indexOf("#cs-root .cs-utility-route-slot{");
+ assert.ok(slotStart>=0,"Shared reference slot must exist");
+ const slot=css.slice(slotStart,css.indexOf("}",slotStart)+1);
+ assert.ok(slot.includes("--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)"));
+ assert.ok(slot.includes("width:calc(var(--cs-ported-route-height) * 1.19330855)"));
+ assert.ok(slot.includes("justify-content:center"));
+ assert.ok(slot.includes("align-items:center"));
+ assert.ok(slot.includes("flex:none;margin-left:auto;align-self:center"));
+ assert.ok(css.includes("#cs-root .cs-utility-route-slot{--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}"),"Mobile reference width must follow smaller External height");
+ assert.ok(js.includes('<span class="cs-utility-route-slot"><img class="cs-utility-route-icon'),"Every SVG must be centered inside the SAME slot");
+ assert.ok(css.includes("#cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}"),"Desktop external retains its original pixel size");
+ for(const route of ["cloud","direct","local","ported"]){
+   assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
+ }
+});
+test("Select button has the same subtle bounding-box hover glow as Edit",()=>{
+ const edit=css.slice(css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"))+1);
+ const select=css.slice(css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"))+1);
+ assert.ok(edit.includes("background:rgba(255,255,255,.065);color:#fff"));
+ assert.ok(select.includes("background:rgba(255,255,255,.065);color:#fff"));
+ assert.ok(css.includes("border-radius:10px;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,background-color .15s ease"));
+});
+test("Add, Edit, Select live inside the reconstructed ChatGPT composer background shell only",()=>{
+ const start=html.indexOf('<div class="cs-control-center" role="group" aria-label="Collection controls">');
+ assert.ok(start>0,"Expected self-contained control center");
+ const end=html.indexOf("</div>",start);
+ assert.ok(end>start);
+ const inside=html.slice(start,end);
+ for(const id of ['id="cs-create"','id="cs-edit"','id="cs-select-collections"'])
+   assert.ok(inside.includes(id),"Must wrap "+id);
+ assert.ok(!inside.includes('id="cs-refresh"'),"Refresh must remain outside the composer-like group");
+ assert.ok(html.indexOf('id="cs-refresh"')>end);
+ const styleStart=css.indexOf("#cs-root .cs-control-center{");
+ assert.ok(styleStart>0);
+ const block=css.slice(styleStart,css.indexOf("}",styleStart)+1);
+ assert.ok(block.includes("background:#303030"),"Source-guided reconstruction fill");
+ assert.ok(block.includes("border:1px solid rgba(255,255,255,.065)"),"Subtle thin outline");
+ assert.ok(block.includes("border-radius:28px"),"Reconstructed composer corner radius");
+ assert.ok(block.includes("box-shadow:0 1px 2px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.015)"),"Both outer and inset shadow components");
+ assert.ok(block.includes("padding:7px 8px 8px"),"Composer reference inset");
+ assert.ok(block.includes("width:max-content"),"Do not stretch controls across the window");
+ assert.ok(css.includes("#cs-root .cs-control-center:hover{border-color:rgba(255,255,255,.09)}"));
+ assert.ok(css.includes("#cs-root .cs-control-center:focus-within{border-color:rgba(255,255,255,.115)}"));
+ for(const name of ["cs-create-control","cs-edit-control","cs-select-control"])
+   assert.ok(css.includes(".cs-control-center > ."+name),"Existing 16px per-button top offsets must not split the shell");
+ assert.ok(css.includes("estimates, NOT live ChatGPT computed-style measurements"),"Do not mislabel recovered estimates as pixel-exact styles");
 });
