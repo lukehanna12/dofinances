@@ -50,66 +50,38 @@ test("scroll animation remains attached to current breadcrumb, not the upper glo
   assert.ok(nav.includes("if(route)render(route)"));
 });
 
-test("animation accelerates throughout first 93% and decelerates throughout final 7%",()=>{
+test("fast ease-out returns large distances to top in well under 300ms",()=>{
   assert.equal(topScrollEase(0),0);
-  assert.equal(topScrollEase(.93),.93,"Both the elapsed time AND distance breakpoint are exactly 93%");
   assert.equal(topScrollEase(1),1);
   assert.equal(topScrollEase(-1),0);
-  assert.equal(topScrollEase(3),1);
-  // Sample the derivative to verify there is no uniform-speed middle.
-  const v=t=>(topScrollEase(t+.00005)-topScrollEase(t-.00005))/.0001;
-  for(let i=1;i<93;i++){
-    const left=v((i-1)/100),right=v(i/100);
-    assert.ok(right>left+1e-7,"Speed must increase on every acceleration sample at "+i+"%");
-  }
-  for(let i=94;i<100;i++){
-    const left=v((i-1)/100),right=v(i/100);
-    assert.ok(right<left-1e-7,"Speed must decrease on every braking sample at "+i+"%");
-  }
-  assert.ok(v(.10)<v(.50)*.55,"No near-constant speed before halfway");
-  assert.ok(v(.50)<v(.80),"Speed still increasing near the end of the 93% phase");
-  assert.ok(v(.94)>v(.97)&&v(.97)>v(.99),"Final 7% has distinctly diminishing velocity");
-  assert.ok(v(.999)<v(.98)*.02,"Arrives gently at practically zero speed");
-  assert.ok(v(0)<.01&&v(1)<.01,"Zero endpoint velocity");
-  for(let i=0;i<1000;i++){
-    const a=topScrollEase(i/1000),b=topScrollEase((i+1)/1000);
-    assert.ok(Number.isFinite(a)&&b>a&&b<=1,"Strictly increasing position without overshoot");
-  }
-  // The phases must meet without a jump in position, speed, or acceleration.
-  const h=.00001;
-  assert.ok(Math.abs(topScrollEase(.93-h)-topScrollEase(.93+h)+2*h*v(.93))<1e-8);
-  assert.ok(Math.abs(topScrollEase(.93-h)+topScrollEase(.93+h)-2*topScrollEase(.93))<1e-8);
+  assert.equal(topScrollEase(2),1);
+  assert.ok(topScrollEase(.25)>.55,"One quarter of the time should cover over half the distance");
+  assert.ok(topScrollEase(.5)>.85,"Midpoint should be close to the top");
+  assert.ok(topScrollEase(.9)>.999-1e-9,"Last frames settle gently");
+  assert.ok(topScrollEase(.99)<1,"No premature snap to zero");
+  for(let i=0;i<1000;i++)
+    assert.ok(topScrollEase((i+1)/1000)>=topScrollEase(i/1000),"Movement never reverses");
+
+  const short=topScrollDuration(100,800);
+  const medium=topScrollDuration(2200,800);
+  const long=topScrollDuration(24000,800);
+  assert.ok(short>=170&&short<medium&&medium<=long&&long<=260,
+    "Distance-aware duration must remain brief, including long pages");
 });
 
-test("distance-adjusted duration provides rendered frames for the 7% final brake",()=>{
-  const height=820;
-  const short=topScrollDuration(100,height);
-  const medium=topScrollDuration(2000,height);
-  const long=topScrollDuration(24000,height);
-  assert.ok(short>=380&&short<medium&&medium<long&&long<=1700);
-  assert.ok(medium*.07>=60,"Common multi-viewport travel gives about four 60Hz braking frames");
-  assert.ok(long*.07>=100,"Long distances reserve at least six 60Hz braking frames");
-});
-
-test("actual RAF trajectory continuously gains speed before 93% then loses it over the last 7%",()=>{
+test("fast actual RAF run travels decisively from the first frame and lands at exactly zero",()=>{
   const h=harness(8000);
-  const duration=topScrollDuration(8000,800);
-  const steps=[];
   h.controller.animateToTop();
+  const first=h.step();
+  assert.ok(first<7200,"First rendered frame starts moving immediately");
+  let frames=1;
   while(h.frames.size){
-    steps.push(h.step(1000/120));
-    assert.ok(steps.length<300,"Stops after one bounded animation");
+    h.step();
+    frames++;
+    assert.ok(frames<20,"Even deep scroll positions should finish in fewer than 20 frames at 60Hz");
   }
   assert.equal(h.root.scrollTop,0);
-  const displacement=(a,b)=>topScrollEase(b)-topScrollEase(a);
-  assert.ok(displacement(.50,.60)>displacement(.20,.30)*1.4,
-    "Mid-run moves much faster than the early acceleration phase");
-  assert.ok(displacement(.82,.92)>displacement(.60,.70),
-    "Near the end of the first 93% still accelerating");
-  assert.ok(displacement(.93,.95)>displacement(.98,1)*3,
-    "Last 7% contains clearly visible braking before zero-velocity landing");
-  assert.equal(topScrollEase(.93),.93);
-  assert.ok(duration*.07>=70,"Long return-to-top has multiple visible braking frames");
+  assert.equal(h.frames.size,0);
 });
 
 test("RAF scroll is visually smooth, starts on the next frame, and lands exactly at the document top",()=>{
@@ -130,11 +102,11 @@ test("RAF scroll is visually smooth, starts on the next frame, and lands exactly
 test("user scroll impulse visibly changes the position mid-flight but is naturally outweighed by the landing",()=>{
   const plain=harness(3800),interrupted=harness(3800);
   plain.controller.animateToTop();interrupted.controller.animateToTop();
-  for(let i=0;i<13;i++){plain.step();interrupted.step();}
+  for(let i=0;i<3;i++){plain.step();interrupted.step();}
   interrupted.root.scrollTop+=190; // Browser wheel/touch displacement occurs between frames.
   const expected=plain.step(),adjusted=interrupted.step();
   assert.ok(adjusted>expected+35,"Actual user scroll must affect the animation, not be immediately discarded");
-  for(let i=0;i<12;i++){plain.step();interrupted.step();}
+  for(let i=0;i<3;i++){plain.step();interrupted.step();}
   const residual=interrupted.root.scrollTop-plain.root.scrollTop;
   assert.ok(residual<adjusted-expected,"Interruption fades instead of permanently changing the target");
   assert.equal(interrupted.complete(),0,"Animation defeats intervening manual scrolling");
@@ -144,16 +116,16 @@ test("user scroll impulse visibly changes the position mid-flight but is natural
 test("upward manual scrolling is also honored transiently without cancelling final arrival",()=>{
   const plain=harness(4200),interrupted=harness(4200);
   plain.controller.animateToTop();interrupted.controller.animateToTop();
-  for(let i=0;i<12;i++){plain.step();interrupted.step();}
+  for(let i=0;i<3;i++){plain.step();interrupted.step();}
   interrupted.root.scrollTop-=170;
   const reference=plain.step(),result=interrupted.step();
   assert.ok(result<reference-35,"Upward manual input should temporarily advance the trajectory");
   assert.equal(interrupted.complete(),0);
 });
 
-test("late user interruption is damped and cannot dislodge the guaranteed top landing",()=>{
+test("a late scroll impulse cannot prevent arrival at the top",()=>{
   const h=harness(5000);h.controller.animateToTop();
-  const approachFrames=Math.floor(.78*topScrollDuration(5000,800)/16.667);
+  const approachFrames=Math.floor(.75*topScrollDuration(5000,800)/16.667);
   for(let i=0;i<approachFrames;i++)h.step();
   h.root.scrollTop+=250;
   h.step();

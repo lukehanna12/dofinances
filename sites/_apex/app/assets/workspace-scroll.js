@@ -6,43 +6,18 @@
  * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
  * boundary gestures, including Safari rubber-banding, while deliberately
  * allowing the left-edge browser-history back gesture (rightward swipe). */
-/* Precisely requested trajectory: accelerating through 93% of elapsed
- * time AND travel distance, then decelerating through the last 7%.
- *
- * Each phase defines velocity, not position. The velocity increases strictly
- * until t=.93, and decreases strictly thereafter. Integrating analytically
- * yields a continuous position, velocity and acceleration (C2) at the join.
- * Both endpoints have zero speed; there is no cruising/constant-speed phase.
- * The small zero-area shaping term gives immediate perceptible acceleration
- * without changing the exact 93:7 distance partition.
- *
- * Normalized rising velocity:
- *   3u²-2u³ + 2u(1-u)²(.4-u)
- * Normalized falling velocity:
- *   1-(3u²-2u³)
- * Both have area .5 and meet at velocity 1 with zero acceleration. */
-const TOP_BRAKE_AT=.93;
-const TOP_BRAKE_REMAINDER=1-TOP_BRAKE_AT;
-const smoothstep=u=>u*u*(3-2*u);
-const smoothstepIntegral=u=>u*u*u*(1-u/2);
+/* Fast, direct return-to-top: quick ease-out instead of the previous
+ * prolonged 93/7 trajectory. No long accelerating/cruising interval. */
+const smoothstep=t=>t*t*(3-2*t);
 export function topScrollEase(progress){
   const t=Math.max(0,Math.min(1,Number(progress)||0));
-  if(t===0||t===1)return t;
-  if(t<=TOP_BRAKE_AT){
-    const u=t/TOP_BRAKE_AT;
-    const remaining=1-u;
-    const risingArea=smoothstepIntegral(u)+.4*u*u*remaining*remaining*remaining;
-    return 2*TOP_BRAKE_AT*risingArea;
-  }
-  const u=(t-TOP_BRAKE_AT)/TOP_BRAKE_REMAINDER;
-  const fallingArea=u-smoothstepIntegral(u);
-  return TOP_BRAKE_AT+2*TOP_BRAKE_REMAINDER*fallingArea;
+  return 1-(1-t)**3;
 }
 export function topScrollDuration(distance,viewportHeight){
   const screens=Math.max(0,Number(distance)||0)/Math.max(1,Number(viewportHeight)||768);
-  // Keep the 7% braking interval visible at normal refresh rates (roughly
-  // 60-120ms on typical page distances) without sacrificing click latency.
-  return Math.round(Math.min(1700,Math.max(380,380+320*Math.sqrt(screens))));
+  // Around 180-260 ms: distant pages move faster instead of scrolling
+  // for more than a second. Still slightly adapts to viewport distance.
+  return Math.round(Math.min(260,Math.max(170,170+28*Math.sqrt(screens))));
 }
 
 export function initWorkspaceScroll(doc=document,win=window) {
@@ -129,8 +104,8 @@ export function initWorkspaceScroll(doc=document,win=window) {
         animation.disturbance=Math.max(-limit,Math.min(limit,animation.disturbance+userDelta));
       }
       animation.disturbance*=Math.exp(-dt/180);
-      // Keep manual-scroll disturbance damping independent from the 93/7
-      // travel curve, so its influence always vanishes gently on arrival.
+      // Preserve a temporary manual-scroll displacement; its influence
+      // disappears before the quick ease-out completes.
       const release=1-smoothstep(Math.max(0,Math.min(1,(t-.62)/.38)));
       const position=Math.max(0,Math.min(maxY(),
         startY*(1-topScrollEase(t))+animation.disturbance*release));
