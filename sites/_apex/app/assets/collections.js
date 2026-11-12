@@ -45,6 +45,12 @@ export function collectionInlineNameWidth(textWidth,availableWidth){
   const available=Math.max(24,Number(availableWidth)||24);
   return Math.min(Math.max(24,available-26),Math.max(24,Math.ceil((Number(textWidth)||0)+10)));
 }
+// Only names that differ after the same normalization used by Done count
+// as changes: adding/removing meaningless spacing does not show a checkmark.
+export function collectionInlineNameChanged(initial,draft){
+  const canonical=value=>String(value??"").normalize("NFKC").trim().replace(/\s+/gu," ");
+  return canonical(initial)!==canonical(draft);
+}
 const EYE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.6-6.2 9.5-6.2 9.5 6.2 9.5 6.2-3.6 6.2-9.5 6.2S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>';
 const EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10 5.9a10.6 10.6 0 0 1 2-.2c5.9 0 9.5 6.3 9.5 6.3a16.8 16.8 0 0 1-2.8 3.2M6.1 7.4C3.8 9.2 2.5 12 2.5 12s3.6 6.3 9.5 6.3c1.1 0 2.2-.2 3.1-.6M10 10a2.8 2.8 0 0 0 3.8 3.8"/></svg>';
 const FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></svg>';
@@ -538,13 +544,12 @@ export function initColosseumCollections(){
      collectionInlineNameWidth(measure.getBoundingClientRect().width,
        field.clientWidth-(reserved-26))+"px");
  }
- const canonicalInlineName=value=>String(value??"").normalize("NFKC").trim().replace(/\s+/gu," ");
  function syncInlineRenameActions(field){
    if(!field||!state.renamingId)return;
    const input=field.querySelector(".cs-inline-name");
    const confirm=field.querySelector(".cs-name-confirm");
    if(!input||!confirm)return;
-   const changed=canonicalInlineName(input.value)!==canonicalInlineName(state.renameInitialValue);
+   const changed=collectionInlineNameChanged(state.renameInitialValue,input.value);
    field.classList.toggle("cs-name-changed",changed);
    confirm.hidden=!changed;
    sizeInlineName(field);
