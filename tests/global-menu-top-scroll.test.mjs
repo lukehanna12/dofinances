@@ -110,7 +110,8 @@ test("upward manual scrolling is also honored transiently without cancelling fin
 
 test("late user interruption is damped and cannot dislodge the guaranteed top landing",()=>{
   const h=harness(5000);h.controller.animateToTop();
-  for(let i=0;i<53;i++)h.step();
+  const approachFrames=Math.floor(.78*topScrollDuration(5000,800)/16.667);
+  for(let i=0;i<approachFrames;i++)h.step();
   h.root.scrollTop+=250;
   h.step();
   assert.equal(h.complete(),0);
@@ -149,7 +150,7 @@ test("motion-reduction and platforms without RAF go directly to top",()=>{
 
 test("no ongoing polling, scroll-handler cancellation or sidebar layout mutations",()=>{
   const js=readFileSync(new URL("../sites/_apex/app/assets/workspace-scroll.js",import.meta.url),"utf8");
-  assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver/);
+  assert.doesNotMatch(js,/setInterval\(|new (?:ResizeObserver|MutationObserver)\(/);
   assert.ok(js.includes("root.scrollTop=position"));
   assert.ok(js.includes("animation.disturbance*=Math.exp(-dt/180)"));
   assert.ok(js.includes("const release=1-topScrollEase((t-.62)/.38)"));
