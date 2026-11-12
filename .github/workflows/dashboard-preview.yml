@@ -99,6 +99,38 @@ jobs:
           ! grep -Fq 'preview-bootstrap.js' dist/index.html
           echo 'Standalone, read-only Dashboard preview verified'
 
+      - name: Browser smoke — live optical filter and unchanged mosaic
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo 'No Chrome executable on GitHub runner; cannot certify SVG backdrop support'
+            exit 1
+          fi
+          python3 -m http.server 8765 --directory dist >/tmp/dashboard-preview-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          "$CHROME" --headless --no-sandbox --enable-unsafe-swiftshader --disable-dev-shm-usage \
+            --window-size=1440,900 --virtual-time-budget=15000 --dump-dom \
+            http://127.0.0.1:8765/ >/tmp/dashboard-preview-live-dom.html \
+            2>/tmp/dashboard-preview-chrome-stderr.log || {
+              tail -80 /tmp/dashboard-preview-chrome-stderr.log
+              exit 1
+            }
+          grep -Fq 'cta6-tile--glass' /tmp/dashboard-preview-live-dom.html
+          grep -Fq 'dashboard-optics.js' /tmp/dashboard-preview-live-dom.html
+          ! grep -Fq 'id="workspace-sidebar"' /tmp/dashboard-preview-live-dom.html
+          # A decoded geometry-only filter sets this marker only after all
+          # three per-pane field maps commit to the live SVG backdrop filter.
+          grep -Fq 'data-oracle-optical-mode="live-backdrop"' /tmp/dashboard-preview-live-dom.html || {
+            echo 'Browser did not activate the live optical filter'
+            tail -35 /tmp/dashboard-preview-chrome-stderr.log
+            exit 1
+          }
+          echo 'Live SVG backdrop filter active; source-field geometry and no-sidebar verified'
+
       - name: Deploy preview branch to distinct Pages URL
         uses: cloudflare/wrangler-action@v4
         with:
