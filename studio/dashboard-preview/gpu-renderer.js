@@ -147,7 +147,8 @@ async function initialize(){
   if(!photoWidth||!photoHeight)throw new Error("Empty decoded backdrop");
   const photo=device.createTexture({
     size:[photoWidth,photoHeight,1],format:"rgba8unorm",
-    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST
+    usage:GPUTextureUsage.TEXTURE_BINDING|
+          GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT
   });
   if(root)root.dataset.gpuPhase="upload-scene-image";
   try{
