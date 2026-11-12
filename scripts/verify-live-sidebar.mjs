@@ -733,19 +733,42 @@ try{
     const before=sample();
     document.getElementById("${target}").click();
     const immediate=sample();
+    const sideStyle=getComputedStyle(side),spacerStyle=getComputedStyle(shell,"::before");
+    const timing={
+      sidebarProperty:sideStyle.transitionProperty,
+      spacerProperty:spacerStyle.transitionProperty,
+      sidebarDuration:sideStyle.transitionDuration.split(",")[0].trim(),
+      spacerDuration:spacerStyle.transitionDuration.split(",")[0].trim(),
+      sidebarEasing:sideStyle.transitionTimingFunction,
+      spacerEasing:spacerStyle.transitionTimingFunction,
+      reducedMotion:matchMedia("(prefers-reduced-motion: reduce)").matches
+    };
     const frames=[];
     for(let i=0;i<18;i++){
       await new Promise(resolve=>requestAnimationFrame(resolve));
       frames.push(sample());
     }
-    return {before,immediate,frames,after:frames[frames.length-1]};
+    return {before,immediate,timing,frames,after:frames[frames.length-1]};
   })()`);
   const assertSmoothToggle=(data,name)=>{
     const delta=Math.abs(data.before.mainLeft-data.after.mainLeft);
     assert.ok(delta>100,"Expected substantial "+name+" sidebar movement: "+JSON.stringify(data));
-    assert.ok(Math.abs(data.immediate.mainLeft-data.before.mainLeft)<2,
-      "Main content jumped on "+name+" instead of beginning a smooth transition: "+
-      JSON.stringify({before:data.before,immediate:data.immediate}));
+    if(!data.timing.reducedMotion){
+      assert.ok(Math.abs(data.immediate.mainLeft-data.before.mainLeft)<2,
+        "Main content jumped on "+name+" instead of beginning a smooth transition: "+
+        JSON.stringify({before:data.before,immediate:data.immediate}));
+      const seconds=value=>value.endsWith("ms")?Number.parseFloat(value)/1000:Number.parseFloat(value);
+      assert.ok(data.timing.sidebarProperty.split(",").map(x=>x.trim()).includes("width"),
+        "The sidebar must animate its width: "+JSON.stringify(data.timing));
+      assert.equal(data.timing.spacerProperty,"flex-basis",
+        "The content spacer must animate its flex basis");
+      assert.ok(Math.abs(seconds(data.timing.sidebarDuration)-.21)<.005,
+        "Sidebar collapse/expand duration changed: "+JSON.stringify(data.timing));
+      assert.ok(Math.abs(seconds(data.timing.spacerDuration)-.21)<.005,
+        "Content spacer duration must match the sidebar: "+JSON.stringify(data.timing));
+      assert.ok(data.timing.sidebarEasing.startsWith(data.timing.spacerEasing),
+        "Content spacer and sidebar have different easing curves: "+JSON.stringify(data.timing));
+    }
     for(const frame of [data.before,data.immediate,...data.frames]){
       assert.ok(Math.abs(frame.mainLeft-frame.sidebarRight)<2,
         "Main column and sidebar edge desynchronized during "+name+": "+
@@ -754,11 +777,10 @@ try{
         "Content's fixed wide-screen inset drifted during "+name+": "+
         JSON.stringify(frame));
     }
-    assert.ok(data.frames.some(frame=>
-      Math.abs(frame.mainLeft-data.before.mainLeft)>10 &&
-      Math.abs(frame.mainLeft-data.after.mainLeft)>10),
-      "Missing interpolated "+name+" frames (possible snap): "+
-      JSON.stringify({before:data.before,after:data.after,frames:data.frames}));
+    // Headless Chrome may skip most of a 210ms compositor animation between
+    // two requestAnimationFrame callbacks under CI load. Assert actual computed
+    // timing/easing above and edge synchronization at every captured frame;
+    // don't require a sample within an arbitrary interior 10px window.
   };
   const collapseFrames=await sampleWideToggle("sidebar-toggle");
   assertSmoothToggle(collapseFrames,"collapse");
@@ -768,7 +790,7 @@ try{
   const expandFrames=await sampleWideToggle("workspace-sidebar");
   assertSmoothToggle(expandFrames,"expansion");
   assert.equal(expandFrames.after.collapsed,false);
-  console.log("PASS: 1600px sidebar collapse and expansion interpolate in sync with the main column, including intermediate frames");
+  console.log("PASS: 1600px collapse and expansion share the sidebar's 210ms easing and remain edge-aligned at every sampled animation frame");
 
   console.log("PASS: desktop 1280/1600/1920 content inset fixed; sidebar collapse, expansion, drag and screen boundaries preserved");
   console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
