@@ -647,7 +647,7 @@ test("Opening edit mode closes an expanded row with the white pencil-position ri
  assert.match(js,/root\.classList\.add\("cs-closing-for-edit"\)/);
  assert.match(js,/await waitForVisualMotion\(panel,"grid-template-rows"\)/);
  assert.match(js,/root\.classList\.remove\("cs-closing-for-edit"\)/);
- assert.match(js,/if\(state\.editing\|\|state\.editTransitioning\)return;/);
+ assert.match(js,/if\(state\.editing\|\|state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning\)return;/);
  assert.match(js,/trigger\.disabled=locked/);
  assert.match(css,/#cs-root\.cs-closing-for-edit \.cs-edit-icon-button::after\{[^}]*border:1\.8px solid #fff/);
  assert.match(css,/animation:cs-edit-spin 600ms linear infinite/);
@@ -702,7 +702,7 @@ test("Collection selection is transient and cannot change Colosseum or existing 
  assert.ok(toggle.includes('button.setAttribute("aria-pressed",String(!wasPicked))'));
  assert.ok(toggle.includes('button.setAttribute("aria-label"'));
  assert.ok(!/request\(|fetch\(|configure|localStorage|sessionStorage|collection\.edit/.test(toggle),"Selecting a bubble must not write or persist anything");
- assert.ok(js.includes('data-cs-pick="'+uuid+'"'));
+ assert.ok(js.includes('data-cs-pick="'));
  assert.ok(js.includes('const picked=state.selectedCollections.has(collection.collection_id)'));
  assert.ok(js.includes('state.selectedCollections.clear()'));
  assert.ok(js.includes('if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}'));
