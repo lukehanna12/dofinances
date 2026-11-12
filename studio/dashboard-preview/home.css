@@ -258,3 +258,70 @@ body:has(> #workspace-shell .dashboard-home) > .workspace-footer::after{
     bottom:15px!important;
   }
 }
+
+
+/* Preview-only tile material transfer. Plain squares inherit the exact old
+   icon-square fill/border/shadow; icon squares inherit the sidebar's glass pane
+   recipe, resized for tiles rather than the 260px / 774px oracle geometry. */
+.dashboard-home .cta6-tile--plain{
+  background:rgba(21,26,32,.77);
+  border-color:rgba(247,250,252,.16);
+  box-shadow:0 4px 18px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.055);
+}
+.dashboard-home .cta6-tile--icon{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  /* Sidebar fallback: --glass-pane, 6.4px backdrop blur and edge optics. */
+  background:rgba(22,23,25,.13);
+  border:1px solid rgba(255,255,255,.21);
+  -webkit-backdrop-filter:blur(6.4px);
+  backdrop-filter:blur(6.4px);
+  box-shadow:
+    inset -1px 0 rgba(255,255,255,.10),
+    10px 0 27px rgba(0,0,0,.19),
+    0 0 1px rgba(255,255,255,.12);
+}
+.dashboard-home .cta6-tile--icon::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(90deg,rgba(255,255,255,.028),transparent 18%,transparent 91%,rgba(255,255,255,.08));
+  box-shadow:inset -1px 0 rgba(255,255,255,.07);
+}
+.dashboard-home .cta6-tile--icon .cta6-icon{
+  position:relative;
+  z-index:1;
+  color:#000;
+  stroke:#000;
+}
+/* The now-absent sidebar cannot keep a flex rail gap, resize target,
+   mobile drawer, or phantom left offset. Never change these shared CSS files. */
+body:has(> #workspace-shell .dashboard-home) #workspace-shell::before{
+  content:none!important;
+  display:none!important;
+  flex-basis:0!important;
+}
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .main{
+  flex:1 1 auto;
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+body:has(> #workspace-shell .dashboard-home){
+  --workspace-wallpaper-image:url("/app/assets/home-rice-terraces-hq.jpg");
+  --workspace-wallpaper-position:center center;
+}
+@media(prefers-reduced-transparency:reduce){
+  .dashboard-home .cta6-tile--icon{
+    background:rgba(226,230,232,.85);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .dashboard-home .cta6-tile--icon{background:rgba(223,227,230,.78)}
+}

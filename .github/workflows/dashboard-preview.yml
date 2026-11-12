@@ -37,8 +37,7 @@ jobs:
             dashboard.css workspace-theme.css sidebar-glass.css \
             workspace-wallpapers.css workspace-enhancements.css \
             diagnostics.css providers.css \
-            workspace-nav.js workspace-scroll.js workspace-wallpapers.js \
-            sidebar-glass.js sidebar-glass-oracle.js sidebar-glass-field-worker.js \
+            workspace-scroll.js workspace-wallpapers.js \
             magnifying-glass.v2.svg dashboard-screen-sidebar-icon.v1.svg \
             collections-screen-sidebar-icon.v1.svg settings-screen-sidebar-icon.v1.svg \
             home-rice-terraces-hq.jpg; do
@@ -56,19 +55,23 @@ jobs:
           test -s dist/app/assets/dashboard-preview.js
           test -s dist/app/assets/dashboard-home.css
           test -s dist/app/assets/dashboard-mosaic.js
-          test -s dist/app/assets/sidebar-glass.js
-          test -s dist/app/assets/sidebar-glass-oracle.js
-          test -s dist/app/assets/sidebar-glass-field-worker.js
           grep -Fq 'data-view="home"' dist/index.html
           grep -Fq 'id="cta6-mosaic"' dist/index.html
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
           grep -Fq 'positionIcons' dist/app/assets/dashboard-mosaic.js
-          grep -Fq 'id="sidebar-resize-handle"' dist/index.html
+          ! grep -Fq 'id="workspace-sidebar"' dist/index.html
+          ! grep -Fq 'id="sidebar-resize-handle"' dist/index.html
+          ! grep -Fq 'id="mobile-nav-toggle"' dist/index.html
+          grep -Fq 'rgba(21,26,32,.77)' dist/app/assets/dashboard-home.css
+          grep -Fq 'backdrop-filter:blur(6.4px)' dist/app/assets/dashboard-home.css
+          grep -Fq 'color:#000' dist/app/assets/dashboard-home.css
+          ! grep -Fq 'initLiquidGlassSidebar' dist/app/assets/dashboard-preview.js
+          ! grep -Fq 'initWorkspaceNavigation' dist/app/assets/dashboard-preview.js
+          node --check dist/app/assets/dashboard-preview.js
+          node --check dist/app/assets/dashboard-mosaic.js
           grep -Fq 'dashboard-preview.js' dist/index.html
-          grep -Fq 'initWorkspaceNavigation()' dist/app/assets/dashboard-preview.js
-          grep -Fq 'initLiquidGlassSidebar()' dist/app/assets/dashboard-preview.js
           test ! -e dist/app/assets/dashboard.js
           test ! -e dist/app/assets/collections.js
           test ! -e dist/app/assets/permissions.js

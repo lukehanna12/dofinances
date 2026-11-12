@@ -1,10 +1,6 @@
-/* Dashboard-only, production-fidelity static preview.
- * Shares the exact production sidebar navigation, resize and glass modules,
- * but prevents all page navigation and protected account operations.
- * Never copy authenticated dashboard.js or protected controller modules here.
- */
-import {initWorkspaceNavigation} from "./workspace-nav.js";
-import {initLiquidGlassSidebar} from "./sidebar-glass.js";
+/* Dashboard-only public static preview. Keep existing top bars and the
+ * standalone 0001c1 mosaic, without sidebar routing or oracle workers.
+ * No account/authenticated controller modules are loaded. */
 
 const HOME_HASH="#home";
 if(location.hash && location.hash!==HOME_HASH)
@@ -36,8 +32,9 @@ window.addEventListener("hashchange",()=>{
     history.replaceState(history.state,"",location.pathname+location.search+HOME_HASH);
 },true);
 
-initWorkspaceNavigation();
-window.__dashboardPreviewGlass=initLiquidGlassSidebar();
+// Preserve the existing topbar glass CSS without mounting the sidebar oracle.
+document.getElementById("workspace-shell")?.classList.add("liquid-glass-preview");
+document.body.dataset.wallpaperRoute="home";
 document.title="Dashboard Preview · DoFinances";
 // The public preview has no authenticated account; never show a fake loading state.
 for(const id of ["account-email","account-email-detail"]){
@@ -54,11 +51,10 @@ for(const form of document.querySelectorAll("form")){
   }
 }
 const sidebarControls=new Set([
-  "sidebar-toggle","mobile-nav-toggle","global-menu-toggle",
-  "global-search-toggle","clock-custom-apply"
+  "global-menu-toggle","global-search-toggle","clock-custom-apply"
 ]);
 for(const button of document.querySelectorAll("button")){
-  if(sidebarControls.has(button.id)||button.closest("#workspace-sidebar"))continue;
+  if(sidebarControls.has(button.id))continue;
   button.disabled=true;
   button.setAttribute("aria-description","Not available in this static Dashboard preview");
 }
