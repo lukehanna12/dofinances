@@ -73,7 +73,7 @@ jobs:
           node --check dist/app/assets/sidebar-glass-oracle.js
           # Node's module default varies by runner; mark this test-only
           # directory as ESM, then remove the marker before Pages deployment.
-          printf '{"type":"module"}\\n' > dist/app/assets/package.json
+          echo '{"type":"module"}' > dist/app/assets/package.json
           node --test dist/app/assets/dashboard-optics.test.mjs
           rm dist/app/assets/package.json
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
