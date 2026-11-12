@@ -329,10 +329,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-inline-name:hover{border-bottom-color:#aaa}
 #cs-root .cs-inline-name:focus{border-bottom-color:#fff;outline:0}
 #cs-root .cs-inline-name:focus-visible{outline:0;border-bottom:1px solid #fff}
-/* The grip finishes INSIDE the inset list's right edge, where the
-   ordinary chevron sits. It enters from just beyond that edge and
-   recedes left on exit. The existing synchronized 480ms transition
-   and the chevron's opposite sweep are otherwise unchanged. */
+/* Both controls remain anchored at the RIGHT EDGE of the inset list.
+   On either mode transition, each fades while moving only 20px;
+   transforms avoid layout changes and preserve 480ms synchronization. */
 #cs-root .cs-drag-handle{
  position:absolute;z-index:6;top:50%;left:calc(100% - 22px);
  display:grid;place-items:center;width:22px;height:30px;padding:0;border:0;
@@ -357,29 +356,28 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-visibility-toggle svg{width:16px;height:16px;pointer-events:none}
 #cs-root .cs-visibility-toggle:hover{background:#262626;color:#fff}
 #cs-root .cs-visibility-toggle[aria-pressed="true"]{color:#8c8c8c}
-/* Entry and exit are intentionally asymmetric: during entry the chevron
-   exits LEFT while the grip travels from the list RIGHT to its LEFT edge.
-   During exit the grip continues LEFT and the chevron returns from RIGHT. */
-#cs-root.cs-editing .cs-chevron{opacity:0;right:calc(100% - 14px)}
+/* Grip enters from +20px and leaves at -20px relative to the RIGHT
+   edge; the chevron reciprocates locally instead of crossing the list. */
+#cs-root.cs-editing .cs-chevron{opacity:0;right:0;transform:translate(-20px,-50%)}
 #cs-root.cs-entering-edit .cs-drag-handle{animation:cs-grip-enter-right var(--cs-control-swap) var(--cs-control-ease) both}
 #cs-root.cs-entering-edit .cs-chevron{animation:cs-chevron-exit-left var(--cs-control-swap) var(--cs-control-ease) both}
 #cs-root.cs-leaving-edit .cs-drag-handle{animation:cs-grip-exit-left var(--cs-control-swap) var(--cs-control-ease) both}
 #cs-root.cs-leaving-edit .cs-chevron{animation:cs-chevron-enter-right var(--cs-control-swap) var(--cs-control-ease) both}
 @keyframes cs-grip-enter-right{
- from{left:calc(100% + 18px);opacity:0}
- to{left:calc(100% - 22px);opacity:1}
+ from{transform:translate(20px,-50%);opacity:0}
+ to{transform:translate(0,-50%);opacity:1}
 }
 @keyframes cs-chevron-exit-left{
- from{right:0;opacity:1}
- to{right:calc(100% - 14px);opacity:0}
+ from{transform:translate(0,-50%);opacity:1}
+ to{transform:translate(-20px,-50%);opacity:0}
 }
 @keyframes cs-grip-exit-left{
- from{left:calc(100% - 22px);opacity:1}
- to{left:-22px;opacity:0}
+ from{transform:translate(0,-50%);opacity:1}
+ to{transform:translate(-20px,-50%);opacity:0}
 }
 @keyframes cs-chevron-enter-right{
- from{right:-22px;opacity:0}
- to{right:0;opacity:1}
+ from{transform:translate(20px,-50%);opacity:0}
+ to{transform:translate(0,-50%);opacity:1}
 }
 #cs-root .cs-entry.cs-dragging{opacity:.43}
 #cs-root .cs-entry.cs-drop-before::before,
