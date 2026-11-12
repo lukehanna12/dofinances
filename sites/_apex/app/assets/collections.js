@@ -956,7 +956,7 @@ export function initColosseumCollections(){
  },{capture:true});
  list.addEventListener("dragstart",event=>{
    const handle=event.target.closest("[data-cs-drag]");
-   if(!state.editing||!handle||handle.closest(".cs-entry")?.classList.contains("cs-open")){
+   if(!state.editing||state.busy||!handle||handle.closest(".cs-entry")?.classList.contains("cs-open")){
      event.preventDefault();return;
    }
    state.draggingId=handle.dataset.csDrag;

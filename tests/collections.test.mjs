@@ -668,6 +668,8 @@ test("Collection rename requires an explicit revision-bound save, cancellation n
  assert.match(js,/if\(!proposed\|\|proposed\.length>100\|\|/);
  assert.match(js,/state\.collections\.some\(other=>other\.collection_id!==id/);
  assert.match(js,/state\.nameDrafts\.set\(id,proposed\)/);
+ assert.match(js,/if\(!state\.editing\|\|state\.busy\|\|!handle\|\|handle\.closest/,
+   "A rename write cannot start a competing drag operation");
  assert.match(js,/input\.readOnly=true/);
  assert.match(js,/state\.renameSaving=false;input\.readOnly=false/);
  assert.match(js,/sizeInlineName\(input\.closest\("\.cs-name-field"\)\)/);
