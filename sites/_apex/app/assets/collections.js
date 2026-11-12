@@ -54,7 +54,7 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
-   nameDrafts:new Map(),draggingId:null
+   nameDrafts:new Map(),draggingId:null,editTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
@@ -151,7 +151,7 @@ export function initColosseumCollections(){
    state.busy=value;
    refreshButton.disabled=value;
    createButton.disabled=value||state.editing;
-   editButton.disabled=value;
+   editButton.disabled=value||state.editTransitioning;
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
@@ -226,17 +226,18 @@ export function initColosseumCollections(){
    const depth=Math.min(8,Math.max(0,collection.collection_depth||0));
    const draft=state.nameDrafts.get(collection.collection_id)??collection.name;
    const editing=state.editing;
+   const off=editing?"":' disabled tabindex="-1" aria-hidden="true"';
    return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
-       (editing?'<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection">'+GRIP+'</button>':'')+
-       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false">'+
+       '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
+       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing?' disabled tabindex="-1"':'')+'>'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
        '<span class="cs-chevron">'+CHEVRON+'</span></button>'+
-       (editing?'<input class="cs-inline-name" type="text" data-cs-name="'+uuid+'" value="'+esc(draft)+'" aria-label="Rename '+esc(collection.name)+'" maxlength="100" autocomplete="off" spellcheck="false">':'')+
-       (editing?'<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'">'+(entry.hidden?EYE_OFF:EYE)+'</button>':'')+
+       '<input class="cs-inline-name" type="text" data-cs-name="'+uuid+'" value="'+esc(draft)+'" aria-label="Rename '+esc(collection.name)+'" maxlength="100" autocomplete="off" spellcheck="false"'+off+'>'+
+       '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
@@ -269,7 +270,7 @@ export function initColosseumCollections(){
    if(!state.collections.length){list.innerHTML='<p class="cs-loading">No collections yet. Use New collection to create one.</p>';renderPages();return;}
    root.classList.toggle("cs-editing",state.editing);
    list.innerHTML=pageItems().map(rowMarkup).join("");
-   renderPages();syncAccordion();
+   renderPages();syncAccordion();syncRowEditing();
  }
  function syncAccordion(){
    list.querySelectorAll(".cs-entry").forEach(el=>{
@@ -346,6 +347,7 @@ export function initColosseumCollections(){
    }
  }
  function openCollection(id){
+   if(state.editing||state.editTransitioning)return;
    const next=state.activeId===id?null:id;
    state.activeId=next;state.selecting=false;state.selected.clear();state.detail=null;
    ++state.detailSeq;
@@ -497,21 +499,91 @@ export function initColosseumCollections(){
      if(/changed|conflict/i.test(error.message))void loadList({focusId:col.collection_id});
    }finally{setBusy(false);syncActions();renderCard();}
  }
+ function syncRowEditing(){
+   const locked=state.editing||state.editTransitioning;
+   list.querySelectorAll(".cs-entry").forEach(entry=>{
+     const trigger=entry.querySelector(".cs-trigger");
+     if(trigger){trigger.disabled=locked;trigger.tabIndex=locked?-1:0;}
+     const editable=entry.querySelector(".cs-inline-name");
+     const drag=entry.querySelector(".cs-drag-handle");
+     const visibility=entry.querySelector(".cs-visibility-toggle");
+     for(const control of [editable,drag,visibility]){
+       if(!control)continue;
+       control.disabled=!state.editing||state.editTransitioning;
+       control.tabIndex=control.disabled?-1:0;
+       if(control.disabled)control.setAttribute("aria-hidden","true");
+       else control.removeAttribute("aria-hidden");
+     }
+     if(drag)drag.draggable=state.editing&&!state.editTransitioning;
+   });
+ }
  function syncEditControl(){
    root.classList.toggle("cs-editing",state.editing);
    editButton.setAttribute("aria-label",state.editing?"Done editing collections":"Edit collections");
    editButton.setAttribute("aria-pressed",String(state.editing));
+   editButton.setAttribute("aria-busy",String(root.classList.contains("cs-closing-for-edit")));
+   editButton.disabled=state.busy||state.editTransitioning;
    $("cs-edit-tooltip-label").textContent=state.editing?"Done editing":"Edit collections";
-   refreshButton.disabled=state.busy||state.editing;
-   createButton.disabled=state.busy||state.editing;
+   refreshButton.disabled=state.busy||state.editing||state.editTransitioning;
+   createButton.disabled=state.busy||state.editing||state.editTransitioning;
+   syncRowEditing();
  }
- function enterEditMode(){
-   if(state.busy||!state.loaded)return;
+ async function waitForVisualMotion(element,property){
+   if(!element||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+   // Force the updated style to resolve once; await native CSS animation
+   // completion rather than using observers or frame-based polling.
+   void getComputedStyle(element).opacity;
+   const active=element.getAnimations().filter(animation=>
+     animation.transitionProperty===property||animation.animationName===property);
+   if(active.length)await Promise.allSettled(active.map(animation=>animation.finished));
+   else if(property==="grid-template-rows"){
+     // An expand+edit in the same paint turn has no CSS transition to await.
+     // Keep the loader for the established 450ms close window in that case.
+     await new Promise(resolve=>setTimeout(resolve,450));
+   }
+ }
+ async function enterEditMode(){
+   if(state.busy||!state.loaded||state.editing||state.editTransitioning)return;
+   state.editTransitioning=true;
+   const panel=list.querySelector(".cs-entry.cs-open .cs-accordion-panel");
+   if(panel){
+     // Show the white hollow loader in place of the pencil for exactly
+     // the existing 450ms accordion collapse, never before or after it.
+     root.classList.add("cs-closing-for-edit");
+     syncEditControl();
+     state.activeId=null;state.detail=null;state.selecting=false;state.selected.clear();
+     ++state.detailSeq;
+     syncAccordion();renderCard();
+     await waitForVisualMotion(panel,"grid-template-rows");
+     root.classList.remove("cs-closing-for-edit");
+   }
+   if(!routeActive()){
+     state.editTransitioning=false;resetEditMode();return;
+   }
    state.editing=true;state.nameDrafts.clear();state.configDirty=false;
-   syncEditControl();renderRows();renderCard();
+   root.classList.add("cs-entering-edit");
+   syncEditControl();
+   await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right");
+   root.classList.remove("cs-entering-edit");
+   state.editTransitioning=false;syncEditControl();
+ }
+ async function exitEditMode(refresh=false){
+   if(!state.editing)return;
+   state.editTransitioning=true;
+   state.editing=false;
+   root.classList.add("cs-leaving-edit");
+   syncEditControl();
+   await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-exit-left");
+   root.classList.remove("cs-leaving-edit");
+   state.editTransitioning=false;
+   state.nameDrafts.clear();state.configDirty=false;
+   syncEditControl();
+   if(!refresh){renderRows();renderCard();}
  }
  function resetEditMode(){
-   state.editing=false;state.nameDrafts.clear();state.configDirty=false;
+   state.editing=false;state.editTransitioning=false;
+   state.nameDrafts.clear();state.configDirty=false;
+   root.classList.remove("cs-entering-edit","cs-leaving-edit","cs-closing-for-edit");
    syncEditControl();renderRows();renderCard();
  }
  function applyDraftLayout(entries,focusId=null){
@@ -552,7 +624,7 @@ export function initColosseumCollections(){
      seenNames.add(key);
      if(proposed!==col.name)edits.push({collection:col,name:proposed});
    }
-   if(!edits.length&&!state.configDirty){resetEditMode();return;}
+   if(!edits.length&&!state.configDirty){await exitEditMode();return;}
    setBusy(true);
    try{
      for(const {collection,name} of edits){
@@ -565,16 +637,16 @@ export function initColosseumCollections(){
      if(state.configDirty)await request("configure",{
        entries:state.configEntries,expected_configuration_revision:state.configRevision
      });
-     state.editing=false;state.nameDrafts.clear();state.configDirty=false;
-     syncEditControl();
+     await exitEditMode(true);
      await loadList();
      announce("Collection organization saved.",false,true);
    }catch(error){announce(error.message,true,true,error.reauthorize===true);}
    finally{setBusy(false);syncEditControl();}
  }
  function toggleEditMode(){
+   if(state.editTransitioning)return;
    if(state.editing){void finishEditMode();return;}
-   enterEditMode();
+   void enterEditMode();
  }
  function dragPosition(event,entry){
    if(!event.target.closest(".cs-entry-heading"))return "inside";
@@ -648,7 +720,7 @@ export function initColosseumCollections(){
  });
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
-   if(!button||state.busy)return;
+   if(!button||state.busy||state.editTransitioning)return;
    if(button.hasAttribute("data-cs-visibility")){toggleCollectionVisibility(button.dataset.csVisibility);return;}
    if(button.hasAttribute("data-cs-drag"))return;
    if(button.hasAttribute("data-cs-jump-child")){jumpToChild(button.dataset.csJumpChild);return;}
