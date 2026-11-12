@@ -15,11 +15,11 @@ const {nativePublicBlurRadius,observedBlurWord} =
   await import("./sidebar-glass-oracle.js");
 test("center-cover backdrop UV respects physical viewport and image aspect",()=>{
   const landscape=coverUVScale(1440,900,1920,1080);
-  assert.ok(Math.abs(landscape[0]-.96)<1e-6);
+  assert.ok(Math.abs(landscape[0]-.9)<1e-6);
   assert.equal(landscape[1],1);
   const portrait=coverUVScale(390,844,1920,1080);
-  assert.equal(portrait[0],1);
-  assert.ok(portrait[1]<1);
+  assert.ok(portrait[0]<1);
+  assert.equal(portrait[1],1);
 });
 test("one occupied tile maps CSS geometry to physical pixels without screenshot",()=>{
   globalThis.getComputedStyle=()=>({
