@@ -57,7 +57,7 @@ test("Closing an expanded Collections row shrinks continuously for 450ms",()=>{
  assert.match(js,/<span class="cs-title-compact" aria-hidden="true"/);
  assert.match(js,/<span class="cs-title-expanded"/);
  assert.doesNotMatch(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{overflow:hidden;white-space:nowrap/);
- assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 0\}/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 24px 20px 0\}/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?transition-duration:\.01ms!important/);
 });
 
@@ -95,7 +95,7 @@ test("Expanded-row membership skeleton resolves without shifting the header and 
  assert.doesNotMatch(js,/setTimeout\([^\n]*(?:renderCard|loadDetail|syncActions|cs-members-ready)/);
  // The 450ms collapse, compact row height, and naturally-sized card remain.
  assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
- assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(var\(--cs-row-height\)/);
  assert.doesNotMatch(css,/#cs-root \.cs-card\{[^}]*min-height:/);
 });
 test("Collection route indicators retain the supplied vector SVGs and replace text capsules",()=>{
@@ -294,23 +294,25 @@ test("Collections content rises while maintaining a margin and the shared title 
  assert.doesNotMatch(css,/#cs-root\{[^}]*position:absolute/);
 });
 
-test("Collapsed Collections rows retain the former mobile height at all widths",()=>{
+test("Collapsed Collections rows are more compact on desktop and smaller again at minimum width",()=>{
  // The former mobile rule: vertical padding 20px on both sides, 16px text, line-height 1.4.
  const mobileSingleLineHeight=20*2+16*1.4;
- assert.equal(mobileSingleLineHeight,62.4);
+ assert.equal(mobileSingleLineHeight,62.4); // historical upper bound
+ assert.match(css,/--cs-row-height:54px/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root\{--cs-row-height:48px\}/);
  assert.match(css,/#cs-root \.cs-entry\{--cs-entry-border:0px\}/);
  assert.match(css,/#cs-root \.cs-entry\+\.cs-entry\{border-top:1px solid var\(--cs-border\);--cs-entry-border:1px\}/);
- assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{padding:0;align-items:center;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(var\(--cs-row-height\) - var\(--cs-entry-border\)\)/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{padding:0 24px 0 0;align-items:center;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\),var\(--cs-control-ease\)\}/);
  assert.match(css,/#cs-root \.cs-entry-title\{position:relative;display:grid;grid-template-rows:0fr;min-height:1lh;overflow:hidden\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*transition:color \.2s,grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\)/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
  assert.match(css,/#cs-root \.cs-entry-title \.cs-title-compact\{white-space:nowrap;text-overflow:ellipsis;opacity:1;transition:opacity \.14s linear\}/);
- assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(16px,1\.7vw,20px\);line-height:1\.4/);
+ assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(14px,1\.35vw,16px\);line-height:1\.4/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
- assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 0\}/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 24px 20px 0\}/);
  // No global height limit on expanded rows; long titles remain readable there.
- assert.doesNotMatch(css,/#cs-root \.cs-trigger\{[^}]*height:62\.4px/);
+ assert.doesNotMatch(css,/#cs-root \.cs-trigger\{[^}]*height:54px/);
  assert.doesNotMatch(css,/#cs-root \.cs-entry\.cs-open \.cs-trigger\{[^}]*height:/);
 });
 
@@ -460,11 +462,11 @@ test("Collections display ten live items per page and keep ordinary last-page pa
 });
 
 test("Collections canvas retains ten-row capacity with about fifteen percent more bottom breathing room",()=>{
- const row=62.4,capacity=10,borders=2,navMargin=25,navHeight=36;
+ const row=54,capacity=10,borders=2,navMargin=25,navHeight=36;
  const countMargin=12,countLine=18,countTrailing=12;
  const reservedHeight=row*capacity+borders+navMargin+navHeight+countMargin+countLine+countTrailing;
- assert.equal(reservedHeight,729);
- assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(626px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px\)/);
+ assert.equal(reservedHeight,645);
+ assert.match(css,/#cs-root \.cs-layout\{[^}]*min-height:calc\(10 \* var\(--cs-row-height\) \+ 2px \+ 25px \+ 36px \+ 12px \+ 18px \+ 12px\)/);
  assert.match(css,/html:has\(body > #workspace-shell \.view\[data-view="colosseum\/collections"\]:not\(\[hidden\]\)\) body:has\(> #workspace-shell\) \.content\{padding-bottom:32px\}/);
  const sharedWallpaper=src("sites/_apex/app/assets/workspace-wallpapers.css");
  assert.match(sharedWallpaper,/body:has\(> #workspace-shell\) \.content \{[\s\S]*?padding-bottom:36px/);
@@ -472,7 +474,7 @@ test("Collections canvas retains ten-row capacity with about fifteen percent mor
  assert.equal(previousGap,38);
  assert.equal(newGap,44);
  assert.ok(Math.abs((newGap-previousGap)/previousGap-.15)<.01);
- assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(var\(--cs-row-height\) - var\(--cs-entry-border\)\)/);
  assert.match(css,/#cs-root \.cs-pagination\{[^}]*margin-top:25px/);
  assert.match(css,/#cs-root \.cs-page\{[^}]*height:36px/);
  assert.match(css,/#cs-root \.cs-countline\{[^}]*margin-top:12px/);
@@ -543,7 +545,7 @@ test("Add collection uses ChatGPT's 36px white send-control geometry and black p
   assert.ok(copy.includes('M12 3.59998C12.5891 3.59998 13.0666 4.07754 13.0666 4.66664V10.9333H19.3333C19.9224 10.9333 20.4 11.4109 20.4 12C20.4 12.5891 19.9224 13.0666 19.3333 13.0666H13.0666V19.3333C13.0666 19.9224 12.5891 20.4 12 20.4C11.4109 20.4 10.9333 19.9224 10.9333 19.3333V13.0666H4.66664C4.07754 13.0666 3.59998 12.5891 3.59998 12C3.59998 11.4109 4.07754 10.9333 4.66664 10.9333H10.9333V4.66664C10.9333 4.07754 11.4109 3.59998 12 3.59998Z'),"Original 20px ChatGPT composer plus path must be preserved");
   assert.doesNotMatch(copy,/add-collection\.v1\.svg/);
   assert.match(css,/#cs-root \.cs-create-control\{[^}]*margin:16px 0 0 3\.5px/);
-  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:36px;min-width:36px;height:36px;min-height:36px/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*border-radius:999px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:#fff;color:#101010/);
   assert.match(js,/createButton\.addEventListener\("click",\(\)=>openForm\("create"\)\)/);
@@ -594,4 +596,48 @@ test("Collections reordering and hidden exposure use only revision-bound ID conf
  assert.match(css,/\.cs-entry\.cs-drop-inside/);
  assert.doesNotMatch(js,/localStorage\.setItem\([^)]*config/);
  assert.doesNotMatch(js,/setInterval\(/);
+});
+
+
+test("Collections control swap shares timing and traverses the list—not the window",()=>{
+ assert.match(css,/--cs-control-swap:480ms;--cs-control-ease:cubic-bezier\(\.22,1,\.36,1\)/);
+ for(const name of ["cs-grip-enter-right","cs-chevron-exit-left","cs-grip-exit-left","cs-chevron-enter-right"]){
+   assert.ok(css.includes("@keyframes "+name+"{"),name+" keyframes");
+   assert.ok(css.includes("animation:"+name+" var(--cs-control-swap) var(--cs-control-ease) both"),name+" sync");
+ }
+ assert.match(css,/@keyframes cs-grip-enter-right\{[^}]*from\{left:calc\(100% - 22px\);opacity:0\}/);
+ assert.match(css,/@keyframes cs-chevron-exit-left\{[\s\S]*?to\{right:calc\(100% - 14px\);opacity:0\}/);
+ assert.match(css,/@keyframes cs-grip-exit-left\{[\s\S]*?to\{left:-22px;opacity:0\}/);
+ assert.match(css,/@keyframes cs-chevron-enter-right\{[\s\S]*?from\{right:-22px;opacity:0\}/);
+ assert.match(js,/const off=editing/); 
+ assert.match(js,/syncRowEditing\(\)/);
+ assert.doesNotMatch(js,/requestAnimationFrame|setInterval|ResizeObserver|MutationObserver/);
+});
+test("Opening edit mode closes an expanded row with the white pencil-position ring",()=>{
+ assert.match(js,/async function enterEditMode\(\)/);
+ assert.match(js,/const panel=list\.querySelector\("\.cs-entry\.cs-open \.cs-accordion-panel"\)/);
+ assert.match(js,/root\.classList\.add\("cs-closing-for-edit"\)/);
+ assert.match(js,/await waitForVisualMotion\(panel,"grid-template-rows"\)/);
+ assert.match(js,/root\.classList\.remove\("cs-closing-for-edit"\)/);
+ assert.match(js,/if\(state\.editing\|\|state\.editTransitioning\)return;/);
+ assert.match(js,/trigger\.disabled=locked/);
+ assert.match(css,/#cs-root\.cs-closing-for-edit \.cs-edit-icon-button::after\{[^}]*border:1\.8px solid #fff/);
+ assert.match(css,/animation:cs-edit-spin 600ms linear infinite/);
+ assert.match(css,/#cs-root\.cs-editing \.cs-trigger:disabled/);
+});
+test("Mobile and desktop compact row components scale independently",()=>{
+ assert.match(css,/#cs-root \.cs-trigger \.cs-num\{[^}]*width:24px;font-size:11px/);
+ assert.match(css,/#cs-root \.cs-chevron\{[^}]*width:14px;height:14px/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger \.cs-num\{width:22px;font-size:10px\}/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger \.cs-entry-title\{font-size:clamp\(12\.5px,2\.7vw,14px\)\}/);
+ assert.match(css,/@media\(max-width:640px\)\{[\s\S]*?#cs-root \.cs-drag-handle svg\{width:13px;height:13px\}/);
+ assert.match(css,/#cs-root \.cs-inline-name\{[\s\S]*?font-size:clamp\(14px,1\.35vw,16px\)/);
+});
+test("Add circle shrinks 10 percent, refresh is aligned right with edit/add at both breakpoints",()=>{
+ assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
+ assert.match(css,/#cs-root \.cs-create-plus-icon\{[^}]*width:18px;height:18px/);
+ assert.match(css,/#cs-root \.cs-head\{[^}]*align-items:flex-end/);
+ assert.match(css,/#cs-root \.cs-top-actions\{[^}]*align-self:flex-end;margin-left:auto/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-head\{flex-direction:row;align-items:flex-end;gap:10px\}/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-top-actions\{justify-content:flex-end;align-self:flex-end;margin-left:auto\}/);
 });
