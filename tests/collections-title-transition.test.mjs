@@ -77,3 +77,15 @@ test("No polling, animation-frame loop, screenshot dependencies or shared navbar
 test("Controller safely no-ops on minimal navigation fixtures",()=>{
   assert.doesNotThrow(()=>initCollectionsTitleTransition({querySelector:()=>null,getElementById:()=>null},{}).setRoute("colosseum/collections"));
 });
+
+
+test("Studio keeps working when shared navigation imports the Collections module",()=>{
+  const workflow=source(".github/workflows/site.yml");
+  const studio=source("studio/sidebar/index.html");
+  const js=source("sites/_apex/app/assets/collections-title-transition.js");
+  assert.match(workflow,/cp sites\/_apex\/app\/assets\/collections-title-transition\.js dist\/app\/assets\/collections-title-transition\.js/);
+  assert.match(workflow,/test -s dist\/app\/assets\/collections-title-transition\.js/);
+  assert.match(workflow,/\/app\/assets\/collections-title-transition\.js \/app\/assets\/sidebar-glass\.css/);
+  assert.doesNotMatch(studio,/href="\/app\/assets\/collections\.css"/,"Studio must remain visually independent");
+  assert.match(js,/if\(!doc\.querySelector\?\.\('link\[href="\/app\/assets\/collections\.css"\]'\)\)return noop/);
+});

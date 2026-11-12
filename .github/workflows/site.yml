@@ -98,6 +98,7 @@ jobs:
           cp sites/_apex/app/assets/dashboard.css dist/app/assets/dashboard.css
           cp sites/_apex/app/assets/workspace-theme.css dist/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js dist/app/assets/workspace-nav.js
+          cp sites/_apex/app/assets/collections-title-transition.js dist/app/assets/collections-title-transition.js
           cp sites/_apex/app/assets/workspace-scroll.js dist/app/assets/workspace-scroll.js
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
@@ -116,6 +117,7 @@ jobs:
           cp studio/sidebar/sidebar-glass.js dist/app/assets/sidebar-glass.js
           cp studio/sidebar/preview-bootstrap.js dist/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
+          test -s dist/app/assets/collections-title-transition.js
           test -s dist/app/assets/magnifying-glass.v2.svg
           test -s dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/collections-screen-sidebar-icon.v1.svg
@@ -245,7 +247,7 @@ jobs:
             exit 1
           fi
           rm "$studio_body"
-          for route in /gallery/assets/gallery.css /gallery/assets/gallery.js /gallery/assets/gallery-field-worker.js /app/ /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
+          for route in /gallery/assets/gallery.css /gallery/assets/gallery.js /gallery/assets/gallery-field-worker.js /app/ /app/assets/collections-title-transition.js /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
             code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "https://stu.dofinances.com$route")"
             echo "Studio $route -> HTTP $code"
             test "$code" = 200

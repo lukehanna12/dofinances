@@ -53,6 +53,9 @@ export function collectionsTitleFrame(scrollDistance,partnerDistances=[0,100,100
 
 export function initCollectionsTitleTransition(doc=document,win=window){
   const noop={setRoute(){}};
+  // Studio shares workspace-nav.js but not Collections' appearance sheet.
+  // Its static preview must not acquire an unstyled inline title or scroll UI.
+  if(!doc.querySelector?.('link[href="/app/assets/collections.css"]'))return noop;
   const header=doc.querySelector?.("#workspace-shell .topbar");
   const breadcrumb=doc.getElementById?.("breadcrumb");
   const list=breadcrumb?.querySelector?.(".shadcn-breadcrumb-list");
