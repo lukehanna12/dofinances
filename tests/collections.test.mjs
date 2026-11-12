@@ -118,7 +118,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   const cloud=src("sites/_apex/app/assets/cloud-utility.v2.svg");
   assert.equal((cloud.match(/<path\s/g)||[]).length,1,
     "Cloud v2 must be a filled silhouette, without v1's inner outline cutout");
-  assert.ok(js.includes('class="cs-utility-route-icon" src='));
+  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" src='));
   assert.ok(js.includes("routeIcon.label"),"Route mode must retain a screen-reader label");
   assert.ok(!js.includes('class="cs-utility-route"'),"Text capsules must be removed");
   assert.ok(!css.includes(".cs-utility-route{"),"Capsule styling must be removed");
@@ -129,6 +129,33 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   for(const [previous,reduced] of [[15,12],[18,14.4],[14,11.2],[10,8]])
     assert.ok(Math.abs(reduced/previous-.8)<1e-10);
 });
+test("Cloud, Direct, Local, and External SVGs use independent exact relative scaling at all breakpoints",()=>{
+  // Initial heights were reduced to 80% in the previous revision. These
+  // factors apply to that current state, not to the original capsule sizes.
+  const scales={cloud:.9,direct:.85,local:.8,ported:1.1};
+  const parts=css.split("@media(max-width:639px){");
+  assert.equal(parts.length,2,"Keep the mobile breakpoint and overrides");
+  const findSizes=(source,mode)=>{
+    const start=source.indexOf("#cs-root .cs-utility-route-icon--"+mode+"{height:calc(clamp(");
+    assert.ok(start>=0,"Missing "+mode+" responsive SVG sizing");
+    const rule=source.slice(start,source.indexOf("}",start));
+    const size=rule.match(/clamp\(([\d.]+)px,([\d.]+)vw,([\d.]+)px\) \+ ([\d.]+)px/);
+    assert.ok(size,"SVG "+mode+" must be scaled using geometry-preserving height, not transforms");
+    return size.slice(1).map(Number);
+  };
+  for(const [mode,scale] of Object.entries(scales)){
+    const desktop=findSizes(parts[0],mode);
+    const mobile=findSizes(parts[1],mode);
+    for(const [sizes,base] of [[desktop,[12,1.2,14.4,11.2]],[mobile,[12,1.2,14.4,8]]])
+      sizes.forEach((actual,i)=>assert.ok(Math.abs(actual-base[i]*scale)<1e-9,mode+" size factor at component "+i));
+    assert.ok(!css.includes(".cs-utility-route-icon--"+mode+"{transform:"),"SVG must never be stretched using transform");
+  }
+  // Route is selected from a fixed allowlist before adding the variant class.
+  assert.match(js,/Object\.hasOwn\(COLLECTION_ROUTE_ICONS,routes\)/);
+  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" src='));
+  assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain/);
+});
+
 test("Collections API session expiry exposes safe owner-only reauthorization",()=>{
  assert.ok(js.includes('const COLLECTIONS_ACCESS_REAUTH="/api/colosseum/connect?return=collections"'));
  assert.match(js,/error instanceof TypeError\)throw accessReauthorizationError/);

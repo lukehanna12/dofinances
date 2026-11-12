@@ -166,6 +166,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Scale all four route SVGs to 80% of their former height while retaining
    intrinsic aspect ratios. Flex placement pins them right and centers vertically. */
 #cs-root .cs-utility-route-icon{display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);width:auto;max-width:none;flex:none;margin-left:auto;align-self:center;object-fit:contain}
+/* Route-specific optical sizes relative to the existing 80%-scaled SVGs.
+   No transform: width:auto preserves each SVG's intrinsic viewBox geometry. */
+#cs-root .cs-utility-route-icon--cloud{height:calc(clamp(10.8px,1.08vw,12.96px) + 10.08px)}
+#cs-root .cs-utility-route-icon--direct{height:calc(clamp(10.2px,1.02vw,12.24px) + 9.52px)}
+#cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 8.96px)}
+#cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}
 #cs-root .cs-utility-empty{padding:14px 0 0;color:var(--cs-muted);font-size:14px;line-height:1.6}
 #cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
 #cs-root .cs-caption{text-align:center;color:var(--cs-muted);font-size:14px;line-height:1.5;margin:24px 0 0}
@@ -206,6 +212,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-utility-list{gap:10px;margin-top:22px}
  #cs-root .cs-utility-row{min-height:58px;gap:10px;padding:12px 12px}
  #cs-root .cs-utility-route-icon{height:calc(clamp(12px,1.2vw,14.4px) + 8px)}
+ #cs-root .cs-utility-route-icon--cloud{height:calc(clamp(10.8px,1.08vw,12.96px) + 7.2px)}
+ #cs-root .cs-utility-route-icon--direct{height:calc(clamp(10.2px,1.02vw,12.24px) + 6.8px)}
+ #cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 6.4px)}
+ #cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}
  #cs-root .cs-summary{font-size:11px;margin-top:22px;padding-top:16px}
 }
 @media(prefers-reduced-motion:reduce){
