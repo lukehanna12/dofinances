@@ -121,7 +121,41 @@ def run():
                             raise RuntimeError("Pointer motion regenerated backdrop mips "+str(updated))
                         if check.get("frameCount",0)<=before_frames:
                             raise RuntimeError("Pointer motion did not trigger GPU redraw "+str(updated))
-                        print("GPU_OFFSCREEN_PROOF "+json.dumps(updated,sort_keys=True))
+                        # Exercise the second retained AIR SDF branch in
+                        # a real GPU render, not merely WGSL compilation. The
+                        # four equal native lanes select 4; one unequal
+                        # corner selects 5. This synthetic CI case is NOT
+                        # presented as captured public Clear state.
+                        baseline_mode4=(check.get("sdfModes") or {}).get("mode4")
+                        if baseline_mode4!=check.get("tiles"):
+                            raise RuntimeError("Equal-radius native mode4 not selected "+str(updated))
+                        synthetic=(
+                            "(()=>{const t=document.querySelector('.cta6-tile--plain');"
+                            "if(!t)throw Error('Missing square for mode5 CI');"
+                            "t.style.borderTopRightRadius='3px';"
+                            "window.__dashboardGpuControls.reflowTiles();return true})()"
+                        )
+                        cdp_eval(ws,counter,synthetic)
+                        mode5_frame=check.get("frameCount",0)
+                        mode5_check={}
+                        for _ in range(20):
+                            time.sleep(.15)
+                            after=json.loads(cdp_eval(ws,counter,expr))
+                            mode5_check=after.get("audit") or {}
+                            modes=mode5_check.get("sdfModes") or {}
+                            if modes.get("mode5",0)>=1 and mode5_check.get("frameCount",0)>mode5_frame:
+                                break
+                        else:
+                            raise RuntimeError("Unequal-corner mode5 GPU render missing "+str(after))
+                        if mode5_check.get("sceneBuilds")!=before_scene_builds:
+                            raise RuntimeError("Mode switch rebuilt backdrop mips "+str(after))
+                        if mode5_check.get("status")!="ready":
+                            raise RuntimeError("Mode5 GPU renderer fell back "+str(after))
+                        print("GPU_BOTH_SDF_BRANCHES "+json.dumps({
+                            "mode4":modes.get("mode4"),"mode5":modes.get("mode5"),
+                            "frameCount":mode5_check.get("frameCount"),
+                            "sceneBuilds":mode5_check.get("sceneBuilds")},sort_keys=True))
+                        print("GPU_OFFSCREEN_PROOF "+json.dumps(after,sort_keys=True))
                         return
                     if latest.get("body")=="fallback":
                         raise RuntimeError("GPU fallback: "+json.dumps(latest,sort_keys=True))
