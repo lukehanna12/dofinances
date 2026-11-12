@@ -71,10 +71,10 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
 }
 .dashboard-atmosphere-grain {
   position:absolute;inset:0;z-index:0;pointer-events:none;
-  opacity:.32;
+  opacity:.68;
   background-image:
-    linear-gradient(90deg,rgba(255,255,255,.023) 1px,transparent 1px),
-    linear-gradient(0deg,rgba(255,255,255,.018) 1px,transparent 1px);
+    linear-gradient(90deg,rgba(255,255,255,.033) 1px,transparent 1px),
+    linear-gradient(0deg,rgba(255,255,255,.027) 1px,transparent 1px);
   background-size:calc(100% / 8) calc(100% / 8);
   -webkit-mask-image:linear-gradient(to bottom,transparent,black 12%,black 76%,transparent);
   mask-image:linear-gradient(to bottom,transparent,black 12%,black 76%,transparent);
@@ -95,17 +95,17 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
   --peak:.19;
   position:absolute;
   box-sizing:border-box;
-  border:1px solid rgba(240,241,243,.17);
+  border:1px solid rgba(240,241,243,.25);
   border-radius:var(--tile-radius,11px);
-  background:rgba(15,16,17,.64);
+  background:rgba(31,32,34,.70);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.08),
     inset 0 1px 0 rgba(255,255,255,.075),
     0 11px 26px rgba(0,0,0,.14);
-  opacity:.018;
+  opacity:.09;
   transform-origin:center center;
-  transform:scale(calc(1 + var(--cursor) * .055));
-  filter:brightness(calc(1 + var(--cursor) * .24));
+  transform:scale(calc(1 + var(--cursor) * .075));
+  filter:brightness(calc(1 + var(--cursor) * .65));
   transition:transform 410ms cubic-bezier(.16,1,.3,1),filter 410ms cubic-bezier(.16,1,.3,1);
   animation:dashboard-tile-breathe var(--duration,100s) cubic-bezier(.32,0,.18,1) var(--delay,0s) infinite both;
   backface-visibility:hidden;
@@ -133,7 +133,7 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
     0 0 22px rgba(255,255,255,.025);
 }
 .dashboard-tile--line{
-  background:rgba(22,22,23,.46);
+  background:rgba(36,36,38,.63);
   border-color:rgba(231,233,235,.13);
 }
 .dashboard-tile--line::after{
@@ -144,15 +144,16 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
   border-left:1px solid rgba(255,255,255,.04);
   border-radius:calc(var(--tile-radius,11px) * .58);
 }
-/* One ~108s breathing interval, with a long quiet interval.
-   The curve is slow at both ends; the brief crest has no pulsing flash. */
+/* 44–66-second non-synchronous cycles: long calm pause, a 7–9 second
+   gentle rise, a short stable crest, and a similarly gentle departure.
+   The floor stays legible as a thin etched lattice even when resting. */
 @keyframes dashboard-tile-breathe {
-  0%,75%,100% {opacity:.018}
-  79%         {opacity:.036}
-  84%         {opacity:var(--peak)}
-  87.4%       {opacity:var(--peak)}
-  91.8%       {opacity:.066}
-  95%         {opacity:.018}
+  0%,47%,100% {opacity:.09}
+  53%         {opacity:.13}
+  66%         {opacity:var(--peak)}
+  71%         {opacity:var(--peak)}
+  85%         {opacity:.15}
+  92%         {opacity:.09}
 }
 .dashboard-atmosphere.dashboard-paused .dashboard-tile{
   animation-play-state:paused;
