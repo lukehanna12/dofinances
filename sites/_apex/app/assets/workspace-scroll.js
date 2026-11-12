@@ -6,44 +6,43 @@
  * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
  * boundary gestures, including Safari rubber-banding, while deliberately
  * allowing the left-edge browser-history back gesture (rightward swipe). */
-/* The duration follows click-time distance, in viewport units.
- * Unlike symmetric smoothstep (which feels almost linear in the middle),
- * this is an asymmetric, normalized INTEGRAL of a continuous speed profile:
- * - rise to cruising speed over the first 9% (quick, smooth acceleration),
- * - a shallow velocity swell rather than a mechanically constant-speed middle,
- * - begin braking at 74%, reaching zero speed AND acceleration at the top.
- * Every phase joins with continuous position, velocity and acceleration (C2).
- * The closed-form polynomial needs no simulation, allocations, lookups or
- * per-frame numerical integration, and finishes at exactly progress=1. */
-const TOP_ACCEL_END=.09;
-const TOP_BRAKE_START=.74;
-const TOP_CRUISE_SWELL=.20;
-const TOP_CRUISE_TIME=TOP_BRAKE_START-TOP_ACCEL_END;
-const TOP_CRUISE_AREA=TOP_CRUISE_TIME*(1+TOP_CRUISE_SWELL*8/15);
-const TOP_TOTAL_AREA=TOP_ACCEL_END/2+TOP_CRUISE_AREA+(1-TOP_BRAKE_START)/2;
+/* Precisely requested trajectory: accelerating through 93% of elapsed
+ * time AND travel distance, then decelerating through the last 7%.
+ *
+ * Each phase defines velocity, not position. The velocity increases strictly
+ * until t=.93, and decreases strictly thereafter. Integrating analytically
+ * yields a continuous position, velocity and acceleration (C2) at the join.
+ * Both endpoints have zero speed; there is no cruising/constant-speed phase.
+ * The small zero-area shaping term gives immediate perceptible acceleration
+ * without changing the exact 93:7 distance partition.
+ *
+ * Normalized rising velocity:
+ *   3u²-2u³ + 2u(1-u)²(.4-u)
+ * Normalized falling velocity:
+ *   1-(3u²-2u³)
+ * Both have area .5 and meet at velocity 1 with zero acceleration. */
+const TOP_BRAKE_AT=.93;
+const TOP_BRAKE_REMAINDER=1-TOP_BRAKE_AT;
+const smoothstep=u=>u*u*(3-2*u);
 const smoothstepIntegral=u=>u*u*u*(1-u/2);
 export function topScrollEase(progress){
   const t=Math.max(0,Math.min(1,Number(progress)||0));
   if(t===0||t===1)return t;
-  let area;
-  if(t<=TOP_ACCEL_END){
-    area=TOP_ACCEL_END*smoothstepIntegral(t/TOP_ACCEL_END);
-  }else if(t<TOP_BRAKE_START){
-    const u=(t-TOP_ACCEL_END)/TOP_CRUISE_TIME;
-    // Integral of v(u)=1+swell*16*u²*(1-u)². The speed and its slope
-    // match both joins: no abrupt acceleration changes or visual corners.
-    const accumulated=u+TOP_CRUISE_SWELL*(8/15)*u*u*u*(10-15*u+6*u*u);
-    area=TOP_ACCEL_END/2+TOP_CRUISE_TIME*accumulated;
-  }else{
-    const u=(t-TOP_BRAKE_START)/(1-TOP_BRAKE_START);
-    area=TOP_ACCEL_END/2+TOP_CRUISE_AREA+
-      (1-TOP_BRAKE_START)*(u-smoothstepIntegral(u));
+  if(t<=TOP_BRAKE_AT){
+    const u=t/TOP_BRAKE_AT;
+    const remaining=1-u;
+    const risingArea=smoothstepIntegral(u)+.4*u*u*remaining*remaining*remaining;
+    return 2*TOP_BRAKE_AT*risingArea;
   }
-  return area/TOP_TOTAL_AREA;
+  const u=(t-TOP_BRAKE_AT)/TOP_BRAKE_REMAINDER;
+  const fallingArea=u-smoothstepIntegral(u);
+  return TOP_BRAKE_AT+2*TOP_BRAKE_REMAINDER*fallingArea;
 }
 export function topScrollDuration(distance,viewportHeight){
   const screens=Math.max(0,Number(distance)||0)/Math.max(1,Number(viewportHeight)||768);
-  return Math.round(Math.min(1050,Math.max(240,235+205*Math.sqrt(screens))));
+  // Keep the 7% braking interval visible at normal refresh rates (roughly
+  // 60-120ms on typical page distances) without sacrificing click latency.
+  return Math.round(Math.min(1700,Math.max(380,380+320*Math.sqrt(screens))));
 }
 
 export function initWorkspaceScroll(doc=document,win=window) {
@@ -130,7 +129,9 @@ export function initWorkspaceScroll(doc=document,win=window) {
         animation.disturbance=Math.max(-limit,Math.min(limit,animation.disturbance+userDelta));
       }
       animation.disturbance*=Math.exp(-dt/180);
-      const release=1-topScrollEase((t-.62)/.38);
+      // Keep manual-scroll disturbance damping independent from the 93/7
+      // travel curve, so its influence always vanishes gently on arrival.
+      const release=1-smoothstep(Math.max(0,Math.min(1,(t-.62)/.38)));
       const position=Math.max(0,Math.min(maxY(),
         startY*(1-topScrollEase(t))+animation.disturbance*release));
       root.scrollTop=position;

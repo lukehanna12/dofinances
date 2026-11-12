@@ -50,57 +50,68 @@ test("scroll animation remains attached to current breadcrumb, not the upper glo
   assert.ok(nav.includes("if(route)render(route)"));
 });
 
-test("duration respects click-time distance; new asymmetric motion accelerates promptly and brakes late",()=>{
+test("animation accelerates throughout first 93% and decelerates throughout final 7%",()=>{
+  assert.equal(topScrollEase(0),0);
+  assert.equal(topScrollEase(.93),.93,"Both the elapsed time AND distance breakpoint are exactly 93%");
+  assert.equal(topScrollEase(1),1);
+  assert.equal(topScrollEase(-1),0);
+  assert.equal(topScrollEase(3),1);
+  // Sample the derivative to verify there is no uniform-speed middle.
+  const v=t=>(topScrollEase(t+.00005)-topScrollEase(t-.00005))/.0001;
+  for(let i=1;i<93;i++){
+    const left=v((i-1)/100),right=v(i/100);
+    assert.ok(right>left+1e-7,"Speed must increase on every acceleration sample at "+i+"%");
+  }
+  for(let i=94;i<100;i++){
+    const left=v((i-1)/100),right=v(i/100);
+    assert.ok(right<left-1e-7,"Speed must decrease on every braking sample at "+i+"%");
+  }
+  assert.ok(v(.10)<v(.50)*.55,"No near-constant speed before halfway");
+  assert.ok(v(.50)<v(.80),"Speed still increasing near the end of the 93% phase");
+  assert.ok(v(.94)>v(.97)&&v(.97)>v(.99),"Final 7% has distinctly diminishing velocity");
+  assert.ok(v(.999)<v(.98)*.02,"Arrives gently at practically zero speed");
+  assert.ok(v(0)<.01&&v(1)<.01,"Zero endpoint velocity");
+  for(let i=0;i<1000;i++){
+    const a=topScrollEase(i/1000),b=topScrollEase((i+1)/1000);
+    assert.ok(Number.isFinite(a)&&b>a&&b<=1,"Strictly increasing position without overshoot");
+  }
+  // The phases must meet without a jump in position, speed, or acceleration.
+  const h=.00001;
+  assert.ok(Math.abs(topScrollEase(.93-h)-topScrollEase(.93+h)+2*h*v(.93))<1e-8);
+  assert.ok(Math.abs(topScrollEase(.93-h)+topScrollEase(.93+h)-2*topScrollEase(.93))<1e-8);
+});
+
+test("distance-adjusted duration provides rendered frames for the 7% final brake",()=>{
   const height=820;
   const short=topScrollDuration(100,height);
   const medium=topScrollDuration(2000,height);
   const long=topScrollDuration(24000,height);
-  assert.ok(short>=240&&short<medium&&medium<long&&long<=1050);
-  assert.equal(topScrollEase(0),0);
-  assert.equal(topScrollEase(1),1);
-  assert.equal(topScrollEase(-1),0);
-  assert.equal(topScrollEase(3),1);
-  assert.ok(topScrollEase(.15)>.10,"Rapid acceleration should move an appreciable distance by 15% of elapsed time");
-  assert.ok(topScrollEase(.85)>.85,"Braking should leave little distance for the final approach");
-  assert.ok(Math.abs(topScrollEase(.001)-topScrollEase(0))<.000005);
-  assert.ok(Math.abs(topScrollEase(1)-topScrollEase(.999))<.000005);
-  for(let i=0;i<1000;i++){
-    const a=topScrollEase(i/1000),b=topScrollEase((i+1)/1000);
-    assert.ok(Number.isFinite(a)&&b>=a&&b<=1,"No reversal, NaN, or overshoot in the animation");
-  }
-  const speed=t=>(topScrollEase(t+.005)-topScrollEase(t-.005))/.01;
-  assert.ok(speed(.04)<speed(.10)*.55,"Starts gently then reaches travelling speed rapidly");
-  assert.ok(speed(.10)>speed(.25)*.8,"Nearly full speed by 10% of travel time");
-  assert.ok(speed(.44)>speed(.20)*1.08,"Middle must not be a visually fixed-velocity line");
-  assert.ok(speed(.78)>speed(.90)*1.8,"Braking should be unmistakable near the landing");
-  assert.ok(speed(.98)<speed(.90)*.12,"Final frames ease almost imperceptibly to zero speed");
-  assert.ok(Math.abs(topScrollEase(.09+.00001)+topScrollEase(.09-.00001)-2*topScrollEase(.09))<1e-7,
-    "Acceleration and travelling phases join without a visible velocity corner");
-  assert.ok(Math.abs(topScrollEase(.74+.00001)+topScrollEase(.74-.00001)-2*topScrollEase(.74))<1e-7,
-    "Cruising and braking phases join continuously");
+  assert.ok(short>=380&&short<medium&&medium<long&&long<=1700);
+  assert.ok(medium*.07>=60,"Common multi-viewport travel gives about four 60Hz braking frames");
+  assert.ok(long*.07>=100,"Long distances reserve at least six 60Hz braking frames");
 });
 
-test("the same breadcrumb trip has a rapid launch and visible late-stage braking, not a linear glide",()=>{
-  const h=harness(3600);
-  const duration=topScrollDuration(3600,800);
+test("actual RAF trajectory continuously gains speed before 93% then loses it over the last 7%",()=>{
+  const h=harness(8000);
+  const duration=topScrollDuration(8000,800);
+  const steps=[];
   h.controller.animateToTop();
-  const samples=[[0,3600]];
   while(h.frames.size){
-    h.step(1000/120);
-    samples.push([Math.min(duration,((samples.length)*1000/120)),h.root.scrollTop]);
-    assert.ok(samples.length<300,"Animation should complete on its scheduled timeline");
+    steps.push(h.step(1000/120));
+    assert.ok(steps.length<300,"Stops after one bounded animation");
   }
   assert.equal(h.root.scrollTop,0);
-  const displacement=(t0,t1)=>{
-    const yAt=t=>3600*(1-topScrollEase(t));
-    return yAt(t0)-yAt(t1);
-  };
-  const launch=displacement(0,.10);
-  const middle=displacement(.40,.50);
-  const last=displacement(.90,1);
-  assert.ok(middle>launch*1.7,"First tenth visibly accelerates instead of instantly reaching a constant velocity");
-  assert.ok(last<middle*.3,"Final tenth must be a graceful landing, not another fixed-speed segment");
+  const displacement=(a,b)=>topScrollEase(b)-topScrollEase(a);
+  assert.ok(displacement(.50,.60)>displacement(.20,.30)*1.4,
+    "Mid-run moves much faster than the early acceleration phase");
+  assert.ok(displacement(.82,.92)>displacement(.60,.70),
+    "Near the end of the first 93% still accelerating");
+  assert.ok(displacement(.93,.95)>displacement(.98,1)*3,
+    "Last 7% contains clearly visible braking before zero-velocity landing");
+  assert.equal(topScrollEase(.93),.93);
+  assert.ok(duration*.07>=70,"Long return-to-top has multiple visible braking frames");
 });
+
 test("RAF scroll is visually smooth, starts on the next frame, and lands exactly at the document top",()=>{
   const h=harness(2000);
   h.controller.animateToTop();
@@ -185,7 +196,7 @@ test("no ongoing polling, scroll-handler cancellation or sidebar layout mutation
   assert.doesNotMatch(js,/setInterval\(|new (?:ResizeObserver|MutationObserver)\(/);
   assert.ok(js.includes("root.scrollTop=position"));
   assert.ok(js.includes("animation.disturbance*=Math.exp(-dt/180)"));
-  assert.ok(js.includes("const release=1-topScrollEase((t-.62)/.38)"));
+  assert.ok(js.includes("const release=1-smoothstep(Math.max(0,Math.min(1,(t-.62)/.38)))"));
   assert.ok(js.includes("win.requestAnimationFrame(tick)"));
   assert.ok(js.includes("cancelTopAnimation()"),"Normal route reset cancels active animation");
 });
