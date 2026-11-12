@@ -769,7 +769,7 @@ test("Collection Edit and Select cannot overlap, selected rows survive paginatio
  assert.ok(handler.includes("renderRows();renderCard()"));
  assert.ok(!handler.includes("state.selectedCollections.clear()"),"Pagination must preserve current selection");
  const exit=js.slice(js.indexOf("async function exitCollectionSelectMode(){"),js.indexOf("function resetCollectionSelectMode(){"));
- assert.ok(exit.includes("state.selectedCollections.clear()"));
+ assert.ok(exit.includes("clearCollectionPicks()"));
  assert.ok(exit.includes('root.classList.add("cs-leaving-selection")'));
  assert.ok(exit.includes('root.classList.remove("cs-leaving-selection")'));
  assert.ok(!exit.includes('request('),"Done should never submit selection to server");
