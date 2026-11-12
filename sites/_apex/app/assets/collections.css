@@ -28,21 +28,22 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-wrap{width:100%;margin:0;padding:0}
 #cs-root .cs-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
 #cs-root .cs-head-copy{flex:1 1 auto;min-width:0;max-width:700px}
-/* ChatGPT dark composer surface: #212121 is the primary composer fill,
-   NOT the #303030 elevated/secondary-card color used in the first pass.
-   The thin #414141 edge is a documented dark-theme boundary; shadow remains
-   deliberately minimal. Exact current account-level computed styles are not
-   recoverable from the truncated heap/reconstruction supplied earlier. */
+/* Measured source: archived ui-decomposition.json, [data-composer-surface].
+   The ChatGPT surface is #212121, radius 28px, minimum height 52px,
+   horizontal padding 8px, vertical padding 5px and a zero-width border.
+   Reported border-color rgba(255,255,255,.05) does NOT draw an outline.
+   Its only nontransparent shadow is a 1px BLURRED INSET white highlight
+   at .2 opacity (shadow-short-composer). No outer drop shadow.
+   Focus/hover on the shell must not invent a bright perimeter. */
 #cs-root .cs-control-center{
  display:inline-flex;align-items:center;justify-content:flex-start;gap:6px;
- width:max-content;max-width:100%;min-height:53px;margin-top:16px;
- padding:7px 8px 8px;border:1px solid #414141;
- border-radius:28px;background:#212121;
- box-shadow:0 1px 2px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.008);
- transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease;
+ width:max-content;max-width:100%;min-height:52px;margin-top:16px;
+ padding:5px 8px;border:0 solid rgba(255,255,255,.05);
+ border-radius:28px;background:#212121;background-clip:padding-box;
+ box-shadow:inset 0 0 1px rgba(255,255,255,.2);
+ outline-style:none;
+ transition:background-color .2s cubic-bezier(.4,0,.2,1);
 }
-#cs-root .cs-control-center:hover{border-color:rgba(255,255,255,.09)}
-#cs-root .cs-control-center:focus-within{border-color:rgba(255,255,255,.115)}
 #cs-root .cs-control-center > .cs-create-control,
 #cs-root .cs-control-center > .cs-edit-control,
 #cs-root .cs-control-center > .cs-select-control{margin:0;vertical-align:middle}
