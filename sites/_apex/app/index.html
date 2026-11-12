@@ -85,18 +85,18 @@
       <div class="sidebar-navigation" id="sidebar-navigation">
         <nav id="main-navigation" class="nav-stack" aria-label="Main workspace navigation">
           <div class="nav-section-label">WORKSPACE</div>
-          <a class="nav-link" data-route="home" href="#home" aria-label="Home"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-home"></use></svg><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
+          <a class="nav-link" data-route="home" href="#home" aria-label="Home"><span class="nav-icon nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
           <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label"><span class="nav-label-text">Projects</span></span></a>
-          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
+          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
           <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><span class="nav-label"><span class="nav-label-text">Utilities</span></span></a>
-          <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-collections"></use></svg><span class="nav-label"><span class="nav-label-text">Collections</span></span></a>
+          <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections"><span class="nav-icon nav-icon-asset nav-icon-asset--collections" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Collections</span></span></a>
           <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-providers"></use></svg><span class="nav-label"><span class="nav-label-text">Providers</span></span></a>
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-permissions"></use></svg><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
           <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-diagnostics"></use></svg><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
-          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-settings"></use></svg><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
+          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="apple-hig-navigation" class="nav-stack" aria-label="Apple HIG Reader navigation" hidden>
           <div class="nav-section-label">APPLE HIG READER</div>
@@ -396,9 +396,9 @@
                 <div class="cs-head-copy">
                   <span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true"><span class="cs-summary-value">TOTAL — / UPDATED —</span><span class="cs-summary-skeleton" aria-hidden="true"><span class="cs-summary-dot"></span><span class="cs-summary-divider">/</span><span class="cs-summary-dot"></span></span></span>
                   <p>Organize your utilities into collections, inspect their live memberships, and manage what belongs together.</p>
+                  <button class="cs-create-icon-button" id="cs-create" type="button" aria-label="New collection" title="New collection"><img src="/app/assets/add-collection.v1.svg" alt="" aria-hidden="true"></button>
                 </div>
                 <div class="cs-top-actions">
-                  <button class="cs-button cs-primary" id="cs-create" type="button"><span aria-hidden="true">+</span> New collection</button>
                   <button class="cs-button" id="cs-refresh" type="button" aria-label="Refresh collections directly from Colosseum"><svg class="cs-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>Refresh</button>
                 </div>
               </header>

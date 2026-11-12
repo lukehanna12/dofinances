@@ -100,6 +100,10 @@ jobs:
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
           cp sites/_apex/app/assets/workspace-enhancements.css dist/app/assets/workspace-enhancements.css
           cp sites/_apex/app/assets/magnifying-glass.v2.svg dist/app/assets/magnifying-glass.v2.svg
+          cp sites/_apex/app/assets/dashboard-screen-sidebar-icon.v1.svg dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
+          cp sites/_apex/app/assets/collections-screen-sidebar-icon.v1.svg dist/app/assets/collections-screen-sidebar-icon.v1.svg
+          cp sites/_apex/app/assets/settings-screen-sidebar-icon.v1.svg dist/app/assets/settings-screen-sidebar-icon.v1.svg
+          cp sites/_apex/app/assets/add-collection.v1.svg dist/app/assets/add-collection.v1.svg
           cp sites/_apex/app/assets/diagnostics.css dist/app/assets/diagnostics.css
           cp sites/_apex/app/assets/providers.css dist/app/assets/providers.css
           cp sites/_apex/app/assets/home-rice-terraces-hq.jpg dist/app/assets/home-rice-terraces-hq.jpg
@@ -110,6 +114,10 @@ jobs:
           cp studio/sidebar/preview-bootstrap.js dist/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
           test -s dist/app/assets/magnifying-glass.v2.svg
+          test -s dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
+          test -s dist/app/assets/collections-screen-sidebar-icon.v1.svg
+          test -s dist/app/assets/settings-screen-sidebar-icon.v1.svg
+          test -s dist/app/assets/add-collection.v1.svg
           test -s dist/app/assets/home-rice-terraces-hq.jpg
           grep -Fq 'global-menu' dist/app/index.html
           grep -Fq 'workspace-enhancements.css' dist/app/index.html

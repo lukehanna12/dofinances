@@ -159,6 +159,29 @@ a:hover {text-decoration: none;}
   letter-spacing: 0;
 }
 .nav-icon {width: 18px; height: 18px; stroke-width: 1.7;}
+/* Three uploaded Apple SVGs occupy the established 18x18 sidebar slots.
+   Masking preserves each vector's native viewBox proportions and original alpha,
+   while inheriting the exact hover/active/currentColor of neighboring icons. */
+.nav-link .nav-icon-asset{
+  display:block;width:18px;height:18px;flex:0 0 18px;align-self:center;
+  background-color:currentColor;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+}
+.nav-link .nav-icon-asset--dashboard{
+  -webkit-mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
+}
+.nav-link .nav-icon-asset--collections{
+  -webkit-mask-image:url("/app/assets/collections-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/collections-screen-sidebar-icon.v1.svg");
+}
+.nav-link .nav-icon-asset--settings{
+  -webkit-mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
+}
+
 .nav-link:hover {background: var(--ui-hover); color: var(--ui-text); border-color: transparent;}
 .nav-link.active {background: var(--ui-selected); border-color: transparent; color: var(--ui-text);}
 .nav-link.active .nav-icon {color: var(--ui-text);}

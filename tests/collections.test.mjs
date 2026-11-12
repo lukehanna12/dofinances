@@ -428,3 +428,59 @@ test("Collections canvas retains ten-row capacity with about fifteen percent mor
  assert.match(css,/#cs-root \.cs-layout\{[^}]*align-items:start/);
  assert.doesNotMatch(js,/pageSize:7/);
 });
+
+
+test("Uploaded native SVGs replace only the requested sidebar icons in both shells",()=>{
+  const preview=src("studio/sidebar/index.html");
+  const navCss=src("sites/_apex/app/assets/workspace-theme.css");
+  const workflow=src(".github/workflows/site.yml");
+  const routes=[
+    ["home","#home","dashboard"],
+    ["collections","#colosseum/collections","collections"],
+    ["settings","#settings","settings"],
+    ["settings","#colosseum/settings","settings"]
+  ];
+  for(const markup of [html,preview]){
+    for(const [route,href,icon] of routes){
+      const link='<a class="nav-link" data-route="'+route+'" href="'+href+'"';
+      assert.ok(markup.includes(link),'Missing navigation destination '+href);
+      const row=markup.slice(markup.indexOf(link),markup.indexOf("</a>",markup.indexOf(link)));
+      assert.ok(row.includes('class="nav-icon nav-icon-asset nav-icon-asset--'+icon+'"'),'Incorrect icon at '+href);
+      assert.doesNotMatch(row,/<use href="#icon-(?:home|collections|settings)"/);
+    }
+    assert.match(markup,/data-route="projects"[^>]*><svg class="nav-icon"/);
+    assert.match(markup,/data-route="providers"[^>]*><svg class="nav-icon"/);
+  }
+  assert.match(navCss,/\.nav-link \.nav-icon-asset\{[^}]*width:18px;height:18px;flex:0 0 18px;align-self:center/);
+  assert.match(navCss,/-webkit-mask-size:contain;mask-size:contain/);
+  for(const [name,view] of [
+    ["dashboard-screen-sidebar-icon.v1.svg","0 0 28.9584 25.8029"],
+    ["collections-screen-sidebar-icon.v1.svg","0 0 28.4799 27.6055"],
+    ["settings-screen-sidebar-icon.v1.svg","0 0 26.7968 26.0794"],
+    ["add-collection.v1.svg","0 0 31.9317 23.3643"]
+  ]){
+    const svg=src("sites/_apex/app/assets/"+name);
+    assert.match(svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+    assert.ok(svg.includes('viewBox="'+view+'"'),name+' geometry changed');
+    assert.match(svg,/<path d="[^"]+" fill="white" fill-opacity="0\.85"\/>/);
+    assert.doesNotMatch(svg,/<(?:script|foreignObject|image)\b|<!DOCTYPE|<\?xml|\.png|data:image/i);
+    assert.ok(workflow.includes('cp sites/_apex/app/assets/'+name+' dist/app/assets/'+name),'Missing Studio asset '+name);
+    assert.ok(workflow.includes('test -s dist/app/assets/'+name),'Missing Studio asset check '+name);
+  }
+  for(const icon of ["dashboard","collections","settings"])
+    assert.ok(navCss.includes('nav-icon-asset--'+icon),'Missing vector mask for '+icon);
+});
+
+test("New collection uses its 85%-height SVG beneath the description with 7.5px inset",()=>{
+  const desc="Organize your utilities into collections, inspect their live memberships, and manage what belongs together.";
+  const start=html.indexOf(desc),btn=html.indexOf('id="cs-create"'),refresh=html.indexOf('id="cs-refresh"');
+  assert.ok(start>=0&&btn>start&&refresh>btn,'New collection must follow description and precede Refresh');
+  const copy=html.slice(html.lastIndexOf('<div class="cs-head-copy">',start),html.indexOf('</div>',start));
+  assert.ok(copy.includes('id="cs-create"'),'Creation action must sit below description in the intro column');
+  assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="New collection"/);
+  assert.match(copy,/src="\/app\/assets\/add-collection\.v1\.svg" alt=""/);
+  assert.doesNotMatch(html,/<button class="cs-button cs-primary" id="cs-create"/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*margin:16px 0 0 7\.5px/);
+  assert.match(css,/#cs-root \.cs-create-icon-button img\{[^}]*height:30\.6px;width:auto/);
+  assert.match(js,/createButton\.addEventListener\("click",\(\)=>openForm\("create"\)\)/);
+});
