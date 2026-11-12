@@ -31,7 +31,7 @@ const stage=document.getElementById("dashboard-atmosphere");
 const small=document.getElementById("dashboard-tiles-small");
 const large=document.getElementById("dashboard-tiles-main");
 const reduce=window.matchMedia("(prefers-reduced-motion: reduce)");
-const PHASE_COUNT=48, CYCLE=76;
+const CYCLE=76;
 let nodes=[],active=new Set(),pointerX=-9999,pointerY=-9999,pointerFrame=0;
 let oldWidth=-1,oldHeight=-1;
 function unitNoise(n,seed=0){
@@ -47,9 +47,11 @@ function tileElement(spec,seq){
   el.style.width=spec.side.toFixed(1)+"px";
   el.style.height=spec.side.toFixed(1)+"px";
   el.style.setProperty("--radius",Math.min(15,Math.max(spec.small?5:9,spec.side*.15)).toFixed(1)+"px");
-  el.style.setProperty("--rest",(spec.icon?.19:spec.small?.10:.085).toFixed(3));
+  el.style.setProperty("--rest",(spec.icon?.265:spec.small?.11:.095).toFixed(3));
   el.style.setProperty("--peak",(spec.icon?.89:spec.small?.46:.60).toFixed(3));
-  const phase=((seq+.5)/PHASE_COUNT*CYCLE+unitNoise(seq,9)*.65)%CYCLE;
+  // Golden-ratio phase separation prevents synchronous bursts; a single
+  // icon is deliberately near its crest on first load.
+  const phase=((seq*.6180339887498949+.807)%1)*CYCLE;
   el.style.setProperty("--phase",(-phase).toFixed(3)+"s");
   const face=document.createElement("span");
   face.className="dashboard-cell-face";
@@ -93,7 +95,7 @@ function rebuild(){
     const x=(col+.5)*unitX+(unitNoise(seed,2)-.5)*unitX*.12;
     const y=topGap+(row+.5)*unitY+(unitNoise(seed,5)-.5)*unitY*.12;
     const base=Math.min(unitX*.97,unitY*.79,125);
-    const boost=icon?.82+unitNoise(seed,11)*.20: .75+unitNoise(seed,14)*.4;
+    const boost=icon?.64+unitNoise(seed,11)*.52: .70+unitNoise(seed,14)*.56;
     let side=Math.max(22,base*boost);
     if(!icon&&row===2&&col===5)side=Math.min(126,unitX*1.55,unitY*1.20);
     // Irregular tile scale is checked against every already-placed tile.
@@ -108,13 +110,25 @@ function rebuild(){
     setTile(large,{left:x-side/2,top:y-side/2,side,icon,small:false});
   }
   if(mobile){
+    // The 11-column desktop grid would shrink to ~20px in a 390px-wide
+    // viewport, then fail the minimum-size gate. Use three explicit columns,
+    // preserve real Lucide icons, and retain ample negative space.
     const shortlist=[ICON_POSITIONS[0],ICON_POSITIONS[2],ICON_POSITIONS[5],
       ICON_POSITIONS[7],ICON_POSITIONS[11],ICON_POSITIONS[14]];
+    const column=mainR.width/3;
+    const band=spanY/3;
     shortlist.forEach(([_,__,name],i)=>{
-      const col=[1,5,9][i%3],row=Math.floor(i/3)*2+1;
-      mainTile(row,col,name,i+47);
+      const x=(i%3+.5)*column;
+      const y=topGap+(Math.floor(i/3)+.56)*band;
+      const side=Math.max(31,Math.min(72,column*(.66+unitNoise(i,8)*.16),band*.56));
+      setTile(large,{left:x-side/2,top:y-side/2,side,icon:name,small:false});
     });
-    [[0,6],[4,4]].forEach(([r,c],i)=>mainTile(r,c,null,i+80));
+    [0,2].forEach((col,i)=>{
+      const x=(col+.5)*column;
+      const y=topGap+2.45*band;
+      const side=Math.max(23,Math.min(48,column*.44));
+      setTile(large,{left:x-side/2,top:y-side/2,side,small:false});
+    });
   }else{
     ICON_POSITIONS.forEach(([r,c,name],i)=>mainTile(r,c,name,i+1));
     EXTRA_POSITIONS.forEach(([r,c],i)=>mainTile(r,c,null,i+29));
