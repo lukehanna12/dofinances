@@ -1,8 +1,9 @@
-/* Sparse animated Dashboard visual — Colosseum 0001c1, CTA 6.
-   Original 16 Lucide SVGs and 11x6 icon coordinates are preserved.
-   One original Home JPEG; ~35 DOM tiles, no per-square backdrop filters,
-   no time-based JS jobs, polling, canvas, network calls or layout tie to sidebar. */
-const ICON_SHAPES={
+/* Recovered Colosseum catalog item 0001c1, CTA 6.
+   The 11x6 lattice, exact icon coordinates, deterministic tile occupancy,
+   and .03s row-plus-column entrance staggering follow cta-6.jsx.
+   Icon paths are from the canonical Lucide open-source SVGs.
+   The Dashboard CTA text is intentionally minimal. */
+const icons={
   "Zap": "<path d=\"M15.914 4a1.5 1.5 0 00-2.474-1.561l-9 9A1.5 1.5 0 005.5 14h4.002a.5.5 0 01.471.666L8.086 20a1.5 1.5 0 002.475 1.56l9-9A1.5 1.5 0 0018.5 10h-3.997a.5.5 0 01-.472-.667z\" />",
   "Boxes": "<path d=\"M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z\" /><path d=\"m7 16.5-4.74-2.85\" /><path d=\"m7 16.5 5-3\" /><path d=\"M7 16.5v5.17\" /><path d=\"M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z\" /><path d=\"m17 16.5-5-3\" /><path d=\"m17 16.5 4.74-2.85\" /><path d=\"M17 16.5v5.17\" /><path d=\"M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z\" /><path d=\"M12 8 7.26 5.15\" /><path d=\"m12 8 4.74-2.85\" /><path d=\"M12 13.5V8\" />",
   "Gauge": "<path d=\"m12 14 4-4\" /><path d=\"M3.34 19a10 10 0 1 1 17.32 0\" />",
@@ -20,174 +21,41 @@ const ICON_SHAPES={
   "Diamond": "<path d=\"M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0Z\" />",
   "Rocket": "<path d=\"M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5\" /><path d=\"M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09\" /><path d=\"M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z\" /><path d=\"M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05\" />"
 };
-const ICON_POSITIONS=[[0,1,"Zap"],[0,5,"Boxes"],[0,8,"Gauge"],[1,0,"Layers"],[1,6,"Hexagon"],[1,9,"Cloud"],[2,1,"Cpu"],[2,9,"Database"],[3,0,"Palette"],[3,10,"Aperture"],[4,2,"Compass"],[4,5,"Orbit"],[4,8,"Shapes"],[5,1,"Triangle"],[5,6,"Diamond"],[5,9,"Rocket"]];
-const EXTRA_POSITIONS=[[0,3],[1,3],[1,8],[2,5],[3,6],[4,0],[5,4],[5,10]];
-const MICRO_SLOTS=[
-  [.08,.17,.66],[.30,.09,.89],[.64,.15,.75],[.85,.29,.93],
-  [.14,.38,.83],[.44,.34,.69],[.73,.50,.78],[.22,.63,.94],
-  [.53,.72,.65],[.82,.78,.80],[.18,.89,.74]
-];
-const stage=document.getElementById("dashboard-atmosphere");
-const small=document.getElementById("dashboard-tiles-small");
-const large=document.getElementById("dashboard-tiles-main");
-const reduce=window.matchMedia("(prefers-reduced-motion: reduce)");
-const CYCLE=76;
-let nodes=[],active=new Set(),pointerX=-9999,pointerY=-9999,pointerFrame=0;
-let oldWidth=-1,oldHeight=-1;
-function unitNoise(n,seed=0){
-  const v=Math.sin((n+1)*127.1+seed*311.7)*43758.5453;
-  return v-Math.floor(v);
-}
-function tileElement(spec,seq){
-  const el=document.createElement("span");
-  el.className="dashboard-cell"+(spec.icon?" dashboard-cell--icon":spec.small?" dashboard-cell--small":" dashboard-cell--quiet");
-  el.setAttribute("aria-hidden","true");
-  el.style.left=spec.left.toFixed(1)+"px";
-  el.style.top=spec.top.toFixed(1)+"px";
-  el.style.width=spec.side.toFixed(1)+"px";
-  el.style.height=spec.side.toFixed(1)+"px";
-  el.style.setProperty("--radius",Math.min(15,Math.max(spec.small?5:9,spec.side*.15)).toFixed(1)+"px");
-  el.style.setProperty("--rest",(spec.icon?.265:spec.small?.11:.095).toFixed(3));
-  el.style.setProperty("--peak",(spec.icon?.89:spec.small?.46:.60).toFixed(3));
-  // Golden-ratio phase separation prevents synchronous bursts; a single
-  // icon is deliberately near its crest on first load.
-  const phase=((seq*.6180339887498949+.807)%1)*CYCLE;
-  el.style.setProperty("--phase",(-phase).toFixed(3)+"s");
-  const face=document.createElement("span");
-  face.className="dashboard-cell-face";
-  if(spec.icon){
-    const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
-    svg.setAttribute("class","dashboard-cell-icon");
-    svg.setAttribute("viewBox","0 0 24 24");
-    svg.setAttribute("aria-hidden","true");
-    svg.setAttribute("focusable","false");
-    svg.innerHTML=ICON_SHAPES[spec.icon];
-    face.append(svg);
-  }
-  el.append(face);
-  return el;
-}
-function rebuild(){
-  if(!stage||!small||!large)return;
-  const sr=stage.getBoundingClientRect();
-  if(sr.width<1||sr.height<1)return;
-  if(Math.abs(sr.width-oldWidth)<1&&Math.abs(sr.height-oldHeight)<1)return;
-  oldWidth=sr.width;oldHeight=sr.height;
-  const mainR=large.getBoundingClientRect();
-  const smallR=small.getBoundingClientRect();
-  const mobile=sr.width<760;
-  const compact=sr.width<1080;
-  const topGap=Math.min(115,Math.max(76,sr.height*.115));
-  const bottomGap=Math.min(190,Math.max(115,sr.height*.18));
-  const spanY=Math.max(210,sr.height-topGap-bottomGap);
-  const unitX=mainR.width/11;
-  const unitY=spanY/6;
-  const stagedMain=[],stagedSmall=[],records=[];
-  const accepted=[];
-  let seq=0;
-  function setTile(zone,spec){
-    const el=tileElement(spec,seq++);
-    (zone===large?stagedMain:stagedSmall).push(el);
-    const area=zone.getBoundingClientRect();
-    records.push({element:el,x:area.left+spec.left+spec.side/2,
-      y:area.top+spec.top+spec.side/2,reach:Math.max(95,spec.side*.75+55),side:spec.side});
-  }
-  function mainTile(row,col,icon,seed){
-    const x=(col+.5)*unitX+(unitNoise(seed,2)-.5)*unitX*.12;
-    const y=topGap+(row+.5)*unitY+(unitNoise(seed,5)-.5)*unitY*.12;
-    const base=Math.min(unitX*.97,unitY*.79,125);
-    const boost=icon?.64+unitNoise(seed,11)*.52: .70+unitNoise(seed,14)*.56;
-    let side=Math.max(22,base*boost);
-    if(!icon&&row===2&&col===5)side=Math.min(126,unitX*1.55,unitY*1.20);
-    // Irregular tile scale is checked against every already-placed tile.
-    // Neighboring cells do not collide on ultrawide or short viewports.
-    for(let attempt=0;attempt<10;attempt++){
-      if(accepted.every(t=>Math.abs(x-t.x)>(side+t.side)/2+8||
-         Math.abs(y-t.y)>(side+t.side)/2+8))break;
-      side*=.88;
+const positionIcons={
+  "0:1": "Zap",
+  "0:5": "Boxes",
+  "0:8": "Gauge",
+  "1:0": "Layers",
+  "1:6": "Hexagon",
+  "1:9": "Cloud",
+  "2:1": "Cpu",
+  "2:9": "Database",
+  "3:0": "Palette",
+  "3:10": "Aperture",
+  "4:2": "Compass",
+  "4:5": "Orbit",
+  "4:8": "Shapes",
+  "5:1": "Triangle",
+  "5:6": "Diamond",
+  "5:9": "Rocket"
+};
+const root=document.getElementById("cta6-mosaic");
+if(root){
+  const cells=document.createDocumentFragment();
+  for(let index=0;index<66;index++){
+    const row=Math.floor(index/11);
+    const col=index%11;
+    const center=row>=2&&row<=3&&col>=3&&col<=7;
+    const name=positionIcons[`${row}:${col}`];
+    const hash=43758.5453*Math.sin(127.1*row+311.7*col);
+    const filled=!center&&(hash-Math.floor(hash))>.35;
+    const tile=document.createElement("div");
+    tile.className="cta6-tile "+(center?"cta6-tile--empty":name?"cta6-tile--icon":filled?"cta6-tile--plain":"cta6-tile--empty");
+    if(name){
+      tile.innerHTML=`<svg class="cta6-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">${icons[name]}</svg>`;
     }
-    if(side<23)return;
-    accepted.push({x,y,side});
-    setTile(large,{left:x-side/2,top:y-side/2,side,icon,small:false});
+    tile.style.setProperty("--cta6-delay",((row+col)*.03).toFixed(2)+"s");
+    cells.append(tile);
   }
-  if(compact){
-    // The 11-column desktop grid becomes visually indistinct in a narrow
-    // column. Phone: 6 generous icon tiles. Tablet: 9 generous icon tiles.
-    // Both preserve the same source SVGs and keep microtiles at the left.
-    const subset=mobile?[0,2,5,7,11,14]:[0,1,2,6,7,9,10,14,15];
-    const column=mainR.width/3;
-    const band=spanY/3;
-    subset.forEach((sourceIndex,i)=>{
-      const name=ICON_POSITIONS[sourceIndex][2];
-      const x=(i%3+.5)*column;
-      const y=topGap+(Math.floor(i/3)+.56)*band;
-      const side=Math.max(31,Math.min(mobile?72:92,
-        column*(mobile?.66+unitNoise(i,8)*.16:.53+unitNoise(i,8)*.19),
-        band*.58));
-      setTile(large,{left:x-side/2,top:y-side/2,side,icon:name,small:false});
-    });
-    if(mobile){
-      [0,2].forEach(col=>{
-        const x=(col+.5)*column;
-        const y=topGap+2.45*band;
-        const side=Math.max(23,Math.min(48,column*.44));
-        setTile(large,{left:x-side/2,top:y-side/2,side,small:false});
-      });
-    }
-  }else{
-    ICON_POSITIONS.forEach(([r,c,name],i)=>mainTile(r,c,name,i+1));
-    EXTRA_POSITIONS.forEach(([r,c],i)=>mainTile(r,c,null,i+29));
-  }
-  // Smaller, sparse squares behind the entire maximum-width sidebar zone.
-  for(const [i,[x,y,s]] of MICRO_SLOTS.entries()){
-    if(mobile&&i%2===1)continue;
-    const diameter=Math.min(mobile?26:38,Math.max(13,smallR.width*.075))*s;
-    const cx=x*smallR.width;
-    const cy=topGap+y*spanY;
-    setTile(small,{left:cx-diameter/2,top:cy-diameter/2,side:diameter,small:true});
-  }
-  small.replaceChildren(...stagedSmall);
-  large.replaceChildren(...stagedMain);
-  nodes=records;
-  active.clear();
-}
-function updatePointer(){
-  pointerFrame=0;
-  if(reduce.matches)return;
-  const next=new Set();
-  for(const n of nodes){
-    const dx=Math.max(0,Math.abs(pointerX-n.x)-n.side*.30);
-    const dy=Math.max(0,Math.abs(pointerY-n.y)-n.side*.30);
-    const distance=Math.hypot(dx,dy);
-    if(distance>=n.reach)continue;
-    const strength=Math.pow(1-distance/n.reach,1.8);
-    if(strength<.015)continue;
-    n.element.style.setProperty("--near",strength.toFixed(3));
-    next.add(n);
-  }
-  for(const n of active)
-    if(!next.has(n))n.element.style.removeProperty("--near");
-  active=next;
-}
-function queuePointer(){
-  if(!pointerFrame)pointerFrame=requestAnimationFrame(updatePointer);
-}
-if(stage&&small&&large){
-  rebuild();
-  window.addEventListener("pointermove",event=>{
-    if(event.pointerType==="touch")return;
-    pointerX=event.clientX;pointerY=event.clientY;queuePointer();
-  },{passive:true});
-  window.addEventListener("pointerout",event=>{
-    if(event.relatedTarget)return;
-    pointerX=-9999;pointerY=-9999;queuePointer();
-  },{passive:true});
-  window.addEventListener("blur",()=>{
-    pointerX=-9999;pointerY=-9999;queuePointer();
-  });
-  window.addEventListener("resize",()=>{rebuild();queuePointer()},{passive:true});
-  reduce.addEventListener?.("change",()=>{
-    for(const n of active)n.element.style.removeProperty("--near");
-    active.clear();
-  });
+  root.replaceChildren(cells);
 }
