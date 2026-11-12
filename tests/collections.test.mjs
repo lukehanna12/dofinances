@@ -599,6 +599,49 @@ test("Collections reordering and hidden exposure use only revision-bound ID conf
 });
 
 
+test("Collection names use a gray inline pencil, live-width underline, and caret synchronized to the line",async()=>{
+  const {collectionInlineNameWidth}=await import("../sites/_apex/app/assets/collections.js");
+  assert.equal(collectionInlineNameWidth(49.25,300),60,"Measured glyphs extend a little past the name");
+  assert.equal(collectionInlineNameWidth(120,300),130,"Longer names widen the underline proportionally");
+  assert.equal(collectionInlineNameWidth(900,170),144,"Long names stop before the eye action");
+  assert.equal(collectionInlineNameWidth(0,170),24,"Empty names keep a usable minimum width");
+  assert.equal(collectionInlineNameWidth(25,40),24,"Narrow viewports remain bounded");
+  assert.match(js,/const NAME_PENCIL='<svg[^']+stroke-width="1\.65"/);
+  assert.match(js,/data-cs-start-rename/);
+  assert.match(js,/class="cs-name-field"/);
+  assert.match(js,/class="cs-name-measure"/);
+  assert.match(js,/class="cs-name-underline"/);
+  assert.match(css,/#cs-root \.cs-name-pencil\{[^}]*color:#979797;cursor:pointer/);
+  assert.match(css,/#cs-root \.cs-inline-name\{[^}]*color:#dedede;-webkit-text-fill-color:#dedede/);
+  assert.match(css,/#cs-root \.cs-name-underline\{[^}]*height:1px/);
+  assert.match(css,/transform:scaleX\(0\);transform-origin:left center/);
+  assert.match(css,/transition:transform 205ms cubic-bezier\(\.14,1,\.25,1\)/);
+  assert.match(css,/#cs-root \.cs-underline-extended \.cs-name-underline\{transform:scaleX\(1\)\}/);
+  assert.match(css,/#cs-root \.cs-caret-pending \.cs-inline-name\{caret-color:transparent\}/);
+  assert.match(js,/underline\.addEventListener\("transitionend",event=>/);
+  assert.match(js,/state\.renameEpoch===renameEpoch&&field\.isConnected/,"A stale animation cannot reveal the next editor's caret");
+  assert.match(css,/#cs-root \.cs-name-field\{[^}]*right:calc\(25% \+ 18px\)/,"Keep pencil clear of eye icon");
+  assert.match(js,/event\.propertyName==="transform"\)revealCaret\(\)/);
+  assert.match(js,/input\.focus\(\{preventScroll:true\}\)/);
+  assert.match(js,/input\.setSelectionRange\(input\.value\.length,input\.value\.length\)/);
+  assert.doesNotMatch(css,/border-bottom:1px dashed #666/,"Old dashed rename border is removed");
+});
+test("Click-away or Enter commits a row draft locally; Escape restores it before Done saves changes",()=>{
+  assert.match(js,/function finishInlineRename\(restore=false\)/);
+  assert.match(js,/function beginInlineRename\(button\)/);
+  assert.match(js,/list\.addEventListener\("focusout",event=>/);
+  assert.match(js,/document\.addEventListener\("pointerdown",event=>/);
+  assert.match(js,/if\(field&&!field\.contains\(event\.target\)\)finishInlineRename\(\)/);
+  assert.match(js,/finishInlineRename\(event\.key==="Escape"\)/);
+  assert.match(js,/if\(restore\)input\.value=state\.renameInitialValue/);
+  assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
+  assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(\)/);
+  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,name,expected_revision:collection\.revision/);
+  assert.match(js,/sizeInlineName\(input\.closest\("\.cs-name-field"\)\)/);
+  assert.match(js,/measure\.textContent=input\.value\|\|" "/);
+  assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
+});
+
 test("Collections control swap uses synchronized 20px local fades at the list right edge",()=>{
  assert.match(css,/--cs-control-swap:480ms;--cs-control-ease:cubic-bezier\(\.22,1,\.36,1\)/);
  for(const name of ["cs-grip-enter-right","cs-chevron-exit-left","cs-grip-exit-left","cs-chevron-enter-right"]){
@@ -608,7 +651,7 @@ test("Collections control swap uses synchronized 20px local fades at the list ri
  assert.match(css,/@keyframes cs-grip-enter-right\{\s*from\{transform:translate\(20px,-50%\);opacity:0\}\s*to\{transform:translate\(0,-50%\);opacity:1\}/);
  assert.match(css,/#cs-root\.cs-editing \.cs-drag-handle\{left:calc\(100% - 22px\);opacity:1;pointer-events:auto\}/);
  assert.doesNotMatch(css,/#cs-root\.cs-editing \.cs-drag-handle\{left:calc\(var\(--cs-depth/);
- assert.match(css,/#cs-root \.cs-inline-name\{[^}]*left:calc\(36px \+ var\(--cs-depth,0\) \* 17px\)/);
+ assert.match(css,/#cs-root \.cs-name-field\{[^}]*left:calc\(36px \+ var\(--cs-depth,0\) \* 17px\)/);
  assert.match(css,/@keyframes cs-grip-exit-left\{\s*from\{transform:translate\(0,-50%\);opacity:1\}\s*to\{transform:translate\(-20px,-50%\);opacity:0\}/);
  assert.match(css,/@keyframes cs-chevron-exit-left\{\s*from\{transform:translate\(0,-50%\);opacity:1\}\s*to\{transform:translate\(-20px,-50%\);opacity:0\}/);
  assert.match(css,/@keyframes cs-chevron-enter-right\{\s*from\{transform:translate\(20px,-50%\);opacity:0\}\s*to\{transform:translate\(0,-50%\);opacity:1\}/);
@@ -625,7 +668,7 @@ test("Eye icons reveal promptly after the rearrangement animation completes",()=
  assert.ok(css.includes("transition:opacity 160ms var(--cs-control-ease),visibility 0s linear 160ms"));
  assert.ok(css.includes("#cs-root.cs-editing .cs-visibility-toggle{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}"));
  assert.ok(css.includes("#cs-root .cs-visibility-toggle:disabled{opacity:0}"));
- assert.ok(js.includes("control.disabled=!state.editing||state.editTransitioning"));
+ assert.ok(js.includes("control.disabled=!canEdit"),"Rearrangement controls disable during entry and exit");
  assert.ok(js.includes('await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right")'));
  assert.ok(css.includes("--cs-control-swap:480ms"));
 });
@@ -638,7 +681,7 @@ test("Visibility eyes fade into view before rearrangement handles finish enterin
  assert.ok(rule.includes("animation:cs-eye-reveal-with-grip var(--cs-control-swap) linear both"),"Animation shares grip's 480ms timeline");
  assert.ok(css.includes("@keyframes cs-eye-reveal-with-grip{\n 0%,25%{opacity:0}\n 80%,100%{opacity:1}\n}"),"Eye fade completes before 480ms");
  assert.ok(css.includes("#cs-root .cs-visibility-toggle:disabled{opacity:0}"),"Hidden while not entering edit mode");
- assert.ok(js.includes("control.disabled=!state.editing||state.editTransitioning"),"Eye remains disabled during transition");
+ assert.ok(js.includes("control.disabled=!canEdit"),"Eye remains disabled during transition");
  assert.ok(css.includes("--cs-control-swap:480ms"));
 });
 test("Opening edit mode closes an expanded row with the white pencil-position ring",()=>{
