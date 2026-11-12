@@ -10,7 +10,8 @@ globalThis.document={
   createElement:()=>({})
 };
 globalThis.window={};
-const {makeTileFloatData,coverUVScale} = await import("./dashboard-gpu-renderer.js");
+const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners} =
+  await import("./dashboard-gpu-renderer.js");
 const {nativePublicBlurRadius,observedBlurWord} =
   await import("./sidebar-glass-oracle.js");
 test("center-cover backdrop UV respects physical viewport and image aspect",()=>{
@@ -23,14 +24,17 @@ test("center-cover backdrop UV respects physical viewport and image aspect",()=>
 });
 test("one occupied tile maps CSS geometry to physical pixels without screenshot",()=>{
   globalThis.getComputedStyle=()=>({
-    borderTopLeftRadius:"12px",
+    borderTopLeftRadius:"12px",borderTopRightRadius:"12px",
+    borderBottomRightRadius:"12px",borderBottomLeftRadius:"12px",
     getPropertyValue:()=>".12s"
   });
   const tile={offsetWidth:75,offsetHeight:75,
     getBoundingClientRect:()=>({left:100,top:250,width:75,height:75})};
   const data=makeTileFloatData([tile],2);
-  assert.equal(data.length,8);
+  assert.equal(data.length,12);
   assert.deepEqual(Array.from(data.slice(0,6)),[200,500,150,150,24,Math.fround(.12)]);
+  assert.equal(data[7],4);
+  assert.deepEqual(Array.from(data.slice(8)),[-24,-24,-24,-24]);
   const radius=nativePublicBlurRadius("clear",75,75);
   assert.equal(data[6],observedBlurWord(radius,1,.25));
 });
@@ -69,4 +73,28 @@ test("oracle-provenance remains finite, native and browser assumptions labeled",
   assert.match(s,/GAP PUBLIC-CLEAR-COLOR/);
   assert.match(s,/GAP NATIVE-UV-TO-CSS/);
   assert.match(m,/GAP R-MIP-KERNEL/);
+});
+
+test("native ordered equality gate: retained equal mode4 and unequal mode5",()=>{
+  // mode4: two repeated exact SDF48→shader binding joins with 20px radius;
+  // mode5: two distinct native private 4-corner cases, each repeated.
+  assert.equal(selectModeForNormalizedCorners([20,20,20,20]),4);
+  assert.equal(selectModeForNormalizedCorners([-20,-20,-20,-20]),4);
+  assert.equal(selectModeForNormalizedCorners([-20,-3,-20,-36]),5);
+  assert.equal(selectModeForNormalizedCorners([-12,-28,-44,-6]),5);
+  assert.equal(selectModeForNormalizedCorners([0,-0,0,-0]),4);
+  assert.equal(selectModeForNormalizedCorners([20,20,Number.NaN,20]),5);
+  assert.throws(()=>selectModeForNormalizedCorners([20,20]),TypeError);
+});
+test("WGSL contains both native-mode SDF bodies and half-conversion specialization",()=>{
+  const s=fs.readFileSync(new URL("./dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+  const r=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
+  assert.match(s,/fn mode4SDF/);
+  assert.match(s,/fn mode5SDF/);
+  assert.match(s,/tile\.properties\.w==4\.0/);
+  assert.match(s,/fn nativeHalf3/);
+  assert.match(r,/shader-f16/);
+  assert.match(r,/__ORACLE_HALF_BODY__/);
+  assert.match(s,/cornerRadii: vec4<f32>/);
+  assert.match(s,/let f0=cornerFactor\(\(r0\+r1\)\*\.5,hw\)/);
 });

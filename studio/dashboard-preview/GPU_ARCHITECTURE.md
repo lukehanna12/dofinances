@@ -81,3 +81,29 @@ The oracle's three open proof obligations (`LG-SR-NATIVE`, `LG-Q-NUMERICAL`, `LG
 - The deployed browser uses the ordinary visible GPU canvas path, not the CI offscreen mode. On GPU failures it automatically falls back to the previously deployed live SVG implementation.
 
 No visual comparison or screenshot similarity is used as mathematical proof. Optimization (tile geometry GPU motion, mip dirty-region updates, shader fusion, buffer lifetimes and device-specific specialization) comes after source-equivalence validation.
+
+
+## 2026-11-12 full-oracle mode/precision reconciliation
+
+The original preview hard-coded mode 5 with four equal signed corners. This
+contradicted the retained target AArch64 `emit_sdf_bounds_internal` predicate:
+four equal **normalized** private lanes select mode 4; any unequal or unordered
+comparison selects mode 5. Exact same-event witnesses in
+`model/primary_evidence/sdf_bridge/live_mode_joins.json.xz` show
+(130,70,4,0), identity2x2, (0,0,20,0) for two equal-radius parameter
+configurations; two unequal configurations have mode 5 with private
+signed radii (-20,-3,-20,-36) and (-12,-28,-44,-6).
+Each configuration was repeated, and the full 48-byte state was joined
+to the actual fragment binding. The browser now implements the two
+AIR source branches and mode selection with the same comparison semantics,
+using CSS corner radii as an *unproved* public-to-private producer adapter.
+
+The LP**H** shader selection is closed on the target by the native selector
+proof. On WebGPU adapters advertising `shader-f16`, the port now
+rounds supercircle returns and selected shape outputs at retained AIR
+half-conversion boundaries. This is closer to native LPH precision; it is
+NOT mechanically proved AIR↔G14G equivalence. Adapters lacking the feature
+retain the original Float32 fallback and declare that status in runtime audit.
+
+No other global oracle proof flag was altered; the target-native mip-kernel,
+selected scalar producer, and final output Q remain unresolved.

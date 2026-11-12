@@ -2,7 +2,7 @@
  * Research authority: liquid-plexiglass-oracle @ 3fd32ed3, 25F80/M2/G14G.
  *
  * Source-backed mathematical stages:
- *   airSupercircleSDF / airMode5SDF: canonical 12 AIR SSA shader corpus
+ *   airSupercircleSDF / mode4SDF / mode5SDF: canonical AIR SSA corpus
  *   refractionEnvelope: glass_background_sdf_no_bleed_lph AIR 256-271,
  *                       352-366
  *   blur distribution: same AIR 290-321, refraction-adjusted distance
@@ -24,7 +24,8 @@ struct Globals {
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
-  properties: vec4<f32>,     // CSS border radius, entrance delay, native blurWord, unused
+  properties: vec4<f32>,   // radius, entrance delay, selected blur word, SDF mode
+  cornerRadii: vec4<f32>,  // native logical corner lane order: TL,TR,BR,BL
 };
 @group(0) @binding(0) var backdrop: texture_2d<f32>;
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
@@ -83,12 +84,19 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   return out;
 }
 
+// AIR supercircle_sdf returns a <3 x half> vector. If adapter.shader-f16
+// is available, round at this actual source conversion point. The fallback
+// is Float32 and does NOT claim to reproduce native half arithmetic.
+// __ORACLE_HALF_BODY__ is replaced with a WGSL body before compilation.
+fn nativeHalf3(v:vec3<f32>)->vec3<f32> {
+  __ORACLE_HALF_BODY__
+}
 fn supercircleSDF(ax:f32,ay:f32,hw:f32,hh:f32,
                   r:f32,bx:f32,by:f32)->vec3<f32>{
   if(r==0.0){
     let d=max(ax-hw,ay-hh);
-    return vec3<f32>(d,select(0.0,1.0,ax>=hw),
-                           select(0.0,1.0,ay>=hh));
+    return nativeHalf3(vec3<f32>(d,select(0.0,1.0,ax>=hw),
+                           select(0.0,1.0,ay>=hh)));
   }
   let ar=abs(r);
   let k=ar*1.5286649465560913;
@@ -125,39 +133,65 @@ fn supercircleSDF(ax:f32,ay:f32,hw:f32,hh:f32,
   let n=vec2<f32>(max(hx,0.0),max(hy,0.0));
   let nlen=length(n);
   if(nlen>0.0){
-    return vec3<f32>(d,n.x/nlen,n.y/nlen);
+    return nativeHalf3(vec3<f32>(d,n.x/nlen,n.y/nlen));
   }
-  return vec3<f32>(d,select(0.0,1.0,hx>hy),select(1.0,0.0,hx>hy));
+  return nativeHalf3(vec3<f32>(d,select(0.0,1.0,hx>hy),select(1.0,0.0,hx>hy)));
 }
 fn cornerFactor(radius:f32,halfSize:f32)->f32{
   if(radius>=0.0){return 1.0;}
   return clamp((-1.5286649465560913-halfSize/radius)*
                -1.891557216644287,0.0,1.0);
 }
-fn mode5SDF(local:vec2<f32>,size:vec2<f32>,corner:f32)->vec3<f32>{
-  let xy=vec2<f32>(local.x-size.x*0.5,size.y*0.5-local.y);
-  let hw=size.x*0.5;
-  let hh=size.y*0.5;
-  // GAP PUBLIC-SDF-WRITER: four equal negative signed radii assume that the
-  // user's four equal CSS radii map into the retained private four-corner
-  // SDF arg2 lanes. No public writer equivalence is established.
-  let r=-max(corner,0.009999999776482582);
-  let fx=cornerFactor(r,hw);
-  let fy=cornerFactor(r,hh);
-  var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r,fx,fy);
-  let topLeft=supercircleSDF(-xy.x, xy.y,hw,hh,r,fx,fy);
+/* Source: glass_background_sdf_no_bleed_lph AIR lines 864-937.
+ * For mode 4, native arg2.z is one positive scalar radius, and arg2.xy
+ * are the supercircle blend controls. The 8 retained native same-event joins
+ * have (blendX,blendY)=(0,0), transform=identity, normalBlend=0.
+ * GAP: public CSS radius -> native scalar producer still not proven.
+ */
+fn mode4SDF(local:vec2<f32>,size:vec2<f32>,radius:f32)->vec3<f32>{
+  let xy=vec2<f32>(local.x-size.x*.5,size.y*.5-local.y);
+  let v=supercircleSDF(abs(xy.x),abs(xy.y),size.x*.5,size.y*.5,
+                       max(0.0,radius),0.0,0.0);
+  let signX=select(-1.0,1.0,xy.x>=0.0);
+  let signY=select(-1.0,1.0,xy.y>=0.0);
+  // AIR lines 880-933: original Cartesian normal reflection, half
+  // multiply and transform, then Y-up -> CSS Y-down.
+  return nativeHalf3(vec3<f32>(v.x,v.y*signX,-v.z*signY));
+}
+/* Source: AIR lines 940-1041 and exact mode-5 CPU state producer.
+ * Four signed corner radii are NOT equivalent to four CSS radii by proof.
+ * The source signed order is TL,TR,BR,BL and follows native shuffle/order.
+ */
+fn mode5SDF(local:vec2<f32>,size:vec2<f32>,radii:vec4<f32>)->vec3<f32>{
+  let xy=vec2<f32>(local.x-size.x*.5,size.y*.5-local.y);
+  let hw=size.x*.5;
+  let hh=size.y*.5;
+  let r0=radii.x; // top left
+  let r1=radii.y; // top right
+  let r2=radii.z; // bottom right
+  let r3=radii.w; // bottom left
+  // AIR lines 943-954: four pairwise signed-radius means followed by
+  // exact factor selection (factor=1 for nonnegative pair).
+  let f0=cornerFactor((r0+r1)*.5,hw);
+  let f1=cornerFactor((r0+r3)*.5,hh);
+  let f2=cornerFactor((r3+r2)*.5,hw);
+  let f3=cornerFactor((r1+r2)*.5,hh);
+  var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3);
+  let topLeft=supercircleSDF(-xy.x, xy.y,hw,hh,r0,f0,f1);
   if(topLeft.x>chosen.x){chosen=vec3<f32>(topLeft.x,-topLeft.y,topLeft.z);}
-  let bottomRight=supercircleSDF( xy.x,-xy.y,hw,hh,r,fx,fy);
+  let bottomRight=supercircleSDF( xy.x,-xy.y,hw,hh,r2,f2,f3);
   if(bottomRight.x>chosen.x){
     chosen=vec3<f32>(bottomRight.x,bottomRight.y,-bottomRight.z);
   }
-  let bottomLeft=supercircleSDF(-xy.x,-xy.y,hw,hh,r,fx,fy);
+  let bottomLeft=supercircleSDF(-xy.x,-xy.y,hw,hh,r3,f2,f1);
   if(bottomLeft.x>chosen.x){
     chosen=vec3<f32>(bottomLeft.x,-bottomLeft.y,-bottomLeft.z);
   }
-  // Normal y is Cartesian positive-up in retained AIR; flip to web y-down.
-  return vec3<f32>(chosen.x,chosen.y,-chosen.z);
+  // Mode5 AIR lines 994-1039: native normalBlend=0 in retained 8 joins;
+  // nonzero normal blend requires its own exact public-state producer.
+  return nativeHalf3(vec3<f32>(chosen.x,chosen.y,-chosen.z));
 }
+
 fn refractionEnvelope(d:f32,amount:f32,invHeight:f32)->f32{
   let t=clamp(-d*invHeight,0.0,1.0);
   return amount*(1.0-clamp(sqrt(clamp(t*(2.0-t),0.0,1.0)),0.0,1.0));
@@ -218,7 +252,12 @@ fn mipSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   let dimensions=tile.rect.zw;
-  let field=mode5SDF(in.local,dimensions,tile.properties.x);
+  // Exact CPU predicate: mode4 iff four NORMALIZED private lanes compare
+  // equal using AArch64 FCMP/FCCMP; any inequality/NaN selects mode5.
+  // Browser CSS-to-private-lane normalization remains a documented GAP.
+  let field=select(mode5SDF(in.local,dimensions,tile.cornerRadii),
+                   mode4SDF(in.local,dimensions,tile.properties.x),
+                   tile.properties.w==4.0);
   let signed=field.x;
   let coverage=clamp(0.5-signed/max(fwidth(signed),0.0001),0.0,1.0);
   if(coverage<=0.0){discard;}

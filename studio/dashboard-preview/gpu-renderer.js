@@ -95,17 +95,36 @@ function makeLayoutData(tile,scale){
   const w=tile.offsetWidth,h=tile.offsetHeight;
   const x=b.left+b.width*.5-w*.5;
   const y=b.top+b.height*.5-h*.5;
-  const radius=Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius)||0;
-  const delay=Number.parseFloat(getComputedStyle(tile).getPropertyValue("--cta6-delay"))||0;
+  const style=getComputedStyle(tile);
+  const radii=[
+    style.borderTopLeftRadius,style.borderTopRightRadius,
+    style.borderBottomRightRadius,style.borderBottomLeftRadius
+  ].map(v=>Number.parseFloat(v)||0);
+  const radius=radii[0];
+  const nativeMode=selectModeForNormalizedCorners(radii);
+  // The retained native writer compares FOUR NORMALIZED PRIVATE LANES.
+  // CSS radii are NOT a proved public-to-private writer. For this uniformly
+  // rounded square, exact equality is at least the source-backed selection.
+  const delay=Number.parseFloat(style.getPropertyValue("--cta6-delay"))||0;
   const r=nativePublicBlurRadius("clear",w,h);
   // Finite native f32 selected factor, NOT universal scale-selection proof.
   const word=observedBlurWord(r,1,.25);
   return [x*scale,y*scale,w*scale,h*scale,
-    radius*scale,delay,word,0];
+    radius*scale,delay,word,nativeMode,
+    ...radii.map(v=>-Math.max(.009999999776482582,v*scale))];
+}
+// Mirrors the native AArch64 FCMP/FCCMP mode gate; the caller is responsible
+// for supplying correctly normalized private lanes. CSS -> private producer
+// remains unproved, and is never silently identified with this comparator.
+export function selectModeForNormalizedCorners(lanes){
+  if(!Array.isArray(lanes)||lanes.length!==4)
+    throw new TypeError("Four native corner lanes required");
+  return lanes[0]===lanes[1] && lanes[1]===lanes[2] &&
+    lanes[2]===lanes[3] ? 4 : 5;
 }
 export function makeTileFloatData(elements,dpr){
-  const out=new Float32Array(elements.length*8);
-  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr),i*8));
+  const out=new Float32Array(elements.length*12);
+  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr),i*12));
   return out;
 }
 function geometry(width,height,imgWidth,imgHeight){
@@ -124,7 +143,12 @@ async function initialize(){
   const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});
   if(!adapter)throw new Error("No WebGPU adapter available");
   if(root)root.dataset.gpuPhase="request-device";
-  const device=await adapter.requestDevice();
+  const nativeF16=adapter.features.has("shader-f16");
+  const device=await adapter.requestDevice({
+    requiredFeatures:nativeF16?["shader-f16"]:[]
+  });
+  audit.nativeHalfConversion=nativeF16?"shader-f16 at AIR half-return sites":
+    "f32 fallback; native LPH half conversion not matched";
   if(root)root.dataset.gpuPhase="device-ready";
   const context=OFFSCREEN_CI?null:canvas.getContext("webgpu");
   if(!OFFSCREEN_CI&&!context)throw new Error("No GPUCanvasContext");
@@ -176,6 +200,11 @@ async function initialize(){
     return r.text();
   }));
   if(root)root.dataset.gpuPhase="compile-wgsl";
+  sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replace(
+    "__ORACLE_HALF_BODY__",
+    nativeF16?"return vec3<f32>(vec3<f16>(v));":"return v;");
+  if(sources[2].includes("__ORACLE_HALF_BODY__"))
+    throw Error("Native half-conversion shader specialization did not apply");
   const modules=sources.map((code,i)=>device.createShaderModule({
     label:["background","explicit mip reduction","oracle glass"][i],code
   }));
@@ -294,9 +323,18 @@ async function initialize(){
     const all=activeTiles();
     const data=makeTileFloatData(all,dpr);
     tileCount=all.length;audit.tiles=tileCount;
+    audit.sdfModes={
+      mode4:all.filter(t=>selectModeForNormalizedCorners([
+        getComputedStyle(t).borderTopLeftRadius,
+        getComputedStyle(t).borderTopRightRadius,
+        getComputedStyle(t).borderBottomRightRadius,
+        getComputedStyle(t).borderBottomLeftRadius
+      ])===4).length
+    };
+    audit.sdfModes.mode5=tileCount-audit.sdfModes.mode4;
     tileBuffer?.destroy();
     tileBuffer=device.createBuffer({
-      size:Math.max(32,data.byteLength),
+      size:Math.max(48,data.byteLength),
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
     });
     if(data.length)device.queue.writeBuffer(tileBuffer,0,data);
@@ -391,6 +429,7 @@ async function initialize(){
   root.dataset.gpuStatus="ready";
   root.dataset.gpuPhase="ready";
   root.dataset.gpuMipLevels=String(audit.mipCount);
+  root.dataset.gpuSdfModes=JSON.stringify(audit.sdfModes);
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
