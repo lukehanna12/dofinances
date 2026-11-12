@@ -89,7 +89,7 @@ function mockEnvironment({scrollHeight=1500,clientHeight=800}={}){
   const breadcrumb={querySelector:()=>list,inert:false};
   const heading=mockNode();
   const header={...mockNode(),appendChild(child){this.child=child;}};
-  const body={classList:classes()};
+  const body={classList:classes(),style:mockNode().style};
   const scroll={scrollTop:0,scrollHeight,clientHeight};
   const handlers=new Map();
   const doc={
@@ -214,4 +214,40 @@ test("Native reference optics constrain Collections blur and title fade behavior
   assert.ok(240>180,"Reverse breadcrumbs wait until compact title is hidden");
   assert.match(js,/const inDelay=\[240,250,282,315\]/);
   assert.match(js,/const reverse=242\+\(i-1\)\*31/);
+});
+
+
+test("Growing blur is restricted to the photographic top strip, never page content",()=>{
+  const css=source("sites/_apex/app/assets/collections.css");
+  const js=source("sites/_apex/app/assets/collections-title-transition.js");
+  const wallpapers=source("sites/_apex/app/assets/workspace-wallpapers.css");
+  const imageBlur=css.match(/body\.collections-title-transition::after\{([\s\S]*?)\}/)?.[1]||"";
+  assert.match(imageBlur,/position:fixed/);
+  assert.match(imageBlur,/z-index:0/);
+  assert.match(imageBlur,/var\(--workspace-wallpaper-image,none\)/);
+  assert.match(imageBlur,/background-position:center,var\(--workspace-wallpaper-position,center 46%\)/);
+  assert.match(imageBlur,/filter:blur\(var\(--collections-strip-blur,0px\)\)/);
+  assert.match(imageBlur,/mask-size:100% var\(--collections-strip-height,0px\)/);
+  assert.match(imageBlur,/mask-position:left calc\(var\(--workspace-top-overpull\) \+ var\(--global-menu-height\) \+ var\(--workspace-header-height\)\)/);
+  assert.doesNotMatch(imageBlur,/backdrop-filter/,"A backdrop sampler would blur scrolling text and rows");
+  assert.doesNotMatch(css,/collections-title-transition #workspace-shell \.topbar::after/,
+    "Never place the image-only filter above the scrolling document");
+  assert.match(wallpapers,/body:has\(> #workspace-shell\)::before,[\s\S]*?--workspace-wallpaper-image/);
+  assert.match(wallpapers,/body:has\(> #workspace-shell\) \.topbar::before/,
+    "Keep the existing shared sticky header unchanged");
+  assert.match(js,/prop\(doc\.body,"--collections-strip-height"/);
+  assert.match(js,/prop\(doc\.body,"--collections-strip-blur"/);
+  assert.match(js,/prop\(doc\.body,"--collections-strip-opacity"/);
+  assert.doesNotMatch(js,/prop\(header,"--collections-strip-/);
+});
+test("Photo strip variables reverse and clean up on route exit",()=>{
+  const m=mockEnvironment({scrollHeight:1100,clientHeight:800});
+  m.controller.setRoute("colosseum/collections");
+  m.scroll.scrollTop=30;
+  m.handlers.get("scroll")();
+  assert.ok(Number.parseFloat(m.body.style.getPropertyValue("--collections-strip-height"))>0);
+  assert.ok(Number.parseFloat(m.body.style.getPropertyValue("--collections-strip-blur"))>0);
+  m.controller.setRoute("home");
+  for(const key of ["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"])
+    assert.equal(m.body.style.getPropertyValue(key),"",key+" must not bleed into other views");
 });

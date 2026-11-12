@@ -60,7 +60,8 @@ export function initCollectionsTitleTransition(doc=document,win=window){
   const list=breadcrumb?.querySelector?.(".shadcn-breadcrumb-list");
   const heading=doc.getElementById?.("project-collections-title");
   if(!header?.appendChild || !list?.querySelectorAll || !heading?.style?.setProperty ||
-     !doc.body?.classList || !doc.createElement || !win.addEventListener)return noop;
+     !doc.body?.classList || !doc.body?.style?.setProperty ||
+     !doc.createElement || !win.addEventListener)return noop;
 
   const title=doc.createElement("span");
   title.className="collections-inline-title";
@@ -115,9 +116,10 @@ export function initCollectionsTitleTransition(doc=document,win=window){
     const state=collectionsTitleFrame(getScroll(),getMaxScroll());
     prop(heading,"--collections-large-blur",state.largeBlur.toFixed(3)+"px");
     prop(heading,"--collections-large-opacity",state.largeOpacity.toFixed(4));
-    prop(header,"--collections-strip-height",state.stripHeight.toFixed(3)+"px");
-    prop(header,"--collections-strip-blur",state.stripBlur.toFixed(3)+"px");
-    prop(header,"--collections-strip-opacity",state.stripOpacity.toFixed(4));
+    // Photo-only effect lives on body::after, behind the scrolling content.
+    prop(doc.body,"--collections-strip-height",state.stripHeight.toFixed(3)+"px");
+    prop(doc.body,"--collections-strip-blur",state.stripBlur.toFixed(3)+"px");
+    prop(doc.body,"--collections-strip-opacity",state.stripOpacity.toFixed(4));
     // This is the sole binary handoff. CSS completes the full animation after
     // a single scroll event, even when there is no further room to scroll.
     if(state.passed!==passed){
@@ -135,7 +137,7 @@ export function initCollectionsTitleTransition(doc=document,win=window){
     breadcrumb.inert=false;
     title.hidden=true;
     remove(heading,["--collections-large-blur","--collections-large-opacity"]);
-    remove(header,["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"]);
+    remove(doc.body,["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"]);
     for(const el of items)remove(el,["--collections-crumb-distance","--collections-out-delay","--collections-in-delay"]);
     for(const el of separators)remove(el,["--collections-arrow-out-flip",
       "--collections-arrow-out-fade","--collections-arrow-in-flip","--collections-arrow-in-fade"]);
