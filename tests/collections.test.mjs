@@ -818,15 +818,16 @@ test("Add, Edit, Select live inside the reconstructed ChatGPT composer backgroun
  const styleStart=css.indexOf("#cs-root .cs-control-center{");
  assert.ok(styleStart>0);
  const block=css.slice(styleStart,css.indexOf("}",styleStart)+1);
- assert.ok(block.includes("background:#303030"),"Source-guided reconstruction fill");
- assert.ok(block.includes("border:1px solid rgba(255,255,255,.065)"),"Subtle thin outline");
+ assert.ok(block.includes("background:#212121"),"Use the documented dark composer surface, not the brighter elevated/secondary surface");
+ assert.ok(!block.includes("background:#303030"),"Do not regress to the bright secondary palette");
+ assert.ok(block.includes("border:1px solid #414141"),"Documented thin low-contrast composer outline");
  assert.ok(block.includes("border-radius:28px"),"Reconstructed composer corner radius");
- assert.ok(block.includes("box-shadow:0 1px 2px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.015)"),"Both outer and inset shadow components");
+ assert.ok(block.includes("box-shadow:0 1px 2px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.008)"),"Two extremely subdued, non-brightening shadow components");
  assert.ok(block.includes("padding:7px 8px 8px"),"Composer reference inset");
  assert.ok(block.includes("width:max-content"),"Do not stretch controls across the window");
  assert.ok(css.includes("#cs-root .cs-control-center:hover{border-color:rgba(255,255,255,.09)}"));
  assert.ok(css.includes("#cs-root .cs-control-center:focus-within{border-color:rgba(255,255,255,.115)}"));
  for(const name of ["cs-create-control","cs-edit-control","cs-select-control"])
    assert.ok(css.includes(".cs-control-center > ."+name),"Existing 16px per-button top offsets must not split the shell");
- assert.ok(css.includes("estimates, NOT live ChatGPT computed-style measurements"),"Do not mislabel recovered estimates as pixel-exact styles");
+ assert.ok(css.includes("Exact current account-level computed styles are not"),"Do not mislabel visual references as live measured CSS");
 });
