@@ -10,6 +10,10 @@ let binary=null;
 for(const name of ["google-chrome-stable","google-chrome","chromium","chromium-browser"]){
   try{binary=execFileSync("which",[name],{encoding:"utf8"}).trim();break;}catch{}
 }
+if(!binary){
+  const macChrome="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  if(existsSync(macChrome))binary=macChrome;
+}
 assert.ok(binary,"Chrome/Chromium is required for gallery smoke");
 const profile=mkdtempSync(join(tmpdir(),"dofinances-gallery-"));
 const chrome=spawn(binary,["--headless=new","--no-sandbox","--disable-dev-shm-usage",
