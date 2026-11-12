@@ -62,7 +62,7 @@ body:has(> #workspace-shell .dashboard-home) > .workspace-footer{
 /* Viewport-anchored and independent of sidebar layout, collapse, and drag.
    Starts immediately below BOTH existing top bars. */
 .dashboard-atmosphere{
-  --micro-width:clamp(475px,38vw,560px);
+  --micro-width:clamp(470px,33vw,520px);
   position:fixed;
   inset:calc(var(--global-menu-height,44px) + var(--workspace-header-height,50px)) 0 0;
   z-index:0;

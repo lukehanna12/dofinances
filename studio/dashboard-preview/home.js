@@ -76,6 +76,7 @@ function rebuild(){
   const mainR=large.getBoundingClientRect();
   const smallR=small.getBoundingClientRect();
   const mobile=sr.width<760;
+  const compact=sr.width<1080;
   const topGap=Math.min(115,Math.max(76,sr.height*.115));
   const bottomGap=Math.min(190,Math.max(115,sr.height*.18));
   const spanY=Math.max(210,sr.height-topGap-bottomGap);
@@ -109,26 +110,30 @@ function rebuild(){
     accepted.push({x,y,side});
     setTile(large,{left:x-side/2,top:y-side/2,side,icon,small:false});
   }
-  if(mobile){
-    // The 11-column desktop grid would shrink to ~20px in a 390px-wide
-    // viewport, then fail the minimum-size gate. Use three explicit columns,
-    // preserve real Lucide icons, and retain ample negative space.
-    const shortlist=[ICON_POSITIONS[0],ICON_POSITIONS[2],ICON_POSITIONS[5],
-      ICON_POSITIONS[7],ICON_POSITIONS[11],ICON_POSITIONS[14]];
+  if(compact){
+    // The 11-column desktop grid becomes visually indistinct in a narrow
+    // column. Phone: 6 generous icon tiles. Tablet: 9 generous icon tiles.
+    // Both preserve the same source SVGs and keep microtiles at the left.
+    const subset=mobile?[0,2,5,7,11,14]:[0,1,2,6,7,9,10,14,15];
     const column=mainR.width/3;
     const band=spanY/3;
-    shortlist.forEach(([_,__,name],i)=>{
+    subset.forEach((sourceIndex,i)=>{
+      const name=ICON_POSITIONS[sourceIndex][2];
       const x=(i%3+.5)*column;
       const y=topGap+(Math.floor(i/3)+.56)*band;
-      const side=Math.max(31,Math.min(72,column*(.66+unitNoise(i,8)*.16),band*.56));
+      const side=Math.max(31,Math.min(mobile?72:92,
+        column*(mobile?.66+unitNoise(i,8)*.16:.53+unitNoise(i,8)*.19),
+        band*.58));
       setTile(large,{left:x-side/2,top:y-side/2,side,icon:name,small:false});
     });
-    [0,2].forEach((col,i)=>{
-      const x=(col+.5)*column;
-      const y=topGap+2.45*band;
-      const side=Math.max(23,Math.min(48,column*.44));
-      setTile(large,{left:x-side/2,top:y-side/2,side,small:false});
-    });
+    if(mobile){
+      [0,2].forEach(col=>{
+        const x=(col+.5)*column;
+        const y=topGap+2.45*band;
+        const side=Math.max(23,Math.min(48,column*.44));
+        setTile(large,{left:x-side/2,top:y-side/2,side,small:false});
+      });
+    }
   }else{
     ICON_POSITIONS.forEach(([r,c,name],i)=>mainTile(r,c,name,i+1));
     EXTRA_POSITIONS.forEach(([r,c],i)=>mainTile(r,c,null,i+29));

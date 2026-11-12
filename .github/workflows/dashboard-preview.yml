@@ -74,7 +74,7 @@ jobs:
           grep -Fq 'dashboard-scene-photo' dist/index.html
           grep -Fq 'home-rice-terraces-hq.jpg' dist/app/assets/dashboard-home.css
           grep -Fq 'const ICON_POSITIONS=' dist/app/assets/dashboard-mosaic.js
-          grep -Fq 'const shortlist=' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'const compact=sr.width<1080' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'The 11-column desktop grid' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'const MICRO_SLOTS=' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'pointermove' dist/app/assets/dashboard-mosaic.js
