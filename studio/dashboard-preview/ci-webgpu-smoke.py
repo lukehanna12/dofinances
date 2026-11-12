@@ -101,7 +101,27 @@ def run():
                             raise RuntimeError("GPU did not build real scene+mips "+str(latest))
                         if latest.get("phase")!="ready" or audit.get("presentation")!="offscreen-ci":
                             raise RuntimeError("GPU init phase not complete "+str(latest))
-                        print("GPU_OFFSCREEN_PROOF "+json.dumps(latest,sort_keys=True))
+                        proof=audit.get("offscreenPixelProof")
+                        if not isinstance(proof,list) or len(proof)!=4 or proof[3]!=255:
+                            raise RuntimeError("Offscreen GPU pixel byte readback failed "+str(latest))
+                        # GPU tile movement/interaction must never invalidate
+                        # the GPU-owned background or its mip pyramid.
+                        before_frames=audit["frameCount"]
+                        before_scene_builds=audit["sceneBuilds"]
+                        cdp_eval(ws,counter,
+                            "window.dispatchEvent(new PointerEvent('pointermove',"+
+                            "{pointerType:'mouse',clientX:155,clientY:166,bubbles:true})); true")
+                        for _ in range(20):
+                            time.sleep(.15)
+                            updated=json.loads(cdp_eval(ws,counter,expr))
+                            check=updated.get("audit") or {}
+                            if check.get("frameCount",0)>before_frames:
+                                break
+                        if check.get("sceneBuilds")!=before_scene_builds:
+                            raise RuntimeError("Pointer motion regenerated backdrop mips "+str(updated))
+                        if check.get("frameCount",0)<=before_frames:
+                            raise RuntimeError("Pointer motion did not trigger GPU redraw "+str(updated))
+                        print("GPU_OFFSCREEN_PROOF "+json.dumps(updated,sort_keys=True))
                         return
                     if latest.get("body")=="fallback":
                         raise RuntimeError("GPU fallback: "+json.dumps(latest,sort_keys=True))
