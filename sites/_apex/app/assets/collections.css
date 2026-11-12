@@ -27,7 +27,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-wrap{width:100%;margin:0;padding:0}
 #cs-root .cs-head{display:flex;align-items:start;justify-content:space-between;gap:24px}
 #cs-root .cs-head-copy{max-width:700px}
-#cs-root .cs-eyebrow{display:block;color:var(--cs-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+#cs-root .cs-eyebrow{display:block;position:relative;color:var(--cs-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase}
 /* Two hollow 1em/currentColor loading rings share one compositor-friendly
    transform animation, synchronized without timers, observers, or extra paints. */
 /* Geometry measured from TOTAL's left edge; all positions scale in em.
@@ -35,11 +35,14 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    First ring center = B/2; second ring center = A+B/2.
    Therefore their midpoint is (A+B)/2, precisely the separator's center.
    Only the rings animate; the slash and ring positions are static. */
-#cs-root .cs-summary-skeleton{display:inline-block;position:relative;vertical-align:middle;height:1em;line-height:1em;width:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 + .5em)}
+/* Loading rings overlay the normally laid-out summary rather than replacing
+   its inline box. The eyebrow and all content below it keep identical geometry
+   during refresh, including when its live value is temporarily hidden. */
+#cs-root .cs-summary-skeleton{display:block;position:absolute;left:0;top:.25em;height:1em;line-height:1em;width:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 + .5em);pointer-events:none}
 #cs-root .cs-summary-dot{position:absolute;top:0;left:calc(var(--cs-summary-group-end,8em) / 2 - .5em);display:inline-block;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-summary-divider{position:absolute;top:0;left:var(--cs-summary-slash-left,7em);white-space:nowrap}
 #cs-root .cs-summary-dot:last-child{left:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 - .5em)}
-#cs-root .cs-summary-loading .cs-summary-value{display:none}
+#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}
 #cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}
 @keyframes cs-summary-spin{to{transform:rotate(360deg)}}
 #cs-root .cs-head p{margin:20px 0 0;max-width:580px;font-size:clamp(14px,1.35vw,18px);line-height:1.6;color:var(--cs-muted)}
@@ -86,14 +89,21 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Let the closing header padding and the panel shrink together over 450ms.
    Keep the same open padding/wrapping and compact final closed height. */
 #cs-root .cs-entry:not(.cs-open) .cs-trigger{padding:0;align-items:center;transition-timing-function:cubic-bezier(.4,0,.2,1)}
-/* Two copies share a grid track: only the compact title has an ellipsis.
-   The track proportions interpolate in both directions, so a multi-line
-   expanded name cannot snap into one line at the start of collapse. */
-#cs-root .cs-entry-title{display:grid;grid-template-rows:0fr 1fr}
-#cs-root .cs-entry:not(.cs-open) .cs-entry-title{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier(.4,0,.2,1)}
-#cs-root .cs-entry-title > span{min-height:0;min-width:0;overflow:hidden}
-#cs-root .cs-entry-title .cs-title-compact{white-space:nowrap;text-overflow:ellipsis}
-#cs-root .cs-entry-title .cs-title-expanded{white-space:normal}
+/* Animate ONLY an invisible line-wrapping measure. The two visual title
+   layers remain anchored at top:0 and are never squeezed by 0fr grid rows.
+   Stagger their opacity so one is fully visible throughout the transition;
+   long titles gain/lose lines smoothly without ever being black-masked. */
+#cs-root .cs-entry-title{position:relative;display:grid;grid-template-rows:0fr;min-height:1lh;overflow:hidden}
+#cs-root .cs-entry.cs-open .cs-entry-title{grid-template-rows:1fr}
+#cs-root .cs-entry:not(.cs-open) .cs-entry-title{grid-template-rows:0fr;transition-timing-function:ease,cubic-bezier(.4,0,.2,1)}
+#cs-root .cs-entry-title .cs-title-measure{min-height:0;min-width:0;overflow:hidden;visibility:hidden;white-space:normal}
+#cs-root .cs-entry-title .cs-title-compact,#cs-root .cs-entry-title .cs-title-expanded{position:absolute;top:0;left:0;right:0;min-width:0;overflow:hidden}
+#cs-root .cs-entry-title .cs-title-compact{white-space:nowrap;text-overflow:ellipsis;opacity:1;transition:opacity .14s linear}
+#cs-root .cs-entry-title .cs-title-expanded{white-space:normal;opacity:0;transition:opacity .14s linear}
+#cs-root .cs-entry.cs-open .cs-title-compact{opacity:0;transition-delay:.1s}
+#cs-root .cs-entry.cs-open .cs-title-expanded{opacity:1}
+#cs-root .cs-entry:not(.cs-open) .cs-title-compact{transition-delay:0s}
+#cs-root .cs-entry:not(.cs-open) .cs-title-expanded{transition-delay:.1s}
 #cs-root .cs-trigger .cs-num{flex:none;width:28px;font-size:12px;font-weight:500;color:var(--cs-dim);font-variant-numeric:tabular-nums}
 #cs-root .cs-trigger .cs-entry-title{flex:1;min-width:0;overflow-wrap:anywhere;font-size:clamp(16px,1.7vw,20px);line-height:1.4;letter-spacing:-.025em;font-weight:500;color:var(--cs-muted);transition:color .2s,grid-template-rows .45s cubic-bezier(.22,1,.36,1)}
 #cs-root .cs-trigger:hover .cs-entry-title,#cs-root .cs-entry.cs-open .cs-entry-title{color:var(--cs-text)}

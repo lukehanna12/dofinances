@@ -46,16 +46,32 @@ test("Closing an expanded Collections row shrinks continuously for 450ms",()=>{
  assert.doesNotMatch(css,/#cs-root \.cs-entry\.cs-open\{height:/);
  assert.match(css,/#cs-root \.cs-trigger\{display:flex;align-items:center/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*overflow-wrap:anywhere/);
- assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr\}/);
+ assert.match(css,/#cs-root \.cs-entry-title\{position:relative;display:grid;grid-template-rows:0fr;min-height:1lh;overflow:hidden\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*transition:color \.2s,grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\)/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
- assert.match(css,/#cs-root \.cs-entry-title > span\{min-height:0;min-width:0;overflow:hidden\}/);
- assert.match(css,/#cs-root \.cs-entry-title \.cs-title-expanded\{white-space:normal\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-entry-title \.cs-title-measure\{min-height:0;min-width:0;overflow:hidden;visibility:hidden;white-space:normal\}/);
+ assert.match(css,/#cs-root \.cs-entry-title \.cs-title-expanded\{white-space:normal;opacity:0;transition:opacity \.14s linear\}/);
+ assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-compact\{opacity:0;transition-delay:\.1s\}/);
+ assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-expanded\{opacity:1\}/);
+ assert.match(js,/<span class="cs-title-measure" aria-hidden="true"/);
  assert.match(js,/<span class="cs-title-compact" aria-hidden="true"/);
  assert.match(js,/<span class="cs-title-expanded"/);
  assert.doesNotMatch(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{overflow:hidden;white-space:nowrap/);
  assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 0\}/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?transition-duration:\.01ms!important/);
+});
+
+test("Collection title pixels remain visible and loading rings cannot reflow layout",()=>{
+ assert.doesNotMatch(css,/\.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr/);
+ assert.match(css,/#cs-root \.cs-entry-title \.cs-title-compact,#cs-root \.cs-entry-title \.cs-title-expanded\{position:absolute;top:0;left:0;right:0/);
+ assert.match(css,/#cs-root \.cs-entry-title \.cs-title-measure\{[^}]*visibility:hidden/);
+ assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-expanded\{opacity:1\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-title-compact\{transition-delay:0s\}/);
+ assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:hidden\}/);
+ assert.match(css,/#cs-root \.cs-summary-skeleton\{[^}]*position:absolute;left:0;top:\.25em/);
+ assert.match(css,/#cs-root \.cs-trigger\{[^}]*transition:padding \.45s/);
+ assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
+ assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
 });
 
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
@@ -140,7 +156,7 @@ test("Collections summary uses the visitor's last successful refresh time and co
  assert.ok(js.includes('summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
  assert.match(js,/state\.collections=good\.filter/);
  assert.match(js,/if\(seq!==state\.loadSeq\)return/);
- assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*text-transform:uppercase/);
+ assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*position:relative;[^}]*text-transform:uppercase/);
 });
 test("Collections positions both ring centers symmetrically around the complete space/slash/space delimiter",async()=>{
  const {collectionSummaryGeometry}=await import("../sites/_apex/app/assets/collections.js");
@@ -190,10 +206,10 @@ test("Collapsed Collections rows retain the former mobile height at all widths",
  assert.match(css,/#cs-root \.cs-entry\+\.cs-entry\{border-top:1px solid var\(--cs-border\);--cs-entry-border:1px\}/);
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px - var\(--cs-entry-border\)\)/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-trigger\{padding:0;align-items:center;transition-timing-function:cubic-bezier\(\.4,0,\.2,1\)\}/);
- assert.match(css,/#cs-root \.cs-entry-title\{display:grid;grid-template-rows:0fr 1fr\}/);
+ assert.match(css,/#cs-root \.cs-entry-title\{position:relative;display:grid;grid-template-rows:0fr;min-height:1lh;overflow:hidden\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*transition:color \.2s,grid-template-rows \.45s cubic-bezier\(\.22,1,\.36,1\)/);
- assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:1fr 0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
- assert.match(css,/#cs-root \.cs-entry-title \.cs-title-compact\{white-space:nowrap;text-overflow:ellipsis\}/);
+ assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-entry-title\{grid-template-rows:0fr;transition-timing-function:ease,cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/#cs-root \.cs-entry-title \.cs-title-compact\{white-space:nowrap;text-overflow:ellipsis;opacity:1;transition:opacity \.14s linear\}/);
  assert.match(css,/#cs-root \.cs-trigger \.cs-entry-title\{[^}]*font-size:clamp\(16px,1\.7vw,20px\);line-height:1\.4/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-accordion-panel\{grid-template-rows:1fr/);
  assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-trigger\{padding:20px 0\}/);
@@ -260,7 +276,9 @@ test("Collections loading summary uses two synchronized, text-colored circular s
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
  assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2); // Both share one keyframe.
  assert.ok(!css.includes('background:currentColor;animation:cs-summary-pulse'));
- assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{display:none}'));
+ assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}'));
+ assert.doesNotMatch(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{display:none/);
+ assert.match(css,/#cs-root \.cs-summary-skeleton\{display:block;position:absolute;left:0;top:\.25em/);
  assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
  assert.ok(css.includes('#cs-root .cs-summary-dot{animation:none!important;opacity:.65}'));
  assert.ok(js.includes('setSummaryLoading(true);'));

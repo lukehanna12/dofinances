@@ -187,7 +187,8 @@ export function initColosseumCollections(){
    return '<article class="cs-entry" data-cs-id="'+esc(collection.collection_id)+'">'+
      '<h2><button class="cs-trigger" type="button" data-cs-open="'+esc(collection.collection_id)+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false">'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
-       '<span class="cs-entry-title"><span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
+       '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
+         '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
        '<span class="cs-chevron">'+CHEVRON+'</span></button></h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
