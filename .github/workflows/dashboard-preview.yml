@@ -150,6 +150,7 @@ jobs:
             grep -o 'data-gpu-scene="[^"]*"' /tmp/dashboard-preview-live-dom.html || true
             grep -o 'data-gpu-error="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
             grep -o 'data-gpu-status="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
+            grep -o 'data-gpu-phase="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
             tail -65 /tmp/dashboard-preview-chrome-stderr.log
             exit 1
           fi
