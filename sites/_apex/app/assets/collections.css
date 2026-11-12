@@ -147,7 +147,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 #cs-root .cs-utility-name{color:var(--cs-muted);font-size:clamp(12px,1.15vw,14px);line-height:1.45;font-weight:500;overflow-wrap:anywhere}
 #cs-root .cs-utility-uid{font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cs-dim);font-variant-numeric:tabular-nums}
-#cs-root .cs-utility-route{border-radius:99px;padding:7px 12px;background:var(--cs-strong);color:var(--cs-strong-ink);font-size:clamp(10px,1vw,12px);font-weight:500;white-space:nowrap;flex:none;text-transform:capitalize}
+/* Keep each native SVG at the former capsule height (font line-height + vertical padding). */
+#cs-root .cs-utility-route-icon{display:block;height:calc(clamp(15px,1.5vw,18px) + 14px);width:auto;max-width:none;flex:none;object-fit:contain}
 #cs-root .cs-utility-empty{padding:14px 0 0;color:var(--cs-muted);font-size:14px;line-height:1.6}
 #cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
 #cs-root .cs-caption{text-align:center;color:var(--cs-muted);font-size:14px;line-height:1.5;margin:24px 0 0}
@@ -188,7 +189,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-card-badge{font-size:11px;padding:7px 10px}
  #cs-root .cs-utility-list{gap:10px;margin-top:22px}
  #cs-root .cs-utility-row{min-height:58px;gap:10px;padding:12px 12px}
- #cs-root .cs-utility-route{padding:5px 9px}
+ #cs-root .cs-utility-route-icon{height:calc(clamp(15px,1.5vw,18px) + 10px)}
  #cs-root .cs-summary{font-size:11px;margin-top:22px;padding-top:16px}
 }
 @media(prefers-reduced-motion:reduce){

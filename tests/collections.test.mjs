@@ -98,6 +98,33 @@ test("Expanded-row membership skeleton resolves without shifting the header and 
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*min-height:calc\(62\.4px/);
  assert.doesNotMatch(css,/#cs-root \.cs-card\{[^}]*min-height:/);
 });
+test("Collection route indicators retain the supplied vector SVGs and replace text capsules",()=>{
+  const expected={
+    cloud:"cloud-utility.v2.svg",
+    direct:"direct-utility.v1.svg",
+    local:"local-provider.v1.svg",
+    ported:"external-provider.v1.svg"
+  };
+  for(const [mode,file] of Object.entries(expected)){
+    assert.ok(js.includes(mode+':{src:"/app/assets/'+file+'"'),
+      "Missing exact SVG file mapping for "+mode);
+    const svg=src("sites/_apex/app/assets/"+file);
+    assert.ok(svg.startsWith("<svg "),file+" must remain a native SVG");
+    assert.match(svg,/viewBox="[^"]+"/);
+    assert.match(svg,/<path\s/);
+    assert.match(svg,/fill="white"/);
+    assert.doesNotMatch(svg,/<(?:script|foreignObject|image)\b|\b(?:href|xlink:href)=|<!DOCTYPE|<\?xml|\.png|data:image/i);
+  }
+  const cloud=src("sites/_apex/app/assets/cloud-utility.v2.svg");
+  assert.equal((cloud.match(/<path\s/g)||[]).length,1,
+    "Cloud v2 must be a filled silhouette, without v1's inner outline cutout");
+  assert.ok(js.includes('class="cs-utility-route-icon" src='));
+  assert.ok(js.includes("routeIcon.label"),"Route mode must retain a screen-reader label");
+  assert.ok(!js.includes('class="cs-utility-route"'),"Text capsules must be removed");
+  assert.ok(!css.includes(".cs-utility-route{"),"Capsule styling must be removed");
+  assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 14px)'));
+  assert.ok(css.includes('height:calc(clamp(15px,1.5vw,18px) + 10px)'));
+});
 test("Collections paginate, utilities scroll at no more than 480px with natural smaller height",()=>{
  assert.match(js,/pageSize:10/);
  assert.match(js,/data-cs-page="prev"/);

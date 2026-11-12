@@ -5,6 +5,12 @@ import {formatWorkspaceTime} from "./workspace-nav.js";
  * Inventory admission (+) is intentionally disabled until separately designed.
  */
 const COLLECTIONS_API="/api/colosseum/collections";
+const COLLECTION_ROUTE_ICONS=Object.freeze({
+  cloud:{src:"/app/assets/cloud-utility.v2.svg",label:"Cloud utility"},
+  direct:{src:"/app/assets/direct-utility.v1.svg",label:"Direct utility"},
+  local:{src:"/app/assets/local-provider.v1.svg",label:"Local provider"},
+  ported:{src:"/app/assets/external-provider.v1.svg",label:"External provider"}
+});
 const SUMMARY_GEOMETRY_KEY="dofinances.collections.summary-divider-geometry.v2";
 const LEGACY_SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
 const validSummaryGeometry=value=>Array.isArray(value)&&value.length===3&&
@@ -259,14 +265,14 @@ export function initColosseumCollections(){
    const names=ids.map(uid=>{
      const item=map.get(uid)||{uid,name:uid};
      const routes=current.routes&&current.routes[uid]&&current.routes[uid].route_mode;
-     const route=["cloud","direct","ported","local"].includes(routes)?routes:"";
+     const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
      const content=(state.selecting?
        '<input type="checkbox" class="cs-checkbox" data-cs-uid="'+uid+'" aria-label="Select '+esc(item.name||uid)+'"'+(selected?' checked':'')+'>':
        '<span class="cs-dot" aria-hidden="true"></span>')+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
        '<span class="cs-utility-uid">'+uid+'</span></span>'+
-       (route?'<span class="cs-utility-route">'+esc(route)+'</span>':'');
+       (routeIcon?'<img class="cs-utility-route-icon" src="'+routeIcon.src+'" alt="'+routeIcon.label+'">':'');
      return state.selecting?
        '<label class="cs-utility-row">'+content+'</label>':
        '<div class="cs-utility-row">'+content+'</div>';
