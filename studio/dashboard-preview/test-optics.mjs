@@ -34,8 +34,12 @@ test("selected-input Float32 blur relation is not a universal scalar proof",()=>
   assert.equal(p.publicRadius,6.875);
   assert.equal(p.blurWord,observedBlurWord(6.875,1,.25));
   assert.equal(p.blurWord,2.75);
-  assert.equal(p.farSigma,11);
-  assert.equal(p.nearSigma,5.5);
+  // Browser transport: finite LOD -> equivalent Gaussian variance for a
+  // box-filter footprint. NOT an exact Metal mip kernel identity.
+  assert.ok(p.farSigma>.7&&p.farSigma<.9,
+    "Clear-style browser blur must not exaggerate native blur word to 11px");
+  assert.ok(p.nearSigma>.4&&p.nearSigma<.6);
+  assert.ok(p.farSigma>p.nearSigma);
 });
 
 test("derived geometric refraction relations keep their measured finite values",()=>{
@@ -83,6 +87,12 @@ test("AIR four-corner SDF emits finite normals and geometry-only maps",()=>{
   }
   assert.ok(a.inner.some((v,i)=>i%4<2&&v!==128),
     "Geometric field must contain a non-trivial displacement; no backdrop pixels");
+  // Regression: the prior adapter attenuated refraction by an extra .25.
+  // The mode5 field must now use the source-UV normalization and finite
+  // source-scale cancellation (explicit browser mapping assumption).
+  const maxSignedInner=Math.max(...a.inner.filter((_,i)=>i%4<2).map(x=>Math.abs(x-128)));
+  assert.ok(maxSignedInner>20,
+    "Refraction must not be artificially reduced to quarter strength");
 });
 
 test("live optical input contract: no pre-rendered backdrop or wallpaper baked in",()=>{
@@ -95,4 +105,8 @@ test("live optical input contract: no pre-rendered backdrop or wallpaper baked i
   assert.ok(!/\.jpg|\.jpeg|\.webp|\.heic/.test(source));
   assert.ok(!/getImageData\s*\(|drawImage\s*\(|html2canvas/.test(source));
   assert.ok(source.includes("GAP(COLOR-Q)"));
+  assert.ok(source.includes("GAP(BROWSER-MIP-TO-GAUSS)"));
+  assert.ok(source.includes("GAP(BROWSER-DISPLACEMENT-COORDINATES)"));
+  assert.ok(!source.includes("const browserRadius=blurWord/.25"));
+  assert.ok(!source.includes("innerValue*.25"));
 });

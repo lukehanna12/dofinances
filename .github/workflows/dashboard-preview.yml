@@ -68,6 +68,8 @@ jobs:
           grep -Fq 'feDisplacementMap' dist/app/assets/dashboard-optics.js
           grep -Fq 'SourceGraphic' dist/app/assets/dashboard-optics.js
           grep -Fq 'GAP LG-Q-NUMERICAL' dist/app/assets/dashboard-home.css
+          grep -Fq 'GAP(BROWSER-MIP-TO-GAUSS)' dist/app/assets/dashboard-optics.js
+          grep -Fq 'GAP(BROWSER-DISPLACEMENT-COORDINATES)' dist/app/assets/dashboard-optics.js
           grep -Fq 'actual painted DOM' dist/app/assets/dashboard-optics.js
           node --check dist/app/assets/dashboard-optics.js
           node --check dist/app/assets/sidebar-glass-oracle.js
@@ -124,6 +126,8 @@ jobs:
           ! grep -Fq 'id="workspace-sidebar"' /tmp/dashboard-preview-live-dom.html
           # A decoded geometry-only filter sets this marker only after all
           # three per-pane field maps commit to the live SVG backdrop filter.
+          grep -Fq 'data-oracle-blur-sigma-far="' /tmp/dashboard-preview-live-dom.html
+          grep -Fq 'data-oracle-css-displacement-scale="1"' /tmp/dashboard-preview-live-dom.html
           grep -Fq 'data-oracle-optical-mode="live-backdrop"' /tmp/dashboard-preview-live-dom.html || {
             echo 'Browser did not activate the live optical filter'
             tail -35 /tmp/dashboard-preview-chrome-stderr.log

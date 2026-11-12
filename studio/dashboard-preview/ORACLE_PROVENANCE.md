@@ -28,6 +28,8 @@ The output also has independent browser-only gaps, each marked `GAP(...)` next t
 2. Per-tile CSS border geometry to private signed mode5 SDF writer.
 3. Native texture coordinate / downsample-space dimensions to browser pixel displacement and encoded 8-bit PNG field.
 4. Native filtered mipmap and float16 math to browser Gaussian / SVG compositing.
+   - **2026-11-12 adapter correction:** the previous `blurWord / .25` and `farSigma=browserRadius` treated an inferred native radius as an 11px Gaussian at a 75px tile. It was an unsupported dimensional conversion. The new clear-style approximation retains native `airTextureMipLOD` and maps `2^LOD` box-filter footprint into a Gaussian of equal variance (`sigma=2^LOD/sqrt(12)`). The box-filter model and one native texel = one CSS pixel are **not native proofs**; the native blur word itself is unchanged.
+   - **2026-11-12 refraction correction:** the original field applied a second `*.25` attenuation to native signed refraction amount. The retained normalized texture-coordinate matrix contains `1/(4*N)`, while a nominal `surfaceScale=.25` implies `N=.25*CSSWidth`; converting normalized offsets back to CSS pixels therefore gives `1/(4*.25)=1`, not `.25`. This assumes matched texture/display extents, **not verified for every native public state or SVG browser renderer**. The recovered four-corner/SDF/refraction expressions themselves are unchanged.
 5. Verified public face/bleed/tint matrix, background/foreground factor selection and end-to-end color/EDR.
 6. Browser-only specular border/glint and cursor interaction; no evidence of an exact Apple pointer-response law.
 

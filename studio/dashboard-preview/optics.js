@@ -35,6 +35,14 @@
  * GAP(BROWSER-TRANSPORT): browser SVG Gaussian blur substitutes for Metal
  *      filtered texture MIP/LOD; browser feDisplacementMap approximates
  *      texture-coordinate transport, precision, edge clipping and sampling.
+ *      CORRECTION: the original bridge divided blurWord by surfaceScale,
+ *      creating massive Gaussian blur that is NOT an observed native radius.
+ *      The bridge now maps observed LOD to a box-filter footprint and
+ *      variance-matched Gaussian sigma. This is a transparent approximation,
+ *      not an Apple pixel-equivalent law. The original bridge also applied
+ *      a second .25 factor to displacement without resolving normalized
+ *      source-texture coordinates to CSS pixels; that attenuation is removed.
+ *      Assumed source texture grid scale still remains an OPEN transport gap.
  * GAP(COLOR-Q): runtime extended-sRGB→ColorSync→EDR→display chain is open.
  *      Keep actual backdrop colors; never substitute one private diagnostic
  *      color matrix as purported public clear-style evidence.
@@ -182,11 +190,16 @@ export function finiteGeometryParameters(w,h){
 export function finiteBlurParameters(w,h){
   const publicRadius=nativePublicBlurRadius("clear",w,h);
   const blurWord=observedBlurWord(publicRadius,1,.25);
-  const browserRadius=blurWord/.25;
-  const nearSigma=Math.max(.15,browserRadius*.5);
-  const farSigma=Math.max(.15,browserRadius);
   const nearLOD=airTextureMipLOD(blurWord,.5);
   const farLOD=airTextureMipLOD(blurWord,1);
+  // GAP(BROWSER-MIP-TO-GAUSS): AIR's LOD is retained exactly. Native mip
+  // texel filtering is NOT a CSS Gaussian. Treat a footprint of 2**LOD
+  // units as a box kernel, then equate variances: sigma=footprint/sqrt(12).
+  // Its 1-texture-texel == 1-CSS-pixel conversion is explicitly UNPROVEN.
+  // Critically, DO NOT divide blurWord by surfaceScale: the former is
+  // already the selected renderer's native blur word, NOT a CSS sigma.
+  const nearSigma=Math.max(.12,Math.pow(2,nearLOD)/Math.sqrt(12));
+  const farSigma=Math.max(.12,Math.pow(2,farLOD)/Math.sqrt(12));
   return {publicRadius,blurWord,nearSigma,farSigma,nearLOD,farLOD};
 }
 
@@ -206,6 +219,16 @@ export function createGeometricMaps(w,h,radius,profile){
   const inner=new Uint8ClampedArray(len);
   const outer=new Uint8ClampedArray(len);
   const blur=new Uint8ClampedArray(len);
+  // GAP(BROWSER-DISPLACEMENT-COORDINATES): target-native sampled
+  // normalized source-UV delta = amount/(4*sourceTextureDimension).
+  // Converting that to page CSS pixels multiplies by displayPixels /
+  // sourceTextureDimension. The finite sourceScale=.25 means a nominal
+  // quarter-resolution native source; for a matching CSS extent this
+  // cancels the /4: (1/4) / .25 = 1. Previous code incorrectly applied
+  // ANOTHER .25 to pixel-space amount, hiding most edge refraction.
+  // That matching-extent/texture-scale assumption is NOT validated for a
+  // browser SVG filter or all clear-style public states.
+  const cssDisplacementScale=1/(4*ORACLE_FINITE_REFRACTION.surfaceScale);
   for(let y=0;y<h;y++){
     for(let x=0;x<w;x++){
       const i=4*(x+y*w);
@@ -216,14 +239,12 @@ export function createGeometricMaps(w,h,radius,profile){
         p.distance,profile.outerAmount,profile.outerInvHeight);
       const blend=airThresholdMix(
         p.distance,profile.threshold0,profile.threshold1,profile.opacity);
-      // Validated native displacement matrix (v5 reconciliation): ±1/(4*N).
-      // In a CSS-pixel field this becomes a quarter of the native "amount".
-      // GAP(BROWSER-TRANSPORT): actual Metal texture/downsample grid differs
-      // from CSS pixels; 0.25 is grounded but not a proven unit conversion.
-      inner[i]=encodeOracleDisplacement(round(p.nx*innerValue*.25));
-      inner[i+1]=encodeOracleDisplacement(round(p.ny*innerValue*.25));
-      outer[i]=encodeOracleDisplacement(round(p.nx*outerValue*.25));
-      outer[i+1]=encodeOracleDisplacement(round(p.ny*outerValue*.25));
+      // The ±1/(4*N) native UV relation is retained. Its CSS displacement
+      // multiplier is derived above, with the explicit texture-grid gap.
+      inner[i]=encodeOracleDisplacement(round(p.nx*innerValue*cssDisplacementScale));
+      inner[i+1]=encodeOracleDisplacement(round(p.ny*innerValue*cssDisplacementScale));
+      outer[i]=encodeOracleDisplacement(round(p.nx*outerValue*cssDisplacementScale));
+      outer[i+1]=encodeOracleDisplacement(round(p.ny*outerValue*cssDisplacementScale));
       inner[i+2]=outer[i+2]=Math.round(clamp(blend,0,1)*255);
       inner[i+3]=outer[i+3]=255;
       // Retained AIR refraction-adjusted SDF is used for blur ramps.
@@ -280,7 +301,9 @@ function init(){
     backdropReadback:false,generatedMaps:"SDF normals/refraction/blur weights ONLY",
     browserSVGSupported:allow,active:false,panes:tiles.length,
     geometry:null,publicClearRadius:null,finiteBlurWord:null,
-    nearLOD:null,farLOD:null,coverage:"finite P/S + approximate browser R/C/Q",
+    nearLOD:null,farLOD:null,nearSigma:null,farSigma:null,
+    cssDisplacementScale:null,
+    coverage:"finite P/S + approximate browser R/C/Q",
     error:null};
   Object.defineProperty(window,"__liquidGlassOraclePreview",{
     configurable:true,get:()=>Object.freeze({...audit})
@@ -315,6 +338,8 @@ function init(){
     audit.publicClearRadius=blur.publicRadius;
     audit.finiteBlurWord=blur.blurWord;
     audit.nearLOD=blur.nearLOD;audit.farLOD=blur.farLOD;
+    audit.nearSigma=blur.nearSigma;audit.farSigma=blur.farSigma;
+    audit.cssDisplacementScale=1/(4*ORACLE_FINITE_REFRACTION.surfaceScale);
     if(!allow||reduced()){lastKey=key;return}
     try{
       const field=createGeometricMaps(rect.w,rect.h,rect.radius,profile);
@@ -341,6 +366,9 @@ function init(){
       audit.error=null;audit.active=true;lastKey=key;
       root.dataset.oracleOpticalMode="live-backdrop";
       root.dataset.oracleFieldGeometry=key;
+      root.dataset.oracleBlurSigmaFar=blur.farSigma.toFixed(3);
+      root.dataset.oracleCssDisplacementScale=
+        String(1/(4*ORACLE_FINITE_REFRACTION.surfaceScale));
     }catch(error){
       if(gen!==generation)return;
       audit.error=String(error);
