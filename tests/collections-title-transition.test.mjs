@@ -251,3 +251,16 @@ test("Photo strip variables reverse and clean up on route exit",()=>{
   for(const key of ["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"])
     assert.equal(m.body.style.getPropertyValue(key),"",key+" must not bleed into other views");
 });
+
+
+test("small Collections title shares the exact native system font stack of large heading",()=>{
+  const css=source("sites/_apex/app/assets/collections.css");
+  const foundation=source("sites/_apex/assets/site-foundation.css");
+  const compact=css.match(/body\.collections-title-transition #workspace-shell \.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
+  assert.match(compact,/font:600 17px\/21px var\(--ui-font-sans,system-ui\)/);
+  assert.match(foundation,/html, body \{[\s\S]*?font-family: var\(--ui-font-sans\)/);
+  assert.doesNotMatch(compact,/"SF Pro Text"|"Helvetica Neue"/);
+  assert.match(compact,/color:#fff/);
+  assert.match(compact,/transition:opacity 180ms/);
+  assert.match(css,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms/);
+});

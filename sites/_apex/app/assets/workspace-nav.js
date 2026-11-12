@@ -418,9 +418,19 @@ export function initWorkspaceNavigation(doc=document,win=window){
     const q=searchInput.value.trim().toLowerCase();
     for(const a of searchable)a.hidden=!a.textContent.toLowerCase().includes(q);
   });
-  for(const link of globalLinks)link.addEventListener("click",()=>{
+  for(const link of globalLinks)link.addEventListener("click",event=>{
     const route=link.href?.split("#")[1];
-    if(route)render(route);
+    const modified=event?.metaKey||event?.ctrlKey||event?.shiftKey||event?.altKey||
+      (event?.button!==undefined&&event.button!==0);
+    if(route===lastRenderedRoute&&!modified){
+      // The current screen is still an ordinary, keyboard-accessible link.
+      // Only plain activation scrolls to top instead of changing the URL.
+      event.preventDefault();
+      workspaceScroll.animateToTop();
+      closeGlobal();
+      return;
+    }
+    if(route&&!modified)render(route);
     closeGlobal();
   });
   for(const link of links){

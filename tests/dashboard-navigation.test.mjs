@@ -365,26 +365,48 @@ function mockNavigation(){
   return {doc,win,elements,views,links,globalLinks,scrollRoot,fire,stored,scrollCalls,
     mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
-test("upper global-menu retains original navigation instead of scrolling on current-route clicks",()=>{
+test("upper global-menu current link scrolls to top without redirecting, unlike other links",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
   const home=m.globalLinks.find(link=>link.href.endsWith("#home"));
   const projects=m.globalLinks.find(link=>link.href.endsWith("#projects"));
+  const collections=m.globalLinks.find(link=>link.href.endsWith("#colosseum/collections"));
   assert.equal(home.getAttribute("aria-current"),"page");
-  assert.equal(home.getAttribute("role"),undefined,"Upper menu stays a link, not a button");
-  assert.equal(home.getAttribute("aria-label"),undefined);
+  assert.equal(home.getAttribute("role"),undefined,"Retains native link semantics");
+  const priorHash=m.win.location.hash;
   m.scrollRoot.scrollTop=1250;
   let prevented=0;
   home.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,0,"Original current-link click does not override native fragment handling");
-  assert.equal(m.scrollRoot.scrollTop,1250,"Upper menu click must not start return-to-top");
+  assert.equal(prevented,1,"Active click suppresses native navigation");
+  assert.equal(m.scrollRoot.scrollTop,0,"Active click scrolls to document top");
+  assert.equal(m.win.location.hash,priorHash,"Active click preserves hash/history");
   home.dispatch("keydown",{key:" ",code:"Space",preventDefault(){prevented++;}});
-  assert.equal(prevented,0,"Original upper-menu links have no custom Space handler");
-  projects.dispatch("click");
+  assert.equal(prevented,1,"Link retains native keyboard behavior");
+  m.scrollRoot.scrollTop=800;
+  projects.dispatch("click",{preventDefault(){prevented++;}});
+  assert.equal(prevented,1,"Other titles still navigate normally");
   assert.equal(m.views.find(v=>v.dataset.view==="projects").hidden,false);
-  assert.equal(m.scrollRoot.scrollTop,0,"Different page still immediately resets scroll");
+  assert.equal(m.scrollRoot.scrollTop,0);
   assert.equal(projects.getAttribute("aria-current"),"page");
-  assert.equal(projects.getAttribute("role"),undefined);
+  assert.equal(home.getAttribute("aria-current"),undefined);
+  m.win.location.hash="#projects";
+  m.scrollRoot.scrollTop=940;
+  projects.dispatch("click",{preventDefault(){prevented++;}});
+  assert.equal(prevented,2,"The new active title must also scroll to top");
+  assert.equal(m.scrollRoot.scrollTop,0);
+  assert.equal(m.win.location.hash,"#projects");
+  collections.dispatch("click",{preventDefault(){prevented++;}});
+  assert.equal(prevented,2,"Unselected Collections remains a navigation link");
+  assert.equal(m.views.find(v=>v.dataset.view==="colosseum/collections").hidden,false);
+  m.win.location.hash="#colosseum/collections";
+  m.scrollRoot.scrollTop=550;
+  collections.dispatch("click",{preventDefault(){prevented++;}});
+  assert.equal(prevented,3);
+  assert.equal(m.scrollRoot.scrollTop,0);
+  assert.equal(m.win.location.hash,"#colosseum/collections");
+  m.scrollRoot.scrollTop=400;
+  collections.dispatch("click",{metaKey:true,preventDefault(){prevented++;}});
+  assert.equal(prevented,3,"Modified native link activation is preserved");
 });
 
 test("current Permissions breadcrumb is a pointer button that returns to top without navigation",async()=>{

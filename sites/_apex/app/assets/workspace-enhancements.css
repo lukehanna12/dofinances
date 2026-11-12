@@ -44,8 +44,9 @@
 }
 .global-menu-links{display:flex;align-items:center;justify-content:space-between;flex:1;gap:clamp(8px,2.2vw,34px);max-width:810px;}
 .global-menu-links a,.global-menu-account{color:rgba(230,230,235,.8);white-space:nowrap;transition:color 125ms ease;}
-.global-menu a:hover,.global-menu a.is-current{color:#fff;text-decoration:none;}
-.global-menu a.is-current{font-weight:570;}
+/* Current links keep aria-current but have identical color and weight to
+   their peers. Only hover changes their color, exactly like other links. */
+.global-menu a:hover{color:#fff;text-decoration:none;}
 .global-menu-actions{display:flex;align-items:center;gap:11px;flex:none;}
 .global-menu-icon{border:0;background:transparent;color:rgba(230,230,235,.82);display:grid;place-items:center;width:28px;height:30px;cursor:pointer;border-radius:7px;padding:0;}
 .global-menu-icon:hover,.global-menu-icon[aria-expanded="true"]{color:#fff;background:rgba(255,255,255,.09);}
@@ -126,11 +127,13 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
 .shadcn-breadcrumb-link,.shadcn-breadcrumb-page{
   display:inline-block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap;
   text-overflow:ellipsis;line-height:1.35;font-size:inherit;text-decoration:none;
+  font-family:inherit;font-weight:inherit;letter-spacing:inherit;
+  text-align:left;vertical-align:baseline;
   background:transparent;border:0;border-radius:0;padding:0;
 }
 .shadcn-breadcrumb-link{color:var(--ui-secondary);transition:color 140ms ease;}
-.shadcn-breadcrumb-link:hover{color:var(--ui-text);text-decoration:none;}
-.shadcn-breadcrumb-page{color:var(--ui-text);font-weight:570;}
+.shadcn-breadcrumb-link:hover,.shadcn-breadcrumb-page:hover{color:var(--ui-text);text-decoration:none;}
+.shadcn-breadcrumb-page{color:var(--ui-secondary);font-weight:inherit;transition:color 140ms ease;}
 button.shadcn-breadcrumb-page{
   font-family:inherit;font-size:inherit;
   appearance:none;cursor:pointer;user-select:none;-webkit-user-select:none;
@@ -364,7 +367,7 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 }
 @media(prefers-reduced-motion:reduce){
   .content > .view:not([hidden]){animation:none;}
-  .shadcn-breadcrumb-link,.global-menu a,.global-menu-icon{transition:none;}
+  .shadcn-breadcrumb-link,.shadcn-breadcrumb-page,.global-menu a,.global-menu-icon{transition:none;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }
 

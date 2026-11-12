@@ -176,7 +176,7 @@ test("actual shadcn Base breadcrumb list uses muted links and an unframed page",
   }
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.match(css,/\.shadcn-breadcrumb-link\{color:var\(--ui-secondary\)/);
-  assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-text\)/);
+   assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-secondary\);font-weight:inherit/);
   assert.match(css,/border-radius:0;padding:0/);
 });
 test("collapsed desktop sidebar never renders the header toggle at compact or wide widths",()=>{
@@ -267,4 +267,19 @@ test("compact topbar centers only its clock and moves navigation into the right-
     assert.ok(html.includes('id="global-menu-toggle"'),"right-edge menu control present");
     assert.ok(html.includes('id="global-search-toggle"'),"right-edge search control present");
   }
+});
+
+
+test("active global navigation title is styled like every other title",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const js=read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(css,/\.global-menu-links a,\.global-menu-account\{color:rgba\(230,230,235,\.8\);white-space:nowrap/);
+  assert.match(css,/\.global-menu a:hover\{color:#fff;text-decoration:none;\}/);
+  assert.doesNotMatch(css,/\.global-menu a\.is-current\{/,
+    "The selected route cannot add whiteness or font weight");
+  assert.match(js,/if\(route===lastRenderedRoute&&!modified\)\{/);
+  assert.match(js,/event\.preventDefault\(\);\s*workspaceScroll\.animateToTop\(\)/);
+  assert.match(js,/if\(route&&!modified\)render\(route\)/);
+  assert.match(css,/\.shadcn-breadcrumb-link,.shadcn-breadcrumb-page\{[\s\S]*?font-family:inherit;font-weight:inherit;letter-spacing:inherit;[\s\S]*?text-align:left;vertical-align:baseline/);
+  assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-secondary\);font-weight:inherit/);
 });

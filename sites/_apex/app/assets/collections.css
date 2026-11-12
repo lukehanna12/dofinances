@@ -645,7 +645,9 @@ body.collections-title-transition #workspace-shell .topbar > .collections-inline
   pointer-events:none;
   user-select:none;
   color:#fff;
-  font:600 17px/21px -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  /* Match the large Collections heading's inherited native font family;
+     retain the compact title's size, weight and opacity transition. */
+  font:600 17px/21px var(--ui-font-sans,system-ui);
   letter-spacing:0;
   opacity:0;
   transition:opacity 180ms cubic-bezier(.4,0,.2,1) 0ms;
