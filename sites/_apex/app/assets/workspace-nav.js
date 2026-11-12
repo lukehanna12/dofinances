@@ -215,6 +215,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
   const workspaceScroll=initWorkspaceScroll(doc,win);
+  // The final breadcrumb is the active page, not an inert text label.
+  // Native button activation (mouse, touch, Enter, Space) reuses the same
+  // distance-aware RAF return-to-top trajectory, without changing routes.
+  currentCrumb?.addEventListener?.("click",()=>workspaceScroll.animateToTop());
   const wallpaper=initWorkspaceWallpaper(doc,win);
   let lastRenderedRoute=null;
   function render(requestedRoute=null){
@@ -242,6 +246,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
     if(currentCrumb){
       currentCrumb.textContent=meta.label;
+      currentCrumb.setAttribute("aria-label","Scroll to top of "+meta.label);
       if(projectArrow)projectArrow.hidden=!meta.project;
       if(colosseumCrumb)colosseumCrumb.hidden=!meta.project;
       if(colosseumArrow)colosseumArrow.hidden=!meta.project;

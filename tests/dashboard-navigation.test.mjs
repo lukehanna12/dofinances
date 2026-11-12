@@ -283,6 +283,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="back-to-workspace"/);
   assert.match(html,/<a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects"/);
   assert.match(html,/<nav class="shadcn-breadcrumbs" id="breadcrumb"/);
+  assert.match(html,/<button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page"/,
+    "The currently selected breadcrumb must be a native clickable button, not a text-cursor span");
   assert.match(html,/href="#colosseum\/utilities"/);
   assert.match(html,/aria-label="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
@@ -335,7 +337,7 @@ function element(props={}){
 function mockNavigation(){
   const ids=["workspace-shell","workspace-sidebar","sidebar-toggle","mobile-nav-toggle",
     "sidebar-scrim","main-navigation","project-navigation","apple-hig-navigation",
-    "breadcrumb","location-subtitle","back-to-workspace","sidebar-resize-handle"];
+    "breadcrumb","breadcrumb-current","location-subtitle","back-to-workspace","sidebar-resize-handle"];
   const elements=Object.fromEntries(ids.map(id=>[id,element()]));
   const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({dataset:{view:name}}));
@@ -396,6 +398,39 @@ test("current global-menu route scrolls to top on click and Space while other ro
   projects.dispatch("click",{metaKey:true,preventDefault(){modifiedPrevented++;}});
   assert.equal(modifiedPrevented,0,"Command-click should retain native new-tab behavior");
   assert.equal(m.scrollRoot.scrollTop,90,"Modified navigation should not start scroll animation");
+});
+
+test("current Permissions breadcrumb is a pointer button that returns to top without navigation",async()=>{
+ const html=await read("../sites/_apex/app/index.html");
+ const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+ assert.match(html,/<button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page" aria-label="Scroll to top of Home">Home<\/button>/);
+ assert.match(css,/\.shadcn-breadcrumb-page\s*\{[^}]*cursor:pointer;user-select:none;-webkit-user-select:none/);
+ assert.match(css,/\.shadcn-breadcrumb-page:focus-visible\{outline:2px solid var\(--ui-focus\)/);
+ const m=mockNavigation();
+ initWorkspaceNavigation(m.doc,m.win);
+ const crumb=m.elements["breadcrumb-current"];
+ assert.equal(crumb.textContent,"Home");
+ assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Home");
+ m.win.location.hash="#colosseum/permissions";
+ m.fire("hashchange");
+ assert.equal(crumb.textContent,"Permissions");
+ assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Permissions");
+ assert.equal(m.views.find(v=>v.dataset.view==="colosseum/permissions").hidden,false);
+ m.scrollRoot.scrollTop=2500;
+ const priorCalls=m.scrollCalls.length;
+ const priorHash=m.win.location.hash;
+ crumb.dispatch("click");
+ assert.equal(m.scrollRoot.scrollTop,0,
+   "Native-button click invokes top scroll; RAF-less test window uses immediate fallback");
+ assert.equal(m.win.location.hash,priorHash,"Current breadcrumb does not change route or history");
+ assert.equal(m.scrollCalls.length,priorCalls,"Same-page breadcrumb does not invoke route-reset logic");
+ assert.equal(m.views.find(v=>v.dataset.view==="colosseum/permissions").hidden,false);
+ m.win.location.hash="#colosseum/providers";m.fire("hashchange");
+ assert.equal(crumb.textContent,"Providers","Button label updates with the current page");
+ assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Providers");
+ m.scrollRoot.scrollTop=120;
+ crumb.dispatch("click");
+ assert.equal(m.scrollRoot.scrollTop,0,"Same behavior works for every current page");
 });
 
 test("click selects route immediately, without awaiting the browser hashchange event",()=>{
