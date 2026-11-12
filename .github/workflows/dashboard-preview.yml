@@ -71,7 +71,11 @@ jobs:
           grep -Fq 'actual painted DOM' dist/app/assets/dashboard-optics.js
           node --check dist/app/assets/dashboard-optics.js
           node --check dist/app/assets/sidebar-glass-oracle.js
-          node --experimental-default-type=module --test dist/app/assets/dashboard-optics.test.mjs
+          # Node's module default varies by runner; mark this test-only
+          # directory as ESM, then remove the marker before Pages deployment.
+          printf '{"type":"module"}\\n' > dist/app/assets/package.json
+          node --test dist/app/assets/dashboard-optics.test.mjs
+          rm dist/app/assets/package.json
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
