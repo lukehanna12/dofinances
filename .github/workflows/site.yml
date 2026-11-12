@@ -89,9 +89,12 @@ jobs:
           # job still supplies the real Auth-3 apex /login page.
           # Only this Pages deployment's dist/ copy becomes the standalone
           # Studio preview. No auth JS or test-branch dependency is included.
-          mkdir -p dist/app/assets dist/assets
-          cp studio/sidebar/index.html dist/index.html
+          mkdir -p dist/app/assets dist/assets dist/gallery/assets
+          cp studio/gallery/index.html dist/index.html
           cp studio/sidebar/index.html dist/app/index.html
+          cp studio/gallery/gallery.css dist/gallery/assets/gallery.css
+          cp studio/gallery/gallery.js dist/gallery/assets/gallery.js
+          cp studio/gallery/gallery-field-worker.js dist/gallery/assets/gallery-field-worker.js
           cp sites/_apex/app/assets/dashboard.css dist/app/assets/dashboard.css
           cp sites/_apex/app/assets/workspace-theme.css dist/app/assets/workspace-theme.css
           cp sites/_apex/app/assets/workspace-nav.js dist/app/assets/workspace-nav.js
@@ -122,7 +125,14 @@ jobs:
           grep -Fq 'global-menu' dist/app/index.html
           grep -Fq 'workspace-enhancements.css' dist/app/index.html
           test ! -e dist/app/assets/dashboard.js
-          grep -Fq 'preview-bootstrap.js' dist/index.html
+          grep -Fq 'id="background-switcher"' dist/index.html
+          grep -Fq 'id="specimen-panel"' dist/index.html
+          grep -Fq 'id="specimen-toggle"' dist/index.html
+          grep -Fq 'src="/gallery/assets/gallery.js"' dist/index.html
+          test -s dist/gallery/assets/gallery.css
+          test -s dist/gallery/assets/gallery.js
+          test -s dist/gallery/assets/gallery-field-worker.js
+          grep -Fq 'preview-bootstrap.js' dist/app/index.html
           grep -Fq 'sidebar-glass.css' dist/app/index.html
           grep -Fq 'initLiquidGlassSidebar' dist/app/assets/preview-bootstrap.js
           grep -Fq 'glass-scene-toggle' dist/app/assets/sidebar-glass.js
@@ -211,30 +221,31 @@ jobs:
           set -euo pipefail
           studio_body="$(mktemp)"
           studio_ready=false
-          # Probe a fresh URL after deployment to distinguish a stale Pages
-          # edge response from a failed static-asset package. Always inspect
-          # the full workspace marker; HTTP 200 alone is insufficient.
+          # Probe the gallery root with a release-unique URL to distinguish a stale
+          # Pages response from the current deployment. The old sidebar demo
+          # remains independently checked at /app/.
           for attempt in 1 2 3 4 5 6; do
             studio_code="$(curl --retry 2 --retry-delay 2 -fsSL --max-time 20 -H 'Cache-Control: no-cache' -w '%{http_code}' -o "$studio_body" "https://stu.dofinances.com/?studio_release=${GITHUB_RUN_ID}-${attempt}")"
             echo "Studio root probe $attempt -> HTTP $studio_code ($(wc -c < "$studio_body") bytes)"
             if test "$studio_code" = 200 &&
-               grep -Fq 'preview-bootstrap.js' "$studio_body" &&
-               grep -Fq 'id="workspace-sidebar"' "$studio_body" &&
-               grep -Fq 'sidebar-glass.css' "$studio_body" &&
+               grep -Fq 'id="background-switcher"' "$studio_body" &&
+               grep -Fq 'id="specimen-panel"' "$studio_body" &&
+               grep -Fq 'id="specimen-toggle"' "$studio_body" &&
+               grep -Fq '/gallery/assets/gallery.js' "$studio_body" &&
                ! grep -Fq 'auth3-studio-preview-v1' "$studio_body"; then
               studio_ready=true
               break
             fi
             echo "Unexpected Studio HTML markers:"
-            grep -Eo '<title>[^<]+|studio-empty-v1|auth3-studio-preview-v1|preview-bootstrap\.js' "$studio_body" | head -12 || true
+            grep -Eo '<title>[^<]+|studio-empty-v1|auth3-studio-preview-v1|gallery\.js' "$studio_body" | head -12 || true
             sleep 5
           done
           if test "$studio_ready" != true; then
-            echo "Live Studio is not the expected static sidebar; refusing preview retirement." >&2
+            echo "Live Studio root is not the expected Liquid Glass gallery." >&2
             exit 1
           fi
           rm "$studio_body"
-          for route in /app/ /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
+          for route in /gallery/assets/gallery.css /gallery/assets/gallery.js /gallery/assets/gallery-field-worker.js /app/ /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
             code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "https://stu.dofinances.com$route")"
             echo "Studio $route -> HTTP $code"
             test "$code" = 200
@@ -385,3 +396,9 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/verify-live-sidebar.mjs
+
+      - name: Verify five Glass gallery controls and backgrounds in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-live-gallery.mjs

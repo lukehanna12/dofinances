@@ -16,7 +16,7 @@ test("Studio root is the only React entrypoint; the apex /login reuses its build
   assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
 });
 
-test("Studio root displays isolated Liquid Glass workspace while apex /login keeps Auth-3", async () => {
+test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /login keeps Auth-3", async () => {
   const [page,bootstrap,glassCSS,glassJS,oracle,workflow] = await Promise.all([
     load("../studio/sidebar/index.html"),
     load("../studio/sidebar/preview-bootstrap.js"),
@@ -44,13 +44,14 @@ test("Studio root displays isolated Liquid Glass workspace while apex /login kee
   assert.match(oracle, /function onPaneResize\(\)/);
   const pages = workflow.split("  deploy:\n")[1].split("\n  deploy-host-router:")[0];
   const hostRouter = workflow.split("  deploy-host-router:\n")[1].split("\n  smoke:")[0];
-  assert.match(pages, /cp studio\/sidebar\/index\.html dist\/index\.html/);
+  assert.match(pages, /cp studio\/gallery\/index\.html dist\/index\.html/);
+  assert.match(pages, /cp studio\/sidebar\/index\.html dist\/app\/index\.html/);
   assert.match(pages, /cp studio\/sidebar\/sidebar-glass\.css dist\/app\/assets\/sidebar-glass\.css/);
   assert.match(pages, /cp studio\/sidebar\/preview-bootstrap\.js dist\/app\/assets\/preview-bootstrap\.js/);
   assert.match(pages, /test ! -e dist\/app\/assets\/dashboard\.js/);
   assert.match(hostRouter, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
   assert.doesNotMatch(hostRouter, /studio\/sidebar|studio\/blank/);
-  assert.match(workflow, /grep -Fq 'preview-bootstrap\.js' "\$studio_body"/);
+  assert.match(workflow, /grep -Fq 'id="background-switcher"' "\$studio_body"/);
   assert.match(workflow, /grep -Fq 'Sign in · Dofinances' "\$body"/);
 });
 

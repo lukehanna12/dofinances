@@ -15,7 +15,7 @@ This repository is public, with default branch `main`. Website code, documentati
 | `edge/auth-*.mjs` | Account state, credentials, MFA, email, Google/GitHub identity-only OAuth |
 | `edge/cloudflare-connection.mjs`, `edge/colosseum-owner.mjs` | Account-scoped Cloudflare API policies and separate Colosseum owner JWT verification |
 | `src/`, root `index.html`, `vite.config.mjs` | React/Tailwind/Motion Auth-3 build used for apex `/login` |
-| `studio/sidebar/` | Public **static** Liquid Glass Studio preview |
+| `studio/gallery/`, `studio/sidebar/` | Public **static** five-component Glass gallery at `/` and preserved standalone sidebar demo at `/app/` |
 | `public/`, `functions/login.js` | Static Pages 404/headers/function route controls; this is top-level `public/`, not `src/public/` |
 | `tests/`, `scripts/verify-live-sidebar.mjs` | Node tests and live headless Chrome smoke validation |
 | `.github/workflows/site.yml` | GitHub Actions production CI/CD |
@@ -47,7 +47,7 @@ The inspected production run succeeded in all four jobs. DNS and Worker routes a
 
 **Private apex workspace (`https://dofinances.com/app`):** the Worker validates the host-only Secure/HttpOnly Dofinances session before serving the HTML shell or protected assets. Navigation primarily uses native JS and hash routes, with specific nested `/app/...` and legacy `/dashboard/...` paths allowlisted by `WORKSPACE_VIEW_PATHS`. Main views: Home, Projects, Settings. Colosseum views: Utilities, Collections, Providers, Permissions, Diagnostics and Settings. Apple HIG Reader is a separate project. Source-of-truth CSS begins at `sites/_apex/assets/site-foundation.css`; workspace layering is in `dashboard.css`, `workspace-theme.css`, `workspace-enhancements.css`, `workspace-wallpapers.css` and screen-specific styles.
 
-**Public Studio (`https://stu.dofinances.com/` or `/app/`):** standalone Liquid Glass navigation and wallpaper demo. This intentionally excludes private `dashboard.js`, authenticated account operations, and live Colosseum client controllers. The apex Auth-3 login is a separate React/Vite bundle; Studio `/login` and `/login/` are forced to 404 by a narrowly scoped Pages Function.
+**Public Studio:** `https://stu.dofinances.com/` hosts a five-component interactive Glass gallery with flat, designed, and photographic backgrounds; the original standalone Liquid Glass navigation/wallpaper demo remains at `/app/`. Both intentionally exclude private `dashboard.js`, authenticated account operations, and live Colosseum controllers. The apex Auth-3 login is a separate React/Vite bundle; Studio `/login` and `/login/` are forced to 404 by a narrowly scoped Pages Function.
 
 The sidebar's Oracle glass module derives SVG-filter optical/displacement fields from the actual DOM backdrop; computational support is in `sidebar-glass-oracle.js` and `sidebar-glass-field-worker.js`. Wallpaper selection is route-aware. The Worker proxies only eight explicitly allowlisted `LIBRARY_III` SHA-addressed objects under `/wallpapers/`, rather than exposing the full Colosseum library.
 
