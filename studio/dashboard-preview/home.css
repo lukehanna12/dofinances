@@ -58,7 +58,7 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
 /* The exact top bars continue to own their original hover, glass and
    stacking; the new atmosphere begins BELOW their combined heights. */
 .dashboard-atmosphere{
-  --micro-width:clamp(310px,32vw,470px);
+  --micro-width:clamp(460px,35vw,525px);
   position:fixed;
   inset:calc(var(--global-menu-height,44px) + var(--workspace-header-height,50px)) 0 0;
   z-index:0;
@@ -102,7 +102,7 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
     0 0 0 1px rgba(0,0,0,.08),
     inset 0 1px 0 rgba(255,255,255,.075),
     0 11px 26px rgba(0,0,0,.14);
-  opacity:.09;
+  opacity:.12;
   transform-origin:center center;
   transform:scale(calc(1 + var(--cursor) * .075));
   filter:brightness(calc(1 + var(--cursor) * .65));
@@ -148,12 +148,12 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
    gentle rise, a short stable crest, and a similarly gentle departure.
    The floor stays legible as a thin etched lattice even when resting. */
 @keyframes dashboard-tile-breathe {
-  0%,47%,100% {opacity:.09}
+  0%,47%,100% {opacity:.12}
   53%         {opacity:.13}
   66%         {opacity:var(--peak)}
   71%         {opacity:var(--peak)}
   85%         {opacity:.15}
-  92%         {opacity:.09}
+  92%         {opacity:.12}
 }
 .dashboard-atmosphere.dashboard-paused .dashboard-tile{
   animation-play-state:paused;
@@ -248,7 +248,7 @@ body:has(> #workspace-shell .dashboard-home) .workspace-footer{
     radial-gradient(ellipse 72% 75% at 50% 52%,transparent 38%,rgba(0,0,0,.37) 100%);
 }
 @media(max-width:760px) {
-  .dashboard-atmosphere{--micro-width:clamp(205px,60vw,280px)}
+  .dashboard-atmosphere{--micro-width:clamp(290px,60vw,340px)}
   .dashboard-structural-top{height:57px}
   .dashboard-structural-bottom{height:clamp(125px,25vh,220px)}
   .dashboard-base-rule{bottom:40px}
