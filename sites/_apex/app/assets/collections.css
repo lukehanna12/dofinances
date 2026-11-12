@@ -349,12 +349,23 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  width:29px;height:29px;display:grid;place-items:center;
  padding:0;border:0;border-radius:8px;background:#0a0a0a;color:#bcbcbc;
  opacity:0;visibility:hidden;pointer-events:none;
- /* The eye is gated until the 480ms control swap finishes, then reveals
-    quickly rather than taking a second full-length fade. */
+ /* On entry, the eyes fade DURING the last part of the handle motion,
+    not afterward. Disabled controls remain non-interactive until landing. */
  transition:opacity 160ms var(--cs-control-ease),visibility 0s linear 160ms,background .15s,color .15s;
 }
 #cs-root.cs-editing .cs-visibility-toggle{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 #cs-root .cs-visibility-toggle:disabled{opacity:0}
+/* Begin the reveal 25% into the 480ms grip animation and finish at 80%:
+   visible before the rearrangement controls reach their final positions.
+   The CSS animation overrides the disabled opacity without enabling clicks. */
+#cs-root.cs-editing.cs-entering-edit .cs-visibility-toggle:disabled{
+ visibility:visible;pointer-events:none;
+ animation:cs-eye-reveal-with-grip var(--cs-control-swap) linear both;
+}
+@keyframes cs-eye-reveal-with-grip{
+ 0%,25%{opacity:0}
+ 80%,100%{opacity:1}
+}
 #cs-root .cs-visibility-toggle svg{width:16px;height:16px;pointer-events:none}
 #cs-root .cs-visibility-toggle:hover{background:#262626;color:#fff}
 #cs-root .cs-visibility-toggle[aria-pressed="true"]{color:#8c8c8c}
