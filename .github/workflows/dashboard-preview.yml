@@ -75,7 +75,7 @@ jobs:
           # directory as ESM, then remove the marker before Pages deployment.
           echo '{"type":"module"}' > dist/app/assets/package.json
           node --test dist/app/assets/dashboard-optics.test.mjs
-          rm dist/app/assets/package.json
+          rm dist/app/assets/package.json dist/app/assets/dashboard-optics.test.mjs
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
