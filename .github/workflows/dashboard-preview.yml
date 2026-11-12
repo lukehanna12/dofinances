@@ -118,45 +118,20 @@ jobs:
           ! grep -Fq 'preview-bootstrap.js' dist/index.html
           echo 'Standalone, read-only Dashboard preview verified'
 
-      - name: Browser smoke — real WebGPU pipeline and original mosaic
+      - name: Browser smoke — real GPU frame, mip chain, and original icons
         shell: bash
         run: |
           set -euo pipefail
-          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$CHROME" ]; then
-            echo 'Chrome unavailable: cannot certify WebGPU browser pipeline'
-            exit 1
-          fi
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME"
+          python3 -m pip install --quiet --disable-pip-version-check websocket-client==1.8.0
           python3 -m http.server 8765 --directory dist >/tmp/dashboard-preview-http.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           sleep 1
-          "$CHROME" --headless --no-sandbox --enable-unsafe-webgpu \
-            --enable-unsafe-swiftshader --use-angle=swiftshader \
-            --ignore-gpu-blocklist --disable-dev-shm-usage \
-            --window-size=800,600 --virtual-time-budget=15000 --dump-dom \
-            http://127.0.0.1:8765/ >/tmp/dashboard-preview-live-dom.html \
-            2>/tmp/dashboard-preview-chrome-stderr.log || {
-              tail -80 /tmp/dashboard-preview-chrome-stderr.log
-              exit 1
-            }
-          grep -Fq 'cta6-tile--icon' /tmp/dashboard-preview-live-dom.html
-          ! grep -Fq 'id="workspace-sidebar"' /tmp/dashboard-preview-live-dom.html
-          grep -Fq 'dashboard-gpu-renderer.js' /tmp/dashboard-preview-live-dom.html
-          # This marker appears only after shader compilation, device/pipeline
-          # construction, real mip passes, and the first submitted GPU frame.
-          if ! grep -Fq 'data-gpu-scene="ready"' /tmp/dashboard-preview-live-dom.html; then
-            echo 'WebGPU pipeline did not report READY in headless Chrome'
-            grep -o 'data-gpu-scene="[^"]*"' /tmp/dashboard-preview-live-dom.html || true
-            grep -o 'data-gpu-error="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
-            grep -o 'data-gpu-status="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
-            grep -o 'data-gpu-phase="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
-            tail -65 /tmp/dashboard-preview-chrome-stderr.log
-            exit 1
-          fi
-          grep -Fq 'data-gpu-renderer="webgpu"' /tmp/dashboard-preview-live-dom.html
-          grep -Fq 'data-gpu-mip-levels="' /tmp/dashboard-preview-live-dom.html
-          echo 'Real WebGPU mip chain, oracle instancing and original DOM icons active'
+          # CI-only real wall-clock CDP. GPU async operations can extend beyond
+          # Chrome's --virtual-time-budget snapshot, producing false failures.
+          python3 studio/dashboard-preview/ci-webgpu-smoke.py
 
       - name: Deploy preview branch to distinct Pages URL
         uses: cloudflare/wrangler-action@v4
