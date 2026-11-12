@@ -37,7 +37,7 @@ assert '</aside>' in removed_sidebar
 assert 'id="sidebar-resize-handle"' in removed_sidebar
 assert 'id="sidebar-scrim"' in removed_sidebar
 html = html[:start] + html[end:]
-mobile_toggle = '          <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>\\n'
+mobile_toggle = '          <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>'
 # The remaining global-menu toggle is separate from the removed workspace drawer.
 assert html.count(mobile_toggle) == 1
 html = html.replace(mobile_toggle,'',1)
