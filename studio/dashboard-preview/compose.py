@@ -24,8 +24,8 @@ assert html.count('id="home-title"') == 1
 assert html.count('id="cta6-mosaic"') == 0
 assert html.count('id="workspace-sidebar"') == 1
 assert 'id="sidebar-resize-handle"' in html
-# A viewport-fixed backdrop is a direct body child, BEFORE the authenticated
-# workspace shell. It does not inherit main-column width or sidebar transforms.
+# Keep the field inside the workspace stacking context, but fixed to
+# the viewport. This avoids the old sibling-layer rendering ambiguity.
 stage = """<div id="dashboard-atmosphere" class="dashboard-atmosphere" aria-hidden="true">
   <div class="dashboard-atmosphere-grain"></div>
   <div id="dashboard-tiles-small" class="dashboard-tiles dashboard-tiles-small"></div>
@@ -46,7 +46,7 @@ stage = """<div id="dashboard-atmosphere" class="dashboard-atmosphere" aria-hidd
 """
 shell_start = '<div class="shell" id="workspace-shell">'
 assert html.count(shell_start) == 1
-html = html.replace(shell_start, stage + shell_start, 1)
+html = html.replace(shell_start, shell_start + stage, 1)
 assert 'id="dashboard-tiles-small"' in html
 assert 'id="dashboard-tiles-main"' in html
 assert 'Workspace</h1>' not in html
