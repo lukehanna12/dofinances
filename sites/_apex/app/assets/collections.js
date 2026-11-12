@@ -228,8 +228,11 @@ export function initColosseumCollections(){
  }
  function renderPages(){
    const pages=pageCount();state.page=Math.min(Math.max(1,state.page),pages);
-   if(pages===1){pagination.innerHTML='';$("cs-countline").textContent=state.loaded?
-       state.collections.length+' '+(state.collections.length===1?"collection":"collections")+' · directly from Colosseum':"";return;}
+   const first=(state.page-1)*state.pageSize+1;
+   const total=state.collections.length;
+   $("cs-countline").textContent=state.loaded?
+     (total?first+'–'+Math.min(first+state.pageSize-1,state.collections.length)+' of '+total:'0 of 0'):"";
+   if(pages===1){pagination.innerHTML='';return;}
    const from=Math.max(1,Math.min(state.page-2,pages-4)),to=Math.min(pages,from+4);
    const numbers=new Set([1,pages]);for(let p=from;p<=to;p++)numbers.add(p);
    let last=0;
@@ -241,8 +244,6 @@ export function initColosseumCollections(){
    }).join("");
    pagination.innerHTML='<button class="cs-page" type="button" data-cs-page="prev" aria-label="Previous collections page"'+(state.page===1?' disabled':'')+'>'+LEFT+'</button>'+
      cells+'<button class="cs-page" type="button" data-cs-page="next" aria-label="Next collections page"'+(state.page===pages?' disabled':'')+'>'+RIGHT+'</button>';
-   const first=(state.page-1)*state.pageSize+1;
-   $("cs-countline").textContent=first+'–'+Math.min(first+state.pageSize-1,state.collections.length)+' of '+state.collections.length+' collections · directly from Colosseum';
  }
  function renderRows(){
    if(!state.loaded){list.innerHTML='<p class="cs-loading">Reading collections directly from Colosseum…</p>';renderPages();return;}

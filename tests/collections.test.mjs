@@ -419,6 +419,18 @@ test("Collections update time inherits the shared unpadded-hour convention",asyn
  assert.ok(!js.includes('updatedAt.toLocaleTimeString('));
 });
 
+test("Collection pagination captions contain only their dynamic range and total",()=>{
+  assert.match(js,/const first=\(state\.page-1\)\*state\.pageSize\+1/);
+  assert.match(js,/const total=state\.collections\.length/);
+  assert.match(js,/textContent=state\.loaded\?[\s\S]*?first\+'–'\+Math\.min\(first\+state\.pageSize-1,state\.collections\.length\)\+' of '\+total:'0 of 0'/);
+  assert.match(js,/if\(pages===1\)\{pagination\.innerHTML='';return;\}/);
+  assert.doesNotMatch(js,/collections · directly from Colosseum/);
+  for(const [total,page,expected] of [[12,1,"1–10 of 12"],[12,2,"11–12 of 12"],[10,1,"1–10 of 10"],[1,1,"1–1 of 1"],[0,1,"0 of 0"]]){
+    const first=(page-1)*10+1;
+    const label=total?first+"–"+Math.min(first+10-1,total)+" of "+total:"0 of 0";
+    assert.equal(label,expected);
+  }
+});
 test("Collections display ten live items per page and keep ordinary last-page pagination",()=>{
  const pageSize=10;
  const collections=Array.from({length:11},(_,i)=>({collection_id:"c"+i}));
