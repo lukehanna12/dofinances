@@ -91,6 +91,16 @@ body:has(> #workspace-shell) .top-actions{margin-left:auto;}
 body:has(> #workspace-shell) .content{
   padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));
 }
+/* Wide desktop content should keep the same viewport-left inset as at 1280px.
+ * Only stop the main content block from centering/growing its left padding.
+ * The existing sidebar-width spacer still moves the main column on rail
+ * collapse, expansion, and drag resize; those interactions remain unchanged. */
+@media(min-width:1280px){
+  body:has(> #workspace-shell) .content{
+    margin-inline:0 auto;
+    padding-inline-start:52.48px; /* 4.1vw at the 1280px breakpoint */
+  }
+}
 /* Non-Home headings share one viewport Y-level on desktop AND mobile.
  * At zero scroll their line-box center matches the desktop sidebar D mark.
  * Relative positioning moves only the title's painted position; it keeps

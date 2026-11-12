@@ -74,6 +74,18 @@ test("desktop sidebar overlays the footer with fixed height and a layout spacer"
   assert.match(css,/@media\(max-width:760px\)\{/);
 });
 
+test("xl content keeps the 1280px left inset without detaching from the sidebar spacer",()=>{
+  const enhanced=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const wallpaper=read("../sites/_apex/app/assets/workspace-wallpapers.css");
+  const navigation=read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(wallpaper,/\.content \{[\s\S]*?max-width:1110px;[\s\S]*?margin-inline:auto;/);
+  assert.match(enhanced,/@media\(min-width:1280px\)\{\s*body:has\(> #workspace-shell\) \.content\{\s*margin-inline:0 auto;\s*padding-inline-start:52\.48px;/);
+  assert.match(enhanced,/--workspace-rail-space-width:var\(--sidebar-expanded-width,260px\)/);
+  assert.match(enhanced,/\.shell\.is-collapsed,[\s\S]*?--workspace-rail-space-width:74px/);
+  assert.match(enhanced,/flex:0 0 calc\(var\(--workspace-sidebar-left-gap\) \+ var\(--workspace-rail-space-width\)\)/);
+  assert.match(navigation,/const isCompactRail=\(\)=>!!win\.matchMedia\?\.\("\(min-width: 761px\) and \(max-width: 1279px\)"\)/);
+});
+
 test("root scrolling guards top, bottom, and right edges while preserving back swipe",()=>{
   const events={};let cancelled=0,scrollCalls=0;
   const root={scrollTop:0,scrollLeft:0,scrollHeight:1600,clientHeight:700,scrollWidth:900,clientWidth:900};

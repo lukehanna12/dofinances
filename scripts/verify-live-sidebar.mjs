@@ -584,6 +584,102 @@ try{
     assert.ok(restoredToggle.width>=30&&restoredToggle.height>=30,
       "Restored collapse control must have a usable hit area: "+JSON.stringify({width,restoredToggle}));
   }
+  // Wide-screen alignment must be fixed in viewport coordinates, except for
+  // the existing sidebar's own expansion/collapse/resize displacement.
+  const measureContentLeft=()=>evaluate(String.raw`(()=>{
+    const shell=document.getElementById("workspace-shell");
+    const main=document.querySelector(".main");
+    const pane=document.getElementById("workspace-sidebar");
+    const content=document.getElementById("main-content");
+    const rect=content.getBoundingClientRect(),style=getComputedStyle(content);
+    return {mainLeft:main.getBoundingClientRect().left,contentLeft:rect.left,
+      leftInset:Number.parseFloat(style.paddingLeft),
+      start:rect.left+Number.parseFloat(style.paddingLeft),
+      paneWidth:pane.getBoundingClientRect().width,
+      collapsed:shell.classList.contains("is-collapsed")};
+  })()`);
+  let expandedReference=null;
+  for(const width of [1280,1600,1920]){
+    await metrics(width,820);
+    await until('document.documentElement.clientWidth==='+String(width)+
+      ' && !document.getElementById("workspace-shell").classList.contains("is-compact-rail")',
+      "wide content alignment at "+width);
+    const measured=await measureContentLeft();
+    assert.equal(measured.collapsed,false,"expected expanded sidebar at "+width);
+    assert.ok(Math.abs(measured.contentLeft-measured.mainLeft)<.8,
+      "Content re-centered away from sidebar-adjusted main column: "+JSON.stringify({width,measured}));
+    assert.ok(Math.abs(measured.leftInset-52.48)<.8,
+      "Wide content left inset must stop growing after 1280: "+JSON.stringify({width,measured}));
+    if(expandedReference===null)expandedReference=measured;
+    else assert.ok(Math.abs(measured.start-expandedReference.start)<1,
+      "Resizing only the window must not drift the content boundary: "+
+      JSON.stringify({width,expandedReference,measured}));
+  }
+  await evaluate('document.getElementById("sidebar-toggle").click();true');
+  await until('document.getElementById("workspace-shell").classList.contains("is-collapsed")'+
+    ' && !document.getElementById("workspace-shell").classList.contains("is-sidebar-toggling")',
+    "wide content collapsed state settled");
+  const collapsed1920=await measureContentLeft();
+  assert.ok(Math.abs((expandedReference.start-collapsed1920.start)-
+    (expandedReference.paneWidth-collapsed1920.paneWidth))<1.5,
+    "Sidebar collapse must shift content by the exact sidebar width delta");
+  await metrics(1280,820);
+  await until('document.documentElement.clientWidth===1280',"collapsed 1280 viewport");
+  const collapsed1280=await measureContentLeft();
+  assert.ok(Math.abs(collapsed1280.start-collapsed1920.start)<1,
+    "Collapsed content boundary must also be fixed across desktop widths");
+  await evaluate('document.getElementById("workspace-sidebar").click();true');
+  await until('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'+
+    ' && !document.getElementById("workspace-shell").classList.contains("is-sidebar-toggling")',
+    "wide content re-expansion settled");
+  const expandedAgain=await measureContentLeft();
+  assert.ok(Math.abs(expandedAgain.start-expandedReference.start)<1,
+    "Sidebar re-expansion must restore the original content boundary");
+  const dragHandle=await evaluate(String.raw`(()=>{
+    const r=document.getElementById("sidebar-resize-handle").getBoundingClientRect();
+    return {x:r.left+r.width/2,y:r.top+Math.min(110,r.height/2)};
+  })()`);
+  await down(dragHandle.x,dragHandle.y);
+  for(let step=1;step<=4;step++){
+    await move(dragHandle.x+step*10,dragHandle.y);
+    await pause(35);
+  }
+  await up(dragHandle.x+40,dragHandle.y);
+  await until('!document.getElementById("workspace-shell").classList.contains("is-sidebar-resizing")',
+    "wide sidebar drag ends");
+  await until('document.querySelector(".sidebar").getBoundingClientRect().width>'+
+    String(expandedAgain.paneWidth+28),"wide sidebar resize reflected in layout");
+  const afterDrag=await measureContentLeft();
+  assert.ok(afterDrag.paneWidth>expandedAgain.paneWidth+28,
+    "Wide sidebar drag did not increase the pane width");
+  assert.ok(Math.abs((afterDrag.start-expandedAgain.start)-
+    (afterDrag.paneWidth-expandedAgain.paneWidth))<1.5,
+    "Main content must follow the actual resized sidebar width: "+
+    JSON.stringify({expandedAgain,afterDrag}));
+  // All screens share the same content boundary, including dynamic views.
+  for(const route of ["home","projects","settings","colosseum/collections",
+    "colosseum/providers","colosseum/permissions","colosseum/diagnostics"]){
+    await evaluate('location.hash="#'+route+'";window.scrollTo(0,0);true');
+    await until('!document.querySelector(\'.view[data-view="'+route+'"]\')?.hidden',
+      "route "+route+" for wide content alignment");
+    await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
+      "route "+route+" content arrival");
+    const screen=await evaluate(String.raw`(()=>{
+      const root=document.querySelector(".content > .view:not([hidden])");
+      const heading=root.querySelector(":scope > .page-heading");
+      const c=document.getElementById("main-content");
+      return {viewLeft:root.getBoundingClientRect().left,
+        titleLeft:heading?.getBoundingClientRect().left??null,
+        contentStart:c.getBoundingClientRect().left+
+          Number.parseFloat(getComputedStyle(c).paddingLeft)};
+    })()`);
+    assert.ok(Math.abs(screen.viewLeft-screen.contentStart)<1,
+      "Screen content lost its shared left boundary: "+JSON.stringify({route,screen}));
+    if(screen.titleLeft!==null)
+      assert.ok(Math.abs(screen.titleLeft-screen.contentStart)<1,
+        "Screen title lost its shared left boundary: "+JSON.stringify({route,screen}));
+  }
+  console.log("PASS: desktop 1280/1600/1920 content inset fixed; sidebar collapse, expansion, drag and screen boundaries preserved");
   console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
