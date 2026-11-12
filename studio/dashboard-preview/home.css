@@ -325,3 +325,94 @@ body:has(> #workspace-shell .dashboard-home){
 @supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
   .dashboard-home .cta6-tile--icon{background:rgba(223,227,230,.78)}
 }
+
+
+/* =====================================================================
+ * Oracle-constrained clear Liquid Glass — isolated Dashboard experiment.
+ * Source: lukehanna12/liquid-plexiglass-oracle @ 3fd32ed3 (25F80/M2/G14G).
+ * The mathematical SDF/refraction field comes from dashboard-optics.js.
+ * SVG/CSS backdrop-filter samples LIVE composited DOM per pane. Texture maps
+ * contain ONLY normals, signed distances and blur weights; NO backdrop image.
+ *
+ * GAP LG-SR-NATIVE: AIR→G14G universal semantics remains OPEN.
+ * GAP LG-P-SCALARS: universal public-state blur selection remains OPEN.
+ * GAP LG-Q-NUMERICAL: runtime EDR/ColorSync/display color chain remains OPEN.
+ * GAP CSS-SVG-TRANSPORT: CSS/SVG sampling, precision, Gaussian texture LOD
+ * and half-float quantization are not exact replacements for the M2 GPU.
+ * GAP PUBLIC-MATERIAL: clear-style face/tint/shadow/color parameters and
+ * private four-corner writer are not closed by retained public evidence.
+ * The below surface/edge styling is an EXPLICIT browser-only aesthetic
+ * fill-in, not a claimed exact Apple shader/material coefficient.
+ * ===================================================================== */
+.dashboard-home .cta6{
+  isolation:auto; /* do not cut off the outside live backdrop root */
+}
+.dashboard-home .cta6-tile--glass{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  pointer-events:auto;
+  background:rgba(246,248,250,.065);
+  border:1px solid rgba(247,250,252,.34);
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.13),
+    0 1px 0 rgba(255,255,255,.22),
+    inset 0 1px 0 rgba(255,255,255,.44),
+    inset 0 -1px 0 rgba(18,22,25,.15);
+}
+.dashboard-home .cta6-tile--glass.oracle-filter-active{
+  -webkit-backdrop-filter:url("#liquid-plexiglass-mosaic");
+  backdrop-filter:url("#liquid-plexiglass-mosaic");
+}
+.dashboard-home .cta6-tile--glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(152deg,rgba(255,255,255,.31) 0%,rgba(255,255,255,.035) 22%,transparent 46%),
+    linear-gradient(345deg,rgba(12,17,21,.12),transparent 29%);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.23),
+    inset -1px -1px 0 rgba(12,14,18,.10);
+}
+.dashboard-home .cta6-tile--glass::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  z-index:0;
+  pointer-events:none;
+  background:radial-gradient(
+    circle 50% at var(--glass-pointer-x,50%) var(--glass-pointer-y,50%),
+    rgba(255,255,255,.35),rgba(255,255,255,.09) 42%,transparent 77%
+  );
+  opacity:var(--glass-pointer-energy,0);
+  transition:opacity 300ms cubic-bezier(.16,1,.3,1);
+}
+.dashboard-home .cta6-tile--glass .cta6-icon{
+  position:relative;
+  z-index:1;
+  color:#050505;
+  stroke:#050505;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.18));
+}
+.dashboard-home .cta6-tile--empty{
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  pointer-events:none;
+}
+@media(prefers-reduced-transparency:reduce),(forced-colors:active){
+  .dashboard-home .cta6-tile--glass,
+  .dashboard-home .cta6-tile--glass.oracle-filter-active{
+    background:rgba(226,229,233,.95);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-home .cta6-tile--glass::after{transition:none}
+}

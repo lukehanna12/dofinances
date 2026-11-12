@@ -17,6 +17,7 @@ html = html.replace(old_title, "<title>Dashboard Preview · DoFinances</title>")
 html = html.replace(old_bootstrap, "/app/assets/dashboard-preview.js")
 html = html.replace("</head>", """  <link rel="stylesheet" href="/app/assets/dashboard-home.css">
   <script type="module" src="/app/assets/dashboard-mosaic.js"></script>
+  <script type="module" src="/app/assets/dashboard-optics.js"></script>
 </head>""", 1)
 assert "Your workspace, all in one place." not in html
 assert "A home for your projects and account." not in html

@@ -31,6 +31,8 @@ jobs:
           python3 studio/dashboard-preview/compose.py
           cp studio/dashboard-preview/home.css dist/app/assets/dashboard-home.css
           cp studio/dashboard-preview/home.js dist/app/assets/dashboard-mosaic.js
+          cp studio/dashboard-preview/optics.js dist/app/assets/dashboard-optics.js
+          cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
 
           cp sites/_apex/assets/site-foundation.css dist/assets/
           for asset in \
@@ -55,8 +57,19 @@ jobs:
           test -s dist/app/assets/dashboard-preview.js
           test -s dist/app/assets/dashboard-home.css
           test -s dist/app/assets/dashboard-mosaic.js
+          test -s dist/app/assets/dashboard-optics.js
+          test -s dist/app/assets/sidebar-glass-oracle.js
           grep -Fq 'data-view="home"' dist/index.html
           grep -Fq 'id="cta6-mosaic"' dist/index.html
+          grep -Fq 'dashboard-optics.js' dist/index.html
+          grep -Fq 'airMode5SDF(' dist/app/assets/dashboard-optics.js
+          grep -Fq 'airRefractionEnvelope(' dist/app/assets/dashboard-optics.js
+          grep -Fq 'feDisplacementMap' dist/app/assets/dashboard-optics.js
+          grep -Fq 'SourceGraphic' dist/app/assets/dashboard-optics.js
+          grep -Fq 'GAP LG-Q-NUMERICAL' dist/app/assets/dashboard-home.css
+          grep -Fq 'actual painted DOM' dist/app/assets/dashboard-optics.js
+          node --check dist/app/assets/dashboard-optics.js
+          node --check dist/app/assets/sidebar-glass-oracle.js
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
