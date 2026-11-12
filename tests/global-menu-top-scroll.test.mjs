@@ -39,15 +39,20 @@ function harness(initial=2400,{reduced=false,raf=true,height=800}={}){
   return {root,win,frames,listeners,windowScrolls,controller,step,complete};
 }
 
-test("scroll animation remains attached to current breadcrumb, not the upper global menu",()=>{
-  assert.ok(css.includes(".global-menu a.is-current{font-weight:570;}"));
-  assert.ok(!css.includes(".global-menu a.is-current{font-weight:570;cursor:pointer;}"));
+test("active upper global title reuses native breadcrumb top-scroll, without visual differentiation",()=>{
+  assert.ok(css.includes(".global-menu-links a,.global-menu-account{color:rgba(230,230,235,.8)"));
+  assert.ok(css.includes(".global-menu a:hover{color:#fff;text-decoration:none;}"));
+  assert.ok(!css.includes(".global-menu a.is-current{font-weight:570;}"));
+  assert.ok(!css.includes(".global-menu a:hover,.global-menu a.is-current"));
   assert.ok(nav.includes('currentCrumb?.addEventListener?.("click",()=>workspaceScroll.animateToTop())'));
-  assert.ok(nav.includes('for(const link of globalLinks)link.addEventListener("click",()=>{'));
-  assert.ok(!nav.includes('targetRoute()!==lastRenderedRoute'));
-  assert.ok(!nav.includes('link.setAttribute("role","button")'));
+  assert.ok(nav.includes('for(const link of globalLinks)link.addEventListener("click",event=>{'));
+  assert.ok(nav.includes("if(route===lastRenderedRoute&&!modified){"));
+  assert.ok(nav.includes("event.preventDefault();"));
+  assert.ok(nav.includes("workspaceScroll.animateToTop();"));
+  assert.ok(nav.includes("if(route&&!modified)render(route)"));
+  assert.ok(!nav.includes('link.setAttribute("role","button")'),
+    "Global navigation remains native links, including the active one");
   assert.ok(!nav.includes('link.setAttribute("aria-label","Scroll to top of "'));
-  assert.ok(nav.includes("if(route)render(route)"));
 });
 
 test("fast ease-out returns large distances to top in well under 300ms",()=>{
