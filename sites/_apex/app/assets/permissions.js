@@ -70,6 +70,7 @@ export function initColosseumPermissions(){
   $("pm-pin-edit").disabled=!active;
   $("pm-add-form").querySelectorAll("input,button").forEach(input=>input.disabled=!active);
   $("pm-exec").hidden=!active;
+  $("pm-lifecycle").hidden=!active||!state.lifecycle;
   const term=$("pm-filter").value.trim().toLowerCase();
   const visible=state.rows.filter(row=>(row.values[2]+" "+row.values[1]).toLowerCase().includes(term));
   $("pm-cards").innerHTML=visible.map(pathCard).join("")||'<p class="pm-quiet">No paths match this search.</p>';
@@ -83,6 +84,14 @@ export function initColosseumPermissions(){
     return '<div class="pm-exec-field" data-exec-key="'+esc(f.key)+'"><label>'+esc(f.label)+'</label>'+ctrl+
      (unit?'<span class="pm-small">'+unit+'</span>':'')+
      '<button type="button" class="pm-btn" data-exec-save>Save</button></div>';
+   }).join("");
+   $("pm-lifecycle-fields").innerHTML=(state.lifecycleFields||[]).map(f=>{
+    const value=state.lifecycle?.[f.key],valid=Number.isSafeInteger(value);
+    return '<div class="pm-exec-field" data-lifecycle-key="'+esc(f.key)+'"><label>'+esc(f.label)+'</label>'+
+     '<input data-lifecycle-input type="number" min="'+f.range[0]+'" max="'+f.range[1]+
+     '" step="60" value="'+(valid?value:'')+'"'+(!valid?' disabled':'')+'>'+
+     '<span class="pm-small">seconds</span><button type="button" class="pm-btn" data-lifecycle-save'+
+     (!canEdit()?' disabled':'')+'>Save</button></div>';
    }).join("");
   }
  }
@@ -138,6 +147,14 @@ export function initColosseumPermissions(){
   const line=b.closest("[data-exec-key]"),input=line.querySelector("[data-exec-input]"),key=line.dataset.execKey;
   const value=input.type==="checkbox"?input.checked:Math.round(Number(input.value)*Number(input.dataset.scale||1));
   void prepare({kind:"execution",key,value});
+ });
+ $("pm-lifecycle-fields").addEventListener("click",event=>{
+  const button=event.target.closest("[data-lifecycle-save]");
+  if(!button)return;
+  const line=button.closest("[data-lifecycle-key]"),input=line.querySelector("[data-lifecycle-input]");
+  const value=Number(input.value);
+  if(!Number.isSafeInteger(value)||!input.checkValidity()){show("Enter a valid idle duration in seconds.",true);return;}
+  void prepare({kind:"lifecycle",key:line.dataset.lifecycleKey,value});
  });
  $("pm-confirm-pin").addEventListener("input",event=>{$("pm-confirm-apply").disabled=!/^[0-9]{4}$/.test(event.target.value)});
  async function cancel(){

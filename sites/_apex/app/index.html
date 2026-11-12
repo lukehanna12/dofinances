@@ -478,7 +478,7 @@
           </div>
         </section>
         <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
-          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1><p class="lead">Manage the local gateway's filesystem access and script execution rules.</p></div>
+          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1><p class="lead">Manage the local gateway's filesystem, execution, and maximum idle-duration limits.</p></div>
           <div id="pm-root" class="pm-screen">
             <div class="pm-summary"><strong id="pm-source" class="pm-source">Loading permission authority…</strong><span id="pm-revision" class="pm-small"></span><span id="pm-count" class="pm-small"></span><button type="button" id="pm-refresh" class="pm-btn">Refresh</button></div>
             <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
@@ -501,6 +501,12 @@
             <section id="pm-exec" class="pm-exec" hidden>
               <div class="pm-heading"><div><h2>Execution controls</h2><span class="pm-quiet">Limits and execution gates remain distinct from filesystem permissions.</span></div><div class="pm-actions"><span id="pm-pin-status" class="pm-small"></span><button type="button" id="pm-pin-edit" class="pm-btn">Manage hazard PIN</button></div></div>
               <details><summary>Review and edit execution settings</summary><div id="pm-execution-fields" class="pm-exec-grid"></div></details>
+            </section>
+            <hr class="pm-divider">
+            <section id="pm-lifecycle" class="pm-exec pm-lifecycle" hidden>
+              <div class="pm-heading"><div><h2>Local provider lifecycle limits</h2>
+                <span class="pm-quiet">The authoritative maximum idle duration is an upper bound. Providers may request a shorter duration, but can never exceed this limit. Active operations and protected unsaved sessions block unsafe shutdown.</span></div></div>
+              <div id="pm-lifecycle-fields" class="pm-exec-grid"></div>
             </section>
             <dialog id="pm-confirm" aria-labelledby="pm-confirm-title">
               <span id="pm-confirm-kind" class="pm-small"></span><h3 id="pm-confirm-title">Review permission change</h3><p id="pm-confirm-copy"></p>

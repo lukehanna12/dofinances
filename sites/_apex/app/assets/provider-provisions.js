@@ -1,6 +1,7 @@
 /* Live, source-derived Colosseum provider controls. The upstream MCP, not this
  * interface, defines the available tools, resource templates, and prompts. */
 import {mountProviderAdapterControl} from "./provider-adapters.js";
+import {mountGhidraLifecycle} from "./provider-ghidra-lifecycle.js";
 const cache=new Map(),loading=new Map(),editors=new Map(),filters=new Map(),pending=new Map();
 const FIELDS=["targets","targetArrays","readTargetArrays","sourceTargets","destinationTargets","forbiddenFields","effectTargets"];
 const CHECKS=["openWorld","filesystemSensitive","scriptSensitive","destructive","allowTargetless"];
@@ -52,6 +53,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
   const s=record.data,items=s.tools||[];
   mountProviderAdapterControl({id,data:s,container:region,request,notify,
    onChanged:fresh=>{cache.set(id,{data:fresh,error:null});draw();}});
+  mountGhidraLifecycle({id,data:s,container:region,request,notify,onChanged:()=>void load(true)});
   const available=items.filter(t=>t.available).length;
   const disabled=items.filter(t=>t.disabled).length;
   const unprepared=items.filter(t=>!t.available&&!t.disabled).length;
