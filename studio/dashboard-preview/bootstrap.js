@@ -39,6 +39,11 @@ window.addEventListener("hashchange",()=>{
 initWorkspaceNavigation();
 window.__dashboardPreviewGlass=initLiquidGlassSidebar();
 document.title="Dashboard Preview · DoFinances";
+// The public preview has no authenticated account; never show a fake loading state.
+for(const id of ["account-email","account-email-detail"]){
+  const el=document.getElementById(id);
+  if(el)el.textContent="";
+}
 
 // Unrelated account, collection and diagnostic actions are not wired to
 // their production controllers. Disable them to avoid misleading activity.
