@@ -75,7 +75,7 @@ jobs:
           grep -Fq 'dashboard-paused' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'const unit=microZone?30:58' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'acceptance=Math.min' dist/app/assets/dashboard-mosaic.js
-          grep -Fq '0%,47%,100% {opacity:.09}' dist/app/assets/dashboard-home.css
+          grep -Fq '0%,47%,100% {opacity:.12}' dist/app/assets/dashboard-home.css
           python3 - <<'PY'
           from pathlib import Path
           from html.parser import HTMLParser
