@@ -253,14 +253,26 @@ test("Photo strip variables reverse and clean up on route exit",()=>{
 });
 
 
-test("small Collections title shares the exact native system font stack of large heading",()=>{
+test("small Collections title inherits the native system stack and matches global clock digits",()=>{
   const css=source("sites/_apex/app/assets/collections.css");
   const foundation=source("sites/_apex/assets/site-foundation.css");
+  const clock=source("sites/_apex/app/assets/workspace-enhancements.css");
+  const toggle=source("sites/_apex/app/assets/workspace-theme.css");
   const compact=css.match(/body\.collections-title-transition #workspace-shell \.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
-  assert.match(compact,/font:600 17px\/21px var\(--ui-font-sans,system-ui\)/);
   assert.match(foundation,/html, body \{[\s\S]*?font-family: var\(--ui-font-sans\)/);
+  assert.match(compact,/font:620 15px\/1 var\(--ui-font-sans,system-ui\)/);
+  assert.match(clock,/\.global-clock\{[\s\S]*?font-size:15px;font-weight:620;line-height:1/);
+  assert.match(compact,/letter-spacing:-\.02em/);
+  assert.match(clock,/font-variant-numeric:tabular-nums;letter-spacing:-\.02em/);
+  assert.match(css,/@media\(max-width:1279px\)\{\s*body\.collections-title-transition #workspace-shell \.topbar > \.collections-inline-title\{\s*font-size:14px/);
+  assert.match(css,/@media\(max-width:450px\)\{\s*body\.collections-title-transition #workspace-shell \.topbar > \.collections-inline-title\{\s*font-size:13px/);
+  assert.match(clock,/@media\(max-width:1279px\)\{[\s\S]*?\.global-clock\{[\s\S]*?font-size:14px/);
+  assert.match(clock,/@media\(max-width:450px\)\{\s*\.global-clock\{gap:6px;font-size:13px/);
+  assert.match(toggle,/\.icon-button \{[\s\S]*?color: var\(--ui-secondary\)/);
+  assert.match(compact,/color:var\(--ui-secondary\)/);
   assert.doesNotMatch(compact,/"SF Pro Text"|"Helvetica Neue"/);
-  assert.match(compact,/color:#fff/);
+  assert.match(compact,/position:absolute;\s*z-index:2;\s*inset:0;\s*display:flex;\s*align-items:center;\s*justify-content:center;\s*transform:none/);
+  assert.match(compact,/pointer-events:none/);
   assert.match(compact,/transition:opacity 180ms/);
   assert.match(css,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms/);
 });

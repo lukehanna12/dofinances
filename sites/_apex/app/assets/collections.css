@@ -628,29 +628,43 @@ body.collections-title-transition::after{
   -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
 }
-/* UIKit's compact title is an independent 17pt Semibold label. The real
-   Catalyst runtime switches its label container at the collapse boundary;
-   this intentionally softened 220ms opacity fade follows the requested
-   Apple-like appearance instead of pretending to reproduce an unexposed
-   proprietary fade curve. Breadcrumbs clear first, without overlap. */
+/* Compact Collections title: same system-family, cap-height rhythm and
+   responsive font size as the global clock digits (15/14/13px, weight 620,
+   line-height 1). Its resting ink is the sidebar toggle's --ui-secondary.
+   The overlay occupies the ENTIRE bottom bar, not its remaining flex space:
+   the title is centered against the real bar on every viewport width.
+   Opacity timing remains independent of the breadcrumb handoff. */
 body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
   position:absolute;
   z-index:2;
-  inset:50% auto auto 50%;
-  transform:translate(-50%,-50%);
-  max-width:calc(100% - 140px);
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:none;
+  box-sizing:border-box;
+  max-width:none;
+  padding-inline:70px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   pointer-events:none;
   user-select:none;
-  color:#fff;
-  /* Match the large Collections heading's inherited native font family;
-     retain the compact title's size, weight and opacity transition. */
-  font:600 17px/21px var(--ui-font-sans,system-ui);
-  letter-spacing:0;
+  color:var(--ui-secondary);
+  font:620 15px/1 var(--ui-font-sans,system-ui);
+  letter-spacing:-.02em;
   opacity:0;
   transition:opacity 180ms cubic-bezier(.4,0,.2,1) 0ms;
+}
+@media(max-width:1279px){
+  body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
+    font-size:14px;
+  }
+}
+@media(max-width:450px){
+  body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
+    font-size:13px;
+  }
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .topbar > .collections-inline-title{
   opacity:1;
