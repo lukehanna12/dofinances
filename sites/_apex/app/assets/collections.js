@@ -609,6 +609,16 @@ export function initColosseumCollections(){
  }
  /* Collection selection is transient, client-side only. It does not write to
     Colosseum, alter configuration, or expose any batch action. */
+ function clearCollectionPicks(){
+   state.selectedCollections.clear();
+   // The row DOM stays mounted across the exit animation. Reset its visual
+   // bubbles after the fade so a new selection session starts truly empty.
+   list.querySelectorAll('.cs-collection-pick[aria-pressed="true"]').forEach(button=>{
+     button.setAttribute("aria-pressed","false");
+     const col=state.collections.find(item=>item.collection_id===button.dataset.csPick);
+     if(col)button.setAttribute("aria-label","Select "+col.name);
+   });
+ }
  function toggleCollectionPick(button){
    if(!state.collectionSelecting||state.collectionSelectTransitioning||state.busy)return;
    const id=button.dataset.csPick;
@@ -655,12 +665,12 @@ export function initColosseumCollections(){
    await waitForVisualMotion(list.querySelector(".cs-collection-pick"),"cs-grip-exit-left");
    root.classList.remove("cs-leaving-selection");
    state.collectionSelectTransitioning=false;
-   state.selectedCollections.clear();
+   clearCollectionPicks();
    syncEditControl();
  }
  function resetCollectionSelectMode(){
    state.collectionSelecting=false;state.collectionSelectTransitioning=false;
-   state.selectedCollections.clear();
+   clearCollectionPicks();
    root.classList.remove("cs-collection-selecting","cs-entering-selection","cs-leaving-selection","cs-closing-for-selection");
    syncEditControl();renderRows();renderCard();
  }
@@ -830,7 +840,7 @@ export function initColosseumCollections(){
  });
  pagination.addEventListener("click",event=>{
    const button=event.target.closest("[data-cs-page]");
-   if(!button||state.busy)return;
+   if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
    const requested=button.dataset.csPage;
    const page=requested==="prev"?state.page-1:requested==="next"?state.page+1:Number(requested);
    if(!Number.isInteger(page)||page<1||page>pageCount()||page===state.page)return;
