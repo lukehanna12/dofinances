@@ -36,6 +36,7 @@ const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
 const GRIP='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+const PICK_CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>';
 const EYE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.6-6.2 9.5-6.2 9.5 6.2 9.5 6.2-3.6 6.2-9.5 6.2S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>';
 const EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10 5.9a10.6 10.6 0 0 1 2-.2c5.9 0 9.5 6.3 9.5 6.3a16.8 16.8 0 0 1-2.8 3.2M6.1 7.4C3.8 9.2 2.5 12 2.5 12s3.6 6.3 9.5 6.3c1.1 0 2.2-.2 3.1-.6M10 10a2.8 2.8 0 0 0 3.8 3.8"/></svg>';
 const FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></svg>';
@@ -54,11 +55,12 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
-   nameDrafts:new Map(),draggingId:null,editTransitioning:false
+   nameDrafts:new Map(),draggingId:null,editTransitioning:false,
+   collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
- const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),editButton=$("cs-edit");
+ const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
  function readStoredGeometry(){
    try{
      const raw=window.localStorage.getItem(SUMMARY_GEOMETRY_KEY);
@@ -149,9 +151,10 @@ export function initColosseumCollections(){
  }
  function setBusy(value){
    state.busy=value;
-   refreshButton.disabled=value;
-   createButton.disabled=value||state.editing;
-   editButton.disabled=value||state.editTransitioning;
+   refreshButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning;
+   createButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning;
+   editButton.disabled=value||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
+   selectButton.disabled=value||state.editing||state.editTransitioning||state.collectionSelectTransitioning;
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
@@ -226,16 +229,20 @@ export function initColosseumCollections(){
    const depth=Math.min(8,Math.max(0,collection.collection_depth||0));
    const draft=state.nameDrafts.get(collection.collection_id)??collection.name;
    const editing=state.editing;
+   const picking=state.collectionSelecting;
+   const picked=state.selectedCollections.has(collection.collection_id);
    const off=editing?"":' disabled tabindex="-1" aria-hidden="true"';
+   const pickOff=picking?"":' disabled tabindex="-1" aria-hidden="true"';
    return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
        '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
-       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing?' disabled tabindex="-1"':'')+'>'+
+       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing||picking?' disabled tabindex="-1"':'')+'>'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
        '<span class="cs-chevron">'+CHEVRON+'</span></button>'+
+       '<button class="cs-collection-pick" type="button" data-cs-pick="'+uuid+'" aria-label="'+(picked?'Deselect ':'Select ')+esc(collection.name)+'" aria-pressed="'+String(picked)+'"'+pickOff+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
        '<input class="cs-inline-name" type="text" data-cs-name="'+uuid+'" value="'+esc(draft)+'" aria-label="Rename '+esc(collection.name)+'" maxlength="100" autocomplete="off" spellcheck="false"'+off+'>'+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
@@ -269,6 +276,7 @@ export function initColosseumCollections(){
    if(!state.loaded){list.innerHTML='<p class="cs-loading">Reading collections directly from Colosseum…</p>';renderPages();return;}
    if(!state.collections.length){list.innerHTML='<p class="cs-loading">No collections yet. Use New collection to create one.</p>';renderPages();return;}
    root.classList.toggle("cs-editing",state.editing);
+   root.classList.toggle("cs-collection-selecting",state.collectionSelecting);
    list.innerHTML=pageItems().map(rowMarkup).join("");
    renderPages();syncAccordion();syncRowEditing();
  }
@@ -347,7 +355,7 @@ export function initColosseumCollections(){
    }
  }
  function openCollection(id){
-   if(state.editing||state.editTransitioning)return;
+   if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
    const next=state.activeId===id?null:id;
    state.activeId=next;state.selecting=false;state.selected.clear();state.detail=null;
    ++state.detailSeq;
@@ -423,7 +431,7 @@ export function initColosseumCollections(){
        announce(error.message,true,false,error.reauthorize===true);
      }
    }
-   finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy;}
+   finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;}
  }
  function openForm(mode){
    if(state.busy)return;
@@ -500,7 +508,7 @@ export function initColosseumCollections(){
    }finally{setBusy(false);syncActions();renderCard();}
  }
  function syncRowEditing(){
-   const locked=state.editing||state.editTransitioning;
+   const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
    list.querySelectorAll(".cs-entry").forEach(entry=>{
      const trigger=entry.querySelector(".cs-trigger");
      if(trigger){trigger.disabled=locked;trigger.tabIndex=locked?-1:0;}
@@ -515,17 +523,30 @@ export function initColosseumCollections(){
        else control.removeAttribute("aria-hidden");
      }
      if(drag)drag.draggable=state.editing&&!state.editTransitioning;
+     const pick=entry.querySelector(".cs-collection-pick");
+     if(pick){
+       pick.disabled=!state.collectionSelecting||state.collectionSelectTransitioning;
+       pick.tabIndex=pick.disabled?-1:0;
+       if(pick.disabled)pick.setAttribute("aria-hidden","true");
+       else pick.removeAttribute("aria-hidden");
+     }
    });
  }
  function syncEditControl(){
    root.classList.toggle("cs-editing",state.editing);
+   root.classList.toggle("cs-collection-selecting",state.collectionSelecting);
    editButton.setAttribute("aria-label",state.editing?"Done editing collections":"Edit collections");
    editButton.setAttribute("aria-pressed",String(state.editing));
    editButton.setAttribute("aria-busy",String(root.classList.contains("cs-closing-for-edit")));
-   editButton.disabled=state.busy||state.editTransitioning;
+   editButton.disabled=state.busy||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
    $("cs-edit-tooltip-label").textContent=state.editing?"Done editing":"Edit collections";
-   refreshButton.disabled=state.busy||state.editing||state.editTransitioning;
-   createButton.disabled=state.busy||state.editing||state.editTransitioning;
+   selectButton.setAttribute("aria-label",state.collectionSelecting?"Done selecting collections":"Select collections");
+   selectButton.setAttribute("aria-pressed",String(state.collectionSelecting));
+   selectButton.setAttribute("aria-busy",String(root.classList.contains("cs-closing-for-selection")));
+   selectButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelectTransitioning;
+   $("cs-select-tooltip-label").textContent=state.collectionSelecting?"Done selecting":"Select collections";
+   refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
+   createButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
    syncRowEditing();
  }
  async function waitForVisualMotion(element,property){
@@ -543,7 +564,7 @@ export function initColosseumCollections(){
    }
  }
  async function enterEditMode(){
-   if(state.busy||!state.loaded||state.editing||state.editTransitioning)return;
+   if(state.busy||!state.loaded||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
    state.editTransitioning=true;
    const panel=list.querySelector(".cs-entry.cs-open .cs-accordion-panel");
    if(panel){
@@ -585,6 +606,68 @@ export function initColosseumCollections(){
    state.nameDrafts.clear();state.configDirty=false;
    root.classList.remove("cs-entering-edit","cs-leaving-edit","cs-closing-for-edit");
    syncEditControl();renderRows();renderCard();
+ }
+ /* Collection selection is transient, client-side only. It does not write to
+    Colosseum, alter configuration, or expose any batch action. */
+ function toggleCollectionPick(button){
+   if(!state.collectionSelecting||state.collectionSelectTransitioning||state.busy)return;
+   const id=button.dataset.csPick;
+   if(!state.collections.some(collection=>collection.collection_id===id))return;
+   const wasPicked=state.selectedCollections.has(id);
+   if(wasPicked)state.selectedCollections.delete(id);
+   else state.selectedCollections.add(id);
+   button.setAttribute("aria-pressed",String(!wasPicked));
+   const collection=state.collections.find(item=>item.collection_id===id);
+   button.setAttribute("aria-label",(wasPicked?"Select ":"Deselect ")+collection.name);
+ }
+ async function enterCollectionSelectMode(){
+   if(state.busy||!state.loaded||state.editing||state.editTransitioning||
+      state.collectionSelecting||state.collectionSelectTransitioning)return;
+   state.collectionSelectTransitioning=true;
+   const panel=list.querySelector(".cs-entry.cs-open .cs-accordion-panel");
+   if(panel){
+     root.classList.add("cs-closing-for-selection");
+     syncEditControl();
+     state.activeId=null;state.detail=null;state.selecting=false;state.selected.clear();
+     ++state.detailSeq;
+     syncAccordion();renderCard();
+     await waitForVisualMotion(panel,"grid-template-rows");
+     root.classList.remove("cs-closing-for-selection");
+   }
+   if(!routeActive()){
+     resetCollectionSelectMode();return;
+   }
+   state.collectionSelecting=true;
+   state.selectedCollections.clear();
+   root.classList.add("cs-entering-selection");
+   syncEditControl();
+   await waitForVisualMotion(list.querySelector(".cs-collection-pick"),"cs-grip-enter-right");
+   root.classList.remove("cs-entering-selection");
+   state.collectionSelectTransitioning=false;
+   syncEditControl();
+ }
+ async function exitCollectionSelectMode(){
+   if(!state.collectionSelecting||state.collectionSelectTransitioning)return;
+   state.collectionSelectTransitioning=true;
+   state.collectionSelecting=false;
+   root.classList.add("cs-leaving-selection");
+   syncEditControl();
+   await waitForVisualMotion(list.querySelector(".cs-collection-pick"),"cs-grip-exit-left");
+   root.classList.remove("cs-leaving-selection");
+   state.collectionSelectTransitioning=false;
+   state.selectedCollections.clear();
+   syncEditControl();
+ }
+ function resetCollectionSelectMode(){
+   state.collectionSelecting=false;state.collectionSelectTransitioning=false;
+   state.selectedCollections.clear();
+   root.classList.remove("cs-collection-selecting","cs-entering-selection","cs-leaving-selection","cs-closing-for-selection");
+   syncEditControl();renderRows();renderCard();
+ }
+ function toggleCollectionSelectMode(){
+   if(state.collectionSelectTransitioning||state.busy||state.editing||state.editTransitioning)return;
+   if(state.collectionSelecting){void exitCollectionSelectMode();return;}
+   void enterCollectionSelectMode();
  }
  function applyDraftLayout(entries,focusId=null){
    state.configEntries=entries;state.configDirty=true;
@@ -644,7 +727,7 @@ export function initColosseumCollections(){
    finally{setBusy(false);syncEditControl();}
  }
  function toggleEditMode(){
-   if(state.editTransitioning)return;
+   if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
    if(state.editing){void finishEditMode();return;}
    void enterEditMode();
  }
@@ -720,7 +803,8 @@ export function initColosseumCollections(){
  });
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
-   if(!button||state.busy||state.editTransitioning)return;
+   if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
+   if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}
    if(button.hasAttribute("data-cs-visibility")){toggleCollectionVisibility(button.dataset.csVisibility);return;}
    if(button.hasAttribute("data-cs-drag"))return;
    if(button.hasAttribute("data-cs-jump-child")){jumpToChild(button.dataset.csJumpChild);return;}
@@ -756,6 +840,7 @@ export function initColosseumCollections(){
  refreshButton.addEventListener("click",()=>{if(!state.busy)void loadList();});
  createButton.addEventListener("click",()=>openForm("create"));
  editButton.addEventListener("click",toggleEditMode);
+ selectButton.addEventListener("click",toggleCollectionSelectMode);
  // Match the tooltip's ⇧⌘N hint without interfering with inputs, other
  // workspace routes, open dialogs, or in-flight Colosseum mutations.
  window.addEventListener("keydown",event=>{
@@ -792,7 +877,11 @@ export function initColosseumCollections(){
  $("cs-delete-apply").addEventListener("click",()=>void deleteCollection());
  editDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  deleteDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
- window.addEventListener("hashchange",()=>{if(routeActive())void loadList();else if(state.editing)resetEditMode();});
+ window.addEventListener("hashchange",()=>{
+   if(routeActive()){void loadList();return;}
+   if(state.editing||state.editTransitioning)resetEditMode();
+   if(state.collectionSelecting||state.collectionSelectTransitioning)resetCollectionSelectMode();
+ });
  if(routeActive())void loadList();
  else announce("Open Collections to retrieve the live Colosseum collection inventory.");
 }
