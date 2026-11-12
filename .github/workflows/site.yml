@@ -396,3 +396,9 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/verify-live-sidebar.mjs
+
+      - name: Verify five Glass gallery controls and backgrounds in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-live-gallery.mjs
