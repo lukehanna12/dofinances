@@ -1,4 +1,5 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
+import {normalizeCollectionConfiguration,orderedCollectionTree,collectionDescendsFrom,moveCollectionInConfiguration} from "./collections-organization.js";
 /* Live Colosseum Collections — no cached collection records, demo data, or polling.
  * The only write surface is /api/colosseum/collections behind the existing
  * DoFinances session + Cloudflare Access + bound owner + HMAC Router bridge.
@@ -34,6 +35,9 @@ const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&
 const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+const GRIP='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+const EYE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.6-6.2 9.5-6.2 9.5 6.2 9.5 6.2-3.6 6.2-9.5 6.2S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.7"/></svg>';
+const EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10 5.9a10.6 10.6 0 0 1 2-.2c5.9 0 9.5 6.3 9.5 6.3a16.8 16.8 0 0 1-2.8 3.2M6.1 7.4C3.8 9.2 2.5 12 2.5 12s3.6 6.3 9.5 6.3c1.1 0 2.2-.2 3.1-.6M10 10a2.8 2.8 0 0 0 3.8 3.8"/></svg>';
 const FOLDER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3h8M9 9h6m-6 4h6"/></svg>';
 const isUid=value=>/^[0-9a-f]{6}$/.test(value);
 export function formatCollectionSummary(updatedAt,count){
@@ -48,11 +52,13 @@ export function initColosseumCollections(){
  const state={
    collections:[],loaded:false,activeId:null,detail:null,
    page:1,pageSize:10,selecting:false,selected:new Set(),
-   busy:false,loadSeq:0,detailSeq:0
+   busy:false,loadSeq:0,detailSeq:0,
+   editing:false,configRevision:0,configEntries:{},configDirty:false,
+   nameDrafts:new Map(),draggingId:null
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
- const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog");
+ const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),editButton=$("cs-edit");
  function readStoredGeometry(){
    try{
      const raw=window.localStorage.getItem(SUMMARY_GEOMETRY_KEY);
@@ -144,7 +150,8 @@ export function initColosseumCollections(){
  function setBusy(value){
    state.busy=value;
    refreshButton.disabled=value;
-   createButton.disabled=value;
+   createButton.disabled=value||state.editing;
+   editButton.disabled=value;
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
@@ -178,6 +185,8 @@ export function initColosseumCollections(){
      if(!response.ok||body.ok!==true){
        const codes={
          collection_revision_conflict:"This collection changed in another session. Refresh before trying again.",
+         collection_configuration_conflict:"Another session changed the collection organization. Refresh before saving.",
+         collection_cycle:"A collection cannot be placed inside itself or one of its descendants.",
          collection_exists:"A collection with that name already exists.",
          collection_name_taken:"A collection with that name already exists.",
          collection_not_found:"That collection no longer exists. Refresh to see the current list.",
@@ -212,13 +221,23 @@ export function initColosseumCollections(){
  function rowMarkup(collection,index){
    const n=(state.page-1)*state.pageSize+index+1;
    const id="cs-panel-"+n;
-   return '<article class="cs-entry" data-cs-id="'+esc(collection.collection_id)+'">'+
-     '<h2><button class="cs-trigger" type="button" data-cs-open="'+esc(collection.collection_id)+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false">'+
+   const uuid=esc(collection.collection_id);
+   const entry=state.configEntries[collection.collection_id]||{hidden:false};
+   const depth=Math.min(8,Math.max(0,collection.collection_depth||0));
+   const draft=state.nameDrafts.get(collection.collection_id)??collection.name;
+   const editing=state.editing;
+   return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
+     '<h2 class="cs-entry-heading">'+
+       (editing?'<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection">'+GRIP+'</button>':'')+
+       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false">'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
-       '<span class="cs-chevron">'+CHEVRON+'</span></button></h2>'+
+       '<span class="cs-chevron">'+CHEVRON+'</span></button>'+
+       (editing?'<input class="cs-inline-name" type="text" data-cs-name="'+uuid+'" value="'+esc(draft)+'" aria-label="Rename '+esc(collection.name)+'" maxlength="100" autocomplete="off" spellcheck="false">':'')+
+       (editing?'<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'">'+(entry.hidden?EYE_OFF:EYE)+'</button>':'')+
+     '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
          '<p class="cs-description">'+esc(collection.description||"No description provided.")+'</p>'+
@@ -248,6 +267,7 @@ export function initColosseumCollections(){
  function renderRows(){
    if(!state.loaded){list.innerHTML='<p class="cs-loading">Reading collections directly from Colosseum…</p>';renderPages();return;}
    if(!state.collections.length){list.innerHTML='<p class="cs-loading">No collections yet. Use New collection to create one.</p>';renderPages();return;}
+   root.classList.toggle("cs-editing",state.editing);
    list.innerHTML=pageItems().map(rowMarkup).join("");
    renderPages();syncAccordion();
  }
@@ -283,6 +303,7 @@ export function initColosseumCollections(){
    if(!col)return "";
    if(!current)return '<div class="cs-card" role="status"><span class="cs-loading">Loading live collection members…</span></div>';
    const ids=Array.isArray(current.item_uids)?current.item_uids.filter(isUid):[];
+   const subcollections=state.collections.filter(x=>state.configEntries[x.collection_id]?.parent_id===col.collection_id);
    const items=Array.isArray(current.items)?current.items:[];
    const map=new Map(items.filter(x=>x&&isUid(x.uid)).map(x=>[x.uid,x]));
    const names=ids.map(uid=>{
@@ -304,7 +325,9 @@ export function initColosseumCollections(){
      '<span class="cs-card-badge">'+ids.length+' '+(ids.length===1?'utility':'utilities')+'</span></div>'+
      '<div class="cs-utility-list" role="group" aria-label="Utilities in '+esc(col.name)+'">'+
        (names||'<p class="cs-utility-empty">This collection has no utilities yet.</p>')+
-     '</div><div class="cs-summary"><span class="cs-dot" aria-hidden="true"></span>'+
+     '</div>'+(subcollections.length?'<div class="cs-subcollections"><span class="cs-subcollections-label">Subcollections · '+subcollections.length+'</span>'+subcollections.map(child=>
+       '<button type="button" class="cs-subcollection-link" data-cs-jump-child="'+esc(child.collection_id)+'">'+esc(child.name)+'</button>').join("")+'</div>':'')+
+     '<div class="cs-summary"><span class="cs-dot" aria-hidden="true"></span>'+
      '<span>Revision '+esc(current.revision)+' · '+ids.length+' '+(ids.length===1?'utility':'utilities')+' in '+esc(col.name)+'</span></div></div>';
  }
  function renderCard(){
@@ -356,6 +379,7 @@ export function initColosseumCollections(){
    announce("Refreshing live collections from Colosseum…");
    try{
      let page=await request("list",{},true);
+     const configuration=page.configuration||null;
      const all=[],cursors=new Set();
      for(let batch=0;batch<100;batch++){
        if(!Array.isArray(page.collections))throw Error("Colosseum returned an invalid collections listing.");
@@ -369,14 +393,18 @@ export function initColosseumCollections(){
      const good=all.filter(item=>item&&typeof item.collection_id==="string"&&
        typeof item.name==="string"&&Number.isInteger(item.revision));
      const seen=new Set();
-     state.collections=good.filter(item=>{if(seen.has(item.collection_id))return false;seen.add(item.collection_id);return true;});
+     const distinct=good.filter(item=>{if(seen.has(item.collection_id))return false;seen.add(item.collection_id);return true;});
+     const normalized=normalizeCollectionConfiguration(distinct,configuration);
+     state.configRevision=normalized.revision;state.configEntries=normalized.entries;
+     state.configDirty=false;state.nameDrafts.clear();
+     state.collections=orderedCollectionTree(distinct,state.configEntries);
      state.loaded=true;
      let chosen=focusId?state.collections.find(x=>x.collection_id===focusId):null;
      if(!chosen&&focusName)chosen=state.collections.find(x=>x.name.toLocaleLowerCase()===focusName.toLocaleLowerCase());
      if(!chosen&&state.activeId)chosen=state.collections.find(x=>x.collection_id===state.activeId);
      state.activeId=chosen?.collection_id||null;
      state.selecting=false;state.selected.clear();state.detail=null;++state.detailSeq;
-     if(chosen)state.page=Math.floor(state.collections.indexOf(chosen)/state.pageSize)+1;
+     if(chosen)state.page=Math.floor(state.collections.findIndex(x=>x.collection_id===chosen.collection_id)/state.pageSize)+1;
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
      const refreshedAt=new Date();
@@ -469,9 +497,161 @@ export function initColosseumCollections(){
      if(/changed|conflict/i.test(error.message))void loadList({focusId:col.collection_id});
    }finally{setBusy(false);syncActions();renderCard();}
  }
+ function syncEditControl(){
+   root.classList.toggle("cs-editing",state.editing);
+   editButton.setAttribute("aria-label",state.editing?"Done editing collections":"Edit collections");
+   editButton.setAttribute("aria-pressed",String(state.editing));
+   $("cs-edit-tooltip-label").textContent=state.editing?"Done editing":"Edit collections";
+   refreshButton.disabled=state.busy||state.editing;
+   createButton.disabled=state.busy||state.editing;
+ }
+ function enterEditMode(){
+   if(state.busy||!state.loaded)return;
+   state.editing=true;state.nameDrafts.clear();state.configDirty=false;
+   syncEditControl();renderRows();renderCard();
+ }
+ function resetEditMode(){
+   state.editing=false;state.nameDrafts.clear();state.configDirty=false;
+   syncEditControl();renderRows();renderCard();
+ }
+ function applyDraftLayout(entries,focusId=null){
+   state.configEntries=entries;state.configDirty=true;
+   state.collections=orderedCollectionTree(state.collections,entries);
+   if(focusId){
+     const index=state.collections.findIndex(x=>x.collection_id===focusId);
+     if(index>=0)state.page=Math.floor(index/state.pageSize)+1;
+   }
+   renderRows();renderCard();
+ }
+ function toggleCollectionVisibility(id){
+   const item=state.configEntries[id];if(!state.editing||!item)return;
+   const entries=Object.fromEntries(Object.entries(state.configEntries).map(([key,value])=>[key,{...value}]));
+   entries[id].hidden=!entries[id].hidden;
+   applyDraftLayout(entries,id);
+ }
+ function moveCollection(sourceId,targetId,position){
+   if(!state.editing||state.busy)return false;
+   const entries=moveCollectionInConfiguration(state.configEntries,sourceId,targetId,position);
+   if(!entries){announce("That collection cannot be moved into itself or its descendants.",true,true);return false;}
+   applyDraftLayout(entries,sourceId);
+   return true;
+ }
+ async function finishEditMode(){
+   if(!state.editing||state.busy)return;
+   for(const input of list.querySelectorAll(".cs-inline-name")){
+     state.nameDrafts.set(input.dataset.csName,input.value);
+   }
+   const edits=[],seenNames=new Set();
+   for(const col of state.collections){
+     const proposed=(state.nameDrafts.get(col.collection_id)??col.name).normalize("NFKC").trim().replace(/\s+/gu," ");
+     const key=proposed.toLocaleLowerCase("en-US");
+     if(!proposed||proposed.length>100||seenNames.has(key)){
+       announce("Each collection needs a unique name of no more than 100 characters.",true,true);
+       return;
+     }
+     seenNames.add(key);
+     if(proposed!==col.name)edits.push({collection:col,name:proposed});
+   }
+   if(!edits.length&&!state.configDirty){resetEditMode();return;}
+   setBusy(true);
+   try{
+     for(const {collection,name} of edits){
+       const changed=await request("edit",{
+         original_name:collection.name,name,expected_revision:collection.revision
+       });
+       collection.name=name;
+       if(Number.isSafeInteger(changed.revision))collection.revision=changed.revision;
+     }
+     if(state.configDirty)await request("configure",{
+       entries:state.configEntries,expected_configuration_revision:state.configRevision
+     });
+     state.editing=false;state.nameDrafts.clear();state.configDirty=false;
+     syncEditControl();
+     await loadList();
+     announce("Collection organization saved.",false,true);
+   }catch(error){announce(error.message,true,true,error.reauthorize===true);}
+   finally{setBusy(false);syncEditControl();}
+ }
+ function toggleEditMode(){
+   if(state.editing){void finishEditMode();return;}
+   enterEditMode();
+ }
+ function dragPosition(event,entry){
+   if(!event.target.closest(".cs-entry-heading"))return "inside";
+   const box=entry.querySelector(".cs-entry-heading").getBoundingClientRect();
+   const fraction=(event.clientY-box.top)/Math.max(box.height,1);
+   return fraction<.28?"before":fraction>.72?"after":"inside";
+ }
+ function clearDropHints(){
+   list.querySelectorAll(".cs-drop-before,.cs-drop-after,.cs-drop-inside,.cs-dragging").forEach(
+     entry=>entry.classList.remove("cs-drop-before","cs-drop-after","cs-drop-inside","cs-dragging"));
+ }
+ list.addEventListener("input",event=>{
+   const input=event.target.closest(".cs-inline-name");
+   if(input&&state.editing)state.nameDrafts.set(input.dataset.csName,input.value);
+ });
+ list.addEventListener("dragstart",event=>{
+   const handle=event.target.closest("[data-cs-drag]");
+   if(!state.editing||!handle||handle.closest(".cs-entry")?.classList.contains("cs-open")){
+     event.preventDefault();return;
+   }
+   state.draggingId=handle.dataset.csDrag;
+   event.dataTransfer.effectAllowed="move";
+   event.dataTransfer.setData("text/plain",state.draggingId);
+   handle.closest(".cs-entry").classList.add("cs-dragging");
+ });
+ list.addEventListener("dragover",event=>{
+   if(!state.editing||!state.draggingId)return;
+   const target=event.target.closest(".cs-entry");
+   if(!target||target.dataset.csId===state.draggingId)return;
+   const zone=dragPosition(event,target);
+   if(zone==="inside"&&collectionDescendsFrom(state.configEntries,target.dataset.csId,state.draggingId))return;
+   event.preventDefault();event.dataTransfer.dropEffect="move";
+   clearDropHints();target.classList.add("cs-drop-"+zone);
+ });
+ list.addEventListener("drop",event=>{
+   if(!state.editing||!state.draggingId)return;
+   const target=event.target.closest(".cs-entry");
+   event.preventDefault();
+   const source=state.draggingId;state.draggingId=null;
+   if(!target||target.dataset.csId===source){clearDropHints();return;}
+   const zone=dragPosition(event,target),destination=target.dataset.csId;
+   clearDropHints();moveCollection(source,destination,zone);
+ });
+ list.addEventListener("dragend",()=>{state.draggingId=null;clearDropHints();});
+ list.addEventListener("keydown",event=>{
+   const handle=event.target.closest("[data-cs-drag]");
+   if(!handle||!state.editing||!event.altKey||event.metaKey||event.ctrlKey||event.shiftKey)return;
+   const id=handle.dataset.csDrag,index=state.collections.findIndex(x=>x.collection_id===id);
+   let target=null,zone="after";
+   if(event.key==="ArrowUp"&&index>0){target=state.collections[index-1];zone="before";}
+   if(event.key==="ArrowDown"&&index<state.collections.length-1){target=state.collections[index+1];zone="after";}
+   if(event.key==="ArrowRight"&&index>0){target=state.collections[index-1];zone="inside";}
+   if(event.key==="ArrowLeft"&&state.configEntries[id]?.parent_id){
+     target=state.collections.find(x=>x.collection_id===state.configEntries[id].parent_id);zone="after";
+   }
+   if(!target)return;
+   event.preventDefault();
+   if(moveCollection(id,target.collection_id,zone)){
+     list.querySelector('[data-cs-drag="'+id+'"]')?.focus({preventScroll:true});
+   }
+ });
+ function jumpToChild(id){
+   const index=state.collections.findIndex(x=>x.collection_id===id);
+   if(index<0)return;
+   state.page=Math.floor(index/state.pageSize)+1;
+   renderRows();openCollection(id);
+ }
+ detail.addEventListener("click",event=>{
+   const button=event.target.closest("[data-cs-jump-child]");
+   if(button)jumpToChild(button.dataset.csJumpChild);
+ });
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
    if(!button||state.busy)return;
+   if(button.hasAttribute("data-cs-visibility")){toggleCollectionVisibility(button.dataset.csVisibility);return;}
+   if(button.hasAttribute("data-cs-drag"))return;
+   if(button.hasAttribute("data-cs-jump-child")){jumpToChild(button.dataset.csJumpChild);return;}
    if(button.hasAttribute("data-cs-open")){openCollection(button.dataset.csOpen);return;}
    const action=button.dataset.csAction;if(!action)return;
    if(action==="admit")return; // Intentionally dormant.
@@ -503,6 +683,7 @@ export function initColosseumCollections(){
  });
  refreshButton.addEventListener("click",()=>{if(!state.busy)void loadList();});
  createButton.addEventListener("click",()=>openForm("create"));
+ editButton.addEventListener("click",toggleEditMode);
  // Match the tooltip's ⇧⌘N hint without interfering with inputs, other
  // workspace routes, open dialogs, or in-flight Colosseum mutations.
  window.addEventListener("keydown",event=>{
@@ -517,6 +698,18 @@ export function initColosseumCollections(){
    event.preventDefault();
    openForm("create");
  },{capture:true});
+ // The same route-scoped shortcut policy powers edit mode and its Done state.
+ window.addEventListener("keydown",event=>{
+   if(event.defaultPrevented||event.isComposing||event.repeat||
+      !event.shiftKey||!event.metaKey||event.ctrlKey||event.altKey)return;
+   if(event.code!=="KeyE"&&event.key?.toLowerCase()!=="e")return;
+   if(!routeActive()||root.closest(".view")?.hidden||state.busy||
+      editButton.disabled||document.querySelector("dialog[open]"))return;
+   const target=event.target;
+   if(!state.editing&&target instanceof Element&&
+      target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+   event.preventDefault();toggleEditMode();
+ },{capture:true});
  $("cs-form").addEventListener("submit",event=>void saveForm(event));
  $("cs-form-cancel").addEventListener("click",editClose);
  $("cs-delete-open").addEventListener("click",beginDelete);
@@ -527,7 +720,7 @@ export function initColosseumCollections(){
  $("cs-delete-apply").addEventListener("click",()=>void deleteCollection());
  editDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  deleteDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
- window.addEventListener("hashchange",()=>{if(routeActive())void loadList();});
+ window.addEventListener("hashchange",()=>{if(routeActive())void loadList();else if(state.editing)resetEditMode();});
  if(routeActive())void loadList();
  else announce("Open Collections to retrieve the live Colosseum collection inventory.");
 }

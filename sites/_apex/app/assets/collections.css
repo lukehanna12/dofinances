@@ -266,3 +266,85 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
  #cs-root .cs-create-tooltip{transition-delay:0s!important}
 }
+
+
+/* Collection organization controls: isolated from the existing 450ms
+   accordion and all other workspace screens. */
+#cs-root .cs-edit-control{position:relative;display:inline-flex;vertical-align:top;margin:16px 0 0 10px}
+#cs-root .cs-edit-icon-button{position:relative;display:inline-grid;place-items:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:0;border-radius:10px;background:transparent;color:#f5f5f5;transition:color .15s ease,background-color .15s ease,transform .12s ease}
+#cs-root .cs-edit-icon-button:hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
+#cs-root .cs-edit-icon-button:active:not(:disabled){transform:scale(.95)}
+#cs-root .cs-edit-icon-button svg{position:absolute;width:19px;height:19px;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
+#cs-root .cs-edit-pencil{opacity:1;transform:scale(1) rotate(0)}
+#cs-root .cs-edit-check{opacity:0;transform:scale(.75) rotate(-15deg)}
+#cs-root.cs-editing .cs-edit-pencil{opacity:0;transform:scale(.72) rotate(14deg)}
+#cs-root.cs-editing .cs-edit-check{opacity:1;transform:scale(1) rotate(0)}
+#cs-root .cs-edit-icon-button:hover + .cs-create-tooltip,
+#cs-root .cs-edit-icon-button:focus-visible + .cs-create-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#cs-root .cs-edit-icon-button:focus-visible + .cs-create-tooltip{transition-delay:0s,0s,0s}
+#cs-root .cs-entry{position:relative}
+#cs-root .cs-entry-heading{position:relative}
+#cs-root .cs-entry .cs-trigger{padding-left:calc(var(--cs-depth,0) * 17px)}
+#cs-root .cs-entry:not(.cs-open) .cs-trigger{padding-left:calc(var(--cs-depth,0) * 17px)}
+#cs-root .cs-entry[data-cs-depth]:not([data-cs-depth="0"]) .cs-num{color:#777}
+#cs-root .cs-entry[data-cs-depth]:not([data-cs-depth="0"]) .cs-entry-title{color:#bbb}
+#cs-root .cs-entry.cs-is-hidden .cs-trigger .cs-entry-title{opacity:.52}
+#cs-root .cs-entry.cs-is-hidden .cs-inline-name{opacity:.65}
+#cs-root.cs-editing .cs-entry-title{opacity:0;pointer-events:none}
+#cs-root .cs-inline-name{
+ position:absolute;z-index:3;top:50%;left:calc(44px + var(--cs-depth,0) * 17px);
+ transform:translateY(-50%);width:calc(71% - 44px - var(--cs-depth,0) * 17px);
+ min-width:80px;min-height:34px;margin:0;padding:3px 4px 3px 0;
+ border:0;border-bottom:1px dashed #666;border-radius:0;
+ outline:0;background:transparent;color:#ededed;
+ font-size:clamp(16px,1.7vw,20px);font-weight:500;line-height:1.4;letter-spacing:-.025em;
+ text-overflow:ellipsis;transition:border-color .15s,color .15s;
+}
+#cs-root .cs-inline-name:hover{border-bottom-color:#aaa}
+#cs-root .cs-inline-name:focus{border-bottom-color:#fff;outline:0}
+#cs-root .cs-inline-name:focus-visible{outline:0;border-bottom:1px solid #fff}
+#cs-root .cs-drag-handle{
+ position:absolute;z-index:6;top:50%;left:-31px;
+ display:grid;place-items:center;width:25px;height:34px;padding:0;border:0;
+ border-radius:7px;background:transparent;color:#8e8e8e;
+ cursor:grab;touch-action:none;animation:cs-grip-enter .27s cubic-bezier(.22,1,.36,1) both;
+}
+#cs-root .cs-drag-handle svg{width:17px;height:17px;pointer-events:none}
+#cs-root .cs-drag-handle:hover{color:#f5f5f5;background:rgba(255,255,255,.065)}
+#cs-root .cs-drag-handle:active{cursor:grabbing}
+#cs-root .cs-entry.cs-open .cs-drag-handle{visibility:hidden;pointer-events:none}
+#cs-root .cs-visibility-toggle{
+ position:absolute;z-index:5;top:50%;left:75%;transform:translate(-50%,-50%);
+ width:32px;height:32px;display:grid;place-items:center;
+ padding:0;border:0;border-radius:8px;background:#0a0a0a;color:#bcbcbc;
+ animation:cs-visibility-enter .24s ease both;
+ transition:background .15s,color .15s;
+}
+#cs-root .cs-visibility-toggle svg{width:18px;height:18px;pointer-events:none}
+#cs-root .cs-visibility-toggle:hover{background:#262626;color:#fff}
+#cs-root .cs-visibility-toggle[aria-pressed="true"]{color:#8c8c8c}
+#cs-root .cs-entry.cs-dragging{opacity:.43}
+#cs-root .cs-entry.cs-drop-before::before,
+#cs-root .cs-entry.cs-drop-after::after{
+ content:"";display:block;position:absolute;z-index:9;
+ left:0;right:0;height:2px;border-radius:3px;background:#f5f5f5;
+ box-shadow:0 0 9px rgba(255,255,255,.22);pointer-events:none;
+}
+#cs-root .cs-entry.cs-drop-before::before{top:-1px}
+#cs-root .cs-entry.cs-drop-after::after{bottom:-1px}
+#cs-root .cs-entry.cs-drop-inside .cs-trigger{background:rgba(255,255,255,.07);border-radius:9px}
+#cs-root .cs-subcollections{display:flex;align-items:flex-start;flex-direction:column;gap:7px;margin-top:19px}
+#cs-root .cs-subcollections-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8a8a8a}
+#cs-root .cs-subcollection-link{border:0;background:transparent;color:#d6d6d6;padding:5px 0;text-align:left;font-size:13px}
+#cs-root .cs-subcollection-link:hover{text-decoration:underline;text-underline-offset:3px;color:#fff}
+@keyframes cs-grip-enter{from{opacity:0;transform:translate(-12px,-50%)}to{opacity:1;transform:translate(0,-50%)}}
+@keyframes cs-visibility-enter{from{opacity:0}to{opacity:1}}
+@media(max-width:640px){
+ #cs-root .cs-drag-handle{left:-19px;width:19px}
+ #cs-root .cs-visibility-toggle{left:78%}
+ #cs-root .cs-inline-name{width:calc(76% - 44px - var(--cs-depth,0) * 17px)}
+}
+@media(prefers-reduced-motion:reduce){
+ #cs-root .cs-drag-handle,#cs-root .cs-visibility-toggle{animation:none}
+ #cs-root .cs-edit-icon-button svg{transition:none}
+}

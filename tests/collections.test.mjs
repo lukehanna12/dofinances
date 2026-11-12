@@ -249,7 +249,8 @@ test("Collections summary uses the visitor's last successful refresh time and co
  assert.ok(html.includes('<span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true">'));
  assert.doesNotMatch(html,/COLOSSEUM \/ COLLECTION LIBRARY/);
  assert.ok(js.includes('summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
- assert.match(js,/state\.collections=good\.filter/);
+ assert.match(js,/const distinct=good\.filter/);
+ assert.match(js,/state\.collections=orderedCollectionTree\(distinct,state\.configEntries\)/);
  assert.match(js,/if\(seq!==state\.loadSeq\)return/);
  assert.match(css,/#cs-root \.cs-eyebrow\{[^}]*position:relative;[^}]*text-transform:uppercase/);
 });
@@ -564,4 +565,33 @@ test("Add collection tooltip mirrors ChatGPT timing and displays the Shift-Comma
   assert.match(js,/!routeActive\(\)\|\|root\.closest\("\.view"\)\?\.hidden\|\|state\.busy/);
   assert.match(js,/document\.querySelector\("dialog\[open\]"\)/);
   assert.match(js,/event\.preventDefault\(\);\s*openForm\("create"\)/);
+});
+
+
+test("Collections edit mode uses a pencil-to-check transition with Shift-Command-E",()=>{
+ assert.match(html,/id="cs-edit" type="button" aria-label="Edit collections"/);
+ assert.match(html,/aria-keyshortcuts="Meta\+Shift\+E"/);
+ assert.match(html,/id="cs-edit-tooltip" role="tooltip"/);
+ assert.match(html,/<kbd>⇧<\/kbd><kbd>⌘<\/kbd><kbd>E<\/kbd>/);
+ assert.match(html,/class="cs-edit-pencil"/);
+ assert.match(html,/class="cs-edit-check"/);
+ assert.match(css,/#cs-root\.cs-editing \.cs-edit-pencil\{opacity:0/);
+ assert.match(css,/#cs-root\.cs-editing \.cs-edit-check\{opacity:1/);
+ assert.match(js,/event\.code!=="KeyE"/);
+ assert.match(js,/if\(!routeActive\(\)\|\|root\.closest\("\.view"\)\?\.hidden/);
+});
+
+test("Collections reordering and hidden exposure use only revision-bound ID configuration",()=>{
+ assert.match(js,/request\("configure",\{/);
+ assert.match(js,/entries:state\.configEntries,expected_configuration_revision:state\.configRevision/);
+ assert.match(js,/moveCollectionInConfiguration\(/);
+ assert.match(js,/data-cs-drag/);
+ assert.match(js,/data-cs-visibility/);
+ assert.match(js,/draggable="true"/);
+ assert.match(js,/class="cs-inline-name"/);
+ assert.match(css,/#cs-root \.cs-visibility-toggle\{[\s\S]*?left:75%/);
+ assert.match(css,/@keyframes cs-grip-enter/);
+ assert.match(css,/\.cs-entry\.cs-drop-inside/);
+ assert.doesNotMatch(js,/localStorage\.setItem\([^)]*config/);
+ assert.doesNotMatch(js,/setInterval\(/);
 });
