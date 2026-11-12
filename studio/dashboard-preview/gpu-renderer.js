@@ -20,6 +20,7 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 
+const OFFSCREEN_CI=location.search.includes("webgpu-offscreen-ci=1");
 const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
@@ -29,7 +30,7 @@ const audit={
   path:"webgpu",status:"initializing",oracleTarget:"25F80/M2/G14G",
   scene:"GPU-owned centered photograph + 12% authored veil",
   sceneCapture:"No DOM screenshot/readback. Arbitrary external DOM is NOT included.",
-  backend:"WebGPU",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
+  backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
   oracleMath:"four-corner mode5 SDF, refraction envelope, blur LOD; finite scope",
   mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[]
@@ -124,10 +125,10 @@ async function initialize(){
   if(root)root.dataset.gpuPhase="request-device";
   const device=await adapter.requestDevice();
   if(root)root.dataset.gpuPhase="device-ready";
-  const context=canvas.getContext("webgpu");
-  if(!context)throw new Error("No GPUCanvasContext");
+  const context=OFFSCREEN_CI?null:canvas.getContext("webgpu");
+  if(!OFFSCREEN_CI&&!context)throw new Error("No GPUCanvasContext");
   const format=navigator.gpu.getPreferredCanvasFormat();
-  context.configure({device,format,alphaMode:"opaque"});
+  if(context)context.configure({device,format,alphaMode:"opaque"});
   canvas.id="dashboard-webgpu-scene";
   canvas.setAttribute("aria-hidden","true");
   document.body.insertBefore(canvas,document.getElementById("workspace-shell"));
@@ -220,7 +221,8 @@ async function initialize(){
     size:48,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   let tileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
-    glassGroup=null,backgroundGroup=null,tileCount=0,physicalWidth=0,physicalHeight=0,
+    glassGroup=null,backgroundGroup=null,offscreenFrame=null,
+    tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1;
   const uniform=new Float32Array(12);
   function writeUniform(){
@@ -248,6 +250,17 @@ async function initialize(){
       canvas.style.width=window.innerWidth+"px";
       canvas.style.height=window.innerHeight+"px";
       scene?.destroy();
+      offscreenFrame?.destroy();
+      if(OFFSCREEN_CI){
+        // CI-only: Linux SwiftShader GPU can compute/render correctly yet
+        // cannot create a headless WebGPU swapchain SharedImage. Exercise
+        // actual GPU draw+compute passes using a physical offscreen texture.
+        // This does NOT validate OS window presentation on Apple hardware.
+        offscreenFrame=device.createTexture({
+          size:[w,h,1],format,
+          usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC
+        });
+      }
       scene=rgba16Texture(device,w,h);
       sceneView=scene.createView();
       audit.mipCount=scene.mipLevelCount;
@@ -322,7 +335,8 @@ async function initialize(){
     if(scenePending)buildScene();
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
     const pass=encoder.beginRenderPass({
-      colorAttachments:[{view:context.getCurrentTexture().createView(),
+      colorAttachments:[{view:OFFSCREEN_CI?
+          offscreenFrame.createView():context.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]
     });
     pass.setPipeline(copyPipeline);pass.setBindGroup(0,copyGroup);
@@ -336,7 +350,7 @@ async function initialize(){
     audit.frameCount++;
   }
   function dispose(){
-    tileBuffer?.destroy();scene?.destroy();photo.destroy();
+    tileBuffer?.destroy();scene?.destroy();offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();
   }
   engine={rebuild,render,dispose,device};
@@ -347,9 +361,10 @@ async function initialize(){
   // errors before removing the CSS fallback background.
   if(root)root.dataset.gpuPhase="wait-first-gpu-frame";
   await device.queue.onSubmittedWorkDone();
-  document.body.dataset.gpuScene="ready";
+  document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
+  root.dataset.gpuPresentation=OFFSCREEN_CI?"offscreen-ci":"visible-canvas";
   root.dataset.gpuStatus="ready";
   root.dataset.gpuPhase="ready";
   root.dataset.gpuMipLevels=String(audit.mipCount);
