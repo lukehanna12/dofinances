@@ -533,6 +533,9 @@ export function initColosseumCollections(){
  function finishInlineRename(restore=false){
    const id=state.renamingId;
    if(!id)return;
+   // Clear authority before disabling the active input, which can itself
+   // cause a focusout; that event must not recursively finish the same edit.
+   state.renamingId=null;
    const field=list.querySelector('[data-cs-name-field="'+id+'"]');
    const input=field?.querySelector(".cs-inline-name");
    if(input){
@@ -543,7 +546,6 @@ export function initColosseumCollections(){
      input.setAttribute("aria-hidden","true");
    }
    field?.classList.remove("cs-renaming","cs-caret-pending","cs-underline-extended");
-   state.renamingId=null;
    state.renameInitialValue="";
  }
  function beginInlineRename(button){
