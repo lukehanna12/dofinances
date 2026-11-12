@@ -587,3 +587,77 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-select-icon-button svg{transition:none}
  #cs-root .cs-name-editor,#cs-root .cs-name-underline,#cs-root .cs-name-pencil,#cs-root .cs-name-action{transition:none}
 }
+
+
+/* Collections title-to-inline handoff: only the visible Collections route
+   receives these styles. Native-inspired measurements from macOS 26.5.1
+   UIKit: large 34pt SF Bold; compact 17pt SF Semibold. The title scrolls
+   without scaling; a separate compact title is revealed in the sticky bar.
+   All progress is written directly from document scroll, with no CSS timers. */
+body.collections-title-transition #project-collections-title{
+  filter:blur(var(--collections-large-blur,0px));
+  opacity:var(--collections-large-opacity,1);
+  will-change:filter,opacity;
+}
+body.collections-title-transition #workspace-shell .topbar::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:0;
+  width:100%;
+  height:var(--collections-strip-height,0px);
+  z-index:0;
+  pointer-events:none;
+  background:linear-gradient(to bottom,rgba(10,11,13,.15),rgba(10,11,13,.025));
+  -webkit-backdrop-filter:blur(var(--collections-strip-blur,0px)) saturate(125%);
+  backdrop-filter:blur(var(--collections-strip-blur,0px)) saturate(125%);
+  opacity:var(--collections-strip-opacity,0);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
+}
+body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
+  position:absolute;
+  z-index:2;
+  inset:50% auto auto 50%;
+  transform:translate(-50%,-50%);
+  max-width:calc(100% - 140px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  pointer-events:none;
+  user-select:none;
+  color:#fff;
+  font:600 17px/21px -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+  letter-spacing:0;
+  opacity:var(--collections-inline-opacity,0);
+}
+body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
+  transform:translate3d(var(--collections-crumb-shift,0px),0,0);
+  opacity:var(--collections-crumb-opacity,1);
+  will-change:transform,opacity;
+}
+body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator{
+  opacity:var(--collections-arrow-opacity,1);
+  will-change:opacity;
+  perspective:180px;
+}
+body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
+  transform:rotateY(var(--collections-arrow-angle,0deg));
+  transform-origin:center;
+  backface-visibility:visible;
+}
+/* Honor reduced motion without abandoning the reversible, scroll-dependent
+   title states or disturbing any sidebar, wallpaper, or collection controls. */
+@media(prefers-reduced-motion:reduce){
+  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
+    transform:none;
+    will-change:auto;
+  }
+  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
+    transform:none;
+  }
+  body.collections-title-transition #project-collections-title{
+    filter:none;
+    will-change:auto;
+  }
+}
