@@ -1,0 +1,153 @@
+/* Dashboard-only composition of Colosseum 0001c1 / CTA 6.
+   The original 11x6 geometry, tile density and staggered entrance are retained.
+   No text-heavy hero, synthetic metrics or extra workspace routes. */
+body:has(> #workspace-shell) .content > .view.dashboard-home:not([hidden]){
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height: min(790px, calc(100dvh - 125px));
+  padding-block:clamp(20px,3vh,42px);
+}
+body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
+  max-width:none;
+  width:100%;
+  box-sizing:border-box;
+  padding-inline:clamp(20px,4.2vw,72px);
+  padding-top:0;
+  padding-bottom:0;
+}
+.dashboard-home .cta6{
+  position:relative;
+  width:min(100%,1080px);
+  margin:0 auto;
+  isolation:isolate;
+}
+.dashboard-home .cta6-mosaic{
+  display:grid;
+  grid-template-columns:repeat(11,minmax(0,1fr));
+  gap:clamp(6px,0.75vw,13px);
+  width:100%;
+  align-items:stretch;
+}
+.dashboard-home .cta6-tile{
+  aspect-ratio:1;
+  min-width:0;
+  display:grid;
+  place-items:center;
+  border-radius:clamp(9px,1.25vw,17px);
+  background:rgba(16,21,27,.48);
+  border:1px solid rgba(255,255,255,.10);
+  box-sizing:border-box;
+  box-shadow:0 6px 20px rgba(0,0,0,.065);
+  animation:cta6-appear .4s cubic-bezier(.2,.78,.2,1) var(--cta6-delay,0s) both;
+  pointer-events:none;
+}
+.dashboard-home .cta6-tile--plain{
+  background:rgba(18,23,29,.29);
+  border-color:rgba(255,255,255,.045);
+  box-shadow:none;
+}
+.dashboard-home .cta6-tile--icon{
+  background:rgba(21,26,32,.77);
+  border-color:rgba(247,250,252,.16);
+  box-shadow:0 4px 18px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.055);
+}
+.dashboard-home .cta6-tile--empty{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  animation:none;
+}
+.dashboard-home .cta6-icon{
+  width:49%;
+  height:49%;
+  color:rgba(242,244,246,.82);
+  stroke-width:1.5;
+  flex:none;
+}
+.dashboard-home .cta6-center{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:0 2%;
+  pointer-events:none;
+  text-align:center;
+  animation:cta6-center-appear .6s cubic-bezier(.2,.78,.2,1) .3s both;
+}
+.dashboard-home .cta6-center h1{
+  font-size:clamp(22px,3.15vw,45px);
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.055em;
+  font-weight:600;
+  color:#f7f9fa;
+  text-shadow:0 2px 18px rgba(0,0,0,.22);
+}
+.dashboard-home .cta6-action{
+  pointer-events:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top:clamp(12px,1.7vw,22px);
+  min-height:39px;
+  padding:9px 15px 9px 18px;
+  border-radius:9px;
+  background:rgba(250,251,251,.97);
+  color:#181c20;
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 2px 14px rgba(0,0,0,.10);
+  font-size:13px;
+  font-weight:600;
+  line-height:1.1;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform 180ms cubic-bezier(.2,.78,.2,1),background-color 180ms ease,box-shadow 180ms ease;
+}
+.dashboard-home .cta6-action svg{width:15px;height:15px;flex:none}
+.dashboard-home .cta6-action:hover{
+  background:#fff;
+  transform:scale(1.03);
+  box-shadow:0 4px 19px rgba(0,0,0,.18);
+}
+.dashboard-home .cta6-action:active,
+.dashboard-home .cta6-action.dashboard-preview-tapped{transform:scale(.97)}
+.dashboard-home .cta6-action:focus-visible{outline:2px solid #fff;outline-offset:4px}
+@keyframes cta6-appear{
+  from{opacity:0;transform:scale(.85)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes cta6-center-appear{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:760px){
+  body:has(> #workspace-shell) .content > .view.dashboard-home:not([hidden]){
+    min-height:calc(100dvh - 140px);
+    padding-block:24px;
+  }
+  body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
+    padding-inline:16px;
+  }
+  .dashboard-home .cta6-mosaic{gap:clamp(3px,1.1vw,7px)}
+  .dashboard-home .cta6-tile{border-radius:clamp(5px,1.4vw,10px)}
+  .dashboard-home .cta6-center h1{font-size:clamp(17px,5vw,28px)}
+  .dashboard-home .cta6-action{
+    min-height:32px;
+    padding:7px 10px 7px 12px;
+    margin-top:12px;
+    font-size:11px;
+    gap:5px;
+    border-radius:7px;
+  }
+  .dashboard-home .cta6-action svg{width:12px;height:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-home .cta6-tile,
+  .dashboard-home .cta6-center{animation:none!important}
+  .dashboard-home .cta6-action{transition:none!important}
+}
