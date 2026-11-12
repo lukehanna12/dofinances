@@ -151,3 +151,110 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
   .dashboard-home .cta6-center{animation:none!important}
   .dashboard-home .cta6-action{transition:none!important}
 }
+
+
+/* Dashboard preview layout-only refinements.
+   Keep Colosseum 0001c1 geometry, icons, stagger and CTA intact.
+   The mosaic is viewport-anchored; the sidebar overlays it without affecting
+   either its width or tile dimensions. Only a viewport resize can change them.
+   These selectors intentionally never touch production/shared assets. */
+html:has(body > #workspace-shell .dashboard-home){
+  --ui-canvas:#0a0a0a;
+  background:#0a0a0a;
+}
+body:has(> #workspace-shell .dashboard-home){
+  background:#0a0a0a;
+}
+/* One centered, continuous photograph replaces the finite upper photo band
+   and lower photographic strip. The sidebar still samples the real backdrop. */
+body:has(> #workspace-shell .dashboard-home)::before{
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100dvh!important;
+  background-image:
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
+    var(--workspace-wallpaper-image,none)!important;
+  background-size:cover,cover!important;
+  background-position:center center,center center!important;
+  background-repeat:no-repeat!important;
+  filter:none!important;
+  clip-path:none!important;
+}
+body:has(> #workspace-shell .dashboard-home) > .workspace-home-art{
+  display:none!important;
+}
+body:has(> #workspace-shell .dashboard-home) #workspace-shell,
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .main,
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .workspace-scroll,
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .content{
+  background:transparent;
+}
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .content{
+  max-width:none;
+  width:100%;
+  min-height:calc(100dvh - var(--global-menu-height,44px) - var(--workspace-header-height,50px));
+  box-sizing:border-box;
+  margin:0;
+  padding:0!important;
+}
+/* Fixed-position view escapes the variable-width .main content column.
+   Top-bar and sidebar layers retain their existing higher z-indices. */
+body:has(> #workspace-shell .dashboard-home) #workspace-shell .content > .view.dashboard-home:not([hidden]){
+  position:fixed!important;
+  inset:calc(var(--global-menu-height,44px) + var(--workspace-header-height,50px)) 0 0!important;
+  z-index:0;
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100vw;
+  height:calc(100dvh - var(--global-menu-height,44px) - var(--workspace-header-height,50px));
+  min-height:0!important;
+  padding:clamp(16px,3vh,36px) 0!important;
+  margin:0!important;
+  animation:none!important;
+  transform:none!important;
+}
+.dashboard-home .cta6{
+  width:min(calc(100vw - 32px),1080px);
+  max-width:none;
+  flex:none;
+  margin-inline:auto;
+}
+/* Strip no longer paints or takes up document height. Copyright is a
+   single unobscured text element, pinned to the viewport's bottom right. */
+body:has(> #workspace-shell .dashboard-home) > .workspace-footer{
+  position:fixed!important;
+  inset:auto clamp(20px,3vw,46px) 17px auto!important;
+  z-index:30;
+  display:block;
+  box-sizing:border-box;
+  width:max-content!important;
+  max-width:calc(100vw - 40px);
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  background:none!important;
+  color:rgba(242,242,243,.85);
+  text-shadow:0 1px 5px rgba(0,0,0,.75);
+  pointer-events:none;
+}
+body:has(> #workspace-shell .dashboard-home) > .workspace-footer::before,
+body:has(> #workspace-shell .dashboard-home) > .workspace-footer::after{
+  content:none!important;
+  display:none!important;
+}
+@media(max-width:760px){
+  body:has(> #workspace-shell .dashboard-home) #workspace-shell .content > .view.dashboard-home:not([hidden]){
+    min-height:0!important;
+    padding:12px 0!important;
+  }
+  .dashboard-home .cta6{
+    width:calc(100vw - 26px);
+  }
+  body:has(> #workspace-shell .dashboard-home) > .workspace-footer{
+    right:19px!important;
+    bottom:15px!important;
+  }
+}
