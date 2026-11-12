@@ -21,9 +21,35 @@ html = html.replace("</head>", """  <link rel="stylesheet" href="/app/assets/das
 assert "Your workspace, all in one place." not in html
 assert "A home for your projects and account." not in html
 assert html.count('id="home-title"') == 1
-assert html.count('id="cta6-mosaic"') == 1
+assert html.count('id="cta6-mosaic"') == 0
 assert html.count('id="workspace-sidebar"') == 1
 assert 'id="sidebar-resize-handle"' in html
+# A viewport-fixed backdrop is a direct body child, BEFORE the authenticated
+# workspace shell. It does not inherit main-column width or sidebar transforms.
+stage = """<div id="dashboard-atmosphere" class="dashboard-atmosphere" aria-hidden="true">
+  <div class="dashboard-atmosphere-grain"></div>
+  <div id="dashboard-tiles-small" class="dashboard-tiles dashboard-tiles-small"></div>
+  <div id="dashboard-tiles-main" class="dashboard-tiles dashboard-tiles-main"></div>
+  <div class="dashboard-structural-side dashboard-structural-side-left"></div>
+  <div class="dashboard-structural-side dashboard-structural-side-right"></div>
+  <div class="dashboard-structural-top">
+    <span class="dashboard-slit dashboard-slit-a"></span>
+    <span class="dashboard-slit dashboard-slit-b"></span>
+    <span class="dashboard-slit dashboard-slit-c"></span>
+  </div>
+  <div class="dashboard-structural-bottom">
+    <span class="dashboard-base-rule"></span>
+    <span class="dashboard-base-rule dashboard-base-rule-inner"></span>
+  </div>
+  <div class="dashboard-atmosphere-vignette"></div>
+</div>
+"""
+shell_start = '<div class="shell" id="workspace-shell">'
+assert html.count(shell_start) == 1
+html = html.replace(shell_start, stage + shell_start, 1)
+assert 'id="dashboard-tiles-small"' in html
+assert 'id="dashboard-tiles-main"' in html
+assert 'Workspace</h1>' not in html
 out = Path("dist/index.html")
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(html, encoding="utf-8")
