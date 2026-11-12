@@ -17,7 +17,7 @@ from urllib.request import urlopen
 import websocket
 
 CHROME=os.environ["CHROME"]
-PAGE="http://127.0.0.1:8765/"
+PAGE="http://127.0.0.1:8765/?webgpu-offscreen-ci=1"
 PORT=9222
 TIMEOUT=95
 
@@ -94,14 +94,14 @@ def run():
                     if raw:
                         latest=json.loads(raw)
                     audit=latest.get("audit") or {}
-                    if latest.get("body")=="ready":
+                    if latest.get("body")=="offscreen-proof":
                         if latest.get("count")!=16 or latest.get("sidebar"):
                             raise RuntimeError("Original 16 icons/sidebar boundary violated "+str(latest))
                         if audit.get("status")!="ready" or audit.get("mipCount",0)<2 or audit.get("sceneBuilds",0)<1:
                             raise RuntimeError("GPU did not build real scene+mips "+str(latest))
-                        if latest.get("phase")!="ready":
+                        if latest.get("phase")!="ready" or audit.get("presentation")!="offscreen-ci":
                             raise RuntimeError("GPU init phase not complete "+str(latest))
-                        print("GPU_READY "+json.dumps(latest,sort_keys=True))
+                        print("GPU_OFFSCREEN_PROOF "+json.dumps(latest,sort_keys=True))
                         return
                     if latest.get("body")=="fallback":
                         raise RuntimeError("GPU fallback: "+json.dumps(latest,sort_keys=True))
