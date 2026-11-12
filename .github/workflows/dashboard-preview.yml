@@ -148,6 +148,8 @@ jobs:
           if ! grep -Fq 'data-gpu-scene="ready"' /tmp/dashboard-preview-live-dom.html; then
             echo 'WebGPU pipeline did not report READY in headless Chrome'
             grep -o 'data-gpu-scene="[^"]*"' /tmp/dashboard-preview-live-dom.html || true
+            grep -o 'data-gpu-error="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
+            grep -o 'data-gpu-status="[^"]*"' /tmp/dashboard-preview-live-dom.html | head -1 || true
             tail -65 /tmp/dashboard-preview-chrome-stderr.log
             exit 1
           fi

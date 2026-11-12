@@ -53,6 +53,10 @@ async function fallback(reason){
   if(raf)cancelAnimationFrame(raf);
   audit.status="fallback";
   audit.errors.push(String(reason));
+  if(root){
+    root.dataset.gpuStatus="fallback";
+    root.dataset.gpuError=String(reason).slice(0,700);
+  }
   document.body.dataset.gpuScene="fallback";
   canvas.remove();
   try{engine?.dispose()}catch{}
@@ -319,6 +323,7 @@ async function initialize(){
   document.body.dataset.gpuScene="ready";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
+  root.dataset.gpuStatus="ready";
   root.dataset.gpuMipLevels=String(audit.mipCount);
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
