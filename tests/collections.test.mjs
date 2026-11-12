@@ -626,20 +626,72 @@ test("Collection names use a gray inline pencil, live-width underline, and caret
   assert.match(js,/input\.setSelectionRange\(input\.value\.length,input\.value\.length\)/);
   assert.doesNotMatch(css,/border-bottom:1px dashed #666/,"Old dashed rename border is removed");
 });
-test("Click-away or Enter commits a row draft locally; Escape restores it before Done saves changes",()=>{
-  assert.match(js,/function finishInlineRename\(restore=false\)/);
-  assert.match(js,/function beginInlineRename\(button\)/);
-  assert.match(js,/list\.addEventListener\("focusout",event=>/);
-  assert.match(js,/document\.addEventListener\("pointerdown",event=>/);
-  assert.match(js,/if\(field&&!field\.contains\(event\.target\)\)finishInlineRename\(\)/);
-  assert.match(js,/finishInlineRename\(event\.key==="Escape"\)/);
-  assert.match(js,/if\(restore\)input\.value=state\.renameInitialValue/);
-  assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
-  assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(\)/);
-  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,name,expected_revision:collection\.revision/);
-  assert.match(js,/sizeInlineName\(input\.closest\("\.cs-name-field"\)\)/);
-  assert.match(js,/measure\.textContent=input\.value\|\|" "/);
-  assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
+test("Collection rename check and cancel are separate circular icon buttons, with no premature save",()=>{
+ assert.match(js,/const NAME_CONFIRM='<svg viewBox="0 0 24 24"[^']+<path d="m5 12\.5 4\.5 4\.4L19 7\.3"/);
+ assert.match(js,/const NAME_CANCEL='<svg viewBox="0 0 24 24"[^']+<path d="M18 6 6 18M6 6l12 12"/);
+ assert.match(js,/class="cs-rename-actions"/);
+ assert.match(js,/class="cs-rename-confirm" type="button" data-cs-confirm-rename/);
+ assert.match(js,/class="cs-rename-cancel" type="button" data-cs-cancel-rename/);
+ assert.match(css,/#cs-root \.cs-rename-actions\{display:none;align-items:center/);
+ assert.match(css,/#cs-root \.cs-renaming \.cs-rename-actions\{display:inline-flex\}/);
+ assert.match(css,/#cs-root \.cs-renaming \.cs-name-pencil\{[^}]*display:none\}/,
+   "Pencil vanishes instead of leaving an empty action slot");
+ assert.match(css,/#cs-root \.cs-rename-actions button\{[^}]*border-radius:50%/);
+ assert.match(css,/#cs-root \.cs-rename-actions \.cs-rename-cancel\{[^}]*border:1px solid var\(--cs-border\);background:var\(--cs-weak\);color:#a3a3a3/,
+   "Grey X uses the same surface fill and outline as the Refresh button");
+ assert.match(css,/#cs-root \.cs-rename-actions \.cs-rename-confirm\{[^}]*background:#fff;color:#101010/);
+ assert.match(css,/#cs-root \.cs-rename-actions \.cs-rename-confirm:disabled\{visibility:hidden;opacity:0;pointer-events:none\}/,
+   "White check stays invisible until the normalized name actually changes");
+ assert.match(js,/field\.classList\.toggle\("cs-rename-dirty",dirty\)/);
+ assert.match(js,/const dirty=normalizedCollectionName\(input\.value\)!==normalizedCollectionName\(col\.name\)/,
+   "Whitespace/canonicalization alone must not show a false-positive white check");
+ assert.match(js,/confirm\.setAttribute\("aria-hidden",String\(!dirty\)\)/);
+ assert.match(js,/cancel\.disabled=false;cancel\.tabIndex=0/);
+ assert.match(js,/confirm\.disabled=!dirty;confirm\.tabIndex=dirty\?0:-1/);
+});
+
+test("Collection rename requires an explicit revision-bound save, cancellation never persists",()=>{
+ assert.match(js,/function finishInlineRename\(restore=true\)/);
+ assert.match(js,/function beginInlineRename\(button\)/);
+ assert.match(js,/document\.addEventListener\("focusin",event=>/);
+ assert.doesNotMatch(js,/list\.addEventListener\("focusout",event=>/,
+   "Moving focus between textbox and check/X must not commit or cancel");
+ assert.match(js,/document\.addEventListener\("pointerdown",event=>/);
+ assert.match(js,/finishInlineRename\(true\)/);
+ assert.match(js,/if\(restore\)input\.value=state\.renameInitialValue/);
+ assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
+ assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(true\)/,
+   "Done discards unfinished text rather than saving implicitly");
+ assert.match(js,/async function confirmInlineRename\(id\)/);
+ assert.match(js,/if\(!state\.editing\|\|state\.busy\|\|state\.renameSaving\|\|state\.renamingId!==id\)return/);
+ assert.match(js,/const changed=await request\("edit",\{\s*original_name:col\.name,name:proposed,expected_revision:col\.revision/);
+ assert.match(js,/if\(Number\.isSafeInteger\(changed\.revision\)\)col\.revision=changed\.revision/);
+ assert.match(js,/if\(!proposed\|\|proposed\.length>100\|\|/);
+ assert.match(js,/state\.collections\.some\(other=>other\.collection_id!==id/);
+ assert.match(js,/state\.nameDrafts\.set\(id,proposed\)/);
+ assert.match(js,/if\(!state\.editing\|\|state\.busy\|\|!handle\|\|handle\.closest/,
+   "A rename write cannot start a competing drag operation");
+ assert.match(js,/input\.readOnly=true/);
+ assert.match(js,/state\.renameSaving=false;input\.readOnly=false/);
+ assert.match(js,/sizeInlineName\(input\.closest\("\.cs-name-field"\)\)/);
+ assert.match(js,/measure\.textContent=input\.value\|\|" "/);
+ assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
+});
+
+test("Refresh remains a centered Lucide icon with a matching hover/focus tooltip",()=>{
+ const start=html.indexOf('<span class="cs-refresh-control">');
+ assert.ok(start>=0);
+ const component=html.slice(start,html.indexOf("</span></span></span>",start)+21);
+ assert.ok(component.includes('id="cs-refresh"'));
+ assert.ok(component.includes('aria-describedby="cs-refresh-tooltip"'));
+ assert.ok(component.includes('id="cs-refresh-tooltip" role="tooltip"'));
+ assert.ok(component.includes('>Refresh collections</span>'));
+ assert.match(css,/#cs-root \.cs-refresh-control\{position:relative;display:inline-flex/);
+ assert.match(css,/#cs-root \.cs-refresh-tooltip\{left:auto;right:0;transform-origin:top right\}/);
+ assert.match(css,/#cs-root #cs-refresh:hover \+ \.cs-refresh-tooltip/);
+ assert.match(css,/#cs-root #cs-refresh:focus-visible \+ \.cs-refresh-tooltip/);
+ assert.match(css,/#cs-root #cs-refresh:focus-visible \+ \.cs-refresh-tooltip\{transition-delay:0s,0s,0s\}/);
+ assert.match(css,/#cs-root #cs-refresh\{width:36px;min-width:36px;height:36px/);
 });
 
 test("Collections control swap uses synchronized 20px local fades at the list right edge",()=>{
