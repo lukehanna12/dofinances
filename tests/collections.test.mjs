@@ -745,6 +745,19 @@ test("Select collapses an open collection with a white spinner before allowing s
  assert.ok(js.includes("if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Open must not expand during selecting");
  assert.ok(js.includes("const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
 });
+test("Done resets checked bubble visuals after the exit animation, with no stale selection next time",()=>{
+ const start=js.indexOf("function clearCollectionPicks(){");
+ const end=js.indexOf("function toggleCollectionPick(button){",start);
+ assert.ok(start>=0&&end>start,"Dedicated transient selection reset");
+ const reset=js.slice(start,end);
+ assert.ok(reset.includes("state.selectedCollections.clear()"));
+ assert.ok(reset.includes('list.querySelectorAll(\'.cs-collection-pick[aria-pressed="true"]\')'));
+ assert.ok(reset.includes('button.setAttribute("aria-pressed","false")'));
+ assert.ok(reset.includes('button.setAttribute("aria-label","Select "+col.name)'));
+ const exit=js.slice(js.indexOf("async function exitCollectionSelectMode(){"),js.indexOf("function resetCollectionSelectMode(){"));
+ assert.ok(exit.indexOf('await waitForVisualMotion(list.querySelector(".cs-collection-pick"),"cs-grip-exit-left")')<exit.indexOf("clearCollectionPicks()"),"Wait for full exit fade before reset");
+ assert.ok(js.includes('if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;'),"Do not paginate while controls are in flight");
+});
 test("Collection Edit and Select cannot overlap, selected rows survive pagination, and Done clears local selection",()=>{
  assert.ok(js.includes("editButton.disabled=state.busy||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
  assert.ok(js.includes("selectButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelectTransitioning"));
