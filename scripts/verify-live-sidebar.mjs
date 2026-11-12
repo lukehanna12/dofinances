@@ -601,7 +601,7 @@ try{
   let expandedReference=null;
   for(const width of [1280,1600,1920]){
     await metrics(width,820);
-    await until('document.documentElement.clientWidth==='+String(width)+
+    await until('window.innerWidth==='+String(width)+
       ' && !document.getElementById("workspace-shell").classList.contains("is-compact-rail")',
       "wide content alignment at "+width);
     const measured=await measureContentLeft();
@@ -624,7 +624,7 @@ try{
     (expandedReference.paneWidth-collapsed1920.paneWidth))<1.5,
     "Sidebar collapse must shift content by the exact sidebar width delta");
   await metrics(1280,820);
-  await until('document.documentElement.clientWidth===1280',"collapsed 1280 viewport");
+  await until('window.innerWidth===1280',"collapsed 1280 viewport");
   const collapsed1280=await measureContentLeft();
   assert.ok(Math.abs(collapsed1280.start-collapsed1920.start)<1,
     "Collapsed content boundary must also be fixed across desktop widths");
