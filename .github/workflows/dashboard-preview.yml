@@ -1,0 +1,81 @@
+name: Dashboard preview (isolated)
+
+on:
+  push:
+    branches: [dashboard-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Independent of the production deployment lock and Collections commits.
+concurrency:
+  group: dofinances-dashboard-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Publish static Dashboard preview only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v6
+
+      - name: Assemble non-authenticated, no-navigation Dashboard copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/app/assets dist/assets
+          # The Studio HTML is a public-safe mirror of the production Home
+          # and entire real sidebar, without protected dashboard controllers.
+          cp studio/sidebar/index.html dist/index.html
+          sed -i 's@<title>Studio · DoFinances</title>@<title>Dashboard Preview · DoFinances</title>@' dist/index.html
+          sed -i 's@/app/assets/preview-bootstrap.js@/app/assets/dashboard-preview.js@' dist/index.html
+
+          cp sites/_apex/assets/site-foundation.css dist/assets/
+          for asset in \
+            dashboard.css workspace-theme.css sidebar-glass.css \
+            workspace-wallpapers.css workspace-enhancements.css \
+            diagnostics.css providers.css \
+            workspace-nav.js workspace-scroll.js workspace-wallpapers.js \
+            sidebar-glass.js sidebar-glass-oracle.js sidebar-glass-field-worker.js \
+            magnifying-glass.v2.svg dashboard-screen-sidebar-icon.v1.svg \
+            collections-screen-sidebar-icon.v1.svg settings-screen-sidebar-icon.v1.svg \
+            home-rice-terraces-hq.jpg; do
+            cp "sites/_apex/app/assets/$asset" "dist/app/assets/$asset"
+          done
+          cp studio/dashboard-preview/bootstrap.js dist/app/assets/dashboard-preview.js
+          printf '/*\n  X-Robots-Tag: noindex, nofollow\n  Cache-Control: no-store\n' > dist/_headers
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
+      - name: Check preview boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/index.html
+          test -s dist/app/assets/dashboard-preview.js
+          test -s dist/app/assets/sidebar-glass.js
+          test -s dist/app/assets/sidebar-glass-oracle.js
+          test -s dist/app/assets/sidebar-glass-field-worker.js
+          grep -Fq 'data-view="home"' dist/index.html
+          grep -Fq 'id="sidebar-resize-handle"' dist/index.html
+          grep -Fq 'dashboard-preview.js' dist/index.html
+          grep -Fq 'initWorkspaceNavigation()' dist/app/assets/dashboard-preview.js
+          grep -Fq 'initLiquidGlassSidebar()' dist/app/assets/dashboard-preview.js
+          test ! -e dist/app/assets/dashboard.js
+          test ! -e dist/app/assets/collections.js
+          test ! -e dist/app/assets/permissions.js
+          test ! -e dist/app/assets/cloudflare-settings.js
+          ! grep -R -Eq '/api/auth/|/api/colosseum/|/api/cloudflare/' dist/app/assets/*.js
+          ! grep -Fq 'preview-bootstrap.js' dist/index.html
+          echo 'Standalone, read-only Dashboard preview verified'
+
+      - name: Deploy preview branch to distinct Pages URL
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: '7d0d4c74836717a4d23784bbf8d5ccd7'
+          # Same Pages project, DIFFERENT branch deployment:
+          # no production route, DNS change, main commit, or Worker deploy.
+          command: pages deploy dist --project-name=dofinances-studio --branch=dashboard-preview
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
