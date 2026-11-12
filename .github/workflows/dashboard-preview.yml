@@ -60,11 +60,21 @@ jobs:
           test -s dist/app/assets/sidebar-glass-oracle.js
           test -s dist/app/assets/sidebar-glass-field-worker.js
           grep -Fq 'data-view="home"' dist/index.html
-          grep -Fq 'id="cta6-mosaic"' dist/index.html
+          grep -Fq 'id="dashboard-atmosphere"' dist/index.html
+          grep -Fq 'id="dashboard-tiles-small"' dist/index.html
+          grep -Fq 'id="dashboard-tiles-main"' dist/index.html
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
-          grep -Fq 'cta6-center' dist/index.html
-          grep -Fq 'positionIcons' dist/app/assets/dashboard-mosaic.js
+          ! grep -Fq 'cta6-center' dist/index.html
+          ! grep -Fq 'Workspace</h1>' dist/index.html
+          ! grep -Fq 'Projects</span>' dist/index.html
+          grep -Fq 'dashboard-tile-breathe' dist/app/assets/dashboard-home.css
+          grep -Fq 'dashboard-structural-top' dist/app/assets/dashboard-home.css
+          grep -Fq 'dashboard-structural-bottom' dist/app/assets/dashboard-home.css
+          grep -Fq 'pointermove' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'dashboard-paused' dist/app/assets/dashboard-mosaic.js
+          node --check dist/app/assets/dashboard-mosaic.js
+          node --check dist/app/assets/dashboard-preview.js
           grep -Fq 'id="sidebar-resize-handle"' dist/index.html
           grep -Fq 'dashboard-preview.js' dist/index.html
           grep -Fq 'initWorkspaceNavigation()' dist/app/assets/dashboard-preview.js
