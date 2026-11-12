@@ -299,6 +299,55 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-edit-icon-button:hover + .cs-create-tooltip,
 #cs-root .cs-edit-icon-button:focus-visible + .cs-create-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
 #cs-root .cs-edit-icon-button:focus-visible + .cs-create-tooltip{transition-delay:0s,0s,0s}
+/* Select collections: white unframed icon, no shortcut, no hover capsule.
+   Follows Edit in the Collections header and reuses its tooltip metrics. */
+#cs-root .cs-select-control{position:relative;display:inline-flex;vertical-align:top;margin:16px 0 0 10px}
+#cs-root .cs-select-icon-button{position:relative;display:inline-grid;place-items:center;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border:0;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,transform .12s ease}
+#cs-root .cs-select-icon-button:hover:not(:disabled){color:#fff}
+#cs-root .cs-select-icon-button:active:not(:disabled){transform:scale(.95)}
+#cs-root .cs-select-icon-button svg{position:absolute;width:19px;height:19px;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
+#cs-root .cs-select-glyph{opacity:1;transform:scale(1) rotate(0)}
+#cs-root .cs-select-done{opacity:0;transform:scale(.75) rotate(-15deg)}
+#cs-root.cs-collection-selecting .cs-select-glyph{opacity:0;transform:scale(.72) rotate(14deg)}
+#cs-root.cs-collection-selecting .cs-select-done{opacity:1;transform:scale(1) rotate(0)}
+#cs-root .cs-select-icon-button:hover + .cs-create-tooltip,
+#cs-root .cs-select-icon-button:focus-visible + .cs-create-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#cs-root .cs-select-icon-button:focus-visible + .cs-create-tooltip{transition-delay:0s,0s,0s}
+#cs-root.cs-closing-for-selection .cs-select-icon-button:disabled{opacity:1;cursor:progress}
+#cs-root.cs-closing-for-selection .cs-select-icon-button svg{opacity:0}
+#cs-root.cs-closing-for-selection .cs-select-icon-button::after{
+ content:"";position:absolute;box-sizing:border-box;width:18px;height:18px;
+ border:1.8px solid #fff;border-top-color:transparent;border-radius:50%;
+ animation:cs-edit-spin 600ms linear infinite;
+}
+#cs-root.cs-closing-for-selection .cs-select-control .cs-create-tooltip{opacity:0;visibility:hidden}
+/* The selectable bubble occupies the same right-edge slot as the chevron or
+   edit-mode grip. Keep all three controls mounted so 480ms CSS swaps overlap. */
+#cs-root .cs-collection-pick{
+ position:absolute;z-index:6;top:50%;right:0;display:grid;place-items:center;
+ width:22px;height:30px;padding:0;border:0;border-radius:7px;
+ background:transparent;color:#a3a3a3;
+ opacity:0;visibility:hidden;transform:translateY(-50%);pointer-events:none;
+}
+#cs-root .cs-collection-pick:disabled{opacity:0;pointer-events:none}
+#cs-root.cs-collection-selecting .cs-collection-pick{opacity:1;visibility:visible;pointer-events:auto}
+#cs-root .cs-collection-pick:hover:not(:disabled){color:#fff}
+#cs-root .cs-select-bubble{display:grid;place-items:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:999px;transition:background .15s,border-color .15s,color .15s}
+#cs-root .cs-select-bubble svg{width:12px;height:12px;opacity:0;stroke-width:2.4;transition:opacity .12s}
+#cs-root .cs-collection-pick[aria-pressed="true"] .cs-select-bubble{background:#fff;border-color:#fff;color:#101010}
+#cs-root .cs-collection-pick[aria-pressed="true"] .cs-select-bubble svg{opacity:1}
+#cs-root.cs-collection-selecting .cs-chevron{opacity:0;right:0;transform:translate(-20px,-50%)}
+#cs-root.cs-entering-selection .cs-collection-pick:disabled{
+ visibility:visible;animation:cs-grip-enter-right var(--cs-control-swap) var(--cs-control-ease) both;
+}
+#cs-root.cs-entering-selection .cs-chevron{animation:cs-chevron-exit-left var(--cs-control-swap) var(--cs-control-ease) both}
+#cs-root.cs-leaving-selection .cs-collection-pick:disabled{
+ visibility:visible;animation:cs-grip-exit-left var(--cs-control-swap) var(--cs-control-ease) both;
+}
+#cs-root.cs-leaving-selection .cs-chevron{animation:cs-chevron-enter-right var(--cs-control-swap) var(--cs-control-ease) both}
+#cs-root.cs-collection-selecting .cs-trigger:disabled,
+#cs-root.cs-closing-for-selection .cs-trigger:disabled,
+#cs-root.cs-leaving-selection .cs-trigger:disabled{opacity:1;cursor:default}
 #cs-root .cs-entry{position:relative}
 #cs-root .cs-entry-heading{position:relative}
 #cs-root .cs-entry .cs-trigger{padding-left:calc(var(--cs-depth,0) * 17px)}
@@ -407,6 +456,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-subcollection-link{border:0;background:transparent;color:#d6d6d6;padding:5px 0;text-align:left;font-size:13px}
 #cs-root .cs-subcollection-link:hover{text-decoration:underline;text-underline-offset:3px;color:#fff}
 @media(max-width:640px){
+ #cs-root .cs-collection-pick{width:19px;height:26px}
+ #cs-root .cs-select-bubble{width:16px;height:16px}
+ #cs-root .cs-select-bubble svg{width:11px;height:11px}
  #cs-root .cs-drag-handle{width:19px;height:26px}
  #cs-root .cs-drag-handle svg{width:13px;height:13px}
  #cs-root .cs-visibility-toggle{left:78%;width:26px;height:26px}
@@ -416,4 +468,6 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 @media(prefers-reduced-motion:reduce){
  #cs-root .cs-edit-icon-button svg{transition:none}
  #cs-root.cs-closing-for-edit .cs-edit-icon-button::after{animation:none}
+ #cs-root.cs-closing-for-selection .cs-select-icon-button::after{animation:none}
+ #cs-root .cs-select-icon-button svg{transition:none}
 }
