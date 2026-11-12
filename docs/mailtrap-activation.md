@@ -1,38 +1,35 @@
-# Activate Dofinances transactional email (Mailtrap)
+# Dofinances Mailtrap transactional email: readiness and verification
 
-Status: **application adapter deployed, default sender configured, integration contract tests passed; live Mailtrap delivery not yet enabled.**
+_Checked 2026-11-11 against the Worker source, deployed Worker bindings, and Cloudflare DNS. Provider dashboard approval and end-to-end mailbox delivery were not checked._
 
-This is the sole remaining onboarding playbook. No Mailtrap credentials are committed to the repository, and no provider-issued DNS verification records should be fabricated before the account is ready. The domain is registered at GoDaddy, but **Cloudflare is authoritative for DNS**.
+## Current state
 
-## Existing infrastructure — already prepared
+| Component | Verified state |
+| --- | --- |
+| Worker adapter | Implemented at `edge/auth-mail.mjs`, using `POST https://send.api.mailtrap.io/api/send` with `Api-Token` |
+| Sender variable | `AUTH_EMAIL_FROM=noreply@dofinances.com` in `edge/wrangler.jsonc` |
+| Worker API-token binding | `MAILTRAP_API_TOKEN` exists as a **secret_text binding**; its value is not available in source and must not be exposed |
+| Sending DNS | `mt75.dofinances.com` → `smtp.mailtrap.live`; `mt-link.dofinances.com` → `t.mailtrap.live`; `rwmt1._domainkey` and `rwmt2._domainkey` point to Mailtrap DKIM hosts; all DNS-only |
+| Incoming email | Zoho MX priorities 10, 20 and 50, Zoho DKIM and root SPF preserved |
+| Mailtrap provider-side approval | **Not verified by this audit** |
+| Real email API acceptance / inbox delivery | **Not verified by this audit** |
 
-- Worker: `dofinances-host-router` (source: `edge/auth-mail.mjs` and `edge/router.mjs`).
-- Email API: `POST https://send.api.mailtrap.io/api/send` with `Api-Token`, plain-text and HTML bodies, categories and a verified domain sender. Does **not** use sandbox or bulk email.
-- `/login?mode=signup`: sign-up requires an email-verification link before first dashboard access.
-- `/login` password-recovery flow, `/verify`, `/reset`: one-time hashed tokens and expiry, server-enforced.
-- Authenticator TOTP MFA, one-use recovery codes and the `MFA_ENCRYPTION_KEY` Worker secret are independent of the email provider.
-- Email-disabled state: `/api/auth/config` returns `emailAvailable:false`, and signup/reset-request/email-verification-send routes reject without an email sender. Normal legacy sign-in still works.
-- Incoming email to the root domain still goes to Zoho: `mx.zoho.com` priority 10, `mx2.zoho.com` 20, `mx3.zoho.com` 50; Zoho DKIM `zmail._domainkey` untouched.
-- Historical outbound provider's `em5386`, `s1._domainkey` and `s2._domainkey` CNAME records were removed. Apex SPF no longer contains its obsolete include.
+The code provides one-time email verification and password reset, and optional TOTP MFA with one-time recovery codes. New users receive no valid authenticated session until email verification. Mailtrap is the **only** configured transactional sending adapter. The prior SendGrid CNAMEs/SPF include have been retired. Cloudflare—not GoDaddy—is authoritative for DNS.
 
-## What remains to do when your Mailtrap account is ready
+## Remaining checks before declaring email fully operational
 
-1. Create/login to a **free Mailtrap account**: <https://mailtrap.io/>. Select **Email API/SMTP Sending** rather than Email Sandbox. **Do not add a paid subscription just for this integration.**
-2. Add `dofinances.com` in **Sending Domains** and copy *exactly* the DNS records that Mailtrap provides for that domain (SPF, DKIM, verification, CNAME, etc., as applicable). The free tier currently supports one sending domain.
-3. Verify those records in Cloudflare DNS. **Preserve Zoho's three existing MX records, `zmail._domainkey`, the existing root SPF and DMARC unless a specific conflict is reviewed.** Do not publish a second SPF TXT at the root; merge authorized include mechanisms if the provider actually requires root SPF, and ensure SPF's ten-DNS-lookup ceiling. Only publish DNS-only (not proxied) mail authentication records.
-4. Wait for the Mailtrap sending domain to report verified/approved.
-5. Create a least-privilege transactional-sending API token, preferably scoped to the verified domain. In Cloudflare Dashboard → Workers & Pages → `dofinances-host-router` → Settings → Variables and Secrets, set:
-   - `MAILTRAP_API_TOKEN` as **Secret** (transactional Email API token; never provide it in a chat or a Git commit).
-   - `AUTH_EMAIL_FROM=noreply@dofinances.com` is **already included in the checked-in Worker configuration**. No extra secret or manual sender variable is needed.
-   - **Optional:** `AUTH_EMAIL_REPLY_TO=support@dofinances.com`, *after* verifying that this support address receives mail via Zoho or forwards to your personal inbox.
-6. Check `https://dofinances.com/api/auth/config`; `emailAvailable` becomes `true` only when the required sender/token environment bindings are present. This checks presence, **not** domain approval or actual mail deliverability.
-7. Perform controlled end-to-end testing: sign up with an inbox you own; receive verification email; open link; sign in; trigger password recovery; confirm single-use/reset expiry; check Gmail/Outlook inbox delivery and spam placement; optionally enroll authenticator MFA and confirm recovery-code behavior.
-8. Keep DNS authentication and sending-domain status monitored when planning changes. No D1 migration or new Cloudflare Workers are necessary for the Mailtrap account connection.
+1. Log into the intended Mailtrap sending account using its own dashboard (without copying a token into source or chat). Confirm `dofinances.com` is approved/verified, the expected sending stream is enabled, and its quota/account status permits sending.
+2. Confirm the configured `MAILTRAP_API_TOKEN` is valid for the production sending API and verified domain. The binding exists, but binding existence alone does not prove permissions or token validity.
+3. Inspect `https://dofinances.com/api/auth/config`: `emailAvailable` reports that the runtime has a sender and token, **not** provider-side validation or inbox delivery. A false result indicates missing/invalid-looking runtime configuration.
+4. Using only controlled test accounts and owned inboxes, run sign-up, receive a verification message, follow the fragment-based 24-hour one-use verification link, sign in, initiate password recovery, and confirm the 30-minute one-use reset and session revocation. Check acceptance, inbox/spam placement, and error responses; also test MFA where appropriate.
+5. If a provider-side DNS correction is required, apply **only the exact Mailtrap-issued record values**. Preserve existing Zoho MX, DKIM, and DMARC; never add a second root SPF TXT. Keep Mailtrap CNAMEs DNS-only. Do not rotate secrets or change the account sender as part of a documentation refresh.
 
-## Failure modes and costs
+## Failure semantics and costs
 
-- A missing Mailtrap token or sender keeps signup and mail requests closed with HTTP 503.
-- Mailtrap API rejection is fail-closed (no fake successful delivery); a signup may leave an unverified account that can request a replacement link after sender issues are resolved.
-- Email sends use the **Mailtrap free-tier quota**, not D1; account/session operations use existing Cloudflare Durable Object SQLite storage.
-- Mailtrap API acceptance is not equivalent to mailbox delivery. Verify in real inboxes before making production promises.
-- Do not replace Zoho MX records to use Mailtrap for outbound email; no inbound mail migration is needed.
+- Missing `MAILTRAP_API_TOKEN` or `AUTH_EMAIL_FROM` makes the email-dependent account flows fail closed with HTTP 503; existing verified/legacy sign-in and MFA remain separate.
+- A Mailtrap send rejection fails closed rather than pretending successful delivery. A pending, unverified signup may remain and need a replacement verification request. The application intentionally does not retry an uncertain delivery in a loop.
+- API acceptance does not prove delivery. Check the Mailtrap provider log and controlled inboxes before stating the feature is production-validated.
+- Mailtrap quotas and free-plan allowances must be read from the **current provider account**; older 4,000/month and 150/day figures are historical notes, not a guaranteed current entitlement. No D1 or R2 service is involved in this email integration.
+- Never reveal the API token, link tokens, recipient PII, or `MFA_ENCRYPTION_KEY` in GitHub, logs, or chat.
+
+See [account security](account-security.md), [domain and DNS setup](domain-setup.md), and [current architecture](architecture.md).

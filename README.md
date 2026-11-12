@@ -1,16 +1,19 @@
 # Dofinances
 
+_Architecture reconciled against repository `main` and deployed Cloudflare configuration on 2026-11-11._
+
 GitHub-based development and automatic deployment for `dofinances.com`, `www.dofinances.com`, `stu.dofinances.com`, and eligible first-level subdomains.
 
 ## Hosting
 
 - **Apex and first-level wildcard subdomains:** Cloudflare Worker `dofinances-host-router` with Workers Static Assets in `sites/`.
 - **www:** same Worker; independent files in `sites/_www/` override paths, and otherwise the URL redirects to the apex.
-- **stu:** React and Vite project on Cloudflare Pages `dofinances-studio`, sourced from `src/`; its root and `/app/` expose the standalone Liquid Glass workspace demo; `/login` remains 404.
+- **stu:** Cloudflare Pages project `dofinances-studio` serves the standalone, non-authenticated Liquid Glass workspace at `/` and `/app/`. CI assembles this from `studio/sidebar/` and selected shared files, **not** the React Auth-3 app. `/login` and `/login/` return 404.
 - **Apex `/login`:** email/password sign-in and registration using the Auth-3 React interface, packaged from the Studio build artifact into the Worker assets during CI/CD.
 - **Apex `/app`:** a protected dashboard served only after the Worker checks the HTTP-only session cookie.
-- **Account state:** a new SQLite-backed Cloudflare Durable Object owned by this Worker. This auth path does not use D1, KV, or R2.
-- **Existing email and commerce records:** remain separate, DNS-only, and are not served by the Worker.
+- **Account state:** the Worker-bound, SQLite-backed `AUTH_STORE` Durable Object holds first-party accounts, sessions, MFA, linked identities, the owner binding, and encrypted Cloudflare account-connection metadata. No D1, KV, or R2 is bound for this account system.
+- **Colosseum:** a Worker service binding (`COLOSSEUM_ROUTER` → `router`) forwards owner-authorized, signed administration requests to the separate Colosseum control plane. A second service binding (`LIBRARY_III` → `library-iii`) serves only allowlisted wallpaper objects.
+- **Existing email and commerce records:** remain separate from this Worker; the original mail and payment DNS records must be preserved.
 
 ## Add, update, or delete public pages
 
@@ -26,7 +29,7 @@ Commit files to `main` in these directories:
 | `sites/portfolio/notes/index.html` | `https://portfolio.dofinances.com/notes` |
 | `sites/portfolio/assets/photo.png` | `https://portfolio.dofinances.com/assets/photo.png` |
 
-Removing a file and committing it makes that page return 404 (or, for `www`, fall back to its apex redirect). No DNS additions are required for new first-level subdomain names. Unknown paths/hosts return HTTP 404.
+Removing a file and committing it makes that page return 404 (or, for `www`, fall back to its apex redirect). No DNS additions are required for **eligible first-level** subdomain labels; the `stu` Pages host and reserved service labels are excluded, and deeper subdomains are not covered by this wildcard setup. Unknown paths/hosts return HTTP 404. These example `about`, `portfolio`, and `_www` source paths describe supported additions, not files presently checked into `main`.
 
 For the Studio sidebar, edit `studio/sidebar/` and the shared `sites/_apex/app` assets, then push `main`; CI assembles the standalone static Pages application. `src/` still produces the Auth-3 React/Vite build for apex `/login` only. CI also copies the compiled `dist/index.html` and hashed assets into the Worker deployment for `https://dofinances.com/login` and `/login/`. This avoids maintaining two independent login implementations. A narrowly scoped Pages Function at `functions/login.js` enforces HTTP 404 on both removed Studio `/login` URL variants; `public/_routes.json` limits Function invocation to those paths. The top-level `public/404.html` provides a static 404 for other unknown routes.
 
@@ -38,7 +41,7 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 **Password hashing compatibility:** Cloudflare currently caps native PBKDF2 iterations at 100,000. This initial system uses 100,000 individually salted PBKDF2-SHA256 iterations, below the stronger modern guidance; move to a reviewed, memory-hard password KDF before accepting sensitive financial data.
 
-**Account security features:** New-account email confirmation, one-use password recovery, TOTP authenticator MFA, and one-time recovery codes are implemented. The Worker requires a verified Mailtrap transactional sending domain plus the `MAILTRAP_API_TOKEN` Worker secret; `AUTH_EMAIL_FROM=noreply@dofinances.com` is already configured as a non-secret Wrangler variable before enabling new sign-ups or sending recovery messages. Mailtrap account/domain verification and credentials remain the only external activation dependencies. Until they are configured, email-dependent operations deliberately return an unavailable status rather than creating unverified accessible accounts. See [Mailtrap activation](docs/mailtrap-activation.md). The account's `MFA_ENCRYPTION_KEY` is stored as a Worker secret and never appears in Git.
+**Account security features:** New-account email confirmation, one-use password recovery, TOTP authenticator MFA, and one-time recovery codes are implemented. The deployed Worker has a `MAILTRAP_API_TOKEN` secret binding and `AUTH_EMAIL_FROM=noreply@dofinances.com` non-secret variable; **binding presence does not prove the Mailtrap sending domain is verified or that messages arrive**. Check `/api/auth/config` for runtime feature readiness and complete controlled delivery tests before declaring email onboarding operational. Missing or rejected email delivery fails closed. See [Mailtrap readiness](docs/mailtrap-activation.md). The `MFA_ENCRYPTION_KEY` is a Worker secret, not Git content.
 
 **Legacy accounts:** Existing registrations created before email verification was introduced can still sign in. They show as unverified until a verification email is delivered. New registrations cannot use `/app` until confirmation. MFA is optional, but required on every new sign-in after enrollment. Password resets on MFA-enabled accounts require an authenticator or recovery code.
 
@@ -46,7 +49,14 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 ## Private workspace navigation
 
-The authenticated `/app` dashboard has a collapsible sidebar with three main views: **Home** (default), **Projects**, and **Settings**. Projects currently lists **Colosseum**, which opens a separate project navigation scope with **Capabilities**, **Collections**, **Providers**, **Permissions**, **Diagnostics**, and its own **Settings** view. All six project views are intentionally empty placeholders. The arrow in the top bar returns to the main Projects view and main sidebar.
+The authenticated `/app` dashboard has a collapsible/resizable sidebar with three main views: **Home** (default), **Projects**, and **Settings**. The **Colosseum** project navigation includes **Utilities**, **Collections**, **Providers**, **Permissions**, **Diagnostics**, and project **Settings**; **Apple HIG Reader** is a separate project. Collections, Providers, Permissions, and Diagnostics have functional, on-demand controllers; do not call them placeholders. Utilities and project Settings currently remain lightweight/unfinished surfaces. The arrow in the top bar returns to the containing project scope.
+
+- **Collections:** revision-checked create/edit/delete and membership operations against live Colosseum data; list paginates **10 collections per page** in the current source. Utility admission (`+`) is deliberately disabled.
+- **Providers:** federated account vault connections and local registry controls; source-derived tools, resources, prompts, installed skills and adapter discovery are inspected through the upstream Colosseum interface. Mutations use prepare/confirm receipts and server-enforced grants; the browser is not the credential or permission authority.
+- **Permissions:** manages local filesystem path rules, execution limits, hazard PIN and effective-access inspection through the independently enforced local gateway. The old Google Sheets permission manager is retired.
+- **Diagnostics:** user-invoked Colosseum diagnostic reports with no background polling.
+
+All Colosseum management APIs are behind both the Dofinances session and owner-only Cloudflare Access; the Worker forwards signed, restricted operations to the separate Colosseum router. See [current architecture](docs/architecture.md) and [owner authorization](docs/colosseum-owner-auth.md).
 
 Main Settings retains Google/GitHub identity linking (limits: five Google, three GitHub), email verification, MFA, and account deletion. Navigation uses in-page hash routes such as `/app#projects` and `/app#colosseum/diagnostics`; no additional public Worker routes or permissions are introduced. The sidebar can collapse to an icon rail on desktop, with the preference stored locally in the browser; on phones it becomes an accessible slide-out navigation drawer. OAuth callbacks that return to `/app?federation_linked=1` or `/app?federation_error=...` automatically show the main Settings view.
 
@@ -77,7 +87,7 @@ rather than claiming pixel-identical proprietary typography.
 
 ## Workspace visual system
 
-The authenticated app's Home, Projects, Settings, and all six Colosseum views share
+The authenticated app's Home, Projects, Settings, Apple HIG Reader, and Colosseum views share
 `sites/_apex/app/assets/workspace-theme.css`, loaded after the existing
 `dashboard.css`. The presentation is adapted from a source-first reconstruction
 of the ChatGPT web interface: a pure-black main canvas and sidebar, separated by a thin charcoal divider,
@@ -100,8 +110,16 @@ Provider configuration is documented in [Federated authentication](docs/federate
 
 ## CI/CD and verification
 
-[`site.yml`](.github/workflows/site.yml) builds and tests on pushes to `main`; with `DEPLOY_ENABLED=true`, it deploys **both** the standalone Studio Pages preview and the authenticated apex Worker. The separate Vite artifact supplies apex `/login` without exposing authentication controls on Studio. Cloudflare Workers uploads site files directly from `sites/`, without D1, R2, or local Mac build artifacts.
+[`site.yml`](.github/workflows/site.yml) runs Node 22 tests and a Vite build on pull requests and pushes to `main`; on successful `main` pushes with `DEPLOY_ENABLED=true`, it deploys **both** the standalone Studio Pages preview and the authenticated apex Worker via Wrangler. The Vite artifact supplies apex `/login` without exposing authentication controls on Studio. A separate smoke job checks live HTTPS, host routing, account boundaries, wallpaper assets and sidebar behavior in headless Chrome. Routes and DNS are managed separately; deployments do **not** recreate DNS or routes. No Tailscale Funnel, Workers Builds, local Mac, D1 or R2 is part of the build pipeline.
 
 [`verify-git-sites.yml`](.github/workflows/verify-git-sites.yml) is a separate manual end-to-end verification workflow.
 
-The current apex homepage is deliberately minimal; it is a deployable placeholder, not an attempt to reproduce the former GoDaddy Website Builder content. GoDaddy remains the domain registrar. The Worker only handles first-level subdomains; deeper subdomains require separate TLS coverage.
+The current apex homepage is deliberately minimal; it is a deployable placeholder, not an attempt to reproduce the former GoDaddy Website Builder content. GoDaddy remains the domain registrar. The Worker only handles eligible first-level subdomains; deeper subdomains require separate DNS/TLS/routing configuration. GitHub currently reports that `main` is **not branch-protected**, so CI is a deployment gate rather than an enforced pull-request merge gate.
+
+## Documentation map
+
+- [Current architecture and authority boundaries](docs/architecture.md)
+- [DNS, routes, hosting and CI/CD](docs/domain-setup.md) and [Worker routing](edge/README.md)
+- [Account security](docs/account-security.md), [federated sign-in](docs/federated-auth.md), [Cloudflare account connection](docs/cloudflare-account-connection.md), [Colosseum owner access](docs/colosseum-owner-auth.md)
+- [Mailtrap readiness and delivery verification](docs/mailtrap-activation.md), [production credentials](docs/production-credentials.md)
+- [Apex Auth-3 design and historical fidelity notes](docs/studio-login.md), [Studio static workspace](studio/sidebar/README.md)

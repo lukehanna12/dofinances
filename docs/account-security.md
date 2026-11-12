@@ -1,4 +1,6 @@
-# Dofinances account security (November 2026)
+# Dofinances account security
+
+_Implementation status checked 2026-11-11 against the Worker source and deployed Cloudflare bindings._
 
 ## Routes and user experience
 
@@ -10,7 +12,7 @@
 
 ## Server implementation
 
-`edge/auth-store-secure.mjs` extends the existing `AuthStore` Durable Object while preserving its users, sessions and attempts tables. Additional tables: `account_security`, `mail_tokens`, `mfa_challenges`, `mfa_recovery`. These are **SQLite-backed Durable Object tables, not D1**. No D1 or R2 is needed.
+`edge/auth-store-secure.mjs` extends the existing `AuthStore` Durable Object while preserving its users, sessions and attempts tables. Additional tables: `account_security`, `mail_tokens`, `mfa_challenges`, `mfa_recovery`, `colosseum_owner`, and `cloudflare_account_connection`. The federated subclass (`edge/auth-store-federated.mjs`) also owns `account_methods`, `federated_identities`, and `federation_transactions`. These are **SQLite-backed Durable Object tables, not D1**. No D1 or R2 is needed.
 
 Verification/reset tokens are 256-bit cryptographically random, stored only as SHA-256 hashes, scoped to user and purpose, expiration-limited and consumed on use. New accounts receive no authenticated session until verification. Existing users are temporarily grandfathered and may verify their email when delivery is enabled.
 
@@ -21,36 +23,20 @@ TOTP implements RFC 6238 with 30-second SHA-1 six-digit codes, a ±1 step tolera
 **Mailtrap is the sole transactional-email provider.** The integration calls
 `POST https://send.api.mailtrap.io/api/send` with the `Api-Token` header, a single recipient,
 plain-text plus HTML content, and the `account-verification`/`password-recovery` category.
-It does **not** call Mailtrap's Sandbox or bulk-marketing API. On the free plan, the currently
-advertised allowance is **4,000 messages/month, capped at 150/day**, for **one verified sending
-domain**. This is a provider quota, not a D1 cost.
+It does **not** call Mailtrap's Sandbox or bulk-marketing API. The Mailtrap account's current plan/quota must be checked at the provider rather than inferred from historical free-tier figures; email delivery does not consume D1 capacity.
 
-### Activating outbound email (requires account owner)
+### Current outbound email configuration and remaining verification
 
-1. Register or sign into [Mailtrap](https://mailtrap.io/) and select **Email API/SMTP Sending**, not
-   Email Sandbox. Use the free plan; do not subscribe to a paid plan.
-2. Under **Sending Domains**, add **`dofinances.com`** and obtain Mailtrap's exact verification
-   records. The domain's **authoritative DNS is Cloudflare**, even though GoDaddy is the registrar.
-   The site already has Zoho MX records, its Zoho DKIM selector and DMARC; preserve them.
-   Only add nonconflicting records that Mailtrap actually issues. If Mailtrap requests a conflicting
-   DMARC or root SPF change, review it instead of blindly replacing the existing security policy.
-3. Complete Mailtrap's compliance/domain verification and confirm its status is **Verified**.
-4. In Mailtrap **Sending Domains → Integration → Transactional Stream → API** (or Settings →
-   API Tokens), obtain a **send-only, domain-scoped API token**.
-5. Configure these as **Cloudflare Worker secrets** for `dofinances-host-router`:
-   - `MAILTRAP_API_TOKEN`: the transactional sending token (**never commit or paste into chat**).
-   - `AUTH_EMAIL_FROM`: already set to `noreply@dofinances.com` as a non-secret variable in `edge/wrangler.jsonc`; no extra setup required.
-   - Optional `AUTH_EMAIL_REPLY_TO`: `support@dofinances.com` **only when inbound
-     reception/forwarding has been confirmed**.
-6. Send test verification and password-reset messages to controlled Gmail and Outlook mailboxes.
-   Confirm send acceptance, inbox placement, links, and delivery before advertising open registration.
+**Verified configuration (2026-11-11):** the Worker has a `MAILTRAP_API_TOKEN` secret binding; `AUTH_EMAIL_FROM=noreply@dofinances.com` is configured in `edge/wrangler.jsonc`. Cloudflare DNS already has Mailtrap CNAMEs for `mt75`, `mt-link`, and `rwmt1`/`rwmt2._domainkey`, all DNS-only. Existing Zoho MX, Zoho DKIM, and DMARC records remain. **Neither secret presence nor DNS presence proves Mailtrap's provider-side domain approval, API acceptance, or real mailbox delivery.**
+
+Before considering sign-up and recovery fully operational, verify the actual Mailtrap sending-domain approval, inspect the public `/api/auth/config` readiness flags, and run controlled sign-up/verification/recovery tests to owned inboxes (including spam placement and single-use token behavior). Avoid copying, reissuing, or logging a production token merely to re-check configuration. If changes are required, use the exact records and guidance issued by Mailtrap, preserve the Zoho records, and do not publish duplicate root SPF TXT records.
 
 `noreply@` and `support@` are two local-part addresses of the **same verified domain**, not
 two separately purchased mailboxes or two sending domains. Mailtrap authenticates the domain;
 it does not receive/forward personal support mail as part of this Worker integration.
 
 **Incoming email remains separate:** existing `mx.zoho.com`, `mx2.zoho.com` and
-`mx3.zoho.com` MX records are left unchanged. No GoDaddy, Zoho, R2 or D1 mutations are needed to activate the API adapter. The old outbound-provider DNS records are retired separately; Mailtrap's verification DNS is still awaiting real provider-generated values.
+`mx3.zoho.com` MX records are left unchanged. No GoDaddy, Zoho, R2 or D1 mutations are needed to activate the API adapter. The obsolete outbound-provider DNS records are retired; Mailtrap-issued sending/tracking/DKIM CNAMEs are now installed. Sender approval and end-to-end deliverability remain separate checks.
 
 If mail credentials are missing, signup and email-dependent flows fail closed with HTTP 503;
 existing login and MFA continue. If email dispatch fails during signup, the pending account
@@ -61,8 +47,8 @@ is installed as a Cloudflare Worker secret. Keep it safe and do not rotate witho
 rotation plan: rotating it invalidates decryption of previously enrolled authenticators.
 Never log or commit secrets, verification links, codes or plaintext passwords.
 
-See [the activation checklist](mailtrap-activation.md) for the exact remaining handoff.\n\n## Security boundaries and follow-up
+See [the Mailtrap verification checklist](mailtrap-activation.md) for the exact remaining readiness checks.\n\n## Security boundaries and follow-up
 
-All state-changing endpoints require the exact canonical apex Origin and JSON. Sessions use hashed server-side tokens in Secure, HttpOnly, SameSite=Lax `__Host-` cookies; protected dashboard HTML and assets are marked no-store. Cross-origin attempts are rejected. Only the apex Worker has account authority; the `stu` Pages host has no access to the session cookie.
+Dofinances account mutations require the exact canonical apex Origin and JSON. Colosseum owner APIs independently validate the account cookie, Cloudflare Access owner JWT, allowed methods, and upstream action grants; see [owner authorization](colosseum-owner-auth.md). Sessions use hashed server-side tokens in Secure, HttpOnly, SameSite=Lax `__Host-` cookies; protected dashboard HTML and assets are marked no-store. Cross-origin attempts are rejected. Only the apex Worker has account authority; the `stu` Pages host does not receive the apex-only host cookie or have account-mutating client code. Identity-only Google/GitHub sign-in is separate from Colosseum federated provider credentials; see [federated sign-in](federated-auth.md).
 
-A verified sender, deliverability tests, security review, password hashing migration to a reviewed memory-hard KDF, and ideally passkeys or phishing-resistant MFA are recommended before storing sensitive financial information. Rate limiting helps reduce automated abuse but is not a replacement for edge-level bot controls or account security monitoring.
+Provider-side sender approval, deliverability tests, security review, password hashing migration to a reviewed memory-hard KDF, and ideally passkeys or phishing-resistant MFA are recommended before storing sensitive financial information. Rate limiting helps reduce automated abuse but is not a replacement for edge-level bot controls or account security monitoring.

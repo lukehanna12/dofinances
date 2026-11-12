@@ -1,10 +1,12 @@
 # Federated sign-in and linked identities (Dofinances)
 
+_Current first-party identity implementation verified from `edge/auth-federation*.mjs` and the Worker bindings on 2026-11-11._
+
 Dofinances supports first-party email/password accounts and identity-only OAuth/OpenID Connect for Google and GitHub. This feature does **not** grant access to Gmail or private GitHub repositories. OAuth access tokens are used only to obtain verified identity; they are not stored. All accounts and identity relationships live in the existing AuthStore SQLite Durable Object (not D1).
 
 ## Status and provider registrations
 
-A button appears enabled only when its complete OAuth client configuration is present in the deployed **dofinances-host-router Worker**. Until then, sign-in with that provider remains disabled. The code and deployment cannot create third-party provider registrations without their owners.
+A button appears enabled only when its complete OAuth client configuration is present in the deployed **dofinances-host-router Worker**. On 2026-11-11 the Google and GitHub OAuth client-ID and client-secret bindings were both present in Cloudflare, but binding presence alone does not verify consent-screen configuration or a complete interactive sign-in. The code cannot create third-party OAuth application registrations on a provider's behalf.
 
 | Provider | Client registration | Required Worker secrets | Exact callback |
 | --- | --- | --- | --- |
@@ -31,6 +33,10 @@ Use Cloudflare **Settings → Variables and Secrets** to save client credentials
 
 The Worker creates a 10-minute OAuth transaction with random state, PKCE S256 verifier and nonce (OIDC), stores it in the existing SQLite Durable Object, and sets a short-lived __Host- HttpOnly Secure SameSite=Lax cookie. Callback consumes the state atomically; linking also checks the original logged-in session. Verified identity claims are checked before local account lookup. First-party sessions are still issued by the existing session system.
 
-OAuth code exchanges and JWKS fetches use fixed upstream HTTPS URLs, with no arbitrary callback or URL forwarding. The new feature does not add Workers, open ports, D1/R2 resources, or a new authentication provider. Existing email/password, MFA, verified email, session-cookie, and account-deletion behavior remain in place.
+OAuth code exchanges and JWKS fetches use fixed upstream HTTPS URLs, with no arbitrary callback or URL forwarding. This identity-only feature does not add Workers, open ports, or D1/R2 resources; it adds Google/GitHub login methods to the existing account authority. Existing email/password, MFA, verified email, session-cookie, and account-deletion behavior remain in place.
 
 After installing OAuth credentials, reload https://dofinances.com/api/auth/config. Check the boolean enabled flags under federation. Perform actual interactive sign-in, link and unlink tests with disposable provider accounts before offering the feature broadly.
+
+## Distinction from Colosseum federated providers
+
+**These OAuth integrations are for signing in to Dofinances**, not authorizing the separate Colosseum MCP providers. Dofinances keeps the linked Google/GitHub identity and ephemeral OAuth transaction in its SQLite `AuthStore`, but does not retain their OAuth access/refresh tokens. The Colosseum Providers screen instead manages a separate upstream credential vault, local-provider contracts and MCP invocation grants through `/api/colosseum/providers`; none of those provider secrets belong in this first-party identity table. See [Colosseum owner access](colosseum-owner-auth.md) and [current architecture](architecture.md).

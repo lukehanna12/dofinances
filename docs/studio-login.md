@@ -1,22 +1,26 @@
-## November 2026 — Email confirmation, recovery and MFA
+# Dofinances Auth-3 sign-in — current architecture and historical fidelity notes
 
-Email verification and one-use password recovery links are implemented under `/verify` and `/reset`, with TOTP authenticator MFA and single-use recovery codes configured from `/app`. Sender activation uses Mailtrap transactional Email API with a domain-scoped API token and verified sender; without these, new registration and email delivery are disabled. See [Account security](account-security.md). Earlier historical notes below describe the original visual design before authentication.
+_Updated 2026-11-11. The Auth-3 React/Vite build is **only** the apex `/login` experience. The current `stu.dofinances.com` Pages deployment is an independent static workspace preview assembled from `studio/sidebar/`._
+
+## Current authentication (November 2026)
+
+Email verification and one-use password recovery links are implemented under `/verify` and `/reset`, with TOTP authenticator MFA and single-use recovery codes configured from `/app`. Sender activation uses Mailtrap transactional Email API with a domain-scoped API token and verified sender; without these, new registration and email delivery are disabled. See [Account security](account-security.md). Google and GitHub identity-only OAuth are also implemented, subject to configured client credentials. See [federated authentication](federated-auth.md). Earlier notes below describe the original visual design and the chronological rollout; they are not current feature-status statements.
 
 # Dofinances Studio — Auth-3 source-fidelity implementation
 
-## November 6, 2026 — Live account authentication
+## Historical rollout: November 6, 2026 — First live account authentication
 
 The apex `/login` form now submits real email/password sign-in and sign-up requests to same-origin Worker endpoints. Successful authentication issues a secure HTTP-only cookie and sends the browser to the server-protected `/app` dashboard. Account and session records are held in an independent SQLite-backed Durable Object, **not D1**. Authenticated account deletion is available.
 
-Cloudflare's native PBKDF2 implementation is capped at 100,000 iterations; this first-stage system uses that limit and should migrate to a reviewed memory-hard KDF before holding sensitive financial information. This is an initial authentication implementation, not a finished consumer identity platform. Email verification, password resets, MFA and third-party sign-in are not enabled. The original social-login buttons remain visible but disabled and explicitly labeled not connected; previously captured style utilities and source provenance are retained.
+Cloudflare's native PBKDF2 implementation is capped at 100,000 iterations; this first-stage system uses that limit and should migrate to a reviewed memory-hard KDF before holding sensitive financial information. This is an initial authentication implementation, not a finished consumer identity platform. At that original rollout, email verification, password resets, MFA and external sign-in were not enabled. **These statements are historical**: verification, reset, TOTP and optional Google/GitHub sign-in are now implemented; a social sign-in button is enabled only when the corresponding OAuth credentials are configured. Previously captured style utilities and source provenance are retained.
 
 ## Live routes and scope
 
-- `https://stu.dofinances.com/` — Studio homepage, unchanged.
-- `https://dofinances.com/login` and `https://dofinances.com/login/` — the same Auth-3 preview, now published through the apex Worker.
+- `https://stu.dofinances.com/` and `/app/` — the standalone, non-authenticated Liquid Glass workspace preview. Its login/account operations are disabled.
+- `https://dofinances.com/login` and `https://dofinances.com/login/` — the functional Auth-3 sign-in/registration UI, published through the apex Worker.
 - `https://stu.dofinances.com/login` and `https://stu.dofinances.com/login/` — removed (HTTP 404).
 
-The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds Studio once, deploys it to Pages, and packages `dist/index.html` plus `dist/assets/` into the apex Worker assets for `/login`; no compiled assets are committed to the repository. A top-level `public/404.html` provides generic missing-page behavior; Pages still served the retired `/login/` URL with HTTP 200 after the first rollout, so `functions/login.js` explicitly returns HTTP 404 for both `/login` forms. The Pages deployment checks out `functions/`, and `public/_routes.json` includes only the two retired paths to avoid Functions execution on the Studio homepage or other static resources. No DNS, GoDaddy, D1, or host-routing changes are required.
+The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds the Auth-3 Vite entrypoint once, packages `dist/index.html` and `dist/assets/` into apex Worker assets for `/login`, and **separately overwrites its Pages job's copy** of `dist` with the static Studio workspace. No compiled assets are committed to the repository. A top-level `public/404.html` provides generic missing-page behavior; Pages still served the retired `/login/` URL with HTTP 200 after the first rollout, so `functions/login.js` explicitly returns HTTP 404 for both `/login` forms. The Pages deployment checks out `functions/`, and `public/_routes.json` includes only the two retired paths to avoid Functions execution on the Studio homepage or other static resources. No DNS, GoDaddy, D1, or host-routing changes are required.
 
 ## Grounded source and current fidelity approach
 
@@ -24,7 +28,7 @@ The Auth-3 component was extracted from `Auth-3.heapsnapshot` as Webpack module 
 
 The original component uses Tailwind utilities (including dark, hover, focus, placeholders, spacing, border, radius, text sizing, line height, weight, tracking, shadows, responsive visibility and alignment). Instead of manually translating those utilities into approximate CSS, this project uses Tailwind CSS 4.2.2 with the corresponding Vite 8-compatible plugin. Motion controls enter transitions exactly as authored: x=-50px, opacity 0→1, duration 0.6 seconds for the card; x=+50px, opacity 0→1, duration 0.6 seconds, delay 0.2 seconds for the caption.
 
-The historical source-fidelity investigation below documents the pre-authentication design. Authentication introduces an additional password input, a sign-up state, inline errors, and disabled social providers while retaining the original utility class strings.
+The source-fidelity investigation below documents the pre-authentication design. The current authentication form adds a password input, registration/recovery/MFA modes, inline errors, and credential-dependent social buttons while retaining the original utility-class contract.
 
 The site theme variables observable in the live documentation tab include:
 - `--radius: .8rem`
@@ -46,11 +50,11 @@ The user-requested customizations are:
 - Default dark mode plus a fixed bottom-right light/dark toggle, toggled in React state without persistence.
 - Standalone Studio deployment with a React/Vite entrypoint.
 
-The page is still a **visual sign-in preview**. Theme toggling and user-requested branding are not original Auth-3 features. The original photograph URL and all three recovered social SVG icons are preserved.
+The **apex login is functional**, not a non-authenticated visual preview; only the separate Studio workspace is a non-authenticated demonstration. Theme toggling and user-requested branding are not original Auth-3 features. The original photograph URL and all three recovered social SVG icons are preserved.
 
 ## Verification
 
-Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, the one Studio entrypoint, and Worker packaging for apex /login. CI builds the app and smoke-tests the Studio root and both apex login paths, plus HTTP 404 for both removed Studio login paths. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
+Automated tests enforce exact matching of source class strings and structural behavior, theme tokens, the Vite Auth-3 entrypoint, and Worker packaging for apex /login. CI builds the app and smoke-tests the Studio root and both apex login paths, plus HTTP 404 for both removed Studio login paths. Source-class equality is strong evidence of CSS fidelity; without a capture of the iframe's rendered pixels at matching viewport and interactive states, claiming complete pixel identity would be unwarranted.
 
 For very short mobile viewports (up to 640px wide and 700px high), the additional theme toggle is placed after the card rather than overlapping the original help text. This is a user-toggle-only responsive exception; all 28 original source classes remain unchanged.
 
