@@ -21,6 +21,7 @@ import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 
 const root=document.getElementById("cta6-mosaic");
+if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
@@ -116,10 +117,13 @@ export function coverUVScale(width,height,imgWidth,imgHeight){
 
 async function initialize(){
   if(!root)return;
+  if(root)root.dataset.gpuPhase="request-adapter";
   if(!navigator.gpu)throw new Error("WebGPU API not available");
   const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});
   if(!adapter)throw new Error("No WebGPU adapter available");
+  if(root)root.dataset.gpuPhase="request-device";
   const device=await adapter.requestDevice();
+  if(root)root.dataset.gpuPhase="device-ready";
   const context=canvas.getContext("webgpu");
   if(!context)throw new Error("No GPUCanvasContext");
   const format=navigator.gpu.getPreferredCanvasFormat();
@@ -130,6 +134,7 @@ async function initialize(){
   const url="/app/assets/home-rice-terraces-hq.jpg";
   const response=await fetch(url);
   if(!response.ok)throw new Error("Backdrop image HTTP "+response.status);
+  if(root)root.dataset.gpuPhase="decode-scene";
   const bitmap=await createImageBitmap(await response.blob());
   const photoWidth=bitmap.width,photoHeight=bitmap.height;
   const photo=device.createTexture({
@@ -150,6 +155,7 @@ async function initialize(){
     if(!r.ok)throw new Error(name+" HTTP "+r.status);
     return r.text();
   }));
+  if(root)root.dataset.gpuPhase="compile-wgsl";
   const modules=sources.map((code,i)=>device.createShaderModule({
     label:["background","explicit mip reduction","oracle glass"][i],code
   }));
@@ -185,6 +191,7 @@ async function initialize(){
       }
     }]},primitive:{topology:"triangle-list"}
   });
+  if(root)root.dataset.gpuPhase="validate-pipelines";
   const pipelineError=await device.popErrorScope();
   if(pipelineError)throw Error("GPU pipeline validation: "+pipelineError.message);
   const sampler=device.createSampler({
@@ -315,15 +322,18 @@ async function initialize(){
     globalsBuffer.destroy();
   }
   engine={rebuild,render,dispose,device};
+  if(root)root.dataset.gpuPhase="submit-first-gpu-frame";
   rebuild();
   render();
   // A valid initial command buffer has been submitted. Reject GPU pipeline
   // errors before removing the CSS fallback background.
+  if(root)root.dataset.gpuPhase="wait-first-gpu-frame";
   await device.queue.onSubmittedWorkDone();
   document.body.dataset.gpuScene="ready";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
   root.dataset.gpuStatus="ready";
+  root.dataset.gpuPhase="ready";
   root.dataset.gpuMipLevels=String(audit.mipCount);
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
