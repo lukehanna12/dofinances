@@ -629,6 +629,14 @@ test("Eye icons reveal promptly after the rearrangement animation completes",()=
  assert.ok(js.includes('await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right")'));
  assert.ok(css.includes("--cs-control-swap:480ms"));
 });
+test("Visibility eyes fade into view before rearrangement handles finish entering",()=>{
+ assert.match(css,/#cs-root\\.cs-editing\\.cs-entering-edit \\.cs-visibility-toggle:disabled\\{[\\s\\S]*?animation:cs-eye-reveal-with-grip var\\(--cs-control-swap\\) linear both/);
+ assert.match(css,/@keyframes cs-eye-reveal-with-grip\\{\\s*0%,25%\\{opacity:0\\}\\s*80%,100%\\{opacity:1\\}\\s*\\}/);
+ assert.match(css,/#cs-root\\.cs-editing\\.cs-entering-edit \\.cs-visibility-toggle:disabled\\{[\\s\\S]*?pointer-events:none/);
+ assert.match(css,/#cs-root \\.cs-visibility-toggle:disabled\\{opacity:0\\}/);
+ assert.match(js,/control\\.disabled=!state\\.editing\\|\\|state\\.editTransitioning/);
+ assert.match(css,/--cs-control-swap:480ms/);
+});
 test("Opening edit mode closes an expanded row with the white pencil-position ring",()=>{
  assert.match(js,/async function enterEditMode\(\)/);
  assert.match(js,/const panel=list\.querySelector\("\.cs-entry\.cs-open \.cs-accordion-panel"\)/);
