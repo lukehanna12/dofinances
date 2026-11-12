@@ -1,60 +1,54 @@
 /*
- * Collections-only native-inspired title/breadcrumb handoff.
- * One passive document-scroll listener, no RAF, polling, layout changes or timers.
- * Values derive exclusively from absolute scroll position: reversing the scroll
- * reverses every blur, title, chevron, and breadcrumb movement precisely.
+ * Collections-only title handoff with one definitive scroll threshold.
+ * The large title and backdrop track scroll up to that point. Crossing it
+ * starts a complete, self-finishing, time-based CSS transition. Re-entering
+ * the pre-threshold region reverses the entire sequence without timers,
+ * animation frames, polling, or any dependence on remaining page height.
  */
-const INTRO_DISTANCE=76;
-const HANDOFF_DISTANCE=64;
+export const COLLECTIONS_TITLE_TRIGGER_DISTANCE=76;
 const clamp=(n,min=0,max=1)=>Math.min(max,Math.max(min,n));
+const number=n=>Number.isFinite(Number(n))?Number(n):0;
 const smooth=(a,b,x)=>{
   const t=clamp((x-a)/(b-a));
   return t*t*(3-2*t);
 };
-const ease=t=>smooth(0,1,t);
-const number=n=>Number.isFinite(n)?n:0;
 
-/**
- * Pure scroll model, independently unit-testable without a DOM or image inspection.
- * partnerDistances[i]: the fixed horizontal distance from title i to title i-1.
- * arrowCrossings[i-1]: fractional travel where title i passes its left chevron.
- */
-export function collectionsTitleFrame(scrollDistance,partnerDistances=[0,100,100,100],arrowCrossings=[.19,.19,.19]){
-  const y=Math.max(0,number(Number(scrollDistance)));
-  const intro=clamp(y/INTRO_DISTANCE);
-  const handoff=clamp((y-INTRO_DISTANCE)/HANDOFF_DISTANCE);
-  // Start at the rightmost title, then work back toward the stationary root.
-  const starts=[0,.30,.16,0];
-  const travel=[0,1,2,3].map(i=>i===0?0:ease(clamp((handoff-starts[i])/.70)));
-  const crumbs=[
-    {x:0,opacity:1-smooth(.22,.83,handoff)},
-    {x:travel[1]===0?0:-number(partnerDistances[1])*travel[1],opacity:1-smooth(.10,.98,travel[1])},
-    {x:travel[2]===0?0:-number(partnerDistances[2])*travel[2],opacity:1-smooth(.06,.75,travel[2])},
-    {x:travel[3]===0?0:-number(partnerDistances[3])*travel[3],opacity:1-smooth(.06,.75,travel[3])}
-  ];
-  const arrows=[1,2,3].map(i=>{
-    const crossed=clamp(number(arrowCrossings[i-1]),.12,.46);
-    const displacement=travel[i];
-    return {
-      turn:180*smooth(crossed-.065,crossed+.085,displacement),
-      opacity:1-smooth(crossed+.095,Math.min(.91,crossed+.47),displacement)
-    };
-  });
+/* Keep the trigger within the document's *actual* scrolling range, even
+   when the final Collections page is shorter than a normal viewport. */
+export function collectionsTitleFrame(scrollDistance,maxScrollDistance){
+  const scroll=Math.max(0,number(scrollDistance));
+  const maxScroll=Math.max(0,number(maxScrollDistance));
+  const threshold=Math.min(COLLECTIONS_TITLE_TRIGGER_DISTANCE,maxScroll*.5);
+  const intro=threshold>0?clamp(scroll/threshold):0;
+  const passed=threshold>0 && scroll>=threshold;
   return {
-    intro,handoff,crumbs,arrows,
+    threshold,passed,intro,
     largeBlur:11*intro,
     largeOpacity:1-smooth(.62,1,intro),
     stripHeight:64*intro,
     stripBlur:4+20*intro,
-    stripOpacity:smooth(0,.86,intro),
-    inlineOpacity:smooth(.64,.98,handoff)
+    stripOpacity:smooth(0,.86,intro)
   };
 }
 
+/* Invert the actual cubic-bezier(.22,1,.36,1) easing used for breadcrumb
+   translation. This couples a chevron's turn to when its title crosses it,
+   rather than to an unrelated fixed animation percentage. */
+export function breadcrumbCrossingTime(fraction){
+  const target=clamp(number(fraction));
+  let low=0,high=1;
+  for(let i=0;i<24;i++){
+    const t=(low+high)*.5;
+    const y=3*(1-t)*(1-t)*t + 3*(1-t)*t*t + t*t*t;
+    if(y<target)low=t;else high=t;
+  }
+  const t=(low+high)*.5;
+  return 3*(1-t)*(1-t)*t*.22 + 3*(1-t)*t*t*.36 + t*t*t;
+}
 export function initCollectionsTitleTransition(doc=document,win=window){
   const noop={setRoute(){}};
-  // Studio shares workspace-nav.js but not Collections' appearance sheet.
-  // Its static preview must not acquire an unstyled inline title or scroll UI.
+  // Studio also imports workspace-nav.js but does not load this appearance
+  // sheet. Never mount the Collections transition into its static preview.
   if(!doc.querySelector?.('link[href="/app/assets/collections.css"]'))return noop;
   const header=doc.querySelector?.("#workspace-shell .topbar");
   const breadcrumb=doc.getElementById?.("breadcrumb");
@@ -62,73 +56,91 @@ export function initCollectionsTitleTransition(doc=document,win=window){
   const heading=doc.getElementById?.("project-collections-title");
   if(!header?.appendChild || !list?.querySelectorAll || !heading?.style?.setProperty ||
      !doc.body?.classList || !doc.createElement || !win.addEventListener)return noop;
+
   const title=doc.createElement("span");
   title.className="collections-inline-title";
   title.textContent="Collections";
-  title.setAttribute("aria-hidden","true"); // Existing h1 supplies the accessible page title.
+  title.setAttribute("aria-hidden","true");
   title.hidden=true;
   header.appendChild(title);
 
-  let active=false;
-  let items=[],separators=[],distances=[0,0,0,0],crossings=[.19,.19,.19];
-  const prop=(el,key,value)=>el.style.setProperty(key,value);
-  const clearVars=(el,keys)=>{for(const key of keys)el.style.removeProperty(key);};
-  const measure=()=>{
-    // offsetLeft is layout geometry, unaffected by our compositor transforms.
-    // Read only on route entry or resize, never during a scrolling frame.
+  let active=false,passed=false,items=[],separators=[];
+  const prop=(element,key,value)=>element.style.setProperty(key,value);
+  const remove=(element,keys)=>{for(const key of keys)element.style.removeProperty(key);};
+  const getScroll=()=>Math.max(0,number(doc.scrollingElement?.scrollTop ?? win.scrollY));
+  const getMaxScroll=()=>{
+    const root=doc.scrollingElement||doc.documentElement;
+    return root?Math.max(0,number(root.scrollHeight)-number(root.clientHeight)):0;
+  };
+
+  function measure(){
+    // offsetLeft uses layout positions, unaffected by compositor transforms.
+    // Measure only on route entry or resize. No scrolling layout reads.
     items=[...list.querySelectorAll(".shadcn-breadcrumb-item")].filter(el=>!el.hidden);
     separators=[...list.querySelectorAll(".shadcn-breadcrumb-separator")].filter(el=>!el.hidden);
-    if(items.length!==4 || separators.length!==3)return false;
-    distances=[0,1,2,3].map(i=>i===0?0:Math.max(0,items[i].offsetLeft-items[i-1].offsetLeft));
-    crossings=[1,2,3].map(i=>{
-      const width=Math.max(1,distances[i]);
-      const arrowCenter=separators[i-1].offsetLeft+separators[i-1].offsetWidth/2;
-      return clamp((items[i].offsetLeft-arrowCenter)/width,.12,.46);
-    });
+    if(items.length!==4||separators.length!==3)return false;
+    for(let i=0;i<4;i++){
+      const left=i?items[i].offsetLeft-items[i-1].offsetLeft:0;
+      const distance=Math.max(0,number(left));
+      prop(items[i],"--collections-crumb-distance",(-distance).toFixed(3)+"px");
+      // Rightmost goes first; the leftmost only fades without moving.
+      const outDelay=[92,66,33,0][i];
+      const inDelay=[120,130,164,198][i];
+      prop(items[i],"--collections-out-delay",outDelay+"ms");
+      prop(items[i],"--collections-in-delay",inDelay+"ms");
+      if(i===0)continue;
+      const arrow=separators[i-1];
+      const arrowCenter=number(arrow.offsetLeft)+number(arrow.offsetWidth)*.5;
+      const fraction=clamp((number(items[i].offsetLeft)-arrowCenter)/Math.max(1,distance),.08,.60);
+      // Match flip midpoint with the text crossing the chevron.
+      const flip=Math.max(0,Math.round(outDelay+280*breadcrumbCrossingTime(fraction)-41));
+      prop(arrow,"--collections-arrow-out-flip",flip+"ms");
+      prop(arrow,"--collections-arrow-out-fade",(flip+84)+"ms");
+      const reverse=120+(i-1)*31;
+      prop(arrow,"--collections-arrow-in-fade",reverse+"ms");
+      prop(arrow,"--collections-arrow-in-flip",(reverse+15)+"ms");
+    }
     return true;
-  };
-  const scrollPosition=()=>Math.max(0,number(Number(doc.scrollingElement?.scrollTop ?? win.scrollY ?? 0)));
-  const paint=()=>{
-    if(!active || items.length!==4)return;
-    const state=collectionsTitleFrame(scrollPosition(),distances,crossings);
+  }
+
+  function paint(){
+    if(!active||items.length!==4)return;
+    const state=collectionsTitleFrame(getScroll(),getMaxScroll());
     prop(heading,"--collections-large-blur",state.largeBlur.toFixed(3)+"px");
     prop(heading,"--collections-large-opacity",state.largeOpacity.toFixed(4));
     prop(header,"--collections-strip-height",state.stripHeight.toFixed(3)+"px");
     prop(header,"--collections-strip-blur",state.stripBlur.toFixed(3)+"px");
     prop(header,"--collections-strip-opacity",state.stripOpacity.toFixed(4));
-    prop(header,"--collections-inline-opacity",state.inlineOpacity.toFixed(4));
-    for(let i=0;i<4;i++){
-      prop(items[i],"--collections-crumb-shift",state.crumbs[i].x.toFixed(3)+"px");
-      prop(items[i],"--collections-crumb-opacity",state.crumbs[i].opacity.toFixed(4));
+    // This is the sole binary handoff. CSS completes the full animation after
+    // a single scroll event, even when there is no further room to scroll.
+    if(state.passed!==passed){
+      passed=state.passed;
+      doc.body.classList.toggle("collections-title-passed",passed);
+      breadcrumb.inert=passed;
     }
-    for(let i=0;i<3;i++){
-      prop(separators[i],"--collections-arrow-angle",state.arrows[i].turn.toFixed(3)+"deg");
-      prop(separators[i],"--collections-arrow-opacity",state.arrows[i].opacity.toFixed(4));
-    }
-    // The invisible breadcrumb must not retain keyboard focus targets.
-    // The large h1 remains in the accessibility tree; compact label is decorative.
-    breadcrumb.inert=state.handoff>=.995;
-  };
+  }
   const onScroll=()=>{if(active)paint();};
-  const reset=()=>{
+  function reset(){
     active=false;
+    passed=false;
+    doc.body.classList.remove("collections-title-passed");
     doc.body.classList.remove("collections-title-transition");
-    title.hidden=true;
     breadcrumb.inert=false;
-    clearVars(heading,["--collections-large-blur","--collections-large-opacity"]);
-    clearVars(header,["--collections-strip-height","--collections-strip-blur",
-      "--collections-strip-opacity","--collections-inline-opacity"]);
-    for(const el of items)clearVars(el,["--collections-crumb-shift","--collections-crumb-opacity"]);
-    for(const el of separators)clearVars(el,["--collections-arrow-angle","--collections-arrow-opacity"]);
-  };
-  const setRoute=route=>{
+    title.hidden=true;
+    remove(heading,["--collections-large-blur","--collections-large-opacity"]);
+    remove(header,["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"]);
+    for(const el of items)remove(el,["--collections-crumb-distance","--collections-out-delay","--collections-in-delay"]);
+    for(const el of separators)remove(el,["--collections-arrow-out-flip",
+      "--collections-arrow-out-fade","--collections-arrow-in-flip","--collections-arrow-in-fade"]);
+  }
+  function setRoute(route){
     if(route!=="colosseum/collections"){if(active)reset();return;}
+    if(!measure()){reset();return;}
     active=true;
     title.hidden=false;
     doc.body.classList.add("collections-title-transition");
-    if(measure())paint();
-    else reset(); // Incomplete breadcrumb markup must not hide navigation.
-  };
+    paint();
+  }
   win.addEventListener("scroll",onScroll,{passive:true});
   win.addEventListener("resize",()=>{if(active && measure())paint();},{passive:true});
   return {setRoute};

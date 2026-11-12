@@ -589,11 +589,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 }
 
 
-/* Collections title-to-inline handoff: only the visible Collections route
-   receives these styles. Native-inspired measurements from macOS 26.5.1
-   UIKit: large 34pt SF Bold; compact 17pt SF Semibold. The title scrolls
-   without scaling; a separate compact title is revealed in the sticky bar.
-   All progress is written directly from document scroll, with no CSS timers. */
+/* Collections only: scroll-dependent large-title/edge treatment, followed by
+   a BINARY threshold-triggered breadcrumb handoff. The document does not
+   need to continue scrolling for the handoff to finish. Duration/delay
+   values animate only CSS transforms/opacity; no JS animation clock. */
 body.collections-title-transition #project-collections-title{
   filter:blur(var(--collections-large-blur,0px));
   opacity:var(--collections-large-opacity,1);
@@ -615,6 +614,9 @@ body.collections-title-transition #workspace-shell .topbar::after{
   -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
   mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
 }
+/* The inline title waits until the LAST breadcrumb and chevron are fully
+   gone. On reverse it fades OUT before any breadcrumb can fade back IN.
+   There is never an overlapping global breadcrumb and compact title. */
 body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
   position:absolute;
   z-index:2;
@@ -629,35 +631,55 @@ body.collections-title-transition #workspace-shell .topbar > .collections-inline
   color:#fff;
   font:600 17px/21px -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
   letter-spacing:0;
-  opacity:var(--collections-inline-opacity,0);
+  opacity:0;
+  transition:opacity 85ms linear 0ms;
+}
+body.collections-title-transition.collections-title-passed #workspace-shell .topbar > .collections-inline-title{
+  opacity:1;
+  transition-delay:280ms;
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
-  transform:translate3d(var(--collections-crumb-shift,0px),0,0);
-  opacity:var(--collections-crumb-opacity,1);
+  transform:translate3d(0,0,0);
+  opacity:1;
   will-change:transform,opacity;
+  transition:transform 280ms cubic-bezier(.22,1,.36,1),opacity 112ms linear;
+  transition-delay:var(--collections-in-delay,130ms),var(--collections-in-delay,130ms);
+}
+body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-item{
+  transform:translate3d(var(--collections-crumb-distance,0px),0,0);
+  opacity:0;
+  transition-delay:var(--collections-out-delay,0ms),var(--collections-out-delay,0ms);
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator{
-  opacity:var(--collections-arrow-opacity,1);
+  opacity:1;
   will-change:opacity;
-  perspective:180px;
+  transition:opacity 76ms linear var(--collections-arrow-in-fade,145ms);
+}
+body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-separator{
+  opacity:0;
+  transition-delay:var(--collections-arrow-out-fade,125ms);
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
-  transform:rotateY(var(--collections-arrow-angle,0deg));
+  transform:rotateY(0deg);
   transform-origin:center;
   backface-visibility:visible;
+  transition:transform 82ms cubic-bezier(.4,0,.2,1) var(--collections-arrow-in-flip,155ms);
 }
-/* Honor reduced motion without abandoning the reversible, scroll-dependent
-   title states or disturbing any sidebar, wallpaper, or collection controls. */
+body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-separator svg{
+  transform:rotateY(180deg);
+  transition-delay:var(--collections-arrow-out-flip,45ms);
+}
 @media(prefers-reduced-motion:reduce){
-  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
-    transform:none;
-    will-change:auto;
-  }
-  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
-    transform:none;
-  }
   body.collections-title-transition #project-collections-title{
     filter:none;
+    will-change:auto;
+  }
+  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item,
+  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator,
+  body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg,
+  body.collections-title-transition #workspace-shell .topbar > .collections-inline-title{
+    transition-duration:0ms;
+    transition-delay:0ms;
     will-change:auto;
   }
 }

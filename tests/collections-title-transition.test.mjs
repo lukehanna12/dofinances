@@ -1,91 +1,189 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {collectionsTitleFrame,initCollectionsTitleTransition}
+import {collectionsTitleFrame,breadcrumbCrossingTime,initCollectionsTitleTransition,
+  COLLECTIONS_TITLE_TRIGGER_DISTANCE}
   from "../sites/_apex/app/assets/collections-title-transition.js";
 
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("native-inspired Collections sequence has stable, reversible endpoints",()=>{
-  const initial=collectionsTitleFrame(0,[0,100,100,100]);
-  assert.equal(initial.largeBlur,0);
-  assert.equal(initial.largeOpacity,1);
-  assert.equal(initial.stripHeight,0);
-  assert.equal(initial.stripOpacity,0);
-  assert.equal(initial.inlineOpacity,0);
-  assert.deepEqual(initial.crumbs.map(c=>[c.x,c.opacity]),[[0,1],[0,1],[0,1],[0,1]]);
-  assert.ok(initial.arrows.every(a=>a.turn===0 && a.opacity===1));
-
-  const blurComplete=collectionsTitleFrame(76,[0,100,100,100]);
-  assert.equal(blurComplete.largeOpacity,0);
-  assert.equal(blurComplete.stripHeight,64);
-  assert.equal(blurComplete.stripBlur,24);
-  assert.equal(blurComplete.handoff,0);
-  assert.equal(blurComplete.inlineOpacity,0);
-  const finished=collectionsTitleFrame(140,[0,100,100,100]);
-  assert.deepEqual(finished.crumbs.map(c=>c.x),[0,-100,-100,-100]);
-  assert.ok(finished.crumbs.every(c=>c.opacity===0));
-  assert.ok(finished.arrows.every(a=>a.opacity===0 && a.turn===180));
-  assert.equal(finished.inlineOpacity,1);
-  assert.deepEqual(collectionsTitleFrame(0,[0,100,100,100]),initial,
-    "Returning to scroll-top must precisely reverse every model value");
+test("Collections handoff is a single binary threshold, never partial",()=>{
+  const max=400,threshold=COLLECTIONS_TITLE_TRIGGER_DISTANCE;
+  assert.equal(threshold,76);
+  const zero=collectionsTitleFrame(0,max);
+  assert.equal(zero.threshold,76);
+  assert.equal(zero.passed,false);
+  assert.equal(zero.largeBlur,0);
+  assert.equal(zero.largeOpacity,1);
+  assert.equal(zero.stripHeight,0);
+  const before=collectionsTitleFrame(threshold-.01,max);
+  assert.equal(before.passed,false);
+  assert.ok(before.largeOpacity>=0&&before.largeOpacity<.00001);
+  assert.equal(collectionsTitleFrame(threshold,max).passed,true);
+  assert.equal(collectionsTitleFrame(threshold+500,max).passed,true);
+  assert.equal(collectionsTitleFrame(threshold-.01,max).passed,false);
+  assert.deepEqual(collectionsTitleFrame(0,max),zero);
+  const at=collectionsTitleFrame(threshold,max);
+  assert.equal(at.largeOpacity,0);
+  assert.equal(at.stripHeight,64);
+  assert.equal(at.stripBlur,24);
+  assert.equal(at.stripOpacity,1);
 });
 
-test("Collection title stays at native font size while breadcrumbs glide independently",()=>{
-  const values=[0,10,25,40,60,76,83,93,106,120,140].map(y=>
-    collectionsTitleFrame(y,[0,78,102,120],[.2,.2,.2]));
-  for(let i=1;i<values.length;i++){
-    assert.ok(values[i].stripHeight>=values[i-1].stripHeight);
-    assert.ok(values[i].largeBlur>=values[i-1].largeBlur);
-    assert.ok(values[i].largeOpacity<=values[i-1].largeOpacity);
-    assert.ok(values[i].inlineOpacity>=values[i-1].inlineOpacity);
-    for(let j=1;j<4;j++)assert.ok(values[i].crumbs[j].x<=values[i-1].crumbs[j].x);
+test("Trigger is reachable on short Collections pages without adding scroll space",()=>{
+  for(const maxScroll of [1,5,12,20,48,70,90,128,140,152]){
+    const state=collectionsTitleFrame(maxScroll,maxScroll);
+    assert.ok(state.threshold>0&&state.threshold<=maxScroll);
+    assert.equal(state.passed,true,"Must finish even when user is at bottom "+maxScroll);
+    assert.equal(collectionsTitleFrame(Math.max(0,state.threshold-1e-3),maxScroll).passed,false);
   }
-  // The stationary leftmost "Workspace" title never translates.
-  assert.ok(values.every(v=>v.crumbs[0].x===0));
-  const opening=collectionsTitleFrame(84,[0,78,102,120]);
-  assert.ok(opening.crumbs[3].x<0,"Collections begins moving first");
-  assert.equal(opening.crumbs[2].x,0,"Colosseum starts a little later");
-  assert.equal(opening.crumbs[1].x,0,"Projects begins last");
-  const passing=collectionsTitleFrame(103,[0,78,102,120],[.2,.2,.2]);
-  assert.ok(passing.arrows[2].turn>0,"Chevron flips as the right title crosses it");
+  assert.equal(collectionsTitleFrame(0,0).passed,false);
+  assert.equal(collectionsTitleFrame(0,0).largeOpacity,1);
 });
 
-test("No polling, animation-frame loop, screenshot dependencies or shared navbar mutation",()=>{
+test("Blur rises monotonically before threshold and reverses identically",()=>{
+  const values=[0,10,25,40,60,75,76].map(y=>collectionsTitleFrame(y,500));
+  for(let i=1;i<values.length;i++){
+    assert.ok(values[i].largeBlur>=values[i-1].largeBlur);
+    assert.ok(values[i].stripHeight>=values[i-1].stripHeight);
+    assert.ok(values[i].largeOpacity<=values[i-1].largeOpacity);
+  }
+  assert.deepEqual(collectionsTitleFrame(25,500),values[2]);
+});
+
+test("Chevrons can time their turns to actual crossing positions",()=>{
+  assert.ok(breadcrumbCrossingTime(.1)<breadcrumbCrossingTime(.2));
+  assert.ok(breadcrumbCrossingTime(.2)<breadcrumbCrossingTime(.8));
+  assert.ok(Math.abs(breadcrumbCrossingTime(1)-1)<1e-5);
+  assert.ok(breadcrumbCrossingTime(.2)<.2,"Navigation translation uses native-inspired fast ease");
+});
+
+function classes(){
+  const value=new Set();
+  return {
+    contains:name=>value.has(name),
+    add:name=>value.add(name),
+    remove:name=>value.delete(name),
+    toggle:(name,enabled)=>{
+      if(enabled)value.add(name);else value.delete(name);
+    }
+  };
+}
+function mockNode({left=0,width=12,hidden=false}={}){
+  const values=new Map();
+  return {
+    hidden,offsetLeft:left,offsetWidth:width,
+    style:{
+      setProperty:(key,value)=>values.set(key,value),
+      removeProperty:key=>values.delete(key),
+      getPropertyValue:key=>values.get(key)||""
+    },
+    get varValues(){return values;}
+  };
+}
+function mockEnvironment({scrollHeight=1500,clientHeight=800}={}){
+  const items=[0,82,196,309].map(left=>mockNode({left}));
+  const separators=[65,179,292].map(left=>mockNode({left,width:12}));
+  const list={querySelectorAll:selector=>selector.includes("separator")?separators:items};
+  const breadcrumb={querySelector:()=>list,inert:false};
+  const heading=mockNode();
+  const header={...mockNode(),appendChild(child){this.child=child;}};
+  const body={classList:classes()};
+  const scroll={scrollTop:0,scrollHeight,clientHeight};
+  const handlers=new Map();
+  const doc={
+    querySelector:selector=>selector.startsWith("link[")?{}:header,
+    getElementById:id=>id==="breadcrumb"?breadcrumb:id==="project-collections-title"?heading:null,
+    body,scrollingElement:scroll,
+    createElement:()=>({hidden:false,setAttribute(){}})
+  };
+  const win={addEventListener:(name,fn)=>handlers.set(name,fn)};
+  return {doc,win,header,heading,items,separators,scroll,body,breadcrumb,handlers,
+    controller:initCollectionsTitleTransition(doc,win)};
+}
+
+test("Controller crosses exactly once, completes on zero further scroll, reverses at threshold",()=>{
+  const m=mockEnvironment({scrollHeight:1100,clientHeight:800});
+  m.controller.setRoute("colosseum/collections");
+  assert.equal(m.body.classList.contains("collections-title-transition"),true);
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
+  assert.equal(m.header.child.textContent,"Collections");
+  assert.equal(m.items[0].style.getPropertyValue("--collections-crumb-distance"),"0.000px");
+  assert.equal(m.items[1].style.getPropertyValue("--collections-crumb-distance"),"-82.000px");
+  assert.equal(m.items[2].style.getPropertyValue("--collections-crumb-distance"),"-114.000px");
+  const threshold=76;
+  m.scroll.scrollTop=threshold-1;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
+  m.scroll.scrollTop=threshold;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),true);
+  assert.equal(m.breadcrumb.inert,true);
+  assert.equal(m.heading.style.getPropertyValue("--collections-large-opacity"),"0.0000");
+  // No extra scroll callbacks, RAF, or timers required for the cascade.
+  assert.equal(m.items[3].varValues.has("--collections-crumb-opacity"),false);
+  assert.equal(m.handlers.has("scroll"),true);
+  m.scroll.scrollTop=threshold-1;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
+  assert.equal(m.breadcrumb.inert,false);
+  m.scroll.scrollTop=threshold;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),true,
+    "Rapid reversal must not trap the animation between states");
+  m.controller.setRoute("home");
+  assert.equal(m.body.classList.contains("collections-title-transition"),false);
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
+  assert.equal(m.breadcrumb.inert,false);
+  assert.equal(m.header.child.hidden,true);
+  assert.equal(m.items[2].style.getPropertyValue("--collections-crumb-distance"),"");
+});
+
+test("Small document uses a lower threshold, allowing a complete handoff before bottom",()=>{
+  const m=mockEnvironment({scrollHeight:880,clientHeight:800});
+  m.controller.setRoute("colosseum/collections");
+  m.scroll.scrollTop=39;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
+  m.scroll.scrollTop=40;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),true);
+});
+
+test("CSS guarantees nonoverlapping centered title and breadcrumbs in both directions",()=>{
+  const css=source("sites/_apex/app/assets/collections.css");
+  const intro=css.slice(css.indexOf("/* Collections only: scroll-dependent large-title/edge treatment"));
+  assert.match(intro,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition-delay:280ms/);
+  assert.match(intro,/collections-inline-title\{[\s\S]*?opacity:0;\s*transition:opacity 85ms linear 0ms/);
+  assert.match(intro,/\.shadcn-breadcrumb-item\{[\s\S]*?opacity:1;[\s\S]*?opacity 112ms linear/);
+  assert.match(intro,/collections-title-passed #workspace-shell \.shadcn-breadcrumb-item\{[\s\S]*?opacity:0/);
+  assert.match(intro,/transform:rotateY\(180deg\)/);
+  // Last breadcrumb fades by 92+112=204 ms. Last arrow fades before 280ms.
+  assert.ok(92+112<280);
+  assert.ok(85<120,"Reverse must hide centered title before first breadcrumb restores");
+  assert.match(intro,/--collections-arrow-out-fade/);
+});
+
+test("No polling or scroll-driven translation remains; Studio stays isolated",()=>{
   const js=source("sites/_apex/app/assets/collections-title-transition.js");
   const nav=source("sites/_apex/app/assets/workspace-nav.js");
-  const css=source("sites/_apex/app/assets/collections.css");
-  assert.match(nav,/import \{initCollectionsTitleTransition\} from "\.\/collections-title-transition\.js"/);
-  assert.match(nav,/const collectionsTitleTransition=initCollectionsTitleTransition\(doc,win\)/);
-  assert.match(nav,/collectionsTitleTransition\.setRoute\(route\)/);
-  assert.match(js,/win\.addEventListener\("scroll",onScroll,\{passive:true\}\)/);
-  assert.match(js,/doc\.scrollingElement\?\.scrollTop/);
-  assert.match(js,/offsetLeft/);
-  assert.match(js,/breadcrumb\.inert=state\.handoff>=\.995/);
-  assert.doesNotMatch(js,/requestAnimationFrame|setInterval|setTimeout|ResizeObserver|MutationObserver|screenshot|canvas\.toDataURL/);
-  assert.match(css,/body\.collections-title-transition #workspace-shell \.topbar::after/);
-  assert.match(css,/body\.collections-title-transition #workspace-shell \.topbar > \.collections-inline-title/);
-  assert.match(css,/font:600 17px\/21px -apple-system/);
-  assert.match(css,/transform:rotateY\(var\(--collections-arrow-angle,0deg\)\)/);
-  assert.match(css,/mask-image:linear-gradient\(to bottom,#000/);
-  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
-  assert.match(js,/if\(route!=="colosseum\/collections"\)/);
-  assert.ok(!js.includes("global-menu-links"),"Upper global bar remains untouched");
-  assert.ok(!js.includes("sidebar"),"The sidebar remains untouched");
-});
-
-test("Controller safely no-ops on minimal navigation fixtures",()=>{
-  assert.doesNotThrow(()=>initCollectionsTitleTransition({querySelector:()=>null,getElementById:()=>null},{}).setRoute("colosseum/collections"));
-});
-
-
-test("Studio keeps working when shared navigation imports the Collections module",()=>{
   const workflow=source(".github/workflows/site.yml");
   const studio=source("studio/sidebar/index.html");
-  const js=source("sites/_apex/app/assets/collections-title-transition.js");
+  assert.match(nav,/import \{initCollectionsTitleTransition\} from "\.\/collections-title-transition\.js"/);
+  assert.match(nav,/collectionsTitleTransition\.setRoute\(route\)/);
+  assert.match(js,/win\.addEventListener\("scroll",onScroll,\{passive:true\}\)/);
+  assert.match(js,/scroll>=threshold/);
+  assert.match(js,/doc\.body\.classList\.toggle\("collections-title-passed",passed\)/);
+  assert.match(js,/offsetLeft/);
+  assert.doesNotMatch(js,/requestAnimationFrame|setInterval|setTimeout|ResizeObserver|MutationObserver|screenshot|canvas\.toDataURL/);
+  assert.doesNotMatch(js,/--collections-crumb-opacity|--collections-arrow-opacity|--collections-inline-opacity/);
   assert.match(workflow,/cp sites\/_apex\/app\/assets\/collections-title-transition\.js dist\/app\/assets\/collections-title-transition\.js/);
-  assert.match(workflow,/test -s dist\/app\/assets\/collections-title-transition\.js/);
-  assert.match(workflow,/\/app\/assets\/collections-title-transition\.js \/app\/assets\/sidebar-glass\.css/);
-  assert.doesNotMatch(studio,/href="\/app\/assets\/collections\.css"/,"Studio must remain visually independent");
+  assert.doesNotMatch(studio,/href="\/app\/assets\/collections\.css"/);
   assert.match(js,/if\(!doc\.querySelector\?\.\('link\[href="\/app\/assets\/collections\.css"\]'\)\)return noop/);
+  assert.ok(!js.includes("global-menu-links"),"Upper global bar untouched");
+  assert.ok(!js.includes("sidebar"),"Sidebar untouched");
+});
+
+test("Missing markup safely declines to mount transition",()=>{
+  assert.doesNotThrow(()=>initCollectionsTitleTransition({querySelector:()=>null,getElementById:()=>null},{}).setRoute("colosseum/collections"));
 });
