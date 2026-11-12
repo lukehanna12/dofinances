@@ -39,18 +39,15 @@ function harness(initial=2400,{reduced=false,raf=true,height=800}={}){
   return {root,win,frames,listeners,windowScrolls,controller,step,complete};
 }
 
-test("selected global navigation shows a hand pointer and an accessible top action",()=>{
-  assert.ok(css.includes(".global-menu a.is-current{font-weight:570;cursor:pointer;}"));
-  assert.match(nav,/link\.setAttribute\("role","button"\)/);
-  assert.match(nav,/link\.setAttribute\("aria-label","Scroll to top of "/);
-  assert.match(nav,/link\.removeAttribute\("role"\)/);
-  assert.match(nav,/link\.addEventListener\("keydown",event=>/);
-  assert.ok(nav.includes('event.key!==" "&&event.code!=="Space"'));
-  assert.ok(nav.includes("workspaceScroll.animateToTop()"));
-  assert.ok(nav.includes("event.preventDefault?.()"));
-  assert.ok(nav.includes("targetRoute()!==lastRenderedRoute"));
-  assert.ok(nav.includes("if(route)render(route)"),"Other pages must keep their immediate navigation");
-  assert.ok(nav.includes("event.altKey||event.ctrlKey||event.metaKey||event.shiftKey"));
+test("scroll animation remains attached to current breadcrumb, not the upper global menu",()=>{
+  assert.ok(css.includes(".global-menu a.is-current{font-weight:570;}"));
+  assert.ok(!css.includes(".global-menu a.is-current{font-weight:570;cursor:pointer;}"));
+  assert.ok(nav.includes('currentCrumb?.addEventListener?.("click",()=>workspaceScroll.animateToTop())'));
+  assert.ok(nav.includes('for(const link of globalLinks)link.addEventListener("click",()=>{'));
+  assert.ok(!nav.includes('targetRoute()!==lastRenderedRoute'));
+  assert.ok(!nav.includes('link.setAttribute("role","button")'));
+  assert.ok(!nav.includes('link.setAttribute("aria-label","Scroll to top of "'));
+  assert.ok(nav.includes("if(route)render(route)"));
 });
 
 test("time responds to click-time travel distance and the eased trajectory lands at zero velocity",()=>{
