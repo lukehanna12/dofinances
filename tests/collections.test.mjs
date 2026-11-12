@@ -605,7 +605,11 @@ test("Collections control swap shares timing and traverses the list—not the wi
    assert.ok(css.includes("@keyframes "+name+"{"),name+" keyframes");
    assert.ok(css.includes("animation:"+name+" var(--cs-control-swap) var(--cs-control-ease) both"),name+" sync");
  }
- assert.match(css,/@keyframes cs-grip-enter-right\{[^}]*from\{left:calc\(100% - 22px\);opacity:0\}/);
+ assert.match(css,/@keyframes cs-grip-enter-right\{[^}]*from\{left:calc\(100% \+ 18px\);opacity:0\}[\s\S]*?to\{left:calc\(100% - 22px\);opacity:1\}/);
+ assert.match(css,/#cs-root\.cs-editing \.cs-drag-handle\{left:calc\(100% - 22px\);opacity:1;pointer-events:auto\}/);
+ assert.doesNotMatch(css,/#cs-root\.cs-editing \.cs-drag-handle\{left:calc\(var\(--cs-depth/);
+ assert.match(css,/#cs-root \.cs-inline-name\{[^}]*left:calc\(36px \+ var\(--cs-depth,0\) \* 17px\)/);
+ assert.match(css,/@keyframes cs-grip-exit-left\{[\s\S]*?from\{left:calc\(100% - 22px\);opacity:1\}/);
  assert.match(css,/@keyframes cs-chevron-exit-left\{[\s\S]*?to\{right:calc\(100% - 14px\);opacity:0\}/);
  assert.match(css,/@keyframes cs-grip-exit-left\{[\s\S]*?to\{left:-22px;opacity:0\}/);
  assert.match(css,/@keyframes cs-chevron-enter-right\{[\s\S]*?from\{right:-22px;opacity:0\}/);
