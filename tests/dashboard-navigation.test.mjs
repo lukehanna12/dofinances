@@ -341,24 +341,63 @@ function mockNavigation(){
     element({dataset:{view:name}}));
   const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
+  const globalLinks=["home","projects","colosseum/collections","settings"].map(name=>
+    element({href:"https://dofinances.com/app#"+name,textContent:name}));
+  const scrollRoot={scrollTop:0,scrollLeft:0,scrollHeight:4500,clientHeight:800,scrollWidth:1000,clientWidth:1000};
   let mobile=false;
   let compactRail=false;
   const listeners={};
   const stored=new Map();
   const scrollCalls=[];
-  const doc={title:"",getElementById:id=>elements[id],querySelectorAll:selector=>
-    selector===".view[data-view]"?views:selector===".nav-link[data-route]"?links:[],
+  const doc={title:"",scrollingElement:scrollRoot,getElementById:id=>elements[id],querySelectorAll:selector=>
+    selector===".view[data-view]"?views:selector===".nav-link[data-route]"?links:
+    selector==="[data-global-route]"?globalLinks:[],
     addEventListener:(key,fn)=>{(listeners["doc:"+key]??=[]).push(fn);}};
   const win={location:{hash:"",search:""},localStorage:{
     getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)},
     matchMedia:query=>({matches:query.includes("(max-width: 760px)")?mobile:
       query.includes("(max-width: 1279px)")?compactRail:false}),
-    scrollTo:(...args)=>{scrollCalls.push(args);},
+    scrollTo:(...args)=>{scrollCalls.push(args);if(Number.isFinite(args[0]?.top))scrollRoot.scrollTop=args[0].top;},
     addEventListener:(key,fn)=>{(listeners[key]??=[]).push(fn);}};
   const fire=key=>(listeners[key]||[]).forEach(fn=>fn());
-  return {doc,win,elements,views,links,fire,stored,scrollCalls,
+  return {doc,win,elements,views,links,globalLinks,scrollRoot,fire,stored,scrollCalls,
     mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
+test("current global-menu route scrolls to top on click and Space while other routes still navigate",()=>{
+  const m=mockNavigation();
+  initWorkspaceNavigation(m.doc,m.win);
+  const home=m.globalLinks.find(link=>link.href.endsWith("#home"));
+  const projects=m.globalLinks.find(link=>link.href.endsWith("#projects"));
+  assert.equal(home.getAttribute("role"),"button");
+  assert.equal(home.getAttribute("aria-current"),"page");
+  assert.equal(home.getAttribute("aria-label"),"Scroll to top of home");
+  assert.equal(projects.getAttribute("role"),undefined);
+  m.scrollRoot.scrollTop=1200;
+  let prevented=0;
+  home.dispatch("click",{preventDefault(){prevented++;}});
+  assert.equal(prevented,1,"Same-route click stops default fragment navigation");
+  assert.equal(m.scrollRoot.scrollTop,0,"RAF-less test fixture uses immediate accessible fallback");
+  assert.equal(m.views.find(v=>v.dataset.view==="home").hidden,false);
+  assert.equal(m.win.location.hash,"","Same-page click must not add a hash/history entry");
+  m.scrollRoot.scrollTop=350;
+  home.dispatch("keydown",{key:" ",code:"Space",preventDefault(){prevented++;}});
+  assert.equal(prevented,2,"Space invokes button-like keyboard action");
+  assert.equal(m.scrollRoot.scrollTop,0);
+  m.scrollRoot.scrollTop=400;
+  projects.dispatch("click");
+  assert.equal(m.views.find(v=>v.dataset.view==="projects").hidden,false,"Different link still renders its route");
+  assert.equal(m.scrollRoot.scrollTop,0,"Different route preserves immediate reset");
+  assert.equal(projects.getAttribute("role"),"button");
+  assert.equal(projects.getAttribute("aria-current"),"page");
+  assert.equal(home.getAttribute("role"),undefined,"Previous route becomes a normal link again");
+  assert.equal(home.getAttribute("aria-label"),undefined);
+  m.scrollRoot.scrollTop=90;
+  let modifiedPrevented=0;
+  projects.dispatch("click",{metaKey:true,preventDefault(){modifiedPrevented++;}});
+  assert.equal(modifiedPrevented,0,"Command-click should retain native new-tab behavior");
+  assert.equal(m.scrollRoot.scrollTop,90,"Modified navigation should not start scroll animation");
+});
+
 test("click selects route immediately, without awaiting the browser hashchange event",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
