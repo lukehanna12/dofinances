@@ -619,6 +619,11 @@ try{
   await until('document.getElementById("workspace-shell").classList.contains("is-collapsed")'+
     ' && !document.getElementById("workspace-shell").classList.contains("is-sidebar-toggling")',
     "wide content collapsed state settled");
+  // Wait for the *layout geometry* to finish: the spacer now interpolates
+  // independently of the short-lived CSS animation marker.
+  await until('Math.abs(document.querySelector(".sidebar").getBoundingClientRect().width-74)<.8'+
+    ' && Math.abs(document.querySelector(".main").getBoundingClientRect().left-document.querySelector(".sidebar").getBoundingClientRect().right)<1',
+    "collapsed pane and main column geometry",4000);
   const collapsed1920=await measureContentLeft();
   assert.ok(Math.abs((expandedReference.start-collapsed1920.start)-
     (expandedReference.paneWidth-collapsed1920.paneWidth))<1.5,
@@ -632,6 +637,10 @@ try{
   await until('!document.getElementById("workspace-shell").classList.contains("is-collapsed")'+
     ' && !document.getElementById("workspace-shell").classList.contains("is-sidebar-toggling")',
     "wide content re-expansion settled");
+  await until('Math.abs(document.getElementById("main-content").getBoundingClientRect().left+'+
+    'Number.parseFloat(getComputedStyle(document.getElementById("main-content")).paddingLeft)-'+
+    String(expandedReference.start)+')<1',
+    "fully restored expanded main-column boundary",4000);
   const expandedAgain=await measureContentLeft();
   assert.ok(Math.abs(expandedAgain.start-expandedReference.start)<1,
     "Sidebar re-expansion must restore the original content boundary");
