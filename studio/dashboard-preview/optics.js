@@ -62,7 +62,7 @@ import {
 
 const NS="http://www.w3.org/2000/svg";
 const FILTER_ID="liquid-plexiglass-mosaic";
-const root=document.getElementById("cta6-mosaic");
+const root=typeof document!=="undefined"?document.getElementById("cta6-mosaic"):null;
 const tiles=root?[...root.querySelectorAll(".cta6-tile:not(.cta6-tile--empty)")]:[];
 const round=Math.fround;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
@@ -161,7 +161,7 @@ function filterGraph(){
  * model/foundation/model/geometry_331_compact.json. Applying their joint
  * values to a browser square with private mode5 thresholds is GAP
  * (JOINT-MATERIAL/PUBLIC-STATE), not an Apple target capture. */
-function finiteGeometryParameters(w,h){
+export function finiteGeometryParameters(w,h){
   const d=Math.min(w,h);
   const innerHeight=Math.min(20,.25*d);
   const outerHeight=.125*d;
@@ -179,7 +179,7 @@ function finiteGeometryParameters(w,h){
 /* Exact finite public CLEAR interpolation, followed by finite selected-input
  * Float32 product. Converting Metal filtered LOD footprint into browser CSS
  * sigma is explicitly a GAP(BROWSER-TRANSPORT) adapter. */
-function finiteBlurParameters(w,h){
+export function finiteBlurParameters(w,h){
   const publicRadius=nativePublicBlurRadius("clear",w,h);
   const blurWord=observedBlurWord(publicRadius,1,.25);
   const browserRadius=blurWord/.25;
@@ -193,7 +193,7 @@ function finiteBlurParameters(w,h){
 /* Fully geometric four-corner AIR mode5. No page-background pixels enter.
  * CSS border-radius -> PRIVATE signed-corner CPU SDF mapping is unproved.
  * The observed private mode5 floor only bounds the minimum corner magnitude. */
-function shapeField(x,y,w,h,radius){
+export function shapeField(x,y,w,h,radius){
   const signed=-Math.max(ORACLE_CORNER_FLOOR,radius);
   const normal=airMode5SDF(
     round(x-w*.5),round(h*.5-y),round(w*.5),round(h*.5),
@@ -201,7 +201,7 @@ function shapeField(x,y,w,h,radius){
   );
   return {distance:normal.distance,nx:normal.nx,ny:-normal.ny};
 }
-function createGeometricMaps(w,h,radius,profile){
+export function createGeometricMaps(w,h,radius,profile){
   const len=w*h*4;
   const inner=new Uint8ClampedArray(len);
   const outer=new Uint8ClampedArray(len);
