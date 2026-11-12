@@ -172,7 +172,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  /* Loading card is roughly 110–140px tall; its final card can be as
     tall as 440px plus caption. Animate only the intrinsic-height increase
     when membership data resolves, never the title/description/header. */
- #cs-root .cs-mobile-detail{display:block;overflow:hidden;max-height:150px;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
+ #cs-root .cs-mobile-detail{display:block;overflow:hidden;max-height:114.1px;transition:max-height .45s cubic-bezier(.4,0,.2,1)}
  #cs-root .cs-mobile-detail.cs-members-ready{max-height:540px}
 }
 @media(max-width:639px){

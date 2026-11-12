@@ -83,8 +83,12 @@ test("Expanded-row membership skeleton resolves without shifting the header and 
  assert.match(js,/mobile\.classList\.toggle\("cs-members-ready",selected&&!!state\.detail\)/);
  assert.match(css,/#cs-root \.cs-mobile-detail\{display:none;margin-top:24px;overflow-anchor:none\}/);
  assert.match(css,/#cs-root \.cs-desktop-detail\{[^}]*overflow-anchor:none\}/);
- assert.match(css,/@media\(max-width:1023px\)\{[\s\S]*?\.cs-mobile-detail\{display:block;overflow:hidden;max-height:150px;transition:max-height \.45s cubic-bezier\(\.4,0,\.2,1\)\}/);
+ assert.match(css,/@media\(max-width:1023px\)\{[\s\S]*?\.cs-mobile-detail\{display:block;overflow:hidden;max-height:114\.1px;transition:max-height \.45s cubic-bezier\(\.4,0,\.2,1\)\}/);
  assert.match(css,/#cs-root \.cs-mobile-detail\.cs-members-ready\{max-height:540px\}/);
+ assert.match(css,/#cs-root \.cs-mobile-detail \.cs-card\{padding:25px 20px;max-height:440px\}/);
+ // The initial cap equals the single-line loading card's intrinsic box:
+ // 2px border + 50px card padding + 40px loading text padding + 22.1px line.
+ assert.ok(Math.abs((2+50+40+13*1.7)-114.1)<0.001);
  assert.match(js,/oldButtons\.every\(\(button,i\)=>button\.dataset\.csAction===newButtons\[i\]\.dataset\.csAction\)/);
  assert.match(js,/if\(button\.disabled!==newButtons\[i\]\.disabled\)button\.disabled=newButtons\[i\]\.disabled/);
  assert.doesNotMatch(js,/ResizeObserver|MutationObserver|requestAnimationFrame|setInterval/);
