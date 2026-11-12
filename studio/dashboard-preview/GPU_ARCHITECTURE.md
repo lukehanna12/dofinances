@@ -126,3 +126,13 @@ The WebGPU implementation now explicitly rounds at these selected AIR
 boundaries when shader-f16 is supported. This improves semantic fidelity on
 the verified M2 adapter, but no general AIR↔native G14G equivalence, precise
 half logarithm equivalence or sampler subtexel arithmetic is claimed.
+
+
+### Native alpha/coverage reconciliation (AIR lines 30–43)
+
+The original preview used Float32 `0.5 - distance/fwidth` and clipped
+its result. AIR actually computes fwidth of the **half** SDF distance,
+clamps the denominator to half bit-pattern `0xH068E`, performs a **half
+division**, promotes that result to Float32, adds `0.5`, saturates,
+and truncates to half. The browser shader now explicitly preserves those
+conversion boundaries. Exact target GPU derivative semantics remain open.

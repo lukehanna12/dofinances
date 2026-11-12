@@ -109,3 +109,13 @@ content outside the GPU-owned backdrop cannot be captured as a texture.
 The result is **exhausted available retained files and implemented several
 previously ignored source-proven paths**—not a declaration that Apple's
 complete Clear Glass mathematical model or displayed pixels are solved.
+
+
+### Native alpha/coverage reconciliation (AIR lines 30–43)
+
+The original preview used Float32 `0.5 - distance/fwidth` and clipped
+its result. AIR actually computes fwidth of the **half** SDF distance,
+clamps the denominator to half bit-pattern `0xH068E`, performs a **half
+division**, promotes that result to Float32, adds `0.5`, saturates,
+and truncates to half. The browser shader now explicitly preserves those
+conversion boundaries. Exact target GPU derivative semantics remain open.

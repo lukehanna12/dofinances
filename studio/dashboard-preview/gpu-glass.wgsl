@@ -297,7 +297,12 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     field=mode5SDF(in.local,dimensions,tile.cornerRadii);
   }
   let signed=field.x;
-  let coverage=clamp(0.5-signed/max(fwidth(signed),0.0001),0.0,1.0);
+  // AIR lines 30-43: SDF is half, fwidth is half, the denominator is
+  // max(fwidth,0xH068E), half division then Float32 +0.5/saturate and
+  // final truncation to half. Derivatives' exact G14G rules remain open.
+  let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));
+  let signedRatio=nativeHalf1(-signed/nativeWidth);
+  let coverage=nativeHalf1(clamp(0.5+signedRatio,0.0,1.0));
   if(coverage<=0.0){discard;}
   let d=min(dimensions.x,dimensions.y);
   let innerAmount=max(-60.0,-0.8*d);

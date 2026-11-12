@@ -108,3 +108,10 @@ test("retained AIR half-rounding checkpoints encoded in browser shader",()=>{
   assert.match(shader,/let root=nativeHalf1\(sqrt\(/);
   assert.match(shader,/let weightedNear=nativeHalf1\(near\*\.5\)/);
 });
+
+test("SDF coverage follows native AIR f16 fwidth/div/saturate stages",()=>{
+  const wgsl=fs.readFileSync(new URL("./dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+  assert.match(wgsl,/nativeHalf1\(fwidth\(signed\)\)/);
+  assert.match(wgsl,/nativeHalf1\(-signed\/nativeWidth\)/);
+  assert.match(wgsl,/nativeHalf1\(clamp\(0\.5\+signedRatio/);
+});
