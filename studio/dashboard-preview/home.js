@@ -23,12 +23,15 @@ if(stage&&micro&&main){
   function renderZone(zone,{microZone,seed}){
     const box=zone.getBoundingClientRect();
     if(box.width<1||box.height<1)return [];
-    const unit=microZone?25:41;
-    const gap=microZone?7:10;
+    const unit=microZone?30:58;
+    const gap=microZone?9:14;
     const step=unit+gap;
     const cols=Math.ceil((box.width+gap)/step);
     const rows=Math.ceil((box.height+gap)/step);
     const used=new Uint8Array(cols*rows);
+    const target=Math.min(microZone?155:110,Math.max(48,
+      Math.round(box.width*box.height/(microZone?4400:9400))));
+    const acceptance=Math.min(1,target/(cols*rows*.73));
     const result=[];
     const fragment=document.createDocumentFragment();
     const free=(row,col,span)=>{
@@ -47,7 +50,7 @@ if(stage&&micro&&main){
         if(used[row*cols+col])continue;
         const anchor=noise(row,col,seed);
         // Interstitial dark cells are intentional breathing space.
-        if(anchor<.20)continue;
+        if(anchor<.27||noise(row,col,seed+61)>acceptance)continue;
         const choice=noise(row,col,seed+2);
         let span=microZone?(choice>.70?2:1):
           choice>.925?4:choice>.66?3:choice>.25?2:1;
@@ -61,15 +64,15 @@ if(stage&&micro&&main){
         const material=noise(row,col,seed+7);
         const crest=noise(row,col,seed+11);
         const phase=noise(row,col,seed+17);
-        const cycle=92+noise(row,col,seed+19)*26; // 92–118 s
+        const cycle=44+noise(row,col,seed+19)*22; // 44–66s: long quiet, slow in/hold/out
         const side=span*unit+(span-1)*gap;
         const left=col*step+Math.round(gap*.5);
         const top=row*step+Math.round(gap*.5);
-        if(material>.947)tile.classList.add("dashboard-tile--glass");
+        if(material>.974)tile.classList.add("dashboard-tile--glass");
         else if(material>.68)tile.classList.add("dashboard-tile--line");
-        const peak=crest>.925?(.71+.12*material):
-          crest>.73?(.28+.21*material):
-          (.07+.12*material);
+        const peak=crest>.885?(.78+.13*material):
+          crest>.66?(.40+.14*material):
+          (.22+.12*material);
         tile.style.left=left+"px";
         tile.style.top=top+"px";
         tile.style.width=side+"px";
@@ -81,7 +84,7 @@ if(stage&&micro&&main){
         tile.style.setProperty("--delay",(-phase*cycle).toFixed(3)+"s");
         // Respect reduced motion with a calm, nonrandom stationary state.
         tile.style.setProperty("--reduced-alpha",
-          (crest>.925?.27:crest>.73?.10:.025).toFixed(3));
+          (crest>.885?.40:crest>.66?.20:.11).toFixed(3));
         fragment.appendChild(tile);
         result.push({element:tile,
           x:box.left+left+side/2,y:box.top+top+side/2,
