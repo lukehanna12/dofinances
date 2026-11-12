@@ -644,20 +644,43 @@ try{
   const expandedAgain=await measureContentLeft();
   assert.ok(Math.abs(expandedAgain.start-expandedReference.start)<1,
     "Sidebar re-expansion must restore the original content boundary");
+  // A drag must start only after the animated fixed pane and the spacer
+  // have settled to the same width; the grip itself tracks the target width.
+  await until(String.raw`(()=>{
+    const shell=document.getElementById("workspace-shell");
+    const side=document.querySelector(".sidebar").getBoundingClientRect();
+    const grip=document.getElementById("sidebar-resize-handle").getBoundingClientRect();
+    const width=Number.parseFloat(getComputedStyle(shell).getPropertyValue("--sidebar-expanded-width"));
+    return !shell.classList.contains("is-sidebar-toggling") &&
+      Math.abs(side.width-width)<.6 &&
+      Math.abs(grip.left+grip.width/2-side.right)<.6;
+  })()`, "wide sidebar and drag handle finish expanding",4000);
   const dragHandle=await evaluate(String.raw`(()=>{
-    const r=document.getElementById("sidebar-resize-handle").getBoundingClientRect();
-    return {x:r.left+r.width/2,y:r.top+Math.min(110,r.height/2)};
+    const grip=document.getElementById("sidebar-resize-handle");
+    const r=grip.getBoundingClientRect();
+    const x=r.left+r.width/2,y=r.top+Math.min(110,r.height/2);
+    const hit=document.elementFromPoint(x,y);
+    return {x,y,hitGrip:hit===grip,hitTag:hit?.tagName,
+      hitId:hit?.id||null,visible:getComputedStyle(grip).display,
+      paneWidth:document.querySelector(".sidebar").getBoundingClientRect().width};
   })()`);
+  assert.ok(dragHandle.hitGrip,"Wide resize grip not hit-testable: "+JSON.stringify(dragHandle));
   await down(dragHandle.x,dragHandle.y);
+  const dragSamples=[];
   for(let step=1;step<=4;step++){
     await move(dragHandle.x+step*10,dragHandle.y);
     await pause(35);
+    dragSamples.push(await measureContentLeft());
   }
   await up(dragHandle.x+40,dragHandle.y);
   await until('!document.getElementById("workspace-shell").classList.contains("is-sidebar-resizing")',
     "wide sidebar drag ends");
   await until('document.querySelector(".sidebar").getBoundingClientRect().width>'+
-    String(expandedAgain.paneWidth+28),"wide sidebar resize reflected in layout");
+    String(expandedAgain.paneWidth+28),"wide sidebar resize reflected in layout")
+    .catch(async()=>{
+      throw new Error("Wide sidebar drag did not follow the pointer: "+
+        JSON.stringify({dragHandle,expandedAgain,dragSamples,after:await measureContentLeft()}));
+    });
   const afterDrag=await measureContentLeft();
   assert.ok(afterDrag.paneWidth>expandedAgain.paneWidth+28,
     "Wide sidebar drag did not increase the pane width");
