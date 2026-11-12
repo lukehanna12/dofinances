@@ -443,8 +443,31 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-name-pencil svg{width:14px;height:14px;pointer-events:none}
 #cs-root .cs-name-pencil:hover:not(:disabled){color:#d3d3d3}
 #cs-root .cs-name-pencil:focus-visible{outline:1px solid #a7a7a7;outline-offset:1px}
-#cs-root .cs-renaming .cs-name-pencil{opacity:0;visibility:hidden;pointer-events:none}
+#cs-root .cs-renaming .cs-name-pencil{opacity:0;visibility:hidden;pointer-events:none;display:none}
 #cs-root .cs-name-pencil:disabled{pointer-events:none}
+/* Circular rename actions: reserve the check's space even when the
+   name is unchanged. Only the pencil disappears; the grey cancel X is
+   always present while editing, and the white check is genuinely conditional.
+   The grey X reuses Refresh's exact fill and border variables. */
+#cs-root .cs-rename-actions{display:none;align-items:center;gap:5px;flex:none;white-space:nowrap}
+#cs-root .cs-renaming .cs-rename-actions{display:inline-flex}
+#cs-root .cs-renaming .cs-name-editor{max-width:calc(100% - 62px)}
+#cs-root .cs-rename-actions button{
+ display:grid;place-items:center;flex:none;
+ width:24px;height:24px;padding:0;border-radius:50%;
+ transition:background-color .14s ease,color .14s ease;
+}
+#cs-root .cs-rename-actions button svg{width:13px;height:13px;pointer-events:none}
+#cs-root .cs-rename-actions .cs-rename-cancel{
+ border:1px solid var(--cs-border);background:var(--cs-weak);color:#a3a3a3;
+}
+#cs-root .cs-rename-actions .cs-rename-cancel:hover:not(:disabled){background:#262626;color:#e7e7e7}
+#cs-root .cs-rename-actions .cs-rename-confirm{
+ border:1px solid #fff;background:#fff;color:#101010;
+}
+#cs-root .cs-rename-actions .cs-rename-confirm:hover:not(:disabled){background:#e7e7e7}
+#cs-root .cs-rename-actions .cs-rename-confirm:disabled{visibility:hidden;opacity:0;pointer-events:none}
+#cs-root .cs-rename-saving .cs-inline-name{opacity:.67}
 /* Both controls remain anchored at the RIGHT EDGE of the inset list.
    On either mode transition, each fades while moving only 20px;
    transforms avoid layout changes and preserve 480ms synchronization. */
@@ -539,4 +562,18 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root.cs-closing-for-selection .cs-select-icon-button::after{animation:none}
  #cs-root .cs-select-icon-button svg{transition:none}
  #cs-root .cs-name-editor,#cs-root .cs-name-underline,#cs-root .cs-name-pencil{transition:none}
+}
+
+/* The Refresh button shares Add/Edit tooltip timing and optics. Wrapping it
+   does not change the 36px action's dimensions or its right alignment. */
+#cs-root .cs-refresh-control{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none}
+#cs-root .cs-refresh-tooltip{left:auto;right:0;transform-origin:top right}
+#cs-root #cs-refresh:hover + .cs-refresh-tooltip,
+#cs-root #cs-refresh:focus-visible + .cs-refresh-tooltip{
+ opacity:1;visibility:visible;transform:translateY(0) scale(1);
+ transition-delay:.15s,.15s,.15s;
+}
+#cs-root #cs-refresh:focus-visible + .cs-refresh-tooltip{transition-delay:0s,0s,0s}
+@media(prefers-reduced-motion:reduce){
+ #cs-root .cs-refresh-tooltip{transition-delay:0s!important}
 }
