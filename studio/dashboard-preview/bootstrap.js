@@ -66,7 +66,7 @@ for(const element of document.querySelectorAll("a[href]")){
 }
 const style=document.createElement("style");
 style.textContent=`
-a.dashboard-preview-tapped{
+.nav-link.dashboard-preview-tapped{
   background-color:rgba(244,247,251,.12)!important;
   transition:background-color 135ms ease;
 }
