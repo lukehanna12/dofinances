@@ -24,7 +24,7 @@ struct Globals {
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
-  meta: vec4<f32>,     // CSS border radius, entrance delay, native blurWord, unused
+  properties: vec4<f32>,     // CSS border radius, entrance delay, native blurWord, unused
 };
 @group(0) @binding(0) var backdrop: texture_2d<f32>;
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
@@ -69,7 +69,7 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   );
   let tile=tiles[instance];
   let uv=corners[vertex];
-  let progress=clamp((state.viewport.z-tile.meta.y)/0.4,0.0,1.0);
+  let progress=clamp((state.viewport.z-tile.properties.y)/0.4,0.0,1.0);
   let a=ease(progress);
   let scale=0.85+0.15*a;
   let center=tile.rect.xy+tile.rect.zw*0.5;
@@ -114,10 +114,10 @@ fn supercircleSDF(ax:f32,ay:f32,hw:f32,hh:f32,
   let rounded=rad+1.0-inverse;
   let q2x=max(0.0,nx0*1.5286649465560913-0.5286650061607361);
   let q2y=max(0.0,ny0*1.5286649465560913-0.5286650061607361);
-  let smooth=length(vec2<f32>(q2x,q2y))*0.6541655659675598+
+  let smoothValue=length(vec2<f32>(q2x,q2y))*0.6541655659675598+
       0.3458344340324402;
-  let a=mix(rounded,smooth,bx);
-  let b=mix(rounded,smooth,by);
+  let a=mix(rounded,smoothValue,bx);
+  let b=mix(rounded,smoothValue,by);
   let sign=select(-1.0,1.0,ny0>nx0);
   let control=clamp(0.5-sign+sign*u,0.0,1.0);
   let signed=k*(mix(a,b,control)-1.0);
@@ -218,7 +218,7 @@ fn mipSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   let dimensions=tile.rect.zw;
-  let field=mode5SDF(in.local,dimensions,tile.meta.x);
+  let field=mode5SDF(in.local,dimensions,tile.properties.x);
   let signed=field.x;
   let coverage=clamp(0.5-signed/max(fwidth(signed),0.0001),0.0,1.0);
   if(coverage<=0.0){discard;}
@@ -238,8 +238,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
      state.viewport.xy;
   let outerUV=(in.position.xy+field.yz*outer*displacementFactor)/
      state.viewport.xy;
-  let innerLOD=glassLOD(tile.meta.z,blurDistribution(signed+inner,d));
-  let outerLOD=glassLOD(tile.meta.z,blurDistribution(signed+outer,d));
+  let innerLOD=glassLOD(tile.properties.z,blurDistribution(signed+inner,d));
+  let outerLOD=glassLOD(tile.properties.z,blurDistribution(signed+outer,d));
   let glass=mix(mipSample(innerUV,innerLOD),
                 mipSample(outerUV,outerLOD),thresholdMix(signed));
   let rim=exp(-abs(signed)*1.16);
