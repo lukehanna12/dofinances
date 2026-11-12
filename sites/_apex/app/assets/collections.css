@@ -349,7 +349,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  width:29px;height:29px;display:grid;place-items:center;
  padding:0;border:0;border-radius:8px;background:#0a0a0a;color:#bcbcbc;
  opacity:0;visibility:hidden;pointer-events:none;
- transition:opacity var(--cs-control-swap) var(--cs-control-ease),visibility 0s linear var(--cs-control-swap),background .15s,color .15s;
+ /* The eye is gated until the 480ms control swap finishes, then reveals
+    quickly rather than taking a second full-length fade. */
+ transition:opacity 160ms var(--cs-control-ease),visibility 0s linear 160ms,background .15s,color .15s;
 }
 #cs-root.cs-editing .cs-visibility-toggle{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
 #cs-root .cs-visibility-toggle:disabled{opacity:0}

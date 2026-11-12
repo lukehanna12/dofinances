@@ -621,6 +621,14 @@ test("Collections control swap uses synchronized 20px local fades at the list ri
  assert.match(js,/syncRowEditing\(\)/);
  assert.doesNotMatch(js,/requestAnimationFrame|setInterval|ResizeObserver|MutationObserver/);
 });
+test("Eye icons reveal promptly after the rearrangement animation completes",()=>{
+ assert.match(css,/#cs-root \\.cs-visibility-toggle\\{[\\s\\S]*?transition:opacity 160ms var\\(--cs-control-ease\\),visibility 0s linear 160ms/);
+ assert.match(css,/#cs-root\\.cs-editing \\.cs-visibility-toggle\\{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s\\}/);
+ assert.match(css,/#cs-root \\.cs-visibility-toggle:disabled\\{opacity:0\\}/);
+ assert.match(js,/control\\.disabled=!state\\.editing\\|\\|state\\.editTransitioning/);
+ assert.match(js,/await waitForVisualMotion\\(list\\.querySelector\\("\\.cs-drag-handle"\\),"cs-grip-enter-right"\\)/);
+ assert.match(css,/--cs-control-swap:480ms/);
+});
 test("Opening edit mode closes an expanded row with the white pencil-position ring",()=>{
  assert.match(js,/async function enterEditMode\(\)/);
  assert.match(js,/const panel=list\.querySelector\("\.cs-entry\.cs-open \.cs-accordion-panel"\)/);
