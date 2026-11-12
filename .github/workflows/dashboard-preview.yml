@@ -28,9 +28,9 @@ jobs:
           mkdir -p dist/app/assets dist/assets
           # The Studio HTML is a public-safe mirror of the production Home
           # and entire real sidebar, without protected dashboard controllers.
-          cp studio/sidebar/index.html dist/index.html
-          sed -i 's@<title>Studio · DoFinances</title>@<title>Dashboard Preview · DoFinances</title>@' dist/index.html
-          sed -i 's@/app/assets/preview-bootstrap.js@/app/assets/dashboard-preview.js@' dist/index.html
+          python3 studio/dashboard-preview/compose.py
+          cp studio/dashboard-preview/home.css dist/app/assets/dashboard-home.css
+          cp studio/dashboard-preview/home.js dist/app/assets/dashboard-mosaic.js
 
           cp sites/_apex/assets/site-foundation.css dist/assets/
           for asset in \
@@ -54,10 +54,17 @@ jobs:
           set -euo pipefail
           test -s dist/index.html
           test -s dist/app/assets/dashboard-preview.js
+          test -s dist/app/assets/dashboard-home.css
+          test -s dist/app/assets/dashboard-mosaic.js
           test -s dist/app/assets/sidebar-glass.js
           test -s dist/app/assets/sidebar-glass-oracle.js
           test -s dist/app/assets/sidebar-glass-field-worker.js
           grep -Fq 'data-view="home"' dist/index.html
+          grep -Fq 'id="cta6-mosaic"' dist/index.html
+          grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
+          ! grep -Fq 'Your workspace, all in one place.' dist/index.html
+          grep -Fq 'cta6-center' dist/index.html
+          grep -Fq 'positionIcons' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'id="sidebar-resize-handle"' dist/index.html
           grep -Fq 'dashboard-preview.js' dist/index.html
           grep -Fq 'initWorkspaceNavigation()' dist/app/assets/dashboard-preview.js
