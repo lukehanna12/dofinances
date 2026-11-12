@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {webcrypto} from "node:crypto";
+import {readFileSync} from "node:fs";
 import {verifyColosseumOwnerJwt} from "../edge/colosseum-owner.mjs";
 globalThis.crypto ||= webcrypto;
 
@@ -38,4 +39,33 @@ test("Cloudflare owner Access allows 30 days, never 31; project remains capped a
   const project={...env,COLOSSEUM_ACCESS_AUD:projectAud};
   assert.deepEqual(await verifyColosseumOwnerJwt(await makeJwt(projectAud,seconds),project,jwks),{subject:"verified-owner"});
   assert.equal(await verifyColosseumOwnerJwt(await makeJwt(projectAud,seconds+1),project,jwks),null);
+});
+
+test("Colosseum Access cutover accepts only signed owner JWTs for the 30-day shared app or old short-lived app",()=>{
+  const edge=readFileSync(new URL("../edge/router.mjs",import.meta.url),"utf8");
+  assert.match(edge,/const sharedEnv=\{\.\.\.env,COLOSSEUM_ACCESS_AUD:env\.CLOUDFLARE_CONNECTION_ACCESS_AUD\}/);
+  assert.match(edge,/verifyColosseumOwnerJwt\(jwt,sharedEnv,fetch,30\*24\*60\*60\)/);
+  assert.match(edge,/if\(!identity\)identity=await verifyColosseumOwnerJwt\(jwt,env\)/);
+});
+
+test("global navigation search uses the uploaded SVG geometry and existing currentColor",()=>{
+ const apex=readFileSync(new URL("../sites/_apex/app/index.html",import.meta.url),"utf8");
+ const preview=readFileSync(new URL("../studio/sidebar/index.html",import.meta.url),"utf8");
+ const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-enhancements.css",import.meta.url),"utf8");
+ const svg=readFileSync(new URL("../sites/_apex/app/assets/magnifying-glass.v2.svg",import.meta.url),"utf8");
+ const workflow=readFileSync(new URL("../.github/workflows/site.yml",import.meta.url),"utf8");
+ for(const html of [apex,preview]){
+   assert.match(html,/<button id="global-search-toggle"[^>]+><span class="global-search-icon" aria-hidden="true"><\/span><\/button>/);
+   assert.doesNotMatch(html,/<button id="global-search-toggle"[^>]+><svg/);
+ }
+ assert.match(css,/\.global-menu-icon\{[^}]*color:rgba\(230,230,235,\.82\)/);
+ assert.match(css,/#global-search-toggle \.global-search-icon\{[^}]*width:17px;height:17px/);
+ assert.match(css,/#global-search-toggle \.global-search-icon\{[^}]*background:currentColor/);
+ assert.match(css,/-webkit-mask:url\("\/app\/assets\/magnifying-glass\.v2\.svg"\)/);
+ assert.match(svg,/^<svg xmlns=/);
+ assert.match(svg,/viewBox="0 0 24\.475 24\.342"/);
+ assert.match(svg,/fill="#e6e6eb"/);
+ assert.match(svg,/M0 9\.64365C0 14\.9499/);
+ assert.doesNotMatch(svg,/<(?:script|image|foreignObject)\b|<!DOCTYPE|\.png/i);
+ assert.match(workflow,/cp sites\/_apex\/app\/assets\/magnifying-glass\.v2\.svg dist\/app\/assets\/magnifying-glass\.v2\.svg/);
 });

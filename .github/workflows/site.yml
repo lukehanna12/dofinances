@@ -99,6 +99,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
           cp sites/_apex/app/assets/workspace-enhancements.css dist/app/assets/workspace-enhancements.css
+          cp sites/_apex/app/assets/magnifying-glass.v2.svg dist/app/assets/magnifying-glass.v2.svg
           cp sites/_apex/app/assets/diagnostics.css dist/app/assets/diagnostics.css
           cp sites/_apex/app/assets/providers.css dist/app/assets/providers.css
           cp sites/_apex/app/assets/home-rice-terraces-hq.jpg dist/app/assets/home-rice-terraces-hq.jpg
@@ -108,6 +109,7 @@ jobs:
           cp studio/sidebar/sidebar-glass.js dist/app/assets/sidebar-glass.js
           cp studio/sidebar/preview-bootstrap.js dist/app/assets/preview-bootstrap.js
           cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
+          test -s dist/app/assets/magnifying-glass.v2.svg
           test -s dist/app/assets/home-rice-terraces-hq.jpg
           grep -Fq 'global-menu' dist/app/index.html
           grep -Fq 'workspace-enhancements.css' dist/app/index.html

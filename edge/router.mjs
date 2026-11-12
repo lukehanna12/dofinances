@@ -258,8 +258,15 @@ async function colosseumOwnerApi(request,env,pathname) {
   if(method==="POST"&&request.headers.get("Origin")!=="https://dofinances.com")
     return json({error:"Forbidden origin."},403);
   let identity;
-  try {identity=await verifyColosseumOwnerJwt(request.headers.get("Cf-Access-Jwt-Assertion"),env);}
-  catch {return json({error:"Colosseum owner authentication is not configured."},503);}
+  try {
+    // During the Access app cutover, accept either signed owner assertion:
+    // shared Cloudflare app (30 days) or legacy Colosseum app (24h max).
+    // Both are still signature-, audience-, issuer-, email- and owner-bound.
+    const jwt=request.headers.get("Cf-Access-Jwt-Assertion");
+    const sharedEnv={...env,COLOSSEUM_ACCESS_AUD:env.CLOUDFLARE_CONNECTION_ACCESS_AUD};
+    identity=await verifyColosseumOwnerJwt(jwt,sharedEnv,fetch,30*24*60*60);
+    if(!identity)identity=await verifyColosseumOwnerJwt(jwt,env);
+  }catch {return json({error:"Colosseum owner authentication is not configured."},503);}
   if(!identity)return json({error:"Cloudflare owner verification required."},403);
   const stub=store(env);
   if(!stub)return json({error:"Account store unavailable."},503);

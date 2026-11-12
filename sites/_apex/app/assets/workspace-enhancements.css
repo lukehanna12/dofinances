@@ -49,6 +49,13 @@
 .global-menu-actions{display:flex;align-items:center;gap:11px;flex:none;}
 .global-menu-icon{border:0;background:transparent;color:rgba(230,230,235,.82);display:grid;place-items:center;width:28px;height:30px;cursor:pointer;border-radius:7px;padding:0;}
 .global-menu-icon:hover,.global-menu-icon[aria-expanded="true"]{color:#fff;background:rgba(255,255,255,.09);}
+/* Render the supplied native vector as a CSS mask so its silhouette
+   inherits the exact existing button color, including hover/active. */
+#global-search-toggle .global-search-icon{
+  display:block;width:17px;height:17px;flex:none;background:currentColor;
+  -webkit-mask:url("/app/assets/magnifying-glass.v2.svg") center/contain no-repeat;
+  mask:url("/app/assets/magnifying-glass.v2.svg") center/contain no-repeat;
+}
 .global-menu-account{border:1px solid rgba(255,255,255,.20);border-radius:999px;padding:5px 12px;font-size:11.5px;}
 .global-mobile-toggle{display:none;}
 .global-search-panel{
