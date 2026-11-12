@@ -6,12 +6,40 @@
  * CSS overscroll-behavior guards the vertical root. Wheel/touch guards handle
  * boundary gestures, including Safari rubber-banding, while deliberately
  * allowing the left-edge browser-history back gesture (rightward swipe). */
-/* The duration follows the distance measured on the click, in viewport units.
- * Smoothstep has a continuous accelerating phase and decelerates to exactly
- * zero velocity; it avoids the sudden arrival of a fixed-speed scroll. */
+/* The duration follows click-time distance, in viewport units.
+ * Unlike symmetric smoothstep (which feels almost linear in the middle),
+ * this is an asymmetric, normalized INTEGRAL of a continuous speed profile:
+ * - rise to cruising speed over the first 9% (quick, smooth acceleration),
+ * - a shallow velocity swell rather than a mechanically constant-speed middle,
+ * - begin braking at 74%, reaching zero speed AND acceleration at the top.
+ * Every phase joins with continuous position, velocity and acceleration (C2).
+ * The closed-form polynomial needs no simulation, allocations, lookups or
+ * per-frame numerical integration, and finishes at exactly progress=1. */
+const TOP_ACCEL_END=.09;
+const TOP_BRAKE_START=.74;
+const TOP_CRUISE_SWELL=.20;
+const TOP_CRUISE_TIME=TOP_BRAKE_START-TOP_ACCEL_END;
+const TOP_CRUISE_AREA=TOP_CRUISE_TIME*(1+TOP_CRUISE_SWELL*8/15);
+const TOP_TOTAL_AREA=TOP_ACCEL_END/2+TOP_CRUISE_AREA+(1-TOP_BRAKE_START)/2;
+const smoothstepIntegral=u=>u*u*u*(1-u/2);
 export function topScrollEase(progress){
   const t=Math.max(0,Math.min(1,Number(progress)||0));
-  return t*t*(3-2*t);
+  if(t===0||t===1)return t;
+  let area;
+  if(t<=TOP_ACCEL_END){
+    area=TOP_ACCEL_END*smoothstepIntegral(t/TOP_ACCEL_END);
+  }else if(t<TOP_BRAKE_START){
+    const u=(t-TOP_ACCEL_END)/TOP_CRUISE_TIME;
+    // Integral of v(u)=1+swell*16*u²*(1-u)². The speed and its slope
+    // match both joins: no abrupt acceleration changes or visual corners.
+    const accumulated=u+TOP_CRUISE_SWELL*(8/15)*u*u*u*(10-15*u+6*u*u);
+    area=TOP_ACCEL_END/2+TOP_CRUISE_TIME*accumulated;
+  }else{
+    const u=(t-TOP_BRAKE_START)/(1-TOP_BRAKE_START);
+    area=TOP_ACCEL_END/2+TOP_CRUISE_AREA+
+      (1-TOP_BRAKE_START)*(u-smoothstepIntegral(u));
+  }
+  return area/TOP_TOTAL_AREA;
 }
 export function topScrollDuration(distance,viewportHeight){
   const screens=Math.max(0,Number(distance)||0)/Math.max(1,Number(viewportHeight)||768);
