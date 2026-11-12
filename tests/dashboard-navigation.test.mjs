@@ -404,8 +404,8 @@ test("current Permissions breadcrumb is a pointer button that returns to top wit
  const html=await read("../sites/_apex/app/index.html");
  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
  assert.match(html,/<button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page" aria-label="Scroll to top of Home">Home<\/button>/);
- assert.match(css,/\.shadcn-breadcrumb-page\s*\{[^}]*cursor:pointer;user-select:none;-webkit-user-select:none/);
- assert.match(css,/\.shadcn-breadcrumb-page:focus-visible\{outline:2px solid var\(--ui-focus\)/);
+ assert.match(css,/button\.shadcn-breadcrumb-page\s*\{[^}]*cursor:pointer;user-select:none;-webkit-user-select:none/);
+ assert.match(css,/button\.shadcn-breadcrumb-page:focus-visible\{outline:2px solid var\(--ui-focus\)/);
  const m=mockNavigation();
  initWorkspaceNavigation(m.doc,m.win);
  const crumb=m.elements["breadcrumb-current"];

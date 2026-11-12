@@ -132,11 +132,12 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
 }
 .shadcn-breadcrumb-link{color:var(--ui-secondary);transition:color 140ms ease;}
 .shadcn-breadcrumb-link:hover{color:var(--ui-text);text-decoration:none;}
-.shadcn-breadcrumb-page{
-  color:var(--ui-text);font:inherit;font-weight:570;
+.shadcn-breadcrumb-page{color:var(--ui-text);font-weight:570;}
+button.shadcn-breadcrumb-page{
+  font-family:inherit;font-size:inherit;
   appearance:none;cursor:pointer;user-select:none;-webkit-user-select:none;
 }
-.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px;border-radius:3px;}
+button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px;border-radius:3px;}
 .shadcn-breadcrumb-separator{display:inline-flex;align-items:center;justify-content:center;flex:none;width:12px;height:12px;color:var(--ui-muted);}
 .shadcn-breadcrumb-separator svg{width:12px;height:12px;display:block;}
 .settings-panel .manage-account{
