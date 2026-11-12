@@ -604,7 +604,7 @@ export function initColosseumCollections(){
    const field=input.closest(".cs-name-field");
    const col=state.collections.find(item=>item.collection_id===state.renamingId);
    if(!field||!col)return;
-   const dirty=normalizedCollectionName(input.value)!==col.name;
+   const dirty=normalizedCollectionName(input.value)!==normalizedCollectionName(col.name);
    field.classList.toggle("cs-rename-dirty",dirty);
    const confirm=field.querySelector(".cs-rename-confirm");
    confirm.disabled=!dirty;confirm.tabIndex=dirty?0:-1;
@@ -617,7 +617,7 @@ export function initColosseumCollections(){
    const input=field?.querySelector(".cs-inline-name");
    if(!col||!field||!input)return;
    const proposed=normalizedCollectionName(input.value);
-   if(proposed===col.name){finishInlineRename(true);return;}
+   if(proposed===normalizedCollectionName(col.name)){finishInlineRename(true);return;}
    if(!proposed||proposed.length>100||
       state.collections.some(other=>other.collection_id!==id&&
         normalizedCollectionName(other.name).toLocaleLowerCase("en-US")===

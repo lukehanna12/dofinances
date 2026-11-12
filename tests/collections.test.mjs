@@ -643,7 +643,8 @@ test("Collection rename check and cancel are separate circular icon buttons, wit
  assert.match(css,/#cs-root \.cs-rename-actions \.cs-rename-confirm:disabled\{visibility:hidden;opacity:0;pointer-events:none\}/,
    "White check stays invisible until the normalized name actually changes");
  assert.match(js,/field\.classList\.toggle\("cs-rename-dirty",dirty\)/);
- assert.match(js,/const dirty=normalizedCollectionName\(input\.value\)!==col\.name/);
+ assert.match(js,/const dirty=normalizedCollectionName\(input\.value\)!==normalizedCollectionName\(col\.name\)/,
+   "Whitespace/canonicalization alone must not show a false-positive white check");
  assert.match(js,/confirm\.setAttribute\("aria-hidden",String\(!dirty\)\)/);
  assert.match(js,/cancel\.disabled=false;cancel\.tabIndex=0/);
  assert.match(js,/confirm\.disabled=!dirty;confirm\.tabIndex=dirty\?0:-1/);
