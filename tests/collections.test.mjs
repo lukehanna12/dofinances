@@ -296,9 +296,9 @@ test("Collections inherits the shared horizontal content alignment without indep
  assert.match(shared,/body:has\(> #workspace-shell\) \.content \{/);
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
 });
-test("Collections primary content typography scales continuously with window width",()=>{
+test("Collections remaining primary content typography scales continuously with window width",()=>{
  for(const selector of [
-  "#cs-root .cs-eyebrow", "#cs-root .cs-head p",
+  "#cs-root .cs-eyebrow",
   "#cs-root .cs-trigger .cs-entry-title", "#cs-root .cs-description",
   "#cs-root .cs-card-label", "#cs-root .cs-utility-name"
  ]){
