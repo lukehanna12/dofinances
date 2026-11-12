@@ -32,6 +32,11 @@ jobs:
           cp studio/dashboard-preview/home.css dist/app/assets/dashboard-home.css
           cp studio/dashboard-preview/home.js dist/app/assets/dashboard-mosaic.js
           cp studio/dashboard-preview/optics.js dist/app/assets/dashboard-optics.js
+          cp studio/dashboard-preview/gpu-renderer.js dist/app/assets/dashboard-gpu-renderer.js
+          cp studio/dashboard-preview/gpu-scene.wgsl dist/app/assets/dashboard-gpu-scene.wgsl
+          cp studio/dashboard-preview/gpu-mipmap.wgsl dist/app/assets/dashboard-gpu-mipmap.wgsl
+          cp studio/dashboard-preview/gpu-glass.wgsl dist/app/assets/dashboard-gpu-glass.wgsl
+          cp studio/dashboard-preview/test-gpu.mjs dist/app/assets/dashboard-gpu.test.mjs
           cp studio/dashboard-preview/test-optics.mjs dist/app/assets/dashboard-optics.test.mjs
           cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
 
@@ -59,10 +64,21 @@ jobs:
           test -s dist/app/assets/dashboard-home.css
           test -s dist/app/assets/dashboard-mosaic.js
           test -s dist/app/assets/dashboard-optics.js
+          test -s dist/app/assets/dashboard-gpu-renderer.js
+          test -s dist/app/assets/dashboard-gpu-scene.wgsl
+          test -s dist/app/assets/dashboard-gpu-mipmap.wgsl
+          test -s dist/app/assets/dashboard-gpu-glass.wgsl
           test -s dist/app/assets/sidebar-glass-oracle.js
           grep -Fq 'data-view="home"' dist/index.html
           grep -Fq 'id="cta6-mosaic"' dist/index.html
-          grep -Fq 'dashboard-optics.js' dist/index.html
+          grep -Fq 'dashboard-gpu-renderer.js' dist/index.html
+          ! grep -Fq '<script type="module" src="/app/assets/dashboard-optics.js"' dist/index.html
+          grep -Fq 'fn mip2x2' dist/app/assets/dashboard-gpu-mipmap.wgsl
+          grep -Fq 'textureStore(dst' dist/app/assets/dashboard-gpu-mipmap.wgsl
+          grep -Fq 'fn mode5SDF' dist/app/assets/dashboard-gpu-glass.wgsl
+          grep -Fq 'fn mipSample' dist/app/assets/dashboard-gpu-glass.wgsl
+          grep -Fq 'copyExternalImageToTexture' dist/app/assets/dashboard-gpu-renderer.js
+          node --check dist/app/assets/dashboard-gpu-renderer.js
           grep -Fq 'airMode5SDF(' dist/app/assets/dashboard-optics.js
           grep -Fq 'airRefractionEnvelope(' dist/app/assets/dashboard-optics.js
           grep -Fq 'feDisplacementMap' dist/app/assets/dashboard-optics.js
@@ -77,7 +93,8 @@ jobs:
           # directory as ESM, then remove the marker before Pages deployment.
           echo '{"type":"module"}' > dist/app/assets/package.json
           node --test dist/app/assets/dashboard-optics.test.mjs
-          rm dist/app/assets/package.json dist/app/assets/dashboard-optics.test.mjs
+          node --test dist/app/assets/dashboard-gpu.test.mjs
+          rm dist/app/assets/package.json dist/app/assets/dashboard-optics.test.mjs dist/app/assets/dashboard-gpu.test.mjs
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
@@ -101,39 +118,42 @@ jobs:
           ! grep -Fq 'preview-bootstrap.js' dist/index.html
           echo 'Standalone, read-only Dashboard preview verified'
 
-      - name: Browser smoke — live optical filter and unchanged mosaic
+      - name: Browser smoke — real WebGPU pipeline and original mosaic
         shell: bash
         run: |
           set -euo pipefail
           CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
           if [ -z "$CHROME" ]; then
-            echo 'No Chrome executable on GitHub runner; cannot certify SVG backdrop support'
+            echo 'Chrome unavailable: cannot certify WebGPU browser pipeline'
             exit 1
           fi
           python3 -m http.server 8765 --directory dist >/tmp/dashboard-preview-http.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           sleep 1
-          "$CHROME" --headless --no-sandbox --enable-unsafe-swiftshader --disable-dev-shm-usage \
-            --window-size=1440,900 --virtual-time-budget=15000 --dump-dom \
+          "$CHROME" --headless --no-sandbox --enable-unsafe-webgpu \
+            --enable-unsafe-swiftshader --use-angle=swiftshader \
+            --ignore-gpu-blocklist --disable-dev-shm-usage \
+            --window-size=800,600 --virtual-time-budget=15000 --dump-dom \
             http://127.0.0.1:8765/ >/tmp/dashboard-preview-live-dom.html \
             2>/tmp/dashboard-preview-chrome-stderr.log || {
               tail -80 /tmp/dashboard-preview-chrome-stderr.log
               exit 1
             }
-          grep -Fq 'cta6-tile--glass' /tmp/dashboard-preview-live-dom.html
-          grep -Fq 'dashboard-optics.js' /tmp/dashboard-preview-live-dom.html
+          grep -Fq 'cta6-tile--icon' /tmp/dashboard-preview-live-dom.html
           ! grep -Fq 'id="workspace-sidebar"' /tmp/dashboard-preview-live-dom.html
-          # A decoded geometry-only filter sets this marker only after all
-          # three per-pane field maps commit to the live SVG backdrop filter.
-          grep -Fq 'data-oracle-blur-sigma-far="' /tmp/dashboard-preview-live-dom.html
-          grep -Fq 'data-oracle-css-displacement-scale="1"' /tmp/dashboard-preview-live-dom.html
-          grep -Fq 'data-oracle-optical-mode="live-backdrop"' /tmp/dashboard-preview-live-dom.html || {
-            echo 'Browser did not activate the live optical filter'
-            tail -35 /tmp/dashboard-preview-chrome-stderr.log
+          grep -Fq 'dashboard-gpu-renderer.js' /tmp/dashboard-preview-live-dom.html
+          # This marker appears only after shader compilation, device/pipeline
+          # construction, real mip passes, and the first submitted GPU frame.
+          if ! grep -Fq 'data-gpu-scene="ready"' /tmp/dashboard-preview-live-dom.html; then
+            echo 'WebGPU pipeline did not report READY in headless Chrome'
+            grep -o 'data-gpu-scene="[^"]*"' /tmp/dashboard-preview-live-dom.html || true
+            tail -65 /tmp/dashboard-preview-chrome-stderr.log
             exit 1
-          }
-          echo 'Live SVG backdrop filter active; source-field geometry and no-sidebar verified'
+          fi
+          grep -Fq 'data-gpu-renderer="webgpu"' /tmp/dashboard-preview-live-dom.html
+          grep -Fq 'data-gpu-mip-levels="' /tmp/dashboard-preview-live-dom.html
+          echo 'Real WebGPU mip chain, oracle instancing and original DOM icons active'
 
       - name: Deploy preview branch to distinct Pages URL
         uses: cloudflare/wrangler-action@v4

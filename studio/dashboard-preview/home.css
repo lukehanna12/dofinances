@@ -416,3 +416,63 @@ body:has(> #workspace-shell .dashboard-home){
 @media(prefers-reduced-motion:reduce){
   .dashboard-home .cta6-tile--glass::after{transition:none}
 }
+
+
+/* =======================================================================
+ * WebGPU-owned clear glass: one real backdrop GPU texture and mip pyramid.
+ * DOM remains responsible only for semantic icons/controls and layout.
+ * The original photograph stays as accessible fallback until first GPU
+ * frame has been validated and submitted. Never overlay separate DOM glass
+ * or blur filters on a successful WebGPU frame.
+ *
+ * GAP PUBLIC-DOM-BACKDROP: arbitrary external DOM cannot be captured by
+ * WebGPU without moving that DOM into the GPU scene. The included image,
+ * its authored veil and glass are entirely GPU owned.
+ * ======================================================================= */
+#dashboard-webgpu-scene{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  display:block;
+  width:100vw;
+  height:100dvh;
+  pointer-events:none;
+  opacity:0;
+  contain:strict;
+}
+body[data-gpu-scene="ready"] #dashboard-webgpu-scene{
+  opacity:1;
+}
+body[data-gpu-scene="ready"]::before{
+  content:none!important;
+  display:none!important;
+}
+body[data-gpu-scene="ready"] > .workspace-home-art{
+  display:none!important;
+}
+body[data-gpu-scene="ready"] #workspace-shell{
+  position:relative;
+  z-index:1;
+  background:transparent;
+}
+body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+  isolation:auto!important;
+  overflow:visible!important;
+}
+body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu::before,
+body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu::after{
+  content:none!important;
+  display:none!important;
+}
+body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta6-icon{
+  color:#050505!important;
+  stroke:#050505!important;
+  position:relative;
+  z-index:2;
+}
