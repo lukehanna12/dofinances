@@ -354,11 +354,25 @@ test("Collections idle refresh icon uses Lucide rotate-cw with Apple-like stroke
  assert.ok(button.includes('stroke-linecap="round" stroke-linejoin="round"'));
  assert.ok(button.includes('<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>'));
  assert.ok(button.includes('<path d="M21 3v5h-5"/>'));
- assert.ok(button.endsWith("Refresh</button>"));
+ assert.ok(button.endsWith("</svg></button>"),"Only the refresh icon should remain visible");
+ assert.doesNotMatch(button,/<\/svg>\s*Refresh\s*<\/button>/);
+ assert.ok(button.includes('aria-label="Refresh collections directly from Colosseum"'));
+ assert.ok(css.includes('#cs-root #cs-refresh{width:36px;min-width:36px;height:36px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}'),
+   "Keep idle icon and loading ring centered within the same square button");
  assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}"));
  assert.ok(js.includes('refreshButton.addEventListener("click"'));
 });
 
+
+test("Expanded collection cards omit redundant Colosseum membership caption on desktop and mobile",()=>{
+ assert.ok(!js.includes("Collection membership, directly from Colosseum"));
+ assert.ok(!css.includes(".cs-caption{"),"Remove obsolete footer spacing");
+ assert.ok(js.includes('const markup=selected?cardMarkup():"";'));
+ assert.ok(js.includes("if(detail.innerHTML!==markup)detail.innerHTML=markup;"));
+ assert.ok(js.includes("if(mobile.innerHTML!==markup)mobile.innerHTML=markup;"),
+   "Desktop and mobile must use the same caption-free card");
+ assert.ok(js.includes('Revision '),"Retain the actual collection revision and utility summary");
+});
 
 test("Collections loading summary uses two synchronized, text-colored circular skeletons",()=>{
  const start=html.indexOf('id="cs-summary"');

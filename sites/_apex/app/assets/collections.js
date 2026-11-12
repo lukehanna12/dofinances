@@ -311,8 +311,7 @@ export function initColosseumCollections(){
    const selected=!!state.activeId;
    detail.classList.toggle("cs-empty",!selected);
    detail.setAttribute("aria-hidden",String(!selected));
-   const markup=selected?cardMarkup()+
-     (state.detail?'<p class="cs-caption">Collection membership, directly from Colosseum</p>':''):"";
+   const markup=selected?cardMarkup():"";
    if(detail.innerHTML!==markup)detail.innerHTML=markup;
    const mobile=list.querySelector(".cs-entry.cs-open [data-cs-mobile]");
    if(mobile){

@@ -73,6 +73,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Lucide rotate-cw at a subtler Apple-like line weight while idle.
    During a fetch, replace its arrow with a plain hollow ring: same 17px
    footprint and currentColor, no additional markup or scripting. */
+/* Fixed square click target; flex centering keeps the Lucide icon and
+   its loading-ring replacement in exactly the same central position. */
+#cs-root #cs-refresh{width:36px;min-width:36px;height:36px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}
 #cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}
 #cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}
 #cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}
@@ -174,7 +177,6 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}
 #cs-root .cs-utility-empty{padding:14px 0 0;color:var(--cs-muted);font-size:14px;line-height:1.6}
 #cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
-#cs-root .cs-caption{text-align:center;color:var(--cs-muted);font-size:14px;line-height:1.5;margin:24px 0 0}
 #cs-root .cs-mobile-detail{display:none;margin-top:24px;overflow-anchor:none}
 #cs-root .cs-loading{font-size:13px;line-height:1.7;color:var(--cs-muted);padding:20px 0}
 #cs-root .cs-notice{font-size:13px;color:var(--cs-muted);line-height:1.6;padding:12px 0}
