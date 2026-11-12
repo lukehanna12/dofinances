@@ -4,8 +4,8 @@ _Current Pages packaging verified 2026-11-11 against `.github/workflows/site.yml
 
 This source is the preserved static Liquid Glass sidebar demo formerly served
 at the temporary `app-sidebar-preview` Pages branch alias. It is deployed to
-`https://stu.dofinances.com/` **and** `/app/` by the production GitHub Actions
-workflow. The workspace navigation and route-specific wallpapers are shared with production; its optional glass scene-switching controls and exact live-backdrop Oracle mathematics remain available.
+`https://stu.dofinances.com/app/` by the production GitHub Actions
+workflow. The root `/` now hosts the five-component Glass gallery. The workspace navigation and route-specific wallpapers are shared with production; its optional glass scene-switching controls and exact live-backdrop Oracle mathematics remain available.
 
 This site has **no authenticated session or account operations**. Its bootstrap keeps production authentication, provider, permission, collection and diagnostics modules out of the public Pages bundle and disables account actions. Do not assume the appearance of a private workspace screen on Studio means its management APIs are enabled. The real private
 workspace stays under `https://dofinances.com/app`.
