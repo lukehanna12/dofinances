@@ -1,10 +1,10 @@
 # Dofinances: current production architecture
 
-_As inspected on 2026-11-11 from repository `main` (base commit `f764e154a5aaed6cc78dda73dbecb86c085f69f1`), the live Cloudflare route/DNS/Worker/Pages configuration, and the successful GitHub Actions deployment. This document separates verified configuration from end-to-end behavior that still requires a signed-in owner._
+_Architecture checked 2026-11-11 against the public source and live deployment. Personal identifiers, private authentication configuration, and secret values are intentionally omitted._
 
 ## Repository is the website deployment authority
 
-Repository: `lukehanna12/dofinances`, public, default branch `main`. Website code, documentation, tests and the GitHub Actions workflow are version-controlled. Cloudflare stores runtime records, deployed bindings, certificates and DNS routes. GitHub source edits do **not** directly modify Colosseum's independent provider registry, credential vault, local permission policy, or account data.
+This repository is public, with default branch `main`. Website code, documentation, tests and the GitHub Actions workflow are version-controlled. Cloudflare stores runtime records, deployed bindings, certificates and DNS routes. GitHub source edits do **not** directly modify Colosseum's independent provider registry, credential vault, local permission policy, or account data.
 
 | Source | Responsibility |
 | --- | --- |
@@ -41,11 +41,11 @@ Zoho inbound MX and DKIM, domain verification, and mail/payment-related DNS are 
 2. **Cloudflare Worker job:** adds the original Vite Auth-3 bundle at `sites/_apex/login/` and compiled `sites/_apex/assets/`; deploys `dofinances-host-router` with `wrangler deploy --config edge/wrangler.jsonc`.
 3. **Smoke job:** waits for both deployments and checks public HTTPS, canonical routing, Studio login 404, apex login 200, protected auth boundaries, allowlisted wallpaper objects and live sidebar behavior through headless Chrome.
 
-The latest inspected run at base revision `f764e15` succeeded in all four jobs. DNS and Worker routes are independently configured and **not provisioned on each deploy**. The pipeline uses GitHub Actions plus Wrangler, not Tailscale Funnel, Cloudflare Workers Builds, a local Mac, D1 or R2. The `main` branch is not currently branch-protected; direct pushes can trigger deployment.
+The inspected production run succeeded in all four jobs. DNS and Worker routes are independently configured and **not provisioned on each deploy**. The pipeline uses GitHub Actions plus Wrangler, not Tailscale Funnel, Cloudflare Workers Builds, a local Mac, D1 or R2. The `main` branch is not currently branch-protected; direct pushes can trigger deployment.
 
 ## Two distinct user interfaces
 
-**Private apex workspace (`https://dofinances.com/app`):** the Worker validates the seven-day, host-only Secure/HttpOnly Dofinances session before serving the HTML shell or protected assets. Navigation primarily uses native JS and hash routes, with specific nested `/app/...` and legacy `/dashboard/...` paths allowlisted by `WORKSPACE_VIEW_PATHS`. Main views: Home, Projects, Settings. Colosseum views: Utilities, Collections, Providers, Permissions, Diagnostics and Settings. Apple HIG Reader is a separate project. Source-of-truth CSS begins at `sites/_apex/assets/site-foundation.css`; workspace layering is in `dashboard.css`, `workspace-theme.css`, `workspace-enhancements.css`, `workspace-wallpapers.css` and screen-specific styles.
+**Private apex workspace (`https://dofinances.com/app`):** the Worker validates the host-only Secure/HttpOnly Dofinances session before serving the HTML shell or protected assets. Navigation primarily uses native JS and hash routes, with specific nested `/app/...` and legacy `/dashboard/...` paths allowlisted by `WORKSPACE_VIEW_PATHS`. Main views: Home, Projects, Settings. Colosseum views: Utilities, Collections, Providers, Permissions, Diagnostics and Settings. Apple HIG Reader is a separate project. Source-of-truth CSS begins at `sites/_apex/assets/site-foundation.css`; workspace layering is in `dashboard.css`, `workspace-theme.css`, `workspace-enhancements.css`, `workspace-wallpapers.css` and screen-specific styles.
 
 **Public Studio (`https://stu.dofinances.com/` or `/app/`):** standalone Liquid Glass navigation and wallpaper demo. This intentionally excludes private `dashboard.js`, authenticated account operations, and live Colosseum client controllers. The apex Auth-3 login is a separate React/Vite bundle; Studio `/login` and `/login/` are forced to 404 by a narrowly scoped Pages Function.
 
@@ -56,19 +56,19 @@ The sidebar's Oracle glass module derives SVG-filter optical/displacement fields
 | Authority | Owner and persistence | What it authorizes |
 | --- | --- | --- |
 | Dofinances authentication | `AUTH_STORE` SQLite Durable Object, Worker `dofinances-host-router` | Accounts, hashed sessions, MFA/TOTP, account verification/reset, linked Google/GitHub sign-in identities |
-| Dofinances Cloudflare account connection | Owner-only Access app at `/api/cloudflare/*` (30-day configured Access session) plus encrypted user API token in `AUTH_STORE` | Cloudflare management API operations within both user-token scope and UI-configured allowlists |
-| Colosseum owner authorization | Separate Access app at `/api/colosseum/*` (8-hour configured Access session), immutable `colosseum_owner` row, Worker HMAC secret | Restricted, signed calls over `COLOSSEUM_ROUTER` to the upstream Colosseum control plane |
+| Cloudflare account connection | Separate authenticated account access and encrypted server-side credential | Scoped management operations |
+| Colosseum administration | Independent owner authorization and authenticated internal forwarding | Restricted operations in upstream control plane |
 | Colosseum local permissions | Independent local gateway / local policy authority | Filesystem read/write/add/delete, script/execution limits, hazard confirmation/PIN, effective-access evaluation |
 | Colosseum provider registry/vault | Upstream Colosseum services | Federated host connections, provider credentials, MCP tools/resources/prompts/skills, independent local profiles and invocation grants |
 | Wallpaper library | Separate `library-iii` Worker, content-addressed objects | Only the small public allowlist is proxied by Dofinances |
 
 **Do not conflate these authorities.** Dofinances OAuth with Google/GitHub is identity-only and does not retain provider API tokens. Colosseum's Providers screen is a client for upstream registry/vault/permission interfaces, not the credential or access authority itself. Permissions is the current operator-facing authority for local-work policy, enforced independently by the local gateway; the former Google Sheets manager is retired. Collections and Diagnostics also request live upstream records; no fabricated data or background status polling is required.
 
-The protected Colosseum routes support owner enrollment/status, `collection.manage`, `permissions.manage`, `provider.admin` (including OAuth callback), `catalog.add/update/remove`, and `system.status`. Server-side checks enforce account session, Access owner JWT, bound owner, exact POST Origin, method/size allowlists, and HMAC-signed forwarding. The client uses upstream prepare/commit/verification receipts for regulated operations, rather than treating a button click as proof of a policy change. The current Collections frontend lists **ten** per page; utility-admission `+` is intentionally disabled.
+Colosseum administrative routes support owner enrollment, collections, permissions, providers, catalog maintenance and diagnostics with server-enforced identity and request authorization. The client uses upstream prepare/commit/verification receipts for regulated operations, rather than treating a button click as proof of a policy change. The current Collections frontend lists **ten** per page; utility-admission `+` is intentionally disabled.
 
 ## What is verified, and what is not
 
-**Verified:** repository source and tree; read/push/admin repository access; the exact production workflow; successful build, deployment and smoke jobs; live DNS, Worker routes, Pages project, Access app paths/durations and Worker binding *names/types*; no D1 or R2 in this site's auth path.
+**Verified:** repository source and tree; read/push/admin repository access; the exact production workflow; successful build, deployment and smoke jobs; live DNS, Worker routes, Pages project, independent access-control layers and Worker binding types; no D1 or R2 in this site's auth path.
 
 **Not inferred solely from those checks:** production end-to-end authenticated provider and permission writes; upstream MCP provision coverage; Mailtrap sending-domain approval, current quota, API delivery or inbox placement; real external OAuth sign-in; validity/privilege details of secret tokens that are not readable. These require dedicated authenticated/controlled tests. A successful smoke job alone does not prove them.
 

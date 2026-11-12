@@ -4,7 +4,7 @@ Verified November 11, 2026 against Cloudflare DNS, Worker routes, Pages and repo
 
 ## Authoritative DNS
 
-Cloudflare zone `82449992fdde32c2fedbc9fda8eb2d3c` is active. Nameservers: `austin.ns.cloudflare.com`, `kira.ns.cloudflare.com`. DNSSEC is disabled by choice.
+Cloudflare is authoritative for the domain. Zone identifiers and private account configuration are intentionally omitted; consult the Cloudflare dashboard for the live zone and DNS security settings.
 
 | DNS hostname | Record | Proxy | Routing |
 | --- | --- | --- | --- |
@@ -15,7 +15,7 @@ Cloudflare zone `82449992fdde32c2fedbc9fda8eb2d3c` is active. Nameservers: `aust
 
 The placeholder IP `192.0.2.1` is deliberately originless; incoming proxied requests are handled by the Worker route rather than a GoDaddy backend. Cloudflare Universal SSL (apex and first-level wildcard) is active. Deeper `a.b.dofinances.com` hostnames are not covered by the default certificate.
 
-Existing Zoho Mail delivery (three MX records and the `zmail._domainkey` DKIM TXT), Zoho domain verification, Domain Connect and GoDaddy payment-link DNS entries are preserved. Mailtrap sending/tracking/DKIM CNAMEs (`mt75`, `mt-link`, `rwmt1._domainkey`, `rwmt2._domainkey`) are also present and DNS-only. **The three obsolete SendGrid CNAMEs and its SPF include were removed in November 2026**; do not restore them. Do not proxy or overwrite Zoho mail records.
+Existing Zoho Mail delivery (three MX records and the `zmail._domainkey` DKIM TXT), Zoho domain verification, Domain Connect and GoDaddy payment-link DNS entries are preserved. Mailtrap sending, tracking and DKIM DNS records are also present and remain DNS-only. **The three obsolete SendGrid CNAMEs and its SPF include were removed in November 2026**; do not restore them. Do not proxy or overwrite Zoho mail records.
 
 ## Git content locations
 
@@ -46,12 +46,12 @@ The apex Worker now also serves a protected `/app` dashboard and email/password 
 
 ## Email delivery for account security
 
-The apex Worker uses the **Mailtrap transactional Email API**, not inbound SMTP. On 2026-11-11 its `MAILTRAP_API_TOKEN` secret binding and `AUTH_EMAIL_FROM=noreply@dofinances.com` variable were both present. Cloudflare DNS also contains Mailtrap-issued `mt75`, `mt-link`, `rwmt1._domainkey`, and `rwmt2._domainkey` CNAME records. Zoho's three existing MX records and DKIM remain authoritative for inbound mail. Mailtrap sending-domain approval and actual delivery were **not established by this infrastructure check**; do not equate a configured token or DNS record with a verified mailbox test. See [Mailtrap verification](mailtrap-activation.md) and [account security](account-security.md).
+The apex Worker uses a transactional email API with private server-side credentials and provider-issued DNS records. The integration's configuration has been observed, but provider-side sender approval and mailbox delivery were not validated. Inbound email is separately handled by the existing mail provider. See [Mailtrap verification](mailtrap-activation.md).
 
 ## Control-plane service boundaries
 
-Worker `edge/wrangler.jsonc` binds `AUTH_STORE` (SQLite Durable Object), `COLOSSEUM_ROUTER` (`router` Worker), and `LIBRARY_III` (`library-iii` Worker) in addition to `ASSETS`. Cloudflare Access applies an 8-hour owner-only app at `/api/colosseum/*` and a separate 30-day owner-only app at `/api/cloudflare/*`. The former authorizes signed Colosseum administration forwarding; the latter protects a user-owned, separately encrypted Cloudflare management token. See [architecture](architecture.md) and [owner authorization](colosseum-owner-auth.md).
+The Worker has independent bindings for static assets, the account store, Colosseum administration and an allowlisted wallpaper service. Separate owner-restricted access policies protect administrative operations; their precise account identifiers and session parameters are not included in public documentation.
 
 ## Mailtrap migration DNS baseline (2026-11-06)
 
-The legacy provider's CNAMEs `em5386.dofinances.com`, `s1._domainkey.dofinances.com`, and `s2._domainkey.dofinances.com` were retired. The apex SPF TXT is `v=spf1 include:zoho.com ~all`, without the legacy outbound provider include. Keep the current Zoho root MX priorities of 10, 20, 50 and `zmail._domainkey` intact. The present Mailtrap records were installed from the provider; do not replace them with example values or add competing SPF TXT records. Reverify provider-side domain approval before changing any authentication DNS. See [Mailtrap activation](mailtrap-activation.md).
+The legacy provider's CNAMEs `em5386.dofinances.com`, `s1._domainkey.dofinances.com`, and `s2._domainkey.dofinances.com` were retired. The apex SPF record reflects the authorized mail provider and excludes the retired outbound service. Keep the current Zoho root MX priorities of 10, 20, 50 and `zmail._domainkey` intact. The present Mailtrap records were installed from the provider; do not replace them with example values or add competing SPF TXT records. Reverify provider-side domain approval before changing any authentication DNS. See [Mailtrap activation](mailtrap-activation.md).

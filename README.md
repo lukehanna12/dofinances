@@ -41,7 +41,7 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 **Password hashing compatibility:** Cloudflare currently caps native PBKDF2 iterations at 100,000. This initial system uses 100,000 individually salted PBKDF2-SHA256 iterations, below the stronger modern guidance; move to a reviewed, memory-hard password KDF before accepting sensitive financial data.
 
-**Account security features:** New-account email confirmation, one-use password recovery, TOTP authenticator MFA, and one-time recovery codes are implemented. The deployed Worker has a `MAILTRAP_API_TOKEN` secret binding and `AUTH_EMAIL_FROM=noreply@dofinances.com` non-secret variable; **binding presence does not prove the Mailtrap sending domain is verified or that messages arrive**. Check `/api/auth/config` for runtime feature readiness and complete controlled delivery tests before declaring email onboarding operational. Missing or rejected email delivery fails closed. See [Mailtrap readiness](docs/mailtrap-activation.md). The `MFA_ENCRYPTION_KEY` is a Worker secret, not Git content.
+**Account security features:** New-account email confirmation, password recovery, authenticator MFA, and recovery codes are implemented. Outbound email credentials are managed privately, and configuration alone does not establish provider approval or successful delivery. Missing or rejected email delivery fails closed. See [Mailtrap readiness](docs/mailtrap-activation.md).
 
 **Legacy accounts:** Existing registrations created before email verification was introduced can still sign in. They show as unverified until a verification email is delivered. New registrations cannot use `/app` until confirmation. MFA is optional, but required on every new sign-in after enrollment. Password resets on MFA-enabled accounts require an authenticator or recovery code.
 
@@ -56,7 +56,7 @@ The authenticated `/app` dashboard has a collapsible/resizable sidebar with thre
 - **Permissions:** manages local filesystem path rules, execution limits, hazard PIN and effective-access inspection through the independently enforced local gateway. The old Google Sheets permission manager is retired.
 - **Diagnostics:** user-invoked Colosseum diagnostic reports with no background polling.
 
-All Colosseum management APIs are behind both the Dofinances session and owner-only Cloudflare Access; the Worker forwards signed, restricted operations to the separate Colosseum router. See [current architecture](docs/architecture.md) and [owner authorization](docs/colosseum-owner-auth.md).
+Colosseum administrative operations require independent server-side authorization and use restricted internal forwarding. See [current architecture](docs/architecture.md) and [owner authorization](docs/colosseum-owner-auth.md).
 
 Main Settings retains Google/GitHub identity linking (limits: five Google, three GitHub), email verification, MFA, and account deletion. Navigation uses in-page hash routes such as `/app#projects` and `/app#colosseum/diagnostics`; no additional public Worker routes or permissions are introduced. The sidebar can collapse to an icon rail on desktop, with the preference stored locally in the browser; on phones it becomes an accessible slide-out navigation drawer. OAuth callbacks that return to `/app?federation_linked=1` or `/app?federation_error=...` automatically show the main Settings view.
 

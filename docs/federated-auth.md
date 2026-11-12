@@ -6,12 +6,12 @@ Dofinances supports first-party email/password accounts and identity-only OAuth/
 
 ## Status and provider registrations
 
-A button appears enabled only when its complete OAuth client configuration is present in the deployed **dofinances-host-router Worker**. On 2026-11-11 the Google and GitHub OAuth client-ID and client-secret bindings were both present in Cloudflare, but binding presence alone does not verify consent-screen configuration or a complete interactive sign-in. The code cannot create third-party OAuth application registrations on a provider's behalf.
+A button appears enabled only when its complete OAuth client configuration is present in the deployed **dofinances-host-router Worker**. OAuth provider configuration is managed privately; the presence of configured credentials alone does not establish successful interactive sign-in. The code cannot create third-party OAuth application registrations on a provider's behalf.
 
 | Provider | Client registration | Required Worker secrets | Exact callback |
 | --- | --- | --- | --- |
-| Google | Google Cloud Console → OAuth client (web application), configure OAuth consent screen | GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET | https://dofinances.com/api/auth/oauth/callback/google |
-| GitHub | GitHub Developer Settings → OAuth Apps → New OAuth App, with Homepage https://dofinances.com | GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET | https://dofinances.com/api/auth/oauth/callback/github |
+| Google | Google Cloud Console → OAuth client (web application), configure OAuth consent screen | protected provider configuration and protected provider configuration | https://dofinances.com/api/auth/oauth/callback/google |
+| GitHub | GitHub Developer Settings → OAuth Apps → New OAuth App, with Homepage https://dofinances.com | protected provider configuration and protected provider configuration | https://dofinances.com/api/auth/oauth/callback/github |
 
 Use Cloudflare **Settings → Variables and Secrets** to save client credentials. Do not commit secrets to GitHub. For Google/GitHub, request only identity scopes: Google openid/profile/email, GitHub read:user/user:email. If GitHub supplies no verified email, linking to an authenticated Dofinances account is possible but creating a new account is rejected until a verified email is available.
 
@@ -31,7 +31,7 @@ Use Cloudflare **Settings → Variables and Secrets** to save client credentials
 
 ## Security boundaries and deployment
 
-The Worker creates a 10-minute OAuth transaction with random state, PKCE S256 verifier and nonce (OIDC), stores it in the existing SQLite Durable Object, and sets a short-lived __Host- HttpOnly Secure SameSite=Lax cookie. Callback consumes the state atomically; linking also checks the original logged-in session. Verified identity claims are checked before local account lookup. First-party sessions are still issued by the existing session system.
+The Worker creates a short-lived, state-bound OAuth transaction with PKCE and nonce validation where applicable, using server-side storage and secure cookies. Callback consumes the state atomically; linking also checks the original logged-in session. Verified identity claims are checked before local account lookup. First-party sessions are still issued by the existing session system.
 
 OAuth code exchanges and JWKS fetches use fixed upstream HTTPS URLs, with no arbitrary callback or URL forwarding. This identity-only feature does not add Workers, open ports, or D1/R2 resources; it adds Google/GitHub login methods to the existing account authority. Existing email/password, MFA, verified email, session-cookie, and account-deletion behavior remain in place.
 

@@ -1,15 +1,15 @@
 # Cloudflare account connection — DoFinances Settings
 
-_Confirmed against source and Cloudflare Access configuration on 2026-11-11._
+_Architecture reviewed 2026-11-11. Public documentation omits private owner identifiers, account IDs, token identifiers, signing secrets and live session durations._
 
 The main Settings page at https://dofinances.com/app/settings manages a durable, user-owned Cloudflare API connection, independently of Colosseum administrator enrollment.
 
 ## Security
 
-- Cloudflare Access protects only /api/cloudflare/* with a separate self-hosted application, an allow policy for the verified Cloudflare owner, and expiring signed Access JWTs.
+- Cloudflare Access protects a restricted management route family and verifies signed identity assertions.
 - The DoFinances Worker additionally requires its Secure, HttpOnly account session and permanently binds the single Cloudflare owner identity to one immutable DoFinances user ID. Cloudflare account ownership is independent of all project-specific owner records.
 - An entered Cloudflare *user API token* is verified using /user/tokens/verify and /user. The token requires User Details Read so its owner can be verified against the server's configured Cloudflare owner email.
-- The token is encrypted with AES-256-GCM in the existing SQLite Durable Object. The existing MFA_ENCRYPTION_KEY is reused with a distinct authenticated-data context bound to the DoFinances user ID. The plaintext token is never returned to Settings.
+- The connected API credential is encrypted in server-side storage and never returned in plaintext.
 - Every API request requires both signed-in identities; the request is forwarded exclusively to https://api.cloudflare.com/client/v4 after policy checks.
 - The permission record and stored API token persist across sessions and deployments until disconnected, revoked, or expired. **Neither the Cloudflare Access session nor the DoFinances login session lasts permanently**, and that is intentional.
 
@@ -25,7 +25,7 @@ The integrated JSON API console is for specific Cloudflare API requests. Non-JSO
 
 ## Deployment
 
-Cloudflare Access application: **DoFinances Cloudflare account access**, path `dofinances.com/api/cloudflare/*`, **720-hour / 30-day** configured session, exact owner allow policy. This is **not** the 8-hour Colosseum owner Access application. The audience is set in edge/wrangler.jsonc as CLOUDFLARE_CONNECTION_ACCESS_AUD. The independent owner email may be stored as CLOUDFLARE_OWNER_ACCESS_EMAIL; until configured, the existing verified-owner email secret COLOSSEUM_OWNER_ACCESS_EMAIL is used. Preserve the Access issuer and MFA_ENCRYPTION_KEY. Do not place API tokens in GitHub.
+The Cloudflare account connection is protected by an independent, owner-restricted Access application. Its policy, identity, credential identifiers and live session limits are maintained in protected Cloudflare settings.
 
 Automated tests cover encryption, path and scope denial, verification, owner route checks, and static UI wiring. End-to-end authentication and token provisioning require the owner's browser login and user-issued token.
 
@@ -33,12 +33,12 @@ Automated tests cover encryption, path and scope denial, verification, owner rou
 
 Cloudflare Access authentication confirms the owner's identity for a short session. It does **not** mint, expose, or grant a Cloudflare management API token. Settings shows "Identity verified · token required" until the owner creates a user API token and connects it in the second step. The effective Cloudflare management connection is marked "API connected" only after the token passes Cloudflare verification and its encrypted record is saved. The account owner can then update its effective scope or disconnect it from Settings. Cloudflare API token issuance is an explicit owner action in the Cloudflare dashboard; self-hosted Access sign-in cannot silently authorize it.
 
-## Cloudflare Access session duration
+## Session lifecycle
 
-This dedicated Cloudflare account Access application is configured for `720h` (30 days), rather than the separate Colosseum application’s `8h`. Its owner JWT verification explicitly accepts a token lifetime up to 30 days; the project-specific Colosseum JWT verification retains its original 24-hour maximum. Cloudflare may require reauthentication after 30 days, on revocation, or sooner if a stricter policy/client session or identity-provider setting applies. The Cloudflare API token stored in the DoFinances Durable Object continues to persist independently of Access browser session expiry. DoFinances account login sessions are separately managed.
+The Access session and Dofinances login expire according to independent protected policies. A saved API credential may persist until revoked, disconnected or expired. Consult protected account settings for exact lifetimes.
 
 ## Runtime authority and operational boundaries
 
-The current worker routes are `GET /api/cloudflare/connect`, `GET/POST/DELETE /api/cloudflare/connection`, `PUT /api/cloudflare/scope`, and `POST /api/cloudflare/request`. Authentication requires the active DoFinances session **and** verified Cloudflare Access owner JWT, then local policy is intersected with the user's Cloudflare token permissions. Only JSON responses within the handler's bounds are accepted.
+The Worker implements authenticated connection, scope and request management without exposing credential material to the browser.
 
 The stored token/connection is separate from Colosseum provider OAuth credentials or local-provider grants. Website source is deployed through GitHub Actions and Wrangler; neither a GitHub commit nor an Access login issues or rotates a user API token. See [current architecture](architecture.md) and [Colosseum owner authorization](colosseum-owner-auth.md).

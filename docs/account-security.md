@@ -16,7 +16,7 @@ _Implementation status checked 2026-11-11 against the Worker source and deployed
 
 Verification/reset tokens are 256-bit cryptographically random, stored only as SHA-256 hashes, scoped to user and purpose, expiration-limited and consumed on use. New accounts receive no authenticated session until verification. Existing users are temporarily grandfathered and may verify their email when delivery is enabled.
 
-TOTP implements RFC 6238 with 30-second SHA-1 six-digit codes, a ±1 step tolerance, replay protection, AES-GCM encryption at rest using a server-only `MFA_ENCRYPTION_KEY` and 10 one-use, account-scoped hashed recovery codes. Enrollment requires the user's current password. Enabling/disabling MFA revokes all active sessions. Login requests with MFA enabled receive a five-minute single-use challenge, never a logged-in cookie, until the correct second factor is supplied. Authentication failures are rate-limited.
+TOTP implements RFC 6238 with replay protection, encrypted key storage, and one-use recovery codes. Enrollment requires the user's current password. Enabling/disabling MFA revokes all active sessions. Login requests with MFA enabled receive a five-minute single-use challenge, never a logged-in cookie, until the correct second factor is supplied. Authentication failures are rate-limited.
 
 ## Selected outbound provider: Mailtrap Email Sending
 
@@ -27,7 +27,7 @@ It does **not** call Mailtrap's Sandbox or bulk-marketing API. The Mailtrap acco
 
 ### Current outbound email configuration and remaining verification
 
-**Verified configuration (2026-11-11):** the Worker has a `MAILTRAP_API_TOKEN` secret binding; `AUTH_EMAIL_FROM=noreply@dofinances.com` is configured in `edge/wrangler.jsonc`. Cloudflare DNS already has Mailtrap CNAMEs for `mt75`, `mt-link`, and `rwmt1`/`rwmt2._domainkey`, all DNS-only. Existing Zoho MX, Zoho DKIM, and DMARC records remain. **Neither secret presence nor DNS presence proves Mailtrap's provider-side domain approval, API acceptance, or real mailbox delivery.**
+**Configuration review (2026-11-11):** Outbound email credentials and provider-issued DNS records are installed, but that does not prove the sending-domain approval, API acceptance, or mailbox delivery. No credential identifiers or private contact details are published here.
 
 Before considering sign-up and recovery fully operational, verify the actual Mailtrap sending-domain approval, inspect the public `/api/auth/config` readiness flags, and run controlled sign-up/verification/recovery tests to owned inboxes (including spam placement and single-use token behavior). Avoid copying, reissuing, or logging a production token merely to re-check configuration. If changes are required, use the exact records and guidance issued by Mailtrap, preserve the Zoho records, and do not publish duplicate root SPF TXT records.
 
@@ -42,13 +42,10 @@ If mail credentials are missing, signup and email-dependent flows fail closed wi
 existing login and MFA continue. If email dispatch fails during signup, the pending account
 may remain and can request a new link later. There is **no retry loop** for an uncertain send.
 
-The `MFA_ENCRYPTION_KEY` (64 hexadecimal characters representing a 256-bit random key)
-is installed as a Cloudflare Worker secret. Keep it safe and do not rotate without a key
-rotation plan: rotating it invalidates decryption of previously enrolled authenticators.
-Never log or commit secrets, verification links, codes or plaintext passwords.
+Cryptographic keys remain in protected runtime settings and require a planned rotation procedure. Never log or commit secrets, verification links, codes or plaintext passwords.
 
 See [the Mailtrap verification checklist](mailtrap-activation.md) for the exact remaining readiness checks.\n\n## Security boundaries and follow-up
 
-Dofinances account mutations require the exact canonical apex Origin and JSON. Colosseum owner APIs independently validate the account cookie, Cloudflare Access owner JWT, allowed methods, and upstream action grants; see [owner authorization](colosseum-owner-auth.md). Sessions use hashed server-side tokens in Secure, HttpOnly, SameSite=Lax `__Host-` cookies; protected dashboard HTML and assets are marked no-store. Cross-origin attempts are rejected. Only the apex Worker has account authority; the `stu` Pages host does not receive the apex-only host cookie or have account-mutating client code. Identity-only Google/GitHub sign-in is separate from Colosseum federated provider credentials; see [federated sign-in](federated-auth.md).
+State-changing requests require server-side origin, session and payload checks. Colosseum owner APIs independently enforce authorization before forwarding regulated requests; see [owner authorization](colosseum-owner-auth.md). Sessions use hashed server-side tokens in Secure, HttpOnly, SameSite=Lax `__Host-` cookies; protected dashboard HTML and assets are marked no-store. Cross-origin attempts are rejected. Only the apex Worker has account authority; the `stu` Pages host does not receive the apex-only host cookie or have account-mutating client code. Identity-only Google/GitHub sign-in is separate from Colosseum federated provider credentials; see [federated sign-in](federated-auth.md).
 
 Provider-side sender approval, deliverability tests, security review, password hashing migration to a reviewed memory-hard KDF, and ideally passkeys or phishing-resistant MFA are recommended before storing sensitive financial information. Rate limiting helps reduce automated abuse but is not a replacement for edge-level bot controls or account security monitoring.
