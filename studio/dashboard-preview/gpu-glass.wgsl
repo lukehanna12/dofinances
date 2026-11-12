@@ -11,7 +11,8 @@
  *   blur selected input: 52 heldout public geometry, 8 exact encoder joins.
  *
  * GAPS: the precise native mip producer/filter kernel, native LPH shader
- *       half/f32 rounding, public clear-state joint fields, SDF corner writer,
+ *       full half/f32/G14G rounding equivalence, public clear-state joint
+ *       fields, SDF corner writer,
  *       browser presentation colorspace/Q, and universal writer/selection
  *       paths are NOT proven. Constants from separate finite families are
  *       not claimed to be a real joined public clear-style material.
@@ -90,6 +91,15 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
 // __ORACLE_HALF_BODY__ is replaced with a WGSL body before compilation.
 fn nativeHalf3(v:vec3<f32>)->vec3<f32> {
   __ORACLE_HALF_BODY__
+}
+// AIR LPH explicit half-to-float boundaries. Keeping these as explicit
+// conversions prevents WGSL fast-math from silently eliding source casts.
+// G14G precise half operation semantics still requires native validation.
+fn nativeHalf1(v:f32)->f32 {
+  return nativeHalf3(vec3<f32>(v,0.0,0.0)).x;
+}
+fn nativeHalf2(v:vec2<f32>)->vec2<f32> {
+  return nativeHalf3(vec3<f32>(v,0.0)).xy;
 }
 fn supercircleSDF(ax:f32,ay:f32,hw:f32,hh:f32,
                   r:f32,bx:f32,by:f32)->vec3<f32>{
@@ -192,9 +202,21 @@ fn mode5SDF(local:vec2<f32>,size:vec2<f32>,radii:vec4<f32>)->vec3<f32>{
   return nativeHalf3(vec3<f32>(chosen.x,chosen.y,-chosen.z));
 }
 
+/* AIR glass_background_sdf_no_bleed_lph lines 256-271 and 352-366:
+ * uniform float -> HALF, multiply/saturate in HALF, 2-t, multiply, HALF
+ * sqrt/saturate, amount*root, amount-difference; return HALF displacement.
+ * The AIR adds d after this for refraction-adjusted blur distance, not UV.
+ */
 fn refractionEnvelope(d:f32,amount:f32,invHeight:f32)->f32{
-  let t=clamp(-d*invHeight,0.0,1.0);
-  return amount*(1.0-clamp(sqrt(clamp(t*(2.0-t),0.0,1.0)),0.0,1.0));
+  let halfInv=nativeHalf1(invHeight);
+  let halfAmount=nativeHalf1(amount);
+  let halfDistance=nativeHalf1(d);
+  let t=clamp(nativeHalf1(nativeHalf1(-halfDistance)*halfInv),0.0,1.0);
+  let twoMinus=nativeHalf1(2.0-t);
+  let root=nativeHalf1(sqrt(nativeHalf1(twoMinus*t)));
+  let clipped=clamp(root,0.0,1.0);
+  let weighted=nativeHalf1(clipped*halfAmount);
+  return nativeHalf1(halfAmount-weighted);
 }
 fn thresholdMix(d:f32)->f32{
   // 0.300048828125, -1, -.5 retained from ONE joint PRIVATE diagnostic.
@@ -208,15 +230,25 @@ fn ramp(d:f32,a:f32,b:f32)->f32{
   return clamp((d-a)/(b-a),0.0,1.0);
 }
 fn blurDistribution(distance:f32,minDimension:f32)->f32{
-  // Native alpha=(1,.5,0,-.5); dist=(-.5*d,-1,0,0).
-  let near=ramp(distance,-0.5*minDimension,-1.0);
-  let far=ramp(distance,0.0,0.0);
-  return 1.0-(0.5*near-0.5*far);
+  // AIR 290-320, 369-380: 3 Float32 FMA+saturate ramps become half,
+  // then half alpha multiplication, ordered half addition, half subtraction.
+  // Native alpha=(1,.5,0,-.5); distances=(-.5*d,-1,0,0).
+  // Zero-span last ramp uses the retained NaN->0/Inf->clamp branch.
+  let near=nativeHalf1(ramp(distance,-0.5*minDimension,-1.0));
+  let far=nativeHalf1(ramp(distance,0.0,0.0));
+  let weightedNear=nativeHalf1(near*.5);
+  let weightedFar=nativeHalf1(far*(-.5));
+  let sum=nativeHalf1(nativeHalf1(weightedNear+0.0)+weightedFar);
+  return nativeHalf1(1.0-sum);
 }
+/* AIR 321-337 and 379-397: float blur-word × half distribution -> half,
+ * half branch, HALF log2, HALF max(0), then convert to Float32 sampler LOD.
+ * In native G14G, exact log2/rounding semantics remain an open SR proof.
+ */
 fn glassLOD(blurWord:f32,dist:f32)->f32{
-  let t=blurWord*dist;
-  let selected=select(t,1.0+0.5*t,t<2.0);
-  return max(0.0,log2(max(selected,0.000001)));
+  let t=nativeHalf1(blurWord*nativeHalf1(dist));
+  let selected=select(t,nativeHalf1(1.0+0.5*t),t<2.0);
+  return nativeHalf1(max(0.0,nativeHalf1(log2(max(selected,0.000001)))));
 }
 
 /* Fully explicit bilinear+trilinear texture loads. This removes dependence
@@ -279,12 +311,18 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // projects to 1 CSS px per material amount for equal-sized extents.
   // This cross-domain assumption is not a universal proof.
   let displacementFactor=1.0/(4.0*0.25);
-  let innerUV=(in.position.xy+field.yz*inner*displacementFactor)/
-     state.viewport.xy;
-  let outerUV=(in.position.xy+field.yz*outer*displacementFactor)/
-     state.viewport.xy;
-  let innerLOD=glassLOD(tile.properties.z,blurDistribution(signed+inner,d));
-  let outerLOD=glassLOD(tile.properties.z,blurDistribution(signed+outer,d));
+  // AIR 323-328 / 383-387: convert base UV to half2, multiply native
+  // half displacement × half2 matrix, HALF add, then promote to sample UV.
+  // GAP NATIVE-UV-TO-CSS still applies to the CSS/texture scale mapping.
+  let baseUV=nativeHalf2(in.position.xy/state.viewport.xy);
+  let innerUV=nativeHalf2(baseUV+nativeHalf2(
+    field.yz*inner*displacementFactor/state.viewport.xy));
+  let outerUV=nativeHalf2(baseUV+nativeHalf2(
+    field.yz*outer*displacementFactor/state.viewport.xy));
+  let innerLOD=glassLOD(tile.properties.z,
+    blurDistribution(nativeHalf1(signed+inner),d));
+  let outerLOD=glassLOD(tile.properties.z,
+    blurDistribution(nativeHalf1(signed+outer),d));
   let glass=mix(mipSample(innerUV,innerLOD),
                 mipSample(outerUV,outerLOD),thresholdMix(signed));
   let rim=exp(-abs(signed)*1.16);

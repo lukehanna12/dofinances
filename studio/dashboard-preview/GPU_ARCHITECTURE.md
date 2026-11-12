@@ -107,3 +107,22 @@ retain the original Float32 fallback and declare that status in runtime audit.
 
 No other global oracle proof flag was altered; the target-native mip-kernel,
 selected scalar producer, and final output Q remain unresolved.
+
+
+## 2026-11-12 LPH AIR intermediate conversion reconciliation
+
+Source `glass_background_sdf_no_bleed_lph.ssa.json.gz` (exact retained
+graph, original Float32/Float16 opcodes):
+- Lines 256–271 / 352–366: refraction uniform operands truncate to half,
+  followed by half multiply/saturate/subtract/sqrt and half result.
+- Lines 290–321 / 369–381: Float32 ramp FMA results are saturated and
+  converted to half before weighted half alpha accumulation.
+- Lines 321–337 / 379–397: Float32 blur-word product is rounded to half,
+  branch-selected, half-log2 and half-clamped before texture sampling.
+- Lines 323–328 / 383–387: UV is converted to half2 before addition of
+  half-space displacement and subsequent promotion to sampler coordinates.
+
+The WebGPU implementation now explicitly rounds at these selected AIR
+boundaries when shader-f16 is supported. This improves semantic fidelity on
+the verified M2 adapter, but no general AIR↔native G14G equivalence, precise
+half logarithm equivalence or sampler subtexel arithmetic is claimed.

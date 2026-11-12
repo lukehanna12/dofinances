@@ -33,7 +33,7 @@ const audit={
   sceneCapture:"No DOM screenshot/readback. Arbitrary external DOM is NOT included.",
   backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
-  oracleMath:"four-corner mode5 SDF, refraction envelope, blur LOD; finite scope",
+  oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
   mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[]
 };
 Object.defineProperty(window,"__dashboardWebGPU",{
@@ -147,7 +147,7 @@ async function initialize(){
   const device=await adapter.requestDevice({
     requiredFeatures:nativeF16?["shader-f16"]:[]
   });
-  audit.nativeHalfConversion=nativeF16?"shader-f16 at AIR half-return sites":
+  audit.nativeHalfConversion=nativeF16?"shader-f16 at selected AIR half arithmetic/conversion sites":
     "f32 fallback; native LPH half conversion not matched";
   if(root)root.dataset.gpuPhase="device-ready";
   const context=OFFSCREEN_CI?null:canvas.getContext("webgpu");

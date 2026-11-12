@@ -98,3 +98,13 @@ test("WGSL contains both native-mode SDF bodies and half-conversion specializati
   assert.match(s,/cornerRadii: vec4<f32>/);
   assert.match(s,/let f0=cornerFactor\(\(r0\+r1\)\*\.5,hw\)/);
 });
+
+test("retained AIR half-rounding checkpoints encoded in browser shader",()=>{
+  const shader=fs.readFileSync(new URL("./dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+  assert.match(shader,/fn nativeHalf1/);
+  assert.match(shader,/fn nativeHalf2/);
+  assert.match(shader,/nativeHalf1\(blurWord\*nativeHalf1\(dist\)\)/);
+  assert.match(shader,/nativeHalf2\(baseUV\+nativeHalf2\(/);
+  assert.match(shader,/let root=nativeHalf1\(sqrt\(/);
+  assert.match(shader,/let weightedNear=nativeHalf1\(near\*\.5\)/);
+});
