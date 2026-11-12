@@ -200,7 +200,7 @@ async function initialize(){
     return r.text();
   }));
   if(root)root.dataset.gpuPhase="compile-wgsl";
-  sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replace(
+  sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replaceAll(
     "__ORACLE_HALF_BODY__",
     nativeF16?"return vec3<f32>(vec3<f16>(v));":"return v;");
   if(sources[2].includes("__ORACLE_HALF_BODY__"))
