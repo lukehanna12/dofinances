@@ -2,54 +2,82 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {collectionsTitleFrame,breadcrumbCrossingTime,initCollectionsTitleTransition,
-  COLLECTIONS_TITLE_TRIGGER_DISTANCE,COLLECTIONS_CRUMB_MOVE_MS}
+  COLLECTIONS_CRUMB_MOVE_MS}
   from "../sites/_apex/app/assets/collections-title-transition.js";
 
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("Collections handoff is a single binary threshold, never partial",()=>{
-  const max=400,threshold=COLLECTIONS_TITLE_TRIGGER_DISTANCE;
-  assert.equal(threshold,76);
-  const zero=collectionsTitleFrame(0,max);
-  assert.equal(zero.threshold,76);
-  assert.equal(zero.passed,false);
-  assert.equal(zero.largeBlur,0);
-  assert.equal(zero.largeOpacity,1);
-  assert.equal(zero.stripHeight,0);
-  const before=collectionsTitleFrame(threshold-.01,max);
-  assert.equal(before.passed,false);
-  assert.ok(before.largeOpacity>=0&&before.largeOpacity<.00001);
-  assert.equal(collectionsTitleFrame(threshold,max).passed,true);
-  assert.equal(collectionsTitleFrame(threshold+500,max).passed,true);
-  assert.equal(collectionsTitleFrame(threshold-.01,max).passed,false);
-  assert.deepEqual(collectionsTitleFrame(0,max),zero);
-  const at=collectionsTitleFrame(threshold,max);
-  assert.equal(at.largeOpacity,0);
-  assert.equal(at.stripHeight,64);
-  assert.equal(at.stripBlur,2);
-  assert.equal(at.largeBlur,1.25);
-  assert.equal(at.stripOpacity,1);
+const syntheticTitle=(scroll,top=140,height=52)=>({top:top-scroll,height});
+const syntheticBar=(bottom=94)=>({bottom});
+
+test("Handoff begins at exact 50% heading occlusion, in both directions",()=>{
+  const bar=syntheticBar();
+  // 140+26-94=72px; unlike the old fixed 76px, this follows typography.
+  const threshold=72;
+  const at=(scroll)=>collectionsTitleFrame(scroll,syntheticTitle(scroll),bar);
+  assert.equal(at(0).threshold,threshold);
+  assert.equal(at(0).passed,false);
+  assert.equal(at(0).largeBlur,0);
+  assert.equal(at(0).stripHeight,0);
+  assert.equal(at(threshold-0.0001).passed,false);
+  assert.equal(at(threshold).passed,true);
+  assert.equal(at(threshold+0.0001).passed,true);
+  assert.equal(at(threshold).threshold,threshold);
+  assert.equal(at(threshold).stripHeight,64);
+  assert.equal(at(threshold).stripBlur,2);
+  assert.equal(at(threshold).largeBlur,1.25);
+  assert.equal(at(threshold).stripOpacity,1);
+  assert.deepEqual(at(threshold-1),at(threshold-1),"Exact same crossing when reversing");
+  assert.equal(at(threshold-0.0001).passed,false,"Fade-in starts at reverse crossing");
 });
 
-test("Trigger is reachable on short Collections pages without adding scroll space",()=>{
-  for(const maxScroll of [1,5,12,20,48,70,90,128,140,152]){
-    const state=collectionsTitleFrame(maxScroll,maxScroll);
-    assert.ok(state.threshold>0&&state.threshold<=maxScroll);
-    assert.equal(state.passed,true,"Must finish even when user is at bottom "+maxScroll);
-    assert.equal(collectionsTitleFrame(Math.max(0,state.threshold-1e-3),maxScroll).passed,false);
+test("No premature short-page handoff if half-heading never passes behind top bar",()=>{
+  const bar=syntheticBar();
+  for(const maxScroll of [0,1,5,12,20,48,70]){
+    const state=collectionsTitleFrame(maxScroll,syntheticTitle(maxScroll),bar);
+    assert.equal(state.threshold,72);
+    assert.equal(state.passed,false,"Heading still over half visible at "+maxScroll);
   }
-  assert.equal(collectionsTitleFrame(0,0).passed,false);
-  assert.equal(collectionsTitleFrame(0,0).largeOpacity,1);
+  for(const scroll of [72,74,90,128,152]){
+    const state=collectionsTitleFrame(scroll,syntheticTitle(scroll),bar);
+    assert.equal(state.passed,true);
+  }
+  const invalid=collectionsTitleFrame(100,{top:0,height:0},bar);
+  assert.equal(invalid.passed,false,"Hidden/unmeasured headings cannot trigger");
+  assert.equal(invalid.threshold,null);
 });
 
-test("Blur rises monotonically before threshold and reverses identically",()=>{
-  const values=[0,10,25,40,60,75,76].map(y=>collectionsTitleFrame(y,500));
+test("Measured crossing adapts exactly to different heading sizes and sticky bar heights",()=>{
+  for(const {top,height,bottom} of [
+    {top:130,height:48,bottom:94},
+    {top:160,height:36,bottom:94},
+    {top:110,height:58,bottom:104},
+    {top:148.25,height:51.5,bottom:92.5}
+  ]){
+    const expected=top+height/2-bottom;
+    const bar=syntheticBar(bottom);
+    for(const scroll of [0,expected-.001,expected,expected+.001,200]){
+      const state=collectionsTitleFrame(scroll,syntheticTitle(scroll,top,height),bar);
+      assert.ok(Math.abs(state.threshold-expected)<1e-7);
+      assert.equal(state.passed,scroll>=expected);
+    }
+  }
+});
+
+test("Blur progresses smoothly to the midpoint without prematurely fading the title",()=>{
+  const bar=syntheticBar();
+  const values=[0,10,25,40,60,71,72].map(y=>collectionsTitleFrame(y,syntheticTitle(y),bar));
   for(let i=1;i<values.length;i++){
     assert.ok(values[i].largeBlur>=values[i-1].largeBlur);
     assert.ok(values[i].stripHeight>=values[i-1].stripHeight);
-    assert.ok(values[i].largeOpacity<=values[i-1].largeOpacity);
   }
-  assert.deepEqual(collectionsTitleFrame(25,500),values[2]);
+  assert.equal(values.at(-1).largeBlur,1.25);
+  assert.equal(values.at(-1).stripBlur,2);
+  const css=source("sites/_apex/app/assets/collections.css");
+  assert.match(css,/body\.collections-title-transition #project-collections-title\{[\s\S]*?opacity:1;\s*transition:opacity 180ms/);
+  assert.match(css,/body\.collections-title-transition\.collections-title-passed #project-collections-title\{\s*opacity:0/);
+  assert.doesNotMatch(source("sites/_apex/app/assets/collections-title-transition.js"),/--collections-large-opacity/,
+    "Heading fade must start with threshold state, not be scroll-scrubbed before it");
 });
 
 test("Chevrons can time their turns to actual crossing positions",()=>{
@@ -91,6 +119,8 @@ function mockEnvironment({scrollHeight=1500,clientHeight=800}={}){
   const header={...mockNode(),appendChild(child){this.child=child;}};
   const body={classList:classes(),style:mockNode().style};
   const scroll={scrollTop:0,scrollHeight,clientHeight};
+  heading.getBoundingClientRect=()=>syntheticTitle(scroll.scrollTop);
+  header.getBoundingClientRect=()=>syntheticBar();
   const handlers=new Map();
   const doc={
     querySelector:selector=>selector.startsWith("link[")?{}:header,
@@ -112,7 +142,7 @@ test("Controller crosses exactly once, completes on zero further scroll, reverse
   assert.equal(m.items[0].style.getPropertyValue("--collections-crumb-distance"),"0.000px");
   assert.equal(m.items[1].style.getPropertyValue("--collections-crumb-distance"),"-82.000px");
   assert.equal(m.items[2].style.getPropertyValue("--collections-crumb-distance"),"-114.000px");
-  const threshold=76;
+  const threshold=72;
   m.scroll.scrollTop=threshold-1;
   m.handlers.get("scroll")();
   assert.equal(m.body.classList.contains("collections-title-passed"),false);
@@ -120,7 +150,8 @@ test("Controller crosses exactly once, completes on zero further scroll, reverse
   m.handlers.get("scroll")();
   assert.equal(m.body.classList.contains("collections-title-passed"),true);
   assert.equal(m.breadcrumb.inert,true);
-  assert.equal(m.heading.style.getPropertyValue("--collections-large-opacity"),"0.0000");
+  assert.equal(m.heading.style.getPropertyValue("--collections-large-opacity"),"",
+    "Large title fade is triggered by the body class, not scroll-written opacity");
   // No extra scroll callbacks, RAF, or timers required for the cascade.
   assert.equal(m.items[3].varValues.has("--collections-crumb-opacity"),false);
   assert.equal(m.handlers.has("scroll"),true);
@@ -140,15 +171,19 @@ test("Controller crosses exactly once, completes on zero further scroll, reverse
   assert.equal(m.items[2].style.getPropertyValue("--collections-crumb-distance"),"");
 });
 
-test("Small document uses a lower threshold, allowing a complete handoff before bottom",()=>{
+test("Short document keeps exact heading midpoint rather than artificially lowering trigger",()=>{
   const m=mockEnvironment({scrollHeight:880,clientHeight:800});
   m.controller.setRoute("colosseum/collections");
-  m.scroll.scrollTop=39;
-  m.handlers.get("scroll")();
-  assert.equal(m.body.classList.contains("collections-title-passed"),false);
   m.scroll.scrollTop=40;
   m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),false,
+    "Do not fade when the large title remains more than half visible");
+  m.scroll.scrollTop=72;
+  m.handlers.get("scroll")();
   assert.equal(m.body.classList.contains("collections-title-passed"),true);
+  m.scroll.scrollTop=71.99;
+  m.handlers.get("scroll")();
+  assert.equal(m.body.classList.contains("collections-title-passed"),false);
 });
 
 test("CSS guarantees quicker, nonoverlapping title/breadcrumb handoff in both directions",()=>{
@@ -174,7 +209,8 @@ test("No polling or scroll-driven translation remains; Studio stays isolated",()
   assert.match(nav,/import \{initCollectionsTitleTransition\} from "\.\/collections-title-transition\.js"/);
   assert.match(nav,/collectionsTitleTransition\.setRoute\(route\)/);
   assert.match(js,/win\.addEventListener\("scroll",onScroll,\{passive:true\}\)/);
-  assert.match(js,/scroll>=threshold/);
+  assert.match(js,/heading\.getBoundingClientRect\(\),header\.getBoundingClientRect\(\)/);
+  assert.match(js,/headingRect\.top\+headingRect\.height\/2-barRect\.bottom/);
   assert.match(js,/doc\.body\.classList\.toggle\("collections-title-passed",passed\)/);
   assert.match(js,/offsetLeft/);
   assert.doesNotMatch(js,/requestAnimationFrame|setInterval|setTimeout|ResizeObserver|MutationObserver|screenshot|canvas\.toDataURL/);
@@ -194,9 +230,9 @@ test("Missing markup safely declines to mount transition",()=>{
 test("Native reference optics constrain Collections blur and title fade behavior",()=>{
   const js=source("sites/_apex/app/assets/collections-title-transition.js");
   const css=source("sites/_apex/app/assets/collections.css");
-  const start=collectionsTitleFrame(0,500);
-  const mid=collectionsTitleFrame(38,500);
-  const end=collectionsTitleFrame(76,500);
+  const start=collectionsTitleFrame(0,syntheticTitle(0),syntheticBar());
+  const mid=collectionsTitleFrame(36,syntheticTitle(36),syntheticBar());
+  const end=collectionsTitleFrame(72,syntheticTitle(72),syntheticBar());
   assert.equal(start.largeBlur,0);
   assert.equal(start.stripBlur,0);
   assert.ok(mid.largeBlur>0&&mid.largeBlur<end.largeBlur);
@@ -308,8 +344,8 @@ test("Breadcrumb stagger, chevron crossings and title handoff form a coherent fa
   assert.match(css,/opacity 88ms linear/);
   assert.match(css,/transition:transform 66ms cubic-bezier/);
   assert.match(css,/transition:opacity 58ms linear/);
-  m.scroll.scrollTop=76;m.handlers.get("scroll")();
+  m.scroll.scrollTop=72;m.handlers.get("scroll")();
   assert.ok(m.body.classList.contains("collections-title-passed"));
-  m.scroll.scrollTop=75;m.handlers.get("scroll")();
+  m.scroll.scrollTop=71.99;m.handlers.get("scroll")();
   assert.ok(!m.body.classList.contains("collections-title-passed"));
 });

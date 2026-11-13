@@ -1,11 +1,11 @@
 /*
- * Collections-only title handoff with one definitive scroll threshold.
- * The large title and backdrop track scroll up to that point. Crossing it
- * starts a complete, self-finishing, time-based CSS transition. Re-entering
- * the pre-threshold region reverses the entire sequence without timers,
- * animation frames, polling, or any dependence on remaining page height.
+ * Collections-only title handoff, anchored to the actual rendered geometry.
+ * When the midpoint of the large title crosses the bottom of the sticky
+ * lower top bar, all three transitions start from that exact crossing:
+ * large heading opacity, breadcrumb departure/reentry, compact-title handoff.
+ * The animations self-finish in CSS even when scrolling stops. No polling,
+ * animation frames, or fixed scroll-distance guesses.
  */
-export const COLLECTIONS_TITLE_TRIGGER_DISTANCE=76;
 /* Preserve one synchronized timeline for all three breadcrumb chevrons.
    The CSS movement and flip durations must match these constants. */
 export const COLLECTIONS_CRUMB_MOVE_MS=220;
@@ -20,20 +20,29 @@ const smooth=(a,b,x)=>{
   return t*t*(3-2*t);
 };
 
-/* Keep the trigger within the document's *actual* scrolling range, even
-   when the final Collections page is shorter than a normal viewport. */
-export function collectionsTitleFrame(scrollDistance,maxScrollDistance){
+/* The heading's visual half-height crossing uses its actual client rect,
+   including responsive font metrics and relative top placement. The sticky
+   bar's bottom edge is also measured, rather than assumed to be 94px.
+   Title, bar and scroll are read in the same scroll event, so the forward
+   and reverse transitions share a single mathematical crossing. */
+export function collectionsTitleFrame(scrollDistance,headingRect,barRect){
   const scroll=Math.max(0,number(scrollDistance));
-  const maxScroll=Math.max(0,number(maxScrollDistance));
-  const threshold=Math.min(COLLECTIONS_TITLE_TRIGGER_DISTANCE,maxScroll*.5);
-  const intro=threshold>0?clamp(scroll/threshold):0;
-  const passed=threshold>0 && scroll>=threshold;
+  const valid=Number.isFinite(headingRect?.top)&&
+    Number.isFinite(headingRect?.height)&&headingRect.height>0&&
+    Number.isFinite(barRect?.bottom);
+  const distance=valid?headingRect.top+headingRect.height/2-barRect.bottom:Infinity;
+  // At a stationary sticky bar: current scroll + center-to-edge distance
+  // equals the document scroll position of the exact 50% crossing.
+  const threshold=valid?scroll+distance:null;
+  const passed=valid&&distance<=0;
+  const intro=valid
+    ?threshold>0?clamp(scroll/threshold):(passed?1:0)
+    :0;
   return {
     threshold,passed,intro,
     // UIKit applies no direct label blur; retain only a subtle, authored
     // blur to honor the Collections-specific design requirement.
     largeBlur:1.25*intro,
-    largeOpacity:1-smooth(.62,1,intro),
     stripHeight:64*intro,
     // Native masked variableBlur exposes inputRadius=1, not a 24px
     // CSS Gaussian radius. A soft 2px maximum is an approximation,
@@ -66,9 +75,11 @@ export function initCollectionsTitleTransition(doc=document,win=window){
   const breadcrumb=doc.getElementById?.("breadcrumb");
   const list=breadcrumb?.querySelector?.(".shadcn-breadcrumb-list");
   const heading=doc.getElementById?.("project-collections-title");
-  if(!header?.appendChild || !list?.querySelectorAll || !heading?.style?.setProperty ||
-     !doc.body?.classList || !doc.body?.style?.setProperty ||
-     !doc.createElement || !win.addEventListener)return noop;
+  if(!header?.appendChild || !header?.getBoundingClientRect ||
+     !list?.querySelectorAll || !heading?.style?.setProperty ||
+     !heading?.getBoundingClientRect || !doc.body?.classList ||
+     !doc.body?.style?.setProperty || !doc.createElement ||
+     !win.addEventListener)return noop;
 
   const title=doc.createElement("span");
   title.className="collections-inline-title";
@@ -81,14 +92,11 @@ export function initCollectionsTitleTransition(doc=document,win=window){
   const prop=(element,key,value)=>element.style.setProperty(key,value);
   const remove=(element,keys)=>{for(const key of keys)element.style.removeProperty(key);};
   const getScroll=()=>Math.max(0,number(doc.scrollingElement?.scrollTop ?? win.scrollY));
-  const getMaxScroll=()=>{
-    const root=doc.scrollingElement||doc.documentElement;
-    return root?Math.max(0,number(root.scrollHeight)-number(root.clientHeight)):0;
-  };
-
   function measure(){
     // offsetLeft uses layout positions, unaffected by compositor transforms.
-    // Measure only on route entry or resize. No scrolling layout reads.
+    // Measure breadcrumb geometry only on route entry or resize.
+    // Heading/bar rects are read per actual scroll event to track the
+    // visible 50% crossing, including responsive layout and sticky offsets.
     items=[...list.querySelectorAll(".shadcn-breadcrumb-item")].filter(el=>!el.hidden);
     separators=[...list.querySelectorAll(".shadcn-breadcrumb-separator")].filter(el=>!el.hidden);
     if(items.length!==4||separators.length!==3)return false;
@@ -122,9 +130,9 @@ export function initCollectionsTitleTransition(doc=document,win=window){
 
   function paint(){
     if(!active||items.length!==4)return;
-    const state=collectionsTitleFrame(getScroll(),getMaxScroll());
+    const state=collectionsTitleFrame(getScroll(),
+      heading.getBoundingClientRect(),header.getBoundingClientRect());
     prop(heading,"--collections-large-blur",state.largeBlur.toFixed(3)+"px");
-    prop(heading,"--collections-large-opacity",state.largeOpacity.toFixed(4));
     // Photo-only effect lives on body::after, behind the scrolling content.
     prop(doc.body,"--collections-strip-height",state.stripHeight.toFixed(3)+"px");
     prop(doc.body,"--collections-strip-blur",state.stripBlur.toFixed(3)+"px");
@@ -145,7 +153,7 @@ export function initCollectionsTitleTransition(doc=document,win=window){
     doc.body.classList.remove("collections-title-transition");
     breadcrumb.inert=false;
     title.hidden=true;
-    remove(heading,["--collections-large-blur","--collections-large-opacity"]);
+    remove(heading,["--collections-large-blur"]);
     remove(doc.body,["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"]);
     for(const el of items)remove(el,["--collections-crumb-distance","--collections-out-delay","--collections-in-delay"]);
     for(const el of separators)remove(el,["--collections-arrow-out-flip",

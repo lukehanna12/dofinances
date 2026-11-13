@@ -593,10 +593,17 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    a BINARY threshold-triggered breadcrumb handoff. The document does not
    need to continue scrolling for the handoff to finish. Duration/delay
    values animate only CSS transforms/opacity; no JS animation clock. */
+/* The large heading does not lose opacity until exactly half its line box
+   has passed behind the sticky lower bar. Class toggling triggers a discrete,
+   self-finishing fade in either direction at the identical crossing point. */
 body.collections-title-transition #project-collections-title{
   filter:blur(var(--collections-large-blur,0px));
-  opacity:var(--collections-large-opacity,1);
+  opacity:1;
+  transition:opacity 180ms cubic-bezier(.4,0,.2,1);
   will-change:filter,opacity;
+}
+body.collections-title-transition.collections-title-passed #project-collections-title{
+  opacity:0;
 }
 /* Blur only the actual top wallpaper: this is an identically cropped PHOTO
    layer behind #workspace-shell, not a backdrop sampler above the document.
@@ -704,6 +711,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(prefers-reduced-motion:reduce){
   body.collections-title-transition #project-collections-title{
     filter:none;
+    transition:none;
     will-change:auto;
   }
   body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item,
