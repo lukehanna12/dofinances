@@ -668,14 +668,14 @@ body.collections-title-transition #workspace-shell .topbar > .collections-inline
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .topbar > .collections-inline-title{
   opacity:1;
-  transition:opacity 220ms cubic-bezier(.4,0,.2,1) 280ms;
+  transition:opacity 220ms cubic-bezier(.4,0,.2,1) 230ms;
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-item{
   transform:translate3d(0,0,0);
   opacity:1;
   will-change:transform,opacity;
-  transition:transform 280ms cubic-bezier(.22,1,.36,1),opacity 112ms linear;
-  transition-delay:var(--collections-in-delay,130ms),var(--collections-in-delay,130ms);
+  transition:transform 220ms cubic-bezier(.22,1,.36,1),opacity 88ms linear;
+  transition-delay:var(--collections-in-delay,210ms),var(--collections-in-delay,210ms);
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-item{
   transform:translate3d(var(--collections-crumb-distance,0px),0,0);
@@ -685,21 +685,21 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator{
   opacity:1;
   will-change:opacity;
-  transition:opacity 76ms linear var(--collections-arrow-in-fade,145ms);
+  transition:opacity 58ms linear var(--collections-arrow-in-fade,204ms);
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-separator{
   opacity:0;
-  transition-delay:var(--collections-arrow-out-fade,125ms);
+  transition-delay:var(--collections-arrow-out-fade,115ms);
 }
 body.collections-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
   transform:rotateY(0deg);
   transform-origin:center;
   backface-visibility:visible;
-  transition:transform 82ms cubic-bezier(.4,0,.2,1) var(--collections-arrow-in-flip,155ms);
+  transition:transform 66ms cubic-bezier(.4,0,.2,1) var(--collections-arrow-in-flip,216ms);
 }
 body.collections-title-transition.collections-title-passed #workspace-shell .shadcn-breadcrumb-separator svg{
   transform:rotateY(180deg);
-  transition-delay:var(--collections-arrow-out-flip,45ms);
+  transition-delay:var(--collections-arrow-out-flip,40ms);
 }
 @media(prefers-reduced-motion:reduce){
   body.collections-title-transition #project-collections-title{

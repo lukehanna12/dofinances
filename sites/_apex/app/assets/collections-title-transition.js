@@ -6,6 +6,13 @@
  * animation frames, polling, or any dependence on remaining page height.
  */
 export const COLLECTIONS_TITLE_TRIGGER_DISTANCE=76;
+/* Preserve one synchronized timeline for all three breadcrumb chevrons.
+   The CSS movement and flip durations must match these constants. */
+export const COLLECTIONS_CRUMB_MOVE_MS=220;
+const COLLECTIONS_ARROW_TURN_MS=66;
+const COLLECTIONS_OUT_DELAYS=[72,52,26,0];
+const COLLECTIONS_IN_DELAYS=[200,210,234,258];
+const COLLECTIONS_ARROW_IN_START_MS=204;
 const clamp=(n,min=0,max=1)=>Math.min(max,Math.max(min,n));
 const number=n=>Number.isFinite(Number(n))?Number(n):0;
 const smooth=(a,b,x)=>{
@@ -90,10 +97,10 @@ export function initCollectionsTitleTransition(doc=document,win=window){
       const distance=Math.max(0,number(left));
       prop(items[i],"--collections-crumb-distance",(-distance).toFixed(3)+"px");
       // Rightmost goes first; the leftmost only fades without moving.
-      const outDelay=[92,66,33,0][i];
-      // Reverse: compact-title fade-out must finish before any old
-      // breadcrumb comes back, so the two states never coexist.
-      const inDelay=[240,250,282,315][i];
+      const outDelay=COLLECTIONS_OUT_DELAYS[i];
+      // Reverse: the compact title finishes fading at 180ms; the first
+      // returning breadcrumb waits just 20ms before entering.
+      const inDelay=COLLECTIONS_IN_DELAYS[i];
       prop(items[i],"--collections-out-delay",outDelay+"ms");
       prop(items[i],"--collections-in-delay",inDelay+"ms");
       if(i===0)continue;
@@ -101,12 +108,14 @@ export function initCollectionsTitleTransition(doc=document,win=window){
       const arrowCenter=number(arrow.offsetLeft)+number(arrow.offsetWidth)*.5;
       const fraction=clamp((number(items[i].offsetLeft)-arrowCenter)/Math.max(1,distance),.08,.60);
       // Match flip midpoint with the text crossing the chevron.
-      const flip=Math.max(0,Math.round(outDelay+280*breadcrumbCrossingTime(fraction)-41));
+      const flip=Math.max(0,Math.round(outDelay+
+        COLLECTIONS_CRUMB_MOVE_MS*breadcrumbCrossingTime(fraction)-
+        COLLECTIONS_ARROW_TURN_MS/2));
       prop(arrow,"--collections-arrow-out-flip",flip+"ms");
-      prop(arrow,"--collections-arrow-out-fade",(flip+84)+"ms");
-      const reverse=242+(i-1)*31;
+      prop(arrow,"--collections-arrow-out-fade",(flip+COLLECTIONS_ARROW_TURN_MS)+"ms");
+      const reverse=COLLECTIONS_ARROW_IN_START_MS+(i-1)*25;
       prop(arrow,"--collections-arrow-in-fade",reverse+"ms");
-      prop(arrow,"--collections-arrow-in-flip",(reverse+15)+"ms");
+      prop(arrow,"--collections-arrow-in-flip",(reverse+12)+"ms");
     }
     return true;
   }

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {collectionsTitleFrame,breadcrumbCrossingTime,initCollectionsTitleTransition,
-  COLLECTIONS_TITLE_TRIGGER_DISTANCE}
+  COLLECTIONS_TITLE_TRIGGER_DISTANCE,COLLECTIONS_CRUMB_MOVE_MS}
   from "../sites/_apex/app/assets/collections-title-transition.js";
 
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -151,18 +151,18 @@ test("Small document uses a lower threshold, allowing a complete handoff before 
   assert.equal(m.body.classList.contains("collections-title-passed"),true);
 });
 
-test("CSS guarantees nonoverlapping centered title and breadcrumbs in both directions",()=>{
+test("CSS guarantees quicker, nonoverlapping title/breadcrumb handoff in both directions",()=>{
   const css=source("sites/_apex/app/assets/collections.css");
   const intro=css.slice(css.indexOf("/* Collections only: scroll-dependent large-title/edge treatment"));
-  assert.match(intro,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 280ms/);
+  assert.match(intro,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 230ms/);
   assert.match(intro,/collections-inline-title\{[\s\S]*?opacity:0;\s*transition:opacity 180ms cubic-bezier\(\.4,0,\.2,1\) 0ms/);
-  assert.match(intro,/\.shadcn-breadcrumb-item\{[\s\S]*?opacity:1;[\s\S]*?opacity 112ms linear/);
+  assert.match(intro,/\.shadcn-breadcrumb-item\{[\s\S]*?opacity:1;[\s\S]*?transform 220ms cubic-bezier\(\.22,1,\.36,1\),opacity 88ms linear/);
   assert.match(intro,/collections-title-passed #workspace-shell \.shadcn-breadcrumb-item\{[\s\S]*?opacity:0/);
   assert.match(intro,/transform:rotateY\(180deg\)/);
-  // Last breadcrumb fades by 92+112=204 ms. Last arrow fades before 280ms.
-  assert.ok(92+112<280);
-  assert.ok(180<240,"Reverse must hide centered title before first breadcrumb restores");
-  assert.match(intro,/--collections-arrow-in-fade/);
+  assert.ok(72+88<230,"Last breadcrumb finishes fading before compact title enters");
+  assert.ok(180<200,"Compact title fades out before first breadcrumb reappears");
+  assert.match(intro,/transition:opacity 58ms linear var\(--collections-arrow-in-fade,204ms\)/);
+  assert.match(intro,/transition:transform 66ms cubic-bezier\(\.4,0,\.2,1\)/);
   assert.match(intro,/--collections-arrow-out-fade/);
 });
 
@@ -208,12 +208,12 @@ test("Native reference optics constrain Collections blur and title fade behavior
   const incoming=css.match(/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
   const outgoing=css.match(/\.topbar > \.collections-inline-title\{([\s\S]*?)\}/)?.[1]||"";
   assert.match(incoming,/opacity:1/);
-  assert.match(incoming,/transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 280ms/);
+  assert.match(incoming,/transition:opacity 220ms cubic-bezier\(\.4,0,\.2,1\) 230ms/);
   assert.match(outgoing,/transition:opacity 180ms cubic-bezier\(\.4,0,\.2,1\) 0ms/);
-  assert.ok(280>92+112,"Incoming compact title starts after all breadcrumb fades");
-  assert.ok(240>180,"Reverse breadcrumbs wait until compact title is hidden");
-  assert.match(js,/const inDelay=\[240,250,282,315\]/);
-  assert.match(js,/const reverse=242\+\(i-1\)\*31/);
+  assert.ok(230>72+88,"Incoming compact title starts after all breadcrumb fades");
+  assert.ok(200>180,"Reverse breadcrumbs wait until compact title is hidden");
+  assert.match(js,/const COLLECTIONS_IN_DELAYS=\[200,210,234,258\]/);
+  assert.match(js,/const COLLECTIONS_ARROW_IN_START_MS=204/);
 });
 
 
@@ -275,4 +275,41 @@ test("small Collections title inherits the native system stack and matches globa
   assert.match(compact,/pointer-events:none/);
   assert.match(compact,/transition:opacity 180ms/);
   assert.match(css,/collections-title-passed #workspace-shell \.topbar > \.collections-inline-title\{\s*opacity:1;\s*transition:opacity 220ms/);
+});
+
+
+test("Breadcrumb stagger, chevron crossings and title handoff form a coherent faster timeline",()=>{
+  assert.equal(COLLECTIONS_CRUMB_MOVE_MS,220);
+  const m=mockEnvironment({scrollHeight:1100,clientHeight:800});
+  m.controller.setRoute("colosseum/collections");
+  const out=m.items.map(el=>Number.parseFloat(el.style.getPropertyValue("--collections-out-delay")));
+  const inside=m.items.map(el=>Number.parseFloat(el.style.getPropertyValue("--collections-in-delay")));
+  assert.deepEqual(out,[72,52,26,0],"Rightmost still starts first, in staggered order");
+  assert.deepEqual(inside,[200,210,234,258],"Reverse stagger starts right after compact title vanishes");
+  const outgoingTitleStart=230;
+  assert.ok(out.every(delay=>delay+88<outgoingTitleStart),
+    "Every breadcrumb completely fades before compact title begins");
+  assert.ok(inside.every(delay=>delay>=180+20),"Every crumb waits for compact title to fade out");
+  const arrowOutEnds=[];
+  for(let i=0;i<3;i++){
+    const el=m.separators[i];
+    const flip=Number.parseFloat(el.style.getPropertyValue("--collections-arrow-out-flip"));
+    const fade=Number.parseFloat(el.style.getPropertyValue("--collections-arrow-out-fade"));
+    assert.equal(fade,flip+66,"Arrow fade starts when its 66ms crossing flip completes");
+    arrowOutEnds.push(fade+58);
+    const incoming=Number.parseFloat(el.style.getPropertyValue("--collections-arrow-in-fade"));
+    assert.equal(incoming,204+i*25);
+    assert.ok(incoming>=200,"Reverse arrows return after compact title vanishes");
+  }
+  assert.ok(Math.max(...arrowOutEnds)<outgoingTitleStart,
+    "All arrows vanish before the compact title enters");
+  const css=source("sites/_apex/app/assets/collections.css");
+  assert.match(css,/transition:transform 220ms cubic-bezier/);
+  assert.match(css,/opacity 88ms linear/);
+  assert.match(css,/transition:transform 66ms cubic-bezier/);
+  assert.match(css,/transition:opacity 58ms linear/);
+  m.scroll.scrollTop=76;m.handlers.get("scroll")();
+  assert.ok(m.body.classList.contains("collections-title-passed"));
+  m.scroll.scrollTop=75;m.handlers.get("scroll")();
+  assert.ok(!m.body.classList.contains("collections-title-passed"));
 });
