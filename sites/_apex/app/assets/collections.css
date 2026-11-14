@@ -834,7 +834,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  background:var(--cs-weak);color:#dfdfe3;
  transition:border-color 140ms ease,background-color 140ms ease
 }
-#cs-root .cs-search:hover:not(:focus-within){border-color:#525252;background:#262626}
+#cs-root .cs-search:hover:not(:focus-within){border-color:#525252}
 #cs-root .cs-search:focus-within{border-color:#525252;background:var(--cs-weak)}
 #cs-root .cs-search-control{
  display:inline-flex;align-items:center;justify-content:center;

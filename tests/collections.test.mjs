@@ -1156,11 +1156,12 @@ test("Collection and utility search normalize case and match multiple independen
  assert.equal(collectionsSearchMatches("Équipe","e\u0301quipe"),true);
 });
 
-test("Both search bars match Refresh idle, hovered and focused colors",()=>{
+test("Both search bars match Refresh border states without a hover background",()=>{
  const search=css.slice(css.indexOf("#cs-root .cs-search{"),css.indexOf("}",css.indexOf("#cs-root .cs-search{"))+1);
  assert.ok(search.includes("border:1px solid var(--cs-border);border-radius:11px"));
  assert.ok(search.includes("background:var(--cs-weak)"));
- assert.ok(css.includes("#cs-root .cs-search:hover:not(:focus-within){border-color:#525252;background:#262626}"));
+ assert.ok(css.includes("#cs-root .cs-search:hover:not(:focus-within){border-color:#525252}"));
+ assert.ok(!css.includes("#cs-root .cs-search:hover:not(:focus-within){border-color:#525252;background:"),"Search hover must not tint the background");
  assert.ok(css.includes("#cs-root .cs-search:focus-within{border-color:#525252;background:var(--cs-weak)}"));
  assert.ok(css.includes('#cs-root .cs-search input[type="search"]::placeholder{color:#595959;opacity:1}'));
  assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"));
