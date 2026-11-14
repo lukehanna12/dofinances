@@ -106,7 +106,10 @@ export function initColosseumCollections(){
       !state.detail?.item_uids?.includes(uid)||!state.activeId)return;
    const next={...memberAnnotation(uid),...changes};
    if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250)return;
-   state.memberDrafts.set(membershipKey(state.activeId,uid),next);
+   const original=state.detail.item_metadata?.[uid];
+   if(next.rating===(validRating(original?.rating)?original.rating:null)&&next.context===(original?.context??""))
+     state.memberDrafts.delete(membershipKey(state.activeId,uid));
+   else state.memberDrafts.set(membershipKey(state.activeId,uid),next);
    renderCard();
  }
  function readStoredGeometry(){
@@ -359,6 +362,7 @@ export function initColosseumCollections(){
      el.querySelector(".cs-accordion-panel").setAttribute("aria-hidden",String(!open));
    });
    syncActions();
+   syncDescriptionEditor();
  }
  function syncActions(){
    const open=list.querySelector(".cs-entry.cs-open [data-cs-actions]");
@@ -429,6 +433,7 @@ export function initColosseumCollections(){
    detail.setAttribute("aria-hidden",String(!selected));
    const markup=selected?cardMarkup():"";
    if(detail.innerHTML!==markup)detail.innerHTML=markup;
+   syncDescriptionEditor();
    const mobile=list.querySelector(".cs-entry.cs-open [data-cs-mobile]");
    if(mobile){
      if(mobile.innerHTML!==markup)mobile.innerHTML=markup;
@@ -517,6 +522,112 @@ export function initColosseumCollections(){
      }
    }
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;}
+ }
+ function syncDescriptionEditor(){
+   const editor=list.querySelector(".cs-entry.cs-open [data-cs-description-editor]");
+   root.classList.toggle("cs-local-editing",localEditorActive());
+   if(!editor)return;
+   const active=localEditorActive(),writing=active&&state.descriptionEditing;
+   editor.classList.toggle("cs-description-writing",writing);
+   const read=editor.querySelector(".cs-description-read"),write=editor.querySelector(".cs-description-write");
+   const display=editor.querySelector("[data-cs-description-read]");
+   const pencil=editor.querySelector("[data-cs-description-start]");
+   const textarea=editor.querySelector("[data-cs-description-input]");
+   read.hidden=writing;write.hidden=!writing;pencil.hidden=!active||writing;
+   if(!writing){
+     display.textContent=state.descriptionDraft??state.detail?.description??activeCollection()?.description??"No description provided.";
+     textarea.value=state.descriptionDraft??state.detail?.description??activeCollection()?.description??"";
+   }
+ }
+ function beginDescriptionEdit(){
+   if(!localEditorActive()||state.busy||state.descriptionEditing)return;
+   state.descriptionEditing=true;
+   syncDescriptionEditor();
+   const editor=list.querySelector(".cs-entry.cs-open [data-cs-description-editor]");
+   const input=editor?.querySelector("[data-cs-description-input]");
+   if(!input)return;
+   const underline=editor.querySelector(".cs-description-underline");
+   void underline.offsetWidth;
+   editor.classList.add("cs-description-underline-extended");
+   input.focus({preventScroll:true});
+   input.setSelectionRange(input.value.length,input.value.length);
+ }
+ function confirmDescriptionEdit(){
+   if(!localEditorActive()||!state.descriptionEditing)return true;
+   const editor=list.querySelector(".cs-entry.cs-open [data-cs-description-editor]");
+   const input=editor?.querySelector("[data-cs-description-input]");
+   if(!input)return false;
+   const value=input.value.trim();
+   if(value.length>2000){announce("Description must be 2,000 characters or fewer.",true,true);input.focus();return false;}
+   state.descriptionDraft=value===state.detail?.description?null:value;
+   state.descriptionEditing=false;
+   editor.classList.remove("cs-description-underline-extended");
+   syncDescriptionEditor();
+   return true;
+ }
+ function cancelDescriptionEdit(){
+   if(!localEditorActive()||!state.descriptionEditing)return;
+   state.descriptionEditing=false;
+   list.querySelector(".cs-entry.cs-open [data-cs-description-editor]")?.classList.remove("cs-description-underline-extended");
+   syncDescriptionEditor();
+ }
+ function exitLocalEditor(){
+   state.localEditingId=null;state.descriptionDraft=null;state.descriptionEditing=false;
+   state.memberDrafts.clear();
+   syncDescriptionEditor();syncActions();renderCard();syncEditControl();
+ }
+ function enterLocalEditor(){
+   if(state.busy||!state.activeId||!state.detail||state.selecting||state.editing||
+      state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
+   state.localEditingId=state.activeId;state.descriptionDraft=null;state.descriptionEditing=false;
+   state.memberDrafts.clear();
+   syncDescriptionEditor();syncActions();renderCard();syncEditControl();
+ }
+ async function finishLocalEditor(){
+   if(!localEditorActive()||state.busy||!state.detail)return;
+   if(!confirmDescriptionEdit())return;
+   const col=activeCollection(),id=state.activeId;
+   if(!col)return;
+   const description=state.descriptionDraft;
+   if(description===null&&!state.memberDrafts.size){exitLocalEditor();return;}
+   setBusy(true);
+   try{
+     let revision=state.detail.revision;
+     if(!Number.isSafeInteger(revision))throw Error("Collection revision unavailable. Refresh before editing.");
+     if(description!==null){
+       const updated=await request("edit",{original_name:col.name,desc:description,expected_revision:revision});
+       if(!Number.isSafeInteger(updated.revision))throw Error("Colosseum did not confirm the description revision.");
+       revision=updated.revision;col.revision=revision;col.description=description;
+       state.detail.revision=revision;state.detail.description=description;state.descriptionDraft=null;
+     }
+     // Only direct members of this collection may be annotated; every request
+     // uses the immediately preceding revision to prevent lost updates.
+     for(const [key,annotation] of state.memberDrafts){
+       const [collectionId,uid]=key.split(":");
+       if(collectionId!==id||!state.detail.item_uids?.includes(uid)||!isUid(uid)||
+          !validRating(annotation.rating)||typeof annotation.context!=="string"||
+          [...annotation.context].length>250)
+         throw Error("A utility annotation is invalid or no longer belongs to this collection.");
+       const updated=await request("annotate",{
+         name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context,
+         expected_revision:revision
+       });
+       if(!Number.isSafeInteger(updated.revision))throw Error("Colosseum did not confirm the membership revision.");
+       revision=updated.revision;col.revision=revision;
+       state.detail.revision=revision;
+       state.detail.item_metadata={...(state.detail.item_metadata||{}),[uid]:annotation};
+       state.memberDrafts.delete(key);
+     }
+     exitLocalEditor();
+     await loadList({focusId:id});
+     announce("Collection description and utility annotations saved.",false,true);
+   }catch(error){
+     announce(error.message,true,true,error.reauthorize===true);
+     // Committed operations were consumed from the draft so retrying cannot
+     // overwrite them; pending annotations remain editable after an error.
+   }finally{
+     setBusy(false);syncActions();syncEditControl();
+   }
  }
  function openRowContext(uid){
    if(!localEditorActive()||state.busy||!state.detail?.item_uids?.includes(uid))return;
