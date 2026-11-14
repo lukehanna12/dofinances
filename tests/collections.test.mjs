@@ -1187,7 +1187,7 @@ test("Add collection renders the whole SF Symbol, not an icon inside a CSS circl
  const htmlButton=html.match(/<button class="cs-create-icon-button"[^>]*>[\s\S]*?<\/button>/)?.[0]||"";
  const native=src("sites/_apex/app/assets/add-collection.v3.svg");
  assert.match(htmlButton,/add-collection\.v3\.svg/);
- assert.doesNotMatch(htmlButton,/<svg|<span|<i/);
+ assert.doesNotMatch(htmlButton,/<svg\b|<span\b|<i\b/);
  assert.ok(native.includes('data-sf-symbol="plus.circle.fill"'));
  assert.ok(native.includes('color="#fff"'));
  assert.ok(native.includes('fill-opacity="0.85"'));
