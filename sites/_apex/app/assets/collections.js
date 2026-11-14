@@ -397,7 +397,7 @@ export function initColosseumCollections(){
      const hasContext=annotation.context.length>0;
      const editingMember=localEditorActive();
      const contextButton=editingMember?
-       '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
+       '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" title="'+(hasContext?'Edit Context':'Add Context')+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
      const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
      const removeRating=editingMember?'<button type="button" class="cs-star-zero" data-cs-member-zero="'+uid+'" aria-label="Rate '+esc(item.name||uid)+' zero stars" title="Rate zero stars">0</button>'+
        '<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
@@ -534,8 +534,9 @@ export function initColosseumCollections(){
    const textarea=editor.querySelector("[data-cs-description-input]");
    read.hidden=writing;write.hidden=!writing;pencil.hidden=!active||writing;
    if(!writing){
-     display.textContent=state.descriptionDraft??state.detail?.description??activeCollection()?.description??"No description provided.";
-     textarea.value=state.descriptionDraft??state.detail?.description??activeCollection()?.description??"";
+     const value=state.descriptionDraft??state.detail?.description??activeCollection()?.description??"";
+     display.textContent=value||"No description provided.";
+     textarea.value=value;
    }
  }
  function beginDescriptionEdit(){
