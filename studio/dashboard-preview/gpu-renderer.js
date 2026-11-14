@@ -529,6 +529,14 @@ async function initialize(){
     };
   }
   function render(){
+    // Also sample reduced-motion preference on every active frame. Some
+    // headless/host browsers do not dispatch a MediaQueryList change event
+    // when system preferences are changed while WebGPU is already active.
+    const allowTrack=root?.dataset.gpuStatus==="ready"&&!reducedMotion.matches;
+    if(trackRunning!==allowTrack){
+      trackRunning=allowTrack;
+      if(!allowTrack)trackSeconds=0;
+    }
     writeUniform();
     syncTileTints();
     if(scenePending)buildScene();
