@@ -416,19 +416,19 @@
                   </span>
                   </div>
                 </div>
-                <div class="cs-top-actions">
-                  <span class="cs-refresh-control"><button class="cs-button" id="cs-refresh" type="button" aria-label="Refresh collections directly from Colosseum" aria-keyshortcuts="Control+Shift+R" aria-describedby="cs-refresh-tooltip"><svg class="cs-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button><span class="cs-create-tooltip" id="cs-refresh-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Refresh</span><span class="cs-create-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span></span>
-                </div>
               </header>
               <p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>
               <div class="cs-layout">
                 <div class="cs-collection-column">
-                  <div class="cs-search cs-collection-search" role="search" aria-label="Search collections">
-                    <span class="cs-search-control">
-                      <button class="cs-search-focus" type="button" id="cs-focus-collection-search" aria-label="Focus collection search" aria-keyshortcuts="Meta+Shift+F" aria-describedby="cs-collection-search-tooltip"><img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>
-                      <span class="cs-create-tooltip" id="cs-collection-search-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Search collections</span><span class="cs-create-tooltip-shortcut" aria-label="Shift Command F"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd></span></span>
-                    </span>
-                    <input id="cs-collection-search" type="search" aria-label="Search collection names and descriptions" placeholder="Search collections" autocomplete="off" spellcheck="false">
+                  <div class="cs-collection-search-row">
+                    <div class="cs-search cs-collection-search" role="search" aria-label="Search collections">
+                      <span class="cs-search-control">
+                        <button class="cs-search-focus" type="button" id="cs-focus-collection-search" aria-label="Focus collection search" aria-keyshortcuts="Meta+Shift+F" aria-describedby="cs-collection-search-tooltip"><img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>
+                        <span class="cs-create-tooltip" id="cs-collection-search-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Search collections</span><span class="cs-create-tooltip-shortcut" aria-label="Shift Command F"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd></span></span>
+                      </span>
+                      <input id="cs-collection-search" type="search" aria-label="Search collection names and descriptions" placeholder="Search collections" autocomplete="off" spellcheck="false">
+                    </div>
+                    <span class="cs-refresh-control"><button class="cs-button" id="cs-refresh" type="button" aria-label="Refresh collections directly from Colosseum" aria-keyshortcuts="Control+Shift+R" aria-describedby="cs-refresh-tooltip"><svg class="cs-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button><span class="cs-create-tooltip" id="cs-refresh-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Refresh</span><span class="cs-create-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span></span>
                   </div>
                   <div class="cs-accordion" id="cs-list" aria-label="Collections"><p class="cs-loading">Awaiting live collections…</p></div>
                   <nav class="cs-pagination" id="cs-pagination" aria-label="Collections pages"></nav>

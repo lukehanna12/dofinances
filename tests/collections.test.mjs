@@ -360,7 +360,7 @@ test("Collections idle refresh icon uses Lucide rotate-cw with Apple-like stroke
  assert.ok(button.endsWith("</svg></button>"),"Only the refresh icon should remain visible");
  assert.doesNotMatch(button,/<\/svg>\s*Refresh\s*<\/button>/);
  assert.ok(button.includes('aria-label="Refresh collections directly from Colosseum"'));
- assert.ok(css.includes('#cs-root #cs-refresh{width:36px;min-width:36px;height:36px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}'),
+ assert.ok(css.includes('#cs-root #cs-refresh{width:32px;min-width:32px;height:32px;min-height:32px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}'),
    "Keep idle icon and loading ring centered within the same square button");
  assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}"));
  assert.ok(js.includes('refreshButton.addEventListener("click"'));
@@ -688,7 +688,7 @@ test("Refresh has an icon-only button with an anchored hover and keyboard-focus 
  assert.ok(wrap.includes('aria-keyshortcuts="Control+Shift+R"'));
  assert.ok(wrap.includes('class="cs-create-tooltip-shortcut" aria-label="Control Shift R"'));
  assert.ok(wrap.includes('<kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd>'));
- assert.match(css,/#cs-root \.cs-refresh-control\{position:relative;display:inline-flex;width:36px;height:36px/);
+ assert.match(css,/#cs-root \.cs-refresh-control\{position:relative;display:inline-flex;width:32px;height:32px/);
  assert.match(css,/#cs-root \.cs-refresh-control \.cs-create-tooltip\{left:auto;right:0/);
  assert.match(css,/#cs-root \.cs-refresh-control:hover \.cs-create-tooltip/);
  assert.match(css,/#cs-root #cs-refresh:focus-visible \+ \.cs-create-tooltip/);
@@ -770,21 +770,42 @@ test("Mobile and desktop compact row components scale independently",()=>{
  assert.match(css,/@media\(max-width:640px\)\{[\s\S]*?#cs-root \.cs-drag-handle svg\{width:13px;height:13px\}/);
  assert.match(css,/#cs-root \.cs-inline-name\{[\s\S]*?font-size:clamp\(14px,1\.35vw,16px\)/);
 });
-test("Add circle shrinks 10 percent, refresh is aligned right with edit/add at both breakpoints",()=>{
- assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
- assert.match(css,/#cs-root \.cs-create-plus-icon\{[^}]*width:32\.4px;height:32\.4px/);
- assert.match(css,/#cs-root \.cs-head\{[^}]*align-items:flex-end/);
- assert.match(css,/#cs-root \.cs-top-actions\{[^}]*align-self:flex-end;margin-left:auto/);
- assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-head\{flex-direction:row;align-items:flex-end;gap:10px\}/);
- assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-top-actions\{justify-content:flex-end;align-self:flex-end;margin-left:auto\}/);
+test("Add, Edit and Select share a 32.4px circular form factor",()=>{
+ for(const button of ["create","edit","select"]){
+   const selector="cs-"+button+"-icon-button",start=css.indexOf("#cs-root ."+selector+"{");
+   assert.ok(start>=0);
+   const block=css.slice(start,css.indexOf("}",start));
+   assert.ok(block.includes("width:32.4px;min-width:32.4px;height:32.4px;min-height:32.4px"));
+   assert.ok(block.includes("border-radius:999px"));
+ }
+ for(const button of ["edit","select"]){
+   assert.ok(css.includes("#cs-root .cs-"+button+"-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px"));
+   assert.ok(css.includes("border-radius:999px;background:rgba(255,255,255,.10);color:#f5f5f5"));
+ }
 });
 
+test("Collection search and Refresh occupy one aligned row, retaining list width",()=>{
+ const start=html.indexOf('<div class="cs-collection-search-row">');
+ const end=html.indexOf('<div class="cs-accordion"',start);
+ assert.ok(start>=0&&end>start);
+ const markup=html.slice(start,end);
+ assert.ok(markup.indexOf('id="cs-collection-search"')>0);
+ assert.ok(markup.indexOf('id="cs-refresh"')>markup.indexOf('id="cs-collection-search"'));
+ assert.ok(!html.includes('class="cs-top-actions"'));
+ assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search{flex:1 1 0;min-width:0}"));
+ assert.match(css,/#cs-root \.cs-search-focus\{[^}]*width:32px;height:32px/);
+ assert.match(css,/#cs-root #cs-refresh\{width:32px;min-width:32px;height:32px;min-height:32px/);
+ assert.ok(css.includes("#cs-root .cs-search-focus{width:30px;height:30px}"));
+ assert.ok(css.includes("#cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}"));
+ assert.match(css,/#cs-root \.cs-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.05fr\)/);
+});
 
-test("Collections header has a white, unframed Select button after Edit with tooltip but no shortcut",()=>{
+test("Collections header has circular Select after Edit with tooltip and no shortcut",()=>{
  const editIndex=html.indexOf('id="cs-edit" type="button"');
  const selectIndex=html.indexOf('id="cs-select-collections" type="button"');
  const refreshIndex=html.indexOf('id="cs-refresh"');
- assert.ok(editIndex>0&&selectIndex>editIndex&&refreshIndex>selectIndex,"Select must be immediately to the right of Edit");
+ assert.ok(editIndex>0&&selectIndex>editIndex&&refreshIndex>selectIndex);
  const button=html.slice(selectIndex,html.indexOf("</button>",selectIndex)+9);
  assert.ok(button.includes('aria-label="Select collections"'));
  assert.ok(button.includes('aria-pressed="false"'));
@@ -793,13 +814,14 @@ test("Collections header has a white, unframed Select button after Edit with too
  assert.ok(!button.includes("aria-keyshortcuts"));
  assert.ok(html.includes('id="cs-select-tooltip" role="tooltip"'));
  const tooltip=html.slice(html.indexOf('id="cs-select-tooltip"'),html.indexOf("</span></span>",html.indexOf('id="cs-select-tooltip"'))+14);
- assert.ok(!tooltip.includes("<kbd>")&&!tooltip.includes("cs-create-tooltip-shortcut"),"Selection tooltip has no keyboard shortcut");
- const control=css.slice(css.indexOf("#cs-root .cs-select-icon-button{"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button{"))+1);
- assert.ok(control.includes("background:transparent"),"Icon must not be encased");
- assert.ok(control.includes("color:#f5f5f5"),"Icon should be white");
+ assert.ok(!tooltip.includes("<kbd>")&&!tooltip.includes("cs-create-tooltip-shortcut"));
+ const control=css.slice(css.indexOf("#cs-root .cs-select-icon-button{"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button{")));
+ assert.ok(control.includes("border-radius:999px"));
+ assert.ok(control.includes("color:#f5f5f5"));
  assert.ok(css.includes("#cs-root.cs-collection-selecting .cs-select-done{opacity:1"));
  assert.ok(js.includes('selectButton.addEventListener("click",toggleCollectionSelectMode)'));
 });
+
 test("Collection selection is transient and cannot change Colosseum or existing utility membership",()=>{
  assert.ok(js.includes("collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false"));
  const beginning=js.indexOf("function toggleCollectionPick(button){");
@@ -907,13 +929,14 @@ test("Utility icon centers share the exact External SVG-derived right-side refer
    assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
  }
 });
-test("Select button has the same subtle bounding-box hover glow as Edit",()=>{
- const edit=css.slice(css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"))+1);
- const select=css.slice(css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"))+1);
- assert.ok(edit.includes("background:rgba(255,255,255,.065);color:#fff"));
- assert.ok(select.includes("background:rgba(255,255,255,.065);color:#fff"));
- assert.ok(css.includes("border-radius:10px;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,background-color .15s ease"));
+test("Select and Edit use matching circular resting and hover fills",()=>{
+ const edit=css.slice(css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){")));
+ const select=css.slice(css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){")));
+ assert.ok(edit.includes("background:rgba(255,255,255,.17);color:#fff"));
+ assert.ok(select.includes("background:rgba(255,255,255,.17);color:#fff"));
+ assert.ok(css.includes("border-radius:999px;background:rgba(255,255,255,.10);color:#f5f5f5;cursor:pointer"));
 });
+
 test("Add, Edit, Select live inside the reconstructed ChatGPT composer background shell only",()=>{
  const start=html.indexOf('<div class="cs-control-center" role="group" aria-label="Collection controls">');
  assert.ok(start>0,"Expected self-contained control center");
@@ -1129,7 +1152,7 @@ test("Both search bars use the exact magnifying glass in the upper top bar and s
  assert.ok(local.includes(searchAsset));
  assert.ok(css.includes('#cs-root .cs-search-control:hover .cs-create-tooltip'));
  assert.ok(css.includes('#cs-root .cs-search-focus:focus-visible + .cs-create-tooltip'));
- assert.ok(css.includes('#cs-root .cs-collection-search{margin-bottom:15px'));
+ assert.ok(css.includes('#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px'));
  assert.ok(css.includes('#cs-root .cs-utility-search{margin-top:19px'));
 });
 test("Collections search filters paginated collection records without modifying organization",()=>{
