@@ -36,18 +36,20 @@ const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
 const STAR_PATH="M12 1.5 15.26 8.15 22.6 9.22 17.3 14.39 18.55 21.7 12 18.25 5.45 21.7 6.7 14.39 1.4 9.22 8.74 8.15 12 1.5Z";
-function collectionStarMarkup(rating,{editable=false,collectionId=null,form=false}={}){
-  const score=typeof rating==="number"&&rating>=0&&rating<=5?rating:null;
+function collectionStarMarkup(rating,{editable=false,memberUid=null}={}){
+  const score=validCollectionRating(rating)?rating:null;
   const stars=Array.from({length:5},(_,index)=>{
     const fill=score===null?0:Math.max(0,Math.min(1,score-index))*100;
-    const surface='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+STAR_PATH+'"/></svg>';
-    const target=form?'data-cs-form-rating':'data-cs-rating-id="'+esc(collectionId)+'" data-cs-rating';
-    const halves=editable?
-      '<button type="button" class="cs-star-half" data-half="left" '+target+'="'+(index+.5)+'" aria-label="'+(index+.5)+' of 5 stars"></button>'+
-      '<button type="button" class="cs-star-half" data-half="right" '+target+'="'+(index+1)+'" aria-label="'+(index+1)+' of 5 stars"></button>':"";
-    return '<span class="cs-star" style="--cs-fill:'+fill+'%"><span class="cs-star-outline">'+surface+'</span><span class="cs-star-fill">'+surface+'</span>'+halves+'</span>';
+    const svg='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+STAR_PATH+'"/></svg>';
+    const buttons=editable&&isUid(memberUid)?
+      '<button type="button" class="cs-star-half" data-half="left" data-cs-member-rating="'+memberUid+'" data-cs-value="'+(index+.5)+'" aria-label="Rate '+(index+.5)+' out of 5"></button>'+
+      '<button type="button" class="cs-star-half" data-half="right" data-cs-member-rating="'+memberUid+'" data-cs-value="'+(index+1)+'" aria-label="Rate '+(index+1)+' out of 5"></button>':"";
+    return '<span class="cs-star" style="--cs-fill:'+fill+'%"><span class="cs-star-outline">'+svg+'</span><span class="cs-star-fill">'+svg+'</span>'+buttons+'</span>';
   }).join("");
-  return '<span class="cs-stars'+(editable?' cs-stars-editable':'')+'" aria-label="'+(score===null?"Not rated":score+" of 5 stars")+'">'+stars+'</span>';
+  return '<span class="cs-stars'+(editable?' cs-stars-editable':'')+'" role="group" aria-label="'+(score===null?"Unrated":score+" out of 5 stars")+'">'+stars+'</span>';
+}
+export function validCollectionRating(value){
+  return value===null||(typeof value==="number"&&Number.isFinite(value)&&value>=0&&value<=5&&Number.isInteger(value*2));
 }
 const GRIP='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 const PICK_CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>';
@@ -83,17 +85,29 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
-   ratingDrafts:new Map(),contextDrafts:new Map(),
+   memberDrafts:new Map(),
    nameDrafts:new Map(),renamingId:null,renameEpoch:0,renameInitialValue:"",draggingId:null,editTransitioning:false,
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),contextDialog=$("cs-context-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
- let formRating=null,rowContextId=null;
- const validRating=value=>value===null||(typeof value==="number"&&value>=0&&value<=5&&Number.isInteger(value*2));
- const ratingFor=collection=>state.ratingDrafts.has(collection.collection_id)?state.ratingDrafts.get(collection.collection_id):(collection.rating??null);
- const contextFor=collection=>state.contextDrafts.has(collection.collection_id)?state.contextDrafts.get(collection.collection_id):(collection.context??"");
+ let rowContextUid=null;
+ const validRating=validCollectionRating;
+ const membershipKey=(collectionId,uid)=>collectionId+":"+uid;
+ const memberAnnotation=uid=>{
+   const key=membershipKey(state.activeId,uid);
+   const value=state.memberDrafts.get(key)??state.detail?.item_metadata?.[uid];
+   return {rating:validRating(value?.rating)?value.rating:null,context:typeof value?.context==="string"?value.context:""};
+ };
+ function stageMemberAnnotation(uid,changes){
+   if(!state.editing||state.editTransitioning||state.busy||!isUid(uid)||
+      !state.detail?.item_uids?.includes(uid)||!state.activeId)return;
+   const next={...memberAnnotation(uid),...changes};
+   if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250)return;
+   state.memberDrafts.set(membershipKey(state.activeId,uid),next);
+   renderCard();
+ }
  function readStoredGeometry(){
    try{
      const raw=window.localStorage.getItem(SUMMARY_GEOMETRY_KEY);
@@ -262,16 +276,11 @@ export function initColosseumCollections(){
    const depth=Math.min(8,Math.max(0,collection.collection_depth||0));
    const draft=state.nameDrafts.get(collection.collection_id)??collection.name;
    const editing=state.editing;
-   const rating=ratingFor(collection);
-   const hasRating=validRating(rating)&&rating!==null;
-   const context=contextFor(collection);
-   const picker='<span class="cs-context-control"><button type="button" class="cs-context-button" data-cs-context-id="'+uuid+'" aria-label="'+(context?'Edit Context':'Add Context')+'" aria-describedby="cs-ctx-tooltip-'+uuid+'" disabled tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip" id="cs-ctx-tooltip-'+uuid+'"><span class="cs-create-tooltip-label">'+(context?'Edit Context':'Add Context')+'</span></span></span>';
-   const ratingControls='<span class="cs-row-annotation cs-annotation-editable">'+picker+collectionStarMarkup(rating,{editable:true,collectionId:uuid})+'<button type="button" class="cs-star-clear" data-cs-clear-rating="'+uuid+'" aria-label="Remove collection rating" title="Remove rating" disabled tabindex="-1" aria-hidden="true">×</button></span>';
    const picking=state.collectionSelecting;
    const picked=state.selectedCollections.has(collection.collection_id);
    const off=editing?"":' disabled tabindex="-1" aria-hidden="true"';
    const pickOff=picking?"":' disabled tabindex="-1" aria-hidden="true"';
-   return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+(hasRating?' cs-has-rating':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
+   return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
        '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
        '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing||picking?' disabled tabindex="-1"':'')+'>'+
@@ -279,7 +288,6 @@ export function initColosseumCollections(){
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
-       '<span class="cs-row-annotation cs-row-rating-only"'+(hasRating?'':' hidden')+' aria-label="'+(hasRating?'Rating '+rating+' of 5':'Not rated')+'">'+collectionStarMarkup(rating)+'</span>'+
        '<span class="cs-chevron">'+CHEVRON+'</span></button>'+
        '<button class="cs-collection-pick" type="button" data-cs-pick="'+uuid+'" aria-label="'+(picked?'Deselect ':'Select ')+esc(collection.name)+'" aria-pressed="'+String(picked)+'"'+pickOff+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
        '<span class="cs-name-field" data-cs-name-field="'+uuid+'">'+
@@ -292,13 +300,12 @@ export function initColosseumCollections(){
            '<button class="cs-name-action cs-name-confirm" type="button" data-cs-confirm-rename="'+uuid+'" aria-label="Apply name change" title="Apply name change" disabled tabindex="-1" hidden>'+NAME_APPLY+'</button>'+
            '<button class="cs-name-action cs-name-cancel" type="button" data-cs-cancel-rename="'+uuid+'" aria-label="Cancel name change" title="Cancel name change" disabled tabindex="-1">'+NAME_CANCEL+'</button>'+
          '</span></span>'+
-       ratingControls+
+       '<button class="cs-edit-utilities-open" type="button" data-cs-open="'+uuid+'" aria-label="Expand '+esc(collection.name)+' to edit utility ratings and context" aria-controls="'+id+'" aria-expanded="false" title="Edit utility ratings and context"'+off+'>'+CHEVRON+'</button>'+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
          '<p class="cs-description">'+esc(collection.description||"No description provided.")+'</p>'+
-         (collection.context?'<p class="cs-context-text">'+esc(collection.context)+'</p>':'')+
          '<div class="cs-actions" data-cs-actions>'+actionMarkup()+'</div>'+
          '<div class="cs-mobile-detail" data-cs-mobile></div>'+
        '</div></div></div></article>';
@@ -337,6 +344,7 @@ export function initColosseumCollections(){
      const open=el.dataset.csId===state.activeId;
      el.classList.toggle("cs-open",open);
      el.querySelector(".cs-trigger").setAttribute("aria-expanded",String(open));
+     el.querySelector(".cs-edit-utilities-open")?.setAttribute("aria-expanded",String(open));
      el.querySelector(".cs-accordion-panel").setAttribute("aria-hidden",String(!open));
    });
    syncActions();
@@ -370,18 +378,25 @@ export function initColosseumCollections(){
    const names=ids.map(uid=>{
      const item=map.get(uid)||{uid,name:uid};
      const routes=current.routes&&current.routes[uid]&&current.routes[uid].route_mode;
-    const annotation=current.item_metadata?.[uid],memberRating=annotation?.rating;
-    const memberContext=typeof annotation?.context==="string"?annotation.context:"";
-    const annotationMarkup=(validRating(memberRating)&&memberRating!==null||memberContext)?
-      '<span class="cs-member-annotation">'+(validRating(memberRating)&&memberRating!==null?collectionStarMarkup(memberRating):"")+
-      (memberContext?'<span class="cs-member-context">'+esc(memberContext)+'</span>':"")+'</span>':"";
+     const annotation=memberAnnotation(uid);
+     const hasRating=annotation.rating!==null;
+     const hasContext=annotation.context.length>0;
+     const editingMember=state.editing&&!state.editTransitioning;
+     const contextButton=editingMember?
+       '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
+     const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
+     const removeRating=editingMember?'<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
+     const annotationControls=(editingMember||hasRating)?
+       '<span class="cs-member-rating-actions">'+contextButton+stars+removeRating+'</span>':"";
+     const contextMarkup=hasContext?'<span class="cs-member-context">'+esc(annotation.context)+'</span>':"";
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
      const content=(state.selecting?
        '<input type="checkbox" class="cs-checkbox" data-cs-uid="'+uid+'" aria-label="Select '+esc(item.name||uid)+'"'+(selected?' checked':'')+'>':
        '<span class="cs-dot" aria-hidden="true"></span>')+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
-       '<span class="cs-utility-uid">'+uid+'</span>'+annotationMarkup+'</span>'+
+       '<span class="cs-utility-uid">'+uid+'</span>'+contextMarkup+'</span>'+
+       annotationControls+
        (routeIcon?'<span class="cs-utility-route-slot"><img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'"></span>':'');
      return state.selecting?
        '<label class="cs-utility-row">'+content+'</label>':
@@ -412,7 +427,7 @@ export function initColosseumCollections(){
    }
  }
  function openCollection(id){
-   if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
+   if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
    const next=state.activeId===id?null:id;
    state.activeId=next;state.selecting=false;state.selected.clear();state.detail=null;
    ++state.detailSeq;
@@ -490,49 +505,24 @@ export function initColosseumCollections(){
    }
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;}
  }
- function renderFormRating(){
-   $("cs-form-rating").innerHTML=collectionStarMarkup(formRating,{editable:true,form:true})+
-     '<button type="button" class="cs-star-clear" data-cs-form-rating-clear aria-label="Remove rating" title="No rating">×</button>';
- }
- function refreshCollectionRowAnnotation(id){
-   const entry=list.querySelector('[data-cs-id="'+id+'"]');
-   const collection=state.collections.find(col=>col.collection_id===id);
-   if(!entry||!collection)return;
-   const rating=ratingFor(collection),hasRating=validRating(rating)&&rating!==null;
-   entry.classList.toggle("cs-has-rating",hasRating);
-   const regular=entry.querySelector(".cs-row-rating-only");
-   if(regular){
-     regular.hidden=!hasRating;
-     regular.setAttribute("aria-label",hasRating?"Rating "+rating+" of 5":"Not rated");
-     regular.innerHTML=collectionStarMarkup(rating);
-   }
-   const editable=entry.querySelector(".cs-annotation-editable .cs-stars");
-   if(editable)editable.outerHTML=collectionStarMarkup(rating,{editable:true,collectionId:id});
-   const contextButton=entry.querySelector(".cs-context-button");
-   const context=contextFor(collection);
-   if(contextButton)contextButton.setAttribute("aria-label",context?"Edit Context":"Add Context");
-   const tooltip=entry.querySelector(".cs-context-control .cs-create-tooltip-label");
-   if(tooltip)tooltip.textContent=context?"Edit Context":"Add Context";
- }
- function openRowContext(id){
-   if(!state.editing||state.editTransitioning||state.busy)return;
-   const col=state.collections.find(item=>item.collection_id===id);
-   if(!col)return;
-   rowContextId=id;
-   $("cs-context-copy").textContent="Optional context for "+col.name+" (up to 250 characters).";
-   $("cs-row-context").value=contextFor(col);
+ function openRowContext(uid){
+   if(!state.editing||state.editTransitioning||state.busy||!state.activeId||!state.detail?.item_uids?.includes(uid))return;
+   rowContextUid=uid;
+   const member=state.detail.items?.find(item=>item.uid===uid);
+   $("cs-context-title").textContent="Utility context";
+   $("cs-context-copy").textContent="Optional context for "+(member?.name||uid)+" in "+(activeCollection()?.name||"this collection")+". Limited to 250 characters.";
+   $("cs-row-context").value=memberAnnotation(uid).context;
    $("cs-row-context-error").textContent="";
    contextDialog.showModal();
    $("cs-row-context").focus();
  }
  function saveRowContext(clear=false){
-   if(!rowContextId||!state.editing)return;
+   if(!rowContextUid||!state.editing)return;
    const context=clear?"":$("cs-row-context").value;
    if([...context].length>250){$("cs-row-context-error").textContent="Context must be 250 characters or fewer.";return;}
-   const id=rowContextId;
-   state.contextDrafts.set(id,context);
-   contextDialog.close();rowContextId=null;
-   refreshCollectionRowAnnotation(id);
+   const uid=rowContextUid;
+   rowContextUid=null;contextDialog.close();
+   stageMemberAnnotation(uid,{context});
  }
  function openForm(mode){
    if(state.busy)return;
@@ -544,9 +534,6 @@ export function initColosseumCollections(){
      "Update this collection's name and description. Existing utilities are preserved.";
    $("cs-name").value=mode==="edit"?state.detail.name:"";
    $("cs-description").value=mode==="edit"?state.detail.description:"";
-   formRating=mode==="edit"?(state.detail.rating??null):null;
-   $("cs-context").value=mode==="edit"?(state.detail.context??""):"";
-   renderFormRating();
    $("cs-form-error").textContent="";
    $("cs-form-save").disabled=false;
    $("cs-delete-open").hidden=mode!=="edit";
@@ -566,16 +553,16 @@ export function initColosseumCollections(){
  }
  async function saveForm(event){
    event.preventDefault();if(state.busy)return;
-   const name=$("cs-name").value.trim(),description=$("cs-description").value.trim(),context=$("cs-context").value.trim();
-   if(!name||name.length>100||description.length>2000||[...context].length>250||!validRating(formRating)){
+   const name=$("cs-name").value.trim(),description=$("cs-description").value.trim();
+   if(!name||name.length>100||description.length>2000){
      $("cs-form-error").textContent="Enter a collection name (up to 100 characters) and description (up to 2,000 characters).";return;
    }
    const previous=activeCollection(),revision=state.detail?.revision;
    if(formMode==="edit"&&(!previous||!Number.isSafeInteger(revision)))return;
    setBusy(true);$("cs-form-save").disabled=true;$("cs-form-error").textContent="";
    try{
-     if(formMode==="create")await request("create",{name,description,rating:formRating,context});
-     else await request("edit",{original_name:previous.name,name,desc:description,rating:formRating,context,expected_revision:revision});
+     if(formMode==="create")await request("create",{name,description});
+     else await request("edit",{original_name:previous.name,name,desc:description,expected_revision:revision});
      editDialog.close();
      await loadList({focusName:name,focusId:formMode==="edit"?previous.collection_id:null});
    }catch(error){$("cs-form-error").textContent=error.message;announce(error.message,true);}
@@ -704,12 +691,6 @@ export function initColosseumCollections(){
      const drag=entry.querySelector(".cs-drag-handle");
      const visibility=entry.querySelector(".cs-visibility-toggle");
      const canEdit=state.editing&&!state.editTransitioning;
-     for(const control of entry.querySelectorAll("[data-cs-rating],[data-cs-clear-rating],[data-cs-context-id]")){
-       control.disabled=!canEdit;
-       control.tabIndex=canEdit?0:-1;
-       if(canEdit)control.removeAttribute("aria-hidden");
-       else control.setAttribute("aria-hidden","true");
-     }
      for(const control of [pencil,drag,visibility]){
        if(!control)continue;
        control.disabled=!canEdit;
@@ -784,7 +765,7 @@ export function initColosseumCollections(){
      state.editTransitioning=false;resetEditMode();return;
    }
    state.editing=true;state.renamingId=null;state.nameDrafts.clear();state.configDirty=false;
-   state.ratingDrafts.clear();state.contextDrafts.clear();
+   state.memberDrafts.clear();
    root.classList.add("cs-entering-edit");
    syncEditControl();
    await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right");
@@ -802,7 +783,7 @@ export function initColosseumCollections(){
    root.classList.remove("cs-leaving-edit");
    state.editTransitioning=false;
    state.nameDrafts.clear();state.configDirty=false;
-   state.ratingDrafts.clear();state.contextDrafts.clear();
+   state.memberDrafts.clear();
    syncEditControl();
    if(!refresh){renderRows();renderCard();}
  }
@@ -810,7 +791,7 @@ export function initColosseumCollections(){
    finishInlineRename();
    state.editing=false;state.editTransitioning=false;
    state.nameDrafts.clear();state.configDirty=false;
-   state.ratingDrafts.clear();state.contextDrafts.clear();
+   state.memberDrafts.clear();
    root.classList.remove("cs-entering-edit","cs-leaving-edit","cs-closing-for-edit");
    syncEditControl();renderRows();renderCard();
  }
@@ -923,25 +904,38 @@ export function initColosseumCollections(){
        return;
      }
      seenNames.add(key);
-     const rating=ratingFor(col),context=contextFor(col);
-     if(!validRating(rating)||[...context].length>250){
-       announce("Ratings must be half-star increments from 0 to 5; context is limited to 250 characters.",true,true);return;
-     }
-     if(proposed!==col.name||rating!==(col.rating??null)||context!==(col.context??""))
-       edits.push({collection:col,name:proposed,rating,context});
+     if(proposed!==col.name)edits.push({collection:col,name:proposed});
    }
-   if(!edits.length&&!state.configDirty){await exitEditMode();return;}
+   if(!edits.length&&!state.configDirty&&!state.memberDrafts.size){await exitEditMode();return;}
    setBusy(true);
    try{
-     for(const {collection,name,rating,context} of edits){
+     for(const {collection,name} of edits){
        const changed=await request("edit",{
-         original_name:collection.name,...(name!==collection.name?{name}:{}),
-         ...(rating!==(collection.rating??null)?{rating}:{}),
-         ...(context!==(collection.context??"")?{context}:{}),
+         original_name:collection.name,name,expected_revision:collection.revision
+       });
+       collection.name=name;
+       if(Number.isSafeInteger(changed.revision))collection.revision=changed.revision;
+     }
+     // Ratings and context are keyed to the exact direct membership. A parent
+     // sees its children's annotations by reference rather than copying them.
+     for(const [key,annotation] of state.memberDrafts){
+       const separator=key.lastIndexOf(":"),collectionId=key.slice(0,separator),uid=key.slice(separator+1);
+       const collection=state.collections.find(item=>item.collection_id===collectionId);
+       if(!collection||!isUid(uid)||!validRating(annotation.rating)||
+          typeof annotation.context!=="string"||[...annotation.context].length>250)
+         throw Error("A collection-specific annotation is invalid. Refresh before saving.");
+       const result=await request("annotate",{
+         name:collection.name,item_uid:uid,rating:annotation.rating,context:annotation.context,
          expected_revision:collection.revision
        });
-       collection.name=name;collection.rating=rating;collection.context=context;
-       if(Number.isSafeInteger(changed.revision))collection.revision=changed.revision;
+       if(!Number.isSafeInteger(result.revision))
+         throw Error("Colosseum did not confirm the updated membership revision.");
+       collection.revision=result.revision;
+       if(state.activeId===collectionId&&state.detail){
+         state.detail.revision=result.revision;
+         state.detail.item_metadata={...(state.detail.item_metadata||{}),[uid]:annotation};
+       }
+       state.memberDrafts.delete(key);
      }
      if(state.configDirty)await request("configure",{
        entries:state.configEntries,expected_configuration_revision:state.configRevision
@@ -1054,23 +1048,31 @@ export function initColosseumCollections(){
    const button=event.target.closest("[data-cs-jump-child]");
    if(button)jumpToChild(button.dataset.csJumpChild);
  });
+ // Edit the membership in the currently open collection, never the catalog item.
+ // Delegation covers the desktop detail and its mobile accordion counterpart.
+ root.addEventListener("click",event=>{
+   if(!state.editing||state.editTransitioning||state.busy)return;
+   const button=event.target.closest?.("button");
+   if(!button)return;
+   if(button.hasAttribute("data-cs-member-context")){
+     openRowContext(button.dataset.csMemberContext);return;
+   }
+   if(button.hasAttribute("data-cs-member-clear")){
+     const uid=button.dataset.csMemberClear;
+     if(isUid(uid))stageMemberAnnotation(uid,{rating:null});
+     return;
+   }
+   if(button.hasAttribute("data-cs-member-rating")){
+     const uid=button.dataset.csMemberRating,value=Number(button.dataset.csValue);
+     if(!isUid(uid)||!validRating(value))return;
+     const inMobile=!!button.closest(".cs-mobile-detail"),half=button.dataset.half;
+     stageMemberAnnotation(uid,{rating:value});
+     (inMobile?list:detail).querySelector('[data-cs-member-rating="'+uid+'"][data-cs-value="'+value+'"][data-half="'+half+'"]')?.focus({preventScroll:true});
+   }
+ });
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
-   if(button.hasAttribute("data-cs-rating")&&state.editing){
-     const id=button.dataset.csRatingId,value=Number(button.dataset.csRating);
-     if(!state.collections.some(collection=>collection.collection_id===id)||!validRating(value))return;
-     state.ratingDrafts.set(id,value);
-     refreshCollectionRowAnnotation(id);return;
-   }
-   if(button.hasAttribute("data-cs-clear-rating")&&state.editing){
-     const id=button.dataset.csClearRating;
-     if(!state.collections.some(collection=>collection.collection_id===id))return;
-     state.ratingDrafts.set(id,null);refreshCollectionRowAnnotation(id);return;
-   }
-   if(button.hasAttribute("data-cs-context-id")&&state.editing){
-     openRowContext(button.dataset.csContextId);return;
-   }
    if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}
    if(button.hasAttribute("data-cs-start-rename")){beginInlineRename(button);return;}
    if(button.hasAttribute("data-cs-confirm-rename")&&state.renamingId===button.dataset.csConfirmRename){
@@ -1157,21 +1159,10 @@ export function initColosseumCollections(){
       target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
    event.preventDefault();toggleEditMode();
  },{capture:true});
- editDialog.addEventListener("click",event=>{
-   const button=event.target.closest?.("button");
-   if(!button||state.busy)return;
-   if(button.hasAttribute("data-cs-form-rating")){
-     const value=Number(button.dataset.csFormRating);
-     if(!validRating(value))return;
-     formRating=value;renderFormRating();
-   }else if(button.hasAttribute("data-cs-form-rating-clear")){
-     formRating=null;renderFormRating();
-   }
- });
  $("cs-context-save").addEventListener("click",()=>saveRowContext());
  $("cs-context-clear").addEventListener("click",()=>saveRowContext(true));
  $("cs-context-cancel").addEventListener("click",()=>contextDialog.close());
- contextDialog.addEventListener("close",()=>{rowContextId=null;});
+ contextDialog.addEventListener("close",()=>{rowContextUid=null;});
  $("cs-form").addEventListener("submit",event=>void saveForm(event));
  $("cs-form-cancel").addEventListener("click",editClose);
  $("cs-delete-open").addEventListener("click",beginDelete);
