@@ -1155,6 +1155,49 @@ test("Collection and utility search normalize case and match multiple independen
  assert.equal(collectionsSearchMatches("", "missing"),false);
  assert.equal(collectionsSearchMatches("Équipe","e\u0301quipe"),true);
 });
+
+test("Both search bars match Refresh idle, hovered and focused colors",()=>{
+ const search=css.slice(css.indexOf("#cs-root .cs-search{"),css.indexOf("}",css.indexOf("#cs-root .cs-search{"))+1);
+ assert.ok(search.includes("border:1px solid var(--cs-border);border-radius:11px"));
+ assert.ok(search.includes("background:var(--cs-weak)"));
+ assert.ok(css.includes("#cs-root .cs-search:hover:not(:focus-within){border-color:#525252;background:#262626}"));
+ assert.ok(css.includes("#cs-root .cs-search:focus-within{border-color:#525252;background:var(--cs-weak)}"));
+ assert.ok(css.includes('#cs-root .cs-search input[type="search"]::placeholder{color:#595959;opacity:1}'));
+ assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"));
+});
+test("Utility count and management control positions are exchanged",()=>{
+ const actions=js.slice(js.indexOf("function actionMarkup(){"),js.indexOf("function rowMarkup("));
+ const card=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function filterUtilityRows(){"));
+ assert.ok(actions.includes('class="cs-card-badge cs-inline-utility-count"'));
+ assert.ok(actions.includes('function utilityToolbarMarkup()'));
+ assert.ok(card.includes("utilityToolbarMarkup()+'</div>'"));
+ assert.ok(!card.includes('class="cs-card-badge"'));
+ for(const asset of ["add-collection.v3.svg","edit-collections.v1.svg","select-collections.v3.svg"])
+   assert.ok(actions.includes("/app/assets/"+asset));
+ assert.ok(actions.includes('role="group" aria-label="Utility management"'));
+ assert.ok(actions.includes('data-cs-action="admit" disabled'));
+ assert.ok(actions.includes('aria-label="Edit utilities"'));
+ assert.ok(actions.includes('aria-label="Select utilities"'));
+ assert.ok(actions.includes('if(state.selecting||localEditorActive())return "";'));
+ assert.ok(js.includes('if(oldButtons.length>0 && oldButtons.length===newButtons.length'));
+ assert.ok(js.includes('const action=event.target.closest(".cs-utility-toolbar button[data-cs-action]")'));
+ assert.ok(js.includes('if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction)'));
+ assert.ok(js.includes('handleUtilityAction(button.dataset.csAction);'));
+ assert.ok(js.includes('root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button")'));
+ for(const action of ["edit","select","done","discard","delete","cancel","remove"])
+   assert.ok(js.includes('if(action==="'+action+'")'));
+});
+test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
+ assert.ok(css.includes("--cs-utility-bubble-height:34px"));
+ assert.ok(css.includes("--cs-utility-bubble-height:28px"));
+ assert.ok(css.includes("#cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height)"));
+ assert.ok(css.includes("#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height)"));
+ assert.ok(css.includes("background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)"));
+ assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:999px;background:transparent"));
+ assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action{width:20px;height:20px}"));
+});
 test("Both search bars use the exact magnifying glass in the upper top bar and show tooltips",()=>{
  const navStyles=src("sites/_apex/app/assets/workspace-enhancements.css");
  const searchAsset="/app/assets/magnifying-glass.v2.svg";

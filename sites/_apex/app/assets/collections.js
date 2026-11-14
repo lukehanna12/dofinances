@@ -217,7 +217,7 @@ export function initColosseumCollections(){
    collectionSearch.disabled=value||state.editing||state.collectionSelecting||
      state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
    collectionSearchFocus.disabled=collectionSearch.disabled;
-   root.querySelectorAll(".cs-actions button").forEach(button=>{
+   root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
        ((button.dataset.csAction==="edit"||button.dataset.csAction==="select")&&!state.detail)||
@@ -285,9 +285,25 @@ export function initColosseumCollections(){
    if(localEditorActive())return '<button class="cs-button cs-primary" type="button" data-cs-action="done"'+(!enabled?' disabled':'')+'>Done</button>'+
      '<button class="cs-button" type="button" data-cs-action="discard"'+(!enabled?' disabled':'')+'>Cancel</button>'+
      '<button class="cs-button cs-danger" type="button" data-cs-action="delete"'+(!enabled?' disabled':'')+'>Delete collection</button>';
-   return '<button class="cs-button cs-add" type="button" data-cs-action="admit" disabled title="Utility admission will be configured later" aria-label="Add utilities (coming later)">+</button>'+
-     '<button class="cs-button" type="button" data-cs-action="edit"'+(!enabled||!state.detail?' disabled':'')+'>Edit</button>'+
-     '<button class="cs-button" type="button" data-cs-action="select"'+(!enabled||!state.detail||!state.detail.item_uids?.length?' disabled':'')+'>Select</button>';
+   const ids=Array.isArray(state.detail?.item_uids)?state.detail.item_uids.filter(isUid):null;
+   const count=ids?.length;
+   return '<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+
+     (count===undefined?'— utilities':count+' '+(count===1?'utility':'utilities'))+'</span>';
+ }
+ // Utility controls reuse Collections' SF Symbols, shrunk to the count-pill height.
+ function utilityToolbarMarkup(){
+   if(state.selecting||localEditorActive())return "";
+   const enabled=!state.busy&&!!state.detail;
+   return '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
+     '<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
+       '<img src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true"></button>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
+     '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="Edit utilities"'+(!enabled?' disabled':'')+'>'+
+       '<img src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"></button>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Edit utilities</span></span></span>'+
+     '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="select" aria-label="Select utilities"'+(!enabled||!state.detail?.item_uids?.length?' disabled':'')+'>'+
+       '<img src="/app/assets/select-collections.v3.svg" alt="" aria-hidden="true"></button>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Select utilities</span></span></span></span>';
  }
  function rowMarkup(collection,index){
    const n=(state.page-1)*state.pageSize+index+1;
@@ -389,10 +405,9 @@ export function initColosseumCollections(){
    replacement.innerHTML=actionMarkup();
    const oldButtons=[...open.querySelectorAll(":scope > button")];
    const newButtons=[...replacement.children];
-   // The first membership response only changes Edit/Select disabled states.
-   // Retain their actual DOM nodes instead of repainting the description's
-   // action strip at the moment the loading card resolves.
-   if(oldButtons.length===newButtons.length &&
+   // Keep active-mode action DOM nodes stable; replace the idle count pill
+   // text when the live membership count arrives.
+   if(oldButtons.length>0 && oldButtons.length===newButtons.length &&
       oldButtons.every((button,i)=>button.dataset.csAction===newButtons[i].dataset.csAction)){
      oldButtons.forEach((button,i)=>{
        if(button.disabled!==newButtons[i].disabled)button.disabled=newButtons[i].disabled;
@@ -438,7 +453,7 @@ export function initColosseumCollections(){
        '<div class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
    }).join("");
    return '<div class="cs-card"><div class="cs-card-heading"><span class="cs-card-label">'+FOLDER+'Utilities</span>'+
-     '<span class="cs-card-badge">'+ids.length+' '+(ids.length===1?'utility':'utilities')+'</span></div>'+
+     utilityToolbarMarkup()+'</div>'+
      '<div class="cs-search cs-utility-search" role="search" aria-label="Search utilities in '+esc(col.name)+'">'+
        '<span class="cs-search-control"><button class="cs-search-focus" type="button" data-cs-focus-utility-search aria-label="Focus utility search" title="Search utilities">'+
          '<img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>'+
@@ -1206,9 +1221,25 @@ export function initColosseumCollections(){
    state.page=Math.floor(index/state.pageSize)+1;
    renderRows();openCollection(id);
  }
+ function handleUtilityAction(action){
+   if(!action||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
+   if(action==="admit")return; // Intentionally dormant.
+   if(action==="edit"){enterLocalEditor();return;}
+   if(action==="done"){void finishLocalEditor();return;}
+   if(action==="discard"){exitLocalEditor();return;}
+   if(action==="delete"){beginDelete();return;}
+   if(action==="select"){
+     if(!state.detail||!state.detail.item_uids?.length)return;
+     state.selecting=true;state.selected.clear();syncActions();renderCard();return;
+   }
+   if(action==="cancel"){state.selecting=false;state.selected.clear();syncActions();renderCard();return;}
+   if(action==="remove")void evictSelected();
+ }
  detail.addEventListener("click",event=>{
-   const button=event.target.closest("[data-cs-jump-child]");
-   if(button)jumpToChild(button.dataset.csJumpChild);
+   const child=event.target.closest("[data-cs-jump-child]");
+   if(child){jumpToChild(child.dataset.csJumpChild);return;}
+   const action=event.target.closest(".cs-utility-toolbar button[data-cs-action]");
+   if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction);
  });
  // Edit the membership in the currently open collection, never the catalog item.
  // Delegation covers the desktop detail and its mobile accordion counterpart.
@@ -1257,18 +1288,7 @@ export function initColosseumCollections(){
    if(button.hasAttribute("data-cs-drag"))return;
    if(button.hasAttribute("data-cs-jump-child")){jumpToChild(button.dataset.csJumpChild);return;}
    if(button.hasAttribute("data-cs-open")){openCollection(button.dataset.csOpen);return;}
-   const action=button.dataset.csAction;if(!action)return;
-   if(action==="admit")return; // Intentionally dormant.
-   if(action==="edit"){enterLocalEditor();return;}
-   if(action==="done"){void finishLocalEditor();return;}
-   if(action==="discard"){exitLocalEditor();return;}
-   if(action==="delete"){beginDelete();return;}
-   if(action==="select"){
-     if(!state.detail||!state.detail.item_uids?.length)return;
-     state.selecting=true;state.selected.clear();syncActions();renderCard();return;
-   }
-   if(action==="cancel"){state.selecting=false;state.selected.clear();syncActions();renderCard();return;}
-   if(action==="remove")void evictSelected();
+   handleUtilityAction(button.dataset.csAction);
  });
  root.addEventListener("change",event=>{
    const checkbox=event.target.closest(".cs-checkbox");
