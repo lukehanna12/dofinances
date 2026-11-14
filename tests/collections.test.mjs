@@ -1089,6 +1089,35 @@ test("Utility description pencil follows the last visible word with inline flow"
  assert.ok(css.includes('#cs-root .cs-description-pencil{margin-left:7px}'));
  assert.ok(!css.includes('#cs-root .cs-description-read{display:flex;'));
 });
+
+test("Per-collection member hide/show is owner-only and scoped to that membership",()=>{
+ const editor=js.slice(js.indexOf("const memberAnnotation=uid=>{"),js.indexOf("function readStoredGeometry()"));
+ const card=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function filterUtilityRows(){"));
+ const save=js.slice(js.indexOf("async function finishLocalEditor(){"),js.indexOf("function openRowContext(uid){"));
+ assert.ok(js.includes('const membershipKey=(collectionId,uid)=>collectionId+":"+uid'));
+ assert.ok(editor.includes('const key=membershipKey(state.activeId,uid)'));
+ assert.ok(editor.includes('hidden:value?.hidden===true'));
+ assert.ok(editor.includes('typeof next.hidden!=="boolean"'));
+ assert.ok(editor.includes('next.hidden===(original?.hidden===true)'));
+ assert.ok(editor.includes('state.memberDrafts.set(membershipKey(state.activeId,uid),next)'));
+ assert.ok(card.includes('const hiddenMember=annotation.hidden===true'));
+ assert.ok(card.includes('class="cs-member-visibility-control"'));
+ assert.ok(card.includes('data-cs-member-visibility='));
+ assert.ok(card.includes('visibilityButton+contextButton+stars'),"Hide/show precedes Context, then stars");
+ assert.ok(card.includes('Show in this collection'));
+ assert.ok(card.includes('Hide in this collection'));
+ assert.ok(card.includes('aria-pressed="'));
+ assert.ok(card.includes('cs-utility-is-hidden'));
+ assert.ok(js.includes('stageMemberAnnotation(uid,{hidden:!memberAnnotation(uid).hidden})'));
+ assert.ok(save.includes('typeof annotation.hidden!=="boolean"'));
+ assert.ok(save.includes('name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context,hidden:annotation.hidden'));
+ assert.ok(save.includes('expected_revision:revision'));
+ assert.ok(save.includes('state.detail.item_metadata={...(state.detail.item_metadata||{}),[uid]:annotation}'));
+ assert.ok(css.includes('#cs-root .cs-member-visibility svg{width:16px;height:16px;pointer-events:none}'));
+ assert.ok(css.includes('#cs-root .cs-member-visibility[aria-pressed="true"]{color:#8c8c8c}'));
+ assert.ok(css.includes('#cs-root .cs-utility-is-hidden .cs-utility-name{opacity:.54}'));
+ assert.ok(!js.includes('request("catalog.update"'),"Never mutate catalog visibility");
+});
 test("Direct-membership ratings use half-star toggling without zero or X controls",()=>{
  assert.ok(js.includes('state.detail?.item_metadata?.[uid]'));
  assert.ok(js.includes('const annotation=memberAnnotation(uid)'));
@@ -1122,7 +1151,7 @@ test("Local Done persists description and member annotations with strict seriali
  assert.ok(save.includes('for(const [key,annotation] of state.memberDrafts)'));
  assert.ok(save.includes('collectionId!==id||!state.detail.item_uids?.includes(uid)'));
  assert.ok(save.includes('request("annotate",{'));
- assert.ok(save.includes('name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context'));
+ assert.ok(save.includes('name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context,hidden:annotation.hidden'));
  assert.ok(save.includes('expected_revision:revision'));
  assert.ok(save.includes('revision=updated.revision'));
  assert.ok(save.includes('state.memberDrafts.delete(key)'));
