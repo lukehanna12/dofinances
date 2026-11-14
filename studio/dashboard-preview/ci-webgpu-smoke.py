@@ -107,6 +107,9 @@ def run():
                     iconTrackTransform:document.querySelector('.cta6-tile--icon')?.style.transform,
                     allGridSlots:document.querySelectorAll('#cta6-mosaic .cta6-tile').length,
                     entryRowSquares:document.querySelectorAll('.cta6-track-entry .cta6-tile--plain').length,
+                    entryRowCSSOpacity:getComputedStyle(document.querySelector('.cta6-track-entry')).opacity,
+                    entryRowCSSAnimation:getComputedStyle(document.querySelector('.cta6-track-entry .cta6-tile--plain')).animationName,
+                    entryRowInlineOpacity:document.querySelector('.cta6-track-entry')?.style.opacity,
                     entryPattern:[...document.querySelectorAll('.cta6-track-entry > .cta6-tile')].map(
                         tile=>tile.classList.contains('cta6-tile--plain')?'1':'0').join(''),
                     centerSquares:(()=>{
@@ -165,6 +168,12 @@ def run():
                         if latest.get("allGridSlots")!=77 or latest.get("entryRowSquares")!=6 or (
                             latest.get("entryPattern")!="11010100101" or latest.get("centerSquares")!=3):
                             raise RuntimeError("Six new entry and three central panes missing "+str(latest))
+                        # Even while GPU is loading, the six entry cells must
+                        # never appear in the separate CSS material renderer.
+                        if latest.get("entryRowCSSOpacity")!="0" or (
+                            latest.get("entryRowInlineOpacity")!="0") or (
+                            latest.get("entryRowCSSAnimation")!="none"):
+                            raise RuntimeError("Seventh row could flash on first paint "+str(latest))
                         if latest.get("count")!=16 or audit.get("tiles")!=51:
                             raise RuntimeError("Original icons or 51 total GPU glass panes changed "+str(latest))
                         if abs(float(latest.get("footerOpacity",0))-0.5)>0.001:

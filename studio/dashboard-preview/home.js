@@ -69,6 +69,9 @@ if(root){
   const entry=document.createElement("div");
   entry.className="cta6-track-entry";
   entry.setAttribute("aria-hidden","true");
+  // This seventh lane must be hidden before entering the DOM. The
+  // separate GPU glass remains free to fade in when moving upward.
+  entry.style.opacity="0";
   for(let col=0;col<11;col++){
     const tile=document.createElement("div");
     tile.className="cta6-tile "+(entryGlassColumns.has(col)?

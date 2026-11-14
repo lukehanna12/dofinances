@@ -404,3 +404,18 @@ squares**, including the prior three behind the central heading/button,
 and 16 unchanged icon-bearing squares. The footer remains 50% opaque.
 The browser smoke test verifies the exact row pattern and numeric cycle
 length, not merely the count of glass squares.
+
+
+## 2026-11-14 prevent separate seventh-row flash on first paint
+
+The seventh row formerly inherited the main lattice's `cta6-appear`
+CSS keyframe animation during asynchronous WebGPU initialization, so
+its opaque CSS panes could appear briefly before the GPU switched to
+the transparent entry lane. The row now receives inline
+`opacity:0` **before insertion**, and stylesheet rules reinforce it
+and disable its CSS animations and transitions. The row still has
+its full measurable DOM geometry for GPU instance placement, while
+the independent WebGPU panes retain their normal bottom fade-in.
+The other six-row lattice and central content retain their startup.
+Browser smoke tests assert exact pattern, computed zero opacity and
+no seventh-row CSS keyframe.

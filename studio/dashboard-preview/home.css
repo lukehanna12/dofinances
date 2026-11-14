@@ -561,9 +561,15 @@ body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu{
   grid-template-columns:repeat(11,minmax(0,1fr));
   gap:var(--cta6-grid-gap);
   pointer-events:none;
+  /* Do not show the CSS glass before the first WebGPU frame. */
+  opacity:0!important;
+  animation:none!important;
+  transition:none!important;
 }
 .dashboard-home .cta6-track-entry>.cta6-tile{
   min-width:0;
+  animation:none!important;
+  transition:none!important;
 }
 /* This isolated Dashboard preview's bottom-right copyright is 50% opaque. */
 body:has(> #workspace-shell .dashboard-home) > .workspace-footer{
