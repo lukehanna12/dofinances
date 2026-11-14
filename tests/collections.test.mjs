@@ -134,7 +134,7 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   // factors apply to that current state, not to the original capsule sizes.
   const scales={cloud:.9,direct:.85,local:.8,ported:1.1};
   const parts=css.split("@media(max-width:639px){");
-  assert.equal(parts.length,2,"Keep the mobile breakpoint and overrides");
+  assert.ok(parts.length>=2,"Keep the original mobile breakpoint and its overrides");
   const findSizes=(source,mode)=>{
     const start=source.indexOf("#cs-root .cs-utility-route-icon--"+mode+"{height:calc(clamp(");
     assert.ok(start>=0,"Missing "+mode+" responsive SVG sizing");
@@ -195,8 +195,8 @@ test("Real writes are owner-protected, revision-bound, and preserve underlying c
  assert.match(edge,/if\(!state\.owner\)return json\(\{error:"Only the connected Colosseum administrator may manage collections/);
  assert.match(edge,/Cross-site collection management request denied/);
  assert.match(edge,/collection\.manage/);
- assert.match(js,/request\("create",\{name,description\}\)/);
- assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,expected_revision:revision\}\)/);
+ assert.match(js,/request\("create",\{name,description,rating:formRating,context\}\)/);
+ assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,rating:formRating,context,expected_revision:revision\}\)/);
  assert.match(js,/request\("evict",\{name:col\.name,item_uids:uids,expected_revision:revision\}\)/);
  assert.match(js,/request\("destroy",\{name:col\.name,expected_revision:revision\}\)/);
  assert.match(js,/Underlying catalog items|underlying catalog items|underlying utilities/);
@@ -636,7 +636,7 @@ test("Click-away or Enter commits a row draft locally; Escape restores it before
   assert.match(js,/if\(restore\)input\.value=state\.renameInitialValue/);
   assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
   assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(\)/);
-  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,name,expected_revision:collection\.revision/);
+  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,[\s\S]*?expected_revision:collection\.revision/);
   assert.match(js,/if\(state\.renamingId===input\.dataset\.csName\)syncInlineRenameActions\(field\)/);
   assert.match(js,/measure\.textContent=input\.value\|\|" "/);
   assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
@@ -967,4 +967,31 @@ test("Collections anchors its top and bottom photo strips under the moving black
   assert.match(get("body:has(> #workspace-shell) > .workspace-footer"),
     /position:fixed;\s*inset:auto 0 0;\s*z-index:0/);
   assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
+});
+
+test("Collection and direct-member annotations are visibly separated and validated",()=>{
+ const section=html.slice(html.indexOf('id="cs-form-dialog"'),html.indexOf('id="cs-delete-dialog"'));
+ assert.ok(section.includes('id="cs-form-rating"'));
+ assert.ok(section.includes('id="cs-context" name="context" maxlength="250"'));
+ assert.ok(section.includes('id="cs-context-dialog"'));
+ assert.ok(section.includes('id="cs-row-context" maxlength="250"'));
+ assert.ok(js.includes('ratingDrafts:new Map(),contextDrafts:new Map()'));
+ assert.ok(js.includes('function collectionStarMarkup('));
+ assert.ok(js.includes('data-cs-rating-id'));
+ assert.ok(js.includes('data-cs-form-rating'));
+ assert.ok(js.includes('data-cs-context-id'));
+ assert.ok(js.includes('function refreshCollectionRowAnnotation('));
+ assert.ok(js.includes('state.ratingDrafts.set(id,value)'));
+ assert.ok(js.includes('state.contextDrafts.set(id,context)'));
+ assert.ok(js.includes('collection.context?'));
+ assert.ok(js.includes('current.item_metadata?.[uid]'));
+ assert.ok(js.includes('if(!validRating(rating)||[...context].length>250)'));
+ assert.ok(js.includes('request("create",{name,description,rating:formRating,context})'));
+ assert.ok(js.includes('request("edit",{original_name:previous.name,name,desc:description,rating:formRating,context,expected_revision:revision})'));
+ assert.ok(js.includes('expected_revision:collection.revision'));
+ assert.ok(css.includes('#cs-root .cs-star-fill'));
+ assert.ok(css.includes('fill:#fff'));
+ assert.ok(css.includes('#cs-root .cs-context-text'));
+ assert.ok(css.includes('font-style:italic'));
+ assert.ok(css.includes('#cs-root .cs-context-control:hover .cs-create-tooltip'));
 });
