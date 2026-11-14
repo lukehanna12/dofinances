@@ -281,3 +281,25 @@ The GPU squares and pointer coordinates subtract the header height
 before entering native-size canvas coordinates, preserving alignment
 and existing interaction behavior. CI checks the header's absence,
 the true scene boundaries, and original image resolution.
+
+
+## 2026-11-14 responsive resize frame protection
+
+Root cause: the DOM reflows immediately but WebGPU scene sizing and
+GPU tile-data uploads were previously deferred to one requestAnimationFrame
+and the completed image to another. Browser compositing could present
+an older canvas backing texture against the new viewport size, briefly
+stretching the photograph and glass squares.
+
+The isolated preview now fences each genuinely changed layout:
+synchronously switch from the old GPU frame to the already-available,
+native-resolution CSS wallpaper and responsive CSS glass; coalesce resize
+events into one rAF; synchronously rebuild the GPU scene and real mip
+chain and submit an updated glass frame together; only expose the canvas
+after `device.queue.onSubmittedWorkDone()` for the latest resize generation.
+Older fence completions cannot reveal stale geometry. The render source
+remains the byte-identical 2400×1600 original Colosseum AVIF. A deterministic
+layout signature suppresses redundant ResizeObserver calls, and source
+quality and all glass optical equations are preserved. CI uses CDP
+viewport-size overrides and asserts eventual 1:1 canvas geometry,
+full-source preservation, GPU re-render and completed resize fences.

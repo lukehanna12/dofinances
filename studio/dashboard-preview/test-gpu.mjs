@@ -70,6 +70,18 @@ test("one occupied tile maps CSS geometry to physical pixels without screenshot"
   const radius=nativePublicBlurRadius("clear",75,75);
   assert.equal(data[6],observedBlurWord(radius,1,.25));
 });
+test("responsive resize never presents an out-of-date GPU backing surface",()=>{
+  const js=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
+  const css=fs.readFileSync(new URL("./dashboard-home.css",import.meta.url),"utf8");
+  assert.match(js,/document\.body\.dataset\.gpuScene="resizing"/);
+  assert.match(js,/audit\.resizePending=true/);
+  assert.match(js,/device\.queue\.onSubmittedWorkDone\(\)\.then/);
+  assert.match(js,/generation!==resizeGeneration/);
+  assert.match(js,/engine\.rebuild\(\);[\s\S]*?engine\.render\(\)/);
+  assert.match(css,/body\[data-gpu-scene="resizing"\] #dashboard-webgpu-scene/);
+  assert.match(css,/opacity:0!important/);
+  assert.match(css,/transition:none!important/);
+});
 test("real-mip architecture explicit compute, LOD and textureLoad",()=>{
   const path=x=>new URL(x,import.meta.url);
   const bg=fs.readFileSync(path("./dashboard-gpu-scene.wgsl"),"utf8");

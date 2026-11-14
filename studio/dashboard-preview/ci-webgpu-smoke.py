@@ -36,6 +36,18 @@ def cdp_eval(ws, counter, expression):
         value=res.get("result",{}).get("result",{})
         return value.get("value")
 
+def cdp_command(ws, counter, method, params):
+    counter[0]+=1
+    tag=counter[0]
+    ws.send(json.dumps({"id":tag,"method":method,"params":params}))
+    while True:
+        message=json.loads(ws.recv())
+        if message.get("id")!=tag:
+            continue
+        if "error" in message:
+            raise RuntimeError(str(message["error"]))
+        return message.get("result",{})
+
 def wait_endpoint():
     for _ in range(80):
         try:
@@ -260,6 +272,50 @@ def run():
                             raise RuntimeError("Mode switch rebuilt backdrop mips "+str(after))
                         if mode5_check.get("status")!="ready":
                             raise RuntimeError("Mode5 GPU renderer fell back "+str(after))
+                        # Resize the actual Chrome viewport twice using CDP.
+                        # The CSS fallback must immediately respond while a
+                        # new GPU scene/mip chain is prepared. Only once
+                        # the GPU queue has completed may the canvas reappear.
+                        for width,height in ((620,530),(980,710)):
+                            prior=mode5_check.get("resizeCompletions",0)
+                            cdp_command(ws,counter,"Emulation.setDeviceMetricsOverride",{
+                                "width":width,"height":height,"deviceScaleFactor":1,
+                                "mobile":False
+                            })
+                            reached=None
+                            for _ in range(90):
+                                time.sleep(.12)
+                                sample=json.loads(cdp_eval(ws,counter,expr))
+                                current=sample.get("audit") or {}
+                                if current.get("resizePending") and sample.get("body")=="ready":
+                                    raise RuntimeError("Stale canvas exposed during active resize")
+                                if sample.get("windowHeight")==height and (
+                                    current.get("resizeCompletions",0)>prior and
+                                    not current.get("resizePending")):
+                                    reached=sample
+                                    break
+                            if reached is None:
+                                raise RuntimeError("GPU resize did not settle "+str(sample))
+                            cur=reached["audit"]
+                            top=(reached.get("upperBar") or {}).get("bottom")
+                            rect=reached.get("canvas") or {}
+                            if reached.get("windowHeight")!=height or abs(rect.get("width",0)-width)>.6:
+                                raise RuntimeError("Viewport and canvas width diverged "+str(reached))
+                            if top is None or abs(rect.get("top",0)-top)>.6 or (
+                                abs(rect.get("height",0)-(height-top))>.6):
+                                raise RuntimeError("Canvas visible region diverged "+str(reached))
+                            if cur.get("sceneBuilds",0)<=before_scene_builds or (
+                                cur.get("sourcePixels")!=[2400,1600]):
+                                raise RuntimeError("Resize omitted scene rebuild or changed AVIF "+str(reached))
+                            if cur.get("status")!="ready" or cur.get("tiles")!=42:
+                                raise RuntimeError("Resize degraded GPU glass "+str(reached))
+                            mode5_check=cur
+                        print("GPU_RESPONSIVE_RESIZE "+json.dumps({
+                            "width":width,"height":height,
+                            "sceneBuilds":cur.get("sceneBuilds"),
+                            "resizeEvents":cur.get("resizeEvents"),
+                            "resizeCompletions":cur.get("resizeCompletions")
+                        },sort_keys=True))
                         print("GPU_BOTH_SDF_BRANCHES "+json.dumps({
                             "mode4":modes.get("mode4"),"mode5":modes.get("mode5"),
                             "frameCount":mode5_check.get("frameCount"),
