@@ -22,9 +22,9 @@ test("Dashboard wallpaper uses exact original AVIF bytes without transcoding",()
     "80006c73c633b57a9a2e63d17df9bbf35e8c86bc6d23491a12600eb8911842f2");
   const shader=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
   const css=fs.readFileSync(new URL("./dashboard-home.css",import.meta.url),"utf8");
-  assert.match(shader,/dashboard-cloud-veiled-colorful-fields\\.avif/);
-  assert.match(css,/dashboard-cloud-veiled-colorful-fields\\.avif/);
-  assert.doesNotMatch(shader,/home-rice-terraces-hq\\.jpg/);
+  assert.match(shader,/dashboard-cloud-veiled-colorful-fields\.avif/);
+  assert.match(css,/dashboard-cloud-veiled-colorful-fields\.avif/);
+  assert.doesNotMatch(shader,/home-rice-terraces-hq\.jpg/);
 });
 test("center-cover backdrop UV respects physical viewport and image aspect",()=>{
   const newWallpaper=coverUVScale(2880,1800,2400,1600);
