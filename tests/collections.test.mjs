@@ -548,7 +548,7 @@ test("Add collection uses ChatGPT's 36px white send-control geometry and black p
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*border-radius:999px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:#fff;color:#101010/);
-  assert.match(js,/createButton\.addEventListener\("click",\(\)=>openForm\("create"\)\)/);
+  assert.match(js,/createButton\.addEventListener\("click",\(\)=>\{if\(!localEditorActive\(\)\)openForm\("create"\);\}\)/);
 });
 
 test("Add collection tooltip mirrors ChatGPT timing and displays the Shift-Command-N shortcut",()=>{
@@ -848,7 +848,7 @@ test("Select collapses an open collection with a white spinner before allowing s
  assert.ok(css.includes("border:1.8px solid #fff;border-top-color:transparent;border-radius:50%"));
  assert.ok(css.includes("animation:cs-edit-spin 600ms linear infinite"));
  assert.ok(css.includes("#cs-root.cs-closing-for-selection .cs-select-icon-button svg{opacity:0}"));
- assert.ok(js.includes("if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Edit mode can expand collections, but selection mode cannot");
+ assert.ok(js.includes("if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Global Edit and Select must not expand collection rows");
  assert.ok(js.includes("const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
 });
 test("Done resets checked bubble visuals after the exit animation, with no stale selection next time",()=>{
