@@ -89,8 +89,9 @@ test("Expanded-row membership skeleton resolves without shifting the header and 
  // The initial cap equals the single-line loading card's intrinsic box:
  // 2px border + 50px card padding + 40px loading text padding + 22.1px line.
  assert.ok(Math.abs((2+50+40+13*1.7)-114.1)<0.001);
- assert.match(js,/oldButtons\.every\(\(button,i\)=>button\.dataset\.csAction===newButtons\[i\]\.dataset\.csAction\)/);
- assert.match(js,/if\(button\.disabled!==newButtons\[i\]\.disabled\)button\.disabled=newButtons\[i\]\.disabled/);
+ assert.ok(js.includes('for(const badge of root.querySelectorAll(".cs-summary .cs-inline-utility-count"))'));
+ assert.ok(js.includes('if(badge.textContent!==label)badge.textContent=label'),
+   "Footer badges update without rebuilding mounted controls");
  assert.doesNotMatch(js,/ResizeObserver|MutationObserver|requestAnimationFrame|setInterval/);
  assert.doesNotMatch(js,/setTimeout\([^\n]*(?:renderCard|loadDetail|syncActions|cs-members-ready)/);
  // The 450ms collapse, compact row height, and naturally-sized card remain.
@@ -103,7 +104,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
     cloud:"cloud-utility.v2.svg",
     direct:"direct-utility.v1.svg",
     local:"local-provider.v1.svg",
-    ported:"external-provider.v1.svg"
+    ported:"external-provider.v2.svg"
   };
   for(const [mode,file] of Object.entries(expected)){
     assert.ok(js.includes(mode+':{src:"/app/assets/'+file+'"'),
@@ -502,7 +503,11 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
   const workflow=src(".github/workflows/site.yml");
   const routes=[
     ["home","#home","dashboard"],
+    ["utilities","#colosseum/utilities","utilities"],
     ["collections","#colosseum/collections","collections"],
+    ["providers","#colosseum/providers","providers"],
+    ["permissions","#colosseum/permissions","permissions"],
+    ["diagnostics","#colosseum/diagnostics","diagnostics"],
     ["settings","#settings","settings"],
     ["settings","#colosseum/settings","settings"]
   ];
@@ -512,10 +517,10 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
       assert.ok(markup.includes(link),'Missing navigation destination '+href);
       const row=markup.slice(markup.indexOf(link),markup.indexOf("</a>",markup.indexOf(link)));
       assert.ok(row.includes('class="nav-icon nav-icon-asset nav-icon-asset--'+icon+'"'),'Incorrect icon at '+href);
-      assert.doesNotMatch(row,/<use href="#icon-(?:home|collections|settings)"/);
+      assert.doesNotMatch(row,/<use href="#icon-(?:home|utilities|collections|providers|permissions|diagnostics|settings)"/);
     }
     assert.match(markup,/data-route="projects"[^>]*><svg class="nav-icon"/);
-    assert.match(markup,/data-route="providers"[^>]*><svg class="nav-icon"/);
+    assert.ok(markup.includes('data-route="apple-hig-reader/overview"'),"Keep HIG navigation untouched");
   }
   assert.match(navCss,/\.nav-link \.nav-icon-asset\{[^}]*width:18px;height:18px;flex:0 0 18px;align-self:center/);
   assert.match(navCss,/-webkit-mask-size:contain;mask-size:contain/);
@@ -523,6 +528,10 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     ["dashboard-screen-sidebar-icon.v1.svg","0 0 28.9584 25.8029"],
     ["collections-screen-sidebar-icon.v1.svg","0 0 28.4799 27.6055"],
     ["settings-screen-sidebar-icon.v1.svg","0 0 26.7968 26.0794"],
+    ["utilities-screen-sidebar-icon.v1.svg","0 0 29.3483 29.6524"],
+    ["providers-screen-sidebar-icon.v1.svg","0 0 32.4458 30.9494"],
+    ["permissions-screen-sidebar-icon.v1.svg","0 0 29.7726 22.632"],
+    ["diagnostics-screen-sidebar-icon.v1.svg","0 0 27.9802 22.8475"],
     ["add-collection.v1.svg","0 0 31.9317 23.3643"]
   ]){
     const svg=src("sites/_apex/app/assets/"+name);
@@ -533,7 +542,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     assert.ok(workflow.includes('cp sites/_apex/app/assets/'+name+' dist/app/assets/'+name),'Missing Studio asset '+name);
     assert.ok(workflow.includes('test -s dist/app/assets/'+name),'Missing Studio asset check '+name);
   }
-  for(const icon of ["dashboard","collections","settings"])
+  for(const icon of ["dashboard","utilities","collections","providers","permissions","diagnostics","settings"])
     assert.ok(navCss.includes('nav-icon-asset--'+icon),'Missing vector mask for '+icon);
 });
 
@@ -914,17 +923,17 @@ test("Collection Edit and Select cannot overlap, selected rows survive paginatio
 
 
 test("Utility icon centers share the exact External SVG-derived right-side reference axis",()=>{
- const external=src("sites/_apex/app/assets/external-provider.v1.svg");
+ const external=src("sites/_apex/app/assets/external-provider.v2.svg");
  const match=external.match(/viewBox="([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)"/);
  assert.ok(match,"External route SVG must preserve its intrinsic viewBox");
  const [, , , width,height]=match.map(Number);
  const referenceRatio=width/height;
- assert.ok(Math.abs(referenceRatio-1.19330855)<1e-7,"Slot must derive from External viewBox, not an estimated optical offset");
+ assert.ok(Math.abs(referenceRatio-1.40991490)<1e-7,"Slot must derive from External viewBox, not an estimated optical offset");
  const slotStart=css.indexOf("#cs-root .cs-utility-route-slot{");
  assert.ok(slotStart>=0,"Shared reference slot must exist");
  const slot=css.slice(slotStart,css.indexOf("}",slotStart)+1);
  assert.ok(slot.includes("--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)"));
- assert.ok(slot.includes("width:calc(var(--cs-ported-route-height) * 1.19330855)"));
+ assert.ok(slot.includes("width:calc(var(--cs-ported-route-height) * 1.40991490)"));
  assert.ok(slot.includes("justify-content:center"));
  assert.ok(slot.includes("align-items:center"));
  assert.ok(slot.includes("flex:none;margin-left:auto;align-self:center"));
@@ -1288,7 +1297,7 @@ test("Original route geometry is retained while masked icons match the former #a
    cloud:["cloud-utility.v2.svg","cloud-utility-mask.v1.svg"],
    direct:["direct-utility.v1.svg","direct-utility-mask.v1.svg"],
    local:["local-provider.v1.svg","local-provider-mask.v1.svg"],
-   ported:["external-provider.v1.svg","external-provider-mask.v1.svg"]
+   ported:["external-provider.v2.svg","external-provider-mask.v2.svg"]
  };
  assert.ok(css.includes('--cs-bg:#0a0a0a;--cs-text:#fafafa;--cs-muted:#a3a3a3'));
  assert.ok(css.includes('#cs-root .cs-utility-name{color:#fff;'));
@@ -1307,7 +1316,60 @@ test("Original route geometry is retained while masked icons match the former #a
    assert.ok(workflow.includes("cp sites/_apex/app/assets/"+mask+" dist/app/assets/"+mask));
    assert.ok(workflow.includes("test -s dist/app/assets/"+mask));
  }
- assert.ok(css.includes('width:calc(var(--cs-ported-route-height) * 1.19330855)'));
+ assert.ok(css.includes('width:calc(var(--cs-ported-route-height) * 1.40991490)'));
+});
+
+test("Compact Collection search matches Refresh on both breakpoints without narrowing its edges",()=>{
+ assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search{flex:1 1 0;min-width:0}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search{height:32px;min-height:32px;border-radius:10px}"));
+ assert.ok(css.includes("#cs-root #cs-refresh{width:32px;min-width:32px;height:32px;min-height:32px"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-control{width:29px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-focus{border-radius:9px 0 0 9px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-focus img{width:14px;height:14px}"));
+ assert.ok(css.includes('#cs-root .cs-collection-search input[type="search"]{height:28px;font-size:12px}'));
+ assert.ok(css.includes("#cs-root .cs-collection-search{height:30px;min-height:30px;border-radius:9px}"));
+ assert.ok(css.includes("#cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-control{width:27px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-focus img{width:13px;height:13px}"));
+ assert.ok(css.includes('#cs-root .cs-collection-search input[type="search"]{height:26px;font-size:11px}'));
+ assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"),"Utility search remains unchanged");
+});
+
+test("New sidebar symbols and externaldrive v2 preserve exact SF Symbol metadata and shapes",()=>{
+ const navCss=src("sites/_apex/app/assets/workspace-theme.css");
+ const workflow=src(".github/workflows/site.yml");
+ const entries=[
+   ["utilities","utilities-screen-sidebar-icon.v1.svg","wrench.and.screwdriver.fill",2],
+   ["providers","providers-screen-sidebar-icon.v1.svg","tray.2.fill",2],
+   ["permissions","permissions-screen-sidebar-icon.v1.svg","lock.rectangle.fill",1],
+   ["diagnostics","diagnostics-screen-sidebar-icon.v1.svg","chart.bar.xaxis.descending",5]
+ ];
+ for(const [route,file,symbol,count] of entries){
+   const svg=src("sites/_apex/app/assets/"+file);
+   assert.ok(svg.includes('data-sf-symbol="'+symbol+'"'));
+   assert.equal((svg.match(/<path d="/g)||[]).length,count);
+   assert.ok(navCss.includes("nav-icon-asset--"+route));
+   assert.ok(navCss.includes('-webkit-mask-image:url("/app/assets/'+file+'")'));
+   assert.ok(navCss.includes('mask-image:url("/app/assets/'+file+'")'));
+   assert.ok(workflow.includes("cp sites/_apex/app/assets/"+file+" dist/app/assets/"+file));
+   assert.ok(workflow.includes("test -s dist/app/assets/"+file));
+ }
+ const external=src("sites/_apex/app/assets/external-provider.v2.svg");
+ const mask=src("sites/_apex/app/assets/external-provider-mask.v2.svg");
+ assert.ok(external.includes('data-sf-symbol="externaldrive.fill"'));
+ assert.ok(external.includes('viewBox="0 0 28.9096 20.5045"'));
+ const paths=source=>[...source.matchAll(/<path d="([^"]+)"/g)].map(x=>x[1]);
+ assert.deepEqual(paths(external),paths(mask));
+ assert.equal(paths(external).length,1);
+ assert.ok(external.includes('fill-opacity="0.85"'));
+ assert.ok(mask.includes('fill-opacity="1"'));
+ assert.ok(mask.includes('data-mask-source="external-provider.v2.svg"'));
+ assert.ok(js.includes('ported:{src:"/app/assets/external-provider.v2.svg",label:"External provider"}'));
+ assert.ok(css.includes('#cs-root .cs-utility-route-icon--ported{aspect-ratio:28.9096/20.5045;'));
+ assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v2.svg")'));
+ assert.ok(workflow.includes("cp sites/_apex/app/assets/external-provider.v2.svg dist/app/assets/external-provider.v2.svg"));
+ assert.ok(workflow.includes("test -s dist/app/assets/external-provider-mask.v2.svg"));
 });
 test("Both search bars match Refresh border states without a hover background",()=>{
  const search=css.slice(css.indexOf("#cs-root .cs-search{"),css.indexOf("}",css.indexOf("#cs-root .cs-search{"))+1);
@@ -1319,26 +1381,37 @@ test("Both search bars match Refresh border states without a hover background",(
  assert.ok(css.includes('#cs-root .cs-search input[type="search"]::placeholder{color:#595959;opacity:1}'));
  assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"));
 });
-test("Utility total and persistent manager controls keep their swapped positions",()=>{
- const actions=js.slice(js.indexOf("function actionMarkup(){"),js.indexOf("function rowMarkup("));
+test("Two matching utility footer bubbles replace the old count badge above Utilities",()=>{
+ const row=js.slice(js.indexOf("function rowMarkup("),js.indexOf("function renderPages(){"));
+ const controls=js.slice(js.indexOf("const UTILITY_DONE_SVG="),js.indexOf("function rowMarkup("));
  const card=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function filterUtilityRows(){"));
- assert.ok(actions.includes('class="cs-card-badge cs-inline-utility-count"'));
- assert.ok(actions.includes('function utilityToolbarMarkup()'));
+ assert.ok(!js.includes("function actionMarkup(){"));
+ assert.ok(!row.includes('data-cs-actions'));
+ assert.ok(!row.includes('class="cs-card-badge'));
  assert.ok(card.includes("utilityToolbarMarkup()+'</div>'"));
- assert.ok(!card.includes('class="cs-card-badge"'));
+ assert.ok(card.includes('class="cs-summary" aria-label="Collection revision and total utilities"'));
+ assert.ok(card.includes('class="cs-card-badge cs-revision-badge" aria-label="Collection revision"'));
+ assert.ok(card.includes('class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities"'));
+ assert.ok(card.indexOf("cs-revision-badge")<card.indexOf("cs-inline-utility-count"));
+ assert.ok(card.includes("Revision '+esc(current.revision)"));
+ assert.ok(card.includes("ids.length+' '+(ids.length===1?'utility':'utilities')"));
+ assert.ok(!card.includes('<div class="cs-summary"><span class="cs-dot"'));
+ const footer=css.slice(css.indexOf("#cs-root .cs-summary{"),css.indexOf("}",css.indexOf("#cs-root .cs-summary{")));
+ assert.ok(footer.includes('display:flex;align-items:center;justify-content:space-between;gap:11px'));
+ assert.ok(!footer.includes('padding-left:')&&!footer.includes('padding-right:'),"Equal left and right insets");
+ assert.ok(css.includes("#cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height)"));
+ assert.ok(css.includes("#cs-root .cs-inline-utility-count{min-width:100px}"));
+ assert.ok(js.includes('for(const badge of root.querySelectorAll(".cs-summary .cs-inline-utility-count"))'));
  for(const asset of ["add-collection.v3.svg","edit-collections.v1.svg","select-collections.v3.svg"])
-   assert.ok(actions.includes("/app/assets/"+asset));
- assert.ok(actions.includes('role="group" aria-label="Utility management"'));
- assert.ok(actions.includes('class="cs-utility-management"'));
- assert.ok(actions.includes('Edit utilities'));
- assert.ok(actions.includes('Select utilities'));
- assert.ok(!actions.includes('if(state.selecting||localEditorActive())return "";'));
- assert.ok(js.includes('if(oldButtons.length>0 && oldButtons.length===newButtons.length'));
+   assert.ok(controls.includes("/app/assets/"+asset));
+ assert.ok(controls.includes('role="group" aria-label="Utility management"'));
+ assert.ok(controls.includes('class="cs-utility-management"'));
+ assert.ok(controls.includes('Edit utilities'));
+ assert.ok(controls.includes('Select utilities'));
  assert.ok(js.includes('const action=event.target.closest(".cs-utility-management button[data-cs-action]")'));
  assert.ok(js.includes('if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction)'));
  assert.ok(js.includes('handleUtilityAction(button.dataset.csAction);'));
- assert.ok(js.includes('root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button, .cs-utility-trash")'));
- assert.ok(!js.includes('>Delete collection</button>'),"Delete collection must not appear in Utility Edit mode");
+ assert.ok(!js.includes('>Delete collection</button>'));
 });
 test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
  assert.ok(css.includes("--cs-utility-bubble-height:34px"));
