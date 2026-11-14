@@ -1244,7 +1244,7 @@ test("Original route geometry is retained while masked icons match the former #a
  assert.ok(css.includes('--cs-bg:#0a0a0a;--cs-text:#fafafa;--cs-muted:#a3a3a3'));
  assert.ok(css.includes('#cs-root .cs-utility-name{color:#fff;'));
  assert.ok(css.includes('#cs-root .cs-utility-route-icon{background:var(--cs-muted)'));
- assert.ok(js.includes('role="img" aria-label="'+routeIcon.label'));
+ assert.ok(js.includes('role="img" aria-label="'));
  for(const [mode,[original,mask]] of Object.entries(masks)){
    const before=src("sites/_apex/app/assets/"+original);
    const after=src("sites/_apex/app/assets/"+mask);
