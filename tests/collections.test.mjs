@@ -780,7 +780,7 @@ test("Add, Edit and Select share a 32.4px circular form factor",()=>{
  }
  for(const button of ["edit","select"]){
    assert.ok(css.includes("#cs-root .cs-"+button+"-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px"));
-   assert.ok(css.includes("border-radius:999px;background:rgba(255,255,255,.10);color:#f5f5f5"));
+   assert.ok(css.includes("border-radius:999px;background:transparent;color:#f5f5f5"));
  }
 });
 
@@ -929,12 +929,14 @@ test("Utility icon centers share the exact External SVG-derived right-side refer
    assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
  }
 });
-test("Select and Edit use matching circular resting and hover fills",()=>{
+test("Select and Edit remain visually unframed until hovered while retaining circular geometry",()=>{
  const edit=css.slice(css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){")));
  const select=css.slice(css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){")));
- assert.ok(edit.includes("background:rgba(255,255,255,.17);color:#fff"));
- assert.ok(select.includes("background:rgba(255,255,255,.17);color:#fff"));
- assert.ok(css.includes("border-radius:999px;background:rgba(255,255,255,.10);color:#f5f5f5;cursor:pointer"));
+ assert.ok(edit.includes("background:rgba(255,255,255,.065);color:#fff"));
+ assert.ok(select.includes("background:rgba(255,255,255,.065);color:#fff"));
+ assert.ok(css.includes("border-radius:999px;background:transparent;color:#f5f5f5;cursor:pointer"));
+  assert.ok(!css.includes("#cs-root.cs-editing .cs-edit-icon-button{background:"));
+  assert.ok(!css.includes("#cs-root.cs-collection-selecting .cs-select-icon-button{background:"));
 });
 
 test("Add, Edit, Select live inside the reconstructed ChatGPT composer background shell only",()=>{
