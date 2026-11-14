@@ -681,11 +681,27 @@ test("Refresh has an icon-only button with an anchored hover and keyboard-focus 
  assert.ok(wrap.includes('id="cs-refresh"'));
  assert.ok(wrap.includes('aria-describedby="cs-refresh-tooltip"'));
  assert.ok(wrap.includes('id="cs-refresh-tooltip" role="tooltip"'));
- assert.ok(wrap.includes('>Refresh collections</span>'));
+ assert.ok(wrap.includes('>Refresh</span>'));
+  assert.ok(wrap.includes('aria-keyshortcuts="Control+Shift+R"'));
+  assert.ok(wrap.includes('class="cs-create-tooltip-shortcut" aria-label="Control Shift R"'));
+  assert.ok(wrap.includes('<kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd>'));
  assert.match(css,/#cs-root \.cs-refresh-control\{position:relative;display:inline-flex;width:36px;height:36px/);
  assert.match(css,/#cs-root \.cs-refresh-control \.cs-create-tooltip\{left:auto;right:0/);
  assert.match(css,/#cs-root \.cs-refresh-control:hover \.cs-create-tooltip/);
  assert.match(css,/#cs-root #cs-refresh:focus-visible \+ \.cs-create-tooltip/);
+});
+
+test("Collections Control-Shift-R refresh shortcut is route-scoped and ignores unsafe targets",()=>{
+  const code=js.slice(js.indexOf("// Refresh the current Collections inventory"),js.indexOf('createButton.addEventListener("click"'));
+  assert.ok(code.includes('window.addEventListener("keydown",event=>{'));
+  assert.ok(code.includes('!event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey'));
+  assert.ok(code.includes('event.code!=="KeyR"&&event.key?.toLowerCase()!=="r"'));
+  assert.ok(code.includes('!routeActive()||root.closest(".view")?.hidden'));
+  assert.ok(code.includes('refreshButton.disabled||document.querySelector("dialog[open]")'));
+  assert.ok(code.includes('input,textarea,select,[contenteditable="true"],[role="textbox"]'));
+  assert.ok(code.includes('event.defaultPrevented||event.isComposing||event.repeat'));
+  assert.ok(code.includes('event.preventDefault();\\n   void loadList();'));
+  assert.ok(code.includes('},{capture:true});'));
 });
 
 test("Collections control swap uses synchronized 20px local fades at the list right edge",()=>{

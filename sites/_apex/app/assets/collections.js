@@ -1004,6 +1004,20 @@ export function initColosseumCollections(){
    renderRows();renderCard();
  });
  refreshButton.addEventListener("click",()=>{if(!state.busy)void loadList();});
+ // Refresh the current Collections inventory on Control-Shift-R. This
+ // follows the other route-scoped shortcuts without changing form inputs.
+ window.addEventListener("keydown",event=>{
+   if(event.defaultPrevented||event.isComposing||event.repeat||
+      !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;
+   if(event.code!=="KeyR"&&event.key?.toLowerCase()!=="r")return;
+   if(!routeActive()||root.closest(".view")?.hidden||
+      refreshButton.disabled||document.querySelector("dialog[open]"))return;
+   const target=event.target;
+   if(target instanceof Element&&
+      target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+   event.preventDefault();
+   void loadList();
+ },{capture:true});
  createButton.addEventListener("click",()=>openForm("create"));
  editButton.addEventListener("click",toggleEditMode);
  selectButton.addEventListener("click",toggleCollectionSelectMode);
