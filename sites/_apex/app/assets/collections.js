@@ -283,7 +283,7 @@ export function initColosseumCollections(){
    return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
        '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
-       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing||picking?' disabled tabindex="-1"':'')+'>'+
+       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(picking?' disabled tabindex="-1"':'')+'>'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+

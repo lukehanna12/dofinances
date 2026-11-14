@@ -195,8 +195,8 @@ test("Real writes are owner-protected, revision-bound, and preserve underlying c
  assert.match(edge,/if\(!state\.owner\)return json\(\{error:"Only the connected Colosseum administrator may manage collections/);
  assert.match(edge,/Cross-site collection management request denied/);
  assert.match(edge,/collection\.manage/);
- assert.match(js,/request\("create",\{name,description,rating:formRating,context\}\)/);
- assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,rating:formRating,context,expected_revision:revision\}\)/);
+ assert.match(js,/request\("create",\{name,description\}\)/);
+ assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,expected_revision:revision\}\)/);
  assert.match(js,/request\("evict",\{name:col\.name,item_uids:uids,expected_revision:revision\}\)/);
  assert.match(js,/request\("destroy",\{name:col\.name,expected_revision:revision\}\)/);
  assert.match(js,/Underlying catalog items|underlying catalog items|underlying utilities/);
@@ -752,8 +752,8 @@ test("Opening edit mode closes an expanded row with the white pencil-position ri
  assert.match(js,/root\.classList\.add\("cs-closing-for-edit"\)/);
  assert.match(js,/await waitForVisualMotion\(panel,"grid-template-rows"\)/);
  assert.match(js,/root\.classList\.remove\("cs-closing-for-edit"\)/);
- assert.match(js,/if\(state\.editing\|\|state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning\)return;/);
- assert.match(js,/trigger\.disabled=locked/);
+ assert.match(js,/if\(state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning\)return;/);
+ assert.match(js,/trigger\.disabled=locked/);\n assert.match(js,/const locked=state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning/);
  assert.match(css,/#cs-root\.cs-closing-for-edit \.cs-edit-icon-button::after\{[^}]*border:1\.8px solid #fff/);
  assert.match(css,/animation:cs-edit-spin 600ms linear infinite/);
  assert.match(css,/#cs-root\.cs-editing \.cs-trigger:disabled/);
@@ -847,8 +847,8 @@ test("Select collapses an open collection with a white spinner before allowing s
  assert.ok(css.includes("border:1.8px solid #fff;border-top-color:transparent;border-radius:50%"));
  assert.ok(css.includes("animation:cs-edit-spin 600ms linear infinite"));
  assert.ok(css.includes("#cs-root.cs-closing-for-selection .cs-select-icon-button svg{opacity:0}"));
- assert.ok(js.includes("if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Open must not expand during selecting");
- assert.ok(js.includes("const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
+ assert.ok(js.includes("if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Edit mode can expand collections, but selection mode cannot");
+ assert.ok(js.includes("const locked=state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
 });
 test("Done resets checked bubble visuals after the exit animation, with no stale selection next time",()=>{
  const start=js.indexOf("function clearCollectionPicks(){");
@@ -969,29 +969,50 @@ test("Collections anchors its top and bottom photo strips under the moving black
   assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
 });
 
-test("Collection and direct-member annotations are visibly separated and validated",()=>{
+test("Ratings accept zero and half-stars, reject invalid and distinguish unrated",async()=>{
+ const {validCollectionRating}=await import("../sites/_apex/app/assets/collections.js");
+ for(let i=0;i<=10;i++)assert.equal(validCollectionRating(i/2),true);
+ assert.equal(validCollectionRating(null),true);
+ for(const invalid of [-0.5,5.5,0.25,undefined,"4.5",NaN,Infinity])
+   assert.equal(validCollectionRating(invalid),false);
+});
+test("Ratings and context are exclusively UI characteristics of direct utility memberships",()=>{
  const section=html.slice(html.indexOf('id="cs-form-dialog"'),html.indexOf('id="cs-delete-dialog"'));
- assert.ok(section.includes('id="cs-form-rating"'));
- assert.ok(section.includes('id="cs-context" name="context" maxlength="250"'));
+ assert.ok(!section.includes('id="cs-form-rating"'),"A collection cannot itself be rated");
+ assert.ok(!section.includes('id="cs-context"'),"A collection cannot itself have annotation context");
  assert.ok(section.includes('id="cs-context-dialog"'));
  assert.ok(section.includes('id="cs-row-context" maxlength="250"'));
- assert.ok(js.includes('ratingDrafts:new Map(),contextDrafts:new Map()'));
- assert.ok(js.includes('function collectionStarMarkup('));
- assert.ok(js.includes('data-cs-rating-id'));
- assert.ok(js.includes('data-cs-form-rating'));
- assert.ok(js.includes('data-cs-context-id'));
- assert.ok(js.includes('function refreshCollectionRowAnnotation('));
- assert.ok(js.includes('state.ratingDrafts.set(id,value)'));
- assert.ok(js.includes('state.contextDrafts.set(id,context)'));
- assert.ok(js.includes('collection.context?'));
- assert.ok(js.includes('current.item_metadata?.[uid]'));
- assert.ok(js.includes('if(!validRating(rating)||[...context].length>250)'));
- assert.ok(js.includes('request("create",{name,description,rating:formRating,context})'));
- assert.ok(js.includes('request("edit",{original_name:previous.name,name,desc:description,rating:formRating,context,expected_revision:revision})'));
+ assert.ok(js.includes('memberDrafts:new Map()'));
+ assert.ok(js.includes('state.detail?.item_metadata?.[uid]'));
+ assert.ok(js.includes('const annotation=memberAnnotation(uid)'));
+ assert.ok(js.includes('const annotationControls=(editingMember||hasRating)?'));
+ assert.ok(js.includes('const contextMarkup=hasContext?'));
+ assert.ok(js.includes('data-cs-member-context'));
+ assert.ok(js.includes('data-cs-member-rating'));
+ assert.ok(js.includes('data-cs-member-clear'));
+ assert.ok(js.includes('data-cs-value'));
+ assert.ok(js.includes('const hasRating=annotation.rating!==null'),"Explicit 0 differs from null");
+ assert.ok(js.includes('const editingMember=state.editing&&!state.editTransitioning'));
+ assert.ok(js.includes('state.memberDrafts.set(membershipKey(state.activeId,uid),next)'));
+ assert.ok(js.includes('stageMemberAnnotation(uid,{context})'));
+ assert.ok(js.includes('stageMemberAnnotation(uid,{rating:value})'));
+ assert.ok(js.includes('stageMemberAnnotation(uid,{rating:null})'));
+ assert.ok(js.includes('request("annotate",{'));
+ assert.ok(js.includes('name:collection.name,item_uid:uid,rating:annotation.rating,context:annotation.context'));
  assert.ok(js.includes('expected_revision:collection.revision'));
+ assert.ok(js.includes('collection.revision=result.revision'));
+ assert.ok(js.includes('state.memberDrafts.delete(key)'));
+ assert.ok(js.includes('for(const [key,annotation] of state.memberDrafts)'));
+ assert.ok(js.includes('if(!edits.length&&!state.configDirty&&!state.memberDrafts.size)'));
+ assert.ok(js.includes('const locked=state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning'));
+ assert.ok(!js.includes('collectionStarMarkup(rating,{editable:true,collectionId:uuid})'));
+ assert.ok(!js.includes('request("create",{name,description,rating'));
+ assert.ok(!js.includes('state.ratingDrafts'));
+ assert.ok(!css.includes('.cs-row-annotation'));
+ assert.ok(css.includes('#cs-root .cs-member-rating-actions'));
  assert.ok(css.includes('#cs-root .cs-star-fill'));
  assert.ok(css.includes('fill:#fff'));
- assert.ok(css.includes('#cs-root .cs-context-text'));
+ assert.ok(css.includes('#cs-root .cs-member-context'));
  assert.ok(css.includes('font-style:italic'));
  assert.ok(css.includes('#cs-root .cs-context-control:hover .cs-create-tooltip'));
 });
