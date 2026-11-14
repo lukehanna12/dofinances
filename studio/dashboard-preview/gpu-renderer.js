@@ -44,7 +44,9 @@ const start=performance.now();
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
 const interaction=createInteractionController();
-const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+const reducedMotion=typeof window.matchMedia==="function"
+  ? window.matchMedia("(prefers-reduced-motion: reduce)")
+  : {matches:false};
 let activePointerId=null,lastFrameTime=performance.now();
 function requestRender(){
   if(!engine||stopped||raf)return;
