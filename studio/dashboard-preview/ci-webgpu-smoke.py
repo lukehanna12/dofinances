@@ -124,9 +124,16 @@ def run():
                         # Local per-tile hover and pressed response must be
                         # reachable without a scene or mip regeneration.
                         cdp_eval(ws,counter,
-                            "window.dispatchEvent(new PointerEvent('pointerdown',"+
-                            "{pointerId:7,isPrimary:true,button:0,pointerType:'mouse',"+
-                            "clientX:155,clientY:166,bubbles:true})); true")
+                            "(()=>{const tile=document.querySelector('.cta6-tile--icon');"
+                            "const b=tile.getBoundingClientRect();"
+                            "const x=b.left+b.width/2,y=b.top+b.height/2;"
+                            "window.__ciPointerXY=[x,y];"
+                            "window.dispatchEvent(new PointerEvent('pointermove',"
+                            "{pointerId:7,isPrimary:true,button:0,pointerType:'mouse',"
+                            "clientX:x,clientY:y,bubbles:true}));"
+                            "window.dispatchEvent(new PointerEvent('pointerdown',"
+                            "{pointerId:7,isPrimary:true,button:0,pointerType:'mouse',"
+                            "clientX:x,clientY:y,bubbles:true}));return true})()")
                         for _ in range(25):
                             time.sleep(.08)
                             inter=json.loads(cdp_eval(ws,counter,expr)).get("audit") or {}
@@ -135,9 +142,10 @@ def run():
                         else:
                             raise RuntimeError("Pointer press not registered on a square")
                         cdp_eval(ws,counter,
-                            "window.dispatchEvent(new PointerEvent('pointerup',"+
-                            "{pointerId:7,isPrimary:true,button:0,pointerType:'mouse',"+
-                            "clientX:155,clientY:166,bubbles:true})); true")
+                            "(()=>{const [x,y]=window.__ciPointerXY;"
+                            "window.dispatchEvent(new PointerEvent('pointerup',"
+                            "{pointerId:7,isPrimary:true,button:0,pointerType:'mouse',"
+                            "clientX:x,clientY:y,bubbles:true}));return true})()")
                         # A tiny motion state update must not rebuild GPU-owned scene.
                         inter=json.loads(cdp_eval(ws,counter,expr)).get("audit") or {}
                         if inter.get("sceneBuilds")!=before_scene_builds:
