@@ -756,8 +756,8 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root.cs-editing .cs-annotation-editable{opacity:1;visibility:visible;transition-delay:0s}
 #cs-root.cs-editing .cs-visibility-toggle{left:66%}
 #cs-root.cs-editing .cs-name-field{right:calc(34% + 12px)}
-#cs-root .cs-trigger:has(.cs-row-rating-label){padding-right:122px}
-#cs-root.cs-editing .cs-trigger:has(.cs-row-rating-label){padding-right:24px}
+#cs-root .cs-entry.cs-has-rating .cs-trigger{padding-right:122px}
+#cs-root.cs-editing .cs-entry.cs-has-rating .cs-trigger{padding-right:24px}
 #cs-root .cs-context-text{max-width:448px;margin:8px 0 0;color:#777;font-size:clamp(12px,1.15vw,14px);line-height:1.55;font-style:italic;white-space:pre-line;overflow-wrap:anywhere}
 #cs-root .cs-context-help{display:block;margin-top:5px;color:#777;font-size:11px}
 #cs-root .cs-form-rating{display:inline-flex;align-items:center;gap:7px;min-height:29px}
@@ -774,6 +774,10 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-context-button{width:19px;height:20px}
  #cs-root.cs-editing .cs-visibility-toggle{left:64%}
  #cs-root.cs-editing .cs-name-field{right:calc(36% + 10px)}
- #cs-root .cs-trigger:has(.cs-row-rating-label){padding-right:112px}
+ #cs-root .cs-entry.cs-has-rating .cs-trigger{padding-right:112px}
  #cs-root .cs-context-text{padding:0 20px 0 44px}
 }
+
+#cs-root.cs-editing .cs-row-rating-only,#cs-root.cs-collection-selecting .cs-row-rating-only{visibility:hidden;opacity:0}
+#cs-root .cs-annotation-editable .cs-stars{pointer-events:auto}
+#cs-root .cs-row-rating-only[hidden]{display:none}
