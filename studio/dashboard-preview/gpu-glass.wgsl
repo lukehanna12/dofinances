@@ -27,6 +27,8 @@ struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
   properties: vec4<f32>,   // radius, entrance delay, selected blur word, SDF mode
   cornerRadii: vec4<f32>,  // native logical corner lane order: TL,TR,BR,BL
+  interaction: vec4<f32>,  // browser-only hover, press, local X, local Y
+  motion: vec4<f32>,       // browser-only normalized velocity XY, reserved
 };
 @group(0) @binding(0) var backdrop: texture_2d<f32>;
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
@@ -324,20 +326,33 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     field.yz*inner*displacementFactor/state.viewport.xy));
   let outerUV=nativeHalf2(baseUV+nativeHalf2(
     field.yz*outer*displacementFactor/state.viewport.xy));
+  // GAP INTERACTIVE-NATIVE: per-square browser-only perturbation, not an
+  // Apple material coefficient. The base AIR SDF/refraction/LOD inputs above
+  // remain untouched and the effect decays to exactly zero when inactive.
+  let delta=in.local-tile.interaction.zw;
+  let localRadius=max(24.0,d*.8);
+  let proximity=exp(-dot(delta,delta)/(localRadius*localRadius));
+  let hover=clamp(tile.interaction.x,0.0,1.0);
+  let pressed=clamp(tile.interaction.y,0.0,1.0);
+  let radial=delta/max(localRadius,1.0);
+  let shiftPx=proximity*(radial*(hover*0.55+pressed*1.1)+
+    tile.motion.xy*(hover*0.42+pressed*0.65));
+  let shiftUV=shiftPx/state.viewport.xy;
+  let interactiveInnerUV=innerUV+shiftUV;
+  let interactiveOuterUV=outerUV+shiftUV;
   let innerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+inner),d));
   let outerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+outer),d));
-  let glass=mix(mipSample(innerUV,innerLOD),
-                mipSample(outerUV,outerLOD),thresholdMix(signed));
+  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
+                mipSample(interactiveOuterUV,outerLOD),thresholdMix(signed));
   let rim=exp(-abs(signed)*1.16);
   let edge=clamp(rim*0.28,0.0,0.28);
-  var pointerLight:f32=0.0;
-  if(state.pointer.z>0.5){
-    let delta=in.position.xy-state.pointer.xy;
-    let radius=max(34.0,dimensions.x*1.4);
-    pointerLight=exp(-dot(delta,delta)/(radius*radius))*0.06;
-  }
+  // Explicitly provisional; not derived from Apple event-dependent light.
+  // Only the hovered/pressed square changes, and lighting follows local
+  // pointer coordinates instead of leaking to neighboring tiles.
+  let pointerLight=proximity*(hover*0.075+pressed*0.06)+
+    rim*proximity*pressed*0.035;
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve real sampled color and apply a restrained rim only.

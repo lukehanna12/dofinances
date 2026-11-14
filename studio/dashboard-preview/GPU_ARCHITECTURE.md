@@ -136,3 +136,22 @@ clamps the denominator to half bit-pattern `0xH068E`, performs a **half
 division**, promotes that result to Float32, adds `0.5`, saturates,
 and truncates to half. The browser shader now explicitly preserves those
 conversion boundaries. Exact target GPU derivative semantics remain open.
+
+
+## 2026-11-14 isolated interaction refinement
+
+The WebGPU preview models each glass square with its own hover and pressed
+state. A deterministic, browser-only critically damped response follows the
+pointer/touch/pen position within the square; the tile storage buffer adds
+two `vec4<f32>` records for hover/press/location and recent pointer motion.
+The source-backed AIR SDF, refraction envelope, and LOD remain unchanged.
+A small bounded optical displacement and local highlight are explicitly
+provisional **browser interaction**, not a proved macOS `interactive()`
+shader or a universal Apple motion law. Their contribution is zero when no
+square is engaged. Pointer events update the existing tile GPU buffer only,
+never the wallpaper or mip pyramid. Reduced-motion settings disable the
+spring interpolation. CI includes independent state-machine regressions
+and a real GPU press/release check.
+
+Important: exact native event-input-to-uniform timing and response, touch
+semantics, highlights and spring constants remain unmeasured on 25F80.

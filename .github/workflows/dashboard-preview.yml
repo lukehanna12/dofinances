@@ -33,10 +33,12 @@ jobs:
           cp studio/dashboard-preview/home.js dist/app/assets/dashboard-mosaic.js
           cp studio/dashboard-preview/optics.js dist/app/assets/dashboard-optics.js
           cp studio/dashboard-preview/gpu-renderer.js dist/app/assets/dashboard-gpu-renderer.js
+          cp studio/dashboard-preview/interaction.js dist/app/assets/dashboard-interaction.js
           cp studio/dashboard-preview/gpu-scene.wgsl dist/app/assets/dashboard-gpu-scene.wgsl
           cp studio/dashboard-preview/gpu-mipmap.wgsl dist/app/assets/dashboard-gpu-mipmap.wgsl
           cp studio/dashboard-preview/gpu-glass.wgsl dist/app/assets/dashboard-gpu-glass.wgsl
           cp studio/dashboard-preview/test-gpu.mjs dist/app/assets/dashboard-gpu.test.mjs
+          cp studio/dashboard-preview/test-interaction.mjs dist/app/assets/dashboard-interaction.test.mjs
           cp studio/dashboard-preview/test-optics.mjs dist/app/assets/dashboard-optics.test.mjs
           cp sites/_apex/app/assets/sidebar-glass-oracle.js dist/app/assets/sidebar-glass-oracle.js
 
@@ -65,6 +67,7 @@ jobs:
           test -s dist/app/assets/dashboard-mosaic.js
           test -s dist/app/assets/dashboard-optics.js
           test -s dist/app/assets/dashboard-gpu-renderer.js
+          test -s dist/app/assets/dashboard-interaction.js
           test -s dist/app/assets/dashboard-gpu-scene.wgsl
           test -s dist/app/assets/dashboard-gpu-mipmap.wgsl
           test -s dist/app/assets/dashboard-gpu-glass.wgsl
@@ -79,6 +82,7 @@ jobs:
           grep -Fq 'fn mipSample' dist/app/assets/dashboard-gpu-glass.wgsl
           grep -Fq 'copyExternalImageToTexture' dist/app/assets/dashboard-gpu-renderer.js
           node --check dist/app/assets/dashboard-gpu-renderer.js
+          node --check dist/app/assets/dashboard-interaction.js
           grep -Fq 'airMode5SDF(' dist/app/assets/dashboard-optics.js
           grep -Fq 'airRefractionEnvelope(' dist/app/assets/dashboard-optics.js
           grep -Fq 'feDisplacementMap' dist/app/assets/dashboard-optics.js
@@ -94,7 +98,8 @@ jobs:
           echo '{"type":"module"}' > dist/app/assets/package.json
           node --test dist/app/assets/dashboard-optics.test.mjs
           node --test dist/app/assets/dashboard-gpu.test.mjs
-          rm dist/app/assets/package.json dist/app/assets/dashboard-optics.test.mjs dist/app/assets/dashboard-gpu.test.mjs
+          node --test dist/app/assets/dashboard-interaction.test.mjs
+          rm dist/app/assets/package.json dist/app/assets/dashboard-optics.test.mjs dist/app/assets/dashboard-gpu.test.mjs dist/app/assets/dashboard-interaction.test.mjs
           grep -Fq 'Dashboard Preview · DoFinances' dist/index.html
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html

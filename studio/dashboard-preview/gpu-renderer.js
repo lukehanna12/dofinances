@@ -19,6 +19,7 @@
  */
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
+import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -42,12 +43,16 @@ Object.defineProperty(window,"__dashboardWebGPU",{
 const start=performance.now();
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
+const interaction=createInteractionController();
+const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");
+let activePointerId=null,lastFrameTime=performance.now();
 function requestRender(){
   if(!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
-    try{engine.render()}catch(e){fallback(e);}
-    if(!stopped&&performance.now()-start<1250)requestRender();
+    let animating=false;
+    try{animating=engine.render()}catch(e){fallback(e);}
+    if(!stopped&&(animating||performance.now()-start<1250))requestRender();
   });
 }
 async function fallback(reason){
@@ -111,7 +116,8 @@ function makeLayoutData(tile,scale){
   const word=observedBlurWord(r,1,.25);
   return [x*scale,y*scale,w*scale,h*scale,
     radius*scale,delay,word,nativeMode,
-    ...radii.map(v=>-Math.max(.009999999776482582,v*scale))];
+    ...radii.map(v=>-Math.max(.009999999776482582,v*scale)),
+    0,0,w*scale*.5,h*scale*.5,0,0,0,0];
 }
 // Mirrors the native AArch64 FCMP/FCCMP mode gate; the caller is responsible
 // for supplying correctly normalized private lanes. CSS -> private producer
@@ -123,8 +129,8 @@ export function selectModeForNormalizedCorners(lanes){
     lanes[2]===lanes[3] ? 4 : 5;
 }
 export function makeTileFloatData(elements,dpr){
-  const out=new Float32Array(elements.length*12);
-  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr),i*12));
+  const out=new Float32Array(elements.length*TILE_FLOATS);
+  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr),i*TILE_FLOATS));
   return out;
 }
 function geometry(width,height,imgWidth,imgHeight){
@@ -255,6 +261,7 @@ async function initialize(){
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1;
   const uniform=new Float32Array(12);
+  let tileData=new Float32Array(0);
   function writeUniform(){
     uniform[0]=physicalWidth;
     uniform[1]=physicalHeight;
@@ -323,6 +330,9 @@ async function initialize(){
     const all=activeTiles();
     const data=makeTileFloatData(all,dpr);
     tileCount=all.length;audit.tiles=tileCount;
+    interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
+    interaction.writeTo(data);
+    tileData=data;
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -372,6 +382,13 @@ async function initialize(){
   function render(){
     writeUniform();
     if(scenePending)buildScene();
+    const now=performance.now();
+    const animating=interaction.advance((now-lastFrameTime)/1000,reducedMotion.matches);
+    lastFrameTime=now;
+    if(tileCount){
+      interaction.writeTo(tileData);
+      device.queue.writeBuffer(tileBuffer,0,tileData);
+    }
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:OFFSCREEN_CI?
@@ -387,6 +404,9 @@ async function initialize(){
     pass.end();
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;
+    audit.focusedTile=interaction.focusedTile;
+    audit.pressed=interaction.isPressed;
+    return animating;
   }
   function dispose(){
     tileBuffer?.destroy();scene?.destroy();offscreenFrame?.destroy();photo.destroy();
@@ -433,18 +453,46 @@ async function initialize(){
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
-  window.addEventListener("pointermove",event=>{
-    if(event.pointerType==="touch")return;
-    pointer.x=event.clientX;pointer.y=event.clientY;
-    pointer.enabled=1;requestRender();
-  },{passive:true});
+  // Browser-only interaction model. No DOM screenshot, no scene/mip rebuild,
+  // no global mutable native material. Each tile keeps independent spring state.
+  const movePointer=event=>{
+    if(activePointerId!==null&&event.pointerId!==activePointerId)return;
+    if(event.pointerType==="touch"&&activePointerId===null)return;
+    pointer.x=event.clientX;pointer.y=event.clientY;pointer.enabled=1;
+    interaction.move(event.clientX*dpr,event.clientY*dpr);
+    requestRender();
+  };
+  const downPointer=event=>{
+    if(event.isPrimary===false||event.button>0 ||
+       (activePointerId!==null&&activePointerId!==event.pointerId))return;
+    activePointerId=event.pointerId;
+    interaction.move(event.clientX*dpr,event.clientY*dpr);
+    interaction.setPressed(true);
+    requestRender();
+  };
+  const upPointer=event=>{
+    if(activePointerId!==event.pointerId)return;
+    activePointerId=null;interaction.setPressed(false);
+    if(event.pointerType==="touch"){pointer.enabled=0;interaction.clear();}
+    else interaction.move(event.clientX*dpr,event.clientY*dpr);
+    requestRender();
+  };
+  const cancelPointer=event=>{
+    if(activePointerId!==null&&event.pointerId!==activePointerId)return;
+    activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
+  };
+  window.addEventListener("pointermove",movePointer,{passive:true});
+  window.addEventListener("pointerdown",downPointer,{passive:true});
+  window.addEventListener("pointerup",upPointer,{passive:true});
+  window.addEventListener("pointercancel",cancelPointer,{passive:true});
   window.addEventListener("pointerout",event=>{
     if(event.relatedTarget)return;
-    pointer.enabled=0;requestRender();
+    cancelPointer(event);
   },{passive:true});
   window.addEventListener("blur",()=>{
-    pointer.enabled=0;requestRender();
+    activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
   });
+  audit.interaction="per-tile browser-only hover/press spring, pointer/touch/pen";
   let sizeQueued=false;
   const onSize=()=>{
     if(sizeQueued||stopped)return;
