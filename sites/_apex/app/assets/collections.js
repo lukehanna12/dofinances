@@ -262,11 +262,16 @@ export function initColosseumCollections(){
    const depth=Math.min(8,Math.max(0,collection.collection_depth||0));
    const draft=state.nameDrafts.get(collection.collection_id)??collection.name;
    const editing=state.editing;
+   const rating=ratingFor(collection);
+   const hasRating=validRating(rating)&&rating!==null;
+   const context=contextFor(collection);
+   const picker='<span class="cs-context-control"><button type="button" class="cs-context-button" data-cs-context-id="'+uuid+'" aria-label="'+(context?'Edit Context':'Add Context')+'" aria-describedby="cs-ctx-tooltip-'+uuid+'" disabled tabindex="-1" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip" id="cs-ctx-tooltip-'+uuid+'"><span class="cs-create-tooltip-label">'+(context?'Edit Context':'Add Context')+'</span></span></span>';
+   const ratingControls='<span class="cs-row-annotation cs-annotation-editable">'+picker+collectionStarMarkup(rating,{editable:true,collectionId:uuid})+'<button type="button" class="cs-star-clear" data-cs-clear-rating="'+uuid+'" aria-label="Remove collection rating" title="Remove rating" disabled tabindex="-1" aria-hidden="true">×</button></span>';
    const picking=state.collectionSelecting;
    const picked=state.selectedCollections.has(collection.collection_id);
    const off=editing?"":' disabled tabindex="-1" aria-hidden="true"';
    const pickOff=picking?"":' disabled tabindex="-1" aria-hidden="true"';
-   return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
+   return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+(hasRating?' cs-has-rating':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
        '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
        '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing||picking?' disabled tabindex="-1"':'')+'>'+
@@ -274,6 +279,7 @@ export function initColosseumCollections(){
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-expanded">'+esc(collection.name)+'</span></span>'+
+       '<span class="cs-row-annotation cs-row-rating-only"'+(hasRating?'':' hidden')+' aria-label="'+(hasRating?'Rating '+rating+' of 5':'Not rated')+'">'+collectionStarMarkup(rating)+'</span>'+
        '<span class="cs-chevron">'+CHEVRON+'</span></button>'+
        '<button class="cs-collection-pick" type="button" data-cs-pick="'+uuid+'" aria-label="'+(picked?'Deselect ':'Select ')+esc(collection.name)+'" aria-pressed="'+String(picked)+'"'+pickOff+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
        '<span class="cs-name-field" data-cs-name-field="'+uuid+'">'+
@@ -286,11 +292,13 @@ export function initColosseumCollections(){
            '<button class="cs-name-action cs-name-confirm" type="button" data-cs-confirm-rename="'+uuid+'" aria-label="Apply name change" title="Apply name change" disabled tabindex="-1" hidden>'+NAME_APPLY+'</button>'+
            '<button class="cs-name-action cs-name-cancel" type="button" data-cs-cancel-rename="'+uuid+'" aria-label="Cancel name change" title="Cancel name change" disabled tabindex="-1">'+NAME_CANCEL+'</button>'+
          '</span></span>'+
+       ratingControls+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
          '<p class="cs-description">'+esc(collection.description||"No description provided.")+'</p>'+
+         (collection.context?'<p class="cs-context-text">'+esc(collection.context)+'</p>':'')+
          '<div class="cs-actions" data-cs-actions>'+actionMarkup()+'</div>'+
          '<div class="cs-mobile-detail" data-cs-mobile></div>'+
        '</div></div></div></article>';
@@ -362,13 +370,18 @@ export function initColosseumCollections(){
    const names=ids.map(uid=>{
      const item=map.get(uid)||{uid,name:uid};
      const routes=current.routes&&current.routes[uid]&&current.routes[uid].route_mode;
+    const annotation=current.item_metadata?.[uid],memberRating=annotation?.rating;
+    const memberContext=typeof annotation?.context==="string"?annotation.context:"";
+    const annotationMarkup=(validRating(memberRating)&&memberRating!==null||memberContext)?
+      '<span class="cs-member-annotation">'+(validRating(memberRating)&&memberRating!==null?collectionStarMarkup(memberRating):"")+
+      (memberContext?'<span class="cs-member-context">'+esc(memberContext)+'</span>':"")+'</span>':"";
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
      const content=(state.selecting?
        '<input type="checkbox" class="cs-checkbox" data-cs-uid="'+uid+'" aria-label="Select '+esc(item.name||uid)+'"'+(selected?' checked':'')+'>':
        '<span class="cs-dot" aria-hidden="true"></span>')+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
-       '<span class="cs-utility-uid">'+uid+'</span></span>'+
+       '<span class="cs-utility-uid">'+uid+'</span>'+annotationMarkup+'</span>'+
        (routeIcon?'<span class="cs-utility-route-slot"><img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'"></span>':'');
      return state.selecting?
        '<label class="cs-utility-row">'+content+'</label>':
