@@ -30,7 +30,7 @@ struct Tile {
   properties: vec4<f32>,   // radius, entrance delay, selected blur word, SDF mode
   cornerRadii: vec4<f32>,  // native logical corner lane order: TL,TR,BR,BL
   interaction: vec4<f32>,  // browser-only hover, press, local X, local Y
-  motion: vec4<f32>,       // browser-only normalized velocity XY, reserved
+  motion: vec4<f32>,       // velocity XY, browser track opacity Z, spare W
 };
 @group(0) @binding(0) var backdrop: texture_2d<f32>;
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
@@ -378,5 +378,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // 0.25 browser color film is NOT a native compositor coefficient.
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
   }
-  return vec4<f32>(color,coverage*in.introAlpha);
+  // Mirror the semantic icon's loop opacity. This is independent of
+  // Apple material coverage and never requires backdrop mip invalidation.
+  return vec4<f32>(color,coverage*in.introAlpha*clamp(tile.motion.z,0.0,1.0));
 }

@@ -21,6 +21,7 @@ import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
+import {TRACK_SECONDS,phaseAtSeconds,trackPosition} from "./dashboard-track.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -50,19 +51,30 @@ const reducedMotion=typeof window.matchMedia==="function"
   ? window.matchMedia("(prefers-reduced-motion: reduce)")
   : {matches:false};
 let activePointerId=null,lastFrameTime=performance.now();
+let trackSeconds=0,trackRunning=false,lastMotionSubmission=0;
+const TRACK_FRAME_INTERVAL=1000/30;
 function requestRender(){
   if(!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
+    if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL){
+      requestRender();return;
+    }
+    lastMotionSubmission=performance.now();
     let animating=false;
     try{animating=engine.render()}catch(e){fallback(e);}
-    if(!stopped&&(animating||performance.now()-start<1250))requestRender();
+    if(!stopped&&(animating||trackRunning||performance.now()-start<1250))
+      requestRender();
   });
 }
 async function fallback(reason){
   if(stopped)return;
   stopped=true;
   if(raf)cancelAnimationFrame(raf);
+  trackRunning=false;
+  if(root)for(const tile of root.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")){
+    tile.style.transform="";tile.style.opacity="";
+  }
   audit.status="fallback";
   audit.resizePending=false;
   audit.errors.push(String(reason));
@@ -322,6 +334,8 @@ async function initialize(){
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
+  let trackTiles=[],trackRows=[],baseTileY=new Float32Array(0),
+    pitchCSS=0,trackOpacity=new Float32Array(0);
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
   function writeUniform(){
@@ -416,8 +430,22 @@ async function initialize(){
       });
       scenePending=true;
     }
+    // Reset only compositor transforms for truthful baseline grid metrics.
+    // A resize synchronously reapplies track motion in the same GPU frame.
     const all=activeTiles();
+    for(const tile of all){tile.style.transform="";tile.style.opacity="";}
+    const cells=[...root.querySelectorAll(".cta6-tile")];
+    const rowIndex=new Map(cells.map((cell,i)=>[cell,Math.floor(i/11)]));
+    // offsetTop is invariant under CSS transform and entrance animations.
+    pitchCSS=cells[11]?.offsetTop-cells[0]?.offsetTop;
+    if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
+    trackTiles=all;
+    trackRows=all.map(cell=>rowIndex.get(cell));
+    if(trackRows.some(row=>row===undefined||row<0||row>5))
+      throw new Error("Invalid six-row moving glass geometry");
     const data=makeTileFloatData(all,dpr,sceneTop);
+    baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
+    trackOpacity=new Float32Array(all.length);
     tileCount=all.length;audit.tiles=tileCount;
     interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
     interaction.writeTo(data);
@@ -477,15 +505,43 @@ async function initialize(){
     scenePending=false;
     audit.sceneBuilds++;
   }
+  function paintTrack(deltaSeconds){
+    if(trackRunning)trackSeconds+=Math.max(0,Math.min(.05,deltaSeconds));
+    const phase=phaseAtSeconds(trackSeconds);
+    let fading=0;
+    for(let i=0;i<trackTiles.length;i++){
+      const pos=trackPosition(trackRows[i],phase);
+      const dy=pos.deltaRows*pitchCSS;
+      tileData[i*TILE_FLOATS+1]=baseTileY[i]+dy*dpr;
+      trackOpacity[i]=pos.opacity;
+      // Actual DOM SVG icons and GPU glass share the same CPU frame.
+      // Only transform/opacity change; the underlying grid does not move.
+      trackTiles[i].style.transform="translate3d(0,"+dy.toFixed(3)+"px,0)";
+      trackTiles[i].style.opacity=pos.opacity.toFixed(5);
+      if(pos.opacity<.9999)fading++;
+    }
+    // Hover targets follow the moving glass instead of static grid slots.
+    interaction.retargetRects(tileData);
+    audit.track={
+      running:trackRunning,phase,elapsed:trackSeconds,
+      cycleSeconds:TRACK_SECONDS,pitchCSS,rows:6,
+      fadedTiles:fading
+    };
+  }
   function render(){
     writeUniform();
     syncTileTints();
     if(scenePending)buildScene();
     const now=performance.now();
-    const animating=interaction.advance((now-lastFrameTime)/1000,reducedMotion.matches);
+    const dt=Math.max(0,(now-lastFrameTime)/1000);
     lastFrameTime=now;
+    if(tileCount)paintTrack(dt);
+    const animating=interaction.advance(dt,reducedMotion.matches);
     if(tileCount){
       interaction.writeTo(tileData);
+      // motion.z is the independent end-of-track transparency; the
+      // interaction adapter owns only hover/press, not track opacity.
+      for(let i=0;i<tileCount;i++)tileData[i*TILE_FLOATS+18]=trackOpacity[i];
       device.queue.writeBuffer(tileBuffer,0,tileData);
     }
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
@@ -554,6 +610,14 @@ async function initialize(){
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
+  trackRunning=!reducedMotion.matches;
+  lastFrameTime=performance.now();
+  reducedMotion.addEventListener?.("change",()=>{
+    if(stopped)return;
+    trackRunning=!reducedMotion.matches;
+    if(reducedMotion.matches)trackSeconds=0;
+    requestRender();
+  });
   // Browser-only interaction model. No DOM screenshot, no scene/mip rebuild,
   // no global mutable native material. Each tile keeps independent spring state.
   const movePointer=event=>{
