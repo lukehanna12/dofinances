@@ -164,14 +164,16 @@ html:has(body > #workspace-shell .dashboard-home){
 }
 body:has(> #workspace-shell .dashboard-home){
   background:#0a0a0a;
+  --dashboard-scene-top:var(--global-menu-height,44px);
+  --dashboard-scene-height:calc(100dvh - var(--dashboard-scene-top));
 }
 /* One centered, continuous photograph replaces the finite upper photo band
    and lower photographic strip. The sidebar still samples the real backdrop. */
 body:has(> #workspace-shell .dashboard-home)::before{
   position:fixed!important;
-  inset:0!important;
+  inset:var(--dashboard-scene-top) 0 0!important;
   width:100%!important;
-  height:100dvh!important;
+  height:var(--dashboard-scene-height)!important;
   background-image:
     linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
     var(--workspace-wallpaper-image,none)!important;
@@ -193,7 +195,7 @@ body:has(> #workspace-shell .dashboard-home) #workspace-shell .content{
 body:has(> #workspace-shell .dashboard-home) #workspace-shell .content{
   max-width:none;
   width:100%;
-  min-height:calc(100dvh - var(--global-menu-height,44px) - var(--workspace-header-height,50px));
+  min-height:var(--dashboard-scene-height);
   box-sizing:border-box;
   margin:0;
   padding:0!important;
@@ -202,14 +204,14 @@ body:has(> #workspace-shell .dashboard-home) #workspace-shell .content{
    Top-bar and sidebar layers retain their existing higher z-indices. */
 body:has(> #workspace-shell .dashboard-home) #workspace-shell .content > .view.dashboard-home:not([hidden]){
   position:fixed!important;
-  inset:calc(var(--global-menu-height,44px) + var(--workspace-header-height,50px)) 0 0!important;
+  inset:var(--dashboard-scene-top) 0 0!important;
   z-index:0;
   display:flex!important;
   align-items:center;
   justify-content:center;
   box-sizing:border-box;
   width:100vw;
-  height:calc(100dvh - var(--global-menu-height,44px) - var(--workspace-header-height,50px));
+  height:var(--dashboard-scene-height);
   min-height:0!important;
   padding:clamp(16px,3vh,36px) 0!important;
   margin:0!important;
@@ -434,11 +436,11 @@ body:has(> #workspace-shell .dashboard-home){
  * ======================================================================= */
 #dashboard-webgpu-scene{
   position:fixed;
-  inset:0;
+  inset:var(--dashboard-scene-top) 0 0;
   z-index:0;
   display:block;
   width:100vw;
-  height:100dvh;
+  height:var(--dashboard-scene-height);
   pointer-events:none;
   opacity:0;
   contain:strict;

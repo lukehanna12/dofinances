@@ -85,7 +85,12 @@ def run():
                     body:document.body?.dataset.gpuScene,
                     audit:window.__dashboardWebGPU||null,
                     count:document.querySelectorAll('.cta6-tile--icon').length,
-                    sidebar:!!document.querySelector('#workspace-sidebar')
+                    sidebar:!!document.querySelector('#workspace-sidebar'),
+                    lowerHeader:!!document.querySelector('.main > .topbar'),
+                    upperBar:document.querySelector('#global-menu')?.getBoundingClientRect().toJSON(),
+                    canvas:document.querySelector('#dashboard-webgpu-scene')?.getBoundingClientRect().toJSON(),
+                    imageFrame:document.querySelector('.dashboard-home')?.getBoundingClientRect().toJSON(),
+                    windowHeight:innerHeight
                 })"""
                 deadline=time.monotonic()+TIMEOUT
                 latest={}
@@ -95,8 +100,20 @@ def run():
                         latest=json.loads(raw)
                     audit=latest.get("audit") or {}
                     if latest.get("body")=="offscreen-proof":
-                        if latest.get("count")!=16 or latest.get("sidebar"):
-                            raise RuntimeError("Original 16 icons/sidebar boundary violated "+str(latest))
+                        if latest.get("count")!=16 or latest.get("sidebar") or latest.get("lowerHeader"):
+                            raise RuntimeError("Icons/removed lower header boundary violated "+str(latest))
+                        bar=latest.get("upperBar") or {}
+                        image=latest.get("imageFrame") or {}
+                        canvas=latest.get("canvas") or {}
+                        top=bar.get("bottom")
+                        bottom=latest.get("windowHeight",0)
+                        if top is None or top<1:
+                            raise RuntimeError("Global bar geometry unavailable "+str(latest))
+                        for name,rect in (("mosaic",image),("GPU canvas",canvas)):
+                            if abs(rect.get("top",-100)-top)>.6 or abs(rect.get("bottom",-100)-bottom)>.6:
+                                raise RuntimeError(name+" leaks behind header or stops early "+str(latest))
+                        if abs(audit.get("sceneTopCSS",-100)-top)>.6 or abs(audit.get("sceneCSSHeight",-100)-(bottom-top))>.6:
+                            raise RuntimeError("GPU image crop extent wrong "+str(latest))
                         if audit.get("status")!="ready" or audit.get("mipCount",0)<2 or audit.get("sceneBuilds",0)<1:
                             raise RuntimeError("GPU did not build real scene+mips "+str(latest))
                         if audit.get("sourcePixels")!=[2400,1600]:

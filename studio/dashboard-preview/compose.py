@@ -38,13 +38,23 @@ assert '</aside>' in removed_sidebar
 assert 'id="sidebar-resize-handle"' in removed_sidebar
 assert 'id="sidebar-scrim"' in removed_sidebar
 html = html[:start] + html[end:]
-mobile_toggle = '          <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-menu"></use></svg></button>'
-# The remaining global-menu toggle is separate from the removed workspace drawer.
-assert html.count(mobile_toggle) == 1
-html = html.replace(mobile_toggle,'',1)
+# Only this isolated static preview drops the lower breadcrumb header.
+# The upper global navigation stays intact and owns its 44px strip.
+h_start = '      <header class="topbar">'
+h_end = '      </header>'
+assert html.count(h_start)==1 and html.count(h_end)==1
+a = html.index(h_start)
+b = html.index(h_end,a)+len(h_end)
+removed_header = html[a:b]
+assert 'id="breadcrumb"' in removed_header
+assert 'id="mobile-nav-toggle"' in removed_header
+html = html[:a]+html[b:]
+assert 'id="global-menu"' in html
+assert '<header class="topbar">' not in html
+assert 'id="breadcrumb"' not in html
+assert 'id="mobile-nav-toggle"' not in html
 assert 'id="workspace-sidebar"' not in html
 assert 'id="sidebar-resize-handle"' not in html
-assert 'id="mobile-nav-toggle"' not in html
 out = Path("dist/index.html")
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(html, encoding="utf-8")

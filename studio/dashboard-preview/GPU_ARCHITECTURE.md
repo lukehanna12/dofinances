@@ -264,3 +264,17 @@ the same single RGBA8unorm source texture, authored scene, and mip
 pyramid; user-requested source pixel dimensions and the original static
 AVIF bytes remain unchanged. This browser-decoder adaptation does not
 supply native Apple Liquid Glass evidence.
+
+
+## 2026-11-14 lower-header removal and visible image viewport
+
+Only the isolated Dashboard preview drops the second
+`Workspace > Home` breadcrumb header. The independent 44px global
+top bar stays intact. Both fallback CSS and the GPU scene begin below
+its measured bottom and extend to the viewport bottom. The original
+2400×1600 AVIF source is byte-identical; centered cover-fitting uses
+the true unobscured viewport, so fewer source pixels are cropped.
+The GPU squares and pointer coordinates subtract the header height
+before entering native-size canvas coordinates, preserving alignment
+and existing interaction behavior. CI checks the header's absence,
+the true scene boundaries, and original image resolution.

@@ -97,13 +97,27 @@ function rgba16Texture(device,width,height){
           GPUTextureUsage.STORAGE_BINDING
   });
 }
-function makeLayoutData(tile,scale){
+// Canvas-local scene: cover image begins at the visible global-bar bottom.
+export function sceneViewportHeight(viewportHeight,headerBottom){
+  if(!Number.isFinite(viewportHeight)||viewportHeight<=0)
+    throw new TypeError("Positive viewport height required");
+  if(!Number.isFinite(headerBottom))
+    throw new TypeError("Finite header bottom required");
+  const top=Math.min(Math.max(0,headerBottom),viewportHeight-1);
+  return {top,height:Math.max(1,viewportHeight-top)};
+}
+function actualSceneViewport(){
+  const bar=document.getElementById("global-menu");
+  return sceneViewportHeight(window.innerHeight,
+    bar?.getBoundingClientRect().bottom ?? 44);
+}
+function makeLayoutData(tile,scale,sceneTop=0){
   // Reading DOM positions only establishes the INITIAL user-selected layout.
   // Future translations are GPU-side parameters, not wallpaper captures.
   const b=tile.getBoundingClientRect();
   const w=tile.offsetWidth,h=tile.offsetHeight;
   const x=b.left+b.width*.5-w*.5;
-  const y=b.top+b.height*.5-h*.5;
+  const y=b.top+b.height*.5-h*.5-sceneTop;
   const style=getComputedStyle(tile);
   const radii=[
     style.borderTopLeftRadius,style.borderTopRightRadius,
@@ -132,9 +146,9 @@ export function selectModeForNormalizedCorners(lanes){
   return lanes[0]===lanes[1] && lanes[1]===lanes[2] &&
     lanes[2]===lanes[3] ? 4 : 5;
 }
-export function makeTileFloatData(elements,dpr){
+export function makeTileFloatData(elements,dpr,sceneTop=0){
   const out=new Float32Array(elements.length*TILE_FLOATS);
-  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr),i*TILE_FLOATS));
+  elements.forEach((tile,i)=>out.set(makeLayoutData(tile,dpr,sceneTop),i*TILE_FLOATS));
   return out;
 }
 function geometry(width,height,imgWidth,imgHeight){
@@ -305,7 +319,7 @@ async function initialize(){
   let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,backgroundGroup=null,offscreenFrame=null,
     tileCount=0,physicalWidth=0,physicalHeight=0,
-    dpr=1;
+    dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
@@ -316,7 +330,7 @@ async function initialize(){
     uniform[3]=dpr;
     const fit=coverUVScale(physicalWidth,physicalHeight,photoWidth,photoHeight);
     uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=0;
-    uniform[8]=pointer.x*dpr;uniform[9]=pointer.y*dpr;
+    uniform[8]=pointer.x*dpr;uniform[9]=(pointer.y-sceneTop)*dpr;
     uniform[10]=pointer.enabled;uniform[11]=0;
     const t=tint.state;
     // Authored tint RGB; scheme-specific native vibrantColorMatrix is NOT a hue transform.\n    uniform[12]=t.rgb[0];uniform[13]=t.rgb[1];uniform[14]=t.rgb[2];uniform[15]=t.opacity;
@@ -343,17 +357,23 @@ async function initialize(){
   }
   function rebuild(){
     if(stopped)return;
-    const w=Math.max(1,Math.floor(window.innerWidth*window.devicePixelRatio));
-    const h=Math.max(1,Math.floor(window.innerHeight*window.devicePixelRatio));
-    if(w>device.limits.maxTextureDimension2D||h>device.limits.maxTextureDimension2D)
-      throw new Error("Viewport exceeds GPU maxTextureDimension2D");
+    const viewport=actualSceneViewport();
+    sceneTop=viewport.top;
     dpr=window.devicePixelRatio||1;
+    const w=Math.max(1,Math.floor(window.innerWidth*dpr));
+    const h=Math.max(1,Math.floor(viewport.height*dpr));
+    if(w>device.limits.maxTextureDimension2D||h>device.limits.maxTextureDimension2D)
+      throw new Error("Visible image region exceeds GPU maxTextureDimension2D");
     const sized=w!==physicalWidth||h!==physicalHeight||!scene;
     physicalWidth=w;physicalHeight=h;
+    document.body.style.setProperty("--dashboard-scene-top",sceneTop+"px");
+    audit.sceneTopCSS=sceneTop;
+    audit.sceneCSSHeight=viewport.height;
+    canvas.style.top=sceneTop+"px";
+    canvas.style.width=window.innerWidth+"px";
+    canvas.style.height=viewport.height+"px";
     if(sized){
       canvas.width=w;canvas.height=h;
-      canvas.style.width=window.innerWidth+"px";
-      canvas.style.height=window.innerHeight+"px";
       scene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
@@ -396,7 +416,7 @@ async function initialize(){
       scenePending=true;
     }
     const all=activeTiles();
-    const data=makeTileFloatData(all,dpr);
+    const data=makeTileFloatData(all,dpr,sceneTop);
     tileCount=all.length;audit.tiles=tileCount;
     interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
     interaction.writeTo(data);
@@ -539,14 +559,14 @@ async function initialize(){
     if(activePointerId!==null&&event.pointerId!==activePointerId)return;
     if(event.pointerType==="touch"&&activePointerId===null)return;
     pointer.x=event.clientX;pointer.y=event.clientY;pointer.enabled=1;
-    interaction.move(event.clientX*dpr,event.clientY*dpr);
+    interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
     requestRender();
   };
   const downPointer=event=>{
     if(event.isPrimary===false||event.button>0 ||
        (activePointerId!==null&&activePointerId!==event.pointerId))return;
     activePointerId=event.pointerId;
-    interaction.move(event.clientX*dpr,event.clientY*dpr);
+    interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
     interaction.setPressed(true);
     requestRender();
   };
@@ -554,7 +574,7 @@ async function initialize(){
     if(activePointerId!==event.pointerId)return;
     activePointerId=null;interaction.setPressed(false);
     if(event.pointerType==="touch"){pointer.enabled=0;interaction.clear();}
-    else interaction.move(event.clientX*dpr,event.clientY*dpr);
+    else interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
     requestRender();
   };
   const cancelPointer=event=>{

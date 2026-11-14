@@ -117,6 +117,9 @@ jobs:
           ! grep -Fq 'id="workspace-sidebar"' dist/index.html
           ! grep -Fq 'id="sidebar-resize-handle"' dist/index.html
           ! grep -Fq 'id="mobile-nav-toggle"' dist/index.html
+          ! grep -Fq '<header class="topbar">' dist/index.html
+          ! grep -Fq 'id="breadcrumb"' dist/index.html
+          grep -Fq 'id="global-menu"' dist/index.html
           grep -Fq 'rgba(21,26,32,.77)' dist/app/assets/dashboard-home.css
           grep -Fq 'backdrop-filter:blur(6.4px)' dist/app/assets/dashboard-home.css
           grep -Fq 'color:#000' dist/app/assets/dashboard-home.css

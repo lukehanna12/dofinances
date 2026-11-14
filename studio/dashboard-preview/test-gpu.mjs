@@ -11,7 +11,7 @@ globalThis.document={
   createElement:()=>({})
 };
 globalThis.window={};
-const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners} =
+const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners,sceneViewportHeight} =
   await import("./dashboard-gpu-renderer.js");
 const {nativePublicBlurRadius,observedBlurWord} =
   await import("./sidebar-glass-oracle.js");
@@ -35,6 +35,23 @@ test("center-cover backdrop UV respects physical viewport and image aspect",()=>
   const portrait=coverUVScale(390,844,1920,1080);
   assert.ok(portrait[0]<1);
   assert.equal(portrait[1],1);
+});
+test("visible wallpaper begins below global bar rather than at page origin",()=>{
+  assert.deepEqual(sceneViewportHeight(900,44),{top:44,height:856});
+  assert.deepEqual(sceneViewportHeight(640,44),{top:44,height:596});
+  assert.deepEqual(sceneViewportHeight(900,-10),{top:0,height:900});
+  assert.throws(()=>sceneViewportHeight(0,44),TypeError);
+});
+test("GPU tiles are positioned in local image coordinates",()=>{
+  globalThis.getComputedStyle=()=>({
+    borderTopLeftRadius:"12px",borderTopRightRadius:"12px",
+    borderBottomRightRadius:"12px",borderBottomLeftRadius:"12px",
+    getPropertyValue:()=>".12s"
+  });
+  const tile={offsetWidth:75,offsetHeight:75,
+    getBoundingClientRect:()=>({left:100,top:250,width:75,height:75})};
+  const data=makeTileFloatData([tile],2,44);
+  assert.deepEqual(Array.from(data.slice(0,4)),[200,412,150,150]);
 });
 test("one occupied tile maps CSS geometry to physical pixels without screenshot",()=>{
   globalThis.getComputedStyle=()=>({
