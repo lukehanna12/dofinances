@@ -968,3 +968,30 @@ test("Collections anchors its top and bottom photo strips under the moving black
     /position:fixed;\s*inset:auto 0 0;\s*z-index:0/);
   assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
 });
+
+test("Collection and direct-member annotations are visibly separated and validated",()=>{
+ const section=html.slice(html.indexOf('id="cs-form-dialog"'),html.indexOf('id="cs-delete-dialog"'));
+ assert.ok(section.includes('id="cs-form-rating"'));
+ assert.ok(section.includes('id="cs-context" name="context" maxlength="250"'));
+ assert.ok(section.includes('id="cs-context-dialog"'));
+ assert.ok(section.includes('id="cs-row-context" maxlength="250"'));
+ assert.ok(js.includes('ratingDrafts:new Map(),contextDrafts:new Map()'));
+ assert.ok(js.includes('function collectionStarMarkup('));
+ assert.ok(js.includes('data-cs-rating-id'));
+ assert.ok(js.includes('data-cs-form-rating'));
+ assert.ok(js.includes('data-cs-context-id'));
+ assert.ok(js.includes('function refreshCollectionRowAnnotation('));
+ assert.ok(js.includes('state.ratingDrafts.set(id,value)'));
+ assert.ok(js.includes('state.contextDrafts.set(id,context)'));
+ assert.ok(js.includes('collection.context?'));
+ assert.ok(js.includes('current.item_metadata?.[uid]'));
+ assert.ok(js.includes('if(!validRating(rating)||[...context].length>250)'));
+ assert.ok(js.includes('request("create",{name,description,rating:formRating,context})'));
+ assert.ok(js.includes('request("edit",{original_name:previous.name,name,desc:description,rating:formRating,context,expected_revision:revision})'));
+ assert.ok(js.includes('expected_revision:collection.revision'));
+ assert.ok(css.includes('#cs-root .cs-star-fill'));
+ assert.ok(css.includes('fill:#fff'));
+ assert.ok(css.includes('#cs-root .cs-context-text'));
+ assert.ok(css.includes('font-style:italic'));
+ assert.ok(css.includes('#cs-root .cs-context-control:hover .cs-create-tooltip'));
+});

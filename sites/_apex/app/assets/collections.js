@@ -1057,6 +1057,20 @@ export function initColosseumCollections(){
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
+   if(button.hasAttribute("data-cs-rating")&&state.editing){
+     const id=button.dataset.csRatingId,value=Number(button.dataset.csRating);
+     if(!state.collections.some(collection=>collection.collection_id===id)||!validRating(value))return;
+     state.ratingDrafts.set(id,value);
+     refreshCollectionRowAnnotation(id);return;
+   }
+   if(button.hasAttribute("data-cs-clear-rating")&&state.editing){
+     const id=button.dataset.csClearRating;
+     if(!state.collections.some(collection=>collection.collection_id===id))return;
+     state.ratingDrafts.set(id,null);refreshCollectionRowAnnotation(id);return;
+   }
+   if(button.hasAttribute("data-cs-context-id")&&state.editing){
+     openRowContext(button.dataset.csContextId);return;
+   }
    if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}
    if(button.hasAttribute("data-cs-start-rename")){beginInlineRename(button);return;}
    if(button.hasAttribute("data-cs-confirm-rename")&&state.renamingId===button.dataset.csConfirmRename){
@@ -1143,6 +1157,21 @@ export function initColosseumCollections(){
       target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
    event.preventDefault();toggleEditMode();
  },{capture:true});
+ editDialog.addEventListener("click",event=>{
+   const button=event.target.closest?.("button");
+   if(!button||state.busy)return;
+   if(button.hasAttribute("data-cs-form-rating")){
+     const value=Number(button.dataset.csFormRating);
+     if(!validRating(value))return;
+     formRating=value;renderFormRating();
+   }else if(button.hasAttribute("data-cs-form-rating-clear")){
+     formRating=null;renderFormRating();
+   }
+ });
+ $("cs-context-save").addEventListener("click",()=>saveRowContext());
+ $("cs-context-clear").addEventListener("click",()=>saveRowContext(true));
+ $("cs-context-cancel").addEventListener("click",()=>contextDialog.close());
+ contextDialog.addEventListener("close",()=>{rowContextId=null;});
  $("cs-form").addEventListener("submit",event=>void saveForm(event));
  $("cs-form-cancel").addEventListener("click",editClose);
  $("cs-delete-open").addEventListener("click",beginDelete);
