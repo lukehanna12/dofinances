@@ -169,9 +169,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root #cs-refresh:focus-visible + .cs-create-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
 #cs-root #cs-refresh:focus-visible + .cs-create-tooltip{transition-delay:0s,0s,0s}
 #cs-root #cs-refresh{width:32px;min-width:32px;height:32px;min-height:32px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}
-#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}
+#cs-root #cs-refresh .cs-refresh-icon{width:14px;height:14px;stroke-width:1.7}
 #cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}
-#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}
+#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:14px;height:14px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-source{font-size:12px;color:var(--cs-muted);margin:20px 0 0;min-height:20px;line-height:1.55}
 #cs-root .cs-source[data-error="true"]{color:var(--cs-red)}
 #cs-root .cs-access-reauthorize{display:inline-block;margin-left:8px;color:#fff;text-decoration:underline;text-underline-offset:3px;font-weight:600}
