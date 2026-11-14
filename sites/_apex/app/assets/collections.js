@@ -35,6 +35,20 @@ const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&
 const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+const STAR_PATH="M12 1.5 15.26 8.15 22.6 9.22 17.3 14.39 18.55 21.7 12 18.25 5.45 21.7 6.7 14.39 1.4 9.22 8.74 8.15 12 1.5Z";
+function collectionStarMarkup(rating,{editable=false,collectionId=null,form=false}={}){
+  const score=typeof rating==="number"&&rating>=0&&rating<=5?rating:null;
+  const stars=Array.from({length:5},(_,index)=>{
+    const fill=score===null?0:Math.max(0,Math.min(1,score-index))*100;
+    const surface='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+STAR_PATH+'"/></svg>';
+    const target=form?'data-cs-form-rating':'data-cs-rating-id="'+esc(collectionId)+'" data-cs-rating';
+    const halves=editable?
+      '<button type="button" class="cs-star-half" data-half="left" '+target+'="'+(index+.5)+'" aria-label="'+(index+.5)+' of 5 stars"></button>'+
+      '<button type="button" class="cs-star-half" data-half="right" '+target+'="'+(index+1)+'" aria-label="'+(index+1)+' of 5 stars"></button>':"";
+    return '<span class="cs-star" style="--cs-fill:'+fill+'%"><span class="cs-star-outline">'+surface+'</span><span class="cs-star-fill">'+surface+'</span>'+halves+'</span>';
+  }).join("");
+  return '<span class="cs-stars'+(editable?' cs-stars-editable':'')+'" aria-label="'+(score===null?"Not rated":score+" of 5 stars")+'">'+stars+'</span>';
+}
 const GRIP='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
 const PICK_CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>';
 const NAME_PENCIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.8 4.7 3.5 3.5M4 20l4.8-1.1L19.6 8.1a2.45 2.45 0 0 0-3.5-3.5L5.3 15.4 4 20Z"/></svg>';
@@ -69,12 +83,17 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
+   ratingDrafts:new Map(),contextDrafts:new Map(),
    nameDrafts:new Map(),renamingId:null,renameEpoch:0,renameInitialValue:"",draggingId:null,editTransitioning:false,
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
- const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
+ const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),contextDialog=$("cs-context-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
+ let formRating=null,rowContextId=null;
+ const validRating=value=>value===null||(typeof value==="number"&&value>=0&&value<=5&&Number.isInteger(value*2));
+ const ratingFor=collection=>state.ratingDrafts.has(collection.collection_id)?state.ratingDrafts.get(collection.collection_id):(collection.rating??null);
+ const contextFor=collection=>state.contextDrafts.has(collection.collection_id)?state.contextDrafts.get(collection.collection_id):(collection.context??"");
  function readStoredGeometry(){
    try{
      const raw=window.localStorage.getItem(SUMMARY_GEOMETRY_KEY);
