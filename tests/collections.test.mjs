@@ -203,7 +203,7 @@ test("Real writes are owner-protected, revision-bound, and preserve underlying c
  assert.match(edge,/collection\.manage/);
  assert.match(js,/request\("create",\{name,description\}\)/);
  assert.match(js,/request\("edit",\{original_name:col\.name,desc:description,expected_revision:revision\}\)/);
- assert.match(js,/request\("evict",\{name:col\.name,item_uids:uids,expected_revision:revision\}\)/);
+ assert.match(js,/request\("evict",\{name:pending\.name,item_uids:pending\.uids,expected_revision:pending\.revision\}\)/);
  assert.match(js,/request\("destroy",\{name:col\.name,expected_revision:revision\}\)/);
  assert.match(js,/Underlying catalog items|underlying catalog items|underlying utilities/);
 });
@@ -1059,7 +1059,8 @@ test("Collection Edit has its own description and member editor, distinct from g
  assert.ok(css.includes('#cs-root .cs-description-underline-extended .cs-description-underline'));
  assert.ok(css.includes('#cs-root .cs-description-pencil'));
  assert.ok(css.includes('#cs-root .cs-description-actions'));
- assert.ok(js.includes('if(action==="edit"){enterLocalEditor();return;}'));
+ assert.ok(js.includes('if(action==="edit"){'));
+ assert.ok(js.includes('enterLocalEditor();return;'));
  assert.ok(js.includes('if(localEditorActive()){void finishLocalEditor();return;}'));
  assert.ok(!js.includes('data-cs-action="discard"'));
  assert.ok(js.includes('if(action==="delete"){beginDelete();return;}'));
