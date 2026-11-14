@@ -541,8 +541,8 @@ test("Add collection uses ChatGPT's 36px white send-control geometry and black p
   assert.doesNotMatch(copy,/<p>/);
   assert.match(copy,/class="cs-create-control"/);
   assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="Add collection" aria-keyshortcuts="Meta\+Shift\+N"/);
-  assert.match(copy,/class="cs-create-plus-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"/);
-  assert.ok(copy.includes('M12 3.59998C12.5891 3.59998 13.0666 4.07754 13.0666 4.66664V10.9333H19.3333C19.9224 10.9333 20.4 11.4109 20.4 12C20.4 12.5891 19.9224 13.0666 19.3333 13.0666H13.0666V19.3333C13.0666 19.9224 12.5891 20.4 12 20.4C11.4109 20.4 10.9333 19.9224 10.9333 19.3333V13.0666H4.66664C4.07754 13.0666 3.59998 12.5891 3.59998 12C3.59998 11.4109 4.07754 10.9333 4.66664 10.9333H10.9333V4.66664C10.9333 4.07754 11.4109 3.59998 12 3.59998Z'),"Original 20px ChatGPT composer plus path must be preserved");
+  assert.match(copy,/class="cs-create-plus-icon" width="20" height="20" src="\/app\/assets\/add-collection\.v2\.svg"/);
+  assert.ok(copy.includes('add-collection.v2.svg'),"The native plus.circle.fill asset is used");
   assert.doesNotMatch(copy,/add-collection\.v1\.svg/);
   assert.match(css,/#cs-root \.cs-create-control\{[^}]*margin:16px 0 0 3\.5px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
@@ -1060,4 +1060,33 @@ test("Local Done persists description and member annotations with strict seriali
  assert.ok(js.includes('if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive())return;'));
  assert.ok(js.includes('selectButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive()'));
  assert.ok(!js.includes('request("create",{name,description,rating'));
+});
+
+// Each asset is traced directly to the corresponding exported symbol in
+// ~/Desktop/font/Icons-Real/SFSymbols.20261112.tsx, not reconstructed from CSS.
+test("Collections controls use versioned exact SF Symbols assets",()=>{
+ const workflow=src(".github/workflows/site.yml");
+ const source=[{"file":"add-collection.v2.svg","symbol":"plus.circle.fill","viewBox":"0 0 25.4314 25.0897","paths":[{"d":"M25.0701 12.5399C25.0701 19.4359 19.4359 25.0701 12.5302 25.0701C5.63418 25.0701 0 19.4359 0 12.5399C0 5.63418 5.63418 0 12.5302 0C19.4359 0 25.0701 5.63418 25.0701 12.5399ZM11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z","fill":"currentColor","opacity":"0.85"}]},{"file":"edit-collections.v1.svg","symbol":"pencil.line","viewBox":"0 0 26.1967 22.5978","paths":[{"d":"M24.4804 20.6072C24.4804 20.9707 24.1806 21.2705 23.8239 21.2705L4.86694 21.2705L5.10297 21.162L6.3228 19.9476L23.8239 19.9476C24.1806 19.9476 24.4804 20.2474 24.4804 20.6072Z","fill":"currentColor","opacity":"0.85"},{"d":"M4.35561 20.0428L18.8857 5.53222L17.1683 3.80204L2.63822 18.3096L1.38725 20.8565C1.27611 21.0876 1.53275 21.3426 1.75775 21.2405ZM19.8398 4.60136L20.9034 3.54755C21.4702 2.99355 21.4873 2.43447 20.9889 1.94277L20.7494 1.70321C20.2765 1.23036 19.6986 1.27919 19.1634 1.80761L18.0992 2.86142Z","fill":"currentColor","opacity":"0.85"}]},{"file":"select-collections.v1.svg","symbol":"pointer.arrow.ipad","viewBox":"0 0 15.4967 20.6062","paths":[{"d":"M6.92022 14.9311L13.8452 14.9311C15.0855 14.9311 15.5207 13.767 14.7534 12.993L2.19737 0.43999C1.35127-0.406105 0 0.0189931 0 1.27935L0 19.1092C0 20.2043 1.13145 20.7034 2.01026 19.8313Z","fill":"currentColor","opacity":"0.85"}]}];
+ for(const {file,symbol,viewBox,paths} of source){
+   const svg=src("sites/_apex/app/assets/"+file);
+   assert.match(svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+   assert.ok(svg.includes('data-sf-symbol="'+symbol+'"'));
+   assert.ok(svg.includes('data-sf-source="SFSymbols.20261112.tsx"'));
+   assert.ok(svg.includes('viewBox="'+viewBox+'"'));
+   assert.equal([...svg.matchAll(/<path d="([^"]+)" fill="currentColor" fill-opacity="([^"]+)"\/>/g)].length,paths.length);
+   for(const path of paths){
+     assert.ok(svg.includes('d="'+path.d+'"'),symbol+" source path differs");
+     assert.ok(svg.includes('fill-opacity="'+path.opacity+'"'),symbol+" opacity differs");
+   }
+   assert.match(html,new RegExp('src="/app/assets/'+file.replaceAll(".","\\.")+'"'));
+   assert.match(workflow,new RegExp('cp sites/_apex/app/assets/'+file.replaceAll(".","\\.")+' dist/app/assets/'+file.replaceAll(".","\\.")));
+   assert.match(workflow,new RegExp('test -s dist/app/assets/'+file.replaceAll(".","\\.")));
+   assert.doesNotMatch(svg,/<(?:script|foreignObject|image)\b|<!DOCTYPE|<\?xml|data:image/i);
+ }
+ assert.match(html,/class="cs-edit-check"/);
+ assert.match(html,/class="cs-select-done"/);
+ assert.match(css,/#cs-root\.cs-closing-for-edit \.cs-edit-icon-button img/);
+ assert.match(css,/#cs-root\.cs-closing-for-selection \.cs-select-icon-button img/);
+ assert.match(css,/#cs-root \.cs-create-plus-icon\{object-fit:contain\}/);
+ assert.doesNotMatch(html,/<svg class="cs-(?:create-plus-icon|edit-pencil|select-glyph)"/);
 });

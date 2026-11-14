@@ -809,3 +809,19 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(prefers-reduced-motion:reduce){
  #cs-root .cs-description-underline{transition:none}
 }
+
+/* SF Symbols 2026-11-12: versioned assets, exact source paths/viewBoxes.
+   Active-state checkmarks remain inline; only inactive glyphs change. */
+#cs-root .cs-create-plus-icon{object-fit:contain}
+#cs-root .cs-edit-icon-button img,
+#cs-root .cs-select-icon-button img{
+ position:absolute;width:19px;height:19px;object-fit:contain;
+ transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)
+}
+#cs-root.cs-closing-for-edit .cs-edit-icon-button img,
+#cs-root.cs-closing-for-selection .cs-select-icon-button img{opacity:0}
+#cs-root .cs-edit-icon-button:hover:not(:disabled) .cs-edit-pencil,
+#cs-root .cs-select-icon-button:hover:not(:disabled) .cs-select-glyph{filter:brightness(1.12)}
+@media(prefers-reduced-motion:reduce){
+ #cs-root .cs-edit-icon-button img,#cs-root .cs-select-icon-button img{transition:none}
+}
