@@ -6,7 +6,7 @@
  */
 export const TRACK_ROWS=7;
 export const TRACK_LANES=7;
-export const TRACK_SECONDS=84; // one row pitch every 12 seconds, twice as fast
+export const TRACK_SECONDS=84/1.15; // precisely 15% faster than the previous 84s cycle
 const smooth=t=>{
   const x=Math.max(0,Math.min(1,t));
   return x*x*(3-2*x);

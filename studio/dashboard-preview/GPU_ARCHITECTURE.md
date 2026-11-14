@@ -386,3 +386,21 @@ hover interaction, responsive resizing, full-resolution AVIF, and the
 no-background-rebuild-on-motion invariant are preserved. Node tests
 and real WebGPU smoke verify track entry, geometry, all 51 instances,
 original icon count, and footer style. The production branch is unchanged.
+
+
+## 2026-11-14 subsequent speed and seventh-row pattern refinement
+
+The 84-second cycle above was subsequently accelerated by exactly 15% in
+velocity: `TRACK_SECONDS=84/1.15`, giving a full loop of approximately
+**73.043478 seconds** and one-row travel every **10.434783 seconds**.
+This preserves the existing opacity fades, seven-lane wrap, six original
+rows, native-resolution background and Dark/no-tint defaults.
+
+The six original seventh-entry-row glass squares are now distributed
+left-to-right in the precise requested 11-cell binary occupancy pattern
+`11010100101`: **columns 0, 1, 3, 5, 8, 10** (zero-indexed).
+All other positions in that row are empty. The total remains **51 GPU
+squares**, including the prior three behind the central heading/button,
+and 16 unchanged icon-bearing squares. The footer remains 50% opaque.
+The browser smoke test verifies the exact row pattern and numeric cycle
+length, not merely the count of glass squares.

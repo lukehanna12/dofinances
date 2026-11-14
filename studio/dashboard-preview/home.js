@@ -41,7 +41,9 @@ const positionIcons={
 };
 // Explicit additions keep the 16 original icons and original lattice intact.
 const centerGlass=new Set(["2:4","2:6","3:5"]);
-const entryGlassColumns=new Set([0,2,4,6,8,10]);
+// Seventh row, left to right: 1 = icon-less glass; 0 = empty slot.
+// Exact requested pattern: 11010100101 (six glass squares).
+const entryGlassColumns=new Set([0,1,3,5,8,10]);
 const root=document.getElementById("cta6-mosaic");
 if(root){
   const cells=document.createDocumentFragment();

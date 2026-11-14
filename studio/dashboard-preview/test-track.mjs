@@ -2,13 +2,14 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {TRACK_ROWS,TRACK_LANES,TRACK_SECONDS,phaseAtSeconds,trackPosition}
   from "./dashboard-track.js";
-test("84-second seven-lane circuit includes six original and one new row",()=>{
+test("15%-faster seven-lane circuit includes six original and one entry row",()=>{
   assert.equal(TRACK_ROWS,7);assert.equal(TRACK_LANES,7);
-  assert.equal(TRACK_SECONDS,84);
+  assert.equal(TRACK_SECONDS,84/1.15);
+  assert.ok(Math.abs(TRACK_SECONDS-73.04347826086956)<1e-10);
   assert.equal(phaseAtSeconds(0),0);
-  assert.equal(phaseAtSeconds(12),1);
-  assert.equal(phaseAtSeconds(84),0);
-  assert.equal(phaseAtSeconds(168),0);
+  assert.ok(Math.abs(phaseAtSeconds(TRACK_SECONDS/7)-1)<1e-10);
+  assert.equal(phaseAtSeconds(TRACK_SECONDS),0);
+  assert.equal(phaseAtSeconds(2*TRACK_SECONDS),0);
 });
 test("all authored initial rows remain in their slots at full opacity",()=>{
   for(let i=0;i<6;i++){

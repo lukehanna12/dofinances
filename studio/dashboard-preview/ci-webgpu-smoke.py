@@ -107,6 +107,8 @@ def run():
                     iconTrackTransform:document.querySelector('.cta6-tile--icon')?.style.transform,
                     allGridSlots:document.querySelectorAll('#cta6-mosaic .cta6-tile').length,
                     entryRowSquares:document.querySelectorAll('.cta6-track-entry .cta6-tile--plain').length,
+                    entryPattern:[...document.querySelectorAll('.cta6-track-entry > .cta6-tile')].map(
+                        tile=>tile.classList.contains('cta6-tile--plain')?'1':'0').join(''),
                     centerSquares:(()=>{
                         const tiles=[...document.querySelectorAll('#cta6-mosaic .cta6-tile')];
                         return [26,28,38].filter(i=>tiles[i]?.classList.contains('cta6-tile--plain')).length;
@@ -161,7 +163,7 @@ def run():
                         if latest.get("tintPanelVisible"):
                             raise RuntimeError("Tint control unexpectedly visible")
                         if latest.get("allGridSlots")!=77 or latest.get("entryRowSquares")!=6 or (
-                            latest.get("centerSquares")!=3):
+                            latest.get("entryPattern")!="11010100101" or latest.get("centerSquares")!=3):
                             raise RuntimeError("Six new entry and three central panes missing "+str(latest))
                         if latest.get("count")!=16 or audit.get("tiles")!=51:
                             raise RuntimeError("Original icons or 51 total GPU glass panes changed "+str(latest))
@@ -170,8 +172,8 @@ def run():
                         if not (latest.get("entryRowTop",0)>latest.get("baseGridBottom",0)):
                             raise RuntimeError("Entry row overlaps original grid "+str(latest))
                         loop=audit.get("track") or {}
-                        if loop.get("cycleSeconds")!=84 or loop.get("rows")!=7:
-                            raise RuntimeError("Double-speed seven-row motion contract missing "+str(loop))
+                        if abs(float(loop.get("cycleSeconds",0))-(84/1.15))>0.00001 or loop.get("rows")!=7:
+                            raise RuntimeError("15%-faster seven-row motion contract missing "+str(loop))
                         if not (latest.get("iconTrackTransform") or "").startswith("translate3d("):
                             raise RuntimeError("DOM icons do not share moving GPU geometry")
                         phase_start=loop.get("phase",0)
