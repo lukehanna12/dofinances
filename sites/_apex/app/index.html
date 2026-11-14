@@ -436,9 +436,6 @@
               <form id="cs-form" method="dialog">
                 <label class="cs-field">Collection name<input id="cs-name" name="name" required maxlength="100" autocomplete="off"></label>
                 <label class="cs-field">Description<textarea id="cs-description" name="description" maxlength="2000" rows="4"></textarea></label>
-                <label class="cs-field">Rating (optional)<span id="cs-form-rating" class="cs-form-rating" role="group" aria-label="Optional collection rating"></span></label>
-                <label class="cs-field">Context (optional)<textarea id="cs-context" name="context" maxlength="250" rows="3" aria-describedby="cs-context-help"></textarea></label>
-                <span id="cs-context-help" class="cs-context-help">Up to 250 characters. Separate from the collection description.</span>
                 <p id="cs-form-error" class="cs-form-error" role="alert"></p>
                 <div class="cs-modal-actions">
                   <button type="button" id="cs-delete-open" data-danger="true" class="cs-button cs-danger" hidden>Delete collection</button>
@@ -448,8 +445,8 @@
               </form>
             </dialog>
             <dialog class="cs-modal" id="cs-context-dialog" aria-labelledby="cs-context-title">
-              <h2 id="cs-context-title">Collection context</h2>
-              <p id="cs-context-copy">Add optional context to this collection.</p>
+              <h2 id="cs-context-title">Utility context</h2>
+              <p id="cs-context-copy">Add optional context to a utility within this collection.</p>
               <label class="cs-field">Context<textarea id="cs-row-context" maxlength="250" rows="4"></textarea></label>
               <p id="cs-row-context-error" class="cs-form-error" role="alert"></p>
               <div class="cs-modal-actions">
