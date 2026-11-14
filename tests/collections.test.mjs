@@ -541,13 +541,16 @@ test("Add collection uses ChatGPT's 36px white send-control geometry and black p
   assert.doesNotMatch(copy,/<p>/);
   assert.match(copy,/class="cs-create-control"/);
   assert.match(copy,/class="cs-create-icon-button" id="cs-create" type="button" aria-label="Add collection" aria-keyshortcuts="Meta\+Shift\+N"/);
-  assert.match(copy,/class="cs-create-plus-icon" width="20" height="20" src="\/app\/assets\/add-collection\.v2\.svg"/);
-  assert.ok(copy.includes('add-collection.v2.svg'),"The native plus.circle.fill asset is used");
+  assert.match(copy,/class="cs-create-plus-icon" width="32" height="32" src="\/app\/assets\/add-collection\.v3\.svg"/);
+  assert.ok(copy.includes('add-collection.v3.svg'),"The native plus.circle.fill asset is used");
+  assert.ok(src("sites/_apex/app/assets/add-collection.v3.svg").includes('color="#fff"'),"Whole circular symbol renders light on the dark canvas");
   assert.doesNotMatch(copy,/add-collection\.v1\.svg/);
   assert.match(css,/#cs-root \.cs-create-control\{[^}]*margin:16px 0 0 3\.5px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
   assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*border-radius:999px/);
-  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:#fff;color:#101010/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:transparent;color:#fff;line-height:0/);
+  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*box-shadow:none/);
+  assert.match(css,/#cs-root \.cs-create-icon-button:hover:not\(:disabled\)\{background:transparent;box-shadow:none\}/);
   assert.match(js,/createButton\.addEventListener\("click",\(\)=>\{if\(!localEditorActive\(\)\)openForm\("create"\);\}\)/);
 });
 
@@ -769,7 +772,7 @@ test("Mobile and desktop compact row components scale independently",()=>{
 });
 test("Add circle shrinks 10 percent, refresh is aligned right with edit/add at both breakpoints",()=>{
  assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*width:32\.4px;min-width:32\.4px;height:32\.4px;min-height:32\.4px/);
- assert.match(css,/#cs-root \.cs-create-plus-icon\{[^}]*width:18px;height:18px/);
+ assert.match(css,/#cs-root \.cs-create-plus-icon\{[^}]*width:32\.4px;height:32\.4px/);
  assert.match(css,/#cs-root \.cs-head\{[^}]*align-items:flex-end/);
  assert.match(css,/#cs-root \.cs-top-actions\{[^}]*align-self:flex-end;margin-left:auto/);
  assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-head\{flex-direction:row;align-items:flex-end;gap:10px\}/);
@@ -1066,7 +1069,7 @@ test("Local Done persists description and member annotations with strict seriali
 // ~/Desktop/font/Icons-Real/SFSymbols.20261112.tsx, not reconstructed from CSS.
 test("Collections controls use versioned exact SF Symbols assets",()=>{
  const workflow=src(".github/workflows/site.yml");
- const source=[{"file":"add-collection.v2.svg","symbol":"plus.circle.fill","viewBox":"0 0 25.4314 25.0897","paths":[{"d":"M25.0701 12.5399C25.0701 19.4359 19.4359 25.0701 12.5302 25.0701C5.63418 25.0701 0 19.4359 0 12.5399C0 5.63418 5.63418 0 12.5302 0C19.4359 0 25.0701 5.63418 25.0701 12.5399ZM11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z","fill":"currentColor","opacity":"0.85"}]},{"file":"edit-collections.v1.svg","symbol":"pencil.line","viewBox":"0 0 26.1967 22.5978","paths":[{"d":"M24.4804 20.6072C24.4804 20.9707 24.1806 21.2705 23.8239 21.2705L4.86694 21.2705L5.10297 21.162L6.3228 19.9476L23.8239 19.9476C24.1806 19.9476 24.4804 20.2474 24.4804 20.6072Z","fill":"currentColor","opacity":"0.85"},{"d":"M4.35561 20.0428L18.8857 5.53222L17.1683 3.80204L2.63822 18.3096L1.38725 20.8565C1.27611 21.0876 1.53275 21.3426 1.75775 21.2405ZM19.8398 4.60136L20.9034 3.54755C21.4702 2.99355 21.4873 2.43447 20.9889 1.94277L20.7494 1.70321C20.2765 1.23036 19.6986 1.27919 19.1634 1.80761L18.0992 2.86142Z","fill":"currentColor","opacity":"0.85"}]},{"file":"select-collections.v1.svg","symbol":"pointer.arrow.ipad","viewBox":"0 0 15.4967 20.6062","paths":[{"d":"M6.92022 14.9311L13.8452 14.9311C15.0855 14.9311 15.5207 13.767 14.7534 12.993L2.19737 0.43999C1.35127-0.406105 0 0.0189931 0 1.27935L0 19.1092C0 20.2043 1.13145 20.7034 2.01026 19.8313Z","fill":"currentColor","opacity":"0.85"}]}];
+ const source=[{"file":"add-collection.v3.svg","symbol":"plus.circle.fill","viewBox":"0 0 25.4314 25.0897","paths":[{"d":"M25.0701 12.5399C25.0701 19.4359 19.4359 25.0701 12.5302 25.0701C5.63418 25.0701 0 19.4359 0 12.5399C0 5.63418 5.63418 0 12.5302 0C19.4359 0 25.0701 5.63418 25.0701 12.5399ZM11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z","fill":"currentColor","opacity":"0.85"}]},{"file":"edit-collections.v1.svg","symbol":"pencil.line","viewBox":"0 0 26.1967 22.5978","paths":[{"d":"M24.4804 20.6072C24.4804 20.9707 24.1806 21.2705 23.8239 21.2705L4.86694 21.2705L5.10297 21.162L6.3228 19.9476L23.8239 19.9476C24.1806 19.9476 24.4804 20.2474 24.4804 20.6072Z","fill":"currentColor","opacity":"0.85"},{"d":"M4.35561 20.0428L18.8857 5.53222L17.1683 3.80204L2.63822 18.3096L1.38725 20.8565C1.27611 21.0876 1.53275 21.3426 1.75775 21.2405ZM19.8398 4.60136L20.9034 3.54755C21.4702 2.99355 21.4873 2.43447 20.9889 1.94277L20.7494 1.70321C20.2765 1.23036 19.6986 1.27919 19.1634 1.80761L18.0992 2.86142Z","fill":"currentColor","opacity":"0.85"}]},{"file":"select-collections.v1.svg","symbol":"pointer.arrow.ipad","viewBox":"0 0 15.4967 20.6062","paths":[{"d":"M6.92022 14.9311L13.8452 14.9311C15.0855 14.9311 15.5207 13.767 14.7534 12.993L2.19737 0.43999C1.35127-0.406105 0 0.0189931 0 1.27935L0 19.1092C0 20.2043 1.13145 20.7034 2.01026 19.8313Z","fill":"currentColor","opacity":"0.85"}]}];
  for(const {file,symbol,viewBox,paths} of source){
    const svg=src("sites/_apex/app/assets/"+file);
    assert.match(svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
@@ -1178,4 +1181,20 @@ test("Utility search keeps desktop/mobile input focus and local editor drafts in
  assert.ok(js.includes('if(!input||!state.detail||!state.activeId)return'));
  assert.ok(css.includes('#cs-root .cs-utility-no-results'));
  assert.ok(css.includes('#cs-root .cs-search input[type="search"]'));
+});
+
+test("Add collection renders the whole SF Symbol, not an icon inside a CSS circle",()=>{
+ const htmlButton=html.match(/<button class="cs-create-icon-button"[^>]*>[\s\S]*?<\/button>/)?.[0]||"";
+ const native=src("sites/_apex/app/assets/add-collection.v3.svg");
+ assert.match(htmlButton,/add-collection\.v3\.svg/);
+ assert.doesNotMatch(htmlButton,/<svg\b|<span\b|<i\b/);
+ assert.ok(native.includes('data-sf-symbol="plus.circle.fill"'));
+ assert.ok(native.includes('color="#fff"'));
+ assert.ok(native.includes('fill-opacity="0.85"'));
+ assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*background:transparent;color:#fff/);
+ assert.match(css,/#cs-root \.cs-create-icon-button\{[^}]*box-shadow:none/);
+ assert.match(css,/#cs-root \.cs-create-plus-icon\{[^}]*width:32\.4px;height:32\.4px/);
+ assert.doesNotMatch(css,/#cs-root \.cs-create-icon-button\{[^}]*background:#fff/);
+ assert.ok(htmlButton.includes('aria-keyshortcuts="Meta+Shift+N"'));
+ assert.ok(htmlButton.includes('aria-describedby="cs-create-tooltip"'));
 });

@@ -108,7 +108,7 @@ jobs:
           cp sites/_apex/app/assets/collections-screen-sidebar-icon.v1.svg dist/app/assets/collections-screen-sidebar-icon.v1.svg
           cp sites/_apex/app/assets/settings-screen-sidebar-icon.v1.svg dist/app/assets/settings-screen-sidebar-icon.v1.svg
           cp sites/_apex/app/assets/add-collection.v1.svg dist/app/assets/add-collection.v1.svg
-          cp sites/_apex/app/assets/add-collection.v2.svg dist/app/assets/add-collection.v2.svg
+          cp sites/_apex/app/assets/add-collection.v3.svg dist/app/assets/add-collection.v3.svg
           cp sites/_apex/app/assets/edit-collections.v1.svg dist/app/assets/edit-collections.v1.svg
           cp sites/_apex/app/assets/select-collections.v1.svg dist/app/assets/select-collections.v1.svg
           cp sites/_apex/app/assets/diagnostics.css dist/app/assets/diagnostics.css
@@ -126,7 +126,7 @@ jobs:
           test -s dist/app/assets/collections-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/settings-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/add-collection.v1.svg
-          test -s dist/app/assets/add-collection.v2.svg
+          test -s dist/app/assets/add-collection.v3.svg
           test -s dist/app/assets/edit-collections.v1.svg
           test -s dist/app/assets/select-collections.v1.svg
           test -s dist/app/assets/home-rice-terraces-hq.jpg
