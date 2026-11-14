@@ -273,7 +273,10 @@ Only the isolated Dashboard preview drops the second
 top bar stays intact. Both fallback CSS and the GPU scene begin below
 its measured bottom and extend to the viewport bottom. The original
 2400×1600 AVIF source is byte-identical; centered cover-fitting uses
-the true unobscured viewport, so fewer source pixels are cropped.
+the true unobscured viewport so the photo is re-centered within the
+visible area rather than being composed behind an opaque header.
+This changes which source pixels are visible, not the native pixel
+resolution or the amount of image detail the display can resolve.
 The GPU squares and pointer coordinates subtract the header height
 before entering native-size canvas coordinates, preserving alignment
 and existing interaction behavior. CI checks the header's absence,
