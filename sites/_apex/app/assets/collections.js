@@ -43,8 +43,15 @@ const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
 const STAR_PATH="M12 1.5 15.26 8.15 22.6 9.22 17.3 14.39 18.55 21.7 12 18.25 5.45 21.7 6.7 14.39 1.4 9.22 8.74 8.15 12 1.5Z";
+export function nextCollectionRating(current,clicked){
+  // Tapping the currently selected half steps down, and tapping it again refills.
+  if(!validCollectionRating(clicked)||clicked===null||clicked===0)return null;
+  const previous=validCollectionRating(current)&&current>0?current:null;
+  const next=previous===clicked?clicked-.5:clicked;
+  return next<=0?null:next;
+}
 function collectionStarMarkup(rating,{editable=false,memberUid=null}={}){
-  const score=validCollectionRating(rating)?rating:null;
+  const score=validCollectionRating(rating)&&rating>0?rating:null;
   const stars=Array.from({length:5},(_,index)=>{
     const fill=score===null?0:Math.max(0,Math.min(1,score-index))*100;
     const svg='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="'+STAR_PATH+'"/></svg>';
@@ -108,15 +115,18 @@ export function initColosseumCollections(){
  const memberAnnotation=uid=>{
    const key=membershipKey(state.activeId,uid);
    const value=state.memberDrafts.get(key)??state.detail?.item_metadata?.[uid];
-   return {rating:validRating(value?.rating)?value.rating:null,context:typeof value?.context==="string"?value.context:""};
+   return {rating:validRating(value?.rating)&&value.rating>0?value.rating:null,context:typeof value?.context==="string"?value.context:""};
  };
  function stageMemberAnnotation(uid,changes){
    if(!localEditorActive()||state.busy||!isUid(uid)||
       !state.detail?.item_uids?.includes(uid)||!state.activeId)return;
    const next={...memberAnnotation(uid),...changes};
+   // Legacy zero values and explicit unrated both resolve to null.
+   if(next.rating===0)next.rating=null;
    if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250)return;
    const original=state.detail.item_metadata?.[uid];
-   if(next.rating===(validRating(original?.rating)?original.rating:null)&&next.context===(original?.context??""))
+   const priorRating=validRating(original?.rating)&&original.rating>0?original.rating:null;
+   if(next.rating===priorRating&&next.context===(original?.context??""))
      state.memberDrafts.delete(membershipKey(state.activeId,uid));
    else state.memberDrafts.set(membershipKey(state.activeId,uid),next);
    renderCard();
@@ -284,8 +294,7 @@ export function initColosseumCollections(){
    // delete is still separately available while editing that collection.
    const badge='<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+
      (count===undefined?'— utilities':count+' '+(count===1?'utility':'utilities'))+'</span>';
-   return badge+(localEditorActive()?
-     '<button class="cs-button cs-danger" type="button" data-cs-action="delete"'+(state.busy?' disabled':'')+'>Delete collection</button>':"");
+   return badge;
  }
  const UTILITY_DONE_SVG='<svg class="cs-utility-done" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4.7 12.1 5 5.1L19.5 7.3"/></svg>';
  // Keep all controls mounted while their native symbols crossfade to Done.
@@ -345,7 +354,7 @@ export function initColosseumCollections(){
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
          '<div class="cs-description-inline" data-cs-description-editor>'+
-           '<div class="cs-description-read"><p class="cs-description" data-cs-description-read>'+esc(state.localEditingId===collection.collection_id&&state.descriptionDraft!==null?state.descriptionDraft:(collection.description||"No description provided."))+'</p>'+
+           '<div class="cs-description-read"><span class="cs-description" data-cs-description-read>'+esc(state.localEditingId===collection.collection_id&&state.descriptionDraft!==null?state.descriptionDraft:(collection.description||"No description provided."))+'</span>'+
              '<button type="button" class="cs-description-pencil" data-cs-description-start aria-label="Edit collection description" title="Edit description" hidden>'+NAME_PENCIL+'</button></div>'+
            '<div class="cs-description-write" hidden><span class="cs-description-input-wrap">'+
              '<textarea class="cs-description-input" data-cs-description-input maxlength="2000" rows="3" aria-label="Collection description">'+esc(collection.description||"")+'</textarea>'+
@@ -436,10 +445,8 @@ export function initColosseumCollections(){
      const contextButton=editingMember?
        '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" title="'+(hasContext?'Edit Context':'Add Context')+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
      const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
-     const removeRating=editingMember?'<button type="button" class="cs-star-zero" data-cs-member-zero="'+uid+'" aria-label="Rate '+esc(item.name||uid)+' zero stars" title="Rate zero stars">0</button>'+
-       '<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
      const annotationControls=(editingMember||hasRating)?
-       '<span class="cs-member-rating-actions">'+contextButton+stars+removeRating+'</span>':"";
+       '<span class="cs-member-rating-actions">'+contextButton+stars+'</span>':"";
      const contextMarkup=hasContext?'<span class="cs-member-context">'+esc(annotation.context)+'</span>':"";
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
@@ -1321,21 +1328,11 @@ export function initColosseumCollections(){
    if(button.hasAttribute("data-cs-member-context")){
      openRowContext(button.dataset.csMemberContext);return;
    }
-   if(button.hasAttribute("data-cs-member-clear")){
-     const uid=button.dataset.csMemberClear;
-     if(isUid(uid))stageMemberAnnotation(uid,{rating:null});
-     return;
-   }
-   if(button.hasAttribute("data-cs-member-zero")){
-     const uid=button.dataset.csMemberZero;
-     if(isUid(uid))stageMemberAnnotation(uid,{rating:0});
-     return;
-   }
    if(button.hasAttribute("data-cs-member-rating")){
      const uid=button.dataset.csMemberRating,value=Number(button.dataset.csValue);
      if(!isUid(uid)||!validRating(value))return;
      const inMobile=!!button.closest(".cs-mobile-detail"),half=button.dataset.half;
-     stageMemberAnnotation(uid,{rating:value});
+     stageMemberAnnotation(uid,{rating:nextCollectionRating(memberAnnotation(uid).rating,value)});
      (inMobile?list:detail).querySelector('[data-cs-member-rating="'+uid+'"][data-cs-value="'+value+'"][data-half="'+half+'"]')?.focus({preventScroll:true});
    }
  });

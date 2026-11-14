@@ -1028,12 +1028,24 @@ test("Collections anchors its top and bottom photo strips under the moving black
   assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
 });
 
-test("Ratings accept zero and half-stars, reject invalid and distinguish unrated",async()=>{
- const {validCollectionRating}=await import("../sites/_apex/app/assets/collections.js");
+test("Rating half-star toggling follows 3/4/5-star examples and collapses zero into unrated",async()=>{
+ const {validCollectionRating,nextCollectionRating}=await import("../sites/_apex/app/assets/collections.js");
  for(let i=0;i<=10;i++)assert.equal(validCollectionRating(i/2),true);
  assert.equal(validCollectionRating(null),true);
  for(const invalid of [-0.5,5.5,0.25,undefined,"4.5",NaN,Infinity])
    assert.equal(validCollectionRating(invalid),false);
+ assert.equal(nextCollectionRating(3,0.5),0.5);
+ assert.equal(nextCollectionRating(0.5,0.5),null);
+ assert.equal(nextCollectionRating(4,4),3.5);
+ assert.equal(nextCollectionRating(5,5),4.5);
+ assert.equal(nextCollectionRating(4.5,5),5);
+ assert.equal(nextCollectionRating(null,0.5),0.5);
+ assert.equal(nextCollectionRating(0,0.5),0.5);
+ assert.equal(nextCollectionRating(3.5,3.5),3);
+ assert.equal(nextCollectionRating(3,2.5),2.5);
+ assert.equal(nextCollectionRating(0.5,5),5);
+ assert.equal(nextCollectionRating(3,3.25),null);
+ assert.equal(nextCollectionRating(null,0),null);
 });
 test("Collection Edit has its own description and member editor, distinct from global organization editing",()=>{
  const section=html.slice(html.indexOf('id="cs-form-dialog"'),html.indexOf('id="cs-delete-dialog"'));
@@ -1063,34 +1075,41 @@ test("Collection Edit has its own description and member editor, distinct from g
  assert.ok(js.includes('enterLocalEditor();return;'));
  assert.ok(js.includes('if(localEditorActive()){void finishLocalEditor();return;}'));
  assert.ok(!js.includes('data-cs-action="discard"'));
- assert.ok(js.includes('if(action==="delete"){beginDelete();return;}'));
+ assert.ok(!js.includes('>Delete collection</button>'),"Delete collection must not appear in Utility Edit mode");
  assert.ok(!js.includes('openForm("edit")'));
  assert.ok(!js.includes('cs-edit-utilities-open'));
  assert.ok(!css.includes('.cs-edit-utilities-open'));
 });
-test("Only a direct membership can be rated or annotated; zero differs from unrated",()=>{
+test("Utility description pencil follows the last visible word with inline flow",()=>{
+ assert.ok(js.includes('<div class="cs-description-read"><span class="cs-description" data-cs-description-read>'));
+ assert.ok(js.includes("No description provided."));
+ assert.ok(css.includes('#cs-root .cs-description-read{display:block;max-width:448px}'));
+ assert.ok(css.includes('#cs-root .cs-description-read .cs-description{display:inline;margin:0;white-space:pre-line}'));
+ assert.ok(css.includes('display:inline-grid;place-items:center;vertical-align:middle;margin-left:8px'));
+ assert.ok(css.includes('#cs-root .cs-description-pencil{margin-left:7px}'));
+ assert.ok(!css.includes('#cs-root .cs-description-read{display:flex;'));
+});
+test("Direct-membership ratings use half-star toggling without zero or X controls",()=>{
  assert.ok(js.includes('state.detail?.item_metadata?.[uid]'));
  assert.ok(js.includes('const annotation=memberAnnotation(uid)'));
  assert.ok(js.includes('const editingMember=localEditorActive()'));
  assert.ok(js.includes('const hasRating=annotation.rating!==null'));
  assert.ok(js.includes('data-cs-member-context'));
  assert.ok(js.includes('data-cs-member-rating'));
- assert.ok(js.includes('data-cs-member-zero'));
- assert.ok(js.includes('data-cs-member-clear'));
+ for(const name of ["cs-member-zero","cs-member-clear","cs-star-zero","cs-star-clear"])
+   assert.ok(!js.includes(name),"Removed separate zero and X controls: "+name);
+ for(const name of [".cs-star-zero",".cs-star-clear"])assert.ok(!css.includes(name));
  assert.ok(js.includes('data-cs-value'));
  assert.ok(js.includes('stageMemberAnnotation(uid,{context})'));
- assert.ok(js.includes('stageMemberAnnotation(uid,{rating:value})'));
- assert.ok(js.includes('stageMemberAnnotation(uid,{rating:0})'));
- assert.ok(js.includes('stageMemberAnnotation(uid,{rating:null})'));
+ assert.ok(js.includes('stageMemberAnnotation(uid,{rating:nextCollectionRating(memberAnnotation(uid).rating,value)})'));
+ assert.ok(js.includes('if(next.rating===0)next.rating=null'));
+ assert.ok(js.includes('const priorRating=validRating(original?.rating)&&original.rating>0?original.rating:null'));
  assert.ok(js.includes('state.memberDrafts.set(membershipKey(state.activeId,uid),next)'));
  assert.ok(js.includes('state.memberDrafts.delete(membershipKey(state.activeId,uid))'));
- assert.ok(js.includes('const contextMarkup=hasContext?'));
  assert.ok(js.includes('const annotationControls=(editingMember||hasRating)?'));
- assert.ok(css.includes('#cs-root .cs-member-rating-actions'));
+ assert.ok(css.includes('#cs-root .cs-member-rating-actions .cs-context-control + .cs-stars{margin-left:8px}'));
+ assert.ok(css.includes('#cs-root .cs-member-rating-actions .cs-context-control + .cs-stars{margin-left:6px}'));
  assert.ok(css.includes('#cs-root .cs-star-fill'));
- assert.ok(css.includes('fill:#fff'));
- assert.ok(css.includes('#cs-root .cs-member-context'));
- assert.ok(css.includes('font-style:italic'));
  assert.ok(css.includes('#cs-root .cs-context-control:hover .cs-create-tooltip'));
 });
 test("Local Done persists description and member annotations with strict serialized revision checks",()=>{
@@ -1290,7 +1309,7 @@ test("Utility total and persistent manager controls keep their swapped positions
  assert.ok(js.includes('if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction)'));
  assert.ok(js.includes('handleUtilityAction(button.dataset.csAction);'));
  assert.ok(js.includes('root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button, .cs-utility-trash")'));
- assert.ok(js.includes('if(action==="delete"){beginDelete();return;}'));
+ assert.ok(!js.includes('>Delete collection</button>'),"Delete collection must not appear in Utility Edit mode");
 });
 test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
  assert.ok(css.includes("--cs-utility-bubble-height:34px"));
