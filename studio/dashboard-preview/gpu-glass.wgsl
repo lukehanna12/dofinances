@@ -358,19 +358,25 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     rim*proximity*pressed*0.035;
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
-  // Preserve real sampled color and apply a restrained rim only.
+  // Preserve source-backed sampled optics and the restrained browser rim.
   let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
-  var color=baseColor;
+  // GAP CLEAR-FACE-OUTPUT: 25F80 Clear face matrix input endpoints are
+  // measured, but their executed native equation is NOT recovered. The
+  // browser applies a linear interpolation between recorded endpoint
+  // inputs: light black/white = 0.20/0.95, dark = 0.05/0.80.
+  // Both face endpoints are lower in dark; tint hue stays independent.
+  let faceBlack=select(0.20,0.05,state.tintMeta.y>0.5);
+  let faceWhite=select(0.95,0.80,state.tintMeta.y>0.5);
+  var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
-    // GAP TINT-RGB-PRODUCER / TINT-C: the 25F80 witness establishes an
-    // added vibrantColorMatrix layer, its exact 80-byte scheme-specific
-    // coefficients, and the alpha at inputColorMatrix float lane 18.
-    // The CPU evaluates that matrix using conventional 4x5 arithmetic.
-    // Its native shader execution and source-over coupling are unproved.
-    // 0.25 is an explicit restrained browser film strength, NOT an
-    // Apple coefficient. At alpha zero the tinted branch still exists.
-    color=mix(baseColor,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
+    // GAP TINT-RGB-PRODUCER / TINT-C: the separate CAFilter vibrancy
+    // matrix is NOT a proved RGB→tint-hue transform. Previously
+    // applying its light=-0.1/dark=+0.1 offsets to the pigment made
+    // the Dark UI lighter, contrary to the observed face inputs.
+    // Preserve authored sRGB pigment; only public alpha is Float32.
+    // 0.25 browser color film is NOT a native compositor coefficient.
+    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
   }
   return vec4<f32>(color,coverage*in.introAlpha);
 }

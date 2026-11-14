@@ -2,12 +2,12 @@
  * Isolated Dashboard preview tint. All observed constants come from
  * E-P-SWIFTUI-TINT-SCHEME-NATIVE-FINITE (25F80/M2/G14G).
  * The native witness captures 104 cases x 2 identical processes.
- * Its extra 80-byte vibrantColorMatrix has measured RGB coefficients
- * that differ by color scheme and a measured opacity in lane 18.
- *
- * IMPORTANT: neither the hue producer nor GPU execution/compositor is
- * recovered. A conventional 4x5 matrix evaluation and source-over tint
- * strength are explicitly browser adapters, not native proofs.
+ * Its extra 80-byte vibrantColorMatrix has measured coefficients that
+ * differ by color scheme and a measured opacity in lane 18.
+ * IMPORTANT: the matrix is NOT a proved public tint-hue RGB transform.
+ * Do not evaluate it against the tint color. The separately captured
+ * native Clear face white/black endpoints drive an explicitly provisional
+ * browser tone map; hue and source-over blending remain browser adapters.
  */
 const BITS=Object.freeze({
   light:Object.freeze([0x3f438716,0x3e5ba804,0x3cb1dd2e,0,0xbdccccd0,
@@ -23,16 +23,51 @@ const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 export const TINT_COLORS=Object.freeze({
   none:Object.freeze({rgb:[0,0,0],opacity:0,label:"None"}),
   red:Object.freeze({rgb:[1,0,0],opacity:.37,label:"Red"}),
-  blue:Object.freeze({rgb:[0,0,1],opacity:.25,label:"Blue"}),
+  orange:Object.freeze({rgb:[1,.38,0],opacity:.75,label:"Orange"}),
+  yellow:Object.freeze({rgb:[1,.91,0],opacity:.75,label:"Yellow"}),
   green:Object.freeze({rgb:[0,1,0],opacity:.5,label:"Green"}),
+  teal:Object.freeze({rgb:[0,.67,.63],opacity:.75,label:"Teal"}),
+  cyan:Object.freeze({rgb:[0,.91,1],opacity:.75,label:"Cyan"}),
+  blue:Object.freeze({rgb:[0,0,1],opacity:.25,label:"Blue"}),
+  indigo:Object.freeze({rgb:[.27,.22,1],opacity:.75,label:"Indigo"}),
+  purple:Object.freeze({rgb:[.58,.24,.95],opacity:.75,label:"Purple"}),
+  magenta:Object.freeze({rgb:[1,0,.78],opacity:.75,label:"Magenta"}),
+  pink:Object.freeze({rgb:[1,.38,.69],opacity:.75,label:"Pink"}),
   white:Object.freeze({rgb:[1,1,1],opacity:.99,label:"White"}),
   black:Object.freeze({rgb:[0,0,0],opacity:1,label:"Black"})
 });
 export const OBSERVED_OPACITIES=Object.freeze([0,.125,.25,.37,.5,.75,.95,.99,1]);
-// Six source-recorded hue controls, seven source-recorded alpha tiers.
-// The assignment across tiles is a browser comparison, not Apple state.
-export const SHOWCASE_TINTS=Object.freeze(["none","red","blue","green","white","black"]);
-export const SHOWCASE_OPACITIES=Object.freeze([.5,.75,1,.95,.37,.25,.125]);
+// 14 visible comparison states x 3 observed public opacity inputs = 42
+// squares. New hues are authored sRGB controls, not native-recovered hues.
+export const SHOWCASE_TINTS=Object.freeze([
+  "none","red","orange","yellow","green","teal","cyan",
+  "blue","indigo","purple","magenta","pink","white","black"
+]);
+export const SHOWCASE_OPACITIES=Object.freeze([.37,.75,1]);
+
+// 25F80/M2, SwiftUI Glass.clear light/dark inputFaceColorMatrixWhite/Black
+// and inputFaceColorMatrixFillColor (white alpha) recorded by
+// E-P-SWIFTUI-TINT-SCHEME-NATIVE-FINITE. The INPUT values are observed.
+// Their application as linear RGB endpoints is an unproved browser adapter.
+export const CLEAR_FACE_INPUTS=Object.freeze({
+  light:Object.freeze({white:Math.fround(.95),black:Math.fround(.2),
+    fillWhiteAlpha:Math.fround(.1)}),
+  dark:Object.freeze({white:Math.fround(.8),black:Math.fround(.05),
+    fillWhiteAlpha:Math.fround(.05)})
+});
+export const BROWSER_TINT_FILM_STRENGTH=.25;
+export function browserFaceColor(rgb,scheme="dark"){
+  const face=CLEAR_FACE_INPUTS[scheme];
+  if(!face)throw new RangeError("Unknown scheme");
+  if(!Array.isArray(rgb)||rgb.length!==3||rgb.some(v=>!Number.isFinite(v)))
+    throw new TypeError("Finite RGB triplet required");
+  return rgb.map(v=>Math.fround(clamp(face.black+(face.white-face.black)*clamp(v))));
+}
+export function browserTintColor(backdrop,material){
+  const face=browserFaceColor(backdrop,material.scheme);
+  const alpha=material.active?material.opacity*BROWSER_TINT_FILM_STRENGTH:0;
+  return face.map((v,i)=>Math.fround(v*(1-alpha)+material.rgb[i]*alpha));
+}
 export function nativeTintMatrix(scheme="dark",opacity=1){
   const bits=BITS[scheme];
   if(!bits)throw new RangeError("light/dark color scheme required");
@@ -61,15 +96,11 @@ export function tintParameters(name="none",opacity,scheme="dark"){
   const rawOpacity=opacity===undefined?entry.opacity:Number(opacity);
   if(!Number.isFinite(rawOpacity)||rawOpacity<0||rawOpacity>1)throw new RangeError("Invalid opacity");
   const active=name!=="none";
-  const matrix=nativeTintMatrix(scheme,active?rawOpacity:0);
-  const c=entry.rgb;
-  // GAP TINT-RGB-PRODUCER: conventional 4x5 evaluation of recorded input
-  // coefficients, not proved native filter execution. Clamp to RGB gamut.
-  const rgb=[0,1,2].map(row=>clamp(Math.fround(
-    Math.fround(matrix[row*5]*c[0])+
-    Math.fround(matrix[row*5+1]*c[1])+
-    Math.fround(matrix[row*5+2]*c[2])+
-    matrix[row*5+4])));
+  // Keep measured nativeTintMatrix() available for exact input regression,
+  // but never apply its scheme-dependent vibrancy offsets to hue RGB:
+  // doing so inverted apparent light/dark brightness in the old preview.
+  // These palette entries are explicitly authored sRGB values.
+  const rgb=entry.rgb.map(x=>Math.fround(x));
   return Object.freeze({
     name,opacity:Math.fround(active?rawOpacity:0),scheme,active,
     rgb:Object.freeze(rgb),filterCount:active?3:2,
@@ -104,12 +135,18 @@ export function createTintControls(onChange){
   const choices=new Map();
   function fallbackStyle(){
     if(!host)return;
-    // Browser-only CSS fallback mirrors the per-pane tint assignments.
+    // Browser-only CSS fallback mirrors the per-pane tint assignments
+    // and keeps the neutral light/dark face distinct even without tint.
+    const face=CLEAR_FACE_INPUTS[state.scheme];
+    const tone=state.scheme==="light"?
+      "rgba(255,255,255,"+face.fillWhiteAlpha.toFixed(6)+")":
+      "rgba(0,0,0,"+face.fillWhiteAlpha.toFixed(6)+")";
     const tiles=[...host.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")];
     tiles.forEach((tile,index)=>{
       const material=tintForTile(state,index);
       const rgb=material.rgb.map(v=>Math.round(clamp(v)*255));
       const alpha=material.active?material.opacity*.25:0;
+      tile.style.setProperty("--dashboard-face-fill",tone);
       tile.style.setProperty("--dashboard-tint-fill",
         material.active?
           "rgba("+rgb.join(",")+","+alpha.toFixed(6)+")":
@@ -180,8 +217,8 @@ export function createTintControls(onChange){
     panel.append(showcaseButton);
     const explanation=document.createElement("p");
     explanation.className="dashboard-tint-guide";
-    explanation.textContent="Clear, red, blue, green, white and black repeat across "+
-      "the blocks, with seven intensity levels. Hover to inspect a block.";
+    explanation.textContent="Fourteen hues and neutral variants across three "+
+      "opacity levels. Hover over any block for its color and strength.";
     panel.append(explanation);
     const swatches=document.createElement("div");
     swatches.className="dashboard-tint-swatches";
@@ -190,6 +227,8 @@ export function createTintControls(onChange){
       button.type="button";button.className="dashboard-tint-swatch";
       button.dataset.tint=name;
       button.textContent=option.label;
+      button.style.setProperty("--tint-swatch-color",
+        "rgb("+option.rgb.map(v=>Math.round(v*255)).join(",")+")");
       button.setAttribute("aria-label",option.label+" tint");
       button.addEventListener("click",()=>apply(name,undefined,state.scheme));
       choices.set(name,button);swatches.append(button);
@@ -221,7 +260,8 @@ export function createTintControls(onChange){
     panel.append(schemeLabel,schemeSelect);
     const note=document.createElement("p");
     note.className="dashboard-tint-note";
-    note.textContent="Native matrix/opacity inputs; hue and blend are browser approximations.";
+    note.textContent="Observed matrix and face inputs; hue/face output math "+
+      "and tint blend are browser approximations.";
     panel.append(note);
     container.append(toggle,panel);
     document.body.append(container);

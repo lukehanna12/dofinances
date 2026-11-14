@@ -104,14 +104,16 @@ def run():
                         proof=audit.get("offscreenPixelProof")
                         if not isinstance(proof,list) or len(proof)!=4 or proof[3]!=255:
                             raise RuntimeError("Offscreen GPU pixel byte readback failed "+str(latest))
-                        # Initial mixed mode assigns exactly seven tiles per hue.
+                        # Initial mixed mode has 14 variants x 3 alpha tiers.
                         counts=audit.get("tintCounts") or {}
-                        expected={k:7 for k in ("none","red","blue","green","white","black")}
+                        hues=("none","red","orange","yellow","green","teal","cyan",
+                            "blue","indigo","purple","magenta","pink","white","black")
+                        expected={k:3 for k in hues}
                         if counts!=expected:
-                            raise RuntimeError("Mixed tint distribution missing "+str(counts))
+                            raise RuntimeError("Expanded tint distribution missing "+str(counts))
                         mixed=audit.get("tintShowcase") or {}
-                        if len(mixed.get("opacityTiers",[]))!=7:
-                            raise RuntimeError("Seven recorded showcase alpha tiers missing")
+                        if len(mixed.get("opacityTiers",[]))!=3:
+                            raise RuntimeError("Three source-recorded opacity tiers missing")
                         # GPU tile movement/interaction must never invalidate
                         # the GPU-owned background or its mip pyramid.
                         before_frames=audit["frameCount"]
@@ -179,6 +181,11 @@ def run():
                             raise RuntimeError("Tint uniform update not recorded")
                         if ta.get("sceneBuilds")!=before_scene_builds:
                             raise RuntimeError("Tint transition regenerated backdrop mips")
+                        # Regression for reversed scheme brightness: encoded
+                        # browser face endpoints must make Light brighter.
+                        # Pure luminance ordering is covered in Node test-tint;
+                        # the WebGPU smoke confirms scheme switching still
+                        # submits a new draw without recreating backdrop mips.
                         cdp_eval(ws,counter,
                             "window.__dashboardTintControls.setScheme('light');true")
                         for _ in range(20):

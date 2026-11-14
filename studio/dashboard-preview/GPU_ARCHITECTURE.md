@@ -197,3 +197,35 @@ matching individual CSS variables. This is a browser-only presentation
 of the finite 25F80/M2 source-observed tint matrix and alpha inputs.
 The hue source, effective 25% film blend and final Apple output chain
 are unproved and explicitly remain provisional.
+
+
+## 2026-11-14 expanded palette and corrected appearance direction
+
+The 42 squares now compare 14 authored RGB variants, three times each at
+source-recorded alpha levels 0.37, 0.75, and 1. They include untinted,
+red, orange, yellow, green, teal, cyan, blue, indigo, purple, magenta,
+pink, white and black. Native cases only tested the original subset.
+**New hues are browser color controls, not target-validated Apple hue
+producers.** The original 14x3 showcase retains all 42 tiles and the
+per-tile GPU storage buffer; icon/geometry/SDF/refraction/mip logic
+is unchanged.
+
+The old preview interpreted the native scheme-specific vibrancy
+`inputColorMatrix` as the pigment RGB transform. This is unjustified:
+its scheme-dependent offsets (~-0.1 light, ~+0.1 dark) made the Dark
+scheme show brighter tinted squares. The actual finite 25F80 Clear
+material source also records `inputFaceColorMatrixBlack` 0.2
+(light) / 0.05 (dark), `inputFaceColorMatrixWhite` 0.95 (light) /
+0.80 (dark), and face white-fill alpha 0.1 (light) / 0.05 (dark).
+Those face inputs consistently order Light above Dark.
+
+The revised browser model keeps palette pigments identical across
+schemes. The shader instead uses measured black/white endpoint
+**inputs** as an explicitly provisional linear face-tone transfer
+for every tile, including untinted controls; tint color film is then
+applied at the same alpha irrespective of scheme. This prevents the
+inversion and keeps the native matrix bytes as evidence only, without
+misrepresenting them as a proven hue producer/compositor. Tests verify
+endpoint ordering and Light > Dark for varied backdrop, opacity, and
+hue. Exact native face transfer, tint compositing, ColorSync/EDR
+remain OPEN, as before.

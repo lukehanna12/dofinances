@@ -1,7 +1,8 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {nativeTintMatrix,tintParameters,tintForTile,TINT_COLORS,OBSERVED_OPACITIES,
-  SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
+  SHOWCASE_TINTS,SHOWCASE_OPACITIES,CLEAR_FACE_INPUTS,browserFaceColor,
+  browserTintColor} from "./dashboard-tint.js";
 
 function word(v){const a=new DataView(new ArrayBuffer(4));a.setFloat32(0,v,true);return a.getUint32(0,true);}
 test("two native tint matrices preserve captured Float32 words and alpha slot 18",()=>{
@@ -17,10 +18,11 @@ test("two native tint matrices preserve captured Float32 words and alpha slot 18
     }
   }
 });
-test("same hue and opacity input yields different measured scheme response",()=>{
+test("native vibrancy offsets must NOT recolor tint hue by scheme",()=>{
   const dark=tintParameters("red",.37,"dark");
   const light=tintParameters("red",.37,"light");
-  assert.notDeepEqual(dark.rgb,light.rgb);
+  assert.deepEqual(dark.rgb,light.rgb);
+  assert.deepEqual(light.rgb,[1,0,0]);
   assert.equal(dark.opacity,Math.fround(.37));
   assert.equal(light.opacity,Math.fround(.37));
   assert.equal(dark.filterCount,3);
@@ -34,9 +36,12 @@ test("native captured 104-case graph distinguishes no-tint and zero-opacity tint
   assert.equal(transparent.active,true);
   assert.equal(transparent.filterCount,3);
   assert.equal(transparent.opacity,0);
-  assert.deepEqual(Object.keys(TINT_COLORS),["none","red","blue","green","white","black"]);
+  assert.deepEqual(Object.keys(TINT_COLORS),[
+    "none","red","orange","yellow","green","teal","cyan","blue",
+    "indigo","purple","magenta","pink","white","black"
+  ]);
 });
-test("all five supported hues have clamped colors, finite alpha, and no false native proof",()=>{
+test("all 13 supported tint hues have finite alpha and no false native proof",()=>{
   for(const name of Object.keys(TINT_COLORS).filter(n=>n!=="none")){
     const s=tintParameters(name);
     assert.ok(s.rgb.every(x=>Number.isFinite(x)&&x>=0&&x<=1));
@@ -48,20 +53,20 @@ test("all five supported hues have clamped colors, finite alpha, and no false na
 test("out-of-domain opacity and schemes fail closed",()=>{
   assert.throws(()=>tintParameters("red",-0.1),RangeError);
   assert.throws(()=>tintParameters("red",1.1),RangeError);
-  assert.throws(()=>tintParameters("cyan",.25),RangeError);
+  assert.throws(()=>tintParameters("ultraviolet",.25),RangeError);
   assert.throws(()=>nativeTintMatrix("sepia",.25),RangeError);
   assert.throws(()=>tintParameters("blue",.5,"sepia"),RangeError);
 });
 
-test("mixed comparison distributes 42 squares across six hues and seven retained alpha tiers",()=>{
+test("mixed comparison distributes 42 squares across 14 colors and three measured alpha tiers",()=>{
   const state=tintParameters("showcase");
   const tiles=Array.from({length:42},(_,i)=>tintForTile(state,i));
-  assert.deepEqual(SHOWCASE_TINTS,["none","red","blue","green","white","black"]);
-  assert.equal(SHOWCASE_OPACITIES.length,7);
+  assert.deepEqual(SHOWCASE_TINTS,Object.keys(TINT_COLORS));
+  assert.deepEqual(SHOWCASE_OPACITIES,[.37,.75,1]);
   assert.equal(state.mixed,true);assert.equal(state.opacity,1);
-  for(let tier=0;tier<7;tier++){
-    for(let hue=0;hue<6;hue++){
-      const item=tiles[tier*6+hue];
+  for(let tier=0;tier<3;tier++){
+    for(let hue=0;hue<14;hue++){
+      const item=tiles[tier*14+hue];
       assert.equal(item.name,SHOWCASE_TINTS[hue]);
       assert.equal(item.opacity,hue===0?0:Math.fround(SHOWCASE_OPACITIES[tier]));
       assert.equal(item.filterCount,hue===0?2:3);
@@ -74,9 +79,39 @@ test("uniform tint stays uniform while mixed strength scales each colored tile",
   assert.equal(tintForTile(uniform,0),uniform);
   assert.equal(tintForTile(uniform,41),uniform);
   const half=tintParameters("showcase",.5,"light");
-  assert.equal(tintForTile(half,1).opacity,Math.fround(.5*.5));
-  assert.equal(tintForTile(half,6).opacity,0);
-  assert.equal(tintForTile(half,7).name,"red");
+  assert.equal(tintForTile(half,1).opacity,Math.fround(.37*.5));
+  assert.equal(tintForTile(half,14).opacity,0);
+  assert.equal(tintForTile(half,15).name,"red");
   assert.throws(()=>tintForTile(half,-1),RangeError);
   assert.throws(()=>tintParameters("showcase",1.01),RangeError);
+});
+
+test("captured 25F80 Clear face endpoints order Light above Dark",()=>{
+  assert.deepEqual(CLEAR_FACE_INPUTS.light,{
+    white:Math.fround(.95),black:Math.fround(.2),fillWhiteAlpha:Math.fround(.1)
+  });
+  assert.deepEqual(CLEAR_FACE_INPUTS.dark,{
+    white:Math.fround(.8),black:Math.fround(.05),fillWhiteAlpha:Math.fround(.05)
+  });
+  for(const rgb of [[0,0,0],[.15,.45,.8],[.6,.6,.6],[1,1,1]]){
+    const l=browserFaceColor(rgb,"light"),d=browserFaceColor(rgb,"dark");
+    assert.ok(l.every((v,i)=>v>d[i]+.14999),"Light must be brighter at each endpoint");
+  }
+});
+test("for equal backdrop/tint alpha, Dark cannot become lighter than Light",()=>{
+  for(const name of Object.keys(TINT_COLORS)){
+    for(const value of [0,.2,.5,.9,1]){
+      const backdrop=[value,Math.min(1,value+.05),Math.max(0,value-.05)];
+      const l=browserTintColor(backdrop,tintParameters(name,.75,"light"));
+      const d=browserTintColor(backdrop,tintParameters(name,.75,"dark"));
+      assert.ok(l.every((v,i)=>v>d[i]),name+" back="+value);
+    }
+  }
+});
+test("expanded palette has distinguishable authored sRGB hues",()=>{
+  assert.equal(Object.keys(TINT_COLORS).length,14);
+  assert.ok(["cyan","purple","pink","orange","yellow","teal","indigo","magenta"]
+    .every(n=>n in TINT_COLORS));
+  const colors=Object.keys(TINT_COLORS).filter(n=>n!=="none");
+  assert.equal(new Set(colors.map(n=>TINT_COLORS[n].rgb.join(","))).size,colors.length);
 });

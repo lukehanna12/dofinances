@@ -277,7 +277,7 @@ async function initialize(){
     uniform[8]=pointer.x*dpr;uniform[9]=pointer.y*dpr;
     uniform[10]=pointer.enabled;uniform[11]=0;
     const t=tint.state;
-    uniform[12]=t.rgb[0];uniform[13]=t.rgb[1];uniform[14]=t.rgb[2];uniform[15]=t.opacity;
+    // Authored tint RGB; scheme-specific native vibrantColorMatrix is NOT a hue transform.\n    uniform[12]=t.rgb[0];uniform[13]=t.rgb[1];uniform[14]=t.rgb[2];uniform[15]=t.opacity;
     uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
     uniform[18]=0;uniform[19]=0;
     device.queue.writeBuffer(globalsBuffer,0,uniform);
