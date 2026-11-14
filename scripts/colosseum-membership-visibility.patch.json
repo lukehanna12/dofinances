@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "worker": "router",
+  "base_deployed_version": "ec34b5d3-53cc-450c-90c8-870653d74169",
+  "purpose": "Owner-only context-scoped hidden boolean on collection membership; filter nonowner get/list and all resolution/invocation; preserve existing catalog and Worker bindings",
+  "patches": [
+    {
+      "id": "metadata-shape",
+      "mode": "region",
+      "start": "function metadataEdit(current,args){",
+      "end": "var COLLECTION_UI_URI",
+      "replacement": "function annotationVisibility(value){\n  if(value===void 0)return value;\n  if(typeof value!==\"boolean\")fail(\"invalid_request\");\n  return value;\n}\nfunction metadataEdit(current,args){\n  const rating=annotationRating(args.rating),context=annotationContext(args.context),hidden=annotationVisibility(args.hidden);\n  return {\n    rating:rating===void 0?(current.rating??null):rating,\n    context:context===void 0?(current.context??\"\"):context,\n    hidden:hidden===void 0?(current.hidden===true):hidden\n  };\n}\n"
+    },
+    {
+      "id": "summary-members",
+      "mode": "region",
+      "start": "function summary(row, includeMembers = false) {",
+      "end": "__name(summary, \"summary\");",
+      "replacement": "function summary(row, includeMembers = false, owner = false) {\n  const metadata=collectionMetadata(row);\n  const ids=JSON.parse(row.members_json);\n  const visible=owner?ids:ids.filter(uid=>metadata.members[uid]?.hidden!==true);\n  const allowed=new Set(visible);\n  return {\n    collection_id:row.id,\n    name:row.name,\n    description:row.description,\n    revision:row.revision,\n    member_count:visible.length,\n    created_at:row.created_at,\n    updated_at:row.updated_at,\n    ...(includeMembers?{\n      item_uids:visible,\n      routes:Object.fromEntries(Object.entries(JSON.parse(row.routes_json)).filter(([uid])=>allowed.has(uid))),\n      item_metadata:Object.fromEntries(Object.entries(metadata.members).filter(([uid])=>allowed.has(uid)))\n    }:{})\n  };\n}\n"
+    },
+    {
+      "id": "summary-create",
+      "mode": "replace",
+      "find": "summary(this.row(key2), true)",
+      "replacement": "summary(this.row(key2), true, owner)"
+    },
+    {
+      "id": "summary-edit-noop",
+      "mode": "replace",
+      "find": "...summary(current)",
+      "replacement": "...summary(current,false,owner)"
+    },
+    {
+      "id": "summary-edit",
+      "mode": "replace",
+      "find": "...summary(this.row(proposed.key))",
+      "replacement": "...summary(this.row(proposed.key),false,owner)"
+    },
+    {
+      "id": "summary-list",
+      "mode": "replace",
+      "find": "...summary(row), parent_collection_id:",
+      "replacement": "...summary(row,false,owner), parent_collection_id:"
+    },
+    {
+      "id": "summary-get",
+      "mode": "replace",
+      "find": "...summary(row, true), child_collection_ids",
+      "replacement": "...summary(row, true, owner), child_collection_ids"
+    },
+    {
+      "id": "summary-annotate",
+      "mode": "replace",
+      "find": "...summary(this.row(key),true)};",
+      "replacement": "...summary(this.row(key),true,owner)};"
+    },
+    {
+      "id": "summary-mutate",
+      "mode": "replace",
+      "find": "...summary(this.row(key), true)",
+      "replacement": "...summary(this.row(key), true, owner)"
+    },
+    {
+      "id": "resolved-direct-members",
+      "mode": "region",
+      "start": "const members=new Set(),routes={},item_annotations=[];",
+      "end": "return {collection_id:row.id,name:row.name,revision:row.revision,",
+      "replacement": "const members=new Set(),routes={},item_annotations=[];\n        for(const child of descendants){\n          const metadata=collectionMetadata(child),childRoutes=JSON.parse(child.routes_json);\n          for(const uid of JSON.parse(child.members_json)){\n            // The direct membership is hidden ONLY in this child collection.\n            if(metadata.members[uid]?.hidden===true)continue;\n            members.add(uid);\n            if(Object.hasOwn(childRoutes,uid))routes[uid]=childRoutes[uid];\n            const annotation=metadata.members[uid];\n            if(annotation&&(annotation.rating!==null&&annotation.rating!==void 0||annotation.context))\n              item_annotations.push({collection_id:child.id,collection_name:child.name,item_uid:uid,\n                rating:annotation.rating??null,context:annotation.context??\"\"});\n          }\n        }\n        "
+    },
+    {
+      "id": "owner-only-membership-annotation",
+      "mode": "region",
+      "start": "if(operation===\"annotate\"){",
+      "end": "if (operation === \"admit\" || operation === \"evict\") {",
+      "replacement": "if(operation===\"annotate\"){\n        shape(args,[\"name\",\"item_uid\",\"rating\",\"context\",\"hidden\",\"expected_revision\"]);\n        if(!owner&&args.hidden!==void 0)fail(\"unauthorized\");\n        assertRevision(args,row);\n        if(typeof args.item_uid!==\"string\"||!UID.test(args.item_uid)||\n           !JSON.parse(row.members_json).includes(args.item_uid))fail(\"collection_member_not_found\");\n        if(!Object.hasOwn(args,\"rating\")&&!Object.hasOwn(args,\"context\")&&!Object.hasOwn(args,\"hidden\"))fail(\"invalid_request\");\n        const metadata=collectionMetadata(row);\n        if(!owner&&metadata.members[args.item_uid]?.hidden===true)fail(\"collection_member_not_found\");\n        const current=metadata.members[args.item_uid]||{rating:null,context:\"\"};\n        const next=metadataEdit(current,args);\n        const changed=next.rating!==(current.rating??null)||next.context!==(current.context??\"\")||next.hidden!==(current.hidden===true);\n        if(changed){\n          if(next.rating===null&&!next.context&&!next.hidden)delete metadata.members[args.item_uid];\n          else metadata.members[args.item_uid]={rating:next.rating,context:next.context,...(next.hidden?{hidden:true}:{})};\n          const result=sql.exec(\"UPDATE collections SET metadata_json=?,revision=revision+1,updated_at=? WHERE id=? AND revision=?\",\n            JSON.stringify(metadata),now,row.id,row.revision);\n          if(result.rowsWritten!==1)fail(\"collection_revision_conflict\");\n        }\n        return {annotated:changed,item_uid:args.item_uid,...summary(this.row(key),true,owner)};\n      }\n      "
+    },
+    {
+      "id": "evict-hidden-members-protected",
+      "mode": "replace",
+      "find": "const set = new Set(existing), routes = JSON.parse(row.routes_json), metadata=collectionMetadata(row);",
+      "replacement": "const set = new Set(existing), routes = JSON.parse(row.routes_json), metadata=collectionMetadata(row);\n        if(!owner&&operation===\"evict\"&&ids.some(uid=>metadata.members[uid]?.hidden===true))\n          fail(\"collection_member_not_found\");"
+    },
+    {
+      "id": "owner-bridge-allow-hidden",
+      "mode": "replace",
+      "find": "annotate:[\"action\",\"name\",\"item_uid\",\"rating\",\"context\",\"expected_revision\"],",
+      "replacement": "annotate:[\"action\",\"name\",\"item_uid\",\"rating\",\"context\",\"hidden\",\"expected_revision\"],"
+    },
+    {
+      "id": "owner-bridge-hidden-only",
+      "mode": "replace",
+      "find": "(parameters.rating===undefined&&parameters.context===undefined)))fail(\"invalid_request\");",
+      "replacement": "(parameters.rating===undefined&&parameters.context===undefined&&parameters.hidden===undefined)))fail(\"invalid_request\");"
+    },
+    {
+      "id": "owner-bridge-validate-hidden",
+      "mode": "replace",
+      "find": "if(action===\"annotate\"){annotationRating(parameters.rating);annotationContext(parameters.context);}",
+      "replacement": "if(action===\"annotate\"){annotationRating(parameters.rating);annotationContext(parameters.context);annotationVisibility(parameters.hidden);}"
+    }
+  ]
+}
