@@ -21,7 +21,14 @@ export function trackPosition(row,phase){
   if(!Number.isInteger(row)||row<0||row>=TRACK_ROWS)
     throw new RangeError("Track row must be in [0,6]");
   if(!Number.isFinite(phase))throw new RangeError("Finite phase required");
-  const slot=((row-phase+1)%TRACK_LANES+TRACK_LANES)%TRACK_LANES-1;
+  // Prefer the unwrapped position while it is inside the visual track.
+  // In particular, row 6 at phase 0 MUST begin at the bottom (slot 6),
+  // not the mathematically equivalent but misplaced invisible top (-1).
+  // At a wrap, both endpoints have alpha 0, so this stays seamless.
+  const cycle=((phase%TRACK_LANES)+TRACK_LANES)%TRACK_LANES;
+  const raw=row-cycle;
+  const slot=raw>=-1&&raw<=6?raw:
+    ((raw+1)%TRACK_LANES+TRACK_LANES)%TRACK_LANES-1;
   return Object.freeze({
     slot,deltaRows:slot-row,
     opacity:smooth(slot+1)*smooth(6-slot)
