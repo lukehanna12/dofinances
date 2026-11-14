@@ -1069,7 +1069,7 @@ test("Local Done persists description and member annotations with strict seriali
 // ~/Desktop/font/Icons-Real/SFSymbols.20261112.tsx, not reconstructed from CSS.
 test("Collections controls use versioned exact SF Symbols assets",()=>{
  const workflow=src(".github/workflows/site.yml");
- const source=[{"file":"add-collection.v3.svg","symbol":"plus.circle.fill","viewBox":"0 0 25.4314 25.0897","paths":[{"d":"M25.0701 12.5399C25.0701 19.4359 19.4359 25.0701 12.5302 25.0701C5.63418 25.0701 0 19.4359 0 12.5399C0 5.63418 5.63418 0 12.5302 0C19.4359 0 25.0701 5.63418 25.0701 12.5399ZM11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z","fill":"currentColor","opacity":"0.85"}]},{"file":"edit-collections.v1.svg","symbol":"pencil.line","viewBox":"0 0 26.1967 22.5978","paths":[{"d":"M24.4804 20.6072C24.4804 20.9707 24.1806 21.2705 23.8239 21.2705L4.86694 21.2705L5.10297 21.162L6.3228 19.9476L23.8239 19.9476C24.1806 19.9476 24.4804 20.2474 24.4804 20.6072Z","fill":"currentColor","opacity":"0.85"},{"d":"M4.35561 20.0428L18.8857 5.53222L17.1683 3.80204L2.63822 18.3096L1.38725 20.8565C1.27611 21.0876 1.53275 21.3426 1.75775 21.2405ZM19.8398 4.60136L20.9034 3.54755C21.4702 2.99355 21.4873 2.43447 20.9889 1.94277L20.7494 1.70321C20.2765 1.23036 19.6986 1.27919 19.1634 1.80761L18.0992 2.86142Z","fill":"currentColor","opacity":"0.85"}]},{"file":"select-collections.v2.svg","symbol":"pointer.arrow","viewBox":"0 0 13.0787 24.3783","paths":[{"d":"M10.0886 24.1737C10.8495 23.8773 11.2021 23.0175 10.8922 22.2694L6.80414 12.6149L6.31108 13.3566L12.1505 13.6365C12.7723 13.6732 13.095 12.9861 12.6517 12.5112L1.11957 0.216012C0.700235-0.222172-0.00601596 0.0465782 3.86757e-05 0.660251L0.0598031 17.309C0.0658577 17.9533 0.814589 18.2399 1.22787 17.7539L5.12445 13.6087L4.16156 13.5398L8.1641 23.3829C8.48373 24.1182 9.33383 24.4836 10.0886 24.1737Z","fill":"currentColor","opacity":"0.85"}]}];
+ const source=[{"file":"add-collection.v3.svg","symbol":"plus.circle.fill","viewBox":"0 0 25.4314 25.0897","paths":[{"d":"M25.0701 12.5399C25.0701 19.4359 19.4359 25.0701 12.5302 25.0701C5.63418 25.0701 0 19.4359 0 12.5399C0 5.63418 5.63418 0 12.5302 0C19.4359 0 25.0701 5.63418 25.0701 12.5399ZM11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z","fill":"currentColor","opacity":"0.85"}]},{"file":"edit-collections.v1.svg","symbol":"pencil.line","viewBox":"0 0 26.1967 22.5978","paths":[{"d":"M24.4804 20.6072C24.4804 20.9707 24.1806 21.2705 23.8239 21.2705L4.86694 21.2705L5.10297 21.162L6.3228 19.9476L23.8239 19.9476C24.1806 19.9476 24.4804 20.2474 24.4804 20.6072Z","fill":"currentColor","opacity":"0.85"},{"d":"M4.35561 20.0428L18.8857 5.53222L17.1683 3.80204L2.63822 18.3096L1.38725 20.8565C1.27611 21.0876 1.53275 21.3426 1.75775 21.2405ZM19.8398 4.60136L20.9034 3.54755C21.4702 2.99355 21.4873 2.43447 20.9889 1.94277L20.7494 1.70321C20.2765 1.23036 19.6986 1.27919 19.1634 1.80761L18.0992 2.86142Z","fill":"currentColor","opacity":"0.85"}]},{"file":"select-collections.v3.svg","symbol":"pointer.arrow.click","viewBox":"0 0 25.4314 25.6799","paths":[{"d":"M0 12.835C0 17.6216 2.77041 21.8265 6.6665 23.8757C7.53594 24.3628 8.20196 23.1972 7.28027 22.6751C3.80762 20.8395 1.38418 17.1149 1.38418 12.835C1.38418 6.65995 6.35811 1.67928 12.5234 1.67928C18.6985 1.67928 23.6859 6.65995 23.6859 12.835C23.6859 13.2905 24.044 13.5462 24.4038 13.5462C24.7464 13.5462 25.0701 13.2838 25.0701 12.835C25.0701 5.95995 19.3985 0.295101 12.5234 0.295101C5.65811 0.295101 0 5.95995 0 12.835Z","fill":"currentColor","opacity":"0.85"},{"d":"M18.3144 25.6122C18.7684 25.4253 18.9883 24.9127 18.7879 24.4429L16.7405 19.6824L19.6613 19.6867C20.0335 19.686 20.2211 19.2987 19.9668 19.0121L13.076 11.6143C12.8193 11.3449 12.3937 11.5086 12.3899 11.8868L12.441 21.9922C12.4373 22.3808 12.892 22.5213 13.1486 22.2586L15.1411 20.2412L17.1315 25.1393C17.3154 25.5829 17.8452 25.7998 18.3144 25.6122Z","fill":"currentColor","opacity":"0.85"}]}];
  for(const {file,symbol,viewBox,paths} of source){
    const svg=src("sites/_apex/app/assets/"+file);
    assert.match(svg,/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
@@ -1199,22 +1199,25 @@ test("Add collection renders the whole SF Symbol, not an icon inside a CSS circl
  assert.ok(htmlButton.includes('aria-describedby="cs-create-tooltip"'));
 });
 
-test("Select Collections uses the exact pointer.arrow, with versioned asset and unchanged control behavior",()=>{
- const svg=src("sites/_apex/app/assets/select-collections.v2.svg");
- const pipeline=src(".github/workflows/site.yml");
+test("Select Collections uses pointer.arrow.click v3 with the original selection behavior",()=>{
+ const asset=src("sites/_apex/app/assets/select-collections.v3.svg");
+ const workflow=src(".github/workflows/site.yml");
  const markup=html.slice(html.indexOf('id="cs-select-collections"'),html.indexOf('id="cs-select-tooltip"'));
- assert.match(markup,/src="\/app\/assets\/select-collections\.v2\.svg"/);
- assert.ok(!markup.includes("pointer.arrow.ipad"));
- assert.ok(!markup.includes("select-collections.v1.svg"));
- assert.ok(svg.includes('data-sf-symbol="pointer.arrow"'));
- assert.ok(svg.includes('viewBox="0 0 13.0787 24.3783"'));
- assert.ok(svg.includes('fill-opacity="0.85"'));
- assert.ok(svg.includes('d="M10.0886 24.1737C10.8495 23.8773 11.2021 23.0175 10.8922 22.2694L6.80414 12.6149L6.31108 13.3566L12.1505 13.6365C12.7723 13.6732 13.095 12.9861 12.6517 12.5112L1.11957 0.216012C0.700235-0.222172-0.00601596 0.0465782 3.86757e-05 0.660251L0.0598031 17.309C0.0658577 17.9533 0.814589 18.2399 1.22787 17.7539L5.12445 13.6087L4.16156 13.5398L8.1641 23.3829C8.48373 24.1182 9.33383 24.4836 10.0886 24.1737Z"'));
- assert.match(markup,/class="cs-select-done"/);
- assert.match(markup,/aria-pressed="false"/);
- assert.match(markup,/aria-describedby="cs-select-tooltip"/);
+ const source={"viewBox":"0 0 25.4314 25.6799","paths":[{"d":"M0 12.835C0 17.6216 2.77041 21.8265 6.6665 23.8757C7.53594 24.3628 8.20196 23.1972 7.28027 22.6751C3.80762 20.8395 1.38418 17.1149 1.38418 12.835C1.38418 6.65995 6.35811 1.67928 12.5234 1.67928C18.6985 1.67928 23.6859 6.65995 23.6859 12.835C23.6859 13.2905 24.044 13.5462 24.4038 13.5462C24.7464 13.5462 25.0701 13.2838 25.0701 12.835C25.0701 5.95995 19.3985 0.295101 12.5234 0.295101C5.65811 0.295101 0 5.95995 0 12.835Z","fill":"currentColor","opacity":"0.85"},{"d":"M18.3144 25.6122C18.7684 25.4253 18.9883 24.9127 18.7879 24.4429L16.7405 19.6824L19.6613 19.6867C20.0335 19.686 20.2211 19.2987 19.9668 19.0121L13.076 11.6143C12.8193 11.3449 12.3937 11.5086 12.3899 11.8868L12.441 21.9922C12.4373 22.3808 12.892 22.5213 13.1486 22.2586L15.1411 20.2412L17.1315 25.1393C17.3154 25.5829 17.8452 25.7998 18.3144 25.6122Z","fill":"currentColor","opacity":"0.85"}]};
+ assert.match(markup,/src="\/app\/assets\/select-collections\.v3\.svg"/);
+ assert.ok(!markup.includes("select-collections.v2.svg"));
+ assert.ok(asset.includes('data-sf-symbol="pointer.arrow.click"'));
+ assert.ok(asset.includes('viewBox="'+source.viewBox+'"'));
+ assert.equal([...asset.matchAll(/<path d="([^"]+)" fill="currentColor" fill-opacity="([^"]+)"\/>/g)].length,source.paths.length);
+ for(const p of source.paths){
+   assert.ok(asset.includes('d="'+p.d+'"'));
+   assert.ok(asset.includes('fill-opacity="'+p.opacity+'"'));
+ }
+ assert.ok(markup.includes('class="cs-select-done"'));
+ assert.ok(markup.includes('aria-pressed="false"'));
+ assert.ok(markup.includes('aria-describedby="cs-select-tooltip"'));
  assert.ok(css.includes('#cs-root.cs-collection-selecting .cs-select-glyph{opacity:0'));
  assert.ok(css.includes('#cs-root.cs-collection-selecting .cs-select-done{opacity:1'));
- assert.ok(pipeline.includes("cp sites/_apex/app/assets/select-collections.v2.svg dist/app/assets/select-collections.v2.svg"));
- assert.ok(pipeline.includes("test -s dist/app/assets/select-collections.v2.svg"));
+ assert.ok(workflow.includes("cp sites/_apex/app/assets/select-collections.v3.svg dist/app/assets/select-collections.v3.svg"));
+ assert.ok(workflow.includes("test -s dist/app/assets/select-collections.v3.svg"));
 });
