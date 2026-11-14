@@ -29,6 +29,10 @@ export const TINT_COLORS=Object.freeze({
   black:Object.freeze({rgb:[0,0,0],opacity:1,label:"Black"})
 });
 export const OBSERVED_OPACITIES=Object.freeze([0,.125,.25,.37,.5,.75,.95,.99,1]);
+// Six source-recorded hue controls, seven source-recorded alpha tiers.
+// The assignment across tiles is a browser comparison, not Apple state.
+export const SHOWCASE_TINTS=Object.freeze(["none","red","blue","green","white","black"]);
+export const SHOWCASE_OPACITIES=Object.freeze([.5,.75,1,.95,.37,.25,.125]);
 export function nativeTintMatrix(scheme="dark",opacity=1){
   const bits=BITS[scheme];
   if(!bits)throw new RangeError("light/dark color scheme required");
@@ -40,9 +44,20 @@ export function nativeTintMatrix(scheme="dark",opacity=1){
   return out;
 }
 export function tintParameters(name="none",opacity,scheme="dark"){
+  if(scheme!=="light"&&scheme!=="dark")throw new RangeError("Unknown scheme");
+  if(name==="showcase"){
+    const strength=opacity===undefined?1:Number(opacity);
+    if(!Number.isFinite(strength)||strength<0||strength>1)
+      throw new RangeError("Showcase strength must be [0,1]");
+    return Object.freeze({
+      name,opacity:Math.fround(strength),scheme,active:true,mixed:true,
+      rgb:Object.freeze([0,0,0]),filterCount:null,observedOpacity:false,
+      evidenceId:"E-P-SWIFTUI-TINT-SCHEME-NATIVE-FINITE",
+      nativeHueProven:false,nativeCompositorProven:false
+    });
+  }
   const entry=TINT_COLORS[name];
   if(!entry)throw new RangeError("Unknown tint preset");
-  if(scheme!=="light"&&scheme!=="dark")throw new RangeError("Unknown scheme");
   const rawOpacity=opacity===undefined?entry.opacity:Number(opacity);
   if(!Number.isFinite(rawOpacity)||rawOpacity<0||rawOpacity>1)throw new RangeError("Invalid opacity");
   const active=name!=="none";
@@ -63,30 +78,59 @@ export function tintParameters(name="none",opacity,scheme="dark"){
     nativeHueProven:false,nativeCompositorProven:false
   });
 }
+// Resolve one tile, preserving the native matrix parameters but explicitly
+// not claiming that the browser color stage reproduces native execution.
+export function tintForTile(state,index){
+  if(!Number.isSafeInteger(index)||index<0)
+    throw new RangeError("Nonnegative tile index required");
+  if(state.name!=="showcase")return state;
+  const name=SHOWCASE_TINTS[index%SHOWCASE_TINTS.length];
+  const tier=SHOWCASE_OPACITIES[Math.floor(index/SHOWCASE_TINTS.length)%
+    SHOWCASE_OPACITIES.length];
+  return tintParameters(name,name==="none"?0:Math.min(1,tier*state.opacity),state.scheme);
+}
 export function createTintControls(onChange){
   const query=new URLSearchParams(typeof location!=="undefined"?location.search:"");
-  const initialColor=TINT_COLORS[query.get("tint")]?query.get("tint"):"none";
+  // Mixed comparison is the default; ?tint=none/red/etc remains supported.
+  const initialColor=TINT_COLORS[query.get("tint")]?
+    query.get("tint"):"showcase";
   const initialScheme=["light","dark"].includes(query.get("tintScheme"))?query.get("tintScheme"):"dark";
   const rawAlpha=query.get("tintOpacity");
   let state=tintParameters(initialColor,
     rawAlpha!==null&&rawAlpha!==""&&Number.isFinite(Number(rawAlpha))?
       clamp(Number(rawAlpha)):undefined,initialScheme);
   const host=typeof document==="object"?document.getElementById("cta6-mosaic"):null;
-  let toggle=null, panel=null,range=null,alphaOut=null,schemeSelect=null;
+  let toggle=null, panel=null,range=null,alphaOut=null,schemeSelect=null,showcaseButton=null;
   const choices=new Map();
   function fallbackStyle(){
     if(!host)return;
-    const alpha=state.active?state.opacity*.25:0;
-    const values=state.rgb.map(v=>Math.round(clamp(v)*255));
-    document.documentElement.style.setProperty("--dashboard-tint-fill",
-      state.active?"rgba("+values.join(",")+","+alpha.toFixed(6)+")":
-      "rgba(246,248,250,.065)");
+    // Browser-only CSS fallback mirrors the per-pane tint assignments.
+    const tiles=[...host.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")];
+    tiles.forEach((tile,index)=>{
+      const material=tintForTile(state,index);
+      const rgb=material.rgb.map(v=>Math.round(clamp(v)*255));
+      const alpha=material.active?material.opacity*.25:0;
+      tile.style.setProperty("--dashboard-tint-fill",
+        material.active?
+          "rgba("+rgb.join(",")+","+alpha.toFixed(6)+")":
+          "rgba(246,248,250,.065)");
+      tile.dataset.glassTint=material.name;
+      // Do not replace any existing semantic icon title/tooltip.
+      if(!tile.title||tile.dataset.dashboardTintTitle==="true"){
+        tile.title=material.name==="none"?"Untinted clear glass":
+          TINT_COLORS[material.name].label+" · "+
+            (material.opacity*100).toFixed(1)+"% tint (browser approximation)";
+        tile.dataset.dashboardTintTitle="true";
+      }
+    });
   }
   function renderUI(){
     fallbackStyle();
     if(!toggle)return;
-    toggle.textContent="Tint · "+TINT_COLORS[state.name].label;
+    toggle.textContent=state.name==="showcase"?"Tint · Mixed showcase":
+      "Tint · "+TINT_COLORS[state.name].label;
     toggle.setAttribute("aria-expanded",String(!panel.hidden));
+    showcaseButton?.setAttribute("aria-pressed",String(state.name==="showcase"));
     for(const [key,button] of choices){
       button.setAttribute("aria-pressed",String(state.name===key));
     }
@@ -105,6 +149,7 @@ export function createTintControls(onChange){
   const api=Object.freeze({
     read:()=>({...state,rgb:[...state.rgb]}),
     setTint:(name,opacity)=>apply(name,opacity,state.scheme),
+    setShowcase:strength=>apply("showcase",strength===undefined?1:strength,state.scheme),
     setScheme:scheme=>apply(state.name,state.opacity,scheme),
     get state(){return {...state,rgb:[...state.rgb]}}
   });
@@ -127,6 +172,17 @@ export function createTintControls(onChange){
     heading.className="dashboard-tint-heading";
     heading.textContent="Clear glass tint";
     panel.append(heading);
+    showcaseButton=document.createElement("button");
+    showcaseButton.type="button";
+    showcaseButton.className="dashboard-tint-showcase";
+    showcaseButton.textContent="Mixed showcase · compare all tiles";
+    showcaseButton.addEventListener("click",()=>apply("showcase",1,state.scheme));
+    panel.append(showcaseButton);
+    const explanation=document.createElement("p");
+    explanation.className="dashboard-tint-guide";
+    explanation.textContent="Clear, red, blue, green, white and black repeat across "+
+      "the blocks, with seven intensity levels. Hover to inspect a block.";
+    panel.append(explanation);
     const swatches=document.createElement("div");
     swatches.className="dashboard-tint-swatches";
     for(const [name,option] of Object.entries(TINT_COLORS)){
@@ -165,7 +221,7 @@ export function createTintControls(onChange){
     panel.append(schemeLabel,schemeSelect);
     const note=document.createElement("p");
     note.className="dashboard-tint-note";
-    note.textContent="Native matrix and opacity inputs; visual blend remains experimental.";
+    note.textContent="Native matrix/opacity inputs; hue and blend are browser approximations.";
     panel.append(note);
     container.append(toggle,panel);
     document.body.append(container);

@@ -1,6 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {nativeTintMatrix,tintParameters,TINT_COLORS,OBSERVED_OPACITIES} from "./dashboard-tint.js";
+import {nativeTintMatrix,tintParameters,tintForTile,TINT_COLORS,OBSERVED_OPACITIES,
+  SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 
 function word(v){const a=new DataView(new ArrayBuffer(4));a.setFloat32(0,v,true);return a.getUint32(0,true);}
 test("two native tint matrices preserve captured Float32 words and alpha slot 18",()=>{
@@ -50,4 +51,32 @@ test("out-of-domain opacity and schemes fail closed",()=>{
   assert.throws(()=>tintParameters("cyan",.25),RangeError);
   assert.throws(()=>nativeTintMatrix("sepia",.25),RangeError);
   assert.throws(()=>tintParameters("blue",.5,"sepia"),RangeError);
+});
+
+test("mixed comparison distributes 42 squares across six hues and seven retained alpha tiers",()=>{
+  const state=tintParameters("showcase");
+  const tiles=Array.from({length:42},(_,i)=>tintForTile(state,i));
+  assert.deepEqual(SHOWCASE_TINTS,["none","red","blue","green","white","black"]);
+  assert.equal(SHOWCASE_OPACITIES.length,7);
+  assert.equal(state.mixed,true);assert.equal(state.opacity,1);
+  for(let tier=0;tier<7;tier++){
+    for(let hue=0;hue<6;hue++){
+      const item=tiles[tier*6+hue];
+      assert.equal(item.name,SHOWCASE_TINTS[hue]);
+      assert.equal(item.opacity,hue===0?0:Math.fround(SHOWCASE_OPACITIES[tier]));
+      assert.equal(item.filterCount,hue===0?2:3);
+      assert.equal(item.nativeHueProven,false);
+    }
+  }
+});
+test("uniform tint stays uniform while mixed strength scales each colored tile",()=>{
+  const uniform=tintParameters("blue",.25,"light");
+  assert.equal(tintForTile(uniform,0),uniform);
+  assert.equal(tintForTile(uniform,41),uniform);
+  const half=tintParameters("showcase",.5,"light");
+  assert.equal(tintForTile(half,1).opacity,Math.fround(.5*.5));
+  assert.equal(tintForTile(half,6).opacity,0);
+  assert.equal(tintForTile(half,7).name,"red");
+  assert.throws(()=>tintForTile(half,-1),RangeError);
+  assert.throws(()=>tintParameters("showcase",1.01),RangeError);
 });

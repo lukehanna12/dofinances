@@ -104,6 +104,14 @@ def run():
                         proof=audit.get("offscreenPixelProof")
                         if not isinstance(proof,list) or len(proof)!=4 or proof[3]!=255:
                             raise RuntimeError("Offscreen GPU pixel byte readback failed "+str(latest))
+                        # Initial mixed mode assigns exactly seven tiles per hue.
+                        counts=audit.get("tintCounts") or {}
+                        expected={k:7 for k in ("none","red","blue","green","white","black")}
+                        if counts!=expected:
+                            raise RuntimeError("Mixed tint distribution missing "+str(counts))
+                        mixed=audit.get("tintShowcase") or {}
+                        if len(mixed.get("opacityTiers",[]))!=7:
+                            raise RuntimeError("Seven recorded showcase alpha tiers missing")
                         # GPU tile movement/interaction must never invalidate
                         # the GPU-owned background or its mip pyramid.
                         before_frames=audit["frameCount"]
@@ -182,6 +190,18 @@ def run():
                             raise RuntimeError("Tint scheme not updated")
                         cdp_eval(ws,counter,
                             "window.__dashboardTintControls.setTint('none');true")
+                        cdp_eval(ws,counter,
+                            "window.__dashboardTintControls.setShowcase();true")
+                        for _ in range(20):
+                            time.sleep(.08)
+                            restored=json.loads(cdp_eval(ws,counter,expr))
+                            state=(restored.get("audit") or {})
+                            if state.get("tintCounts")==expected:
+                                break
+                        else:
+                            raise RuntimeError("Mixed tint restoration failed")
+                        if state.get("sceneBuilds")!=before_scene_builds:
+                            raise RuntimeError("Per-tile tint changes rebuilt scene")
                         # Exercise the second retained AIR SDF branch in
                         # a real GPU render, not merely WGSL compilation. The
                         # four equal native lanes select 4; one unequal

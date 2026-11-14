@@ -35,6 +35,7 @@ struct Tile {
 @group(0) @binding(0) var backdrop: texture_2d<f32>;
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
 @group(0) @binding(2) var<uniform> state: Globals;
+@group(0) @binding(3) var<storage,read> tintTiles: array<vec4<f32>>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -360,7 +361,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve real sampled color and apply a restrained rim only.
   let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
   var color=baseColor;
-  if(state.tintMeta.x>0.5){
+  let localTint=tintTiles[in.tileIndex];
+  if(localTint.w>0.0){
     // GAP TINT-RGB-PRODUCER / TINT-C: the 25F80 witness establishes an
     // added vibrantColorMatrix layer, its exact 80-byte scheme-specific
     // coefficients, and the alpha at inputColorMatrix float lane 18.
@@ -368,7 +370,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // Its native shader execution and source-over coupling are unproved.
     // 0.25 is an explicit restrained browser film strength, NOT an
     // Apple coefficient. At alpha zero the tinted branch still exists.
-    color=mix(baseColor,state.tint.rgb,clamp(state.tint.w,0.0,1.0)*0.25);
+    color=mix(baseColor,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
   }
   return vec4<f32>(color,coverage*in.introAlpha);
 }

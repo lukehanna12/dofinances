@@ -508,3 +508,11 @@ body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta6-icon{
 .dashboard-tint-tool button:focus-visible,.dashboard-tint-tool input:focus-visible,
 .dashboard-tint-tool select:focus-visible{outline:2px solid #fff;outline-offset:2px}
 @media(max-width:760px){.dashboard-tint-tool{left:12px;bottom:12px}}
+
+/* Comparative mixed tint palette: experimental browser-only color transfer. */
+.dashboard-tint-showcase{display:block;width:100%;min-height:32px;
+  margin-bottom:8px;color:#fff;background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.22);border-radius:8px;cursor:pointer}
+.dashboard-tint-showcase[aria-pressed="true"]{
+  border-color:#fff;background:rgba(220,231,248,.23);font-weight:700}
+.dashboard-tint-guide{margin:0 0 10px;color:#c9cfdb;font-size:10.5px;line-height:1.4}

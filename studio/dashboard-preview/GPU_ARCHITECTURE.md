@@ -179,3 +179,21 @@ This modifies only one 80-byte GPU uniform, never the background or mips,
 and is supported by independent pure-code and real GPU CI checks. A
 fallback CSS overlay covers non-WebGPU browsers. No oracle closure flag is
 modified; source RGB producer, native matrix execution and Q remain OPEN.
+
+## 2026-11-14 simultaneous mixed tint showcase
+
+The isolated preview defaults to a mixed comparison on its 42 glass
+blocks, cycling through untinted, red, blue, green, white and black.
+Each consecutive six-block set uses one of seven previously measured
+native alpha input values: 0.5, 0.75, 1, 0.95, 0.37, 0.25, 0.125.
+Untinted blocks provide the comparison controls. The original grid,
+semantic icons, and pointer interaction remain unchanged.
+
+Tint parameters occupy a separate per-tile vec4<f32> GPU storage buffer;
+changing the mode or a preset writes only this buffer, never the
+backdrop or its mip pyramid. The UI can switch between Mixed showcase
+and a uniform color, intensity and scheme; the fallback provides
+matching individual CSS variables. This is a browser-only presentation
+of the finite 25F80/M2 source-observed tint matrix and alpha inputs.
+The hue source, effective 25% film blend and final Apple output chain
+are unproved and explicitly remain provisional.

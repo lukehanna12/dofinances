@@ -20,7 +20,7 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
-import {createTintControls} from "./dashboard-tint.js";
+import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -260,10 +260,11 @@ async function initialize(){
   const globalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
-  let tileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
+  let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,backgroundGroup=null,offscreenFrame=null,
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1;
+  let tintData=new Float32Array(0),lastTintKey="";
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
   function writeUniform(){
@@ -280,6 +281,23 @@ async function initialize(){
     uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
     uniform[18]=0;uniform[19]=0;
     device.queue.writeBuffer(globalsBuffer,0,uniform);
+  }
+  function syncTileTints(force=false){
+    const value=tint.state;
+    const key=value.name+"|"+value.opacity+"|"+value.scheme+"|"+tileCount;
+    if(!force&&key===lastTintKey)return;
+    lastTintKey=key;
+    const counts={};
+    for(let i=0;i<tileCount;i++){
+      const m=tintForTile(value,i),at=4*i;
+      tintData[at]=m.rgb[0];tintData[at+1]=m.rgb[1];
+      tintData[at+2]=m.rgb[2];tintData[at+3]=m.active?m.opacity:0;
+      counts[m.name]=(counts[m.name]||0)+1;
+    }
+    if(tintData.length)device.queue.writeBuffer(tintTileBuffer,0,tintData);
+    audit.tintCounts=counts;
+    audit.tintShowcase=value.name==="showcase"?
+      {hues:[...SHOWCASE_TINTS],opacityTiers:[...SHOWCASE_OPACITIES]}:null;
   }
   function rebuild(){
     if(stopped)return;
@@ -341,6 +359,7 @@ async function initialize(){
     interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
     interaction.writeTo(data);
     tileData=data;
+    tintData=new Float32Array(tileCount*4);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -356,12 +375,20 @@ async function initialize(){
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
     });
     if(data.length)device.queue.writeBuffer(tileBuffer,0,data);
+    tintTileBuffer?.destroy();
+    tintTileBuffer=device.createBuffer({
+      size:Math.max(16,tintData.byteLength),
+      usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
+    });
+    lastTintKey="";
+    syncTileTints(true);
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),
       entries:[
         {binding:0,resource:sceneView},
         {binding:1,resource:{buffer:tileBuffer}},
-        {binding:2,resource:{buffer:globalsBuffer}}
+        {binding:2,resource:{buffer:globalsBuffer}},
+        {binding:3,resource:{buffer:tintTileBuffer}}
       ]
     });
   }
@@ -389,6 +416,7 @@ async function initialize(){
   }
   function render(){
     writeUniform();
+    syncTileTints();
     if(scenePending)buildScene();
     const now=performance.now();
     const animating=interaction.advance((now-lastFrameTime)/1000,reducedMotion.matches);
@@ -418,7 +446,8 @@ async function initialize(){
     return animating;
   }
   function dispose(){
-    tileBuffer?.destroy();scene?.destroy();offscreenFrame?.destroy();photo.destroy();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();
+    scene?.destroy();offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();
   }
   engine={rebuild,render,dispose,device};
