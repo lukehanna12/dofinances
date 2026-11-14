@@ -115,7 +115,7 @@ export function initColosseumCollections(){
  const memberAnnotation=uid=>{
    const key=membershipKey(state.activeId,uid);
    const value=state.memberDrafts.get(key)??state.detail?.item_metadata?.[uid];
-   return {rating:validRating(value?.rating)&&value.rating>0?value.rating:null,context:typeof value?.context==="string"?value.context:""};
+   return {rating:validRating(value?.rating)&&value.rating>0?value.rating:null,context:typeof value?.context==="string"?value.context:"",hidden:value?.hidden===true};
  };
  function stageMemberAnnotation(uid,changes){
    if(!localEditorActive()||state.busy||!isUid(uid)||
@@ -123,10 +123,10 @@ export function initColosseumCollections(){
    const next={...memberAnnotation(uid),...changes};
    // Legacy zero values and explicit unrated both resolve to null.
    if(next.rating===0)next.rating=null;
-   if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250)return;
+   if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250||typeof next.hidden!=="boolean")return;
    const original=state.detail.item_metadata?.[uid];
    const priorRating=validRating(original?.rating)&&original.rating>0?original.rating:null;
-   if(next.rating===priorRating&&next.context===(original?.context??""))
+   if(next.rating===priorRating&&next.context===(original?.context??"")&&next.hidden===(original?.hidden===true))
      state.memberDrafts.delete(membershipKey(state.activeId,uid));
    else state.memberDrafts.set(membershipKey(state.activeId,uid),next);
    renderCard();
@@ -441,12 +441,16 @@ export function initColosseumCollections(){
      const annotation=memberAnnotation(uid);
      const hasRating=annotation.rating!==null;
      const hasContext=annotation.context.length>0;
+     const hiddenMember=annotation.hidden===true;
      const editingMember=localEditorActive();
+     // The eye is scoped to this collection's direct membership.
+     const visibilityButton=editingMember?
+       '<span class="cs-member-visibility-control"><button class="cs-member-visibility" type="button" data-cs-member-visibility="'+uid+'" aria-label="'+(hiddenMember?'Show ':'Hide ')+esc(item.name||uid)+' to ChatGPT in '+esc(col.name)+'" aria-pressed="'+String(hiddenMember)+'" title="'+(hiddenMember?'Show to ChatGPT':'Hide from ChatGPT')+' in this collection">'+(hiddenMember?EYE_OFF:EYE)+'</button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hiddenMember?'Show in this collection':'Hide in this collection')+'</span></span></span>':"";
      const contextButton=editingMember?
        '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" title="'+(hasContext?'Edit Context':'Add Context')+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
      const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
      const annotationControls=(editingMember||hasRating)?
-       '<span class="cs-member-rating-actions">'+contextButton+stars+'</span>':"";
+       '<span class="cs-member-rating-actions">'+visibilityButton+contextButton+stars+'</span>':"";
      const contextMarkup=hasContext?'<span class="cs-member-context">'+esc(annotation.context)+'</span>':"";
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
@@ -458,7 +462,7 @@ export function initColosseumCollections(){
        '<span class="cs-utility-trailing">'+
        (routeIcon?'<span class="cs-utility-route-slot"><span class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" role="img" aria-label="'+routeIcon.label+'"></span></span>':"")+
        '<button type="button" class="cs-utility-pick" data-cs-pick-utility="'+uid+'" data-cs-utility-name="'+esc(item.name||uid)+'" aria-label="'+(selected?'Deselect ':'Select ')+esc(item.name||uid)+'" aria-pressed="'+String(selected)+'"'+(!state.selecting?' disabled tabindex="-1" aria-hidden="true"':'')+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button></span>';
-     return '<div class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
+     return '<div class="cs-utility-row'+(hiddenMember?' cs-utility-is-hidden':'')+'" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
    }).join("");
    return '<div class="cs-card"><div class="cs-card-heading"><span class="cs-card-label">'+FOLDER+'Utilities</span>'+
      utilityToolbarMarkup()+'</div>'+
@@ -715,11 +719,11 @@ export function initColosseumCollections(){
      for(const [key,annotation] of state.memberDrafts){
        const [collectionId,uid]=key.split(":");
        if(collectionId!==id||!state.detail.item_uids?.includes(uid)||!isUid(uid)||
-          !validRating(annotation.rating)||typeof annotation.context!=="string"||
+          !validRating(annotation.rating)||typeof annotation.context!=="string"||typeof annotation.hidden!=="boolean"||
           [...annotation.context].length>250)
          throw Error("A utility annotation is invalid or no longer belongs to this collection.");
        const updated=await request("annotate",{
-         name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context,
+         name:col.name,item_uid:uid,rating:annotation.rating,context:annotation.context,hidden:annotation.hidden,
          expected_revision:revision
        });
        if(!Number.isSafeInteger(updated.revision))throw Error("Colosseum did not confirm the membership revision.");
@@ -730,7 +734,7 @@ export function initColosseumCollections(){
      }
      exitLocalEditor();
      await loadList({focusId:id});
-     announce("Collection description and utility annotations saved.",false,true);
+     announce("Collection description, utility annotations and membership visibility saved.",false,true);
    }catch(error){
      announce(error.message,true,true,error.reauthorize===true);
      // Committed operations were consumed from the draft so retrying cannot
@@ -1325,6 +1329,11 @@ export function initColosseumCollections(){
    if(!localEditorActive()||state.busy)return;
    const button=event.target.closest?.("button");
    if(!button)return;
+   if(button.hasAttribute("data-cs-member-visibility")){
+     const uid=button.dataset.csMemberVisibility;
+     if(isUid(uid))stageMemberAnnotation(uid,{hidden:!memberAnnotation(uid).hidden});
+     return;
+   }
    if(button.hasAttribute("data-cs-member-context")){
      openRowContext(button.dataset.csMemberContext);return;
    }
