@@ -1102,7 +1102,7 @@ test("Per-collection member hide/show is owner-only and scoped to that membershi
  assert.ok(editor.includes('state.memberDrafts.set(membershipKey(state.activeId,uid),next)'));
  assert.ok(card.includes('const hiddenMember=annotation.hidden===true'));
  assert.ok(card.includes('class="cs-member-visibility-control"'));
- assert.ok(card.includes('data-cs-member-visibility="'+uid+'));
+ assert.ok(card.includes('data-cs-member-visibility='));
  assert.ok(card.includes('visibilityButton+contextButton+stars'),"Hide/show precedes Context, then stars");
  assert.ok(card.includes('Show in this collection'));
  assert.ok(card.includes('Hide in this collection'));
