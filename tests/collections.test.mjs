@@ -369,7 +369,7 @@ test("Collections idle refresh icon uses Lucide rotate-cw with Apple-like stroke
  assert.ok(button.includes('aria-label="Refresh collections directly from Colosseum"'));
  assert.ok(css.includes('#cs-root #cs-refresh{width:32px;min-width:32px;height:32px;min-height:32px;padding:0;gap:0;display:inline-flex;align-items:center;justify-content:center}'),
    "Keep idle icon and loading ring centered within the same square button");
- assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:17px;height:17px;stroke-width:1.7}"));
+ assert.ok(css.includes("#cs-root #cs-refresh .cs-refresh-icon{width:14px;height:14px;stroke-width:1.7}"));
  assert.ok(js.includes('refreshButton.addEventListener("click"'));
 });
 
@@ -414,6 +414,17 @@ test("Collections legacy live-status skeleton occupies no space, while failures 
  assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });
 
+test("Refresh icon and its loading skeleton match the 14px collection search glyph and stay centered",()=>{ 
+ const idle=css.slice(css.indexOf("#cs-root #cs-refresh .cs-refresh-icon{"),css.indexOf("}",css.indexOf("#cs-root #cs-refresh .cs-refresh-icon{"))+1);
+ const busy=css.slice(css.indexOf("#cs-root #cs-refresh.cs-refreshing::before{"),css.indexOf("}",css.indexOf("#cs-root #cs-refresh.cs-refreshing::before{"))+1);
+ const button=css.slice(css.indexOf("#cs-root #cs-refresh{"),css.indexOf("}",css.indexOf("#cs-root #cs-refresh{"))+1);
+ assert.ok(idle.includes("width:14px;height:14px"));
+ assert.ok(busy.includes("width:14px;height:14px"));
+ assert.ok(button.includes("display:inline-flex;align-items:center;justify-content:center"));
+ assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-focus img{width:14px;height:14px}"));
+ assert.ok(css.includes("#cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}"));
+ assert.ok(!idle.includes("width:17px")&&!busy.includes("width:17px"));
+});
 test("Collections refresh shows a fast arrow-free ring while both skeletons remain synchronized",()=>{
  assert.ok(js.includes('refreshButton.classList.toggle("cs-refreshing",loading)'));
  assert.ok(js.includes('refreshButton.setAttribute("aria-busy",String(loading))'));
@@ -421,7 +432,7 @@ test("Collections refresh shows a fast arrow-free ring while both skeletons rema
  assert.ok(js.includes('setSummaryLoading(true);'));
  assert.ok(js.includes('setSummaryLoading(false);'));
  assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing .cs-refresh-icon{display:none}'));
- assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:17px;height:17px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}'));
+ assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{content:"";display:inline-block;box-sizing:border-box;width:14px;height:14px;flex:none;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:cs-summary-spin 600ms linear infinite}'));
  assert.ok(css.includes('#cs-root #cs-refresh.cs-refreshing::before{animation:none!important}'));
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
  assert.ok(!css.includes('cs-refreshing .cs-refresh-icon{animation:'));
