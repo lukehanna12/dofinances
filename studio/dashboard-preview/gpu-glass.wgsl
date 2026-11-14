@@ -22,6 +22,8 @@ struct Globals {
   viewport: vec4<f32>, // physical W,H,elapsed seconds,DPR
   fit: vec4<f32>,
   pointer: vec4<f32>,  // x,y,enabled,unused
+  tint: vec4<f32>,     // matrix-projected RGB and native Float32 opacity lane
+  tintMeta: vec4<f32>, // tint branch enabled, dark scheme, reserved, reserved
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
@@ -356,6 +358,17 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve real sampled color and apply a restrained rim only.
-  let color=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
+  let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
+  var color=baseColor;
+  if(state.tintMeta.x>0.5){
+    // GAP TINT-RGB-PRODUCER / TINT-C: the 25F80 witness establishes an
+    // added vibrantColorMatrix layer, its exact 80-byte scheme-specific
+    // coefficients, and the alpha at inputColorMatrix float lane 18.
+    // The CPU evaluates that matrix using conventional 4x5 arithmetic.
+    // Its native shader execution and source-over coupling are unproved.
+    // 0.25 is an explicit restrained browser film strength, NOT an
+    // Apple coefficient. At alpha zero the tinted branch still exists.
+    color=mix(baseColor,state.tint.rgb,clamp(state.tint.w,0.0,1.0)*0.25);
+  }
   return vec4<f32>(color,coverage*in.introAlpha);
 }

@@ -20,6 +20,7 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
+import {createTintControls} from "./dashboard-tint.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -44,6 +45,7 @@ const start=performance.now();
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
 const interaction=createInteractionController();
+const tint=createTintControls(requestRender);
 const reducedMotion=typeof window.matchMedia==="function"
   ? window.matchMedia("(prefers-reduced-motion: reduce)")
   : {matches:false};
@@ -256,13 +258,13 @@ async function initialize(){
     addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
   });
   const globalsBuffer=device.createBuffer({
-    size:48,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+    size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   let tileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,backgroundGroup=null,offscreenFrame=null,
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1;
-  const uniform=new Float32Array(12);
+  const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
   function writeUniform(){
     uniform[0]=physicalWidth;
@@ -273,6 +275,10 @@ async function initialize(){
     uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=0;
     uniform[8]=pointer.x*dpr;uniform[9]=pointer.y*dpr;
     uniform[10]=pointer.enabled;uniform[11]=0;
+    const t=tint.state;
+    uniform[12]=t.rgb[0];uniform[13]=t.rgb[1];uniform[14]=t.rgb[2];uniform[15]=t.opacity;
+    uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
+    uniform[18]=0;uniform[19]=0;
     device.queue.writeBuffer(globalsBuffer,0,uniform);
   }
   function rebuild(){
@@ -408,6 +414,7 @@ async function initialize(){
     audit.frameCount++;
     audit.focusedTile=interaction.focusedTile;
     audit.pressed=interaction.isPressed;
+    audit.tint=tint.state;
     return animating;
   }
   function dispose(){

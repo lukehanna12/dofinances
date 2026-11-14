@@ -352,7 +352,7 @@ body:has(> #workspace-shell .dashboard-home){
   isolation:isolate;
   overflow:hidden;
   pointer-events:auto;
-  background:rgba(246,248,250,.065);
+  background:var(--dashboard-tint-fill,rgba(246,248,250,.065));
   border:1px solid rgba(247,250,252,.34);
   -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
   backdrop-filter:blur(var(--glass-fallback-blur,8px));
@@ -476,3 +476,35 @@ body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta6-icon{
   position:relative;
   z-index:2;
 }
+
+/* Isolated optional Clear tint laboratory; does not change the 11x6 lattice. */
+.dashboard-tint-tool{position:fixed;z-index:80;bottom:19px;left:20px;
+  max-width:min(340px,calc(100vw - 40px));font:12px/1.4 system-ui,-apple-system,sans-serif;
+  color:#f5f6f9}
+.dashboard-tint-tool button,.dashboard-tint-tool select,.dashboard-tint-tool input{
+  font:inherit}
+.dashboard-tint-toggle{min-height:31px;padding:5px 12px;color:#f9fafb;
+  background:rgba(18,22,29,.82);border:1px solid rgba(255,255,255,.24);
+  border-radius:18px;cursor:pointer;backdrop-filter:blur(14px)}
+.dashboard-tint-panel{position:absolute;left:0;bottom:calc(100% + 10px);width:290px;
+  max-width:calc(100vw - 40px);box-sizing:border-box;padding:14px;
+  border-radius:14px;background:rgba(20,24,31,.94);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 16px 36px rgba(0,0,0,.35);backdrop-filter:blur(18px)}
+.dashboard-tint-panel[hidden]{display:none!important}
+.dashboard-tint-heading{font-size:13px;font-weight:650;margin-bottom:9px}
+.dashboard-tint-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  margin-bottom:12px}
+.dashboard-tint-swatch{min-height:30px;color:#e8ecf2;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.15);border-radius:7px;cursor:pointer}
+.dashboard-tint-swatch[aria-pressed="true"]{border-color:#fff;
+  background:rgba(240,245,255,.20);font-weight:700}
+.dashboard-tint-label{display:flex;justify-content:space-between;gap:8px;margin:7px 0 4px}
+.dashboard-tint-label output{font-variant-numeric:tabular-nums}
+.dashboard-tint-panel input[type=range]{width:100%;accent-color:#d4ddef}
+.dashboard-tint-panel select{width:100%;margin-bottom:6px;min-height:30px;
+  background:#242a34;color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:6px}
+.dashboard-tint-note{font-size:10px;line-height:1.4;color:#bec5d0;margin:8px 0 0}
+.dashboard-tint-tool button:focus-visible,.dashboard-tint-tool input:focus-visible,
+.dashboard-tint-tool select:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:760px){.dashboard-tint-tool{left:12px;bottom:12px}}

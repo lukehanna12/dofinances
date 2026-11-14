@@ -155,3 +155,27 @@ and a real GPU press/release check.
 
 Important: exact native event-input-to-uniform timing and response, touch
 semantics, highlights and spring constants remain unmeasured on 25F80.
+
+
+## 2026-11-14 measured native tint input / isolated browser transfer
+
+A finite native SwiftUI witness at oracle main `58a83a8`, named
+`E-P-SWIFTUI-TINT-SCHEME-NATIVE-FINITE`, includes 104 regular/clear,
+light/dark, interactive on/off and tint cases, reproduced in two native
+processes. A tinted Glass adds one 80-byte vibrantColorMatrix and a larger
+layer tree without modifying the original Glass filters. Its Float32 lane
+18 exactly carries public tint alpha, including zero-opacity colored tint.
+The additional matrix's 19 other lanes are scheme-specific and invariant
+across recorded public tint hues. No native observation identifies where the
+hue RGB values enter, or proves the executed tint color/compositing operation.
+
+The Dashboard preview now has a separate, opt-in, removable tint stage.
+The exact captured matrix coefficients and Float32 alpha are retained in
+`tint.js`; a conventional 4x5 RGB transform and 25% maximum source-over
+film are explicitly **browser assumptions**, not source-proved Apple output.
+The default remains unmodified neutral glass. A nonintrusive palette can
+switch None/Red/Blue/Green/White/Black, alpha and light/dark schemes.
+This modifies only one 80-byte GPU uniform, never the background or mips,
+and is supported by independent pure-code and real GPU CI checks. A
+fallback CSS overlay covers non-WebGPU browsers. No oracle closure flag is
+modified; source RGB producer, native matrix execution and Q remain OPEN.

@@ -150,6 +150,38 @@ def run():
                         inter=json.loads(cdp_eval(ws,counter,expr)).get("audit") or {}
                         if inter.get("sceneBuilds")!=before_scene_builds:
                             raise RuntimeError("Interaction rebuilt backdrop mips")
+                        # A tint change is a GPU uniform update only.
+                        # Source hue transfer is experimental; verify matrix
+                        # opacity provenance and that it does not touch mips.
+                        before_tint_frames=inter.get("frameCount",0)
+                        cdp_eval(ws,counter,
+                            "window.__dashboardTintControls.setTint('blue',0.25);true")
+                        for _ in range(25):
+                            time.sleep(.08)
+                            after_tint=json.loads(cdp_eval(ws,counter,expr))
+                            ta=(after_tint.get("audit") or {})
+                            witness=ta.get("tint") or {}
+                            if ta.get("frameCount",0)>before_tint_frames and (
+                                witness.get("name")=="blue"
+                                and abs(witness.get("opacity",0)-0.25)<0.000001
+                                and witness.get("filterCount")==3
+                            ):
+                                break
+                        else:
+                            raise RuntimeError("Tint uniform update not recorded")
+                        if ta.get("sceneBuilds")!=before_scene_builds:
+                            raise RuntimeError("Tint transition regenerated backdrop mips")
+                        cdp_eval(ws,counter,
+                            "window.__dashboardTintControls.setScheme('light');true")
+                        for _ in range(20):
+                            time.sleep(.08)
+                            scheme_check=json.loads(cdp_eval(ws,counter,expr))
+                            st=(scheme_check.get("audit") or {}).get("tint") or {}
+                            if st.get("scheme")=="light":break
+                        else:
+                            raise RuntimeError("Tint scheme not updated")
+                        cdp_eval(ws,counter,
+                            "window.__dashboardTintControls.setTint('none');true")
                         # Exercise the second retained AIR SDF branch in
                         # a real GPU render, not merely WGSL compilation. The
                         # four equal native lanes select 4; one unequal
