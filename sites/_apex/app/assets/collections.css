@@ -760,3 +760,18 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-utility-row{flex-wrap:wrap}
  #cs-root .cs-utility-info{min-width:88px}
 }
+
+/* A dedicated disclosure in collection Edit mode preserves the existing disabled
+   accordion trigger and inline rename semantics while exposing member controls. */
+#cs-root .cs-edit-utilities-open{
+ position:absolute;z-index:6;top:50%;right:38px;transform:translateY(-50%);
+ width:23px;height:26px;padding:3px;border:0;border-radius:6px;
+ background:transparent;color:#999;display:grid;place-items:center;
+ opacity:0;visibility:hidden;pointer-events:none;
+ transition:color .15s ease,background .15s ease,opacity .15s ease,visibility .15s ease;
+}
+#cs-root .cs-edit-utilities-open svg{display:block;width:16px;height:16px;transition:transform .22s cubic-bezier(.22,1,.36,1)}
+#cs-root .cs-entry.cs-open .cs-edit-utilities-open svg{transform:rotate(180deg)}
+#cs-root.cs-editing .cs-edit-utilities-open{opacity:1;visibility:visible;pointer-events:auto}
+#cs-root .cs-edit-utilities-open:disabled{opacity:0;pointer-events:none}
+#cs-root .cs-edit-utilities-open:hover:not(:disabled),#cs-root .cs-edit-utilities-open:focus-visible{color:#fff;background:#242424}

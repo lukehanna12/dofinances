@@ -283,7 +283,7 @@ export function initColosseumCollections(){
    return '<article class="cs-entry'+(entry.hidden?' cs-is-hidden':'')+'" data-cs-id="'+uuid+'" data-cs-depth="'+depth+'" style="--cs-depth:'+depth+'">'+
      '<h2 class="cs-entry-heading">'+
        '<button class="cs-drag-handle" type="button" draggable="true" data-cs-drag="'+uuid+'" aria-label="Drag '+esc(collection.name)+' to reorder or nest" title="Drag to reorder or move into a collection"'+off+'>'+GRIP+'</button>'+
-       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(picking?' disabled tabindex="-1"':'')+'>'+
+       '<button class="cs-trigger" type="button" data-cs-open="'+uuid+'" id="cs-trigger-'+n+'" aria-controls="'+id+'" aria-expanded="false"'+(editing||picking?' disabled tabindex="-1"':'')+'>'+
        '<span class="cs-num">'+String(n).padStart(2,"0")+'</span>'+
        '<span class="cs-entry-title"><span class="cs-title-measure" aria-hidden="true">'+esc(collection.name)+'</span>'+
          '<span class="cs-title-compact" aria-hidden="true">'+esc(collection.name)+'</span>'+
@@ -300,6 +300,7 @@ export function initColosseumCollections(){
            '<button class="cs-name-action cs-name-confirm" type="button" data-cs-confirm-rename="'+uuid+'" aria-label="Apply name change" title="Apply name change" disabled tabindex="-1" hidden>'+NAME_APPLY+'</button>'+
            '<button class="cs-name-action cs-name-cancel" type="button" data-cs-cancel-rename="'+uuid+'" aria-label="Cancel name change" title="Cancel name change" disabled tabindex="-1">'+NAME_CANCEL+'</button>'+
          '</span></span>'+
+       '<button class="cs-edit-utilities-open" type="button" data-cs-open="'+uuid+'" aria-label="Expand '+esc(collection.name)+' to edit utility ratings and context" aria-controls="'+id+'" aria-expanded="false" title="Edit utility ratings and context"'+off+'>'+CHEVRON+'</button>'+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
@@ -343,6 +344,7 @@ export function initColosseumCollections(){
      const open=el.dataset.csId===state.activeId;
      el.classList.toggle("cs-open",open);
      el.querySelector(".cs-trigger").setAttribute("aria-expanded",String(open));
+     el.querySelector(".cs-edit-utilities-open")?.setAttribute("aria-expanded",String(open));
      el.querySelector(".cs-accordion-panel").setAttribute("aria-hidden",String(!open));
    });
    syncActions();
@@ -381,7 +383,7 @@ export function initColosseumCollections(){
      const hasContext=annotation.context.length>0;
      const editingMember=state.editing&&!state.editTransitioning;
      const contextButton=editingMember?
-       '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" aria-describedby="cs-member-tooltip-'+uid+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" id="cs-member-tooltip-'+uid+'" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
+       '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
      const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
      const removeRating=editingMember?'<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
      const annotationControls=(editingMember||hasRating)?
@@ -679,7 +681,7 @@ export function initColosseumCollections(){
    input.setSelectionRange(input.value.length,input.value.length);
  }
  function syncRowEditing(){
-   const locked=state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
+   const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
    list.querySelectorAll(".cs-entry").forEach(entry=>{
      const trigger=entry.querySelector(".cs-trigger");
      if(trigger){trigger.disabled=locked;trigger.tabIndex=locked?-1:0;}

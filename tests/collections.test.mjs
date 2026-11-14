@@ -753,7 +753,8 @@ test("Opening edit mode closes an expanded row with the white pencil-position ri
  assert.match(js,/await waitForVisualMotion\(panel,"grid-template-rows"\)/);
  assert.match(js,/root\.classList\.remove\("cs-closing-for-edit"\)/);
  assert.match(js,/if\(state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning\)return;/);
- assert.match(js,/trigger\.disabled=locked/);\n assert.match(js,/const locked=state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning/);
+ assert.match(js,/trigger\.disabled=locked/);
+ assert.match(js,/const locked=state\.editing\|\|state\.editTransitioning\|\|state\.collectionSelecting\|\|state\.collectionSelectTransitioning/);
  assert.match(css,/#cs-root\.cs-closing-for-edit \.cs-edit-icon-button::after\{[^}]*border:1\.8px solid #fff/);
  assert.match(css,/animation:cs-edit-spin 600ms linear infinite/);
  assert.match(css,/#cs-root\.cs-editing \.cs-trigger:disabled/);
@@ -848,7 +849,7 @@ test("Select collapses an open collection with a white spinner before allowing s
  assert.ok(css.includes("animation:cs-edit-spin 600ms linear infinite"));
  assert.ok(css.includes("#cs-root.cs-closing-for-selection .cs-select-icon-button svg{opacity:0}"));
  assert.ok(js.includes("if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;"),"Edit mode can expand collections, but selection mode cannot");
- assert.ok(js.includes("const locked=state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
+ assert.ok(js.includes("const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning"));
 });
 test("Done resets checked bubble visuals after the exit animation, with no stale selection next time",()=>{
  const start=js.indexOf("function clearCollectionPicks(){");
@@ -1004,7 +1005,9 @@ test("Ratings and context are exclusively UI characteristics of direct utility m
  assert.ok(js.includes('state.memberDrafts.delete(key)'));
  assert.ok(js.includes('for(const [key,annotation] of state.memberDrafts)'));
  assert.ok(js.includes('if(!edits.length&&!state.configDirty&&!state.memberDrafts.size)'));
- assert.ok(js.includes('const locked=state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning'));
+ assert.ok(js.includes('const locked=state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning'));
+ assert.ok(js.includes('class="cs-edit-utilities-open"'));
+ assert.ok(css.includes('#cs-root.cs-editing .cs-edit-utilities-open'));
  assert.ok(!js.includes('collectionStarMarkup(rating,{editable:true,collectionId:uuid})'));
  assert.ok(!js.includes('request("create",{name,description,rating'));
  assert.ok(!js.includes('state.ratingDrafts'));
