@@ -929,6 +929,30 @@ test("Utility icon centers share the exact External SVG-derived right-side refer
    assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
  }
 });
+test("Collections stylesheet has balanced CSS declaration blocks",()=>{
+ // A missing closing brace can swallow every subsequent selector while still
+ // allowing superficial string assertions and the Vite build to pass.
+ const withoutCommentsOrStrings=css.replace(/\\/\\*[\\s\\S]*?\\*\\//g,"")
+   .replace(/"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'/g,'""');
+ let depth=0;
+ for(const ch of withoutCommentsOrStrings){
+   if(ch==="{")depth++;
+   if(ch==="}")depth--;
+   assert.ok(depth>=0,"Unexpected closing brace in Collections CSS");
+ }
+ assert.equal(depth,0,"Unclosed declaration block in Collections CSS");
+ for(const action of ["edit","select"]){
+   const name="#cs-root .cs-"+action+"-icon-button{";
+   const start=css.indexOf(name),end=css.indexOf("}",start);
+   assert.ok(start>=0&&end>start,"Missing complete "+action+" style block");
+   const style=css.slice(start,end+1);
+   assert.ok(style.includes("border-radius:999px"));
+   assert.ok(style.includes("background:transparent"));
+   assert.match(style,/transform \\.12s ease\\}$/);
+   assert.ok(css.slice(end+1).includes("#cs-root .cs-"+action+"-icon-button:hover:not(:disabled){"));
+ }
+});
+
 test("Select and Edit remain visually unframed until hovered while retaining circular geometry",()=>{
  const edit=css.slice(css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-edit-icon-button:hover:not(:disabled){")));
  const select=css.slice(css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){"),css.indexOf("}",css.indexOf("#cs-root .cs-select-icon-button:hover:not(:disabled){")));

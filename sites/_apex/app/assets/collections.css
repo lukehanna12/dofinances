@@ -339,7 +339,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Collection organization controls: isolated from the existing 450ms
    accordion and all other workspace screens. */
 #cs-root .cs-edit-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;vertical-align:top;margin:16px 0 0 10px}
-#cs-root .cs-edit-icon-button{position:relative;display:inline-grid;place-items:center;width:32.4px;min-width:32.4px;height:32.4px;min-height:32.4px;padding:0;border:0;border-radius:999px;background:transparent;color:#f5f5f5;transition:color .15s ease,background-color .15s ease,transform .12s ease
+#cs-root .cs-edit-icon-button{position:relative;display:inline-grid;place-items:center;width:32.4px;min-width:32.4px;height:32.4px;min-height:32.4px;padding:0;border:0;border-radius:999px;background:transparent;color:#f5f5f5;transition:color .15s ease,background-color .15s ease,transform .12s ease}
 #cs-root .cs-edit-icon-button:hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
 #cs-root .cs-edit-icon-button:active:not(:disabled){transform:scale(.95)}
 #cs-root .cs-edit-icon-button svg{position:absolute;width:19px;height:19px;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
@@ -362,7 +362,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Select collections: 32.4px circular control with no keyboard shortcut.
    Follows Edit in the Collections header and reuses its tooltip metrics. */
 #cs-root .cs-select-control{position:relative;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;vertical-align:top;margin:16px 0 0 10px}
-#cs-root .cs-select-icon-button{position:relative;display:inline-grid;place-items:center;width:32.4px;min-width:32.4px;height:32.4px;min-height:32.4px;padding:0;border:0;border-radius:999px;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,background-color .15s ease,transform .12s ease
+#cs-root .cs-select-icon-button{position:relative;display:inline-grid;place-items:center;width:32.4px;min-width:32.4px;height:32.4px;min-height:32.4px;padding:0;border:0;border-radius:999px;background:transparent;color:#f5f5f5;cursor:pointer;transition:color .15s ease,background-color .15s ease,transform .12s ease}
 #cs-root .cs-select-icon-button:hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
 #cs-root .cs-select-icon-button:active:not(:disabled){transform:scale(.95)}
 #cs-root .cs-select-icon-button svg{position:absolute;width:19px;height:19px;transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
