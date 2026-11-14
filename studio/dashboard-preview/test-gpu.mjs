@@ -76,7 +76,12 @@ test("real-mip architecture explicit compute, LOD and textureLoad",()=>{
   assert.match(js,/device\.queue\.onSubmittedWorkDone/);
   assert.match(js,/scenePending=false/);
   assert.match(js,/if\(scenePending\)buildScene\(\)/);
-  assert.doesNotMatch(js,/getImageData\(|drawImage\(|html2canvas/);
+  // Only permitted CPU raster path is an intrinsic-size AVIF decoder
+  // compatibility fallback. It samples the source image, never the DOM.
+  assert.match(js,/ctx\.drawImage\(img,0,0,photoWidth,photoHeight\)/);
+  assert.match(js,/ctx\.getImageData\(0,0,photoWidth,photoHeight\)/);
+  assert.match(js,/queue\.writeTexture/);
+  assert.doesNotMatch(js,/html2canvas|document\.body\.toDataURL/);
   assert.doesNotMatch(mip,/feGaussianBlur\s*\(/);
 });
 test("oracle-provenance remains finite, native and browser assumptions labeled",()=>{
