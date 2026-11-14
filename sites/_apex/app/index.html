@@ -473,6 +473,17 @@
                 <button type="button" id="cs-delete-apply" class="cs-button cs-danger" disabled>Delete collection</button>
               </div>
             </dialog>
+            <dialog class="cs-modal" id="cs-evict-dialog" aria-labelledby="cs-evict-title" aria-describedby="cs-evict-copy">
+              <h2 id="cs-evict-title">Remove utilities from collection?</h2>
+              <p id="cs-evict-copy">Remove <strong id="cs-evict-count"></strong> from the <strong id="cs-evict-collection"></strong> collection?</p>
+              <ul class="cs-evict-items" id="cs-evict-items" aria-label="Selected utility names"></ul>
+              <p class="cs-evict-warning">This removes membership only. The underlying utilities will not be deleted.</p>
+              <p id="cs-evict-error" class="cs-form-error" role="alert"></p>
+              <div class="cs-modal-actions">
+                <button type="button" id="cs-evict-cancel" class="cs-button">Cancel</button>
+                <button type="button" id="cs-evict-apply" class="cs-button cs-danger">Remove from collection</button>
+              </div>
+            </dialog>
           </div>
         </section>
         <section class="view project-view" data-view="colosseum/providers" hidden aria-labelledby="project-providers-title">

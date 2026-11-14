@@ -118,7 +118,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
   const cloud=src("sites/_apex/app/assets/cloud-utility.v2.svg");
   assert.equal((cloud.match(/<path\s/g)||[]).length,1,
     "Cloud v2 must be a filled silhouette, without v1's inner outline cutout");
-  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" src='));
+  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" role="img" aria-label="'));
   assert.ok(js.includes("routeIcon.label"),"Route mode must retain a screen-reader label");
   assert.ok(!js.includes('class="cs-utility-route"'),"Text capsules must be removed");
   assert.ok(!css.includes(".cs-utility-route{"),"Capsule styling must be removed");
@@ -152,7 +152,7 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   }
   // Route is selected from a fixed allowlist before adding the variant class.
   assert.match(js,/Object\.hasOwn\(COLLECTION_ROUTE_ICONS,routes\)/);
-  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" src='));
+  assert.ok(js.includes('class="cs-utility-route-icon cs-utility-route-icon--\'+routes+\'" role="img" aria-label="'));
   assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*width:auto;max-width:none;flex:none;align-self:center;object-fit:contain/);
 });
 
@@ -179,16 +179,22 @@ test("Collections paginate, utilities scroll at no more than 480px with natural 
  assert.match(css,/\.cs-utility-list\{[^}]*overflow-y:auto/);
  assert.match(css,/\.cs-card\{[^}]*border-radius:24px/);
 });
-test("Selection mode changes Edit/Select to Remove/Cancel and hides dormant addition",()=>{
- assert.match(js,/if\(state\.selecting\)/);
- assert.match(js,/cs-danger" type="button" data-cs-action="remove"/);
- assert.match(js,/data-cs-action="cancel"/);
- assert.match(js,/data-cs-action="admit" disabled/);
- assert.match(js,/data-cs-action="edit"/);
- assert.match(js,/data-cs-action="select"/);
- assert.match(js,/if\(action==="admit"\)return/);
+test("Utilities use persistent Done checkmarks and confirmed trash removal",()=>{
+ assert.ok(js.includes('const UTILITY_DONE_SVG='));
+ assert.ok(js.includes('class="cs-utility-trash"'));
+ assert.ok(js.includes('src="/app/assets/trash-utilities.v1.svg"'));
+ assert.ok(js.includes('data-cs-action="remove"'));
+ assert.ok(js.includes('data-cs-action="admit" disabled'));
+ assert.ok(js.includes('data-cs-action="edit"'));
+ assert.ok(js.includes('data-cs-action="select"'));
+ assert.ok(js.includes('aria-pressed="'));
+ assert.ok(js.includes('if(action==="edit"){'));
+ assert.ok(js.includes('if(localEditorActive()){void finishLocalEditor();return;}'));
+ assert.ok(js.includes('if(action==="select"){'));
+ assert.ok(js.includes('if(state.selecting){'));
+ assert.ok(js.includes('if(action==="remove"){openEvictDialog();return;}'));
+ assert.doesNotMatch(js,/data-cs-action="done"|data-cs-action="discard"|data-cs-action="cancel"/);
  assert.doesNotMatch(js,/request\("admit"/);
- assert.match(js,/new Set\(\)/);
 });
 test("Real writes are owner-protected, revision-bound, and preserve underlying catalog items",()=>{
  assert.match(edge,/const collections=pathname==="\/api\/colosseum\/collections"/);
@@ -794,9 +800,9 @@ test("Collection search and Refresh occupy one aligned row, retaining list width
  assert.ok(!html.includes('class="cs-top-actions"'));
  assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}"));
  assert.ok(css.includes("#cs-root .cs-collection-search{flex:1 1 0;min-width:0}"));
- assert.match(css,/#cs-root \.cs-search-focus\{[^}]*width:32px;height:32px/);
+ assert.match(css,/#cs-root \.cs-search-focus\{[^}]*position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%/);
  assert.match(css,/#cs-root #cs-refresh\{width:32px;min-width:32px;height:32px;min-height:32px/);
- assert.ok(css.includes("#cs-root .cs-search-focus{width:30px;height:30px}"));
+ assert.ok(css.includes("#cs-root .cs-search-focus{width:100%;height:100%}"));
  assert.ok(css.includes("#cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}"));
  assert.match(css,/#cs-root \.cs-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.05fr\)/);
 });
@@ -923,7 +929,7 @@ test("Utility icon centers share the exact External SVG-derived right-side refer
  assert.ok(slot.includes("align-items:center"));
  assert.ok(slot.includes("flex:none;margin-left:auto;align-self:center"));
  assert.ok(css.includes("#cs-root .cs-utility-route-slot{--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}"),"Mobile reference width must follow smaller External height");
- assert.ok(js.includes('<span class="cs-utility-route-slot"><img class="cs-utility-route-icon'),"Every SVG must be centered inside the SAME slot");
+ assert.ok(js.includes('<span class="cs-utility-route-slot"><span class="cs-utility-route-icon'),"Every masked SVG must be centered inside the SAME slot");
  assert.ok(css.includes("#cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}"),"Desktop external retains its original pixel size");
  for(const route of ["cloud","direct","local","ported"]){
    assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
@@ -1054,8 +1060,8 @@ test("Collection Edit has its own description and member editor, distinct from g
  assert.ok(css.includes('#cs-root .cs-description-pencil'));
  assert.ok(css.includes('#cs-root .cs-description-actions'));
  assert.ok(js.includes('if(action==="edit"){enterLocalEditor();return;}'));
- assert.ok(js.includes('if(action==="done"){void finishLocalEditor();return;}'));
- assert.ok(js.includes('if(action==="discard"){exitLocalEditor();return;}'));
+ assert.ok(js.includes('if(localEditorActive()){void finishLocalEditor();return;}'));
+ assert.ok(!js.includes('data-cs-action="discard"'));
  assert.ok(js.includes('if(action==="delete"){beginDelete();return;}'));
  assert.ok(!js.includes('openForm("edit")'));
  assert.ok(!js.includes('cs-edit-utilities-open'));
@@ -1156,6 +1162,104 @@ test("Collection and utility search normalize case and match multiple independen
  assert.equal(collectionsSearchMatches("Équipe","e\u0301quipe"),true);
 });
 
+
+test("Search magnifying-glass buttons fill their entire left-hand bar segments",()=>{
+ assert.ok(css.includes("min-width:0;min-height:38px;height:38px;padding:0 10px 0 0"));
+ assert.ok(css.includes("position:relative;flex:none;align-self:stretch;width:35px;height:auto"));
+ assert.ok(css.includes("position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%"));
+ assert.ok(css.includes("border:0;border-radius:10px 0 0 10px;padding:0;background:transparent"));
+ assert.ok(css.includes('#cs-root .cs-search-focus:hover:not(:disabled),#cs-root .cs-search-focus:focus-visible{background:rgba(255,255,255,.055)}'));
+ assert.ok(css.includes('#cs-root .cs-search-control{height:auto;width:34px}'));
+ assert.ok(css.includes('#cs-root .cs-search:focus-within{border-color:#525252;background:var(--cs-weak)}'));
+ assert.ok(!css.includes('border:0;border-radius:7px;padding:0;background:transparent'));
+});
+
+test("Utilities selection bubbles animate from the right with mounted rows",()=>{
+ const card=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function filterUtilityRows(){"));
+ const chrome=js.slice(js.indexOf("function syncUtilityChrome(){"),js.indexOf("function openCollection("));
+ const handler=js.slice(js.indexOf("function handleUtilityAction(action){"),js.indexOf('detail.addEventListener("click"'));
+ assert.ok(card.includes('class="cs-utility-trailing"'));
+ assert.ok(card.includes('class="cs-utility-pick" data-cs-pick-utility="'));
+ assert.ok(card.includes('class="cs-select-bubble" aria-hidden="true"'));
+ assert.ok(!card.includes('class="cs-checkbox"'));
+ assert.ok(!card.includes('const content=(state.selecting?'));
+ assert.ok(chrome.includes('root.classList.toggle("cs-utility-selecting",state.selecting)'));
+ assert.ok(chrome.includes('for(const pick of card.querySelectorAll(".cs-utility-pick"))'));
+ assert.ok(chrome.includes('pick.setAttribute("aria-pressed",String(chosen))'));
+ assert.ok(chrome.includes('pick.disabled=!state.selecting||state.busy'));
+ assert.ok(handler.includes('state.selecting=true;state.selected.clear();syncUtilityChrome();syncActions();'));
+ assert.ok(handler.includes('state.selecting=false;state.selected.clear();syncUtilityChrome();syncActions();'));
+ assert.ok(!handler.includes("renderCard()"),"Mode changes may not rebuild moving rows");
+ assert.ok(css.includes('#cs-root .cs-utility-pick{display:grid;place-items:center;flex:none;width:0;height:28px;margin-left:0'));
+ assert.ok(css.includes('transform:translateX(20px);pointer-events:none;transition:width var(--cs-control-swap)'));
+ assert.ok(css.includes('#cs-root.cs-utility-selecting .cs-utility-pick{width:26px;margin-left:8px;overflow:visible;opacity:1;visibility:visible;transform:translateX(0)'));
+ assert.ok(css.includes('#cs-root .cs-utility-pick[aria-pressed="true"] .cs-select-bubble'));
+ assert.ok(js.includes('const button=event.target.closest(".cs-utility-pick")'));
+ assert.ok(js.includes('if(!isUid(uid)||!state.detail.item_uids?.includes(uid))return;'));
+ assert.ok(!js.includes('root.addEventListener("change",event=>{'));
+ assert.ok(js.includes('await waitForVisualMotion(visible,"width")'));
+});
+
+test("Native trash confirmation lists exact item names, guards writes and preserves catalog items",()=>{
+ const workflow=src(".github/workflows/site.yml");
+ const asset=src("sites/_apex/app/assets/trash-utilities.v1.svg");
+ assert.ok(asset.includes('viewBox="0 0 24.31 29.6418"'));
+ assert.ok(asset.includes('data-sf-symbol="trash" data-sf-source="SFSymbols.20261112.tsx"'));
+ assert.ok(asset.includes('color="#ef4444"'));
+ assert.match(asset,/<path d="M8\.19824 23\.8266[^"]+" fill="currentColor" fill-opacity="0\.85"\/>/);
+ assert.doesNotMatch(asset,/<script|<foreignObject|<image|<!DOCTYPE/i);
+ assert.match(css,/#cs-root \.cs-utility-trash-control\{[^}]*width:0;height:var\(--cs-utility-bubble-height\)/);
+ assert.ok(css.includes('#cs-root.cs-utility-selecting .cs-utility-trash-control{width:28px;opacity:1;visibility:visible'));
+ assert.ok(css.includes('#cs-root .cs-utility-trash:hover:not(:disabled){background:rgba(239,68,68,.14)}'));
+ assert.ok(html.includes('id="cs-evict-dialog" aria-labelledby="cs-evict-title" aria-describedby="cs-evict-copy"'));
+ for(const id of ["cs-evict-count","cs-evict-collection","cs-evict-items","cs-evict-cancel","cs-evict-apply","cs-evict-error"])
+   assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(html.includes('class="cs-evict-items" id="cs-evict-items"'));
+ assert.ok(css.includes('#cs-root .cs-evict-items{max-height:min(260px,34vh);min-height:0;overflow:auto'));
+ const confirmation=js.slice(js.indexOf("function openEvictDialog(){"),js.indexOf("function sizeInlineName("));
+ assert.ok(confirmation.includes('list.replaceChildren(...uids.map(uid=>{'));
+ assert.ok(confirmation.includes('item.textContent=names.get(uid)||uid'));
+ assert.ok(confirmation.includes('pendingEvict={collectionId:col.collection_id,name:col.name,revision:state.detail.revision,uids}'));
+ assert.ok(confirmation.includes('evictDialog.showModal()'));
+ assert.ok(confirmation.includes('if(!pending||!evictDialog.open||state.busy||!state.selecting'));
+ assert.ok(confirmation.includes('state.detail.revision!==pending.revision'));
+ assert.ok(confirmation.includes('pending.uids.some(uid=>!state.selected.has(uid)||!state.detail.item_uids.includes(uid))'));
+ assert.ok(confirmation.includes('await request("evict",{name:pending.name,item_uids:pending.uids,expected_revision:pending.revision})'));
+ assert.ok(!confirmation.includes('confirm('),"No browser-native confirmation with unnamed records");
+ assert.ok(js.includes('evictDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();})'));
+ assert.ok(js.includes('evictDialog.addEventListener("close",()=>{pendingEvict=null;})'));
+ assert.ok(!js.includes('cs-create-tooltip-shortcut" aria-label="Remove'));
+ assert.ok(workflow.includes("cp sites/_apex/app/assets/trash-utilities.v1.svg dist/app/assets/trash-utilities.v1.svg"));
+ assert.ok(workflow.includes("test -s dist/app/assets/trash-utilities.v1.svg"));
+});
+
+test("Original route geometry is retained while masked icons match the former #a3a3a3 text",()=>{
+ const workflow=src(".github/workflows/site.yml");
+ const masks={
+   cloud:["cloud-utility.v2.svg","cloud-utility-mask.v1.svg"],
+   direct:["direct-utility.v1.svg","direct-utility-mask.v1.svg"],
+   local:["local-provider.v1.svg","local-provider-mask.v1.svg"],
+   ported:["external-provider.v1.svg","external-provider-mask.v1.svg"]
+ };
+ assert.ok(css.includes('--cs-bg:#0a0a0a;--cs-text:#fafafa;--cs-muted:#a3a3a3'));
+ assert.ok(css.includes('#cs-root .cs-utility-name{color:#fff;'));
+ assert.ok(css.includes('#cs-root .cs-utility-route-icon{background:var(--cs-muted)'));
+ assert.ok(js.includes('role="img" aria-label="'+routeIcon.label'));
+ for(const [mode,[original,mask]] of Object.entries(masks)){
+   const before=src("sites/_apex/app/assets/"+original);
+   const after=src("sites/_apex/app/assets/"+mask);
+   assert.equal(before.match(/viewBox="[^"]+"/)?.[0],after.match(/viewBox="[^"]+"/)?.[0]);
+   const paths=text=>[...text.matchAll(/<path d="([^"]+)"/g)].map(x=>x[1]);
+   assert.deepEqual(paths(before),paths(after));
+   assert.ok(!after.includes('fill-opacity="0.85"'));
+   assert.ok(after.includes('fill-opacity="1"'));
+   assert.ok(css.includes('#cs-root .cs-utility-route-icon--'+mode+'{aspect-ratio:'));
+   assert.ok(css.includes('mask-image:url("/app/assets/'+mask+'")'));
+   assert.ok(workflow.includes("cp sites/_apex/app/assets/"+mask+" dist/app/assets/"+mask));
+   assert.ok(workflow.includes("test -s dist/app/assets/"+mask));
+ }
+ assert.ok(css.includes('width:calc(var(--cs-ported-route-height) * 1.19330855)'));
+});
 test("Both search bars match Refresh border states without a hover background",()=>{
  const search=css.slice(css.indexOf("#cs-root .cs-search{"),css.indexOf("}",css.indexOf("#cs-root .cs-search{"))+1);
  assert.ok(search.includes("border:1px solid var(--cs-border);border-radius:11px"));
@@ -1166,7 +1270,7 @@ test("Both search bars match Refresh border states without a hover background",(
  assert.ok(css.includes('#cs-root .cs-search input[type="search"]::placeholder{color:#595959;opacity:1}'));
  assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"));
 });
-test("Utility count and management control positions are exchanged",()=>{
+test("Utility total and persistent manager controls keep their swapped positions",()=>{
  const actions=js.slice(js.indexOf("function actionMarkup(){"),js.indexOf("function rowMarkup("));
  const card=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function filterUtilityRows(){"));
  assert.ok(actions.includes('class="cs-card-badge cs-inline-utility-count"'));
@@ -1176,17 +1280,16 @@ test("Utility count and management control positions are exchanged",()=>{
  for(const asset of ["add-collection.v3.svg","edit-collections.v1.svg","select-collections.v3.svg"])
    assert.ok(actions.includes("/app/assets/"+asset));
  assert.ok(actions.includes('role="group" aria-label="Utility management"'));
- assert.ok(actions.includes('data-cs-action="admit" disabled'));
- assert.ok(actions.includes('aria-label="Edit utilities"'));
- assert.ok(actions.includes('aria-label="Select utilities"'));
- assert.ok(actions.includes('if(state.selecting||localEditorActive())return "";'));
+ assert.ok(actions.includes('class="cs-utility-management"'));
+ assert.ok(actions.includes('Edit utilities'));
+ assert.ok(actions.includes('Select utilities'));
+ assert.ok(!actions.includes('if(state.selecting||localEditorActive())return "";'));
  assert.ok(js.includes('if(oldButtons.length>0 && oldButtons.length===newButtons.length'));
- assert.ok(js.includes('const action=event.target.closest(".cs-utility-toolbar button[data-cs-action]")'));
+ assert.ok(js.includes('const action=event.target.closest(".cs-utility-management button[data-cs-action]")'));
  assert.ok(js.includes('if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction)'));
  assert.ok(js.includes('handleUtilityAction(button.dataset.csAction);'));
- assert.ok(js.includes('root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button")'));
- for(const action of ["edit","select","done","discard","delete","cancel","remove"])
-   assert.ok(js.includes('if(action==="'+action+'")'));
+ assert.ok(js.includes('root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button, .cs-utility-trash")'));
+ assert.ok(js.includes('if(action==="delete"){beginDelete();return;}'));
 });
 test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
  assert.ok(css.includes("--cs-utility-bubble-height:34px"));

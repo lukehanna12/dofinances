@@ -111,6 +111,11 @@ jobs:
           cp sites/_apex/app/assets/add-collection.v3.svg dist/app/assets/add-collection.v3.svg
           cp sites/_apex/app/assets/edit-collections.v1.svg dist/app/assets/edit-collections.v1.svg
           cp sites/_apex/app/assets/select-collections.v3.svg dist/app/assets/select-collections.v3.svg
+          cp sites/_apex/app/assets/trash-utilities.v1.svg dist/app/assets/trash-utilities.v1.svg
+          cp sites/_apex/app/assets/cloud-utility-mask.v1.svg dist/app/assets/cloud-utility-mask.v1.svg
+          cp sites/_apex/app/assets/direct-utility-mask.v1.svg dist/app/assets/direct-utility-mask.v1.svg
+          cp sites/_apex/app/assets/local-provider-mask.v1.svg dist/app/assets/local-provider-mask.v1.svg
+          cp sites/_apex/app/assets/external-provider-mask.v1.svg dist/app/assets/external-provider-mask.v1.svg
           cp sites/_apex/app/assets/diagnostics.css dist/app/assets/diagnostics.css
           cp sites/_apex/app/assets/providers.css dist/app/assets/providers.css
           cp sites/_apex/app/assets/home-rice-terraces-hq.jpg dist/app/assets/home-rice-terraces-hq.jpg
@@ -129,6 +134,11 @@ jobs:
           test -s dist/app/assets/add-collection.v3.svg
           test -s dist/app/assets/edit-collections.v1.svg
           test -s dist/app/assets/select-collections.v3.svg
+          test -s dist/app/assets/trash-utilities.v1.svg
+          test -s dist/app/assets/cloud-utility-mask.v1.svg
+          test -s dist/app/assets/direct-utility-mask.v1.svg
+          test -s dist/app/assets/local-provider-mask.v1.svg
+          test -s dist/app/assets/external-provider-mask.v1.svg
           test -s dist/app/assets/home-rice-terraces-hq.jpg
           grep -Fq 'global-menu' dist/app/index.html
           grep -Fq 'workspace-enhancements.css' dist/app/index.html
