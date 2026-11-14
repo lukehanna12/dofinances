@@ -181,6 +181,22 @@ a:hover {text-decoration: none;}
   -webkit-mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
   mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
 }
+.nav-link .nav-icon-asset--utilities{
+  -webkit-mask-image:url("/app/assets/utilities-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/utilities-screen-sidebar-icon.v1.svg");
+}
+.nav-link .nav-icon-asset--providers{
+  -webkit-mask-image:url("/app/assets/providers-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/providers-screen-sidebar-icon.v1.svg");
+}
+.nav-link .nav-icon-asset--permissions{
+  -webkit-mask-image:url("/app/assets/permissions-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/permissions-screen-sidebar-icon.v1.svg");
+}
+.nav-link .nav-icon-asset--diagnostics{
+  -webkit-mask-image:url("/app/assets/diagnostics-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/diagnostics-screen-sidebar-icon.v1.svg");
+}
 
 .nav-link:hover {background: var(--ui-hover); color: var(--ui-text); border-color: transparent;}
 .nav-link.active {background: var(--ui-selected); border-color: transparent; color: var(--ui-text);}

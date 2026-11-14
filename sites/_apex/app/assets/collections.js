@@ -16,7 +16,7 @@ const COLLECTION_ROUTE_ICONS=Object.freeze({
   cloud:{src:"/app/assets/cloud-utility.v2.svg",label:"Cloud utility"},
   direct:{src:"/app/assets/direct-utility.v1.svg",label:"Direct utility"},
   local:{src:"/app/assets/local-provider.v1.svg",label:"Local provider"},
-  ported:{src:"/app/assets/external-provider.v1.svg",label:"External provider"}
+  ported:{src:"/app/assets/external-provider.v2.svg",label:"External provider"}
 });
 const SUMMARY_GEOMETRY_KEY="dofinances.collections.summary-divider-geometry.v2";
 const LEGACY_SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
@@ -287,15 +287,6 @@ export function initColosseumCollections(){
    return hash?hash==="colosseum/collections":
      location.pathname.replace(/\/+$/,"").toLowerCase()==="/app/colosseum/collections";
  };
- function actionMarkup(){
-   const ids=Array.isArray(state.detail?.item_uids)?state.detail.item_uids.filter(isUid):null;
-   const count=ids?.length;
-   // The count stays beneath the description in every mode. A collection
-   // delete is still separately available while editing that collection.
-   const badge='<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+
-     (count===undefined?'— utilities':count+' '+(count===1?'utility':'utilities'))+'</span>';
-   return badge;
- }
  const UTILITY_DONE_SVG='<svg class="cs-utility-done" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4.7 12.1 5 5.1L19.5 7.3"/></svg>';
  // Keep all controls mounted while their native symbols crossfade to Done.
  function utilityToolbarMarkup(){
@@ -363,7 +354,7 @@ export function initColosseumCollections(){
                '<button class="cs-name-action cs-name-confirm" type="button" data-cs-description-confirm aria-label="Confirm description" title="Confirm description">'+NAME_APPLY+'</button>'+
                '<button class="cs-name-action cs-name-cancel" type="button" data-cs-description-cancel aria-label="Cancel description edit" title="Cancel description edit">'+NAME_CANCEL+'</button>'+
              '</span></div></div>'+
-         '<div class="cs-actions" data-cs-actions>'+actionMarkup()+'</div>'+
+         
          '<div class="cs-mobile-detail" data-cs-mobile></div>'+
        '</div></div></div></article>';
  }
@@ -411,21 +402,11 @@ export function initColosseumCollections(){
    syncDescriptionEditor();
  }
  function syncActions(){
-   const open=list.querySelector(".cs-entry.cs-open [data-cs-actions]");
-   if(!open)return;
-   const replacement=document.createElement("div");
-   replacement.innerHTML=actionMarkup();
-   const oldButtons=[...open.querySelectorAll(":scope > button")];
-   const newButtons=[...replacement.children];
-   // Keep active-mode action DOM nodes stable; replace the idle count pill
-   // text when the live membership count arrives.
-   if(oldButtons.length>0 && oldButtons.length===newButtons.length &&
-      oldButtons.every((button,i)=>button.dataset.csAction===newButtons[i].dataset.csAction)){
-     oldButtons.forEach((button,i)=>{
-       if(button.disabled!==newButtons[i].disabled)button.disabled=newButtons[i].disabled;
-       if(button.textContent!==newButtons[i].textContent)button.textContent=newButtons[i].textContent;
-     });
-   }else open.replaceChildren(...replacement.childNodes);
+   // Count lives in the footer; update mounted desktop/mobile cards in place.
+   const count=Array.isArray(state.detail?.item_uids)?state.detail.item_uids.filter(isUid).length:null;
+   const label=count===null?"— utilities":count+" "+(count===1?"utility":"utilities");
+   for(const badge of root.querySelectorAll(".cs-summary .cs-inline-utility-count"))
+     if(badge.textContent!==label)badge.textContent=label;
  }
  function cardMarkup(){
    const col=activeCollection(),current=state.detail;
@@ -478,8 +459,9 @@ export function initColosseumCollections(){
        '<p class="cs-utility-empty cs-utility-no-results" hidden>No utilities match your search.</p>'+
      '</div>'+(subcollections.length?'<div class="cs-subcollections"><span class="cs-subcollections-label">Subcollections · '+subcollections.length+'</span>'+subcollections.map(child=>
        '<button type="button" class="cs-subcollection-link" data-cs-jump-child="'+esc(child.collection_id)+'">'+esc(child.name)+'</button>').join("")+'</div>':'')+
-     '<div class="cs-summary"><span class="cs-dot" aria-hidden="true"></span>'+
-     '<span>Revision '+esc(current.revision)+' · '+ids.length+' '+(ids.length===1?'utility':'utilities')+' in '+esc(col.name)+'</span></div></div>';
+     '<div class="cs-summary" aria-label="Collection revision and total utilities">'+
+     '<span class="cs-card-badge cs-revision-badge" aria-label="Collection revision">Revision '+esc(current.revision)+'</span>'+
+     '<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+ids.length+' '+(ids.length===1?'utility':'utilities')+'</span></div></div>';
  }
  function filterUtilityRows(){
    const query=state.utilityQuery.trim();

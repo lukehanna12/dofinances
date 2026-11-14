@@ -255,15 +255,15 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 #cs-root .cs-utility-name{color:#fff;font-size:clamp(12px,1.15vw,14px);line-height:1.45;font-weight:500;overflow-wrap:anywhere}
 #cs-root .cs-utility-uid{font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cs-dim);font-variant-numeric:tabular-nums}
-/* The external/ported SVG is the geometric reference. Its viewBox is
-   32.1 x 26.9: rendered width / rendered height = 1.19330855. A fixed
+/* The external/ported SVG is the geometric reference. Its new viewBox is
+   28.9096 x 20.5045: rendered width / rendered height = 1.40991490. A fixed
    reference slot sits flush against the utility box's content-right edge;
    every icon's CENTER is placed exactly half a ported width from that edge,
    retaining each route image's individual height and aspect ratio. */
 #cs-root .cs-utility-route-slot{
  --cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px);
  display:flex;align-items:center;justify-content:center;
- width:calc(var(--cs-ported-route-height) * 1.19330855);
+ width:calc(var(--cs-ported-route-height) * 1.40991490);
  height:var(--cs-ported-route-height);flex:none;margin-left:auto;align-self:center;
 }
 #cs-root .cs-utility-route-icon{display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);width:auto;max-width:none;flex:none;align-self:center;object-fit:contain}
@@ -274,7 +274,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 8.96px)}
 #cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}
 #cs-root .cs-utility-empty{padding:14px 0 0;color:var(--cs-muted);font-size:14px;line-height:1.6}
-#cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
+#cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;justify-content:space-between;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
 #cs-root .cs-mobile-detail{display:none;margin-top:24px;overflow-anchor:none}
 #cs-root .cs-loading{font-size:13px;line-height:1.7;color:var(--cs-muted);padding:20px 0}
 #cs-root .cs-notice{font-size:13px;color:var(--cs-muted);line-height:1.6;padding:12px 0}
@@ -874,8 +874,8 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-utility-list{margin-top:12px}
 }
 
-/* Expanded collection: the original Utilities count pill now lives under the
-   description; its former top-right position contains the scaled controls. */
+/* Expanded collection: utility controls remain in the header while the exact
+   original total pill now shares the footer with the revision pill. */
 #cs-root{--cs-utility-bubble-height:34px}
 #cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height);padding:0 14px}
 #cs-root .cs-inline-utility-count{min-width:100px}
@@ -909,7 +909,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root .cs-utility-route-icon--cloud{aspect-ratio:24/15.6;-webkit-mask-image:url("/app/assets/cloud-utility-mask.v1.svg");mask-image:url("/app/assets/cloud-utility-mask.v1.svg")}
 #cs-root .cs-utility-route-icon--direct{aspect-ratio:29.8575/20.9553;-webkit-mask-image:url("/app/assets/direct-utility-mask.v1.svg");mask-image:url("/app/assets/direct-utility-mask.v1.svg")}
 #cs-root .cs-utility-route-icon--local{aspect-ratio:30.6624/15.7547;-webkit-mask-image:url("/app/assets/local-provider-mask.v1.svg");mask-image:url("/app/assets/local-provider-mask.v1.svg")}
-#cs-root .cs-utility-route-icon--ported{aspect-ratio:32.1/26.9;-webkit-mask-image:url("/app/assets/external-provider-mask.v1.svg");mask-image:url("/app/assets/external-provider-mask.v1.svg")}
+#cs-root .cs-utility-route-icon--ported{aspect-ratio:28.9096/20.5045;-webkit-mask-image:url("/app/assets/external-provider-mask.v2.svg");mask-image:url("/app/assets/external-provider-mask.v2.svg")}
 
 /* The original collection selection bubble enters from the right. Keep each
    utility row mounted, animate its bubble width and offset, and let the route
@@ -983,4 +983,19 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(max-width:639px){
  #cs-root .cs-member-visibility{width:19px;height:20px}
  #cs-root .cs-member-visibility svg{width:14px;height:14px}
+}
+
+/* Compact only Collection search to exactly match Refresh's square height;
+   its existing flex basis and full left/right boundaries remain unchanged. */
+#cs-root .cs-collection-search{height:32px;min-height:32px;border-radius:10px}
+#cs-root .cs-collection-search .cs-search-control{width:29px}
+#cs-root .cs-collection-search .cs-search-focus{border-radius:9px 0 0 9px}
+#cs-root .cs-collection-search .cs-search-focus img{width:14px;height:14px}
+#cs-root .cs-collection-search input[type="search"]{height:28px;font-size:12px}
+@media(max-width:639px){
+ #cs-root .cs-collection-search{height:30px;min-height:30px;border-radius:9px}
+ #cs-root .cs-collection-search .cs-search-control{width:27px}
+ #cs-root .cs-collection-search .cs-search-focus{border-radius:8px 0 0 8px}
+ #cs-root .cs-collection-search .cs-search-focus img{width:13px;height:13px}
+ #cs-root .cs-collection-search input[type="search"]{height:26px;font-size:11px}
 }
