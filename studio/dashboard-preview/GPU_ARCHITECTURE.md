@@ -248,3 +248,19 @@ sampling/viewport conversion and the GPU's original authored veil remain
 unchanged. The existing production/Collections wallpaper references are
 intentionally unaffected. The previously used rice-terraces image
 remains untouched in the production source tree.
+
+
+### AVIF direct-upload compatibility fallback
+
+The first Dashboard AVIF CI run detected a Chrome/SwiftShader-specific
+case where the browser successfully decoded the 2400×1600 AVIF, but both
+`copyExternalImageToTexture` paths rejected the native decoded image.
+On such browsers only, the renderer stages the **same unscaled 2400×1600
+raster** through a temporary 2D canvas and `GPUQueue.writeTexture`,
+using 256-byte-aligned RGBA8 rows. It neither saves nor re-encodes a
+second image, and it never reads arbitrary DOM or screen pixels. Normal
+hardware paths retain direct external-texture import. Both paths use
+the same single RGBA8unorm source texture, authored scene, and mip
+pyramid; user-requested source pixel dimensions and the original static
+AVIF bytes remain unchanged. This browser-decoder adaptation does not
+supply native Apple Liquid Glass evidence.
