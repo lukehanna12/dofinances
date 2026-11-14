@@ -195,15 +195,50 @@ async function initialize(){
   });
   if(root)root.dataset.gpuPhase="upload-scene-image";
   try{
+    // Preferred path: browser decodes original AVIF directly into GPU pixels.
     device.queue.copyExternalImageToTexture({source:img},
       {texture:photo},[photoWidth,photoHeight]);
-  }catch(error){
-    // Browser capability gap (some Safari builds accept ImageBitmap but not
-    // direct HTMLImageElement sources), not a CPU background snapshot.
-    const bitmap=await createImageBitmap(img);
-    device.queue.copyExternalImageToTexture({source:bitmap},
-      {texture:photo},[photoWidth,photoHeight]);
-    bitmap.close();
+    audit.sourceUpload="direct-image";
+  }catch(directError){
+    let bitmap=null,bitmapError=null;
+    try{
+      bitmap=await createImageBitmap(img);
+      device.queue.copyExternalImageToTexture({source:bitmap},
+        {texture:photo},[photoWidth,photoHeight]);
+      audit.sourceUpload="image-bitmap";
+    }catch(error){
+      bitmapError=error;
+    }finally{
+      bitmap?.close();
+    }
+    if(bitmapError){
+      // Some Chrome/SwiftShader combinations decode AVIF correctly but
+      // reject BOTH external-image GPU imports. Decode the same original
+      // pixels, at exactly native dimensions, into a temporary 2D surface
+      // and upload uncompressed RGBA8 pixels with correctly padded rows.
+      // This is NOT a screenshot of the DOM or a resized/re-encoded image.
+      // The AVIF source is still served unchanged, with its full 2400x1600
+      // raster preserved; GPU source texture was RGBA8 in either path.
+      const staging=document.createElement("canvas");
+      staging.width=photoWidth;staging.height=photoHeight;
+      const ctx=staging.getContext("2d",{willReadFrequently:true});
+      if(!ctx)throw new Error("AVIF GPU import unavailable and 2D staging unsupported: "+
+        String(directError)+" / "+String(bitmapError));
+      ctx.drawImage(img,0,0,photoWidth,photoHeight);
+      const rgba=ctx.getImageData(0,0,photoWidth,photoHeight).data;
+      const rowBytes=photoWidth*4;
+      const bytesPerRow=Math.ceil(rowBytes/256)*256;
+      const pixels=bytesPerRow===rowBytes?rgba:new Uint8Array(bytesPerRow*photoHeight);
+      if(bytesPerRow!==rowBytes){
+        for(let row=0;row<photoHeight;row++)
+          pixels.set(rgba.subarray(row*rowBytes,(row+1)*rowBytes),row*bytesPerRow);
+      }
+      device.queue.writeTexture({texture:photo},pixels,
+        {bytesPerRow,rowsPerImage:photoHeight},
+        [photoWidth,photoHeight,1]);
+      audit.sourceUpload="native-size-rgba8-staging";
+      staging.width=0;staging.height=0;
+    }
   }
 
   const base="/app/assets/";
