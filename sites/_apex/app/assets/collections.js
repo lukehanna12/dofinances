@@ -32,6 +32,13 @@ export function collectionSummaryGeometry(start,end,slash,fontSize){
 }
 
 const esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+// Local, deterministic search: tokenize once, match every term across the
+// supplied text fields without polling or additional backend requests.
+export function collectionsSearchMatches(text,query){
+  const haystack=String(text??"").normalize("NFKC").toLocaleLowerCase("en-US");
+  const words=String(query??"").normalize("NFKC").toLocaleLowerCase("en-US").trim().split(/\s+/u).filter(Boolean);
+  return words.every(word=>haystack.includes(word));
+}
 const CHEVRON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
 const RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
@@ -82,6 +89,7 @@ export function initColosseumCollections(){
  const $=id=>root.querySelector("#"+id);
  const state={
    collections:[],loaded:false,activeId:null,detail:null,
+   collectionQuery:"",utilityQuery:"",
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
@@ -90,6 +98,7 @@ export function initColosseumCollections(){
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
+ const collectionSearch=$("cs-collection-search"),collectionSearchFocus=$("cs-focus-collection-search");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),contextDialog=$("cs-context-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
  let rowContextUid=null;
@@ -253,8 +262,11 @@ export function initColosseumCollections(){
    }finally{clearTimeout(timer);}
  }
  const activeCollection=()=>state.collections.find(item=>item.collection_id===state.activeId)||null;
- const pageCount=()=>Math.max(1,Math.ceil(state.collections.length/state.pageSize));
- const pageItems=()=>state.collections.slice((state.page-1)*state.pageSize,state.page*state.pageSize);
+ const matchingCollections=()=>state.collectionQuery.trim()?
+   state.collections.filter(col=>collectionsSearchMatches([col.name,col.description,col.collection_id].join(" "),state.collectionQuery)):
+   state.collections;
+ const pageCount=()=>Math.max(1,Math.ceil(matchingCollections().length/state.pageSize));
+ const pageItems=()=>matchingCollections().slice((state.page-1)*state.pageSize,state.page*state.pageSize);
  const routeActive=()=>{
    const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
    return hash?hash==="colosseum/collections":
@@ -327,9 +339,9 @@ export function initColosseumCollections(){
  function renderPages(){
    const pages=pageCount();state.page=Math.min(Math.max(1,state.page),pages);
    const first=(state.page-1)*state.pageSize+1;
-   const total=state.collections.length;
+   const total=matchingCollections().length;
    $("cs-countline").textContent=state.loaded?
-     (total?first+'–'+Math.min(first+state.pageSize-1,state.collections.length)+' of '+total:'0 of 0'):"";
+     (total?first+'–'+Math.min(first+state.pageSize-1,total)+' of '+total:'0 of 0'):"";
    if(pages===1){pagination.innerHTML='';return;}
    const from=Math.max(1,Math.min(state.page-2,pages-4)),to=Math.min(pages,from+4);
    const numbers=new Set([1,pages]);for(let p=from;p<=to;p++)numbers.add(p);
@@ -348,6 +360,10 @@ export function initColosseumCollections(){
    state.renamingId=null;
    if(!state.loaded){list.innerHTML='<p class="cs-loading">Reading collections directly from Colosseum…</p>';renderPages();return;}
    if(!state.collections.length){list.innerHTML='<p class="cs-loading">No collections yet. Use New collection to create one.</p>';renderPages();return;}
+   if(!matchingCollections().length){
+     list.innerHTML='<p class="cs-loading cs-search-empty">No collections match your search.</p>';
+     renderPages();return;
+   }
    root.classList.toggle("cs-editing",state.editing);
    root.classList.toggle("cs-collection-selecting",state.collectionSelecting);
    list.innerHTML=pageItems().map(rowMarkup).join("");
@@ -406,6 +422,7 @@ export function initColosseumCollections(){
      const contextMarkup=hasContext?'<span class="cs-member-context">'+esc(annotation.context)+'</span>':"";
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
+     const searchIndex=esc([item.name||uid,uid,annotation.context,routes||""].join(" "));
      const content=(state.selecting?
        '<input type="checkbox" class="cs-checkbox" data-cs-uid="'+uid+'" aria-label="Select '+esc(item.name||uid)+'"'+(selected?' checked':'')+'>':
        '<span class="cs-dot" aria-hidden="true"></span>')+
@@ -414,17 +431,47 @@ export function initColosseumCollections(){
        annotationControls+
        (routeIcon?'<span class="cs-utility-route-slot"><img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'"></span>':'');
      return state.selecting?
-       '<label class="cs-utility-row">'+content+'</label>':
-       '<div class="cs-utility-row">'+content+'</div>';
+       '<label class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</label>':
+       '<div class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
    }).join("");
    return '<div class="cs-card"><div class="cs-card-heading"><span class="cs-card-label">'+FOLDER+'Utilities</span>'+
      '<span class="cs-card-badge">'+ids.length+' '+(ids.length===1?'utility':'utilities')+'</span></div>'+
+     '<div class="cs-search cs-utility-search" role="search" aria-label="Search utilities in '+esc(col.name)+'">'+
+       '<span class="cs-search-control"><button class="cs-search-focus" type="button" data-cs-focus-utility-search aria-label="Focus utility search" title="Search utilities">'+
+         '<img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>'+
+         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Search utilities</span></span></span>'+
+       '<input data-cs-utility-search type="search" aria-label="Search utility names, IDs and context" placeholder="Search utilities" autocomplete="off" spellcheck="false" value="'+esc(state.utilityQuery)+'">'+
+     '</div>'+
+     '<p class="cs-search-results" data-cs-utility-results role="status" aria-live="polite" hidden></p>'+
      '<div class="cs-utility-list" role="group" aria-label="Utilities in '+esc(col.name)+'">'+
        (names||'<p class="cs-utility-empty">This collection has no utilities yet.</p>')+
+       '<p class="cs-utility-empty cs-utility-no-results" hidden>No utilities match your search.</p>'+
      '</div>'+(subcollections.length?'<div class="cs-subcollections"><span class="cs-subcollections-label">Subcollections · '+subcollections.length+'</span>'+subcollections.map(child=>
        '<button type="button" class="cs-subcollection-link" data-cs-jump-child="'+esc(child.collection_id)+'">'+esc(child.name)+'</button>').join("")+'</div>':'')+
      '<div class="cs-summary"><span class="cs-dot" aria-hidden="true"></span>'+
      '<span>Revision '+esc(current.revision)+' · '+ids.length+' '+(ids.length===1?'utility':'utilities')+' in '+esc(col.name)+'</span></div></div>';
+ }
+ function filterUtilityRows(){
+   const query=state.utilityQuery.trim();
+   for(const card of root.querySelectorAll(".cs-card")){
+     const input=card.querySelector("[data-cs-utility-search]");
+     if(!input)continue;
+     if(input.value!==state.utilityQuery)input.value=state.utilityQuery;
+     const rows=[...card.querySelectorAll(".cs-utility-row")];
+     let shown=0;
+     for(const row of rows){
+       const visible=collectionsSearchMatches(row.dataset.csUtilityIndex,query);
+       row.hidden=!visible;
+       if(visible)shown++;
+     }
+     const empty=card.querySelector(".cs-utility-no-results");
+     if(empty)empty.hidden=!query||shown!==0||rows.length===0;
+     const results=card.querySelector("[data-cs-utility-results]");
+     if(results){
+       results.hidden=!query;
+       results.textContent=query?shown+" of "+rows.length+" utilities shown":"";
+     }
+   }
  }
  function renderCard(){
    const selected=!!state.activeId;
@@ -441,11 +488,13 @@ export function initColosseumCollections(){
      // the 0fr→1fr accordion track's target height in a single frame.
      mobile.classList.toggle("cs-members-ready",selected&&!!state.detail);
    }
+   filterUtilityRows();
  }
  function openCollection(id){
    if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
    if(localEditorActive()){announce("Save or cancel this collection's edits before closing or switching collections.",true,true);return;}
    const next=state.activeId===id?null:id;
+   state.utilityQuery="";
    state.activeId=next;state.selecting=false;state.selected.clear();state.detail=null;
    ++state.detailSeq;
    syncAccordion();renderCard();
