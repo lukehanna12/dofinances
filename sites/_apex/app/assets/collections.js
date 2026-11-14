@@ -217,12 +217,14 @@ export function initColosseumCollections(){
    collectionSearch.disabled=value||state.editing||state.collectionSelecting||
      state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
    collectionSearchFocus.disabled=collectionSearch.disabled;
-   root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button").forEach(button=>{
-     button.disabled=value||button.dataset.csAction==="admit"||
-       (button.dataset.csAction==="remove"&&!state.selected.size)||
-       ((button.dataset.csAction==="edit"||button.dataset.csAction==="select")&&!state.detail)||
-       (button.dataset.csAction==="select"&&!state.detail?.item_uids?.length);
+   root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button, .cs-utility-trash").forEach(button=>{
+     const action=button.dataset.csAction;
+     button.disabled=value||action==="admit"||
+       (action==="remove"&&(!state.selecting||!state.selected.size))||
+       (action==="edit"&&(state.selecting||!state.detail))||
+       (action==="select"&&(localEditorActive()||(!state.selecting&&!state.detail?.item_uids?.length)));
    });
+   syncUtilityChrome();
  }
  async function request(action,data={},firstList=false){
    const method=firstList?"GET":"POST";
@@ -276,34 +278,35 @@ export function initColosseumCollections(){
      location.pathname.replace(/\/+$/,"").toLowerCase()==="/app/colosseum/collections";
  };
  function actionMarkup(){
-   const enabled=!state.busy;
-   if(state.selecting){
-     return '<button class="cs-button cs-danger" type="button" data-cs-action="remove"'+(!enabled||!state.selected.size?' disabled':'')+
-       '>Remove'+(state.selected.size?' ('+state.selected.size+')':'')+'</button>'+
-       '<button class="cs-button" type="button" data-cs-action="cancel"'+(!enabled?' disabled':'')+'>Cancel</button>';
-   }
-   if(localEditorActive())return '<button class="cs-button cs-primary" type="button" data-cs-action="done"'+(!enabled?' disabled':'')+'>Done</button>'+
-     '<button class="cs-button" type="button" data-cs-action="discard"'+(!enabled?' disabled':'')+'>Cancel</button>'+
-     '<button class="cs-button cs-danger" type="button" data-cs-action="delete"'+(!enabled?' disabled':'')+'>Delete collection</button>';
    const ids=Array.isArray(state.detail?.item_uids)?state.detail.item_uids.filter(isUid):null;
    const count=ids?.length;
-   return '<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+
+   // The count stays beneath the description in every mode. A collection
+   // delete is still separately available while editing that collection.
+   const badge='<span class="cs-card-badge cs-inline-utility-count" aria-label="Total utilities">'+
      (count===undefined?'— utilities':count+' '+(count===1?'utility':'utilities'))+'</span>';
+   return badge+(localEditorActive()?
+     '<button class="cs-button cs-danger" type="button" data-cs-action="delete"'+(state.busy?' disabled':'')+'>Delete collection</button>':"");
  }
- // Utility controls reuse Collections' SF Symbols, shrunk to the count-pill height.
+ const UTILITY_DONE_SVG='<svg class="cs-utility-done" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m4.7 12.1 5 5.1L19.5 7.3"/></svg>';
+ // Keep all controls mounted while their native symbols crossfade to Done.
  function utilityToolbarMarkup(){
-   if(state.selecting||localEditorActive())return "";
+   const activeEdit=localEditorActive(),activeSelect=state.selecting;
    const enabled=!state.busy&&!!state.detail;
-   return '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
-     '<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
-       '<img src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true"></button>'+
-       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
-     '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="Edit utilities"'+(!enabled?' disabled':'')+'>'+
-       '<img src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"></button>'+
-       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Edit utilities</span></span></span>'+
-     '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="select" aria-label="Select utilities"'+(!enabled||!state.detail?.item_uids?.length?' disabled':'')+'>'+
-       '<img src="/app/assets/select-collections.v3.svg" alt="" aria-hidden="true"></button>'+
-       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Select utilities</span></span></span></span>';
+   return '<span class="cs-utility-management">'+
+     '<span class="cs-utility-trash-control">'+
+       '<button class="cs-utility-trash" type="button" data-cs-action="remove" aria-label="Remove selected utilities"'+(!enabled||!activeSelect||!state.selected.size?' disabled':'')+'>'+
+         '<img src="/app/assets/trash-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Remove selected utilities</span></span></span>'+
+     '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
+       '<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
+         '<img src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true"></button>'+
+         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
+       '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="'+(activeEdit?'Done editing utilities':'Edit utilities')+'" aria-pressed="'+String(activeEdit)+'"'+(!enabled||activeSelect?' disabled':'')+'>'+
+         '<img class="cs-utility-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+
+         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeEdit?'Done editing utilities':'Edit utilities')+'</span></span></span>'+
+       '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="select" aria-label="'+(activeSelect?'Done selecting utilities':'Select utilities')+'" aria-pressed="'+String(activeSelect)+'"'+(!enabled||activeEdit||(!activeSelect&&!state.detail?.item_uids?.length)?' disabled':'')+'>'+
+         '<img class="cs-utility-glyph" src="/app/assets/select-collections.v3.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+
+         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeSelect?'Done selecting utilities':'Select utilities')+'</span></span></span></span></span>';
  }
  function rowMarkup(collection,index){
    const n=(state.page-1)*state.pageSize+index+1;
@@ -441,16 +444,14 @@ export function initColosseumCollections(){
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
      const searchIndex=esc([item.name||uid,uid,annotation.context,routes||""].join(" "));
-     const content=(state.selecting?
-       '<input type="checkbox" class="cs-checkbox" data-cs-uid="'+uid+'" aria-label="Select '+esc(item.name||uid)+'"'+(selected?' checked':'')+'>':
-       '<span class="cs-dot" aria-hidden="true"></span>')+
+     const content='<span class="cs-dot" aria-hidden="true"></span>'+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
-       '<span class="cs-utility-uid">'+uid+'</span>'+contextMarkup+'</span>'+
+         '<span class="cs-utility-uid">'+uid+'</span>'+contextMarkup+'</span>'+
        annotationControls+
-       (routeIcon?'<span class="cs-utility-route-slot"><img class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" src="'+routeIcon.src+'" alt="'+routeIcon.label+'"></span>':'');
-     return state.selecting?
-       '<label class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</label>':
-       '<div class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
+       '<span class="cs-utility-trailing">'+
+       (routeIcon?'<span class="cs-utility-route-slot"><span class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" role="img" aria-label="'+routeIcon.label+'"></span></span>':"")+
+       '<button type="button" class="cs-utility-pick" data-cs-pick-utility="'+uid+'" data-cs-utility-name="'+esc(item.name||uid)+'" aria-label="'+(selected?'Deselect ':'Select ')+esc(item.name||uid)+'" aria-pressed="'+String(selected)+'"'+(!state.selecting?' disabled tabindex="-1" aria-hidden="true"':'')+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button></span>';
+     return '<div class="cs-utility-row" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
    }).join("");
    return '<div class="cs-card"><div class="cs-card-heading"><span class="cs-card-label">'+FOLDER+'Utilities</span>'+
      utilityToolbarMarkup()+'</div>'+
@@ -507,6 +508,38 @@ export function initColosseumCollections(){
      mobile.classList.toggle("cs-members-ready",selected&&!!state.detail);
    }
    filterUtilityRows();
+   syncUtilityChrome();
+ }
+ // These updates never rebuild a utility row, so entering and exiting
+ // selection genuinely animate both the bubble and the route-icon position.
+ function syncUtilityChrome(){
+   root.classList.toggle("cs-utility-selecting",state.selecting);
+   for(const card of root.querySelectorAll(".cs-card")){
+     const edit=card.querySelector('.cs-utility-toolbar [data-cs-action="edit"]');
+     const select=card.querySelector('.cs-utility-toolbar [data-cs-action="select"]');
+     const trash=card.querySelector(".cs-utility-trash");
+     const editing=localEditorActive();
+     for(const [button,active,name] of [[edit,editing,"editing"],[select,state.selecting,"selecting"]]){
+       if(!button)continue;
+       const aria=active?"Done "+name+" utilities":name==="editing"?"Edit utilities":"Select utilities";
+       button.setAttribute("aria-pressed",String(active));
+       button.setAttribute("aria-label",aria);
+       const tooltip=button.nextElementSibling?.querySelector(".cs-create-tooltip-label");
+       if(tooltip)tooltip.textContent=aria;
+       button.disabled=state.busy||!state.detail||
+         (name==="editing"?state.selecting:editing||(!state.selecting&&!state.detail.item_uids?.length));
+     }
+     if(trash)trash.disabled=state.busy||!state.selecting||!state.selected.size;
+     for(const pick of card.querySelectorAll(".cs-utility-pick")){
+       const uid=pick.dataset.csPickUtility,chosen=state.selected.has(uid);
+       pick.setAttribute("aria-pressed",String(chosen));
+       pick.setAttribute("aria-label",(chosen?"Deselect ":"Select ")+pick.dataset.csUtilityName);
+       pick.disabled=!state.selecting||state.busy;
+       pick.tabIndex=pick.disabled?-1:0;
+       if(pick.disabled)pick.setAttribute("aria-hidden","true");
+       else pick.removeAttribute("aria-hidden");
+     }
+   }
  }
  function openCollection(id){
    if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
@@ -770,23 +803,55 @@ export function initColosseumCollections(){
    }catch(error){$("cs-delete-error").textContent=error.message;announce(error.message,true);}
    finally{setBusy(false);}
  }
- async function evictSelected(){
-   if(state.busy||!state.selecting||!state.detail||!state.selected.size)return;
-   const col=activeCollection(),uids=[...state.selected],revision=state.detail.revision;
-   if(!col)return;
-   if(!confirm("Remove "+uids.length+" "+(uids.length===1?"utility":"utilities")+
-     " from "+col.name+"? This does not delete the underlying catalog items."))return;
-   setBusy(true);
-   try{
-     await request("evict",{name:col.name,item_uids:uids,expected_revision:revision});
-     state.selecting=false;state.selected.clear();
-     await loadList({focusId:col.collection_id});
-     announce(uids.length+" "+(uids.length===1?"utility evicted":"utilities evicted")+" from "+col.name+". Catalog items preserved.",false,true);
-   }catch(error){
-     announce(error.message,true);
-     if(/changed|conflict/i.test(error.message))void loadList({focusId:col.collection_id});
-   }finally{setBusy(false);syncActions();renderCard();}
+ let pendingEvict=null;
+ const evictDialog=$("cs-evict-dialog");
+ function openEvictDialog(){
+   if(state.busy||!state.selecting||!state.detail||!state.selected.size||evictDialog.open)return;
+   const col=activeCollection();
+   if(!col||!Number.isSafeInteger(state.detail.revision))return;
+   // Only selected direct members may enter the confirmation manifest.
+   const uids=state.detail.item_uids.filter(uid=>state.selected.has(uid)&&isUid(uid));
+   if(!uids.length)return;
+   const names=new Map((Array.isArray(state.detail.items)?state.detail.items:[]).filter(item=>item&&isUid(item.uid)).map(item=>[item.uid,item.name||item.uid]));
+   const list=$("cs-evict-items");
+   list.replaceChildren(...uids.map(uid=>{
+     const item=document.createElement("li");
+     item.textContent=names.get(uid)||uid;
+     return item;
+   }));
+   $("cs-evict-collection").textContent=col.name;
+   $("cs-evict-count").textContent=uids.length===1?"this utility":"these "+uids.length+" utilities";
+   $("cs-evict-error").textContent="";
+   $("cs-evict-apply").disabled=false;
+   pendingEvict={collectionId:col.collection_id,name:col.name,revision:state.detail.revision,uids};
+   evictDialog.showModal();
  }
+ async function evictSelected(){
+   const pending=pendingEvict,col=activeCollection();
+   if(!pending||!evictDialog.open||state.busy||!state.selecting||!state.detail||
+      !col||col.collection_id!==pending.collectionId||
+      col.name!==pending.name||state.detail.revision!==pending.revision||
+      pending.uids.some(uid=>!state.selected.has(uid)||!state.detail.item_uids.includes(uid))){
+     if(evictDialog.open)$("cs-evict-error").textContent="The selection changed. Cancel and choose the utilities again.";
+     return;
+   }
+   setBusy(true);$("cs-evict-apply").disabled=true;$("cs-evict-error").textContent="";
+   try{
+     await request("evict",{name:pending.name,item_uids:pending.uids,expected_revision:pending.revision});
+     evictDialog.close();pendingEvict=null;
+     // Keep the selected rows mounted for the reverse 480ms transition.
+     state.selecting=false;state.selected.clear();syncUtilityChrome();syncActions();
+     const visible=[...root.querySelectorAll(".cs-utility-pick")].find(item=>item.getClientRects().length);
+     await waitForVisualMotion(visible,"width");
+     await loadList({focusId:pending.collectionId});
+     announce(pending.uids.length+" "+(pending.uids.length===1?"utility removed":"utilities removed")+
+       " from "+pending.name+". Catalog items preserved.",false,true);
+   }catch(error){
+     $("cs-evict-error").textContent=error.message;
+     announce(error.message,true);
+   }finally{setBusy(false);syncActions();syncUtilityChrome();}
+ }
+
  function sizeInlineName(field){
    const input=field?.querySelector(".cs-inline-name");
    const measure=field?.querySelector(".cs-name-measure");
@@ -1224,21 +1289,27 @@ export function initColosseumCollections(){
  function handleUtilityAction(action){
    if(!action||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
    if(action==="admit")return; // Intentionally dormant.
-   if(action==="edit"){enterLocalEditor();return;}
-   if(action==="done"){void finishLocalEditor();return;}
-   if(action==="discard"){exitLocalEditor();return;}
+   if(action==="edit"){
+     if(localEditorActive()){void finishLocalEditor();return;}
+     enterLocalEditor();return;
+   }
    if(action==="delete"){beginDelete();return;}
    if(action==="select"){
-     if(!state.detail||!state.detail.item_uids?.length)return;
-     state.selecting=true;state.selected.clear();syncActions();renderCard();return;
+     if(state.selecting){
+       state.selecting=false;state.selected.clear();syncUtilityChrome();syncActions();
+       return;
+     }
+     if(!state.detail||!state.detail.item_uids?.length||localEditorActive())return;
+     state.selecting=true;state.selected.clear();syncUtilityChrome();syncActions();
+     return;
    }
-   if(action==="cancel"){state.selecting=false;state.selected.clear();syncActions();renderCard();return;}
-   if(action==="remove")void evictSelected();
+   if(action==="remove"){openEvictDialog();return;}
  }
+
  detail.addEventListener("click",event=>{
    const child=event.target.closest("[data-cs-jump-child]");
    if(child){jumpToChild(child.dataset.csJumpChild);return;}
-   const action=event.target.closest(".cs-utility-toolbar button[data-cs-action]");
+   const action=event.target.closest(".cs-utility-management button[data-cs-action]");
    if(action&&!action.disabled)handleUtilityAction(action.dataset.csAction);
  });
  // Edit the membership in the currently open collection, never the catalog item.
@@ -1290,14 +1361,15 @@ export function initColosseumCollections(){
    if(button.hasAttribute("data-cs-open")){openCollection(button.dataset.csOpen);return;}
    handleUtilityAction(button.dataset.csAction);
  });
- root.addEventListener("change",event=>{
-   const checkbox=event.target.closest(".cs-checkbox");
-   if(!checkbox||!state.selecting||state.busy)return;
-   const uid=checkbox.dataset.csUid;if(!isUid(uid))return;
-   if(checkbox.checked)state.selected.add(uid);else state.selected.delete(uid);
-   // Mirror selection in the responsive copy without rebuilding focused inputs.
-   root.querySelectorAll(".cs-checkbox").forEach(other=>{if(other!==checkbox&&other.dataset.csUid===uid)other.checked=checkbox.checked;});
-   syncActions();
+ root.addEventListener("click",event=>{
+   const button=event.target.closest(".cs-utility-pick");
+   if(!button||button.disabled||!state.selecting||state.busy||!state.detail)return;
+   const uid=button.dataset.csPickUtility;
+   if(!isUid(uid)||!state.detail.item_uids?.includes(uid))return;
+   if(state.selected.has(uid))state.selected.delete(uid);
+   else state.selected.add(uid);
+   // Both responsive copies reflect the same transient set in place.
+   syncUtilityChrome();
  });
  // Both searches are local projections of already-loaded Colosseum data.
  // Never repaint the utilities card on each keystroke: preserving the input
@@ -1406,11 +1478,17 @@ export function initColosseumCollections(){
    $("cs-delete-apply").disabled=$("cs-delete-confirm-name").value!==state.detail?.name||state.busy;
  });
  $("cs-delete-apply").addEventListener("click",()=>void deleteCollection());
+ $("cs-evict-cancel").addEventListener("click",()=>{if(!state.busy)evictDialog.close();});
+ $("cs-evict-apply").addEventListener("click",()=>void evictSelected());
+ evictDialog.addEventListener("close",()=>{pendingEvict=null;});
+ evictDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  editDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  deleteDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  window.addEventListener("hashchange",()=>{
    if(routeActive()){if(!localEditorActive())void loadList();return;}
    if(state.localEditingId)exitLocalEditor();
+   if(state.selecting){state.selecting=false;state.selected.clear();syncUtilityChrome();}
+   if(evictDialog.open&&!state.busy)evictDialog.close();
    if(state.editing||state.editTransitioning)resetEditMode();
    if(state.collectionSelecting||state.collectionSelectTransitioning)resetCollectionSelectMode();
  });
