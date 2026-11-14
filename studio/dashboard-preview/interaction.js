@@ -41,6 +41,18 @@ export function createInteractionController(){
     focus=hasPointer?hit(px,py):-1;
     if(focus<0)pressed=false;
   }
+  // Update moving GPU hit regions without rebuilding the hover springs.
+  function retargetRects(data){
+    if(!(data instanceof Float32Array)||data.length!==bounds.length*TILE_FLOATS)
+      throw new TypeError("Translated 20-float tile data required");
+    for(let i=0;i<bounds.length;i++){
+      const p=i*TILE_FLOATS,b=bounds[i];
+      b[0]=data[p];b[1]=data[p+1];b[2]=data[p+2];b[3]=data[p+3];
+    }
+    const target=hasPointer?hit(px,py):-1;
+    if(target!==focus)pressed=false;
+    focus=target;
+  }
   function move(x,y){
     if(!Number.isFinite(x)||!Number.isFinite(y)){clear();return -1;}
     const previous=focus, oldX=px, oldY=py;
@@ -96,7 +108,7 @@ export function createInteractionController(){
     }
   }
   return {
-    configure,move,setPressed,clear,advance,writeTo,
+    configure,retargetRects,move,setPressed,clear,advance,writeTo,
     get focusedTile(){return focus;},
     get isPressed(){return pressed;},
     get count(){return state.length;},

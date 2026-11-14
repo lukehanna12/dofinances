@@ -56,6 +56,18 @@ export const CLEAR_FACE_INPUTS=Object.freeze({
     fillWhiteAlpha:Math.fround(.05)})
 });
 export const BROWSER_TINT_FILM_STRENGTH=.25;
+const HEX_COLOR=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+export function normalizeTintHex(hex){
+  if(typeof hex!=="string")throw new TypeError("Hex tint must be a string");
+  const token=hex.startsWith("#")?hex:"#"+hex;
+  if(!HEX_COLOR.test(token))throw new RangeError("Hex tint must be RGB or RRGGBB");
+  const chars=token.slice(1).toLowerCase();
+  return "#"+(chars.length===3?[...chars].map(c=>c+c).join(""):chars);
+}
+export function rgbFromHex(hex){
+  const code=normalizeTintHex(hex).slice(1);
+  return Object.freeze([0,2,4].map(i=>Math.fround(parseInt(code.slice(i,i+2),16)/255)));
+}
 export function browserFaceColor(rgb,scheme="dark"){
   const face=CLEAR_FACE_INPUTS[scheme];
   if(!face)throw new RangeError("Unknown scheme");
@@ -91,7 +103,8 @@ export function tintParameters(name="none",opacity,scheme="dark"){
       nativeHueProven:false,nativeCompositorProven:false
     });
   }
-  const entry=TINT_COLORS[name];
+  const hex=typeof name==="string"&&HEX_COLOR.test(name)?normalizeTintHex(name):null;
+  const entry=hex?{rgb:rgbFromHex(hex),opacity:.75,label:hex}:TINT_COLORS[name];
   if(!entry)throw new RangeError("Unknown tint preset");
   const rawOpacity=opacity===undefined?entry.opacity:Number(opacity);
   if(!Number.isFinite(rawOpacity)||rawOpacity<0||rawOpacity>1)throw new RangeError("Invalid opacity");
@@ -102,7 +115,7 @@ export function tintParameters(name="none",opacity,scheme="dark"){
   // These palette entries are explicitly authored sRGB values.
   const rgb=entry.rgb.map(x=>Math.fround(x));
   return Object.freeze({
-    name,opacity:Math.fround(active?rawOpacity:0),scheme,active,
+    name:hex||name,opacity:Math.fround(active?rawOpacity:0),scheme,active,
     rgb:Object.freeze(rgb),filterCount:active?3:2,
     observedOpacity:active&&OBSERVED_OPACITIES.some(v=>Math.fround(v)===Math.fround(rawOpacity)),
     evidenceId:"E-P-SWIFTUI-TINT-SCHEME-NATIVE-FINITE",
@@ -122,9 +135,10 @@ export function tintForTile(state,index){
 }
 export function createTintControls(onChange){
   const query=new URLSearchParams(typeof location!=="undefined"?location.search:"");
-  // Mixed comparison is the default; ?tint=none/red/etc remains supported.
-  const initialColor=TINT_COLORS[query.get("tint")]?
-    query.get("tint"):"showcase";
+  // Default is Dark + untinted. Presets, showcase and hex remain available.
+  const selected=query.get("tint");
+  const initialColor=selected==="showcase"||TINT_COLORS[selected]||
+    (typeof selected==="string"&&HEX_COLOR.test(selected))?selected:"none";
   const initialScheme=["light","dark"].includes(query.get("tintScheme"))?query.get("tintScheme"):"dark";
   const rawAlpha=query.get("tintOpacity");
   let state=tintParameters(initialColor,
@@ -155,7 +169,7 @@ export function createTintControls(onChange){
       // Do not replace any existing semantic icon title/tooltip.
       if(!tile.title||tile.dataset.dashboardTintTitle==="true"){
         tile.title=material.name==="none"?"Untinted clear glass":
-          TINT_COLORS[material.name].label+" · "+
+          (TINT_COLORS[material.name]?.label||material.name)+" · "+
             (material.opacity*100).toFixed(1)+"% tint (browser approximation)";
         tile.dataset.dashboardTintTitle="true";
       }
@@ -165,7 +179,7 @@ export function createTintControls(onChange){
     fallbackStyle();
     if(!toggle)return;
     toggle.textContent=state.name==="showcase"?"Tint · Mixed showcase":
-      "Tint · "+TINT_COLORS[state.name].label;
+      "Tint · "+(TINT_COLORS[state.name]?.label||state.name);
     toggle.setAttribute("aria-expanded",String(!panel.hidden));
     showcaseButton?.setAttribute("aria-pressed",String(state.name==="showcase"));
     for(const [key,button] of choices){
@@ -186,11 +200,14 @@ export function createTintControls(onChange){
   const api=Object.freeze({
     read:()=>({...state,rgb:[...state.rgb]}),
     setTint:(name,opacity)=>apply(name,opacity,state.scheme),
+    setHex:(hex,opacity)=>apply(normalizeTintHex(hex),opacity,state.scheme),
     setShowcase:strength=>apply("showcase",strength===undefined?1:strength,state.scheme),
     setScheme:scheme=>apply(state.name,state.opacity,scheme),
     get state(){return {...state,rgb:[...state.rgb]}}
   });
-  if(host){
+  // Hide the old bottom-left panel by default. ?tintUi=1 restores it
+  // for future experiments without affecting the hex/preset tint API.
+  if(host&&query.get("tintUi")==="1"){
     const container=document.createElement("aside");
     container.className="dashboard-tint-tool";
     container.setAttribute("aria-label","Glass tint controls");
@@ -265,8 +282,8 @@ export function createTintControls(onChange){
     panel.append(note);
     container.append(toggle,panel);
     document.body.append(container);
-    renderUI();
   }
+  renderUI();
   if(typeof window!=="undefined")window.__dashboardTintControls=api;
   return api;
 }
