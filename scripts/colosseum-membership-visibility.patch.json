@@ -98,5 +98,25 @@
       "find": "if(action===\"annotate\"){annotationRating(parameters.rating);annotationContext(parameters.context);}",
       "replacement": "if(action===\"annotate\"){annotationRating(parameters.rating);annotationContext(parameters.context);annotationVisibility(parameters.hidden);}"
     }
-  ]
+  ],
+  "deployed_version": "61a102b0-0b7e-4024-bb99-819bab1c8e5c",
+  "deployment_id": "1e7a3d46-b62b-4362-b8d3-ce659210eb74",
+  "worker_deployment_method": "Cloudflare Worker versions, 100 percent routing; inherited all 26 bindings",
+  "exports": {
+    "default": {
+      "type": "worker"
+    },
+    "ColosseumAccountVault": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "ColosseumCollectionCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "TokenCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
 }
