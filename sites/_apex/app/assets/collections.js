@@ -521,7 +521,7 @@ export function initColosseumCollections(){
        announce(error.message,true,false,error.reauthorize===true);
      }
    }
-   finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;}
+   finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();}
  }
  function syncDescriptionEditor(){
    const editor=list.querySelector(".cs-entry.cs-open [data-cs-description-editor]");
@@ -844,15 +844,15 @@ export function initColosseumCollections(){
    editButton.setAttribute("aria-label",state.editing?"Done editing collections":"Edit collections");
    editButton.setAttribute("aria-pressed",String(state.editing));
    editButton.setAttribute("aria-busy",String(root.classList.contains("cs-closing-for-edit")));
-   editButton.disabled=state.busy||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
+   editButton.disabled=state.busy||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
    $("cs-edit-tooltip-label").textContent=state.editing?"Done editing":"Edit collections";
    selectButton.setAttribute("aria-label",state.collectionSelecting?"Done selecting collections":"Select collections");
    selectButton.setAttribute("aria-pressed",String(state.collectionSelecting));
    selectButton.setAttribute("aria-busy",String(root.classList.contains("cs-closing-for-selection")));
-   selectButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelectTransitioning;
+   selectButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
    $("cs-select-tooltip-label").textContent=state.collectionSelecting?"Done selecting":"Select collections";
-   refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
-   createButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
+   refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
+   createButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
    syncRowEditing();
  }
  async function waitForVisualMotion(element,property){
@@ -1138,6 +1138,7 @@ export function initColosseumCollections(){
    }
  });
  function jumpToChild(id){
+   if(localEditorActive()){announce("Save or cancel this collection's edits before switching collections.",true,true);return;}
    const index=state.collections.findIndex(x=>x.collection_id===id);
    if(index<0)return;
    state.page=Math.floor(index/state.pageSize)+1;
@@ -1150,7 +1151,7 @@ export function initColosseumCollections(){
  // Edit the membership in the currently open collection, never the catalog item.
  // Delegation covers the desktop detail and its mobile accordion counterpart.
  root.addEventListener("click",event=>{
-   if(!state.editing||state.editTransitioning||state.busy)return;
+   if(!localEditorActive()||state.busy)return;
    const button=event.target.closest?.("button");
    if(!button)return;
    if(button.hasAttribute("data-cs-member-context")){
@@ -1159,6 +1160,11 @@ export function initColosseumCollections(){
    if(button.hasAttribute("data-cs-member-clear")){
      const uid=button.dataset.csMemberClear;
      if(isUid(uid))stageMemberAnnotation(uid,{rating:null});
+     return;
+   }
+   if(button.hasAttribute("data-cs-member-zero")){
+     const uid=button.dataset.csMemberZero;
+     if(isUid(uid))stageMemberAnnotation(uid,{rating:0});
      return;
    }
    if(button.hasAttribute("data-cs-member-rating")){
@@ -1172,6 +1178,9 @@ export function initColosseumCollections(){
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
+   if(button.hasAttribute("data-cs-description-start")){beginDescriptionEdit();return;}
+   if(button.hasAttribute("data-cs-description-confirm")){confirmDescriptionEdit();return;}
+   if(button.hasAttribute("data-cs-description-cancel")){cancelDescriptionEdit();return;}
    if(button.hasAttribute("data-cs-pick")){toggleCollectionPick(button);return;}
    if(button.hasAttribute("data-cs-start-rename")){beginInlineRename(button);return;}
    if(button.hasAttribute("data-cs-confirm-rename")&&state.renamingId===button.dataset.csConfirmRename){
@@ -1188,7 +1197,10 @@ export function initColosseumCollections(){
    if(button.hasAttribute("data-cs-open")){openCollection(button.dataset.csOpen);return;}
    const action=button.dataset.csAction;if(!action)return;
    if(action==="admit")return; // Intentionally dormant.
-   if(action==="edit"){openForm("edit");return;}
+   if(action==="edit"){enterLocalEditor();return;}
+   if(action==="done"){void finishLocalEditor();return;}
+   if(action==="discard"){exitLocalEditor();return;}
+   if(action==="delete"){beginDelete();return;}
    if(action==="select"){
      if(!state.detail||!state.detail.item_uids?.length)return;
      state.selecting=true;state.selected.clear();syncActions();renderCard();return;
@@ -1207,14 +1219,14 @@ export function initColosseumCollections(){
  });
  pagination.addEventListener("click",event=>{
    const button=event.target.closest("[data-cs-page]");
-   if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
+   if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive())return;
    const requested=button.dataset.csPage;
    const page=requested==="prev"?state.page-1:requested==="next"?state.page+1:Number(requested);
    if(!Number.isInteger(page)||page<1||page>pageCount()||page===state.page)return;
    state.page=page;state.activeId=null;state.detail=null;state.selecting=false;state.selected.clear();++state.detailSeq;
    renderRows();renderCard();
  });
- refreshButton.addEventListener("click",()=>{if(!state.busy)void loadList();});
+ refreshButton.addEventListener("click",()=>{if(!state.busy&&!localEditorActive())void loadList();});
  // Refresh the current Collections inventory on Control-Shift-R. This
  // follows the other route-scoped shortcuts without changing form inputs.
  window.addEventListener("keydown",event=>{
@@ -1229,7 +1241,7 @@ export function initColosseumCollections(){
    event.preventDefault();
    void loadList();
  },{capture:true});
- createButton.addEventListener("click",()=>openForm("create"));
+ createButton.addEventListener("click",()=>{if(!localEditorActive())openForm("create");});
  editButton.addEventListener("click",toggleEditMode);
  selectButton.addEventListener("click",toggleCollectionSelectMode);
  // Match the tooltip's ⇧⌘N hint without interfering with inputs, other
@@ -1258,6 +1270,11 @@ export function initColosseumCollections(){
       target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
    event.preventDefault();toggleEditMode();
  },{capture:true});
+ list.addEventListener("keydown",event=>{
+   if(!event.target.matches?.("[data-cs-description-input]"))return;
+   if(event.key==="Escape"){event.preventDefault();cancelDescriptionEdit();}
+   if(event.key==="Enter"&&(event.metaKey||event.ctrlKey)){event.preventDefault();confirmDescriptionEdit();}
+ });
  $("cs-context-save").addEventListener("click",()=>saveRowContext());
  $("cs-context-clear").addEventListener("click",()=>saveRowContext(true));
  $("cs-context-cancel").addEventListener("click",()=>contextDialog.close());
@@ -1273,7 +1290,8 @@ export function initColosseumCollections(){
  editDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  deleteDialog.addEventListener("cancel",event=>{if(state.busy)event.preventDefault();});
  window.addEventListener("hashchange",()=>{
-   if(routeActive()){void loadList();return;}
+   if(routeActive()){if(!localEditorActive())void loadList();return;}
+   if(state.localEditingId)exitLocalEditor();
    if(state.editing||state.editTransitioning)resetEditMode();
    if(state.collectionSelecting||state.collectionSelectTransitioning)resetCollectionSelectMode();
  });
