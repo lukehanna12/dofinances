@@ -1,11 +1,12 @@
 /* Isolated Dashboard: browser-authored seven-lane slow vertical track.
  * Six original grid rows and a seventh, initially transparent entry row.
- * Fade out between the original top row and one row above; fade in
- * between the new row beneath the bottom and the original bottom row.
+ * Fade across two row pitches at each end: slot -1 to +1 above,
+ * and slot +6 to +4 below. Both edges always have a partial row.
  * This does not represent a recovered Apple Liquid Glass parameter.
  */
 export const TRACK_ROWS=7;
 export const TRACK_LANES=7;
+export const TRACK_FADE_ROWS=2;
 export const TRACK_SECONDS=84/1.15; // precisely 15% faster than the previous 84s cycle
 const smooth=t=>{
   const x=Math.max(0,Math.min(1,t));
@@ -31,6 +32,6 @@ export function trackPosition(row,phase){
     ((raw+1)%TRACK_LANES+TRACK_LANES)%TRACK_LANES-1;
   return Object.freeze({
     slot,deltaRows:slot-row,
-    opacity:smooth(slot+1)*smooth(6-slot)
+    opacity:smooth((slot+1)/TRACK_FADE_ROWS)*smooth((6-slot)/TRACK_FADE_ROWS)
   });
 }
