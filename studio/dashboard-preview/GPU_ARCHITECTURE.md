@@ -303,3 +303,25 @@ layout signature suppresses redundant ResizeObserver calls, and source
 quality and all glass optical equations are preserved. CI uses CDP
 viewport-size overrides and asserts eventual 1:1 canvas geometry,
 full-source preservation, GPU re-render and completed resize fences.
+
+
+## 2026-11-14 resize: continuous tint and appearance preservation
+
+Follow-up regression: the prior resizing handoff exposed the **CSS glass**
+when GPUScene was set to `resizing`. That fallback uses a different
+background/tint/face approximation and cannot preserve the WebGPU material.
+Consequently, red/blue/other pigments and the light/dark Clear face
+visibly flashed while resizing even though the geometry was already
+corrected.
+
+The revised isolated preview **never switches material pipelines** for a
+resize. The browser's resize event and pre-paint ResizeObserver delivery
+immediately call `engine.rebuild()` and `engine.render()` in the same JS
+task, updating the physical GPU canvas, native 2400×1600 AVIF source cover
+fit, real GPU mip chain and 42 tile positions before yielding for paint.
+The WebGPU canvas remains opaque/visible and the GLSL/WGSL tint/scheme
+uniforms retain their selected state. GPU fence completion is telemetry,
+NOT a trigger to reveal a differently colored material. Source-backed
+shader calculations and browser approximation labels are unchanged.
+Node and Chrome GPU CI verify no CSS scene transitions and retain named
+tint/appearance settings across four physical viewport changes.

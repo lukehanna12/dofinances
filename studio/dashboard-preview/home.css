@@ -448,18 +448,11 @@ body:has(> #workspace-shell .dashboard-home){
 body[data-gpu-scene="ready"] #dashboard-webgpu-scene{
   opacity:1;
 }
-/* During a viewport change, the CSS image and square materials reflow in
-   native layout immediately. Hide the old-size GPU surface until its new
-   scene, mip levels, and instanced glass have all been submitted.
-   Never animate/fade the handoff or rescale stale canvas pixels. */
-body[data-gpu-scene="resizing"] #dashboard-webgpu-scene{
-  opacity:0!important;
+/* Never swap back to CSS glass during a resize. It has different tint
+   and light/dark face equations from WebGPU, causing a material-color flash.
+   Window resize synchronously updates the GPU canvas backing size and frame. */
+#dashboard-webgpu-scene{
   transition:none!important;
-}
-body[data-gpu-scene="resizing"] #workspace-shell{
-  position:relative;
-  z-index:1;
-  background:transparent;
 }
 body[data-gpu-scene="ready"]::before{
   content:none!important;

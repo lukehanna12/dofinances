@@ -70,17 +70,22 @@ test("one occupied tile maps CSS geometry to physical pixels without screenshot"
   const radius=nativePublicBlurRadius("clear",75,75);
   assert.equal(data[6],observedBlurWord(radius,1,.25));
 });
-test("responsive resize never presents an out-of-date GPU backing surface",()=>{
+test("responsive resize keeps GPU tint and scheme visible without a CSS material switch",()=>{
   const js=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
   const css=fs.readFileSync(new URL("./dashboard-home.css",import.meta.url),"utf8");
-  assert.match(js,/document\.body\.dataset\.gpuScene="resizing"/);
+  assert.match(js,/audit\.resizePresentation="continuous-webgpu"/);
   assert.match(js,/audit\.resizePending=true/);
   assert.match(js,/device\.queue\.onSubmittedWorkDone\(\)\.then/);
   assert.match(js,/generation!==resizeGeneration/);
-  assert.match(js,/engine\.rebuild\(\);[\s\S]*?engine\.render\(\)/);
-  assert.match(css,/body\[data-gpu-scene="resizing"\] #dashboard-webgpu-scene/);
-  assert.match(css,/opacity:0!important/);
-  assert.match(css,/transition:none!important/);
+  assert.match(js,/engine\.rebuild\(\);\s*engine\.render\(\)/);
+  assert.doesNotMatch(js,/document\.body\.dataset\.gpuScene="resizing"/);
+  assert.doesNotMatch(css,/body\[data-gpu-scene="resizing"\]/);
+  assert.match(css,/#dashboard-webgpu-scene\{\s*transition:none!important;/);
+  const resizeBlock=js.slice(js.indexOf("const onSize=()=>{"),
+    js.indexOf("// The explicit invalidation contract"));
+  assert.ok(resizeBlock.indexOf("engine.render()")<
+    resizeBlock.indexOf("device.queue.onSubmittedWorkDone()"));
+  assert.doesNotMatch(resizeBlock,/requestAnimationFrame/);
 });
 test("real-mip architecture explicit compute, LOD and textureLoad",()=>{
   const path=x=>new URL(x,import.meta.url);

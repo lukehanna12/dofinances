@@ -272,30 +272,53 @@ def run():
                             raise RuntimeError("Mode switch rebuilt backdrop mips "+str(after))
                         if mode5_check.get("status")!="ready":
                             raise RuntimeError("Mode5 GPU renderer fell back "+str(after))
-                        # Resize the actual Chrome viewport twice using CDP.
-                        # The CSS fallback must immediately respond while a
-                        # new GPU scene/mip chain is prepared. Only once
-                        # the GPU queue has completed may the canvas reappear.
-                        for width,height in ((620,530),(980,710)):
-                            prior=mode5_check.get("resizeCompletions",0)
+                        # Real WebGPU must stay continuously visible during
+                        # rapid viewport changes. Test BOTH schemes and colors:
+                        # CSS fallback is a different optical model and may
+                        # never be exposed as an intermediate resize frame.
+                        cdp_eval(ws,counter,
+                            "(()=>{window.__resizeSceneTransitions=[];"
+                            "const obs=new MutationObserver(items=>{for(const m of items){"
+                            "if(m.attributeName==='data-gpu-scene')"
+                            "window.__resizeSceneTransitions.push(document.body.dataset.gpuScene)"
+                            "}});"
+                            "obs.observe(document.body,{attributes:true,"
+                            "attributeFilter:['data-gpu-scene']});"
+                            "window.__resizeSceneObserver=obs;return true})()")
+                        for width,height,scheme,name in (
+                            (620,530,"light","cyan"),
+                            (980,710,"dark","purple"),
+                            (700,620,"light","orange"),
+                            (900,660,"dark","blue")
+                        ):
+                            # Set the material and scheme before the viewport
+                            # change so the renderer must carry them through.
+                            cdp_eval(ws,counter,
+                                "(()=>{window.__dashboardTintControls.setTint("+
+                                json.dumps(name)+",.75);"
+                                "window.__dashboardTintControls.setScheme("+
+                                json.dumps(scheme)+");return true})()")
+                            previous=mode5_check.get("resizeSubmissions",0)
                             cdp_command(ws,counter,"Emulation.setDeviceMetricsOverride",{
                                 "width":width,"height":height,"deviceScaleFactor":1,
                                 "mobile":False
                             })
                             reached=None
-                            for _ in range(90):
-                                time.sleep(.12)
+                            for _ in range(100):
+                                time.sleep(.08)
                                 sample=json.loads(cdp_eval(ws,counter,expr))
                                 current=sample.get("audit") or {}
-                                if current.get("resizePending") and sample.get("body")=="ready":
-                                    raise RuntimeError("Stale canvas exposed during active resize")
+                                if sample.get("body")!="offscreen-proof":
+                                    raise RuntimeError("Material renderer switched during resize "+str(sample))
                                 if sample.get("windowHeight")==height and (
-                                    current.get("resizeCompletions",0)>prior and
-                                    not current.get("resizePending")):
+                                    current.get("resizeSubmissions",0)>previous and
+                                    not current.get("resizePending") and
+                                    (current.get("tint") or {}).get("name")==name and
+                                    (current.get("tint") or {}).get("scheme")==scheme):
                                     reached=sample
                                     break
                             if reached is None:
-                                raise RuntimeError("GPU resize did not settle "+str(sample))
+                                raise RuntimeError("GPU resize/scheme did not settle "+str(sample))
                             cur=reached["audit"]
                             top=(reached.get("upperBar") or {}).get("bottom")
                             rect=reached.get("canvas") or {}
@@ -303,18 +326,26 @@ def run():
                                 raise RuntimeError("Viewport and canvas width diverged "+str(reached))
                             if top is None or abs(rect.get("top",0)-top)>.6 or (
                                 abs(rect.get("height",0)-(height-top))>.6):
-                                raise RuntimeError("Canvas visible region diverged "+str(reached))
+                                raise RuntimeError("Canvas region diverged "+str(reached))
+                            if cur.get("resizePresentation")!="continuous-webgpu":
+                                raise RuntimeError("Resize is not continuous WebGPU "+str(reached))
                             if cur.get("sceneBuilds",0)<=before_scene_builds or (
                                 cur.get("sourcePixels")!=[2400,1600]):
-                                raise RuntimeError("Resize omitted scene rebuild or changed AVIF "+str(reached))
+                                raise RuntimeError("Resize omitted scene rebuild or altered AVIF "+str(reached))
                             if cur.get("status")!="ready" or cur.get("tiles")!=42:
                                 raise RuntimeError("Resize degraded GPU glass "+str(reached))
+                            if (cur.get("tintCounts") or {}).get(name)!=42:
+                                raise RuntimeError("Per-block tints desynchronized "+str(reached))
                             mode5_check=cur
+                        transitions=cdp_eval(ws,counter,
+                            "JSON.stringify(window.__resizeSceneTransitions)")
+                        if json.loads(transitions or "[]"):
+                            raise RuntimeError("GPU material changed during resize "+str(transitions))
                         print("GPU_RESPONSIVE_RESIZE "+json.dumps({
-                            "width":width,"height":height,
-                            "sceneBuilds":cur.get("sceneBuilds"),
+                            "width":width,"height":height,"scheme":scheme,
+                            "tint":name,"sceneBuilds":cur.get("sceneBuilds"),
                             "resizeEvents":cur.get("resizeEvents"),
-                            "resizeCompletions":cur.get("resizeCompletions")
+                            "resizeSubmissions":cur.get("resizeSubmissions")
                         },sort_keys=True))
                         print("GPU_BOTH_SDF_BRANCHES "+json.dumps({
                             "mode4":modes.get("mode4"),"mode5":modes.get("mode5"),

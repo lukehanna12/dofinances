@@ -594,53 +594,45 @@ async function initialize(){
     activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
   });
   audit.interaction="per-tile browser-only hover/press spring, pointer/touch/pen";
-  // Resize contract:
-  // 1. A genuine layout change immediately switches presentation to the
-  //    native-size CSS wallpaper + responsive CSS glass.
-  // 2. Rebuild scene/mips + new tile geometry together in one rAF. Render
-  //    the correctly sized result before exposing the canvas again.
-  // 3. Fence the GPU queue; older completions may never reveal stale frames.
-  // No old swapchain texture may be rescaled as the CSS viewport changes.
-  let sizeQueued=false,resizeGeneration=0;
+  // Continuous-GPU resize contract:
+  // CSS glass and WebGPU glass use DIFFERENT face/color models. Switching
+  // to CSS glass during resize caused the user-visible tint/scheme flash.
+  // Never change the presentation mode when the window is resized.
+  // The resize event (or pre-paint ResizeObserver delivery) synchronously
+  // updates the backing dimensions, scene, mip pyramid and tile geometry,
+  // then submits a matching GPU frame before returning to the browser.
+  // An older GPU canvas is never laid out at the new CSS size for a paint.
+  // GPU completion is recorded for telemetry, never used as a color swap.
+  let resizeGeneration=0;
   const layoutKey=()=>{
     const viewport=actualSceneViewport(),b=root.getBoundingClientRect();
     return [innerWidth,innerHeight,devicePixelRatio||1,viewport.top,
       viewport.height,b.left,b.top,b.width,b.height].join("|");
   };
   let lastLayoutKey=layoutKey();
+  audit.resizePresentation="continuous-webgpu";
+  audit.resizePending=false;
   const onSize=()=>{
     if(stopped)return;
     const nextKey=layoutKey();
     if(nextKey===lastLayoutKey)return;
     lastLayoutKey=nextKey;
-    ++resizeGeneration;
+    const generation=++resizeGeneration;
     audit.resizeEvents=(audit.resizeEvents||0)+1;
     audit.resizePending=true;
-    // Do this synchronously, BEFORE the next browser paint. The previous
-    // full-resolution GPU canvas is never stretched into the new geometry.
-    if(!OFFSCREEN_CI)document.body.dataset.gpuScene="resizing";
-    if(sizeQueued)return;
-    sizeQueued=true;
-    requestAnimationFrame(()=>{
-      sizeQueued=false;
-      if(stopped)return;
-      const generation=resizeGeneration;
-      try{
-        engine.rebuild();
-        // Submit the newly fitted backdrop, mip pyramid, and tile vertices
-        // in the SAME frame, not via a second requestAnimationFrame callback.
-        engine.render();
-        audit.resizeSubmissions=(audit.resizeSubmissions||0)+1;
-        device.queue.onSubmittedWorkDone().then(()=>{
-          if(stopped||generation!==resizeGeneration)return;
-          if(layoutKey()!==lastLayoutKey){onSize();return;}
-          audit.resizePending=false;
-          audit.resizeCompletions=(audit.resizeCompletions||0)+1;
-          if(!OFFSCREEN_CI)document.body.dataset.gpuScene="ready";
-          requestRender();
-        }).catch(fallback);
-      }catch(error){fallback(error);}
-    });
+    try{
+      // Do not defer this with requestAnimationFrame: the browser must never
+      // paint the old GPU backing pixels stretched to the new CSS viewport.
+      engine.rebuild();
+      engine.render();
+      audit.resizeSubmissions=(audit.resizeSubmissions||0)+1;
+      audit.resizeSubmittedFrame=audit.frameCount;
+      audit.resizePending=false;
+      device.queue.onSubmittedWorkDone().then(()=>{
+        if(stopped||generation!==resizeGeneration)return;
+        audit.resizeCompletions=(audit.resizeCompletions||0)+1;
+      }).catch(fallback);
+    }catch(error){fallback(error);}
   };
   // The explicit invalidation contract for future moving squares/content:
   // reflowTiles rewrites only tile positions; invalidateBackdrop triggers
