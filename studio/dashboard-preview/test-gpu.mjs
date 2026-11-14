@@ -31,10 +31,11 @@ test("one occupied tile maps CSS geometry to physical pixels without screenshot"
   const tile={offsetWidth:75,offsetHeight:75,
     getBoundingClientRect:()=>({left:100,top:250,width:75,height:75})};
   const data=makeTileFloatData([tile],2);
-  assert.equal(data.length,12);
+  assert.equal(data.length,20);
   assert.deepEqual(Array.from(data.slice(0,6)),[200,500,150,150,24,Math.fround(.12)]);
   assert.equal(data[7],4);
-  assert.deepEqual(Array.from(data.slice(8)),[-24,-24,-24,-24]);
+  assert.deepEqual(Array.from(data.slice(8,12)),[-24,-24,-24,-24]);
+  assert.deepEqual(Array.from(data.slice(12)),[0,0,75,75,0,0,0,0]);
   const radius=nativePublicBlurRadius("clear",75,75);
   assert.equal(data[6],observedBlurWord(radius,1,.25));
 });
