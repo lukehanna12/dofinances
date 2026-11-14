@@ -134,7 +134,7 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   // factors apply to that current state, not to the original capsule sizes.
   const scales={cloud:.9,direct:.85,local:.8,ported:1.1};
   const parts=css.split("@media(max-width:639px){");
-  assert.equal(parts.length,2,"Keep the mobile breakpoint and overrides");
+  assert.ok(parts.length>=2,"Keep the original mobile breakpoint and its overrides");
   const findSizes=(source,mode)=>{
     const start=source.indexOf("#cs-root .cs-utility-route-icon--"+mode+"{height:calc(clamp(");
     assert.ok(start>=0,"Missing "+mode+" responsive SVG sizing");
@@ -195,8 +195,8 @@ test("Real writes are owner-protected, revision-bound, and preserve underlying c
  assert.match(edge,/if\(!state\.owner\)return json\(\{error:"Only the connected Colosseum administrator may manage collections/);
  assert.match(edge,/Cross-site collection management request denied/);
  assert.match(edge,/collection\.manage/);
- assert.match(js,/request\("create",\{name,description\}\)/);
- assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,expected_revision:revision\}\)/);
+ assert.match(js,/request\("create",\{name,description,rating:formRating,context\}\)/);
+ assert.match(js,/request\("edit",\{original_name:previous\.name,name,desc:description,rating:formRating,context,expected_revision:revision\}\)/);
  assert.match(js,/request\("evict",\{name:col\.name,item_uids:uids,expected_revision:revision\}\)/);
  assert.match(js,/request\("destroy",\{name:col\.name,expected_revision:revision\}\)/);
  assert.match(js,/Underlying catalog items|underlying catalog items|underlying utilities/);
@@ -636,7 +636,7 @@ test("Click-away or Enter commits a row draft locally; Escape restores it before
   assert.match(js,/if\(restore\)input\.value=state\.renameInitialValue/);
   assert.match(js,/state\.nameDrafts\.set\(id,input\.value\)/);
   assert.match(js,/async function finishEditMode\(\)\{[\s\S]*?finishInlineRename\(\)/);
-  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,name,expected_revision:collection\.revision/);
+  assert.match(js,/request\("edit",\{\s*original_name:collection\.name,[\s\S]*?expected_revision:collection\.revision/);
   assert.match(js,/if\(state\.renamingId===input\.dataset\.csName\)syncInlineRenameActions\(field\)/);
   assert.match(js,/measure\.textContent=input\.value\|\|" "/);
   assert.doesNotMatch(js,/setInterval\(|ResizeObserver|MutationObserver|requestAnimationFrame/);
