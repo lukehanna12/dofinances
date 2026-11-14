@@ -325,3 +325,37 @@ NOT a trigger to reveal a differently colored material. Source-backed
 shader calculations and browser approximation labels are unchanged.
 Node and Chrome GPU CI verify no CSS scene transitions and retain named
 tint/appearance settings across four physical viewport changes.
+
+
+## 2026-11-14 slow upward loop, soft transparent wrap, Dark Clear default
+
+The isolated preview's original 42 occupied blocks now move upward
+on a **168-second continuous vertical track**, equivalent to one row
+pitch every 24 seconds. The original six-row mosaic circulates over a
+seven-pitch closed path: one additional lane beneath the former bottom
+row allows squares leaving the top to teleport **only at alpha zero**,
+then fade into the old bottom row as they travel upward. Leaving
+squares fade over the pitch from the original top row to one row above.
+Both transitions use smoothstep opacity, not an abrupt visibility toggle.
+
+The browser-authored motion is computed once per rendered frame in
+`track.js` and drives the same per-tile physical y-offset and opacity
+for GPU glass and semantic DOM SVG icons. The moving hitboxes are
+retargeted without discarding per-tile spring state; wallpaper
+composition, 2400×1600 original AVIF, mipmaps, and the static hero
+title/CTA are **not** recomputed or moved on motion frames. The motion
+targets 30 fps and pauses when the user requests reduced motion.
+
+The preview now defaults to **Dark appearance, no tint**, and the old
+bottom-left palette is removed from the normal page. The complete
+color model and presets are retained. Arbitrary hexadecimal RGB tints
+can be applied later using
+`window.__dashboardTintControls.setHex("#aabbcc",0.75)`.
+The old palette remains optionally available with `?tintUi=1`
+only for manual testing. Neither the motion nor new pigment selection
+is represented as native Apple Liquid Glass behavior.
+
+CI validates the six-by-seven cycle, invisible wrapping, slow phase
+progression, icon movement, Dark Clear default, absence of the tint
+button, optional hex/preset preservation, and zero backdrop mip
+regeneration during motion.

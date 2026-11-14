@@ -102,7 +102,9 @@ def run():
                     upperBar:document.querySelector('#global-menu')?.getBoundingClientRect().toJSON(),
                     canvas:document.querySelector('#dashboard-webgpu-scene')?.getBoundingClientRect().toJSON(),
                     imageFrame:document.querySelector('.dashboard-home')?.getBoundingClientRect().toJSON(),
-                    windowHeight:innerHeight
+                    windowHeight:innerHeight,
+                    tintPanelVisible:!!document.querySelector('.dashboard-tint-tool'),
+                    iconTrackTransform:document.querySelector('.cta6-tile--icon')?.style.transform
                 })"""
                 deadline=time.monotonic()+TIMEOUT
                 latest={}
@@ -137,16 +139,34 @@ def run():
                         proof=audit.get("offscreenPixelProof")
                         if not isinstance(proof,list) or len(proof)!=4 or proof[3]!=255:
                             raise RuntimeError("Offscreen GPU pixel byte readback failed "+str(latest))
-                        # Initial mixed mode has 14 variants x 3 alpha tiers.
+                        # Default must be Dark with no pigment, with the
+                        # optional tint button absent from the page.
                         counts=audit.get("tintCounts") or {}
-                        hues=("none","red","orange","yellow","green","teal","cyan",
-                            "blue","indigo","purple","magenta","pink","white","black")
-                        expected={k:3 for k in hues}
+                        expected={"none":42}
                         if counts!=expected:
-                            raise RuntimeError("Expanded tint distribution missing "+str(counts))
-                        mixed=audit.get("tintShowcase") or {}
-                        if len(mixed.get("opacityTiers",[]))!=3:
-                            raise RuntimeError("Three source-recorded opacity tiers missing")
+                            raise RuntimeError("Expected 42 untinted glass squares "+str(counts))
+                        material=audit.get("tint") or {}
+                        if material.get("name")!="none" or material.get("scheme")!="dark" or (
+                            material.get("active")):
+                            raise RuntimeError("Default not Dark clear glass "+str(material))
+                        if latest.get("tintPanelVisible"):
+                            raise RuntimeError("Tint control unexpectedly visible")
+                        loop=audit.get("track") or {}
+                        if loop.get("cycleSeconds")!=168 or loop.get("rows")!=6:
+                            raise RuntimeError("Seven-lane motion contract missing "+str(loop))
+                        if not (latest.get("iconTrackTransform") or "").startswith("translate3d("):
+                            raise RuntimeError("DOM icons do not share moving GPU geometry")
+                        phase_start=loop.get("phase",0)
+                        for _ in range(20):
+                            time.sleep(.10)
+                            live=json.loads(cdp_eval(ws,counter,expr))
+                            progress=(live.get("audit") or {}).get("track") or {}
+                            if progress.get("phase",0)>phase_start+.004:
+                                break
+                        else:
+                            raise RuntimeError("Glass track failed to advance continuously")
+                        if (live.get("audit") or {}).get("sceneBuilds")!=audit.get("sceneBuilds"):
+                            raise RuntimeError("Vertical track rebuilt wallpaper mipmap chain")
                         # GPU tile movement/interaction must never invalidate
                         # the GPU-owned background or its mip pyramid.
                         before_frames=audit["frameCount"]
@@ -228,20 +248,48 @@ def run():
                             if st.get("scheme")=="light":break
                         else:
                             raise RuntimeError("Tint scheme not updated")
+                        # Future custom hexadecimal pigment support remains
+                        # available even though the button is now hidden.
                         cdp_eval(ws,counter,
-                            "window.__dashboardTintControls.setTint('none');true")
+                            "window.__dashboardTintControls.setHex('#2A7FC1',0.4);true")
+                        for _ in range(20):
+                            time.sleep(.08)
+                            custom=json.loads(cdp_eval(ws,counter,expr))
+                            ca=custom.get("audit") or {}
+                            if ca.get("tintCounts")=={"#2a7fc1":42}:
+                                break
+                        else:
+                            raise RuntimeError("Custom hex tint was lost")
+                        if ca.get("sceneBuilds")!=before_scene_builds:
+                            raise RuntimeError("Hex pigment update rebuilt backdrop mips")
+                        hues=("none","red","orange","yellow","green","teal","cyan",
+                            "blue","indigo","purple","magenta","pink","white","black")
+                        showcase={k:3 for k in hues}
                         cdp_eval(ws,counter,
                             "window.__dashboardTintControls.setShowcase();true")
                         for _ in range(20):
                             time.sleep(.08)
                             restored=json.loads(cdp_eval(ws,counter,expr))
                             state=(restored.get("audit") or {})
-                            if state.get("tintCounts")==expected:
+                            if state.get("tintCounts")==showcase:
                                 break
                         else:
-                            raise RuntimeError("Mixed tint restoration failed")
+                            raise RuntimeError("Retained optional showcase mode failed")
                         if state.get("sceneBuilds")!=before_scene_builds:
-                            raise RuntimeError("Per-tile tint changes rebuilt scene")
+                            raise RuntimeError("Tint modes rebuilt scene")
+                        cdp_eval(ws,counter,
+                            "window.__dashboardTintControls.setScheme('dark');"
+                            "window.__dashboardTintControls.setTint('none');true")
+                        for _ in range(20):
+                            time.sleep(.08)
+                            reset=json.loads(cdp_eval(ws,counter,expr))
+                            state=(reset.get("audit") or {})
+                            material=state.get("tint") or {}
+                            if state.get("tintCounts")==expected and (
+                                material.get("name")=="none" and material.get("scheme")=="dark"):
+                                break
+                        else:
+                            raise RuntimeError("Default Dark clear state not restorable")
                         # Exercise the second retained AIR SDF branch in
                         # a real GPU render, not merely WGSL compilation. The
                         # four equal native lanes select 4; one unequal
