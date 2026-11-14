@@ -723,3 +723,57 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
     will-change:auto;
   }
 }
+
+/* Collection-scoped annotations. Rating controls do not participate in accordion
+   layout measurements or the 450ms title and detail transitions. */
+#cs-root .cs-row-annotation{position:absolute;z-index:7;right:26px;top:50%;display:flex;align-items:center;gap:5px;transform:translateY(-50%);pointer-events:none}
+#cs-root .cs-row-annotation[hidden]{display:none}
+#cs-root .cs-stars{display:inline-flex;align-items:center;gap:1px;white-space:nowrap;flex:none;line-height:0}
+#cs-root .cs-star{display:block;position:relative;width:15px;height:15px;flex:none;color:#898989}
+#cs-root .cs-star svg{display:block;width:15px;height:15px;overflow:visible}
+#cs-root .cs-star-outline{position:absolute;inset:0;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linejoin:miter}
+#cs-root .cs-star-fill{position:absolute;top:0;left:0;width:var(--cs-fill,0%);height:100%;overflow:hidden}
+#cs-root .cs-star-fill svg{fill:#fff;stroke:#fff;stroke-width:.3;stroke-linejoin:miter}
+#cs-root .cs-star-half{position:absolute;top:0;bottom:0;width:50%;border:0;background:transparent;margin:0;padding:0;cursor:pointer;z-index:2}
+#cs-root .cs-star-half[data-half="left"]{left:0}
+#cs-root .cs-star-half[data-half="right"]{right:0}
+#cs-root .cs-star-half:focus-visible{outline:2px solid #fff;outline-offset:1px;border-radius:2px}
+#cs-root .cs-stars-editable .cs-star:hover{color:#fff}
+#cs-root .cs-star-clear{flex:none;background:transparent;border:0;color:#828282;font-size:17px;line-height:1;cursor:pointer;padding:1px 2px}
+#cs-root .cs-star-clear:hover,#cs-root .cs-star-clear:focus-visible{color:#fff}
+#cs-root .cs-row-annotation:not(.cs-annotation-editable){right:28px}
+#cs-root .cs-annotation-editable{pointer-events:auto;right:28px}
+#cs-root .cs-annotation-editable .cs-star{width:13px;height:13px}
+#cs-root .cs-annotation-editable .cs-star svg{width:13px;height:13px}
+#cs-root .cs-context-control{position:relative;display:inline-flex;flex:none}
+#cs-root .cs-context-button{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:#bababa;cursor:pointer}
+#cs-root .cs-context-button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+#cs-root .cs-context-button:hover,#cs-root .cs-context-button:focus-visible{color:#fff;background:#232323}
+#cs-root .cs-context-control:hover .cs-create-tooltip,
+#cs-root .cs-context-button:focus-visible + .cs-create-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#cs-root .cs-context-control .cs-create-tooltip{left:auto;right:0}
+#cs-root .cs-annotation-editable{opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s linear .16s}
+#cs-root.cs-editing .cs-annotation-editable{opacity:1;visibility:visible;transition-delay:0s}
+#cs-root.cs-editing .cs-visibility-toggle{left:66%}
+#cs-root.cs-editing .cs-name-field{right:calc(34% + 12px)}
+#cs-root .cs-trigger:has(.cs-row-rating-label){padding-right:122px}
+#cs-root.cs-editing .cs-trigger:has(.cs-row-rating-label){padding-right:24px}
+#cs-root .cs-context-text{max-width:448px;margin:8px 0 0;color:#777;font-size:clamp(12px,1.15vw,14px);line-height:1.55;font-style:italic;white-space:pre-line;overflow-wrap:anywhere}
+#cs-root .cs-context-help{display:block;margin-top:5px;color:#777;font-size:11px}
+#cs-root .cs-form-rating{display:inline-flex;align-items:center;gap:7px;min-height:29px}
+#cs-root .cs-form-rating .cs-star,#cs-root .cs-form-rating .cs-star svg{width:25px;height:25px}
+#cs-root .cs-form-rating .cs-star{color:#878787}
+#cs-root .cs-form-rating .cs-star-clear{font-size:21px}
+#cs-root .cs-modal .cs-field textarea#cs-context{min-height:72px}
+#cs-root .cs-member-annotation{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+#cs-root .cs-member-context{color:#777;font-size:12px;font-style:italic;overflow-wrap:anywhere}
+#cs-root .cs-member-annotation .cs-star,#cs-root .cs-member-annotation .cs-star svg{width:12px;height:12px}
+@media(max-width:639px){
+ #cs-root .cs-annotation-editable{right:24px;gap:2px}
+ #cs-root .cs-annotation-editable .cs-star,#cs-root .cs-annotation-editable .cs-star svg{width:11px;height:11px}
+ #cs-root .cs-context-button{width:19px;height:20px}
+ #cs-root.cs-editing .cs-visibility-toggle{left:64%}
+ #cs-root.cs-editing .cs-name-field{right:calc(36% + 10px)}
+ #cs-root .cs-trigger:has(.cs-row-rating-label){padding-right:112px}
+ #cs-root .cs-context-text{padding:0 20px 0 44px}
+}
