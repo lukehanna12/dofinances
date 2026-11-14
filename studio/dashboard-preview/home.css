@@ -23,9 +23,11 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
   isolation:isolate;
 }
 .dashboard-home .cta6-mosaic{
+  --cta6-grid-gap:clamp(6px,0.75vw,13px);
+  position:relative;
   display:grid;
   grid-template-columns:repeat(11,minmax(0,1fr));
-  gap:clamp(6px,0.75vw,13px);
+  gap:var(--cta6-grid-gap);
   width:100%;
   align-items:stretch;
 }
@@ -133,7 +135,7 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
   body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
     padding-inline:16px;
   }
-  .dashboard-home .cta6-mosaic{gap:clamp(3px,1.1vw,7px)}
+  .dashboard-home .cta6-mosaic{--cta6-grid-gap:clamp(3px,1.1vw,7px)}
   .dashboard-home .cta6-tile{border-radius:clamp(5px,1.4vw,10px)}
   .dashboard-home .cta6-center h1{font-size:clamp(17px,5vw,28px)}
   .dashboard-home .cta6-action{
@@ -544,4 +546,26 @@ body[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu{
   animation:none!important;
   transition:none!important;
   will-change:transform,opacity;
+}
+
+/* Sixth visible row is unchanged. The extra seventh lane begins
+   exactly one grid pitch beneath it but does not change grid height,
+   hero centering, or responsive text/button layout. */
+.dashboard-home .cta6-track-entry{
+  position:absolute;
+  z-index:0;
+  top:calc(100% + var(--cta6-grid-gap));
+  left:0;
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(11,minmax(0,1fr));
+  gap:var(--cta6-grid-gap);
+  pointer-events:none;
+}
+.dashboard-home .cta6-track-entry>.cta6-tile{
+  min-width:0;
+}
+/* This isolated Dashboard preview's bottom-right copyright is 50% opaque. */
+body:has(> #workspace-shell .dashboard-home) > .workspace-footer{
+  opacity:.5!important;
 }

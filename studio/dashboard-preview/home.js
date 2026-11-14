@@ -39,6 +39,9 @@ const positionIcons={
   "5:6": "Diamond",
   "5:9": "Rocket"
 };
+// Explicit additions keep the 16 original icons and original lattice intact.
+const centerGlass=new Set(["2:4","2:6","3:5"]);
+const entryGlassColumns=new Set([0,2,4,6,8,10]);
 const root=document.getElementById("cta6-mosaic");
 if(root){
   const cells=document.createDocumentFragment();
@@ -48,14 +51,28 @@ if(root){
     const center=row>=2&&row<=3&&col>=3&&col<=7;
     const name=positionIcons[`${row}:${col}`];
     const hash=43758.5453*Math.sin(127.1*row+311.7*col);
-    const filled=!center&&(hash-Math.floor(hash))>.35;
+    const filled=centerGlass.has(row+":"+col) ||
+      (!center&&(hash-Math.floor(hash))>.35);
     const tile=document.createElement("div");
-    tile.className="cta6-tile "+(center?"cta6-tile--empty":name?"cta6-tile--icon":filled?"cta6-tile--plain":"cta6-tile--empty");
+    tile.className="cta6-tile "+(name?"cta6-tile--icon":
+      filled?"cta6-tile--plain":"cta6-tile--empty");
     if(name){
       tile.innerHTML=`<svg class="cta6-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">${icons[name]}</svg>`;
     }
     tile.style.setProperty("--cta6-delay",((row+col)*.03).toFixed(2)+"s");
     cells.append(tile);
   }
-  root.replaceChildren(cells);
+  // The seventh track lane is positioned outside the six-row grid.
+  // It never participates in grid sizing or moves the central copy.
+  const entry=document.createElement("div");
+  entry.className="cta6-track-entry";
+  entry.setAttribute("aria-hidden","true");
+  for(let col=0;col<11;col++){
+    const tile=document.createElement("div");
+    tile.className="cta6-tile "+(entryGlassColumns.has(col)?
+      "cta6-tile--plain":"cta6-tile--empty");
+    tile.style.setProperty("--cta6-delay","0s");
+    entry.append(tile);
+  }
+  root.replaceChildren(cells,entry);
 }

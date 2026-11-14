@@ -1,12 +1,12 @@
 /* Isolated Dashboard: browser-authored seven-lane slow vertical track.
- * Six grid rows and one fully transparent entrance lane beneath row six.
+ * Six original grid rows and a seventh, initially transparent entry row.
  * Fade out between the original top row and one row above; fade in
  * between the new row beneath the bottom and the original bottom row.
  * This does not represent a recovered Apple Liquid Glass parameter.
  */
-export const TRACK_ROWS=6;
+export const TRACK_ROWS=7;
 export const TRACK_LANES=7;
-export const TRACK_SECONDS=168; // one row pitch every 24 seconds
+export const TRACK_SECONDS=84; // one row pitch every 12 seconds, twice as fast
 const smooth=t=>{
   const x=Math.max(0,Math.min(1,t));
   return x*x*(3-2*x);
@@ -19,7 +19,7 @@ export function phaseAtSeconds(elapsed,seconds=TRACK_SECONDS){
 }
 export function trackPosition(row,phase){
   if(!Number.isInteger(row)||row<0||row>=TRACK_ROWS)
-    throw new RangeError("Track row must be in [0,5]");
+    throw new RangeError("Track row must be in [0,6]");
   if(!Number.isFinite(phase))throw new RangeError("Finite phase required");
   const slot=((row-phase+1)%TRACK_LANES+TRACK_LANES)%TRACK_LANES-1;
   return Object.freeze({

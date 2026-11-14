@@ -441,8 +441,8 @@ async function initialize(){
     if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
     trackTiles=all;
     trackRows=all.map(cell=>rowIndex.get(cell));
-    if(trackRows.some(row=>row===undefined||row<0||row>5))
-      throw new Error("Invalid six-row moving glass geometry");
+    if(trackRows.some(row=>row===undefined||row<0||row>6))
+      throw new Error("Invalid seven-row moving glass geometry");
     const data=makeTileFloatData(all,dpr,sceneTop);
     baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
     trackOpacity=new Float32Array(all.length);
@@ -524,7 +524,7 @@ async function initialize(){
     interaction.retargetRects(tileData);
     audit.track={
       running:trackRunning,phase,elapsed:trackSeconds,
-      cycleSeconds:TRACK_SECONDS,pitchCSS,rows:6,
+      cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,
       fadedTiles:fading
     };
   }
