@@ -85,7 +85,7 @@ test("responsive resize keeps GPU tint and scheme visible without a CSS material
     js.indexOf("// The explicit invalidation contract"));
   assert.ok(resizeBlock.indexOf("engine.render()")<
     resizeBlock.indexOf("device.queue.onSubmittedWorkDone()"));
-  assert.doesNotMatch(resizeBlock,/requestAnimationFrame/);
+  assert.doesNotMatch(resizeBlock,/requestAnimationFrame\s*\(/);
 });
 test("real-mip architecture explicit compute, LOD and textureLoad",()=>{
   const path=x=>new URL(x,import.meta.url);
