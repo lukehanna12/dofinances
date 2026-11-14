@@ -119,6 +119,9 @@ jobs:
           ! grep -Fq 'Your workspace, all in one place.' dist/index.html
           grep -Fq 'cta6-center' dist/index.html
           grep -Fq 'positionIcons' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'entryGlassColumns' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'centerGlass' dist/app/assets/dashboard-mosaic.js
+          grep -Fq 'TRACK_SECONDS=84' dist/app/assets/dashboard-track.js
           ! grep -Fq 'id="workspace-sidebar"' dist/index.html
           ! grep -Fq 'id="sidebar-resize-handle"' dist/index.html
           ! grep -Fq 'id="mobile-nav-toggle"' dist/index.html

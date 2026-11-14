@@ -104,7 +104,16 @@ def run():
                     imageFrame:document.querySelector('.dashboard-home')?.getBoundingClientRect().toJSON(),
                     windowHeight:innerHeight,
                     tintPanelVisible:!!document.querySelector('.dashboard-tint-tool'),
-                    iconTrackTransform:document.querySelector('.cta6-tile--icon')?.style.transform
+                    iconTrackTransform:document.querySelector('.cta6-tile--icon')?.style.transform,
+                    allGridSlots:document.querySelectorAll('#cta6-mosaic .cta6-tile').length,
+                    entryRowSquares:document.querySelectorAll('.cta6-track-entry .cta6-tile--plain').length,
+                    centerSquares:(()=>{
+                        const tiles=[...document.querySelectorAll('#cta6-mosaic .cta6-tile')];
+                        return [26,28,38].filter(i=>tiles[i]?.classList.contains('cta6-tile--plain')).length;
+                    })(),
+                    footerOpacity:getComputedStyle(document.querySelector('.workspace-footer')).opacity,
+                    entryRowTop:document.querySelector('.cta6-track-entry')?.getBoundingClientRect().top,
+                    baseGridBottom:document.querySelector('.cta6-mosaic')?.getBoundingClientRect().bottom
                 })"""
                 deadline=time.monotonic()+TIMEOUT
                 latest={}
@@ -142,18 +151,27 @@ def run():
                         # Default must be Dark with no pigment, with the
                         # optional tint button absent from the page.
                         counts=audit.get("tintCounts") or {}
-                        expected={"none":42}
+                        expected={"none":51}
                         if counts!=expected:
-                            raise RuntimeError("Expected 42 untinted glass squares "+str(counts))
+                            raise RuntimeError("Expected 51 untinted glass squares "+str(counts))
                         material=audit.get("tint") or {}
                         if material.get("name")!="none" or material.get("scheme")!="dark" or (
                             material.get("active")):
                             raise RuntimeError("Default not Dark clear glass "+str(material))
                         if latest.get("tintPanelVisible"):
                             raise RuntimeError("Tint control unexpectedly visible")
+                        if latest.get("allGridSlots")!=77 or latest.get("entryRowSquares")!=6 or (
+                            latest.get("centerSquares")!=3):
+                            raise RuntimeError("Six new entry and three central panes missing "+str(latest))
+                        if latest.get("count")!=16 or audit.get("tiles")!=51:
+                            raise RuntimeError("Original icons or 51 total GPU glass panes changed "+str(latest))
+                        if abs(float(latest.get("footerOpacity",0))-0.5)>0.001:
+                            raise RuntimeError("Copyright not at 50% opacity "+str(latest))
+                        if not (latest.get("entryRowTop",0)>latest.get("baseGridBottom",0)):
+                            raise RuntimeError("Entry row overlaps original grid "+str(latest))
                         loop=audit.get("track") or {}
-                        if loop.get("cycleSeconds")!=168 or loop.get("rows")!=6:
-                            raise RuntimeError("Seven-lane motion contract missing "+str(loop))
+                        if loop.get("cycleSeconds")!=84 or loop.get("rows")!=7:
+                            raise RuntimeError("Double-speed seven-row motion contract missing "+str(loop))
                         if not (latest.get("iconTrackTransform") or "").startswith("translate3d("):
                             raise RuntimeError("DOM icons do not share moving GPU geometry")
                         phase_start=loop.get("phase",0)
@@ -256,7 +274,7 @@ def run():
                             time.sleep(.08)
                             custom=json.loads(cdp_eval(ws,counter,expr))
                             ca=custom.get("audit") or {}
-                            if ca.get("tintCounts")=={"#2a7fc1":42}:
+                            if ca.get("tintCounts")=={"#2a7fc1":51}:
                                 break
                         else:
                             raise RuntimeError("Custom hex tint was lost")
@@ -264,7 +282,7 @@ def run():
                             raise RuntimeError("Hex pigment update rebuilt backdrop mips")
                         hues=("none","red","orange","yellow","green","teal","cyan",
                             "blue","indigo","purple","magenta","pink","white","black")
-                        showcase={k:3 for k in hues}
+                        showcase={k:(4 if i<9 else 3) for i,k in enumerate(hues)}
                         cdp_eval(ws,counter,
                             "window.__dashboardTintControls.setShowcase();true")
                         for _ in range(20):
@@ -380,9 +398,9 @@ def run():
                             if cur.get("sceneBuilds",0)<=before_scene_builds or (
                                 cur.get("sourcePixels")!=[2400,1600]):
                                 raise RuntimeError("Resize omitted scene rebuild or altered AVIF "+str(reached))
-                            if cur.get("status")!="ready" or cur.get("tiles")!=42:
+                            if cur.get("status")!="ready" or cur.get("tiles")!=51:
                                 raise RuntimeError("Resize degraded GPU glass "+str(reached))
-                            if (cur.get("tintCounts") or {}).get(name)!=42:
+                            if (cur.get("tintCounts") or {}).get(name)!=51:
                                 raise RuntimeError("Per-block tints desynchronized "+str(reached))
                             mode5_check=cur
                         transitions=cdp_eval(ws,counter,

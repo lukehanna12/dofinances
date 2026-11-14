@@ -359,3 +359,30 @@ CI validates the six-by-seven cycle, invisible wrapping, slow phase
 progression, icon movement, Dark Clear default, absence of the tint
 button, optional hex/preset preservation, and zero backdrop mip
 regeneration during motion.
+
+
+## 2026-11-14 doubling speed and filling seven-row loop
+
+The moving circuit is now **84 seconds per cycle** (12 seconds
+per pitch), exactly twice the preceding 168-second implementation.
+The original six-row, 11-column lattice remains geometrically stable.
+Six additional **icon-less** glass squares occupy alternating columns
+0, 2, 4, 6, 8 and 10 of an absolutely positioned seventh entry row
+beneath the old bottom row. They begin below the previous bottom row,
+transparent, and rise/fade in as their row progresses into slot 5.
+An absolute row overlay avoids changing the centered hero's dimensions,
+font metrics, or the six original row coordinates.
+
+Three additional icon-less panes occupy formerly empty reserved
+central cells (row/column positions 2:4, 2:6, 3:5) **behind** the
+Workspace heading and button; z-order of those controls stays above
+the GPU plane. The original 16 icon positions are unchanged. There
+are now **51 GPU glass instances**, 16 of them icon-bearing, across
+77 total DOM grid cells (66 original plus 11 seventh-row cells).
+The footer's isolated-preview text is rendered at CSS opacity 0.5.
+
+Original Dark/no-tint defaults, optional future hex tint API, per-square
+hover interaction, responsive resizing, full-resolution AVIF, and the
+no-background-rebuild-on-motion invariant are preserved. Node tests
+and real WebGPU smoke verify track entry, geometry, all 51 instances,
+original icon count, and footer style. The production branch is unchanged.
