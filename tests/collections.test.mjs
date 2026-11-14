@@ -932,8 +932,8 @@ test("Utility icon centers share the exact External SVG-derived right-side refer
 test("Collections stylesheet has balanced CSS declaration blocks",()=>{
  // A missing closing brace can swallow every subsequent selector while still
  // allowing superficial string assertions and the Vite build to pass.
- const withoutCommentsOrStrings=css.replace(/\\/\\*[\\s\\S]*?\\*\\//g,"")
-   .replace(/"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'/g,'""');
+ const withoutCommentsOrStrings=css.replace(/\/\*[\s\S]*?\*\//g,"")
+   .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g,'""');
  let depth=0;
  for(const ch of withoutCommentsOrStrings){
    if(ch==="{")depth++;
@@ -948,7 +948,7 @@ test("Collections stylesheet has balanced CSS declaration blocks",()=>{
    const style=css.slice(start,end+1);
    assert.ok(style.includes("border-radius:999px"));
    assert.ok(style.includes("background:transparent"));
-   assert.match(style,/transform \\.12s ease\\}$/);
+   assert.ok(style.endsWith("transform .12s ease}"));
    assert.ok(css.slice(end+1).includes("#cs-root .cs-"+action+"-icon-button:hover:not(:disabled){"));
  }
 });
