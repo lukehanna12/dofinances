@@ -423,6 +423,13 @@
               <p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>
               <div class="cs-layout">
                 <div class="cs-collection-column">
+                  <div class="cs-search cs-collection-search" role="search" aria-label="Search collections">
+                    <span class="cs-search-control">
+                      <button class="cs-search-focus" type="button" id="cs-focus-collection-search" aria-label="Focus collection search" aria-keyshortcuts="Meta+Shift+F" aria-describedby="cs-collection-search-tooltip"><img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>
+                      <span class="cs-create-tooltip" id="cs-collection-search-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Search collections</span><span class="cs-create-tooltip-shortcut" aria-label="Shift Command F"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd></span></span>
+                    </span>
+                    <input id="cs-collection-search" type="search" aria-label="Search collection names and descriptions" placeholder="Search collections" autocomplete="off" spellcheck="false">
+                  </div>
                   <div class="cs-accordion" id="cs-list" aria-label="Collections"><p class="cs-loading">Awaiting live collections…</p></div>
                   <nav class="cs-pagination" id="cs-pagination" aria-label="Collections pages"></nav>
                   <p class="cs-countline" id="cs-countline"></p>
