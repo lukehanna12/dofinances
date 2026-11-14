@@ -732,8 +732,6 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root .cs-star-half[data-half="right"]{right:0}
 #cs-root .cs-star-half:focus-visible{outline:2px solid #fff;outline-offset:1px;border-radius:2px}
 #cs-root .cs-stars-editable .cs-star:hover{color:#fff}
-#cs-root .cs-star-clear{flex:none;background:transparent;border:0;color:#868686;font-size:17px;line-height:1;cursor:pointer;padding:1px 2px}
-#cs-root .cs-star-clear:hover,#cs-root .cs-star-clear:focus-visible{color:#fff}
 #cs-root .cs-context-control{position:relative;display:inline-flex;flex:none}
 #cs-root .cs-context-button{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:#aaa;cursor:pointer}
 #cs-root .cs-context-button svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
@@ -750,7 +748,6 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-member-rating-actions{gap:2px}
  #cs-root .cs-star,#cs-root .cs-star svg{width:12px;height:12px}
  #cs-root .cs-context-button{width:19px;height:20px}
- #cs-root .cs-star-clear{font-size:15px;padding:1px}
  #cs-root .cs-utility-row{flex-wrap:wrap}
  #cs-root .cs-utility-info{min-width:88px}
 }
@@ -758,11 +755,11 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 /* Local editor: description edits remain in the expanded collection. The
    global Edit Collections visual treatment and accordion motion stay unchanged. */
 #cs-root .cs-description-inline{max-width:100%;min-width:0}
-#cs-root .cs-description-read{display:flex;align-items:flex-start;gap:10px;max-width:520px}
+#cs-root .cs-description-read{display:block;max-width:448px}
 #cs-root .cs-description-read[hidden],#cs-root .cs-description-write[hidden]{display:none}
-#cs-root .cs-description-read .cs-description{flex:1;min-width:0}
+#cs-root .cs-description-read .cs-description{display:inline;margin:0;white-space:pre-line}
 #cs-root .cs-description-pencil{
- display:grid;place-items:center;flex:none;width:22px;height:26px;padding:0;
+ display:inline-grid;place-items:center;vertical-align:middle;margin-left:8px;width:22px;height:26px;padding:0;
  border:0;border-radius:5px;background:transparent;color:#989898;cursor:pointer;
  transition:color 140ms ease,background-color 140ms ease
 }
@@ -786,15 +783,9 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 }
 #cs-root .cs-description-underline-extended .cs-description-underline{transform:scaleX(1)}
 #cs-root .cs-description-actions{display:inline-flex;gap:5px;align-items:center;flex:none;padding-bottom:2px}
-#cs-root .cs-star-zero{
- display:grid;place-items:center;flex:none;width:19px;height:19px;padding:0;
- border:1px solid #606060;border-radius:5px;background:transparent;
- color:#999;font-size:11px;line-height:1;font-weight:650;cursor:pointer
-}
-#cs-root .cs-star-zero:hover,#cs-root .cs-star-zero:focus-visible{color:#fff;border-color:#fff}
 #cs-root.cs-local-editing .cs-actions{display:flex}
 @media(max-width:639px){
- #cs-root .cs-description-read{padding-right:20px;gap:7px}
+ #cs-root .cs-description-read{padding-right:20px}
  #cs-root .cs-description-write{padding:0 20px 0 44px;gap:7px}
  #cs-root .cs-description-read .cs-description{padding-right:0}
  #cs-root .cs-description-input{font-size:14px;min-height:76px}
@@ -972,3 +963,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(prefers-reduced-motion:reduce){
  #cs-root .cs-utility-pick,#cs-root .cs-utility-trash-control,#cs-root .cs-utility-action .cs-utility-glyph,#cs-root .cs-utility-action .cs-utility-done{transition:none}
 }
+
+/* Give the Context action breathing room without enlarging half-star hit targets. */
+#cs-root .cs-member-rating-actions .cs-context-control + .cs-stars{margin-left:8px}
+@media(max-width:639px){#cs-root .cs-member-rating-actions .cs-context-control + .cs-stars{margin-left:6px}#cs-root .cs-description-pencil{margin-left:7px}}
