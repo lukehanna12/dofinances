@@ -56,3 +56,19 @@ test("reject malformed buffers and invalid geometry",()=>{
   assert.throws(()=>s.writeTo(new Float32Array(12)),TypeError);
   assert.throws(()=>s.configure([[NaN,0,1,1]]),TypeError);
 });
+
+test("moving tile targeting updates without resetting existing springs",()=>{
+  const s=make();s.move(20,20);settle(s);
+  const before=s.snapshot()[0].hover;
+  const data=new Float32Array(2*TILE_FLOATS);
+  data.set([0,120,100,100],0);
+  data.set([110,120,100,100],TILE_FLOATS);
+  s.retargetRects(data);
+  assert.equal(s.focusedTile,-1);
+  assert.equal(s.snapshot()[0].hover,before);
+  s.move(20,150);
+  assert.equal(s.focusedTile,0);
+  settle(s);
+  assert.ok(s.snapshot()[0].hover>.97);
+  assert.throws(()=>s.retargetRects(new Float32Array(8)),TypeError);
+});

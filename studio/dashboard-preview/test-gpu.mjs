@@ -36,6 +36,17 @@ test("center-cover backdrop UV respects physical viewport and image aspect",()=>
   assert.ok(portrait[0]<1);
   assert.equal(portrait[1],1);
 });
+test("GPU loop uses the same DOM displacement and fade as shader geometry",()=>{
+  const shader=fs.readFileSync(new URL("./dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+  const renderer=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
+  assert.match(renderer,/interaction\.retargetRects\(tileData\)/);
+  assert.match(renderer,/trackTiles\[i\]\.style\.transform/);
+  assert.match(renderer,/trackTiles\[i\]\.style\.opacity/);
+  assert.match(renderer,/trackOpacity\[i\]=pos\.opacity/);
+  assert.match(renderer,/tileData\[i\*TILE_FLOATS\+18\]=trackOpacity\[i\]/);
+  assert.match(renderer,/TRACK_FRAME_INTERVAL=1000\/30/);
+  assert.match(shader,/coverage\*in\.introAlpha\*clamp\(tile\.motion\.z,0\.0,1\.0\)/);
+});
 test("visible wallpaper begins below global bar rather than at page origin",()=>{
   assert.deepEqual(sceneViewportHeight(900,44),{top:44,height:856});
   assert.deepEqual(sceneViewportHeight(640,44),{top:44,height:596});

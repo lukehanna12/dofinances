@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {nativeTintMatrix,tintParameters,tintForTile,TINT_COLORS,OBSERVED_OPACITIES,
   SHOWCASE_TINTS,SHOWCASE_OPACITIES,CLEAR_FACE_INPUTS,browserFaceColor,
-  browserTintColor} from "./dashboard-tint.js";
+  browserTintColor,normalizeTintHex,rgbFromHex} from "./dashboard-tint.js";
 
 function word(v){const a=new DataView(new ArrayBuffer(4));a.setFloat32(0,v,true);return a.getUint32(0,true);}
 test("two native tint matrices preserve captured Float32 words and alpha slot 18",()=>{
@@ -114,4 +114,19 @@ test("expanded palette has distinguishable authored sRGB hues",()=>{
     .every(n=>n in TINT_COLORS));
   const colors=Object.keys(TINT_COLORS).filter(n=>n!=="none");
   assert.equal(new Set(colors.map(n=>TINT_COLORS[n].rgb.join(","))).size,colors.length);
+});
+
+test("default Dark + untinted and future arbitrary hexadecimal colors remain supported",()=>{
+  const clear=tintParameters("none",undefined,"dark");
+  assert.equal(clear.name,"none");
+  assert.equal(clear.opacity,0);
+  assert.equal(clear.scheme,"dark");
+  assert.equal(normalizeTintHex("#F3a"),"#ff33aa");
+  assert.equal(normalizeTintHex("08ACF1"),"#08acf1");
+  const custom=tintParameters("#08ACF1",.42,"dark");
+  assert.equal(custom.name,"#08acf1");
+  assert.deepEqual(custom.rgb,rgbFromHex("#08acf1"));
+  assert.equal(custom.opacity,Math.fround(.42));
+  assert.equal(custom.nativeHueProven,false);
+  assert.throws(()=>normalizeTintHex("#FFFFF"),RangeError);
 });
