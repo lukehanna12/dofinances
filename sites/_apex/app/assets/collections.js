@@ -1046,6 +1046,28 @@ export function initColosseumCollections(){
    const button=event.target.closest("[data-cs-jump-child]");
    if(button)jumpToChild(button.dataset.csJumpChild);
  });
+ // Edit the membership in the currently open collection, never the catalog item.
+ // Delegation covers the desktop detail and its mobile accordion counterpart.
+ root.addEventListener("click",event=>{
+   if(!state.editing||state.editTransitioning||state.busy)return;
+   const button=event.target.closest?.("button");
+   if(!button)return;
+   if(button.hasAttribute("data-cs-member-context")){
+     openRowContext(button.dataset.csMemberContext);return;
+   }
+   if(button.hasAttribute("data-cs-member-clear")){
+     const uid=button.dataset.csMemberClear;
+     if(isUid(uid))stageMemberAnnotation(uid,{rating:null});
+     return;
+   }
+   if(button.hasAttribute("data-cs-member-rating")){
+     const uid=button.dataset.csMemberRating,value=Number(button.dataset.csValue);
+     if(!isUid(uid)||!validRating(value))return;
+     const inMobile=!!button.closest(".cs-mobile-detail"),half=button.dataset.half;
+     stageMemberAnnotation(uid,{rating:value});
+     (inMobile?list:detail).querySelector('[data-cs-member-rating="'+uid+'"][data-cs-value="'+value+'"][data-half="'+half+'"]')?.focus({preventScroll:true});
+   }
+ });
  list.addEventListener("click",event=>{
    const button=event.target.closest("button");
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
