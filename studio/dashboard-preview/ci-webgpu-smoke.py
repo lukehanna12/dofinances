@@ -181,8 +181,8 @@ def run():
                         if not (latest.get("entryRowTop",0)>latest.get("baseGridBottom",0)):
                             raise RuntimeError("Entry row overlaps original grid "+str(latest))
                         loop=audit.get("track") or {}
-                        if abs(float(loop.get("cycleSeconds",0))-(84/1.15))>0.00001 or loop.get("rows")!=7:
-                            raise RuntimeError("15%-faster seven-row motion contract missing "+str(loop))
+                        if abs(float(loop.get("cycleSeconds",0))-(84/(1.15*1.30)))>0.00001 or loop.get("rows")!=7:
+                            raise RuntimeError("30%-faster seven-row motion contract missing "+str(loop))
                         if not (latest.get("iconTrackTransform") or "").startswith("translate3d("):
                             raise RuntimeError("DOM icons do not share moving GPU geometry")
                         phase_start=loop.get("phase",0)

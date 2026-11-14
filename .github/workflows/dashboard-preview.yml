@@ -122,7 +122,7 @@ jobs:
           grep -Fq 'entryGlassColumns' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'entry.style.opacity="0"' dist/app/assets/dashboard-mosaic.js
           grep -Fq 'centerGlass' dist/app/assets/dashboard-mosaic.js
-          grep -Fq 'TRACK_SECONDS=84/1.15' dist/app/assets/dashboard-track.js
+          grep -Fq 'TRACK_SECONDS=84/(1.15*1.30)' dist/app/assets/dashboard-track.js
           grep -Fq '11010100101' dist/app/assets/dashboard-mosaic.js
           ! grep -Fq 'id="workspace-sidebar"' dist/index.html
           ! grep -Fq 'id="sidebar-resize-handle"' dist/index.html
