@@ -85,7 +85,7 @@ export function initColosseumCollections(){
    page:1,pageSize:10,selecting:false,selected:new Set(),
    busy:false,loadSeq:0,detailSeq:0,
    editing:false,configRevision:0,configEntries:{},configDirty:false,
-   memberDrafts:new Map(),
+   memberDrafts:new Map(),localEditingId:null,descriptionDraft:null,descriptionEditing:false,
    nameDrafts:new Map(),renamingId:null,renameEpoch:0,renameInitialValue:"",draggingId:null,editTransitioning:false,
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
@@ -94,6 +94,7 @@ export function initColosseumCollections(){
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),contextDialog=$("cs-context-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
  let rowContextUid=null;
  const validRating=validCollectionRating;
+ const localEditorActive=()=>!!state.localEditingId&&state.localEditingId===state.activeId;
  const membershipKey=(collectionId,uid)=>collectionId+":"+uid;
  const memberAnnotation=uid=>{
    const key=membershipKey(state.activeId,uid);
@@ -101,7 +102,7 @@ export function initColosseumCollections(){
    return {rating:validRating(value?.rating)?value.rating:null,context:typeof value?.context==="string"?value.context:""};
  };
  function stageMemberAnnotation(uid,changes){
-   if(!state.editing||state.editTransitioning||state.busy||!isUid(uid)||
+   if(!localEditorActive()||state.busy||!isUid(uid)||
       !state.detail?.item_uids?.includes(uid)||!state.activeId)return;
    const next={...memberAnnotation(uid),...changes};
    if(!validRating(next.rating)||typeof next.context!=="string"||[...next.context].length>250)return;
@@ -198,10 +199,10 @@ export function initColosseumCollections(){
  }
  function setBusy(value){
    state.busy=value;
-   refreshButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning;
-   createButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning;
-   editButton.disabled=value||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;
-   selectButton.disabled=value||state.editing||state.editTransitioning||state.collectionSelectTransitioning;
+   refreshButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
+   createButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
+   editButton.disabled=value||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
+   selectButton.disabled=value||state.editing||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
@@ -264,6 +265,9 @@ export function initColosseumCollections(){
        '>Remove'+(state.selected.size?' ('+state.selected.size+')':'')+'</button>'+
        '<button class="cs-button" type="button" data-cs-action="cancel"'+(!enabled?' disabled':'')+'>Cancel</button>';
    }
+   if(localEditorActive())return '<button class="cs-button cs-primary" type="button" data-cs-action="done"'+(!enabled?' disabled':'')+'>Done</button>'+
+     '<button class="cs-button" type="button" data-cs-action="discard"'+(!enabled?' disabled':'')+'>Cancel</button>'+
+     '<button class="cs-button cs-danger" type="button" data-cs-action="delete"'+(!enabled?' disabled':'')+'>Delete collection</button>';
    return '<button class="cs-button cs-add" type="button" data-cs-action="admit" disabled title="Utility admission will be configured later" aria-label="Add utilities (coming later)">+</button>'+
      '<button class="cs-button" type="button" data-cs-action="edit"'+(!enabled||!state.detail?' disabled':'')+'>Edit</button>'+
      '<button class="cs-button" type="button" data-cs-action="select"'+(!enabled||!state.detail||!state.detail.item_uids?.length?' disabled':'')+'>Select</button>';
@@ -300,12 +304,20 @@ export function initColosseumCollections(){
            '<button class="cs-name-action cs-name-confirm" type="button" data-cs-confirm-rename="'+uuid+'" aria-label="Apply name change" title="Apply name change" disabled tabindex="-1" hidden>'+NAME_APPLY+'</button>'+
            '<button class="cs-name-action cs-name-cancel" type="button" data-cs-cancel-rename="'+uuid+'" aria-label="Cancel name change" title="Cancel name change" disabled tabindex="-1">'+NAME_CANCEL+'</button>'+
          '</span></span>'+
-       '<button class="cs-edit-utilities-open" type="button" data-cs-open="'+uuid+'" aria-label="Expand '+esc(collection.name)+' to edit utility ratings and context" aria-controls="'+id+'" aria-expanded="false" title="Edit utility ratings and context"'+off+'>'+CHEVRON+'</button>'+
        '<button class="cs-visibility-toggle" type="button" data-cs-visibility="'+uuid+'" aria-label="'+(entry.hidden?'Show ':'Hide ')+esc(collection.name)+' to ChatGPT" aria-pressed="'+String(entry.hidden)+'" title="'+(entry.hidden?'Show to ChatGPT':'Hide from ChatGPT')+'"'+off+'>'+(entry.hidden?EYE_OFF:EYE)+'</button>'+
      '</h2>'+
      '<div class="cs-accordion-panel" id="'+id+'" role="region" aria-labelledby="cs-trigger-'+n+'" aria-hidden="true">'+
        '<div class="cs-panel-clip"><div class="cs-panel-inner">'+
-         '<p class="cs-description">'+esc(collection.description||"No description provided.")+'</p>'+
+         '<div class="cs-description-inline" data-cs-description-editor>'+
+           '<div class="cs-description-read"><p class="cs-description" data-cs-description-read>'+esc(state.localEditingId===collection.collection_id&&state.descriptionDraft!==null?state.descriptionDraft:(collection.description||"No description provided."))+'</p>'+
+             '<button type="button" class="cs-description-pencil" data-cs-description-start aria-label="Edit collection description" title="Edit description" hidden>'+NAME_PENCIL+'</button></div>'+
+           '<div class="cs-description-write" hidden><span class="cs-description-input-wrap">'+
+             '<textarea class="cs-description-input" data-cs-description-input maxlength="2000" rows="3" aria-label="Collection description">'+esc(collection.description||"")+'</textarea>'+
+             '<span class="cs-description-underline" aria-hidden="true"></span></span>'+
+             '<span class="cs-description-actions">'+
+               '<button class="cs-name-action cs-name-confirm" type="button" data-cs-description-confirm aria-label="Confirm description" title="Confirm description">'+NAME_APPLY+'</button>'+
+               '<button class="cs-name-action cs-name-cancel" type="button" data-cs-description-cancel aria-label="Cancel description edit" title="Cancel description edit">'+NAME_CANCEL+'</button>'+
+             '</span></div></div>'+
          '<div class="cs-actions" data-cs-actions>'+actionMarkup()+'</div>'+
          '<div class="cs-mobile-detail" data-cs-mobile></div>'+
        '</div></div></div></article>';
@@ -344,7 +356,6 @@ export function initColosseumCollections(){
      const open=el.dataset.csId===state.activeId;
      el.classList.toggle("cs-open",open);
      el.querySelector(".cs-trigger").setAttribute("aria-expanded",String(open));
-     el.querySelector(".cs-edit-utilities-open")?.setAttribute("aria-expanded",String(open));
      el.querySelector(".cs-accordion-panel").setAttribute("aria-hidden",String(!open));
    });
    syncActions();
@@ -381,11 +392,12 @@ export function initColosseumCollections(){
      const annotation=memberAnnotation(uid);
      const hasRating=annotation.rating!==null;
      const hasContext=annotation.context.length>0;
-     const editingMember=state.editing&&!state.editTransitioning;
+     const editingMember=localEditorActive();
      const contextButton=editingMember?
        '<span class="cs-context-control"><button class="cs-context-button" type="button" data-cs-member-context="'+uid+'" aria-label="'+(hasContext?'Edit Context':'Add Context')+' for '+esc(item.name||uid)+'" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 3V5Z"/><path d="M8 9h8m-8 4h5"/></svg></button><span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(hasContext?'Edit Context':'Add Context')+'</span></span></span>':"";
      const stars=(editingMember||hasRating)?collectionStarMarkup(annotation.rating,{editable:editingMember,memberUid:uid}):"";
-     const removeRating=editingMember?'<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
+     const removeRating=editingMember?'<button type="button" class="cs-star-zero" data-cs-member-zero="'+uid+'" aria-label="Rate '+esc(item.name||uid)+' zero stars" title="Rate zero stars">0</button>'+
+       '<button type="button" class="cs-star-clear" data-cs-member-clear="'+uid+'" aria-label="Remove rating for '+esc(item.name||uid)+'" title="Remove rating">×</button>':"";
      const annotationControls=(editingMember||hasRating)?
        '<span class="cs-member-rating-actions">'+contextButton+stars+removeRating+'</span>':"";
      const contextMarkup=hasContext?'<span class="cs-member-context">'+esc(annotation.context)+'</span>':"";
@@ -427,7 +439,8 @@ export function initColosseumCollections(){
    }
  }
  function openCollection(id){
-   if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
+   if(state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
+   if(localEditorActive()){announce("Save or cancel this collection's edits before closing or switching collections.",true,true);return;}
    const next=state.activeId===id?null:id;
    state.activeId=next;state.selecting=false;state.selected.clear();state.detail=null;
    ++state.detailSeq;
@@ -506,7 +519,7 @@ export function initColosseumCollections(){
    finally{if(seq===state.loadSeq)refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning;}
  }
  function openRowContext(uid){
-   if(!state.editing||state.editTransitioning||state.busy||!state.activeId||!state.detail?.item_uids?.includes(uid))return;
+   if(!localEditorActive()||state.busy||!state.detail?.item_uids?.includes(uid))return;
    rowContextUid=uid;
    const member=state.detail.items?.find(item=>item.uid===uid);
    $("cs-context-title").textContent="Utility context";
@@ -517,7 +530,7 @@ export function initColosseumCollections(){
    $("cs-row-context").focus();
  }
  function saveRowContext(clear=false){
-   if(!rowContextUid||!state.editing)return;
+   if(!rowContextUid||!localEditorActive())return;
    const context=clear?"":$("cs-row-context").value;
    if([...context].length>250){$("cs-row-context-error").textContent="Context must be 250 characters or fewer.";return;}
    const uid=rowContextUid;
@@ -526,7 +539,7 @@ export function initColosseumCollections(){
  }
  function openForm(mode){
    if(state.busy)return;
-   if(mode==="edit"&&(!activeCollection()||!state.detail||state.selecting))return;
+   if(mode==="edit")return;
    formMode=mode;
    $("cs-form-title").textContent=mode==="create"?"New collection":"Edit collection";
    $("cs-form-copy").textContent=mode==="create"?
@@ -542,13 +555,13 @@ export function initColosseumCollections(){
  function editClose(){if(!state.busy&&editDialog.open)editDialog.close();}
  function deleteClose(){if(!state.busy&&deleteDialog.open)deleteDialog.close();}
  function beginDelete(){
-   if(formMode!=="edit"||!state.detail||!activeCollection())return;
+   if(!localEditorActive()||!state.detail||!activeCollection()||state.busy)return;
    $("cs-delete-name").textContent=state.detail.name;
    $("cs-delete-copy").textContent="This permanently deletes the collection and removes its memberships. The underlying utilities are preserved. Type the collection name to confirm.";
    $("cs-delete-confirm-name").value="";
    $("cs-delete-apply").disabled=true;
    $("cs-delete-error").textContent="";
-   editDialog.close();
+   if(editDialog.open)editDialog.close();
    deleteDialog.showModal();
  }
  async function saveForm(event){
@@ -557,14 +570,12 @@ export function initColosseumCollections(){
    if(!name||name.length>100||description.length>2000){
      $("cs-form-error").textContent="Enter a collection name (up to 100 characters) and description (up to 2,000 characters).";return;
    }
-   const previous=activeCollection(),revision=state.detail?.revision;
-   if(formMode==="edit"&&(!previous||!Number.isSafeInteger(revision)))return;
+   const previous=activeCollection();
    setBusy(true);$("cs-form-save").disabled=true;$("cs-form-error").textContent="";
    try{
-     if(formMode==="create")await request("create",{name,description});
-     else await request("edit",{original_name:previous.name,name,desc:description,expected_revision:revision});
+     await request("create",{name,description});
      editDialog.close();
-     await loadList({focusName:name,focusId:formMode==="edit"?previous.collection_id:null});
+     await loadList({focusName:name});
    }catch(error){$("cs-form-error").textContent=error.message;announce(error.message,true);}
    finally{setBusy(false);$("cs-form-save").disabled=false;}
  }
@@ -576,6 +587,7 @@ export function initColosseumCollections(){
    try{
      await request("destroy",{name:col.name,expected_revision:revision});
      deleteDialog.close();
+     state.localEditingId=null;state.descriptionDraft=null;state.descriptionEditing=false;state.memberDrafts.clear();
      state.activeId=null;state.detail=null;await loadList();
      announce('Collection "'+col.name+'" deleted. Its utilities remain in the catalog.',false,true);
    }catch(error){$("cs-delete-error").textContent=error.message;announce(error.message,true);}
@@ -765,7 +777,6 @@ export function initColosseumCollections(){
      state.editTransitioning=false;resetEditMode();return;
    }
    state.editing=true;state.renamingId=null;state.nameDrafts.clear();state.configDirty=false;
-   state.memberDrafts.clear();
    root.classList.add("cs-entering-edit");
    syncEditControl();
    await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right");
@@ -783,7 +794,6 @@ export function initColosseumCollections(){
    root.classList.remove("cs-leaving-edit");
    state.editTransitioning=false;
    state.nameDrafts.clear();state.configDirty=false;
-   state.memberDrafts.clear();
    syncEditControl();
    if(!refresh){renderRows();renderCard();}
  }
@@ -791,7 +801,6 @@ export function initColosseumCollections(){
    finishInlineRename();
    state.editing=false;state.editTransitioning=false;
    state.nameDrafts.clear();state.configDirty=false;
-   state.memberDrafts.clear();
    root.classList.remove("cs-entering-edit","cs-leaving-edit","cs-closing-for-edit");
    syncEditControl();renderRows();renderCard();
  }
@@ -906,7 +915,7 @@ export function initColosseumCollections(){
      seenNames.add(key);
      if(proposed!==col.name)edits.push({collection:col,name:proposed});
    }
-   if(!edits.length&&!state.configDirty&&!state.memberDrafts.size){await exitEditMode();return;}
+   if(!edits.length&&!state.configDirty){await exitEditMode();return;}
    setBusy(true);
    try{
      for(const {collection,name} of edits){
@@ -915,27 +924,6 @@ export function initColosseumCollections(){
        });
        collection.name=name;
        if(Number.isSafeInteger(changed.revision))collection.revision=changed.revision;
-     }
-     // Ratings and context are keyed to the exact direct membership. A parent
-     // sees its children's annotations by reference rather than copying them.
-     for(const [key,annotation] of state.memberDrafts){
-       const separator=key.lastIndexOf(":"),collectionId=key.slice(0,separator),uid=key.slice(separator+1);
-       const collection=state.collections.find(item=>item.collection_id===collectionId);
-       if(!collection||!isUid(uid)||!validRating(annotation.rating)||
-          typeof annotation.context!=="string"||[...annotation.context].length>250)
-         throw Error("A collection-specific annotation is invalid. Refresh before saving.");
-       const result=await request("annotate",{
-         name:collection.name,item_uid:uid,rating:annotation.rating,context:annotation.context,
-         expected_revision:collection.revision
-       });
-       if(!Number.isSafeInteger(result.revision))
-         throw Error("Colosseum did not confirm the updated membership revision.");
-       collection.revision=result.revision;
-       if(state.activeId===collectionId&&state.detail){
-         state.detail.revision=result.revision;
-         state.detail.item_metadata={...(state.detail.item_metadata||{}),[uid]:annotation};
-       }
-       state.memberDrafts.delete(key);
      }
      if(state.configDirty)await request("configure",{
        entries:state.configEntries,expected_configuration_revision:state.configRevision
@@ -947,7 +935,7 @@ export function initColosseumCollections(){
    finally{setBusy(false);syncEditControl();}
  }
  function toggleEditMode(){
-   if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning)return;
+   if(state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive())return;
    if(state.editing){void finishEditMode();return;}
    void enterEditMode();
  }
