@@ -761,17 +761,51 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-utility-info{min-width:88px}
 }
 
-/* A dedicated disclosure in collection Edit mode preserves the existing disabled
-   accordion trigger and inline rename semantics while exposing member controls. */
-#cs-root .cs-edit-utilities-open{
- position:absolute;z-index:6;top:50%;right:38px;transform:translateY(-50%);
- width:23px;height:26px;padding:3px;border:0;border-radius:6px;
- background:transparent;color:#999;display:grid;place-items:center;
- opacity:0;visibility:hidden;pointer-events:none;
- transition:color .15s ease,background .15s ease,opacity .15s ease,visibility .15s ease;
+/* Local editor: description edits remain in the expanded collection. The
+   global Edit Collections visual treatment and accordion motion stay unchanged. */
+#cs-root .cs-description-inline{max-width:100%;min-width:0}
+#cs-root .cs-description-read{display:flex;align-items:flex-start;gap:10px;max-width:520px}
+#cs-root .cs-description-read[hidden],#cs-root .cs-description-write[hidden]{display:none}
+#cs-root .cs-description-read .cs-description{flex:1;min-width:0}
+#cs-root .cs-description-pencil{
+ display:grid;place-items:center;flex:none;width:22px;height:26px;padding:0;
+ border:0;border-radius:5px;background:transparent;color:#989898;cursor:pointer;
+ transition:color 140ms ease,background-color 140ms ease
 }
-#cs-root .cs-edit-utilities-open svg{display:block;width:16px;height:16px;transition:transform .22s cubic-bezier(.22,1,.36,1)}
-#cs-root .cs-entry.cs-open .cs-edit-utilities-open svg{transform:rotate(180deg)}
-#cs-root.cs-editing .cs-edit-utilities-open{opacity:1;visibility:visible;pointer-events:auto}
-#cs-root .cs-edit-utilities-open:disabled{opacity:0;pointer-events:none}
-#cs-root .cs-edit-utilities-open:hover:not(:disabled),#cs-root .cs-edit-utilities-open:focus-visible{color:#fff;background:#242424}
+#cs-root .cs-description-pencil[hidden]{display:none}
+#cs-root .cs-description-pencil svg{width:14px;height:14px;pointer-events:none}
+#cs-root .cs-description-pencil:hover,#cs-root .cs-description-pencil:focus-visible{color:#fff;background:#262626}
+#cs-root .cs-description-write{display:flex;align-items:flex-end;gap:12px;max-width:520px;min-width:0}
+#cs-root .cs-description-input-wrap{position:relative;flex:1;display:block;min-width:0}
+#cs-root .cs-description-input{
+ width:100%;min-height:82px;max-height:280px;display:block;resize:vertical;
+ border:0;border-radius:0;background:transparent;box-shadow:none;
+ padding:2px 0 9px;margin:0;outline:0;color:var(--cs-muted);
+ font:inherit;font-size:clamp(14px,1.35vw,16px);line-height:1.65;
+ caret-color:#fff;overflow-wrap:anywhere
+}
+#cs-root .cs-description-input:focus,#cs-root .cs-description-input:focus-visible{outline:0;border:0;box-shadow:none}
+#cs-root .cs-description-underline{
+ position:absolute;left:0;bottom:0;height:1px;width:100%;background:#a7a7a7;
+ transform:scaleX(0);transform-origin:left center;pointer-events:none;
+ transition:transform 205ms cubic-bezier(.14,1,.25,1)
+}
+#cs-root .cs-description-underline-extended .cs-description-underline{transform:scaleX(1)}
+#cs-root .cs-description-actions{display:inline-flex;gap:5px;align-items:center;flex:none;padding-bottom:2px}
+#cs-root .cs-star-zero{
+ display:grid;place-items:center;flex:none;width:19px;height:19px;padding:0;
+ border:1px solid #606060;border-radius:5px;background:transparent;
+ color:#999;font-size:11px;line-height:1;font-weight:650;cursor:pointer
+}
+#cs-root .cs-star-zero:hover,#cs-root .cs-star-zero:focus-visible{color:#fff;border-color:#fff}
+#cs-root.cs-local-editing .cs-actions{display:flex}
+@media(max-width:639px){
+ #cs-root .cs-description-read{padding-right:20px;gap:7px}
+ #cs-root .cs-description-write{padding:0 20px 0 44px;gap:7px}
+ #cs-root .cs-description-read .cs-description{padding-right:0}
+ #cs-root .cs-description-input{font-size:14px;min-height:76px}
+ #cs-root .cs-description-actions{gap:3px}
+}
+@media(prefers-reduced-motion:reduce){
+ #cs-root .cs-description-underline{transition:none}
+}

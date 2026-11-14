@@ -180,7 +180,6 @@ export function initColosseumCollections(){
    }catch{}
    applyGeometry(geometry);
  }
- let formMode="create";
  function announce(message,error=false,visible=false,reauthorize=false){
    status.textContent=message;
    if(reauthorize){
@@ -648,19 +647,14 @@ export function initColosseumCollections(){
    rowContextUid=null;contextDialog.close();
    stageMemberAnnotation(uid,{context});
  }
- function openForm(mode){
-   if(state.busy)return;
-   if(mode==="edit")return;
-   formMode=mode;
-   $("cs-form-title").textContent=mode==="create"?"New collection":"Edit collection";
-   $("cs-form-copy").textContent=mode==="create"?
-     "Create an empty collection in Colosseum. Utilities can be added later.":
-     "Update this collection's name and description. Existing utilities are preserved.";
-   $("cs-name").value=mode==="edit"?state.detail.name:"";
-   $("cs-description").value=mode==="edit"?state.detail.description:"";
+ function openForm(){
+   if(state.busy||localEditorActive())return;
+   $("cs-form-title").textContent="New collection";
+   $("cs-form-copy").textContent="Create an empty collection in Colosseum. Utilities can be added later.";
+   $("cs-name").value="";
+   $("cs-description").value="";
    $("cs-form-error").textContent="";
    $("cs-form-save").disabled=false;
-   $("cs-delete-open").hidden=mode!=="edit";
    editDialog.showModal();
  }
  function editClose(){if(!state.busy&&editDialog.open)editDialog.close();}
@@ -1281,7 +1275,6 @@ export function initColosseumCollections(){
  contextDialog.addEventListener("close",()=>{rowContextUid=null;});
  $("cs-form").addEventListener("submit",event=>void saveForm(event));
  $("cs-form-cancel").addEventListener("click",editClose);
- $("cs-delete-open").addEventListener("click",beginDelete);
  $("cs-delete-cancel").addEventListener("click",deleteClose);
  $("cs-delete-confirm-name").addEventListener("input",()=>{
    $("cs-delete-apply").disabled=$("cs-delete-confirm-name").value!==state.detail?.name||state.busy;
