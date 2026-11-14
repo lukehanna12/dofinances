@@ -214,6 +214,9 @@ export function initColosseumCollections(){
    createButton.disabled=value||state.editing||state.collectionSelecting||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
    editButton.disabled=value||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
    selectButton.disabled=value||state.editing||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
+   collectionSearch.disabled=value||state.editing||state.collectionSelecting||
+     state.editTransitioning||state.collectionSelectTransitioning||localEditorActive();
+   collectionSearchFocus.disabled=collectionSearch.disabled;
    root.querySelectorAll(".cs-actions button").forEach(button=>{
      button.disabled=value||button.dataset.csAction==="admit"||
        (button.dataset.csAction==="remove"&&!state.selected.size)||
@@ -550,9 +553,12 @@ export function initColosseumCollections(){
      let chosen=focusId?state.collections.find(x=>x.collection_id===focusId):null;
      if(!chosen&&focusName)chosen=state.collections.find(x=>x.name.toLocaleLowerCase()===focusName.toLocaleLowerCase());
      if(!chosen&&state.activeId)chosen=state.collections.find(x=>x.collection_id===state.activeId);
+     const visible=matchingCollections();
+     if(chosen&&!visible.some(item=>item.collection_id===chosen.collection_id))chosen=null;
+     if(!chosen||chosen.collection_id!==state.activeId)state.utilityQuery="";
      state.activeId=chosen?.collection_id||null;
      state.selecting=false;state.selected.clear();state.detail=null;++state.detailSeq;
-     if(chosen)state.page=Math.floor(state.collections.findIndex(x=>x.collection_id===chosen.collection_id)/state.pageSize)+1;
+     if(chosen)state.page=Math.floor(visible.findIndex(x=>x.collection_id===chosen.collection_id)/state.pageSize)+1;
      state.page=Math.min(Math.max(1,state.page),pageCount());
      renderRows();renderCard();
      const refreshedAt=new Date();
@@ -729,6 +735,7 @@ export function initColosseumCollections(){
    setBusy(true);$("cs-form-save").disabled=true;$("cs-form-error").textContent="";
    try{
      await request("create",{name,description});
+     state.collectionQuery="";collectionSearch.value="";
      editDialog.close();
      await loadList({focusName:name});
    }catch(error){$("cs-form-error").textContent=error.message;announce(error.message,true);}
@@ -897,6 +904,9 @@ export function initColosseumCollections(){
    $("cs-select-tooltip-label").textContent=state.collectionSelecting?"Done selecting":"Select collections";
    refreshButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
    createButton.disabled=state.busy||state.editing||state.editTransitioning||state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
+   collectionSearch.disabled=state.busy||state.editing||state.editTransitioning||
+     state.collectionSelecting||state.collectionSelectTransitioning||localEditorActive();
+   collectionSearchFocus.disabled=collectionSearch.disabled;
    syncRowEditing();
  }
  async function waitForVisualMotion(element,property){
@@ -932,6 +942,10 @@ export function initColosseumCollections(){
      state.editTransitioning=false;resetEditMode();return;
    }
    state.editing=true;state.renamingId=null;state.nameDrafts.clear();state.configDirty=false;
+   if(state.collectionQuery){
+     state.collectionQuery="";collectionSearch.value="";state.page=1;
+     renderRows();
+   }
    root.classList.add("cs-entering-edit");
    syncEditControl();
    await waitForVisualMotion(list.querySelector(".cs-drag-handle"),"cs-grip-enter-right");
@@ -1001,6 +1015,10 @@ export function initColosseumCollections(){
    }
    state.collectionSelecting=true;
    state.selectedCollections.clear();
+   if(state.collectionQuery){
+     state.collectionQuery="";collectionSearch.value="";state.page=1;
+     renderRows();
+   }
    root.classList.add("cs-entering-selection");
    syncEditControl();
    await waitForVisualMotion(list.querySelector(".cs-collection-pick"),"cs-grip-enter-right");
@@ -1261,6 +1279,32 @@ export function initColosseumCollections(){
    root.querySelectorAll(".cs-checkbox").forEach(other=>{if(other!==checkbox&&other.dataset.csUid===uid)other.checked=checkbox.checked;});
    syncActions();
  });
+ // Both searches are local projections of already-loaded Colosseum data.
+ // Never repaint the utilities card on each keystroke: preserving the input
+ // node also preserves focus, caret position and staged item edits.
+ collectionSearch.addEventListener("input",()=>{
+   if(collectionSearch.disabled)return;
+   state.collectionQuery=collectionSearch.value;
+   state.page=1;
+   if(state.activeId&&!pageItems().some(col=>col.collection_id===state.activeId)){
+     state.activeId=null;state.detail=null;state.selecting=false;
+     state.selected.clear();state.utilityQuery="";++state.detailSeq;
+   }
+   renderRows();renderCard();
+ });
+ collectionSearchFocus.addEventListener("click",()=>{
+   if(!collectionSearch.disabled)collectionSearch.focus({preventScroll:true});
+ });
+ root.addEventListener("input",event=>{
+   const input=event.target.closest?.("[data-cs-utility-search]");
+   if(!input||!state.detail||!state.activeId)return;
+   state.utilityQuery=input.value;
+   filterUtilityRows();
+ });
+ root.addEventListener("click",event=>{
+   const button=event.target.closest?.("[data-cs-focus-utility-search]");
+   if(button)button.closest(".cs-card")?.querySelector("[data-cs-utility-search]")?.focus({preventScroll:true});
+ });
  pagination.addEventListener("click",event=>{
    const button=event.target.closest("[data-cs-page]");
    if(!button||state.busy||state.editTransitioning||state.collectionSelectTransitioning||localEditorActive())return;
@@ -1284,6 +1328,18 @@ export function initColosseumCollections(){
       target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
    event.preventDefault();
    void loadList();
+ },{capture:true});
+ // Only collection search has a shortcut. Keep it route-scoped and avoid
+ // intercepting browser Find outside this page, active dialogs or other modes.
+ window.addEventListener("keydown",event=>{
+   if(event.defaultPrevented||event.isComposing||event.repeat||
+      !event.metaKey||!event.shiftKey||event.ctrlKey||event.altKey)return;
+   if(event.code!=="KeyF"&&event.key?.toLowerCase()!=="f")return;
+   if(!routeActive()||root.closest(".view")?.hidden||collectionSearch.disabled||
+      document.querySelector("dialog[open]"))return;
+   event.preventDefault();
+   collectionSearch.focus({preventScroll:true});
+   collectionSearch.select();
  },{capture:true});
  createButton.addEventListener("click",()=>{if(!localEditorActive())openForm("create");});
  editButton.addEventListener("click",toggleEditMode);
