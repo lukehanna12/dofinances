@@ -438,8 +438,8 @@ test("Collections update time inherits the shared unpadded-hour convention",asyn
 
 test("Collection pagination captions contain only their dynamic range and total",()=>{
   assert.match(js,/const first=\(state\.page-1\)\*state\.pageSize\+1/);
-  assert.match(js,/const total=state\.collections\.length/);
-  assert.match(js,/textContent=state\.loaded\?[\s\S]*?first\+'–'\+Math\.min\(first\+state\.pageSize-1,state\.collections\.length\)\+' of '\+total:'0 of 0'/);
+  assert.match(js,/const total=matchingCollections\(\)\.length/);
+  assert.match(js,/textContent=state\.loaded\?[\s\S]*?first\+'–'\+Math\.min\(first\+state\.pageSize-1,total\)\+' of '\+total:'0 of 0'/);
   assert.match(js,/if\(pages===1\)\{pagination\.innerHTML='';return;\}/);
   assert.doesNotMatch(js,/collections · directly from Colosseum/);
   for(const [total,page,expected] of [[12,1,"1–10 of 12"],[12,2,"11–12 of 12"],[10,1,"1–10 of 10"],[1,1,"1–1 of 1"],[0,1,"0 of 0"]]){
@@ -452,13 +452,13 @@ test("Collections display ten live items per page and keep ordinary last-page pa
  const pageSize=10;
  const collections=Array.from({length:11},(_,i)=>({collection_id:"c"+i}));
  assert.match(js,/page:1,pageSize:10,selecting:false/);
- assert.match(js,/Math\.ceil\(state\.collections\.length\/state\.pageSize\)/);
- assert.match(js,/state\.collections\.slice\(\(state\.page-1\)\*state\.pageSize,state\.page\*state\.pageSize\)/);
+ assert.match(js,/Math\.ceil\(matchingCollections\(\)\.length\/state\.pageSize\)/);
+ assert.match(js,/matchingCollections\(\)\.slice\(\(state\.page-1\)\*state\.pageSize,state\.page\*state\.pageSize\)/);
  assert.equal(Math.ceil(collections.length/pageSize),2);
  assert.equal(collections.slice(0,pageSize).length,10);
  assert.equal(collections.slice(pageSize,2*pageSize).length,1);
  assert.match(js,/const first=\(state\.page-1\)\*state\.pageSize\+1/);
- assert.match(js,/Math\.min\(first\+state\.pageSize-1,state\.collections\.length\)/);
+ assert.match(js,/Math\.min\(first\+state\.pageSize-1,total\)/);
 });
 
 test("Collections canvas retains ten-row capacity with about fifteen percent more bottom breathing room",()=>{
