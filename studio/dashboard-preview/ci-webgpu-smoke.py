@@ -99,6 +99,10 @@ def run():
                             raise RuntimeError("Original 16 icons/sidebar boundary violated "+str(latest))
                         if audit.get("status")!="ready" or audit.get("mipCount",0)<2 or audit.get("sceneBuilds",0)<1:
                             raise RuntimeError("GPU did not build real scene+mips "+str(latest))
+                        if audit.get("sourcePixels")!=[2400,1600]:
+                            raise RuntimeError("Original AVIF lost 2400x1600 resolution "+str(audit))
+                        if audit.get("sourceImage")!="/app/assets/dashboard-cloud-veiled-colorful-fields.avif":
+                            raise RuntimeError("Wrong backdrop source "+str(audit))
                         if latest.get("phase")!="ready" or audit.get("presentation")!="offscreen-ci":
                             raise RuntimeError("GPU init phase not complete "+str(latest))
                         proof=audit.get("offscreenPixelProof")

@@ -5,6 +5,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import {createHash} from "node:crypto";
 globalThis.document={
   getElementById:()=>null,
   createElement:()=>({})
@@ -14,7 +15,20 @@ const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners} =
   await import("./dashboard-gpu-renderer.js");
 const {nativePublicBlurRadius,observedBlurWord} =
   await import("./sidebar-glass-oracle.js");
+test("Dashboard wallpaper uses exact original AVIF bytes without transcoding",()=>{
+  const source=fs.readFileSync(new URL("./dashboard-cloud-veiled-colorful-fields.avif",import.meta.url));
+  assert.equal(source.byteLength,106094);
+  assert.equal(createHash("sha256").update(source).digest("hex"),
+    "80006c73c633b57a9a2e63d17df9bbf35e8c86bc6d23491a12600eb8911842f2");
+  const shader=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
+  const css=fs.readFileSync(new URL("./dashboard-home.css",import.meta.url),"utf8");
+  assert.match(shader,/dashboard-cloud-veiled-colorful-fields\\.avif/);
+  assert.match(css,/dashboard-cloud-veiled-colorful-fields\\.avif/);
+  assert.doesNotMatch(shader,/home-rice-terraces-hq\\.jpg/);
+});
 test("center-cover backdrop UV respects physical viewport and image aspect",()=>{
+  const newWallpaper=coverUVScale(2880,1800,2400,1600);
+  assert.ok(newWallpaper[0]===1&&Math.abs(newWallpaper[1]-.9375)<1e-6);
   const landscape=coverUVScale(1440,900,1920,1080);
   assert.ok(Math.abs(landscape[0]-.9)<1e-6);
   assert.equal(landscape[1],1);

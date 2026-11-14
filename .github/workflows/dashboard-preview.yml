@@ -38,6 +38,8 @@ jobs:
           cp studio/dashboard-preview/gpu-scene.wgsl dist/app/assets/dashboard-gpu-scene.wgsl
           cp studio/dashboard-preview/gpu-mipmap.wgsl dist/app/assets/dashboard-gpu-mipmap.wgsl
           cp studio/dashboard-preview/gpu-glass.wgsl dist/app/assets/dashboard-gpu-glass.wgsl
+          # Copy the exact original AVIF; no optimize/resize/transcode step.
+          cp studio/dashboard-preview/assets/cloud-veiled-colorful-fields.avif dist/app/assets/dashboard-cloud-veiled-colorful-fields.avif
           cp studio/dashboard-preview/test-gpu.mjs dist/app/assets/dashboard-gpu.test.mjs
           cp studio/dashboard-preview/test-interaction.mjs dist/app/assets/dashboard-interaction.test.mjs
           cp studio/dashboard-preview/test-tint.mjs dist/app/assets/dashboard-tint.test.mjs
@@ -51,8 +53,7 @@ jobs:
             diagnostics.css providers.css \
             workspace-scroll.js workspace-wallpapers.js \
             magnifying-glass.v2.svg dashboard-screen-sidebar-icon.v1.svg \
-            collections-screen-sidebar-icon.v1.svg settings-screen-sidebar-icon.v1.svg \
-            home-rice-terraces-hq.jpg; do
+            collections-screen-sidebar-icon.v1.svg settings-screen-sidebar-icon.v1.svg; do
             cp "sites/_apex/app/assets/$asset" "dist/app/assets/$asset"
           done
           cp studio/dashboard-preview/bootstrap.js dist/app/assets/dashboard-preview.js
@@ -74,6 +75,10 @@ jobs:
           test -s dist/app/assets/dashboard-gpu-scene.wgsl
           test -s dist/app/assets/dashboard-gpu-mipmap.wgsl
           test -s dist/app/assets/dashboard-gpu-glass.wgsl
+          test -s dist/app/assets/dashboard-cloud-veiled-colorful-fields.avif
+          # Verify byte-identical source retention; preserve AVIF metadata,
+          # native 2400×1600 image payload and the original compression.
+          echo '80006c73c633b57a9a2e63d17df9bbf35e8c86bc6d23491a12600eb8911842f2  dist/app/assets/dashboard-cloud-veiled-colorful-fields.avif' | sha256sum -c -
           test -s dist/app/assets/sidebar-glass-oracle.js
           grep -Fq 'data-view="home"' dist/index.html
           grep -Fq 'id="cta6-mosaic"' dist/index.html

@@ -167,7 +167,7 @@ async function initialize(){
   canvas.id="dashboard-webgpu-scene";
   canvas.setAttribute("aria-hidden","true");
   document.body.insertBefore(canvas,document.getElementById("workspace-shell"));
-  const url="/app/assets/home-rice-terraces-hq.jpg";
+  const url="/app/assets/dashboard-cloud-veiled-colorful-fields.avif";
   // HTMLImageElement onload works without a CPU-side Blob/ImageBitmap
   // re-encode. The GPU still owns all downstream scene/mip operations.
   if(root)root.dataset.gpuPhase="load-scene-image";
@@ -181,6 +181,13 @@ async function initialize(){
   await ready;
   const photoWidth=img.naturalWidth,photoHeight=img.naturalHeight;
   if(!photoWidth||!photoHeight)throw new Error("Empty decoded backdrop");
+  // The untouched Colosseum original is decoded at its intrinsic size.
+  // AVIF source: cloud-veiled-colorful-fields.avif, 2400×1600,
+  // SHA-256 80006c73c633b57a9a2e63d17df9bbf35e8c86bc6d23491a12600eb8911842f2. No image scaling occurs before GPU upload.
+  if(photoWidth!==2400||photoHeight!==1600)
+    throw new Error("Unexpected source image dimensions: "+photoWidth+"x"+photoHeight);
+  audit.sourceImage=url;
+  audit.sourcePixels=[photoWidth,photoHeight];
   const photo=device.createTexture({
     size:[photoWidth,photoHeight,1],format:"rgba8unorm",
     usage:GPUTextureUsage.TEXTURE_BINDING|

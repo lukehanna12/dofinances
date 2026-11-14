@@ -312,7 +312,7 @@ body:has(> #workspace-shell .dashboard-home) #workspace-shell .main{
   min-width:0;
 }
 body:has(> #workspace-shell .dashboard-home){
-  --workspace-wallpaper-image:url("/app/assets/home-rice-terraces-hq.jpg");
+  --workspace-wallpaper-image:url("/app/assets/dashboard-cloud-veiled-colorful-fields.avif");
   --workspace-wallpaper-position:center center;
 }
 @media(prefers-reduced-transparency:reduce){

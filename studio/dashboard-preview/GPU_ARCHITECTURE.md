@@ -229,3 +229,22 @@ misrepresenting them as a proven hue producer/compositor. Tests verify
 endpoint ordering and Light > Dark for varied backdrop, opacity, and
 hue. Exact native face transfer, tint compositing, ColorSync/EDR
 remain OPEN, as before.
+
+
+## 2026-11-14 full-resolution Colosseum wallpaper selection
+
+The isolated Dashboard preview now uses the source `cloud-veiled-colorful-fields.avif`
+from the 70-image Colosseum Wallpapers utility. The source is retained
+**unchanged** at `studio/dashboard-preview/assets/cloud-veiled-colorful-fields.avif`:
+2400 × 1600 intrinsic pixels, 106,094 bytes, SHA-256
+`80006c73c633b57a9a2e63d17df9bbf35e8c86bc6d23491a12600eb8911842f2`.
+GitHub Actions copies the AVIF byte-for-byte to the preview's
+`/app/assets/dashboard-cloud-veiled-colorful-fields.avif` URL, verifies
+its hash and tests that the WebGPU decoder reports the full intrinsic
+dimensions. Both the GPU-owned scene and the CSS fallback use this exact
+asset, with no intermediate image compression, resizing, or re-encoding.
+As before, cover-fitting crops as needed for viewport aspect ratio;
+sampling/viewport conversion and the GPU's original authored veil remain
+unchanged. The existing production/Collections wallpaper references are
+intentionally unaffected. The previously used rice-terraces image
+remains untouched in the production source tree.
