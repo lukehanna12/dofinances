@@ -69,6 +69,23 @@ test("Providers routes keep credential mutations in the secure vault and tool gr
  assert.match(js,/event\.ctrlKey/);
  assert.match(js,/event\.shiftKey/);
 });
+test("Providers child navigation is text-only while the parent retains its icon",async()=>{
+ const html=await read("../sites/_apex/app/index.html");
+ const css=await read("../sites/_apex/app/assets/providers.css");
+ const begin=html.indexOf('id="providers-subnavigation"');
+ const end=html.indexOf('</div>',begin);
+ assert.ok(begin>=0&&end>begin);
+ const subnav=html.slice(begin,end);
+ for(const child of ["local","external","credentials"]){
+  assert.match(subnav,new RegExp('data-route="providers/'+child+'"'));
+  assert.match(subnav,new RegExp('href="#colosseum/providers/'+child+'"'));
+ }
+ assert.doesNotMatch(subnav,/<svg|pv-subnav-glyph|nav-icon/);
+ assert.match(html,/data-providers-toggle[^>]*>\s*<span class="nav-icon nav-icon-asset nav-icon-asset--providers"/);
+ assert.match(css,/#project-navigation \.pv-provider-child\{[^}]*padding:7px 10px 7px 19px;gap:0/);
+ assert.doesNotMatch(css,/pv-subnav-glyph/);
+});
+
 test("Public Studio retains its original two-pane Providers geometry alongside private child screens",async()=>{
  const studio=await read("../studio/sidebar/index.html");
  const production=await read("../sites/_apex/app/index.html");
