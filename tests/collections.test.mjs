@@ -1012,7 +1012,7 @@ test("Add, Edit and Select keep their identities within the fixed frosted dock",
  assert.ok(block.includes("--cs-dock-scale:1.5"));
  assert.ok(block.includes("position:fixed"));
  assert.ok(block.includes("background:rgba(14,15,17,.69)"),"Dock tint matches the lower topbar");
- assert.ok(block.includes("border:0"),"No fake glass rim");
+ assert.ok(block.includes("border:1px solid rgba(245,248,252,.065)"),"Dock outline matches the lower header hairline");
  assert.ok(block.includes("box-shadow:none"),"No inset faux glass outline");
  assert.ok(block.includes("-webkit-backdrop-filter:blur(18px) saturate(120%)"),"Match topbar blur");
  assert.ok(block.includes("backdrop-filter:blur(18px) saturate(120%)"),"Match topbar blur");

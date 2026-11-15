@@ -6,12 +6,16 @@ const css=read("sites/_apex/app/assets/collections.css");
 const js=read("sites/_apex/app/assets/collections.js");
 const html=read("sites/_apex/app/index.html");
 const topbar=read("sites/_apex/app/assets/workspace-wallpapers.css");
+const headerBorder=read("sites/_apex/app/assets/sidebar-glass.css");
 const dock=css.slice(css.indexOf("/* Floating Collections dock:"));
 test("Collections dock uses the exact lower topbar translucent tint and frosted material",()=>{
  assert.match(css,/#cs-root \.cs-control-center\{\s*--cs-dock-scale:1\.5;[\s\S]*?position:fixed;/);
  for(const value of ["background:rgba(14,15,17,.69);","-webkit-backdrop-filter:blur(18px) saturate(120%);","backdrop-filter:blur(18px) saturate(120%);"])
   assert.ok(topbar.includes(value)&&dock.includes(value),"Topbar material mismatch: "+value);
  assert.ok(dock.includes("box-shadow:none;")&&dock.includes("border-radius:9999px;"));
+ const hairline="border:1px solid rgba(245,248,252,.065);";
+ assert.ok(headerBorder.includes(hairline),"The lower topbar original hairline must remain unchanged");
+ assert.ok(dock.includes(hairline),"The Collections dock must reuse the exact lower topbar border");
  assert.match(dock,/#cs-root \.cs-control-center::before,\s*#cs-root \.cs-control-center::after\{\s*content:none;/);
  assert.ok(dock.includes("background:rgba(18,19,21,.93)"),"No-blur fallback matches topbar");
  assert.doesNotMatch(dock,/url\("#collections-oracle-live-glass"\)|feDisplacementMap|cs-oracle-ready|--cs-optical-/);

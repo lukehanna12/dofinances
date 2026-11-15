@@ -1106,7 +1106,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  min-height:calc(52px * var(--cs-dock-scale));
  margin:0;
  padding:calc(5px * var(--cs-dock-scale)) calc(8px * var(--cs-dock-scale));
- border:0;
+ border:1px solid rgba(245,248,252,.065);
  border-radius:9999px;
  background:rgba(14,15,17,.69);
  color:#fafafa;
