@@ -1,4 +1,5 @@
 import {initCollectionsTitleTransition} from "./collections-title-transition.js";
+import {initUtilitiesTitleTransition} from "./utilities-title-transition.js";
 import {initWorkspaceScroll} from "./workspace-scroll.js";
 import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
 import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
@@ -244,6 +245,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   }
   const workspaceScroll=initWorkspaceScroll(doc,win);
   const collectionsTitleTransition=initCollectionsTitleTransition(doc,win);
+  const utilitiesTitleTransition=initUtilitiesTitleTransition(doc,win);
   // The final breadcrumb is the active page, not an inert text label.
   // Native button activation (mouse, touch, Enter, Space) reuses the same
   // distance-aware RAF return-to-top trajectory, without changing routes.
@@ -317,6 +319,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     else workspaceScroll.reset();
     wallpaper.show(route,first);
     collectionsTitleTransition.setRoute(route);
+    utilitiesTitleTransition.setRoute(route);
   }
 
   desktopToggle.addEventListener("click",()=>{
