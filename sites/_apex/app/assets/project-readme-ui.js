@@ -197,10 +197,13 @@ export function initProjectReadme(){
  }
  async function loadReadme(){
   const slug=routeSlug();
-  if(!slug){state.slug=null;exitEdit();return;}
-  if(state.editing&&state.dirty){ // Never silently discard a pending editor draft on route change.
-   if(!confirm("Discard your unsaved README changes?")){location.hash="#"+slugRoute(state.slug);return;}
+  if(state.editing&&state.dirty){ // Never discard a draft when changing projects OR leaving a README.
+   if(!window.confirm("Discard your unsaved README changes?")){
+    if(state.slug)location.hash="#"+slugRoute(state.slug);
+    return;
+   }
   }
+  if(!slug){state.slug=null;exitEdit();return;}
   const ticket=++state.loadTicket;
   state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;
   reading.textContent="Loading README…";say("");
@@ -221,7 +224,6 @@ export function initProjectReadme(){
    if(data.source==="unavailable"||data.source==="missing"){
     say((data.error||"Repository README unavailable.")+" Showing the project's default README.",true);
    }
-   const previousTicket=state.renderTicket;
    void renderMarkup(state.original,reading,slug);
    if(!state.canEdit)edit.setAttribute("data-readonly","true");
    else edit.removeAttribute("data-readonly");

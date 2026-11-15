@@ -317,11 +317,12 @@ jobs:
           grep -Fq -- 'position:absolute;' "$source_css"
           ! grep -Fq -- 'workspace-at-end' "$source_css"
           python3 - "$source_js" <<'PY'
-          import re, sys, subprocess, tempfile, struct, os
+          import re, sys, subprocess, tempfile, struct, os, hashlib
 
           js = open(sys.argv[1], encoding="utf-8").read()
           assets = list(dict.fromkeys(re.findall(r'"sha":\s*"([a-f0-9]{64})",\s*"ext":\s*"(jpg|png|webp|avif)",\s*"name":\s*"[^"]+"(?:,\s*"path":\s*"([^"]+)")?', js)))
-          assert len(assets) == 8, f"Expected eight distinct wallpaper assets, got {len(assets)}"
+          assert len(assets) == 9, f"Expected nine distinct wallpaper assets, got {len(assets)}"
+          assert ("ade03e6d5958ddb9e1e5098ad67d46b7f4c801057aa77c85510d846ef8f75091", "png", "") in assets, "Uncompressed README PNG missing"
           def dimensions(data):
               # PNG IHDR
               if data.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -372,6 +373,9 @@ jobs:
                   command = ["curl", "--retry", "5", "--retry-all-errors", "--retry-delay", "2", "-fsSL", "--max-time", "35", "-D", hdr.name, "-o", tmp.name, url]
                   subprocess.run(command, check=True)
                   content = open(tmp.name, "rb").read()
+                  if sha == "ade03e6d5958ddb9e1e5098ad67d46b7f4c801057aa77c85510d846ef8f75091":
+                      assert len(content) == 2724541, f"Original README wallpaper PNG size mismatch: {len(content)}"
+                      assert hashlib.sha256(content).hexdigest() == sha, "README wallpaper bytes differ from lossless original"
                   headers = open(hdr.name, encoding="latin-1").read().lower()
                   mime = {"jpg":"image/jpeg","png":"image/png","webp":"image/webp","avif":"image/avif"}[ext]
                   assert f"content-type: {mime}" in headers, f"Unexpected MIME for {sha}: {headers[-900:]}"
@@ -389,7 +393,7 @@ jobs:
           invalid="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://dofinances.com/wallpapers/not-allowlisted.jpg)"
           test "$invalid" = 404
           rm "$source_js" "$source_css"
-          echo 'Git-managed Home and seven library-iii wallpapers are live'
+          echo 'Git-managed Home and eight library-iii wallpapers are live'
 
       - name: Verify authentication boundaries and new account security routes
         shell: bash
