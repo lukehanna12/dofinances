@@ -1,4 +1,5 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
+import {mountCollectionsGlass} from "./collections-glass.js";
 import {normalizeCollectionConfiguration,orderedCollectionTree,collectionDescendsFrom,moveCollectionInConfiguration} from "./collections-organization.js";
 /* Live Colosseum Collections — no cached collection records, demo data, or polling.
  * The only write surface is /api/colosseum/collections behind the existing
@@ -93,6 +94,9 @@ export function initColosseumCollections(){
  const root=document.getElementById("cs-root");
  if(!root||root.dataset.ready==="true")return;
  root.dataset.ready="true";
+ // Mount once: the fixed SVG backdrop is driven by route/size changes only.
+ // It samples the real browser backdrop, never precomputed wallpaper pixels.
+ mountCollectionsGlass(root);
  const $=id=>root.querySelector("#"+id);
  const state={
    collections:[],loaded:false,activeId:null,detail:null,
