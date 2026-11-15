@@ -318,8 +318,15 @@ export function initWorkspaceNavigation(doc=document,win=window){
     if(first)workspaceScroll.sync();
     else workspaceScroll.reset();
     wallpaper.show(route,first);
-    collectionsTitleTransition.setRoute(route);
-    utilitiesTitleTransition.setRoute(route);
+    // Reset the outgoing title controller BEFORE activating the incoming one.
+    // Both share breadcrumb.inert; resetting afterward would clobber it.
+    if(route==="colosseum/collections"){
+      utilitiesTitleTransition.setRoute(route);
+      collectionsTitleTransition.setRoute(route);
+    }else{
+      collectionsTitleTransition.setRoute(route);
+      utilitiesTitleTransition.setRoute(route);
+    }
   }
 
   desktopToggle.addEventListener("click",()=>{
