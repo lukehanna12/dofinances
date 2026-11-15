@@ -311,7 +311,7 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="apple-hig-navigation"/);
   assert.match(html,/data-view="apple-hig-reader\/overview"/);
-  assert.match(html,/<span class="count-label" id="project-count">2 projects<\/span>/);
+  assert.match(html,/<span class="count-label" id="project-count">13 projects<\/span>/);
   assert.match(html,/href="#apple-hig-reader\/readme"/);
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);
@@ -661,7 +661,14 @@ test("Apple HIG Reader showcases its Google Apps Script API rather than presenti
     assert.match(page,/live token-authenticated availability is not asserted here/);
     assert.doesNotMatch(page,/OFFICIAL DOCUMENTATION|Colosseum cloud reader<\/h2>/,
       "the project page must not revert to the earlier generic references layout");
-    assert.match(html,/Apple HIG Reader<\/strong><span>Google Apps Script · Live documentation reader/);
+    if(path.includes("studio/sidebar")){
+      assert.match(html,/Apple HIG Reader<\/strong><span>Google Apps Script · Live documentation reader/);
+    }else{
+      const showcase=await read("../sites/_apex/app/assets/project-showcase.js");
+      assert.match(showcase,/name:"Apple HIGs Reader"/);
+      assert.match(showcase,/repository:"lukehanna12\/apple-higs-reader"/);
+      assert.match(html,/id="project-list" class="project-showcase-grid"/);
+    }
   }
   const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.match(css,/\.hig-showcase-intro\{display:grid/);

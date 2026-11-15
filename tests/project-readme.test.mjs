@@ -44,7 +44,7 @@ test("Account-scoped project creation auto-seeds README and stores repository as
  assert.ok(store.includes('PRIMARY KEY(user_id,slug)'));
  assert.ok(store.includes('const template=name=>"# "+name'));
  assert.ok(store.includes('["colosseum","Colosseum","lukehanna12/colosseum"]'));
- assert.ok(store.includes('["apple-hig-reader","Apple HIG Reader",null]'));
+ assert.ok(store.includes('["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"]'));
  assert.ok(store.includes('this.sql.exec("INSERT INTO project_records(user_id,slug,name,repository,default_readme'));
  assert.ok(store.includes('projectSetPresentation'));
  assert.ok(store.includes('projectSaveLocal'));
