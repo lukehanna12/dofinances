@@ -1435,7 +1435,8 @@ test("Add utilities uses a button-filling square glyph, preserving exact origina
  assert.match(controls,/data-cs-action="admit" disabled aria-label="Add utilities \(coming later\)"/);
  assert.match(controls,/src="\/app\/assets\/add-utilities\.v1\.svg"/);
  assert.doesNotMatch(controls,/src="\/app\/assets\/add-collection\.v3\.svg"/);
- assert.match(html,/id="cs-create"[^>]*src="\/app\/assets\/add-collection\.v3\.svg"/);
+ const collectionButton=html.match(/<button[^>]*id="cs-create"[\s\S]*?<\/button>/)?.[0]||"";
+ assert.match(collectionButton,/src="\/app\/assets\/add-collection\.v3\.svg"/);
  assert.match(css,/#cs-root \.cs-utility-action--add\{overflow:hidden\}/);
  assert.match(css,/#cs-root \.cs-utility-action--add img\{width:24px;height:24px;border-radius:inherit;object-fit:fill\}/);
  assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-utility-action--add img\{width:20px;height:20px\}/);
