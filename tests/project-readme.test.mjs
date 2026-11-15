@@ -5,6 +5,7 @@ import {webcrypto} from "node:crypto";
 import {githubReadme,githubRepository,githubSaveReadme,githubMarkdown,githubRequest,githubIdentity,sealGithubToken,openGithubToken} from "../edge/project-readme.mjs";
 import {projectApi} from "../edge/project-api.mjs";
 import {makeReadmeDiff} from "../sites/_apex/app/assets/project-readme-ui.js";
+import {createReadmeMarkdownConverter,preserveReadmeSource} from "../sites/_apex/app/assets/readme-rich-markdown.js";
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const html=source("sites/_apex/app/index.html");
@@ -114,7 +115,7 @@ test("GitHub renderer uses the GFM Markdown endpoint and constrains its context"
 });
 
 test("README editing offers larger Collections-style controls, live preview, diff and permission errors",()=>{
- for(const id of ["rm-edit","rm-confirm","rm-diff","rm-markdown","rm-preview","rm-reading","rm-diff-panel",
+ for(const id of ["rm-edit","rm-confirm","rm-diff","rm-reading","rm-diff-panel",
   "rm-repository-form","rm-presentation","rm-notice"])assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(html.includes('aria-keyshortcuts="Meta+Shift+E"'));
  assert.ok(css.includes(".rm-icon-button{width:42px;height:42px"));
@@ -125,11 +126,11 @@ test("README editing offers larger Collections-style controls, live preview, dif
    "A draft must not be silently discarded on navigation out of the README screen");
  assert.ok(!ui.includes('if(!confirm("Discard your unsaved README changes?")'));
  assert.ok(ui.includes("GitHub token with Contents: Read and write permission"));
- assert.ok(ui.includes('const dirty=state.editing&&textarea.value!==state.original'));
+ assert.ok(ui.includes('const dirty=state.editing&&state.dirty'));
  assert.ok(ui.includes('confirm.hidden=!dirty'));
  assert.ok(ui.includes('diffButton.hidden=!dirty'));
  assert.ok(ui.includes('state.renderDelay=setTimeout'));
- assert.ok(ui.includes('makeReadmeDiff(state.original,textarea.value)'));
+ assert.ok(ui.includes('makeReadmeDiff(state.original,state.draft)'));
  const diff=makeReadmeDiff("one\ntwo\nthree","one\nchanged\nthree");
  assert.ok(diff.some(line=>line.type==="removed"&&line.text==="two"));
  assert.ok(diff.some(line=>line.type==="added"&&line.text==="changed"));
@@ -138,7 +139,18 @@ test("README editing offers larger Collections-style controls, live preview, dif
 
 test("GitHub visual defaults, three per-project styles and unsafe HTML rebuilding",()=>{
  assert.ok(html.includes('class="rm-reading markdown-body"'));
- assert.ok(html.includes('class="rm-preview-pane"'));
+ assert.ok(html.includes('class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
+ assert.ok(html.includes('rm-control-wrap rm-edit-surround'));
+ assert.doesNotMatch(html,/id="rm-markdown"|id="rm-preview"|id="rm-editor"/);
+ assert.ok(css.includes('.rm-edit-surround{'));
+ assert.ok(css.includes('background:#212121'));
+ assert.ok(css.includes('box-shadow:inset 0 0 1px rgba(255,255,255,.2)'));
+ assert.ok(ui.includes('reading.contentEditable="true"'));
+ assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
+ assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
+ assert.ok(ui.includes('reading.addEventListener("input"'));
+ assert.ok(ui.includes('converter.turndown(reading)'));
+ assert.ok(!ui.includes('renderMarkup(textarea.value'));
  assert.ok(html.includes('option value="github"'));
  assert.ok(html.includes('option value="minimal"'));
  assert.ok(html.includes('option value="reader"'));
@@ -261,4 +273,61 @@ test("Reading and live editor use independent, route-bound rendering revisions",
  assert.ok(ui.includes('++state.loadTicket;++state.readingRenderTicket;'),
   "Leaving the README must invalidate in-flight reads");
  assert.ok(!ui.includes("state.renderTicket"),"The single shared render revision was a race condition");
+});
+
+
+test("Editing is directly on the stable GitHub-rendered document, with no split editor",()=>{
+ assert.equal((html.match(/id="rm-reading"/g)||[]).length,1);
+ assert.ok(html.includes('id="rm-reading" class="rm-reading markdown-body"'));
+ assert.ok(!html.includes('id="rm-editor"')&&!html.includes('id="rm-markdown"')&&!html.includes('id="rm-preview"'));
+ assert.ok(!css.includes('.rm-editor{')&&!css.includes('.rm-preview-pane'));
+ assert.ok(css.includes('rm-reading[contenteditable="true"]'));
+ assert.ok(css.includes('outline:none;caret-color:#f0f6fc'));
+ assert.ok(ui.includes('reading.contentEditable="true"'));
+ assert.ok(ui.includes('reading.contentEditable="false"'));
+ assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
+ assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
+ assert.ok(ui.includes('reading.addEventListener("paste"'));
+ assert.ok(ui.includes('event.clipboardData?.getData("text/plain")'));
+ assert.ok(ui.includes('reading.addEventListener("drop"'));
+ assert.ok(!ui.includes('textarea.focus(')&&!ui.includes('reading.focus('));
+ assert.ok(ui.includes('state.draft')&&ui.includes('reading.addEventListener("input"'));
+ assert.ok(ui.includes('makeReadmeDiff(state.original,state.draft)'));
+ assert.ok(ui.includes('state.source?.sha||null'),"Keep SHA-based concurrency protection");
+});
+
+test("The edit control is enclosed by the Collections-style circular surface",()=>{
+ const surround=css.slice(css.indexOf(".rm-edit-surround{"),css.indexOf(".rm-edit-surround #rm-edit{"));
+ assert.match(surround,/padding:4px/);
+ assert.match(surround,/border-radius:999px/);
+ assert.match(surround,/background:#212121/);
+ assert.match(surround,/box-shadow:inset 0 0 1px rgba\(255,255,255,\.2\)/);
+ assert.ok(html.includes('class="rm-control-wrap rm-edit-surround"'));
+ assert.ok(css.includes('.rm-edit-surround #rm-edit{width:42px;height:42px}'));
+ assert.ok(css.includes('.rm-confirm{background:#fff;color:#141414'));
+ assert.ok(html.includes('id="rm-diff"'));
+});
+
+test("In-place GFM conversion ships locally, preserving rich and unchanged source",()=>{
+ const vendored=source("sites/_apex/app/assets/readme-rich-markdown.js");
+ const license=source("sites/_apex/app/assets/readme-rich-markdown.LICENSE");
+ assert.ok(vendored.includes("TurndownService"));
+ assert.ok(vendored.includes("highlightedCodeBlock"));
+ assert.ok(vendored.includes("taskListItems"));
+ assert.ok(vendored.includes("tablesPlugin"));
+ assert.ok(vendored.includes('converter.addRule("readme-original-link"'));
+ assert.ok(vendored.includes('converter.addRule("readme-original-image"'));
+ assert.ok(license.includes("MIT License"));
+ const c=createReadmeMarkdownConverter();
+ assert.equal(c.options.codeBlockStyle,"fenced");
+ assert.equal(c.options.headingStyle,"atx");
+ assert.equal(typeof c.turndown,"function");
+ const original="# Title\n\nOne **bold** word.\n<!-- preserve this comment -->\n";
+ const canonical="# Title\n\nOne **bold** word.";
+ assert.equal(preserveReadmeSource(original,canonical,canonical),original);
+ assert.equal(preserveReadmeSource(original,canonical,"# Title\n\nOne **new** word."),
+  "# Title\n\nOne **new** word.\n<!-- preserve this comment -->\n");
+ const insertion="# Title\n\nOne **newer bold** word.";
+ const patched=preserveReadmeSource(original,canonical,insertion);
+ assert.ok(patched.includes("newer bold"));
 });
