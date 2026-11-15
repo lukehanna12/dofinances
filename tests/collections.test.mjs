@@ -555,7 +555,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     ["utilities-screen-sidebar-icon.v1.svg","0 0 29.3483 29.6524"],
     ["providers-screen-sidebar-icon.v1.svg","0 0 32.4458 30.9494"],
     ["permissions-screen-sidebar-icon.v2.svg","0 0 20.5504 25.5361"],
-    ["diagnostics-screen-sidebar-icon.v1.svg","0 0 27.9802 22.8475"],
+    ["diagnostics-screen-sidebar-icon.v2.svg","0 0 24.8594 26.3093"],
     ["add-collection.v1.svg","0 0 31.9317 23.3643"]
   ]){
     const svg=src("sites/_apex/app/assets/"+name);

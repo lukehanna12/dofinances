@@ -147,9 +147,9 @@ test("Diagnostics sidebar uses exact local waveform.path.ecg SF Symbol v2",()=>{
   assert.match(source,/data-sf-export="WaveformPathEcg"/);
   assert.match(source,/viewBox="0 0 24\.8594 26\.3093"/);
   assert.match(source,/M0\.601954 15\.2947L6\.13877 15\.2947/);
-  assert.match(source,/fill-opacity="0\\.85"/);
+  assert.match(source,/fill-opacity="0\.85"/);
   const workflow=read("../.github/workflows/site.yml");
-  assert.match(workflow,/cp sites\\/_apex\\/app\\/assets\\/diagnostics-screen-sidebar-icon\\.v2\\.svg dist\\/app\\/assets\\/diagnostics-screen-sidebar-icon\\.v2\\.svg/);
+  assert.ok(workflow.includes("cp sites/_apex/app/assets/diagnostics-screen-sidebar-icon.v2.svg dist/app/assets/diagnostics-screen-sidebar-icon.v2.svg"));
   assert.match(theme,/mask-image:url\("\/app\/assets\/diagnostics-screen-sidebar-icon\.v2\.svg"\)/);
   assert.doesNotMatch(theme,/diagnostics-screen-sidebar-icon\.v1\.svg/);
 });
