@@ -378,7 +378,8 @@ test("Expanded collection cards omit redundant Colosseum membership caption on d
  assert.ok(!js.includes("Collection membership, directly from Colosseum"));
  assert.ok(!css.includes(".cs-caption{"),"Remove obsolete footer spacing");
  assert.ok(js.includes('const markup=selected?cardMarkup():"";'));
- assert.ok(js.includes("if(detail.innerHTML!==markup)detail.innerHTML=markup;"));
+ assert.ok(js.includes('if((selected||!layout.classList.contains("cs-detail-resizing"))&&detail.innerHTML!==markup)'),
+   "Desktop card remains mounted during an exit but is replaced when switching open collections");
  assert.ok(js.includes("if(mobile.innerHTML!==markup)mobile.innerHTML=markup;"),
    "Desktop and mobile must use the same caption-free card");
  assert.ok(js.includes('Revision '),"Retain the actual collection revision and utility summary");
