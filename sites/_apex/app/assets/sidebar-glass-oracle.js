@@ -366,7 +366,10 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
     // shortcut erased every displacement sample in the left half of the
     // pane, even at its upper/lower outline; that shortcut has no AIR
     // provenance. Keep only the proven distance-domain optimization.
-    if(dst>activeSpan){
+    // The sidebar shortcut is exact only for its <=24px corners. A pill
+    // has ~65px corners, so it must evaluate ALL mode5 samples, including
+    // pixels whose rectangular-edge distance exceeds the AIR active span.
+    if(shape==="sidebar"&&dst>activeSpan){
       inner[i]=outer[i]=128;
       inner[i+1]=outer[i+1]=128;
       inner[i+2]=outer[i+2]=0;
