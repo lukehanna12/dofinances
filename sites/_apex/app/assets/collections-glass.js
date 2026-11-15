@@ -64,7 +64,7 @@ const hasUsableSVGBackdrop=win=>{
  // Known SVG backdrop-filter limitations:
  // https://bugs.webkit.org/show_bug.cgi?id=245510
  // https://github.com/mdn/browser-compat-data/issues/24110
- if(/Firefox\//.test(ua)||/Safari\//.test(ua)&&!/Chrome\/|Chromium\/|CriOS\/|Edg\//.test(ua))
+ if(/Firefox\/|iPhone|iPad|iPod/.test(ua)||/Safari\//.test(ua)&&!/Chrome\/|Chromium\/|Edg\//.test(ua))
   return false;
  const ref='url("#'+FILTER_ID+'")';
  return !!win.CSS?.supports?.("backdrop-filter",ref)||
@@ -102,7 +102,8 @@ export function mountCollectionsGlass(root,doc=document,win=window){
   panel.classList.add("cs-oracle-ready");
  };
  const accept=response=>{
-  if(disposed||!response?.key||response.error)return;
+  if(disposed||!response?.key)return;
+  if(response.error){fail();return;}
   const {key,w,h}=response;
   const url=response.png||(
    response.pixels?pngURL(doc,response.pixels,w,h):null);
