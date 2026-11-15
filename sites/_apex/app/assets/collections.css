@@ -1203,8 +1203,9 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(max-width:440px){
  #cs-root .cs-control-center{
   --cs-dock-scale:1.5;
-  right:calc(12px + env(safe-area-inset-right,0px));
-  bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  /* Reserve the full outer glass span inside the mobile viewport. */
+  right:calc(24px + env(safe-area-inset-right,0px));
+  bottom:calc(24px + env(safe-area-inset-bottom,0px));
  }
 }
 @media(max-width:360px){
