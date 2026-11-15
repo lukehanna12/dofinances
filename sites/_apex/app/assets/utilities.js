@@ -262,6 +262,7 @@ export function initColosseumUtilities(){
    return;
   }
   s.activeUid=s.activeUid===uid?null:uid;
+  report("");
   s.detail=null;s.detailError=null;s.detailSeq++;
   syncActive();renderDetail();
   if(s.activeUid)void loadDetails(s.activeUid);
@@ -521,7 +522,7 @@ export function initColosseumUtilities(){
    const results=Array.isArray(data)?data:Array.isArray(data?.items)?data.items:
     Array.isArray(data?.updates)?data.updates:Array.isArray(data?.results)?data.results:[];
    elements.updateResults.textContent=results.length?
-    results.map(x=>esc(x.name||x.inventory_uid)+": "+esc(x.status||"indeterminate")+
+    results.map(x=>plain(x.name||x.inventory_uid)+": "+plain(x.status||"indeterminate")+
      (x.observed_revision&&x.observed_revision!==x.saved_revision?" · revision differs (unverified)":"")).join(" · "):
     "No update candidates were returned. No changes were installed or published.";
   }catch(error){elements.updateResults.textContent=error.message||String(error);}
@@ -556,7 +557,7 @@ export function initColosseumUtilities(){
  elements.query.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();void loadPage(0,null);}});
  elements.query.addEventListener("search",()=>void loadPage(0,null));
  elements.sort.addEventListener("change",()=>void loadPage(0,null));
- elements.refresh.addEventListener("click",()=>void loadPage(0,null));
+ elements.refresh.addEventListener("click",()=>{s.collectionChoices=null;void loadPage(0,null);});
  elements.filterToggle.addEventListener("click",()=>{
   const open=elements.filters.hidden;elements.filters.hidden=!open;elements.filterToggle.setAttribute("aria-expanded",String(open));
   if(open)void loadCollectionChoices();
