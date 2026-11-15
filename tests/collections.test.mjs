@@ -1434,7 +1434,7 @@ test("Utility management is a scaled Collections-like shell matching count-bubbl
  assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent"));
  assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
  assert.ok(css.includes("#cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}"));
- assert.ok(css.includes("#cs-root .cs-utility-action{width:20px;height:20px}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}"));
 });
 test("Both search bars use the exact magnifying glass in the upper top bar and show tooltips",()=>{
  const navStyles=src("sites/_apex/app/assets/workspace-enhancements.css");
