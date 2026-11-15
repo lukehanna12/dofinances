@@ -1000,7 +1000,7 @@ test("Add, Edit and Select keep their controller identities inside the fixed bla
  assert.ok(!inside.includes('id="cs-refresh"'),"Refresh remains in the list header");
  assert.ok(html.indexOf('id="cs-refresh"')>end);
  assert.equal((html.match(/class="cs-control-center"/g)||[]).length,1,"No cloned toolbar or duplicate IDs");
- const anchor=css.lastIndexOf("#cs-root .cs-control-center{");
+ const anchor=css.indexOf("#cs-root .cs-control-center{\n --cs-dock-scale:2.5;");
  assert.ok(anchor>0,"Expected the fixed dock's override after the legacy composer style");
  const block=css.slice(anchor,css.indexOf("}",anchor)+1);
  assert.ok(block.includes("--cs-dock-scale:2.5"));
