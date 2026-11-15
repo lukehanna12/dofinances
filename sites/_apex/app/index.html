@@ -462,8 +462,12 @@
                   </select>
                   <button class="ut-refresh" id="ut-refresh" type="button" aria-label="Refresh utilities"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
                 </div>
-                <form class="ut-filter-panel" id="ut-filters" hidden aria-label="Include and exclude utility categories">
+                <form class="ut-filter-panel" id="ut-filters" data-mode="include" hidden aria-label="Include and exclude utility categories">
                   <div class="ut-filter-heading"><span>Filter catalog</span><span class="ut-overline">AND across fields · OR within values</span></div>
+                  <div class="ut-filter-mode" role="group" aria-label="Filter direction">
+                    <button type="button" data-ut-filter-tab="include" aria-pressed="true">Include</button>
+                    <button type="button" data-ut-filter-tab="exclude" aria-pressed="false">Exclude</button>
+                  </div>
                   <div class="ut-filter-fields" id="ut-filter-fields"></div>
                   <div class="ut-filter-actions">
                     <button class="ut-small-button" id="ut-filters-clear" type="button">Clear</button>

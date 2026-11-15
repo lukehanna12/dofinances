@@ -437,3 +437,33 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  #ut-root .ut-chevron{width:12px;height:12px}
  #ut-root .ut-mobile-detail{margin-top:20px}
 }
+
+
+/* Compact filter modes: no 22-control double stack. Hidden mode keeps its
+   values in the DOM, so changing tabs never discards include/exclude picks. */
+#ut-root .ut-filter-mode{
+ display:inline-flex;gap:3px;padding:3px;margin-bottom:15px;
+ background:#1d1d1d;border:1px solid #2d2d2d;border-radius:10px;
+}
+#ut-root .ut-filter-mode button{
+ border:0;border-radius:7px;background:transparent;color:#858585;
+ min-width:92px;height:29px;padding:0 15px;font-size:11px;font-weight:550;
+ transition:background .16s,color .16s;
+}
+#ut-root .ut-filter-mode button[aria-pressed="true"]{background:#333;color:#fafafa}
+#ut-root .ut-filter-mode button:not([aria-pressed="true"]):hover{color:#e4e4e4}
+#ut-root .ut-filter-panel[data-mode="include"] .ut-filter-field[data-ut-filter-side="exclude"],
+#ut-root .ut-filter-panel[data-mode="exclude"] .ut-filter-field[data-ut-filter-side="include"]{display:none}
+
+/* Mirror Collections' mobile accordion: loading card has a stable initial
+   envelope, then expands through a native max-height transition when ready. */
+@media(max-width:1023px){
+ #ut-root .ut-mobile-detail{
+  overflow:hidden;max-height:114.1px;
+  transition:max-height .45s cubic-bezier(.4,0,.2,1);
+ }
+ #ut-root .ut-mobile-detail.ut-detail-ready{max-height:540px}
+}
+@media(prefers-reduced-motion:reduce){
+ #ut-root .ut-mobile-detail{transition:none!important}
+}
