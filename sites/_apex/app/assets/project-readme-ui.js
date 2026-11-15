@@ -176,7 +176,7 @@ export function initProjectReadme(){
  function updateDraft(){
   if(!state.editing||state.processing)return;
   try{
-   const rich=converter.turndown(reading);
+   const rich=converter.turndown(reading).replace(/\u200b/g,"");
    state.dirty=rich!==state.richBaseline;
    state.draft=state.dirty?preserveReadmeSource(state.original,state.richBaseline,rich):state.original;
    state.conversionError=state.draft.length>180000?"README exceeds the 180 KB limit.":null;
@@ -280,7 +280,7 @@ export function initProjectReadme(){
    return;
   }
   say("");
-  try{state.richBaseline=converter.turndown(reading);}
+  try{state.richBaseline=converter.turndown(reading).replace(/\u200b/g,"");}
   catch(error){say("Cannot edit this document safely: "+error.message,true);return;}
   state.savedDom=reading.cloneNode(true);
   state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;

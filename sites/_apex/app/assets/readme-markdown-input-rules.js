@@ -118,8 +118,20 @@ function placeCaret(doc,element,offset=0){
  r.collapse(true);
  selection.removeAllRanges();selection.addRange(r);
 }
+const CARET_ANCHOR="\u200b";
 function fillEmpty(doc,node){
- if(!node.childNodes.length)node.append(doc.createElement("br"));
+ // A zero-width text anchor (not an empty BR-only element) keeps Chromium's
+ // Selection attached when contenteditable replaces an empty heading/list.
+ if(!node.childNodes.length)node.append(doc.createTextNode(CARET_ANCHOR));
+}
+function clearCaretAnchor(root){
+ const selection=root.ownerDocument.getSelection?.();
+ const node=selection?.anchorNode;
+ if(!node||node.nodeType!==NODE_TEXT||!node.data.includes(CARET_ANCHOR))return;
+ const offset=selection.anchorOffset;
+ const removedBefore=node.data.slice(0,offset).split(CARET_ANCHOR).length-1;
+ node.data=node.data.split(CARET_ANCHOR).join("");
+ if(selection.isCollapsed)placeCaret(root.ownerDocument,node,Math.max(0,offset-removedBefore));
 }
 function transferChildren(from,to){
  while(from.firstChild)to.append(from.firstChild);
@@ -215,19 +227,20 @@ function applyBlock(root,ctx,trigger,pendingSpace=""){
    caretTarget=doc.createElement("code");
    if(rule.language)caretTarget.className="language-"+rule.language;
    // A text node allows a caret inside an initially empty code block.
-   caretTarget.append(doc.createTextNode(""));
+   caretTarget.append(doc.createTextNode(CARET_ANCHOR));
    container.append(caretTarget);break;
   case "hr":
    container=doc.createElement("hr");
    caretTarget=doc.createElement("p");
-   caretTarget.append(doc.createElement("br"));
+   fillEmpty(doc,caretTarget);
    block.replaceWith(container,caretTarget);
-   placeCaret(doc,caretTarget,0);
+   placeCaret(doc,caretTarget.firstChild,caretTarget.firstChild.length);
    return true;
   default:return false;
  }
  block.replaceWith(container);
- if(rule.kind==="fence")placeCaret(doc,caretTarget.firstChild,0);
+ if(caretTarget.firstChild?.nodeType===NODE_TEXT)
+  placeCaret(doc,caretTarget.firstChild,caretTarget.firstChild.length);
  else placeCaret(doc,caretTarget,0);
  return true;
 }
@@ -254,7 +267,9 @@ function handleCodeEnter(root,ctx){
 
 /** Convert a newly typed space or closing delimiter into rendered GFM. */
 export function applyReadmeMarkdownInput(root,event){
- if(!root||event?.isComposing||event?.inputType?.startsWith?.("delete"))return false;
+ if(!root||event?.isComposing)return false;
+ clearCaretAnchor(root);
+ if(event?.inputType?.startsWith?.("delete"))return false;
  if(event?.inputType!=="insertText")return false;
  const ctx=selectedCaret(root);
  if(!ctx)return false;

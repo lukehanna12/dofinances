@@ -400,6 +400,9 @@ test("Markdown input engine is wired to existing rendered README without split v
  assert.ok(rules.includes('return defer(ctx,()=>applyBlock(root,ctx,"space"," "))'));
  assert.ok(rules.includes('return defer(ctx,()=>applyInline(root,ctx,event.data))'));
  assert.ok(rules.includes('setTimeout(()=>{'));
+ assert.ok(rules.includes('const CARET_ANCHOR="\\u200b"'));
+ assert.ok(rules.includes('clearCaretAnchor(root)'));
+ assert.ok(ui.includes('converter.turndown(reading).replace(/\\u200b/g,"")'));
  assert.ok(rules.includes('event.preventDefault()'));
  assert.ok(rules.includes('node.parentElement?.closest("code,pre,kbd,samp,a")'));
  assert.ok(html.includes('id="rm-reading" class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
