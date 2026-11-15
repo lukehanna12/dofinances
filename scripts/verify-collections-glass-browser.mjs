@@ -256,6 +256,16 @@ try{
 
  await command("Emulation.setDeviceMetricsOverride",{width:365,height:740,deviceScaleFactor:2,mobile:true});
  await pause(300);
+ const mobileRailTip=await evaluate('(()=>{const link=document.querySelector("#main-navigation .nav-link");'+
+  'link.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
+  'const t=document.getElementById("workspace-rail-tooltip");'+
+  'return {visible:t.classList.contains("is-visible"),display:getComputedStyle(t).display}})()');
+ assert.equal(mobileRailTip.visible,false);
+ assert.equal(mobileRailTip.display,"none","Never show collapsed-desktop rail labels in the mobile drawer");
+ // Remove the supplemental sidebar before measuring the original floating
+ // dock. A collapsed rail changes the test page's shell layout on mobile,
+ // but the real application never displays a collapsed desktop rail there.
+ await evaluate('(()=>{window.__rail.dispose();document.getElementById("workspace-sidebar")?.remove();document.getElementById("workspace-shell").classList.remove("is-collapsed");return true})()');
  const narrow=await evaluate(metrics);
  assert.ok(narrow.right<=narrow.viewport[0]-10,"Floating glass dock stays within small viewport");
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
@@ -268,12 +278,6 @@ try{
  for(const r of mobileRoutes.filter(r=>r.mode!=="unknown"))
   assert.ok(Math.abs(r.iconHeight/r.rawHeight-.6)<.003,
    "Every mobile icon must retain the 60% scale");
- const mobileRailTip=await evaluate('(()=>{const link=document.querySelector("#main-navigation .nav-link");'+
-  'link.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
-  'const t=document.getElementById("workspace-rail-tooltip");'+
-  'return {visible:t.classList.contains("is-visible"),display:getComputedStyle(t).display}})()');
- assert.equal(mobileRailTip.visible,false);
- assert.equal(mobileRailTip.display,"none","Never show collapsed-desktop rail labels in the mobile drawer");
 
  const mobileSquare=await evaluate(squareMetrics);
  assert.equal(mobileSquare.buttonRadius,"6px");
