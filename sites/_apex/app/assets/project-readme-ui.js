@@ -132,7 +132,7 @@ export function initProjectReadme(){
  const diffPanel=$("rm-diff-panel"),diffContent=$("rm-diff-content");
  const form=$("project-create-form"),repoForm=$("rm-repository-form");
  const state={projects:[],slug:null,source:null,original:"",dirty:false,editing:false,canEdit:false,
-   renderTicket:0,loadTicket:0,renderDelay:null,processing:false,loaded:false};
+   readingRenderTicket:0,previewRenderTicket:0,loadTicket:0,renderDelay:null,processing:false,loaded:false};
  const say=(message,error=false,success=false,node=notice)=>{
   node.hidden=!message;node.textContent=message||"";node.classList.toggle("rm-error",!!error);node.classList.toggle("rm-success",!!success);
  };
@@ -158,15 +158,18 @@ export function initProjectReadme(){
  const exitEdit=()=>{
   state.editing=false;
   textarea.value=state.original;
-  ++state.renderTicket;
+  ++state.previewRenderTicket;
   paintControls();
  };
  async function renderMarkup(markdown,target,slug){
-  const ticket=++state.renderTicket;
+  // Reading and live preview must not invalidate each other's network response.
+  // Bind each render to both its target and its originating project.
+  const key=target===reading?"readingRenderTicket":"previewRenderTicket";
+  const ticket=++state[key];
   let html;
   try{html=(await api("/api/projects/render","POST",{markdown,slug})).html;}
   catch(error){html=fallbackMarkdown(markdown);if(target===reading&&active())say("GitHub Markdown rendering unavailable; using a basic text preview. "+error.message,true);}
-  if(ticket!==state.renderTicket||!view.isConnected)return;
+  if(ticket!==state[key]||state.slug!==slug||!view.isConnected)return;
   target.replaceChildren(sanitizeMarkdown(html,{slug,repository:source()?.project?.repository,path:source()?.path}));
  }
  function populateProjectCards(projects){
@@ -203,8 +206,13 @@ export function initProjectReadme(){
     return;
    }
   }
-  if(!slug){state.slug=null;exitEdit();return;}
+  if(!slug){
+   // Drop pending content responses from the previous project upon leaving.
+   ++state.loadTicket;++state.readingRenderTicket;
+   state.slug=null;exitEdit();return;
+  }
   const ticket=++state.loadTicket;
+  ++state.readingRenderTicket;++state.previewRenderTicket;
   state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;
   reading.textContent="Loading README…";say("");
   $("rm-project-label").textContent=(state.projects.find(p=>p.slug===slug)?.name||slug).toUpperCase();
