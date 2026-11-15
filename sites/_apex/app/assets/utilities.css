@@ -592,3 +592,118 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  #ut-root .ut-skeleton-bar,#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{animation:none;background-position:50% 0}
  #ut-root .ut-summary-dot{animation:none}
 }
+
+
+/* Collections-parity search control and tooltip. Magnifier focuses the
+   input, rather than submitting a separate search request. */
+#ut-root .ut-search-control{position:relative;display:inline-flex;align-items:center;justify-content:center;align-self:stretch;width:29px;flex:none}
+#ut-root .ut-search-focus{position:absolute;inset:0;width:100%;height:100%;display:grid;place-items:center;padding:0;border:0;border-radius:9px 0 0 9px;background:transparent;color:inherit;cursor:text}
+#ut-root .ut-search-focus:disabled{opacity:.55;cursor:default}
+#ut-root .ut-search-focus img{display:block;width:14px;height:14px;object-fit:contain;pointer-events:none}
+#ut-root .ut-search-focus:hover:not(:disabled),#ut-root .ut-search-focus:focus-visible{background:rgba(255,255,255,.055)}
+#ut-root .ut-search-control .ut-tooltip{bottom:auto;top:calc(100% + 7px);left:0;transform-origin:top left}
+#ut-root .ut-search-control:hover .ut-tooltip,#ut-root .ut-search-focus:focus-visible + .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#ut-root .ut-search-control .ut-search-focus:focus-visible + .ut-tooltip{transition-delay:0s,0s,0s}
+#ut-root .ut-search input[type="search"]{font:500 12px/1.3 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#efefef;caret-color:#fff}
+#ut-root .ut-search input[type="search"]::placeholder{color:#595959;opacity:1}
+#ut-root .ut-shortcut-tooltip{display:flex;align-items:center;justify-content:space-between;gap:17px}
+#ut-root .ut-shortcut-keys{display:inline-flex;gap:3px;align-items:center;color:#adadad;font-size:12px}
+#ut-root .ut-shortcut-keys kbd{font:inherit;white-space:nowrap}
+#ut-root .ut-refresh-stack .ut-update-control{position:absolute;right:0;bottom:calc(100% + 9px);z-index:5;width:max-content;height:32px;display:inline-flex;justify-content:flex-end}
+#ut-root .ut-refresh-stack .ut-update-control .ut-update-check{position:relative;inset:auto;height:32px;white-space:nowrap;min-width:max-content}
+#ut-root .ut-refresh-stack .ut-refresh-control{width:32px;height:32px;display:inline-flex}
+#ut-root .ut-refresh-stack .ut-update-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 11px);transform-origin:bottom right}
+#ut-root .ut-refresh-stack .ut-refresh-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 12px);transform-origin:bottom right}
+#ut-root .ut-control-center > .ut-tooltip-wrap:last-child .ut-tooltip{left:auto;right:0;transform-origin:bottom right}
+
+/* Collections' numbered circular pagination with ellipses and real page
+   selection. No disabled current-page pill or "more available" chrome. */
+#ut-root .ut-pages{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin-top:25px}
+#ut-root .ut-pages .ut-page{width:36px;min-width:36px;height:36px;padding:0;border:1px solid var(--ut-line);border-radius:999px;background:var(--ut-fill);color:#a3a3a3;display:grid;place-items:center;font-size:12px;position:relative;transition:background .2s,color .2s,transform .2s}
+#ut-root .ut-pages .ut-page:hover:not(:disabled){background:#262626;color:#fafafa}
+#ut-root .ut-pages .ut-page[aria-current="page"]{background:#fff;border-color:#fff;color:#171717;font-weight:600;transform:scale(1.03);opacity:1;cursor:default}
+#ut-root .ut-pages .ut-page svg{width:16px;height:16px}
+#ut-root .ut-page-gap{font-size:12px;color:#a3a3a3}
+
+/* Only an explicitly picked utility gets a filled circle/checkmark. The
+   picker is separate from the row's disclosure button and stays mounted
+   across mode transitions, exactly like the Collections row picker. */
+#ut-root .ut-row-pick{
+ position:absolute;z-index:8;right:0;top:calc((var(--ut-row-height) - var(--ut-row-divider))/2);
+ display:grid;place-items:center;width:22px;height:30px;padding:0;border:0;border-radius:7px;
+ background:transparent;color:#a3a3a3;opacity:0;visibility:hidden;
+ transform:translateY(-50%);pointer-events:none;
+}
+#ut-root .ut-row-pick:disabled{opacity:0;pointer-events:none}
+#ut-root.ut-selecting .ut-row-pick{opacity:1;visibility:visible;pointer-events:auto}
+#ut-root .ut-row-pick:hover:not(:disabled){color:#fff}
+#ut-root .ut-select-bubble{display:grid;place-items:center;width:18px;height:18px;border:1.5px solid currentColor;border-radius:999px;transition:background .15s,border-color .15s,color .15s}
+#ut-root .ut-select-bubble svg{width:12px;height:12px;opacity:0;stroke-width:2.4;transition:opacity .12s}
+#ut-root .ut-row-pick[aria-pressed="true"] .ut-select-bubble{background:#fff;border-color:#fff;color:#101010}
+#ut-root .ut-row-pick[aria-pressed="true"] .ut-select-bubble svg{opacity:1}
+#ut-root.ut-selecting .ut-chevron,#ut-root.ut-editing .ut-chevron{opacity:0;transform:translate(-20px,-50%)}
+#ut-root.ut-selecting .ut-row-main:disabled,#ut-root.ut-editing .ut-row-main:disabled,
+#ut-root.ut-entering-selection .ut-row-main:disabled,#ut-root.ut-leaving-selection .ut-row-main:disabled,
+#ut-root.ut-entering-edit .ut-row-main:disabled,#ut-root.ut-leaving-edit .ut-row-main:disabled{opacity:1;cursor:default}
+#ut-root.ut-entering-selection .ut-row-pick:disabled{visibility:visible;animation:ut-pick-enter-right 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-entering-selection .ut-chevron{animation:ut-chevron-exit-left 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-leaving-selection .ut-row-pick:disabled{visibility:visible;animation:ut-pick-exit-left 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-leaving-selection .ut-chevron{animation:ut-chevron-enter-right 480ms cubic-bezier(.22,1,.36,1) both}
+@keyframes ut-pick-enter-right{from{transform:translate(20px,-50%);opacity:0}to{transform:translate(0,-50%);opacity:1}}
+@keyframes ut-pick-exit-left{from{transform:translate(0,-50%);opacity:1}to{transform:translate(-20px,-50%);opacity:0}}
+@keyframes ut-chevron-exit-left{from{transform:translate(0,-50%);opacity:1}to{transform:translate(-20px,-50%);opacity:0}}
+@keyframes ut-chevron-enter-right{from{transform:translate(20px,-50%);opacity:0}to{transform:translate(0,-50%);opacity:1}}
+
+/* Inline rename mirrors Collections. Readable glyph-width fields replace
+   display labels only in Edit mode; pencil extends underline on click and
+   check/cancel stage a name until Done saves GitHub-first. */
+#ut-root .ut-name-field{
+ position:absolute;z-index:7;top:calc((var(--ut-row-height) - var(--ut-row-divider))/2);
+ left:69px;right:35px;transform:translateY(-50%);height:34px;display:flex;
+ align-items:center;gap:6px;white-space:nowrap;min-width:0;
+ font-size:clamp(14px,1.35vw,16px);font-weight:500;line-height:1.4;letter-spacing:-.025em;
+ opacity:0;visibility:hidden;pointer-events:none;
+ transition:opacity 480ms cubic-bezier(.22,1,.36,1),visibility 0s linear 480ms;
+}
+#ut-root.ut-editing .ut-name-field{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+#ut-root.ut-editing .ut-row-copy{opacity:0;pointer-events:none}
+#ut-root .ut-name-editor{position:relative;display:flex;align-items:center;flex:0 1 auto;width:var(--ut-inline-name-width,120px);min-width:24px;max-width:calc(100% - 26px);height:31px;transition:width 125ms cubic-bezier(.16,1,.3,1)}
+#ut-root .ut-name-measure{position:absolute;top:0;left:0;display:inline-block;width:max-content;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;letter-spacing:inherit}
+#ut-root .ut-inline-name{display:block;flex:none;box-sizing:border-box;width:100%;min-width:0;height:28px;margin:0;padding:0;border:0;border-radius:0;outline:0;background:transparent;color:#dedede;-webkit-text-fill-color:#dedede;font:inherit;line-height:1.4;letter-spacing:-.025em;text-overflow:ellipsis;cursor:text;caret-color:#fff}
+#ut-root .ut-inline-name:disabled{opacity:1;cursor:default}
+#ut-root .ut-inline-name:focus,#ut-root .ut-inline-name:focus-visible{outline:none;border:0;box-shadow:none}
+#ut-root .ut-name-underline{position:absolute;left:0;bottom:0;width:100%;height:1px;background:#a7a7a7;transform:scaleX(0);transform-origin:left center;pointer-events:none;opacity:0;transition:transform 205ms cubic-bezier(.14,1,.25,1),opacity 0s}
+#ut-root .ut-renaming .ut-name-underline{opacity:1}
+#ut-root .ut-underline-extended .ut-name-underline{transform:scaleX(1)}
+#ut-root .ut-name-pencil,#ut-root .ut-name-confirm,#ut-root .ut-name-cancel{display:grid;place-items:center;flex:none;width:20px;height:28px;padding:0;border:0;border-radius:5px;background:transparent;color:#979797;cursor:pointer}
+#ut-root .ut-name-pencil svg,#ut-root .ut-name-confirm svg,#ut-root .ut-name-cancel svg{width:14px;height:14px;pointer-events:none}
+#ut-root .ut-name-pencil:hover:not(:disabled),#ut-root .ut-name-confirm:hover:not(:disabled),#ut-root .ut-name-cancel:hover:not(:disabled){color:#fff}
+#ut-root .ut-name-pencil:disabled{opacity:0;pointer-events:none}
+#ut-root .ut-name-actions{display:inline-flex;align-items:center;gap:4px;flex:none}
+#ut-root .ut-name-actions[hidden]{display:none!important}
+#ut-root.ut-entering-edit .ut-name-field{animation:ut-name-enter-right 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-entering-edit .ut-chevron{animation:ut-chevron-exit-left 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-leaving-edit .ut-name-field{visibility:visible;animation:ut-name-exit-left 480ms cubic-bezier(.22,1,.36,1) both}
+#ut-root.ut-leaving-edit .ut-chevron{animation:ut-chevron-enter-right 480ms cubic-bezier(.22,1,.36,1) both}
+@keyframes ut-name-enter-right{from{transform:translate(20px,-50%);opacity:0}to{transform:translate(0,-50%);opacity:1}}
+@keyframes ut-name-exit-left{from{transform:translate(0,-50%);opacity:1}to{transform:translate(-20px,-50%);opacity:0}}
+
+/* Same icon-to-check morph as the Collections management dock. */
+#ut-root .ut-control-center .ut-dock-button .ut-dock-glyph{opacity:1;transform:scale(1) rotate(0);transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
+#ut-root .ut-control-center .ut-dock-button svg.ut-dock-done{position:absolute;inset:50% auto auto 50%;translate:-50% -50%;width:calc(19px * var(--ut-dock-scale));height:calc(19px * var(--ut-dock-scale));opacity:0;transform:scale(.75) rotate(-15deg);transition:opacity .2s cubic-bezier(.22,1,.36,1),transform .2s cubic-bezier(.22,1,.36,1)}
+#ut-root.ut-selecting #ut-select .ut-dock-glyph,#ut-root.ut-editing #ut-edit .ut-dock-glyph{opacity:0;transform:scale(.72) rotate(14deg)}
+#ut-root.ut-selecting #ut-select .ut-dock-done,#ut-root.ut-editing #ut-edit .ut-dock-done{opacity:1;transform:scale(1) rotate(0)}
+@media(max-width:639px){
+ #ut-root .ut-row-pick{width:19px;height:26px}
+ #ut-root .ut-select-bubble{width:16px;height:16px}
+ #ut-root .ut-select-bubble svg{width:11px;height:11px}
+ #ut-root .ut-name-field{left:65px;font-size:13px}
+ #ut-root .ut-search-control{width:27px}
+ #ut-root .ut-search-focus{border-radius:8px 0 0 8px}
+ #ut-root .ut-search-focus img{width:13px;height:13px}
+ #ut-root .ut-refresh-stack .ut-update-control .ut-update-check{height:30px}
+ #ut-root .ut-refresh-stack .ut-refresh-control{height:30px;width:30px}
+}
+@media(prefers-reduced-motion:reduce){
+ #ut-root .ut-row-pick,#ut-root .ut-name-field,#ut-root .ut-chevron,#ut-root .ut-name-underline{animation:none!important;transition:none!important}
+}
