@@ -45,6 +45,7 @@ const files=new Map([
  ["workspace-enhancements.css","sites/_apex/app/assets/workspace-enhancements.css"],
  ["collections.css","sites/_apex/app/assets/collections.css"],
  ["collections-glass.js","sites/_apex/app/assets/collections-glass.js"],
+ ["collections-glass-public-clear.js","sites/_apex/app/assets/collections-glass-public-clear.js"],
  ["collections-glass-field-worker.js","sites/_apex/app/assets/collections-glass-field-worker.js"],
  ["sidebar-glass-oracle.js","sites/_apex/app/assets/sidebar-glass-oracle.js"],
  ["add-collection.v3.svg","sites/_apex/app/assets/add-collection.v3.svg"],
@@ -121,9 +122,9 @@ try{
   'buttons:b,visible:!!p.offsetWidth,ready:p.classList.contains("cs-oracle-ready")};})()';
  const before=await evaluate(metrics);
  assert.equal(before.position,"fixed");
- assert.ok(before.width>=335&&before.width<=360,"Desktop dock width should be 2.5x baseline");
- assert.ok(before.height>=128&&before.height<=145);
- assert.ok(before.buttons.every(b=>b.w>78&&b.h>78));
+ assert.ok(before.width>=195&&before.width<=218,"Desktop dock should be 150% of original");
+ assert.ok(before.height>=76&&before.height<=85);
+ assert.ok(before.buttons.every(b=>b.w>=47&&b.h>=47&&b.w<52&&b.h<52));
  assert.ok(Math.abs(innerNumber(before.viewport[0])-24-before.right)<2);
  assert.ok(Math.abs(before.viewport[1]-24-before.bottom)<2);
  assert.equal(await evaluate('(()=>{const b=document.getElementById("cs-create"),r=b.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest("button")?.id})()'),"cs-create");
@@ -140,7 +141,7 @@ try{
  if(svg){
   await until('window.__glass?.active===true',"SVG geometry maps available");
   const widths=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect();return [...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>({w:+x.getAttribute("width"),h:+x.getAttribute("height"),png:x.getAttribute("href")?.startsWith("data:image/png")}))})()');
-  assert.equal(widths.length,3);
+  assert.equal(widths.length,1);
   assert.ok(widths.every(x=>x.w===Math.round(before.width)&&x.h===Math.round(before.height)&&x.png));
   const old=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
   await evaluate('(()=>{document.querySelector(".test-scenery").style.background="repeating-linear-gradient(95deg,red 0 8px,blue 8px 16px)";scrollTo(0,1800);return true})()');
@@ -153,11 +154,11 @@ try{
  const narrow=await evaluate(metrics);
  assert.ok(narrow.right<=narrow.viewport[0]-10,"Floating glass dock stays within small viewport");
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
- assert.ok(narrow.buttons.every(b=>b.w>=60&&b.h>=60));
+ assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-12-narrow.bottom)<2);
  await evaluate('document.querySelector(".view").hidden=true;true');
  assert.equal(await evaluate('document.querySelector(".cs-control-center").getBoundingClientRect().width'),0);
- console.log("Floating Collections dark-clear glass: fixed desktop/mobile geometry, live SourceGraphic, hit testing and exact-sized maps passed.");
+ console.log("Public Clear Collections: 1.5x fixed dock, exact-size one-pass warp, live backdrop, hit testing and mobile layout passed.");
 }finally{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");
