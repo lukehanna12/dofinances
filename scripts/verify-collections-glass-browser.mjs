@@ -117,7 +117,7 @@ try{
  const metrics='(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect(),s=getComputedStyle(p),'+
   'b=[...p.querySelectorAll("button")].map(x=>{const q=x.getBoundingClientRect();return {w:q.width,h:q.height,id:x.id}});'+
   'return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,'+
-  'viewport:[innerWidth,innerHeight],position:s.position,filter:s.backdropFilter||s.webkitBackdropFilter,'+
+  'viewport:[document.documentElement.clientWidth,document.documentElement.clientHeight],position:s.position,filter:s.backdropFilter||s.webkitBackdropFilter,'+
   'buttons:b,visible:!!p.offsetWidth,ready:p.classList.contains("cs-oracle-ready")};})()';
  const before=await evaluate(metrics);
  assert.equal(before.position,"fixed");
