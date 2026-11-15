@@ -28,7 +28,7 @@ test("Every project has a README-first route, with earlier sections still addres
  assert.ok(nav.includes('if(raw==="colosseum")return "colosseum/readme"'));
  assert.ok(nav.includes('if(raw==="apple-hig-reader")return "apple-hig-reader/readme"'));
  assert.ok(nav.includes('PROJECT_README_PATTERN'));
- assert.ok(nav.includes('route.endsWith("/readme")?"project/readme":route'));
+ assert.ok(nav.includes('route.endsWith("/readme")?"project/readme":'),"Shared README route remains intact across Studio and production");
  assert.ok(html.includes('data-view="project/readme"'));
  assert.ok(html.includes('href="#colosseum/readme"'));
  assert.ok(html.includes('href="#apple-hig-reader/readme"'));
