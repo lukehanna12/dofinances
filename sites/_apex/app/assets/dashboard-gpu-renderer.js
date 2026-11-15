@@ -744,6 +744,6 @@ function syncDashboardRoute(){
     requestRender();
   }catch(error){void fallback(error);}
 }
-window.addEventListener("hashchange",()=>queueMicrotask(syncDashboardRoute));
-window.addEventListener("popstate",()=>queueMicrotask(syncDashboardRoute));
+window.addEventListener?.("hashchange",()=>queueMicrotask(syncDashboardRoute));
+window.addEventListener?.("popstate",()=>queueMicrotask(syncDashboardRoute));
 initialize().catch(fallback);

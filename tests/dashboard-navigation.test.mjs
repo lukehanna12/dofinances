@@ -24,8 +24,9 @@ test("Settings sidebar links use the native SVG while the Home Settings feature 
         "Settings sidebar uses the new asset at "+href);
       assert.ok(!row.includes('<use href="#icon-settings">'),"Old settings symbol still in the sidebar");
     }
-    assert.equal((html.match(/<use href="#icon-settings"><\/use>/g)||[]).length,1,
-      "Only the unchanged Home Settings card retains the legacy gear symbol");
+    assert.equal((html.match(/<use href="#icon-settings"><\/use>/g)||[]).length,
+      path.includes("studio/sidebar")?1:0,
+      "Studio preserves its legacy Home Settings gear; production Home is now the CTA mosaic");
   }
 });
 

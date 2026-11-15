@@ -316,8 +316,8 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .mai
   min-width:0;
 }
 body:has(> #workspace-shell .dashboard-home:not([hidden])){
-  --workspace-wallpaper-image:url("/app/assets/dashboard-cloud-veiled-colorful-fields.avif");
-  --workspace-wallpaper-position:center center;
+  --workspace-wallpaper-image:url("/app/assets/dashboard-cloud-veiled-colorful-fields.avif")!important;
+  --workspace-wallpaper-position:center center!important;
 }
 @media(prefers-reduced-transparency:reduce){
   .dashboard-home .cta6-tile--icon{
