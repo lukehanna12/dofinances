@@ -12,6 +12,7 @@ import {initCloudflareConnection} from "./cloudflare-settings.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
 import {initColosseumProviders} from "./providers.js";
 import {initColosseumCollections} from "./collections.js";
+import {initColosseumUtilities} from "./utilities.js";
 import {initColosseumPermissions} from "./permissions.js";
 initWorkspaceNavigation();
 initProjectReadme();
@@ -19,6 +20,7 @@ initCloudflareConnection();
 initColosseumDiagnostics();
 initColosseumProviders();
 initColosseumCollections();
+initColosseumUtilities();
 initColosseumPermissions();
 
 const account = document.getElementById("account-email");

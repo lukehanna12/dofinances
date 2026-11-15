@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/app/assets/providers.css">
   <link rel="stylesheet" href="/app/assets/permissions.css">
   <link rel="stylesheet" href="/app/assets/collections.css">
+  <link rel="stylesheet" href="/app/assets/utilities.css">
   <link rel="stylesheet" href="/app/assets/github-markdown.css">
   <link rel="stylesheet" href="/app/assets/project-readme.css">
   <link rel="stylesheet" href="/app/assets/dashboard-home.css">
@@ -438,7 +439,80 @@
         </section>
         <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>
-          <div class="empty-state"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-utilities"></use></svg><h2>Nothing here yet</h2><p>This section is ready for future Colosseum functionality.</p></div>
+          <div id="ut-root" class="ut-screen">
+            <span class="ut-summary" id="ut-summary" aria-live="polite">CATALOG / NOT LOADED</span>
+            <p class="ut-status" id="ut-status" role="status" aria-live="polite"></p>
+            <div class="ut-layout" id="ut-layout">
+              <div class="ut-list-column">
+                <div class="ut-toolbar">
+                  <div class="ut-search" role="search" aria-label="Search utilities">
+                    <button id="ut-search-submit" class="ut-search-icon" type="button" aria-label="Search utilities" title="Search utilities"><img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button>
+                    <input id="ut-search" type="search" aria-label="Search the live Colosseum catalog" placeholder="Search utilities" autocomplete="off" spellcheck="false">
+                    <div class="ut-filter-control">
+                      <button class="ut-filter-toggle" id="ut-filter-toggle" type="button" aria-label="Filter utilities" aria-controls="ut-filters" aria-expanded="false" title="Include or exclude catalog categories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg></button>
+                    </div>
+                  </div>
+                  <select class="ut-order" id="ut-sort" aria-label="Sort utilities">
+                    <option value="name_asc">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                    <option value="uid_asc">UID ascending</option>
+                    <option value="uid_desc">UID descending</option>
+                    <option value="time_new">Newest first</option>
+                    <option value="time_old">Oldest first</option>
+                  </select>
+                  <button class="ut-refresh" id="ut-refresh" type="button" aria-label="Refresh utilities" title="Refresh live utilities"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+                </div>
+                <form class="ut-filter-panel" id="ut-filters" hidden aria-label="Include and exclude utility categories">
+                  <div class="ut-filter-heading"><span>Filter catalog</span><span class="ut-overline">AND across fields · OR within values</span></div>
+                  <div class="ut-filter-fields" id="ut-filter-fields"></div>
+                  <div class="ut-filter-actions">
+                    <button class="ut-small-button" id="ut-filters-clear" type="button">Clear</button>
+                    <button class="ut-small-button ut-primary" type="submit">Apply filters</button>
+                  </div>
+                </form>
+                <div class="ut-list" id="ut-list" aria-label="Catalog utilities" aria-busy="true"></div>
+                <nav class="ut-pages" id="ut-pages" aria-label="Utility pages"></nav>
+                <p class="ut-count" id="ut-count"></p>
+                <button class="ut-update-check" id="ut-update-check" type="button" title="Inspect upstream revisions on demand"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12l3 3 5-6"/><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v6h6"/></svg><span>Check for updates</span></button>
+                <div id="ut-update-results" class="ut-status" role="status" aria-live="polite"></div>
+              </div>
+              <aside class="ut-inspector" id="ut-inspector" aria-label="Selected utility details" aria-hidden="true"></aside>
+            </div>
+            <div class="ut-control-center" role="group" aria-label="Utility management">
+              <span class="ut-tooltip-wrap"><button class="ut-dock-button" id="ut-add" type="button" aria-label="Add utility" aria-describedby="ut-add-tooltip"><img src="/app/assets/add-utilities.v1.svg" alt="" aria-hidden="true"></button><span id="ut-add-tooltip" role="tooltip" class="ut-tooltip">Add utility</span></span>
+              <span class="ut-tooltip-wrap"><button class="ut-dock-button" id="ut-edit" type="button" aria-label="Edit selected utility" aria-describedby="ut-edit-tooltip" disabled><img src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"></button><span id="ut-edit-tooltip" role="tooltip" class="ut-tooltip">Edit selected utility</span></span>
+              <span class="ut-tooltip-wrap"><button class="ut-dock-button" id="ut-select" type="button" aria-label="Select utilities" aria-pressed="false" aria-describedby="ut-select-tooltip"><img src="/app/assets/select-collections.v3.svg" alt="" aria-hidden="true"></button><span id="ut-select-tooltip" role="tooltip" class="ut-tooltip">Select utilities</span></span>
+            </div>
+            <dialog class="ut-dialog" id="ut-editor" aria-labelledby="ut-editor-title">
+              <h2 id="ut-editor-title">Add utility</h2><p id="ut-editor-copy">Create a GitHub-first Colosseum catalog item.</p>
+              <form id="ut-editor-form">
+                <div class="ut-form-grid" id="ut-editor-fields"></div>
+                <div class="ut-edit-assets" id="ut-assets-section" hidden>
+                  <h3>Cloud static assets</h3>
+                  <p>Attach files to the private Colosseum Static Assets library. Only changed files are uploaded.</p>
+                  <label class="ut-field">Add files (up to 8 MiB total)<input type="file" id="ut-files" multiple></label>
+                  <div id="ut-existing-files"></div>
+                </div>
+                <p class="ut-dialog-error" id="ut-editor-error" role="alert"></p>
+                <div class="ut-dialog-actions">
+                  <button class="ut-small-button" id="ut-editor-cancel" type="button">Cancel</button>
+                  <button class="ut-small-button" id="ut-editor-plan" type="button">Review changes</button>
+                  <button class="ut-small-button ut-primary" id="ut-editor-publish" type="submit" hidden>Confirm and publish</button>
+                </div>
+              </form>
+            </dialog>
+            <dialog class="ut-dialog" id="ut-delete-dialog" aria-labelledby="ut-delete-title">
+              <h2 id="ut-delete-title">Remove utility?</h2>
+              <p id="ut-delete-copy">This removes the catalog entry and its associations; it does not uninstall locally installed software.</p>
+              <label class="ut-field">Type the utility name to confirm<input id="ut-delete-confirm" type="text" autocomplete="off" spellcheck="false"></label>
+              <p class="ut-dialog-error" id="ut-delete-error" role="alert"></p>
+              <div class="ut-dialog-actions">
+                <button class="ut-small-button" id="ut-delete-cancel" type="button">Cancel</button>
+                <button class="ut-small-button" id="ut-delete-plan" type="button" disabled>Review removal</button>
+                <button class="ut-small-button ut-primary" id="ut-delete-publish" type="button" hidden>Confirm removal</button>
+              </div>
+            </dialog>
+          </div>
         </section>
         <section class="view project-view" data-view="colosseum/collections" hidden aria-labelledby="project-collections-title">
           <div class="page-heading"><h1 id="project-collections-title">Collections</h1></div>
