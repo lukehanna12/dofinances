@@ -89,7 +89,18 @@ try{
   'const s=getSelection();s.removeAllRanges();s.addRange(range);'+
   'return document.activeElement===e;})()');
  const type=async text=>{
-  for(const char of text)await command("Input.insertText",{text:char});
+  // Dispatch real keydown/keyup pairs, not IME-style Input.insertText.
+  // The latter can clear a contenteditable selection after preventDefault.
+  for(const char of text){
+   const code=/^[A-Za-z]$/.test(char)?"Key"+char.toUpperCase():
+    char===" "?"Space":/^[0-9]$/.test(char)?"Digit"+char:"";
+   const keyCode=/^[A-Za-z]$/.test(char)?char.toUpperCase().charCodeAt(0):
+    /^[0-9]$/.test(char)?char.charCodeAt(0):char===" "?32:0;
+   await command("Input.dispatchKeyEvent",{type:"keyDown",key:char,code,
+    text:char,unmodifiedText:char,windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});
+   await command("Input.dispatchKeyEvent",{type:"keyUp",key:char,code,
+    windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});
+  }
  };
  const pressEnter=async()=>{
   await command("Input.dispatchKeyEvent",{type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
