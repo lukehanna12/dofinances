@@ -409,7 +409,27 @@ export function initWorkspaceNavigation(doc=document,win=window){
     resizeHandle.addEventListener("pointermove",onMove);
     resizeHandle.addEventListener("pointerup",onEnd);
     resizeHandle.addEventListener("pointercancel",onEnd);
-    resizeHandle.addEventListener("lostpointercapture",onEnd);
+    // Some browsers revoke pointer capture mid-drag while the mouse button is
+    // still held. That is not a release: keep the in-progress drag alive and
+    // follow subsequent events through the document until pointerup/cancel.
+    // Pointer capture remains the preferred path when available; the document
+    // listeners serve only as an event-driven fallback, never polling.
+    doc.addEventListener?.("pointermove",event=>{
+      if(drag && event.target!==resizeHandle && event.pointerId===drag.pointerId)onMove(event);
+    });
+    doc.addEventListener?.("pointerup",event=>{
+      if(drag && event.pointerId===drag.pointerId)onEnd(event);
+    });
+    doc.addEventListener?.("pointercancel",event=>{
+      if(drag && event.pointerId===drag.pointerId)onEnd(event);
+    });
+    resizeHandle.addEventListener("lostpointercapture",event=>{
+      if(!drag || event.pointerId!==drag.pointerId)return;
+      // Native capture may transfer while buttons still indicate a held drag.
+      // Do not commit the old width or discard the drag in that situation.
+      if(event.buttons) return;
+      onEnd(event);
+    });
     resizeHandle.addEventListener("keydown",event=>{
       if(isMobile()||shell.classList.contains("is-collapsed"))return;
       if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
