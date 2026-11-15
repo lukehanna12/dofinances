@@ -25,6 +25,48 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root button:disabled{opacity:.43;cursor:not-allowed}
 #pm-root :is(button,input,select):focus-visible{outline:2px solid #fafafa;outline-offset:2px}
 #pm-root .pm-eyebrow{font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--pm-muted)}
+/* Collections' two-ring, fixed-geometry summary skeleton. */
+#pm-root #pm-count{position:relative;display:inline-block;white-space:nowrap;line-height:1.4}
+#pm-root .pm-count-value{display:inline-block}
+#pm-root .pm-count-skeleton{position:absolute;inset:0;pointer-events:none}
+#pm-root .pm-count-ring{
+ position:absolute;top:.18em;width:1em;height:1em;border-radius:50%;
+ border:1.5px solid currentColor;border-top-color:transparent;
+ background:transparent;animation:pm-count-spin 600ms linear infinite
+}
+#pm-root .pm-count-ring:first-child{left:calc(var(--pm-ring-first,42px) - .5em)}
+#pm-root .pm-count-ring:last-child{left:calc(var(--pm-ring-second,145px) - .5em)}
+#pm-root .pm-count-divider{position:absolute;top:0;left:var(--pm-ring-slash,80px)}
+#pm-root #pm-count.pm-count-loading .pm-count-value{visibility:hidden}
+#pm-root #pm-count:not(.pm-count-loading) .pm-count-skeleton{display:none}
+@keyframes pm-count-spin{to{transform:rotate(360deg)}}
+#pm-root .pm-rule-row--skeleton{pointer-events:none}
+#pm-root .pm-skeleton-copy{display:flex;align-items:center;gap:12px;min-width:0}
+#pm-root .pm-skeleton-number{width:24px;flex:none;color:#525252;font-size:11px;font-variant-numeric:tabular-nums}
+#pm-root .pm-skeleton-text{
+ display:block;width:var(--site-skeleton-text-width,68%);height:12px;min-width:0;flex:none;
+ max-width:calc(100% - 36px)
+}
+/* During refresh, preserve real rule and column geometry, as Collections does. */
+#pm-root .pm-rule-list.pm-list-loading .pm-rule-row:not(.pm-rule-row--skeleton) .pm-rule-main{position:relative}
+#pm-root .pm-rule-list.pm-list-loading .pm-rule-row:not(.pm-rule-row--skeleton) :is(.pm-rule-title,.pm-rule-path){visibility:hidden}
+#pm-root .pm-rule-list.pm-list-loading .pm-rule-row:not(.pm-rule-row--skeleton) .pm-rule-main::after{
+ content:"";position:absolute;top:14px;left:0;
+ width:var(--site-skeleton-text-width,68%);max-width:85%;height:12px;
+ display:block;background:var(--site-skeleton-accent,#262626);
+ border-radius:.375rem;animation:site-skeleton-pulse 2s cubic-bezier(.4,0,.6,1) infinite;
+ pointer-events:none
+}
+#pm-root .pm-rule-list .pm-rule-row{--site-skeleton-text-width:68%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 1){--site-skeleton-text-width:79%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 2){--site-skeleton-text-width:51%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 3){--site-skeleton-text-width:68%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 4){--site-skeleton-text-width:84%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 5){--site-skeleton-text-width:56%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 6){--site-skeleton-text-width:72%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 7){--site-skeleton-text-width:45%}
+#pm-root .pm-rule-list .pm-rule-row:nth-child(8n + 8){--site-skeleton-text-width:63%}
+
 #pm-root .pm-quiet,#pm-root .pm-small{font-size:12px;color:var(--pm-muted);line-height:1.55}
 #pm-root .pm-overview{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 #pm-root .pm-overview-right{display:flex;align-items:center;gap:14px;min-width:0}
@@ -164,6 +206,15 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-choice:has(input:checked) .pm-choice-mark{color:#f7f7f7}
 #pm-root .pm-dialog-foot{display:flex;justify-content:flex-end;align-items:center;gap:9px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid var(--pm-line)}
 #pm-root .pm-dialog-foot .pm-remove{margin-right:auto}
+/* Device unlock is supplemental to the authority's existing PIN check. */
+#pm-root .pm-device-confirm{margin:16px 0 4px}
+#pm-root .pm-device-confirm .pm-btn{width:100%;min-height:38px}
+#pm-root .pm-device-confirm .pm-quiet{margin:9px 0 0}
+#pm-root .pm-device-setup{margin-top:20px;padding-top:16px;border-top:1px solid var(--pm-line)}
+#pm-root .pm-device-setup h4{font-size:13px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px;color:var(--pm-ink)}
+#pm-root .pm-device-setup p{margin:6px 0 12px}
+#pm-root .pm-device-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#pm-root #pm-device-status{margin:10px 0 0;min-height:0}
 #pm-root .pm-pin-label{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin:13px 0;color:var(--pm-muted);font-size:12px}
 #pm-root .pm-pin-input{min-height:34px;padding:7px 10px;border:1px solid #383838;border-radius:8px;background:var(--pm-fill);color:#f5f5f5;width:150px;letter-spacing:.15em}
 #pm-root #pm-confirm-error,#pm-root #pm-pin-error{font-size:12px;color:#f87171;min-height:0}
@@ -192,5 +243,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
  #pm-root .pm-choice-grid{gap:4px}
  #pm-root .pm-exec-field{grid-template-columns:minmax(0,1fr) 72px auto 48px;gap:5px}
 }
-@media(prefers-reduced-motion:reduce){#pm-root *{transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){
+ #pm-root *{transition:none!important;animation:none!important}
+ #pm-root .pm-count-ring,#pm-root #pm-refresh.pm-refreshing::before{animation:none!important}
+}
 @media(forced-colors:active){#pm-root .pm-choice:has(input:checked){outline:2px solid Highlight}}

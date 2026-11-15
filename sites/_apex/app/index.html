@@ -654,7 +654,10 @@
           <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1></div>
           <div id="pm-root" class="pm-screen">
             <div class="pm-overview" aria-label="Local policy authority">
-              <span id="pm-count" class="pm-eyebrow" aria-live="polite">FILESYSTEM RULES —</span>
+              <span id="pm-count" class="pm-eyebrow pm-count-loading" aria-live="polite" aria-busy="true">
+                <span class="pm-count-value">— RULES / — ENABLED</span>
+                <span class="pm-count-skeleton" aria-hidden="true"><span class="pm-count-ring"></span><span class="pm-count-divider">/</span><span class="pm-count-ring"></span></span>
+              </span>
               <div class="pm-overview-right">
                 <span class="pm-refresh-control">
                   <button id="pm-refresh" class="pm-refresh-button" type="button" aria-label="Refresh permissions" aria-keyshortcuts="Control+Shift+R" aria-describedby="pm-refresh-tooltip" aria-busy="false"><svg class="pm-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
@@ -678,7 +681,7 @@
                   <div class="pm-operations"><span class="pm-op-head">R</span><span class="pm-op-head">W</span><span class="pm-op-head">S</span><span class="pm-op-head">A</span><span class="pm-op-head">D</span></div>
                   <span class="pm-status-col">Status</span><span></span>
                 </div>
-                <div id="pm-cards" class="pm-rule-list" aria-live="polite"></div>
+                <div id="pm-cards" class="pm-rule-list" aria-live="polite" aria-busy="true"></div>
               </div>
             </section>
             <section class="pm-section" aria-labelledby="pm-policy-heading">
@@ -736,6 +739,10 @@
               <span id="pm-confirm-kind" class="pm-small"></span>
               <h3 id="pm-confirm-title">Review permission change</h3>
               <p id="pm-confirm-copy"></p>
+              <div id="pm-confirm-device-wrap" class="pm-device-confirm" hidden>
+                <button type="button" id="pm-confirm-device" class="pm-btn pm-primary">Use Touch ID or Face ID</button>
+                <p class="pm-quiet">Device verification unlocks your enrolled PIN. Enter it manually below if needed.</p>
+              </div>
               <label id="pm-confirm-pin-label" class="pm-pin-label" hidden>Four-digit hazard PIN
                 <input class="pm-pin-input" type="password" id="pm-confirm-pin" inputmode="numeric" maxlength="4" autocomplete="off">
               </label>
@@ -754,6 +761,15 @@
               <label class="pm-pin-label">New PIN
                 <input class="pm-pin-input" type="password" id="pm-pin-new" inputmode="numeric" maxlength="4" autocomplete="off">
               </label>
+              <section id="pm-device-setup" class="pm-device-setup" hidden aria-labelledby="pm-device-setup-title">
+                <h4 id="pm-device-setup-title">Device unlock</h4>
+                <p>Use Touch ID or Face ID when supported. Enter your current PIN above to enroll this device. A device-protected encrypted copy stays in this browser; the gateway still checks the PIN.</p>
+                <div class="pm-device-actions">
+                  <button type="button" id="pm-device-enroll" class="pm-btn">Enable device unlock</button>
+                  <button type="button" id="pm-device-remove" class="pm-btn pm-remove" hidden>Remove from this device</button>
+                </div>
+                <p id="pm-device-status" class="pm-quiet" role="status" aria-live="polite"></p>
+              </section>
               <p id="pm-pin-error" role="alert"></p>
               <div class="pm-dialog-foot">
                 <button type="button" id="pm-pin-cancel" class="pm-btn">Go back</button>
