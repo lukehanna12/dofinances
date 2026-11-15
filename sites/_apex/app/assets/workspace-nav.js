@@ -5,7 +5,7 @@ import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
-export const COLOSSEUM_ROUTES=Object.freeze(["readme","utilities","collections","providers","permissions","diagnostics","settings"]);
+export const COLOSSEUM_ROUTES=Object.freeze(["readme","utilities","collections","providers/local","providers/external","providers/credentials","permissions","diagnostics","settings"]);
 export const APPLE_HIG_ROUTES=Object.freeze(["readme","overview"]);
 const MAIN_SET=new Set(MAIN_ROUTES);
 const PROJECT_SET=new Set(COLOSSEUM_ROUTES);
@@ -44,6 +44,7 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   if(MAIN_SET.has(raw))return raw;
   if(raw==="account")return "settings"; // old dashboard deep-link
   if(raw==="colosseum")return "colosseum/readme";
+  if(raw==="colosseum/providers")return "colosseum/providers/local"; // Legacy Providers route.
   if(raw==="apple-hig-reader")return "apple-hig-reader/readme";
   if(PROJECT_README_PATTERN.test(raw))return raw;
   if(raw.startsWith("apple-hig-reader/")){
@@ -64,6 +65,7 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   if(MAIN_SET.has(slug))return slug;
   if(slug==="account")return "settings";
   if(slug==="colosseum")return "colosseum/readme";
+  if(slug==="colosseum/providers")return "colosseum/providers/local"; // Legacy deep link.
   if(slug==="apple-hig-reader")return "apple-hig-reader/readme";
   if(PROJECT_README_PATTERN.test(slug))return slug;
   if(slug.startsWith("apple-hig-reader/")&&APPLE_HIG_SET.has(slug.slice("apple-hig-reader/".length)))
@@ -76,9 +78,11 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
 export function workspaceRouteDetails(route){
   const selected=resolveWorkspaceRoute("#"+route);
   if(selected.startsWith("colosseum/")){
-    const section=selected.split("/")[1];
-    return {route:selected,project:true,projectKey:"colosseum",label:TITLE_CASE[section],
-      breadcrumb:"Projects / Colosseum / "+TITLE_CASE[section],
+    const section=selected.slice("colosseum/".length);
+    const providerChild=section.startsWith("providers/");
+    const label=providerChild?({local:"Local",external:"External",credentials:"Credentials"}[section.slice("providers/".length)]):TITLE_CASE[section];
+    return {route:selected,project:true,projectKey:"colosseum",label,
+      breadcrumb:"Projects / Colosseum / "+(providerChild?"Providers / ":"")+label,
       subtitle:"Colosseum project workspace"};
   }
   if(selected.startsWith("apple-hig-reader/")){
@@ -129,6 +133,13 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const searchable=[...doc.querySelectorAll("#global-search-results a")];
   const views=[...doc.querySelectorAll(".view[data-view]")];
   const links=[...doc.querySelectorAll(".nav-link[data-route]")];
+  const providerParent=doc.querySelector?.("[data-providers-toggle]");
+  const providerSubnav=doc.getElementById?.("providers-subnavigation");
+  let providersExpanded=false;
+  const syncProviderNav=()=>{
+    if(providerSubnav)providerSubnav.hidden=!providersExpanded;
+    providerParent?.setAttribute?.("aria-expanded",String(providersExpanded));
+  };
   if(!shell||!sidebar||!desktopToggle||!mobileToggle||!scrim||
      !mainNav||!projectNav||!breadcrumb||!subtitle||!back||!views.length)
     throw Error("Workspace navigation markup is incomplete.");
@@ -299,11 +310,15 @@ export function initWorkspaceNavigation(doc=document,win=window){
       else link.removeAttribute("aria-current");
     }
     doc.title=meta.label+" · "+(meta.projectKey==="colosseum"?"Colosseum · ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader · ":"")+"DoFinances";
+    // A provider child is a real route; the parent is a disclosure, never a fourth screen.
+    if(route.startsWith("colosseum/providers/"))providersExpanded=true;
+    syncProviderNav();
+    providerParent?.classList?.toggle("is-parent-current",route.startsWith("colosseum/providers/"));
     // One Settings DOM view for both Workspace and every project.
     const visibleView=route==="colosseum/settings"?"settings":route.endsWith("/readme")?"project/readme":route;
     for(const view of views)view.hidden=view.dataset.view!==visibleView;
     for(const link of links){
-      const selected=link.href?.split("#")[1]===route;
+      const selected=link!==providerParent&&link.href?.split("#")[1]===route;
       link.classList.toggle("active",selected);
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
@@ -319,6 +334,21 @@ export function initWorkspaceNavigation(doc=document,win=window){
     workspaceTitleTransition.setRoute(route);
   }
 
+  providerParent?.addEventListener?.("click",event=>{
+    if(event?.ctrlKey||event?.metaKey||event?.altKey||event?.shiftKey||event?.button>0)return;
+    event.preventDefault();
+    providersExpanded=!providersExpanded;
+    if(providersExpanded&&!isMobile()&&shell.classList.contains("is-collapsed")){
+      if(isCompactRail())railExpanded=true;
+      else{
+        collapsed=false;
+        try{win.localStorage.setItem(PREFERENCE_KEY,"false");}catch{}
+      }
+      startSidebarMotion("layout");updateCollapse();
+    }
+    syncProviderNav();
+  });
+  syncProviderNav();
   desktopToggle.addEventListener("click",()=>{
     if(isMobile()){closeDrawer(true);return;}
     if(isCompactRail()&&!railExpanded)return;

@@ -68,7 +68,8 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
   }
 });
 export function workspaceWallpaperForRoute(route) {
-  const key=route==="colosseum/settings"?"settings":
+  const key=route.startsWith("colosseum/providers/")?"colosseum/providers":
+    route==="colosseum/settings"?"settings":
     route==="apple-hig-reader/readme"||/^project\/[a-z0-9-]+\/readme$/.test(route)?"colosseum/readme":
     route.startsWith("apple-hig-reader/")?"projects":route;
   return WORKSPACE_WALLPAPERS[key]||WORKSPACE_WALLPAPERS.home;

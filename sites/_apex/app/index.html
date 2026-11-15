@@ -36,7 +36,7 @@
         <a data-global-route href="#projects">Projects</a>
         <a data-global-route href="#colosseum/readme">Colosseum</a>
         <a data-global-route href="#colosseum/collections">Collections</a>
-        <a data-global-route href="#colosseum/providers">Providers</a>
+        <a data-global-route href="#colosseum/providers/local">Providers</a>
         <a data-global-route href="#settings">Settings</a>
       </div>
       <div class="global-menu-actions">
@@ -56,7 +56,7 @@
         <a data-global-route href="#colosseum/readme">Colosseum Docs</a>
         <a data-global-route href="#colosseum/utilities">Utilities</a>
         <a data-global-route href="#colosseum/collections">Collections</a>
-        <a data-global-route href="#colosseum/providers">Providers</a>
+        <a data-global-route href="#colosseum/providers/local">Providers</a>
         <a data-global-route href="#colosseum/permissions">Permissions</a>
         <a data-global-route href="#colosseum/diagnostics">Diagnostics</a>
         <a data-global-route href="#colosseum/settings">Colosseum Settings</a>
@@ -104,7 +104,12 @@
           <a class="nav-link" data-route="readme" href="#colosseum/readme" aria-label="Docs"><span class="nav-icon nav-icon-asset nav-icon-asset--docs" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Docs</span></span></a>
           <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities"><span class="nav-icon nav-icon-asset nav-icon-asset--utilities" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Utilities</span></span></a>
           <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections"><span class="nav-icon nav-icon-asset nav-icon-asset--collections" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Collections</span></span></a>
-          <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers"><span class="nav-icon nav-icon-asset nav-icon-asset--providers" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Providers</span></span></a>
+          <a class="nav-link" data-route="providers" data-providers-toggle href="#colosseum/providers/local" aria-label="Providers" aria-expanded="false" aria-controls="providers-subnavigation"><span class="nav-icon nav-icon-asset nav-icon-asset--providers" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Providers</span></span><svg class="pv-provider-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></a>
+          <div id="providers-subnavigation" class="pv-provider-subnav" hidden aria-label="Provider screens">
+            <a class="nav-link pv-provider-child" data-route="providers/local" href="#colosseum/providers/local" aria-label="Local providers"><span class="pv-subnav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="13" rx="2"/><path d="M8 21h8m-4-3v3"/></svg></span><span class="nav-label"><span class="nav-label-text">Local</span></span></a>
+            <a class="nav-link pv-provider-child" data-route="providers/external" href="#colosseum/providers/external" aria-label="External providers"><span class="pv-subnav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18m0-18c5 5 5 13 0 18"/></svg></span><span class="nav-label"><span class="nav-label-text">External</span></span></a>
+            <a class="nav-link pv-provider-child" data-route="providers/credentials" href="#colosseum/providers/credentials" aria-label="Provider credentials"><span class="pv-subnav-glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4"/><path d="M12 14h9m-3 0v-3m-3 3v3"/></svg></span><span class="nav-label"><span class="nav-label-text">Credentials</span></span></a>
+          </div>
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions"><span class="nav-icon nav-icon-asset nav-icon-asset--permissions" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
           <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics"><span class="nav-icon nav-icon-asset nav-icon-asset--diagnostics" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
           <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
@@ -613,42 +618,36 @@
             </dialog>
           </div>
         </section>
-        <section class="view project-view" data-view="colosseum/providers" hidden aria-labelledby="project-providers-title">
-          <div class="page-heading"><h1 id="project-providers-title">Providers</h1></div>
+        <section class="view project-view pv-route-view" data-view="colosseum/providers/local" hidden aria-labelledby="project-providers-local-title">
+          <div class="page-heading"><h1 id="project-providers-local-title">Local</h1></div>
           <div class="pv-workbench" id="pv-root">
-            <div class="pv-introduction">
-              <div>
-                <p class="pv-kicker">COLOSSEUM / CONNECTIONS &amp; ACCESS</p>
-                <h2>One place for your providers.</h2>
-                <p>Configure hosted connections, approve individual MCP tools, and regulate independently registered Mac providers—all against the actual authorization systems.</p>
-              </div>
-              <span class="pv-portal-link" aria-label="Owner-secured management">Owner-secured control plane</span>
+            <div class="pv-overview">
+              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span id="pv-summary-value">LOCAL · — REGISTERED / — AVAILABLE</span><span class="pv-summary-skeleton" aria-hidden="true"></span></span>
+              <span class="pv-refresh-control">
+                <button id="pv-refresh" class="pv-refresh" type="button" aria-label="Refresh providers" aria-keyshortcuts="Control+Shift+R" aria-describedby="pv-refresh-tooltip"><svg class="pv-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+                <span class="pv-refresh-tooltip" id="pv-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="pv-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span>
+              </span>
             </div>
-            <div class="pv-toolbar">
-              <div class="pv-switch" role="tablist" aria-label="Provider category">
-                <button id="pv-federated-tab" class="pv-mode active" type="button" role="tab" aria-selected="true" aria-controls="pv-browser">Federated <span class="pv-mode-count" id="pv-cloud-count">Not checked</span></button>
-                <button id="pv-local-tab" class="pv-mode" type="button" role="tab" aria-selected="false" aria-controls="pv-browser">Local <span class="pv-mode-count" id="pv-local-count">Not checked</span></button>
+            <p id="pv-status" class="pv-status" role="status" aria-live="polite"></p>
+            <div class="pv-browser" id="pv-browser">
+              <div class="pv-list-column">
+                <div class="pv-search-field"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" id="pv-search" aria-label="Search providers" autocomplete="off" placeholder="Search providers" spellcheck="false"></div>
+                <div class="pv-list-meta"><span id="pv-index-title">Registered Mac providers</span><span id="pv-index-total"></span></div>
+                <div id="pv-list" class="pv-provider-list" aria-label="Provider registry" aria-live="polite"></div>
               </div>
-              <button id="pv-refresh" class="pv-refresh" type="button"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-refresh"></use></svg><span>Check live</span></button>
-            </div>
-            <p class="pv-status" id="pv-status" role="status" aria-live="polite">Retrieving current account connections and effective local permissions…</p>
-            <div class="pv-browser" id="pv-browser" role="tabpanel" aria-labelledby="pv-federated-tab">
-              <aside class="pv-index" aria-label="Provider selector">
-                <div class="pv-index-heading"><span id="pv-index-title">Federated connections</span><span id="pv-index-total">—</span></div>
-                <label class="pv-search-field"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-search"></use></svg><input type="search" id="pv-search" aria-label="Filter providers" autocomplete="off" placeholder="Search providers"></label>
-                <div class="pv-provider-list" id="pv-list">
-                  <p class="pv-empty-list">Checking registered providers…</p>
-                </div>
-              </aside>
               <div class="pv-inspector" id="pv-detail" aria-label="Selected provider details">
-                <div class="pv-inspector-placeholder">Choose a provider to inspect its connection or local gateway details.</div>
+                <p class="pv-inspector-placeholder">Select a provider to inspect its capabilities.</p>
               </div>
-            </div>
-            <div class="pv-boundary">
-              <div><strong>Federated access</strong><p>Configure encrypted credentials, verify connections, authorize OAuth, and grant or revoke individual tools here. Changes are enforced by the existing Colosseum vault and router.</p></div>
-              <div><strong>Local access</strong><p>Review, confirm, and apply revision-bound provider profiles on the Mac. The Permissions Screen is authoritative for filesystem and script-execution restrictions.</p></div>
             </div>
           </div>
+        </section>
+        <section class="view project-view pv-route-view" data-view="colosseum/providers/external" hidden aria-labelledby="project-providers-external-title">
+          <div class="page-heading"><h1 id="project-providers-external-title">External</h1></div>
+          <div id="pv-external-mount"></div>
+        </section>
+        <section class="view project-view pv-route-view" data-view="colosseum/providers/credentials" hidden aria-labelledby="project-providers-credentials-title">
+          <div class="page-heading"><h1 id="project-providers-credentials-title">Credentials</h1></div>
+          <div id="pv-credentials-mount"></div>
         </section>
         <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
           <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1></div>

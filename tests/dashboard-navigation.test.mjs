@@ -52,7 +52,7 @@ test("Mobile opener reuses the original panel glyph; collapse buttons horizontal
 
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
-  assert.deepEqual(COLOSSEUM_ROUTES,["readme","utilities","collections","providers","permissions","diagnostics","settings"]);
+  assert.deepEqual(COLOSSEUM_ROUTES,["readme","utilities","collections","providers/local","providers/external","providers/credentials","permissions","diagnostics","settings"]);
   assert.equal(resolveWorkspaceRoute(""),"home");
   assert.equal(resolveWorkspaceRoute("#home"),"home");
   assert.equal(resolveWorkspaceRoute("#projects"),"projects");
@@ -78,6 +78,29 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.equal(resolveWorkspaceRoute("#colosseum/unknown"),"home");
   assert.equal(resolveWorkspaceRoute("#javascript:evil"),"home");
 });
+test("Providers has three routed child screens and a disclosure parent, preserving legacy paths",async()=>{
+ const html=await read("../sites/_apex/app/index.html");
+ const nav=await read("../sites/_apex/app/assets/workspace-nav.js");
+ const worker=await read("../edge/router.mjs");
+ const wallpapers=await read("../sites/_apex/app/assets/workspace-wallpapers.js");
+ for(const child of ["local","external","credentials"]){
+  const route="colosseum/providers/"+child;
+  assert.equal(resolveWorkspaceRoute("#"+route),route);
+  assert.equal(resolveWorkspaceRoute("","","/app/"+route),route);
+  assert.equal(workspaceRouteDetails(route).label,child[0].toUpperCase()+child.slice(1));
+  assert.ok(html.includes('data-view="'+route+'"'));
+  assert.ok(html.includes('href="#'+route+'"'));
+  assert.ok(worker.includes('"/app/'+route+'"'));
+ }
+ assert.equal(resolveWorkspaceRoute("#colosseum/providers"),"colosseum/providers/local");
+ assert.equal(resolveWorkspaceRoute("","","/app/colosseum/providers"),"colosseum/providers/local");
+ assert.match(html,/id="providers-subnavigation"[^>]*hidden/);
+ assert.match(html,/data-providers-toggle/);
+ assert.match(nav,/providerParent\?\.addEventListener\?\.\("click"/);
+ assert.match(nav,/syncProviderNav\(\)/);
+ assert.match(wallpapers,/route\.startsWith\("colosseum\/providers\/"\)/);
+});
+
 test("direct nested app paths resolve the same screens as hash navigation",()=>{
   for(const route of MAIN_ROUTES){
     assert.equal(resolveWorkspaceRoute("","",`/app/${route}`),route);
