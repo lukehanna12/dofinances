@@ -70,8 +70,10 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
  background:#292929;border-color:#5a5a5a;color:#fff
 }
 #st-root :is(.secondary,.rm-save,.cf-panel button,.st-disclosure button):active:not(:disabled){transform:translateY(1px)}
-#st-root .destructive{border-color:#61383d;background:rgba(124,40,48,.12);color:#f9a7ae}
-#st-root .destructive:hover:not(:disabled){background:rgba(153,48,58,.2);border-color:#96525a}
+/* Reuse the exact pre-redesign Permissions "Remove" red (#b42318).
+   Use it as a solid fill so white labels remain legible on the dark canvas. */
+#st-root button.destructive{background:#b42318;border-color:#b42318;color:#fff}
+#st-root button.destructive:hover:not(:disabled){background:#c52c20;border-color:#c52c20;color:#fff}
 #st-root .clock-settings-fields{max-width:350px;min-width:210px;flex:0 1 350px;display:grid;gap:6px;margin:0;padding:0}
 #st-root .clock-settings-fields > label{font-size:10px;color:#9a9a9a}
 #st-root .clock-settings-fields #clock-settings-feedback{font-size:11px;min-height:0;margin:0;color:#b7b7b7}

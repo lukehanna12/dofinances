@@ -75,6 +75,16 @@ test("Settings keeps server-side authorization and uses compact scoped styling",
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
 
+test("Settings destructive buttons use the original Permissions Remove red",async()=>{
+ const css=await read("sites/_apex/app/assets/settings.css");
+ const html=await read("sites/_apex/app/index.html");
+ assert.match(css,/#st-root button\.destructive\{background:#b42318;border-color:#b42318;color:#fff\}/);
+ assert.match(css,/#st-root button\.destructive:hover:not\(:disabled\)/);
+ assert.match(html,/<button[^>]*class="destructive"[^>]*>Disable MFA<\/button>/);
+ assert.match(html,/<button[^>]*class="destructive"[^>]*>Permanently delete account<\/button>/);
+ assert.match(html,/<button[^>]*class="destructive"[^>]*id="cf-disconnect"[^>]*>Remove connection<\/button>/);
+});
+
 test("Settings section buttons scroll without changing the SPA route",()=>{
  const calls=[],section={scrollIntoView:x=>calls.push(x)};
  const buttons=["st-general","st-security","st-connections","st-advanced"].map(id=>{
