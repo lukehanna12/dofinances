@@ -100,7 +100,11 @@ try{
  await until('window.__rulesReady===true',"module load");
  assert.equal(await reset(),true,"README must be focused");
  await type("# ");await until('!!document.querySelector("#readme > h1")',"heading marker");
- await type("Header");await until('document.querySelector("#readme h1")?.textContent==="Header"',"heading text");
+ const caretDiagnostics='(()=>{const s=getSelection(),a=s?.anchorNode;return {active:document.activeElement?.id,anchor:a?.nodeName,anchorParent:a?.parentElement?.outerHTML?.slice(0,200),offset:s?.anchorOffset,collapsed:s?.isCollapsed,rangeCount:s?.rangeCount,focus:s?.focusNode?.nodeName,editable:document.querySelector("#readme h1")?.isContentEditable};})()';
+ console.log("After heading shortcut:",JSON.stringify(await evaluate(caretDiagnostics)));
+ await type("Header");
+ console.log("After typed heading text:",JSON.stringify(await evaluate(caretDiagnostics)),JSON.stringify(await evaluate('document.getElementById("readme").outerHTML')));
+ await until('document.querySelector("#readme h1")?.textContent==="Header"',"heading text");
  await reset();await type("> ");await until('!!document.querySelector("#readme > blockquote > p")',"quote marker");
  await type("Quote");await until('document.querySelector("#readme blockquote p")?.textContent==="Quote"',"quote text");
  await reset();await type("- ");await until('!!document.querySelector("#readme > ul > li")',"bullet list");
