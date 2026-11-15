@@ -423,12 +423,12 @@
               <span class="rm-tooltip" role="tooltip">Highlight changes</span></span></div>
             <div class="rm-toolbar-end">
               <span class="rm-control-wrap"><button type="button" id="rm-confirm" class="rm-icon-button rm-confirm" aria-label="Save README" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg></button><span class="rm-tooltip" role="tooltip">Confirm and save changes</span></span>
-              <span class="rm-control-wrap"><button type="button" id="rm-edit" class="rm-icon-button" aria-label="Edit README" aria-keyshortcuts="Meta+Shift+E"><img class="rm-edit-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"><svg class="rm-cancel-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button><span id="rm-edit-tooltip" class="rm-tooltip" role="tooltip">Edit README · ⇧⌘E</span></span>
+              <span class="rm-control-wrap rm-edit-surround"><button type="button" id="rm-edit" class="rm-icon-button" aria-label="Edit README" aria-keyshortcuts="Meta+Shift+E"><img class="rm-edit-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"><svg class="rm-cancel-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button><span id="rm-edit-tooltip" class="rm-tooltip" role="tooltip">Edit README · ⇧⌘E</span></span>
             </div>
           </div>
           <p id="rm-notice" class="rm-notice" role="status" aria-live="polite" hidden></p>
-          <article id="rm-reading" class="rm-reading markdown-body" data-theme="dark"><p>Loading README…</p></article>
-          <div id="rm-editor" class="rm-editor" hidden><div class="rm-editor-pane"><label for="rm-markdown">Markdown</label><textarea id="rm-markdown" spellcheck="false" aria-label="Edit README Markdown"></textarea></div><div class="rm-preview-pane"><h2>Live preview</h2><article id="rm-preview" class="markdown-body" data-theme="dark"></article></div></div>
+          <article id="rm-reading" class="rm-reading markdown-body" data-theme="dark" contenteditable="false" spellcheck="false" aria-label="README document"><p>Loading README…</p></article>
+          
           <section id="rm-diff-panel" class="rm-diff-panel" hidden aria-label="README changes"><h2>Changes to README</h2><div id="rm-diff-content"></div></section>
           <details class="rm-repository-config"><summary>README presentation &amp; GitHub repository</summary>
             <label for="rm-presentation">Presentation style</label>

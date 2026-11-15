@@ -2,6 +2,7 @@
 // diff, repository association, and encrypted GitHub connection in Settings.
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
+import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 
 const $=id=>document.getElementById(id);
 const routeSlug=()=>{
@@ -69,15 +70,23 @@ function sanitizeMarkdown(html,project){
    if(name==="href"&&tag==="a"){
     try{
      const u=new URL(value, "https://github.com/");
-     if(/^#[a-zA-Z0-9_:-]{1,120}$/.test(value))el.setAttribute("href","#readme-"+value.slice(1));
-     else if(["https:","http:"].includes(u.protocol)){el.href=u.href;el.rel="noopener noreferrer";if(u.origin!==location.origin)el.target="_blank";}
+     if(/^#[a-zA-Z0-9_:-]{1,120}$/.test(value)){
+       el.setAttribute("href","#readme-"+value.slice(1));
+       el.setAttribute("data-readme-original-href",value);
+      }
+     else if(["https:","http:"].includes(u.protocol)){
+       el.href=u.href;el.setAttribute("data-readme-original-href",value);
+       el.rel="noopener noreferrer";if(u.origin!==location.origin)el.target="_blank";
+      }
     }catch{}
    }else if(name==="src"&&tag==="img"){
     try{
      const u=new URL(value,"https://github.com/");
      const asset=safeAssetPath(value,project);
-     if(asset)el.src=asset;
-     else if(["https:","http:"].includes(u.protocol)&&/^https?:\/\//.test(value))el.src=u.href;
+     if(asset){el.src=asset;el.setAttribute("data-readme-original-src",value);}
+     else if(["https:","http:"].includes(u.protocol)&&/^https?:\/\//.test(value)){
+      el.src=u.href;el.setAttribute("data-readme-original-src",value);
+     }
     }catch{}
    }else if(name==="type"&&tag==="input"&&value==="checkbox"){el.type="checkbox";el.disabled=true;}
    else if(name==="checked"&&tag==="input"){el.checked=true;el.disabled=true;}
@@ -127,12 +136,15 @@ export function initProjectReadme(){
  const cards=$("project-list"),create=$("project-create"),createDialog=$("project-create-dialog");
  if(!view||!cards||view.dataset.initialized==="true")return;
  view.dataset.initialized="true";
- const edit=$("rm-edit"),confirm=$("rm-confirm"),diffButton=$("rm-diff"),editor=$("rm-editor");
- const textarea=$("rm-markdown"),preview=$("rm-preview"),reading=$("rm-reading"),notice=$("rm-notice");
+ const edit=$("rm-edit"),confirm=$("rm-confirm"),diffButton=$("rm-diff");
+ const reading=$("rm-reading"),notice=$("rm-notice");
+ const converter=createReadmeMarkdownConverter();
  const diffPanel=$("rm-diff-panel"),diffContent=$("rm-diff-content");
  const form=$("project-create-form"),repoForm=$("rm-repository-form");
  const state={projects:[],slug:null,source:null,original:"",dirty:false,editing:false,canEdit:false,
-   readingRenderTicket:0,previewRenderTicket:0,loadTicket:0,renderDelay:null,processing:false,loaded:false};
+   readingRenderTicket:0,previewRenderTicket:0,loadTicket:0,renderDelay:null,
+   processing:false,loaded:false,renderReady:false,richBaseline:"",draft:"",
+   savedDom:null,conversionError:null};
  const say=(message,error=false,success=false,node=notice)=>{
   node.hidden=!message;node.textContent=message||"";node.classList.toggle("rm-error",!!error);node.classList.toggle("rm-success",!!success);
  };
@@ -140,27 +152,41 @@ export function initProjectReadme(){
  const source=()=>state.source;
  const setBusy=flag=>{
   state.processing=flag;
-  textarea.disabled=flag;
-  confirm.disabled=flag;
-  edit.disabled=flag;
+  reading.contentEditable=state.editing&&!flag?"true":"false";
+  confirm.disabled=flag;edit.disabled=flag;
  };
  const paintControls=()=>{
   view.classList.toggle("rm-editing",state.editing);
-  const dirty=state.editing&&textarea.value!==state.original;
-  state.dirty=dirty;
-  confirm.hidden=!dirty;
-  diffButton.hidden=!dirty;
+  const dirty=state.editing&&state.dirty;
+  confirm.hidden=!dirty;diffButton.hidden=!dirty;
   edit.setAttribute("aria-label",state.editing?"Cancel README edits":"Edit README");
   $("rm-edit-tooltip").textContent=state.editing?"Cancel editing · ⇧⌘E":"Edit README · ⇧⌘E";
   if(!dirty){diffPanel.hidden=true;diffButton.setAttribute("aria-pressed","false");}
-  reading.hidden=state.editing;editor.hidden=!state.editing;
  };
- const exitEdit=()=>{
-  state.editing=false;
-  textarea.value=state.original;
-  ++state.previewRenderTicket;
-  paintControls();
+ const exitEdit=(restore=true)=>{
+  reading.contentEditable="false";
+  if(restore&&state.savedDom)
+   reading.replaceChildren(...Array.from(state.savedDom.childNodes,node=>node.cloneNode(true)));
+  for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=true;
+  state.savedDom=null;state.editing=false;state.dirty=false;state.conversionError=null;
+  state.draft=state.original;state.richBaseline="";
+  ++state.previewRenderTicket;paintControls();
  };
+ function updateDraft(){
+  if(!state.editing||state.processing)return;
+  try{
+   const rich=converter.turndown(reading);
+   state.dirty=rich!==state.richBaseline;
+   state.draft=state.dirty?preserveReadmeSource(state.original,state.richBaseline,rich):state.original;
+   state.conversionError=state.draft.length>180000?"README exceeds the 180 KB limit.":null;
+   if(state.conversionError)say(state.conversionError,true);
+   else if(notice.classList.contains("rm-error")&&notice.textContent==="README exceeds the 180 KB limit.")say("");
+   paintControls();if(!diffPanel.hidden)drawDiff();
+  }catch(error){
+   state.conversionError="This rendered content could not be converted safely to Markdown: "+error.message;
+   say(state.conversionError,true);
+  }
+ }
  async function renderMarkup(markdown,target,slug){
   // Reading and live preview must not invalidate each other's network response.
   // Bind each render to both its target and its originating project.
@@ -171,6 +197,7 @@ export function initProjectReadme(){
   catch(error){html=fallbackMarkdown(markdown);if(target===reading&&active())say("GitHub Markdown rendering unavailable; using a basic text preview. "+error.message,true);}
   if(ticket!==state[key]||state.slug!==slug||!view.isConnected)return;
   target.replaceChildren(sanitizeMarkdown(html,{slug,repository:source()?.project?.repository,path:source()?.path}));
+  if(target===reading)state.renderReady=true;
  }
  function populateProjectCards(projects){
   const fragment=document.createDocumentFragment();
@@ -209,20 +236,21 @@ export function initProjectReadme(){
   if(!slug){
    // Drop pending content responses from the previous project upon leaving.
    ++state.loadTicket;++state.readingRenderTicket;
-   state.slug=null;exitEdit();return;
+   state.slug=null;exitEdit();state.renderReady=false;return;
   }
   const ticket=++state.loadTicket;
   ++state.readingRenderTicket;++state.previewRenderTicket;
-  state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;
+  state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;state.renderReady=false;
   reading.textContent="Loading README…";say("");
   $("rm-project-label").textContent=(state.projects.find(p=>p.slug===slug)?.name||slug).toUpperCase();
   $("rm-repository-label").textContent="Loading repository association…";
-  textarea.value="";diffContent.replaceChildren();paintControls();
+  reading.contentEditable="false";state.dirty=false;state.savedDom=null;
+  diffContent.replaceChildren();paintControls();
   try{
    const data=await api("/api/projects/"+encodeURIComponent(slug)+"/readme");
    if(ticket!==state.loadTicket||!active())return;
    state.source=data;state.original=data.markdown||"";
-   state.canEdit=!!data.canEdit;textarea.value=state.original;
+   state.canEdit=!!data.canEdit;state.draft=state.original;
    $("rm-project-label").textContent=(data.project.name||slug).toUpperCase();
    $("rm-repository-label").textContent=data.project.repository?
       data.project.repository+(data.private?" · Private":""):"Local README · No linked GitHub repository";
@@ -243,39 +271,67 @@ export function initProjectReadme(){
  async function startEdit(){
   if(!active())return;
   if(state.editing){exitEdit();return;}
-  if(!state.source){say("The README is still loading. Please retry.",true);return;}
+  if(!state.source||!state.renderReady){say("The README is still rendering. Please retry.",true);return;}
   if(!state.canEdit){
-   const credentials=state.source.requiresConnection;
-   say(credentials?
+   say(state.source.requiresConnection?
      "Editing is unavailable: configure a GitHub token with Contents: Read and write permission in Settings first.":
      "Editing is not permitted for this repository with your currently validated GitHub credentials. Check repository write access in Settings.",true);
    return;
   }
   say("");
-  state.editing=true;textarea.value=state.original;paintControls();
-  void renderMarkup(textarea.value,preview,state.slug);
-  textarea.focus({preventScroll:true});
+  try{state.richBaseline=converter.turndown(reading);}
+  catch(error){say("Cannot edit this document safely: "+error.message,true);return;}
+  state.savedDom=reading.cloneNode(true);
+  state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;
+  reading.contentEditable="true";
+  for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=false;
+  paintControls();
+  // Do not focus here; the same GitHub-rendered document remains stationary.
+  // The first click on text places the caret exactly where the user wants it.
  }
- // Internal GitHub heading links scroll within the README, without hijacking
- // the workspace's hash-router navigation or colliding with control IDs.
- for(const container of [reading,preview])container.addEventListener("click",event=>{
+ // One in-place document: no Markdown textarea, preview pane or re-render
+ // when editing starts. Links do not navigate while text is editable.
+ reading.addEventListener("click",event=>{
+  if(state.editing){
+   if(event.target.closest?.("a"))event.preventDefault();
+   if(event.target.matches?.('input[type="checkbox"]'))queueMicrotask(updateDraft);
+   return;
+  }
   const link=event.target.closest?.('a[href^="#readme-"]');
-  if(!link||!container.contains(link))return;
-  const target=container.querySelector('[id="'+link.getAttribute("href").slice(1)+'"]');
+  if(!link||!reading.contains(link))return;
+  const target=reading.querySelector('[id="'+link.getAttribute("href").slice(1)+'"]');
   if(!target)return;
   event.preventDefault();target.scrollIntoView({behavior:"smooth",block:"start"});
  });
- edit.addEventListener("click",()=>void startEdit());
- textarea.addEventListener("input",()=>{
+ reading.addEventListener("paste",event=>{
   if(!state.editing)return;
-  paintControls();
-  if(state.renderDelay!==null)clearTimeout(state.renderDelay);
-  state.renderDelay=setTimeout(()=>{if(state.editing)void renderMarkup(textarea.value,preview,state.slug)},220);
-  if(!diffPanel.hidden)drawDiff();
+  event.preventDefault();
+  const plain=event.clipboardData?.getData("text/plain")||"";
+  // Plain text prevents cross-origin HTML paste from injecting active
+  // elements into the authenticated reading document.
+  if(!document.execCommand("insertText",false,plain)){
+   const selection=window.getSelection();
+   if(selection?.rangeCount&&reading.contains(selection.anchorNode)){
+    const range=selection.getRangeAt(0);
+    range.deleteContents();const node=document.createTextNode(plain);range.insertNode(node);
+    range.setStartAfter(node);range.collapse(true);selection.removeAllRanges();selection.addRange(range);
+   }
+  }
+  updateDraft();
  });
+ reading.addEventListener("drop",event=>{if(state.editing)event.preventDefault();});
+ reading.addEventListener("input",()=>{
+  if(!state.editing)return;
+  if(state.renderDelay!==null)clearTimeout(state.renderDelay);
+  state.renderDelay=setTimeout(updateDraft,80);
+ });
+ reading.addEventListener("change",event=>{
+  if(state.editing&&event.target.matches?.('input[type="checkbox"]'))updateDraft();
+ });
+ edit.addEventListener("click",()=>void startEdit());
  function drawDiff(){
   diffContent.replaceChildren();
-  const changes=makeReadmeDiff(state.original,textarea.value);
+  const changes=makeReadmeDiff(state.original,state.draft);
   if(!changes.length){const empty=document.createElement("div");empty.className="rm-diff-empty";empty.textContent="No changes.";diffContent.append(empty);return;}
   for(const line of changes){
    const div=document.createElement("div");div.className="rm-diff-line rm-diff-"+line.type;
@@ -283,21 +339,28 @@ export function initProjectReadme(){
   }
  }
  diffButton.addEventListener("click",()=>{
-  if(!state.editing||!state.dirty)return;
+  if(!state.editing)return;
+  if(state.renderDelay!==null)clearTimeout(state.renderDelay);
+  updateDraft();
+  if(!state.dirty)return;
   diffPanel.hidden=!diffPanel.hidden;
   diffButton.setAttribute("aria-pressed",String(!diffPanel.hidden));
   if(!diffPanel.hidden){drawDiff();diffPanel.scrollIntoView({block:"nearest",behavior:"smooth"});}
  });
  confirm.addEventListener("click",async()=>{
-  if(!state.editing||!state.dirty||state.processing)return;
-  const content=textarea.value,slug=state.slug;
+  if(!state.editing||state.processing)return;
+  if(state.renderDelay!==null)clearTimeout(state.renderDelay);
+  updateDraft();
+  if(!state.dirty)return;
+  if(state.conversionError){say(state.conversionError,true);return;}
+  const content=state.draft,slug=state.slug;
   setBusy(true);say("Saving README…");
   try{
    const res=await api("/api/projects/"+encodeURIComponent(slug)+"/readme","PUT",
      {markdown:content,sha:state.source?.sha||null,path:state.source?.path||"README.md"});
    if(routeSlug()!==slug){exitEdit();return;}
    state.original=content;state.source={...state.source,sha:res.sha||null,path:res.path||state.source?.path,markdown:content,source:res.local?"local":"github"};
-   exitEdit();
+   exitEdit(false);
    await renderMarkup(content,reading,slug);
    say("README saved"+(res.commit?" to GitHub · "+res.commit.slice(0,8):" locally")+".",false,true);
   }catch(error){say("README not saved: "+error.message,true);}

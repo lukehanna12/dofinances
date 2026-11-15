@@ -9,6 +9,19 @@
 .rm-toolbar-start,.rm-toolbar-end{display:flex;align-items:center;gap:9px}
 .rm-toolbar-end{margin-left:auto}
 .rm-control-wrap{display:inline-flex;position:relative;align-items:center;justify-content:center}
+.rm-edit-surround{
+ padding:4px;border:0;border-radius:999px;background:#212121;
+ background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)
+}
+.rm-edit-surround #rm-edit{width:42px;height:42px}
+.rm-view .rm-reading[contenteditable="true"]{
+ outline:none;caret-color:#f0f6fc;
+ /* Editing uses this exact rendered surface. No content-box, typography,
+    border or background differences from its read-only appearance. */
+}
+.rm-view .rm-reading[contenteditable="true"]:focus-visible{outline:none}
+.rm-view .rm-reading[contenteditable="true"] a{cursor:text}
+.rm-view .rm-reading[contenteditable="true"] img{user-select:none}
 .rm-icon-button{width:42px;height:42px;border:0;border-radius:999px;display:grid;place-items:center;background:transparent;color:#f5f5f5;cursor:pointer;padding:0;position:relative;transition:background-color .15s ease,transform .12s ease;color-scheme:dark}
 .rm-icon-button:hover:not(:disabled){background:rgba(255,255,255,.08)}
 .rm-icon-button:active:not(:disabled){transform:scale(.95)}
@@ -31,15 +44,9 @@
 .rm-notice.rm-error{color:#ff9999;border-color:#6c3232;background:#241819}
 .rm-notice.rm-success{color:#a7e9bf;border-color:#315341;background:#17241b}
 .rm-notice a{text-decoration:underline;color:inherit}
-.rm-view .rm-reading,.rm-view .rm-preview-pane .markdown-body{background:#0d1117;color:#f0f6fc;border:1px solid #3d444d;border-radius:12px;padding:clamp(20px,3.2vw,42px);min-width:0;overflow-wrap:anywhere;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.rm-view .rm-reading{background:#0d1117;color:#f0f6fc;border:1px solid #3d444d;border-radius:12px;padding:clamp(20px,3.2vw,42px);min-width:0;overflow-wrap:anywhere;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
 .rm-view .markdown-body{font-size:16px;line-height:1.5}
 .rm-view .markdown-body img{max-width:100%}
-.rm-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}
-.rm-editor-pane,.rm-preview-pane{min-width:0;display:flex;flex-direction:column}
-.rm-editor-pane label,.rm-preview-pane h2{font-size:12px;font-weight:600;color:var(--rm-muted);margin:0 0 10px;line-height:1.4}
-.rm-editor-pane textarea{box-sizing:border-box;display:block;resize:vertical;width:100%;min-height:530px;padding:20px 18px;border:1px solid #424242;border-radius:12px;background:#101013;color:#f4f4f4;font:400 13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:2;outline:0}
-.rm-editor-pane textarea:focus-visible{border-color:#969696;box-shadow:0 0 0 2px #96969633}
-.rm-preview-pane .markdown-body{flex:1;min-height:530px;max-height:none;overflow:auto}
 .rm-diff-panel{padding:16px 0 4px}
 .rm-diff-panel h2{font-size:14px;margin:0 0 12px;font-weight:600}
 .rm-diff-panel #rm-diff-content{border:1px solid #414141;border-radius:11px;background:#151515;overflow-x:auto;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -80,16 +87,13 @@
 .rm-dialog form{display:flex;flex-direction:column}
 .rm-dialog input{width:100%;flex:auto}
 .rm-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-@media(max-width:900px){.rm-editor{grid-template-columns:1fr}.rm-editor-pane textarea{min-height:280px}.rm-preview-pane .markdown-body{min-height:280px}}
-@media(max-width:639px){.rm-icon-button{width:38px;height:38px}.rm-diff-button{width:auto;min-width:90px}.rm-view .markdown-body{font-size:14px}.rm-settings-input,.rm-repository-entry{flex-wrap:wrap}.rm-toolbar{margin-top:20px}}
+@media(max-width:639px){.rm-icon-button{width:38px;height:38px}.rm-edit-surround #rm-edit{width:38px;height:38px}.rm-diff-button{width:auto;min-width:90px}.rm-view .markdown-body{font-size:14px}.rm-settings-input,.rm-repository-entry{flex-wrap:wrap}.rm-toolbar{margin-top:20px}}
 @media(prefers-reduced-motion:reduce){.rm-view *, .rm-view *::before, .rm-view *::after{transition-duration:.01ms!important}}
 
 /* Optional per-project presentations; GitHub is the default, using the
    vendored github-markdown-css rules above without these overrides. */
 .rm-repository-config select{display:block;min-width:180px;max-width:100%;padding:10px 12px;border:1px solid #424242;border-radius:9px;background:#1b1b1b;color:#f4f4f4;font:inherit;margin:7px 0 16px}
-.rm-view[data-presentation="minimal"] .rm-reading,
-.rm-view[data-presentation="minimal"] .rm-preview-pane .markdown-body{background:#191919;border-color:transparent;box-shadow:none;border-radius:0;padding-inline:24px}
+.rm-view[data-presentation="minimal"] .rm-reading{background:#191919;border-color:transparent;box-shadow:none;border-radius:0;padding-inline:24px}
 .rm-view[data-presentation="minimal"] .markdown-body{--bgColor-default:#191919;--fgColor-default:#eee;--borderColor-default:#404040}
-.rm-view[data-presentation="reader"] .rm-reading,
-.rm-view[data-presentation="reader"] .rm-preview-pane .markdown-body{max-width:850px;margin-inline:auto;background:#111114;border:1px solid #343434;border-radius:17px;padding:clamp(24px,4vw,64px)}
+.rm-view[data-presentation="reader"] .rm-reading{max-width:850px;margin-inline:auto;background:#111114;border:1px solid #343434;border-radius:17px;padding:clamp(24px,4vw,64px)}
 .rm-view[data-presentation="reader"] .markdown-body{font-size:17px;line-height:1.75;letter-spacing:.003em}
