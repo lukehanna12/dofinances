@@ -87,7 +87,7 @@ export async function githubSaveReadme(repository,token,{path="README.md",markdo
  if(sha!==null&&sha!==undefined&&(typeof sha!=="string"||!/^[a-f0-9]{40}$/.test(sha)))throw Error("Invalid README revision.");
  const bytes=utf8.encode(markdown);
  const response=await githubRequest("/repos/"+repository+"/contents/"+encodeSegments(path),
-  {token,method:"PUT",body:{message:"docs: update README from DoFinances",content:base64url(bytes).replace(/-/g,"+").replace(/_/g,"/"),...(sha?{sha}:{})}},fetcher);
+  {token,method:"PUT",body:{message:"docs: update README from DoFinances",content:base64url(bytes).replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(bytes.length/3)*4,"="),...(sha?{sha}:{})}},fetcher);
  const data=await safeJson(response);
  if(!response.ok)return {ok:false,status:response.status,error:githubError(response,data,true)};
  return {ok:true,sha:data.content?.sha||null,path:data.content?.path||path,commit:data.commit?.sha||null};

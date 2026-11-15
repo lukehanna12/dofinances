@@ -69,8 +69,8 @@ function sanitizeMarkdown(html,project){
    if(name==="href"&&tag==="a"){
     try{
      const u=new URL(value, "https://github.com/");
-     if(["https:","http:"].includes(u.protocol)){el.href=u.href;el.rel="noopener noreferrer";if(u.origin!==location.origin)el.target="_blank";}
-     else if(value.startsWith("#"))el.setAttribute("href",value);
+     if(/^#[a-zA-Z0-9_:-]{1,120}$/.test(value))el.setAttribute("href","#readme-"+value.slice(1));
+     else if(["https:","http:"].includes(u.protocol)){el.href=u.href;el.rel="noopener noreferrer";if(u.origin!==location.origin)el.target="_blank";}
     }catch{}
    }else if(name==="src"&&tag==="img"){
     try{
@@ -87,7 +87,7 @@ function sanitizeMarkdown(html,project){
    else if(textAttrs.has(name)){
     if(name==="id"&&!/^[a-zA-Z0-9_:-]{1,120}$/.test(value))continue;
     if(name==="class"&&!/^[a-zA-Z0-9_\- ]{1,180}$/.test(value))continue;
-    el.setAttribute(name,value.slice(0,180));
+    el.setAttribute(name,name==="id"?"readme-"+value:value.slice(0,180));
    }
   }
   for(const child of node.childNodes)el.append(cleanNode(child));
@@ -246,6 +246,15 @@ export function initProjectReadme(){
   void renderMarkup(textarea.value,preview,state.slug);
   textarea.focus({preventScroll:true});
  }
+ // Internal GitHub heading links scroll within the README, without hijacking
+ // the workspace's hash-router navigation or colliding with control IDs.
+ for(const container of [reading,preview])container.addEventListener("click",event=>{
+  const link=event.target.closest?.('a[href^="#readme-"]');
+  if(!link||!container.contains(link))return;
+  const target=container.querySelector('[id="'+link.getAttribute("href").slice(1)+'"]');
+  if(!target)return;
+  event.preventDefault();target.scrollIntoView({behavior:"smooth",block:"start"});
+ });
  edit.addEventListener("click",()=>void startEdit());
  textarea.addEventListener("input",()=>{
   if(!state.editing)return;

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {webcrypto} from "node:crypto";
 import {githubReadme,githubRepository,githubSaveReadme,githubMarkdown,githubRequest,githubIdentity,sealGithubToken,openGithubToken} from "../edge/project-readme.mjs";
+import {projectApi} from "../edge/project-api.mjs";
 import {makeReadmeDiff} from "../sites/_apex/app/assets/project-readme-ui.js";
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -86,6 +87,7 @@ test("GitHub README retrieval and SHA guarded saves stay on fixed HTTPS GitHub A
    const req=JSON.parse(opts.body);
    assert.equal(req.sha,"a".repeat(40));
    assert.equal(Buffer.from(req.content,"base64").toString("utf8"),"# Updated\n");
+   assert.equal(req.content.length%4,0,"GitHub Content API receives padded RFC 4648 base64");
    return Response.json({content:{sha:"b".repeat(40),path:"README.md"},commit:{sha:"c".repeat(40)}});
   }
   throw Error("Unexpected URL "+url);
@@ -166,4 +168,42 @@ test("Production builds keep private README assets off the public Studio Pages a
  assert.ok(workflow.includes('command: deploy --config edge/wrangler.jsonc'));
  assert.ok(workflow.includes('cp studio/sidebar/index.html dist/app/index.html'));
  assert.ok(!workflow.includes('cp sites/_apex/app/assets/project-readme-ui.js dist/app/assets/project-readme-ui.js'));
+});
+
+test("Projects API enforces account scope, route ownership, payload fields and same-origin saves",async()=>{
+ const fakeProject={slug:"sandbox",name:"Sandbox",repository:null,defaultReadme:"# Sandbox\n",presentation:"github"};
+ const mutations=[];
+ const stub={
+  async projectList({userId}){assert.equal(userId,"account-test");return {status:200,projects:[fakeProject]};},
+  async projectGet({userId,slug}){return slug==="sandbox"&&userId==="account-test"?{status:200,project:fakeProject}:{status:404,error:"Project not found."};},
+  async projectSaveLocal(value){mutations.push(value);return {status:200};},
+  async projectSetPresentation(value){mutations.push(value);return {status:200,project:{...fakeProject,presentation:value.presentation}};},
+  async projectCreate(value){mutations.push(value);return {status:201,project:{...fakeProject,name:value.name}};},
+  async githubProjectConnection(){return {status:200,connected:false,login:null,updatedAt:null};}
+ };
+ const env={},user={id:"account-test"};
+ const make=(path,method="GET",body,origin="https://dofinances.com")=>new Request("https://dofinances.com"+path,{
+  method,headers:{"Content-Type":"application/json",...(method!=="GET"?{Origin:origin}:{} )},
+  ...(body===undefined?{}:{body:JSON.stringify(body)})
+ });
+ let response=await projectApi(make("/api/projects"),env,"/api/projects",user,stub);
+ assert.equal(response.status,200);
+ let data=await response.json();
+ assert.equal(data.projects[0].name,"Sandbox");
+ assert.ok(!Object.hasOwn(data.projects[0],"defaultReadme"));
+ response=await projectApi(make("/api/projects/sandbox/readme"),env,"/api/projects/sandbox/readme",user,stub);
+ assert.equal(response.status,200);
+ data=await response.json();assert.equal(data.source,"local");assert.equal(data.canEdit,true);
+ response=await projectApi(make("/api/projects/sandbox/readme","PUT",{markdown:"# Updated",sha:null}),env,"/api/projects/sandbox/readme",user,stub);
+ assert.equal(response.status,200);assert.equal(mutations[0].markdown,"# Updated");
+ response=await projectApi(make("/api/projects/sandbox/presentation","PUT",{presentation:"reader"}),env,"/api/projects/sandbox/presentation",user,stub);
+ assert.equal(response.status,200);assert.equal(mutations[1].presentation,"reader");
+ response=await projectApi(make("/api/projects","POST",{name:"Another project"}),env,"/api/projects",user,stub);
+ assert.equal(response.status,201);assert.equal(mutations[2].name,"Another project");
+ response=await projectApi(make("/api/projects/sandbox/readme","PUT",{markdown:"Injected"},"https://evil.invalid"),env,"/api/projects/sandbox/readme",user,stub);
+ assert.equal(response.status,403);
+ response=await projectApi(make("/api/projects/unknown/readme"),env,"/api/projects/unknown/readme",user,stub);
+ assert.equal(response.status,404);
+ response=await projectApi(make("/api/projects/sandbox/readme","PUT",{markdown:"Allowed",surprise:true}),env,"/api/projects/sandbox/readme",user,stub);
+ assert.equal(response.status,400);
 });
