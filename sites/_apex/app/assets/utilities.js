@@ -27,7 +27,8 @@ const FILTER_GROUPS=[
  ["cardinalities","Cardinality",["solo","registry","router","index","directory"]],
  ["ecosystems","Ecosystem",null],
  ["vendors","Vendor",null],
- ["subjects","Subject",null]
+ ["subjects","Subject",null],
+ ["collections","Collection",[]]
 ];
 export function utilityFiltersFromFields(rows){
  const result={include:{},exclude:{}};
@@ -73,7 +74,7 @@ export function initColosseumUtilities(){
  };
  const s={items:[],page:0,cursors:[null],nextCursor:null,loaded:false,loading:false,working:false,
   activeUid:null,detail:null,detailCache:new Map(),detailSeq:0,requestSeq:0,
-  sort:"name_asc",query:"",include:{},exclude:{},selectionMode:false,
+  sort:"name_asc",query:"",include:{},exclude:{},collectionChoices:null,collectionChoicePending:false,pageSize:10,selectionMode:false,
   selection:new Set(),editorMode:"add",editorItem:null,planned:null,pendingDelete:null,
   fileOffset:0};
  const selectedItem=()=>s.items.find(x=>x.uid===s.activeUid)||null;
@@ -115,7 +116,7 @@ export function initColosseumUtilities(){
     " / PAGE "+String(s.page+1):"CATALOG / LOADING";
  }
  function skeletons(){
-  elements.list.innerHTML=Array.from({length:10},(_,i)=>'<div class="ut-skeleton" aria-hidden="true"><span>'+String(s.page*25+i+1).padStart(2,"0")+'</span></div>').join("");
+  elements.list.innerHTML=Array.from({length:10},(_,i)=>'<div class="ut-skeleton" aria-hidden="true"><span>'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span></div>').join("");
  }
  function rowsMarkup(){
   if(!s.items.length)return '<p class="ut-empty">'+(s.query||Object.keys(s.include).length||Object.keys(s.exclude).length?
@@ -124,12 +125,15 @@ export function initColosseumUtilities(){
    const title=esc(plain(item.name)),uid=esc(item.uid);
    return '<article class="ut-row" data-ut-uid="'+uid+'">'+
     '<button type="button" class="ut-row-main" data-ut-open="'+uid+'" aria-expanded="false" aria-controls="ut-panel-'+uid+'">'+
-    '<span class="ut-row-number">'+String(s.page*25+i+1).padStart(2,"0")+'</span>'+
+    '<span class="ut-row-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
     '<span class="ut-route-icon" data-route="'+esc(item.route||"unknown")+'" aria-label="'+esc(plain(item.route))+' utility" role="img"></span>'+
-    '<span class="ut-row-copy"><span class="ut-row-title">'+title+'</span>'+
+    '<span class="ut-row-copy"><span class="ut-row-title">'+
+    '<span class="ut-title-measure" aria-hidden="true">'+title+'</span>'+
+    '<span class="ut-title-compact" aria-hidden="true">'+title+'</span>'+
+    '<span class="ut-title-expanded">'+title+'</span></span>'+
     '<span class="ut-row-sub">'+uid+' · '+esc(plain(item.class))+'</span></span>'+
     '<span class="ut-row-side">'+esc(plain(item.author))+'</span><span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
-    '<div class="ut-row-panel" id="ut-panel-'+uid+'" aria-hidden="true"><div class="ut-row-panel-inner">'+
+    '<div class="ut-row-panel" id="ut-panel-'+uid+'" role="region" aria-hidden="true"><div class="ut-row-panel-inner">'+
     '<p class="ut-row-description">'+esc(plain(item.label))+'</p>'+
     '<div class="ut-mobile-detail" data-ut-mobile></div></div></div></article>';
   }).join("");
@@ -137,6 +141,7 @@ export function initColosseumUtilities(){
  function syncActive(){
   elements.layout.classList.toggle("ut-open",!!s.activeUid);
   elements.inspector.setAttribute("aria-hidden",String(!s.activeUid));
+  elements.inspector.classList.toggle("ut-empty",!s.activeUid);
   for(const el of elements.list.querySelectorAll(".ut-row")){
    const open=el.dataset.utUid===s.activeUid;
    el.classList.toggle("ut-active",open);
@@ -165,12 +170,16 @@ export function initColosseumUtilities(){
   const files=(s.detail.files||[]).map(f=>'<div class="ut-file"><code>'+esc(f.relative_path)+'</code>'+
    '<small>'+Number(f.size_bytes||0).toLocaleString()+' bytes</small></div>').join("");
   const canEdit=utilityCanManage(item);
-  return '<section class="ut-card" aria-label="'+esc(item.name)+' details">'+
+  const linked=Array.isArray(s.detail.collection_names)?s.detail.collection_names:[];
+  const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
+    (linked.length?'<div class="ut-tag-list">'+linked.map(name=>'<span class="ut-tag">'+esc(name)+'</span>').join("")+'</div>':
+     '<p>Not a direct member of any collection.</p>')+'</section>';
+  return '<section class="ut-card"' aria-label="'+esc(item.name)+' details">'+
    '<div class="ut-card-header"><div><p class="ut-overline">'+esc(plain(item.route))+' UTILITY</p>'+
    '<h2>'+esc(item.name)+'</h2></div><span class="ut-tag">#'+esc(item.uid)+'</span></div>'+
    '<p>'+esc(plain(item.label))+'</p><dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
    tagSection("Languages",item.languages_json)+tagSection("Ecosystems",item.ecosystems_json)+
-   tagSection("Vendors",item.vendors_json)+tagSection("Subjects",item.subjects_json)+
+   tagSection("Vendors",item.vendors_json)+tagSection("Subjects",item.subjects_json)+collectionSection+
    '<section class="ut-card-section"><h3>Source & dependencies</h3>'+
    (url?'<p><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(url)+'</a></p>':
       '<p>'+esc(plain(item.reference))+'</p>')+
@@ -186,6 +195,8 @@ export function initColosseumUtilities(){
    '</div></section></section>';
  }
  function renderDetail(){
+  // Keep the outgoing card mounted during the CSS exit transition.
+  if(!s.activeUid)return;
   const card=itemCard();elements.inspector.innerHTML=card;
   elements.list.querySelectorAll("[data-ut-mobile]").forEach(el=>{
    if(el.closest(".ut-row")?.dataset.utUid===s.activeUid)el.innerHTML=card;
@@ -198,7 +209,7 @@ export function initColosseumUtilities(){
    '<button type="button" aria-current="page" disabled>'+String(s.page+1)+'</button>'+
    (s.nextCursor?'<button type="button" data-ut-page="next" aria-label="Next utilities page">Next</button>':"");
   elements.count.textContent=s.items.length?
-   String(s.page*25+1)+"–"+String(s.page*25+s.items.length)+(s.nextCursor?" · more available":"")+" · live Colosseum":"0 matching utilities";
+   String(s.page*s.pageSize+1)+"–"+String(s.page*s.pageSize+s.items.length)+(s.nextCursor?" · more available":"")+" · live Colosseum":"0 matching utilities";
   syncActive();renderDetail();
  }
  async function loadPage(index=0,cursor=null){
@@ -209,7 +220,7 @@ export function initColosseumUtilities(){
   report("Loading live catalog utilities…");
   try{
    const query=clean(elements.query.value).slice(0,160);
-   const args={action:"list",query,sort:elements.sort.value,page_size:25,
+   const args={action:"list",query,sort:elements.sort.value,page_size:s.pageSize,
     include:s.include,exclude:s.exclude,...(cursor?{cursor}:{})};
    const result=await api(args);if(serial!==s.requestSeq)return;
    if(!Array.isArray(result.items))throw Error("The catalog returned an unexpected listing.");
@@ -489,6 +500,10 @@ export function initColosseumUtilities(){
   if(remove){openDelete(remove.dataset.utRemove);return;}
   if(event.target.closest("[data-ut-more-files]"))void moreFiles();
  });
+ elements.inspector.addEventListener("transitionend",event=>{
+  if(event.target===elements.inspector&&event.propertyName==="opacity"&&!s.activeUid)
+   elements.inspector.replaceChildren();
+ });
  elements.inspector.addEventListener("click",event=>{
   const edit=event.target.closest("[data-ut-edit]");
   if(edit){const item=s.items.find(x=>x.uid===edit.dataset.utEdit);if(item)openEditor("edit",s.detail?.item?.uid===item.uid?s.detail.item:item);return;}
@@ -532,7 +547,7 @@ export function initColosseumUtilities(){
    if(active)rowButton.insertAdjacentHTML("beforeend",
     '<span class="ut-pick" role="img" aria-label="Select utility" aria-pressed="false">✓</span>');
   }
-  elements.count.textContent=s.selectionMode?"Select utilities to inspect; click Select again to exit.":String(s.page*25+1)+"–"+String(s.page*25+s.items.length)+" · live Colosseum";
+  elements.count.textContent=s.selectionMode?"Select utilities to inspect; click Select again to exit.":String(s.page*s.pageSize+1)+"–"+String(s.page*s.pageSize+s.items.length)+" · live Colosseum";
  });
  elements.editorCancel.addEventListener("click",()=>elements.editor.close());
  elements.editor.addEventListener("close",()=>{s.planned=null;});
