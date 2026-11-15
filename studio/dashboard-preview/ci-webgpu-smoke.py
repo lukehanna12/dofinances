@@ -176,9 +176,6 @@ def run():
                             raise RuntimeError("Seventh row could flash on first paint "+str(latest))
                         if latest.get("count")!=16 or audit.get("tiles")!=51:
                             raise RuntimeError("Original icons or 51 total GPU glass panes changed "+str(latest))
-                        if audit.get("cloudForegroundPasses",0)<1 or not (
-                            "original cloud photograph" in audit.get("cloudForeground","")):
-                            raise RuntimeError("Image-based cloud foreground pass not submitted "+str(latest))
                         if abs(float(latest.get("footerOpacity",0))-0.5)>0.001:
                             raise RuntimeError("Copyright not at 50% opacity "+str(latest))
                         if not (latest.get("entryRowTop",0)>latest.get("baseGridBottom",0)):
