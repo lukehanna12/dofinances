@@ -501,8 +501,7 @@ export function initColosseumProviders(){
   if(route==="colosseum/providers")return "local";
   return Object.keys(ROUTES).find(mode=>ROUTES[mode]===route)||null;
  };
- function onRoute(){
-  const mode=routeMode();if(!mode)return;
+ function activateProviderScreen(mode){
   const host=mode==="local"?document.querySelector('[data-view="colosseum/providers/local"]'):
    document.getElementById(mode==="credentials"?"pv-credentials-mount":"pv-external-mount");
   if(host&&root.parentElement!==host)host.append(root);
@@ -515,6 +514,15 @@ export function initColosseumProviders(){
    else void load(dataMode());
   }
  }
+ function onRoute(){
+  const mode=routeMode();if(mode)activateProviderScreen(mode);
+ }
+ document.querySelectorAll("#project-navigation .pv-provider-child").forEach(link=>{
+  link.addEventListener("click",()=>{
+   const mode=Object.keys(ROUTES).find(key=>"#"+ROUTES[key]===link.getAttribute("href"));
+   if(mode)activateProviderScreen(mode);
+  });
+ });
  window.addEventListener("keydown",event=>{
   if(event.defaultPrevented||event.isComposing||event.repeat||
      !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;

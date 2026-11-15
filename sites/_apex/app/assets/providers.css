@@ -12,7 +12,7 @@
 #project-navigation .pv-subnav-glyph svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 @media(min-width:761px){
  .shell.is-collapsed #project-navigation .pv-provider-subnav{display:none!important}
- .shell.is-collapsed #project-navigation .pv-provider-chevron{opacity:0}
+ .shell.is-collapsed #project-navigation .pv-provider-chevron{display:none!important}
 }
 @media(max-width:760px){
  #project-navigation .pv-provider-subnav{padding-left:20px}
