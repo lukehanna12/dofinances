@@ -265,12 +265,14 @@ try{
  // Remove the supplemental sidebar before measuring the original floating
  // dock. A collapsed rail changes the test page's shell layout on mobile,
  // but the real application never displays a collapsed desktop rail there.
- await evaluate('(()=>{window.__rail.dispose();document.getElementById("workspace-sidebar")?.remove();document.getElementById("workspace-shell").classList.remove("is-collapsed");return true})()');
+ await evaluate('(()=>{window.__rail.dispose();document.getElementById("workspace-sidebar")?.remove();document.getElementById("workspace-shell").classList.remove("is-collapsed");document.getElementById("route-fixture").hidden=true;return true})()');
  const narrow=await evaluate(metrics);
+ console.log("Isolated mobile dock geometry:",JSON.stringify(narrow));
  assert.ok(narrow.right<=narrow.viewport[0]-10,"Floating glass dock stays within small viewport");
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
  assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-24-narrow.bottom)<2);
+ await evaluate('document.getElementById("route-fixture").hidden=false;true');
  const mobileRoutes=await evaluate(utilityMetrics);
  assert.ok(mobileRoutes.every(r=>Math.abs(r.slotWidth-21)<.06),
   "All mobile route slots must be exactly 21px");
