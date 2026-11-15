@@ -14,7 +14,7 @@ test("Collections dock uses the exact lower topbar translucent tint and frosted 
   assert.ok(topbar.includes(value)&&dock.includes(value),"Topbar material mismatch: "+value);
  assert.ok(dock.includes("box-shadow:none;")&&dock.includes("border-radius:9999px;"));
  const hairline="border:1px solid rgba(245,248,252,.065);";
- assert.ok(headerBorder.includes(hairline),"The lower topbar original hairline must remain unchanged");
+ assert.ok(headerBorder.includes("border-bottom:1px solid rgba(245,248,252,.065);"),"The lower topbar original hairline must remain unchanged");
  assert.ok(dock.includes(hairline),"The Collections dock must reuse the exact lower topbar border");
  assert.match(dock,/#cs-root \.cs-control-center::before,\s*#cs-root \.cs-control-center::after\{\s*content:none;/);
  assert.ok(dock.includes("background:rgba(18,19,21,.93)"),"No-blur fallback matches topbar");
