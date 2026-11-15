@@ -1,3 +1,4 @@
+import {formatWorkspaceTime} from "./workspace-nav.js";
 /* Live Colosseum Utilities — Collections-compatible layout, explicit network I/O.
  * Only the authenticated /api/colosseum/utilities owner bridge can read data.
  * No timers, polling, simulated inventory, or background update checks.
@@ -58,7 +59,7 @@ export function initColosseumUtilities(){
  root.dataset.ready="true";
  const $=id=>root.querySelector("#"+id);
  const elements={
-  summary:$("ut-summary"),status:$("ut-status"),layout:$("ut-layout"),
+  summary:$("ut-summary"),summaryValue:$("ut-summary").querySelector(".ut-summary-value"),status:$("ut-status"),layout:$("ut-layout"),
   list:$("ut-list"),inspector:$("ut-inspector"),pages:$("ut-pages"),count:$("ut-count"),
   query:$("ut-search"),submit:$("ut-search-submit"),filters:$("ut-filters"),
   fields:$("ut-filter-fields"),filterToggle:$("ut-filter-toggle"),clear:$("ut-filters-clear"),
@@ -74,7 +75,7 @@ export function initColosseumUtilities(){
  };
  const s={items:[],page:0,cursors:[null],nextCursor:null,loaded:false,loading:false,working:false,
   activeUid:null,detail:null,detailError:null,detailCache:new Map(),detailSeq:0,requestSeq:0,
-  sort:"name_asc",query:"",include:{},exclude:{},collectionChoices:null,collectionChoicePending:false,pageSize:10,selectionMode:false,
+  sort:"name_asc",query:"",include:{},exclude:{},collectionChoices:null,collectionChoicePending:false,pageSize:25,total:null,updatedAt:null,selectionMode:false,
   selection:new Set(),editorMode:"add",editorItem:null,planned:null,pendingDelete:null,
   fileOffset:0};
  const selectedItem=()=>s.items.find(x=>x.uid===s.activeUid)||null;
@@ -110,13 +111,39 @@ export function initColosseumUtilities(){
   elements.submit.disabled=value;
   elements.filterToggle.disabled=value;
  }
+ // Share Collections' geometry-measured, non-jumping two-ring loading state.
+ function measureSummaryDivider(){
+  const value=elements.summaryValue,text=value.firstChild;
+  const index=text?.nodeType===3?text.textContent.indexOf(" / "):-1;
+  if(index<0||!value.getClientRects().length)return;
+  const range=document.createRange(),origin=value.getBoundingClientRect().left;
+  range.setStart(text,index);range.setEnd(text,index+3);
+  const group=range.getBoundingClientRect();
+  range.setStart(text,index+1);range.setEnd(text,index+2);
+  const slash=range.getBoundingClientRect();
+  const font=parseFloat(getComputedStyle(elements.summary).fontSize);
+  if(!(font>0&&group.width>0&&slash.width>0))return;
+  elements.summary.style.setProperty("--ut-summary-group-start",((group.left-origin)/font).toFixed(5)+"em");
+  elements.summary.style.setProperty("--ut-summary-group-end",((group.right-origin)/font).toFixed(5)+"em");
+  elements.summary.style.setProperty("--ut-summary-slash-left",((slash.left-origin)/font).toFixed(5)+"em");
+ }
+ function setSummaryLoading(value){
+  elements.summary.classList.toggle("ut-summary-loading",value);
+  elements.summary.setAttribute("aria-busy",String(value));
+  elements.list.classList.toggle("ut-list-loading",value);
+  elements.list.setAttribute("aria-busy",String(value));
+  elements.refresh.setAttribute("aria-busy",String(value));
+ }
  function summary(){
-  elements.summary.textContent=s.loaded?
-   "CATALOG "+String(s.items.length)+(s.nextCursor?"+":"")+" / REVISION "+(s.revision||"—")+
-    " / PAGE "+String(s.page+1):"CATALOG / LOADING";
+  elements.summaryValue.textContent="TOTAL "+(s.total??"—")+" / UPDATED "+
+   (s.updatedAt?formatWorkspaceTime(s.updatedAt,{hour12:true}):"—");
+  measureSummaryDivider();
  }
  function skeletons(){
-  elements.list.innerHTML=Array.from({length:10},(_,i)=>'<div class="ut-skeleton" aria-hidden="true"><span>'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span></div>').join("");
+  elements.list.innerHTML=Array.from({length:s.pageSize},(_,i)=>
+   '<article class="ut-skeleton" aria-hidden="true"><div class="ut-skeleton-row">'+
+   '<span class="ut-skeleton-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
+   '<span class="ut-skeleton-bar"></span></div></article>').join("");
  }
  function rowsMarkup(){
   if(!s.items.length)return '<p class="ut-empty">'+(s.query||Object.keys(s.include).length||Object.keys(s.exclude).length?
@@ -132,7 +159,7 @@ export function initColosseumUtilities(){
     '<span class="ut-title-compact" aria-hidden="true">'+title+'</span>'+
     '<span class="ut-title-expanded">'+title+'</span></span>'+
     '<span class="ut-row-sub">'+uid+' · '+esc(plain(item.class))+'</span></span>'+
-    '<span class="ut-row-side">'+esc(plain(item.author))+'</span><span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
+    '<span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
     '<div class="ut-row-panel" id="ut-panel-'+uid+'" role="region" aria-hidden="true"><div class="ut-row-panel-inner">'+
     '<p class="ut-row-description">'+esc(plain(item.label))+'</p>'+
     '<div class="ut-mobile-detail" data-ut-mobile></div></div></div></article>';
@@ -163,7 +190,7 @@ export function initColosseumUtilities(){
    return '<section class="ut-card" role="status"><p>Loading live utility details…</p></section>';
   const rows=[
    ["UID",item.uid],["Enabled",item.enabled===0?"No":"Yes"],["Route",item.route],["Class",item.class],["Type",item.type],
-   ["Cardinality",item.cardinality],["Author",item.author],["Platform",item.platform],
+   ["Cardinality",item.cardinality],["Platform",item.platform],
    ["Source mode",item.source_mode],["Revision",item.revision],["Created",displayDate(item.source_created_at)],
    ["Last updated",displayDate(item.updated_at)],["Runtime",item.runtime],["Assets",String(s.detail.asset_count??0)]
   ];
@@ -175,9 +202,12 @@ export function initColosseumUtilities(){
   const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
     (linked.length?'<div class="ut-tag-list">'+linked.map(name=>'<span class="ut-tag">'+esc(name)+'</span>').join("")+'</div>':
      '<p>Not a direct member of any collection.</p>')+'</section>';
-  return '<section class="ut-card" aria-label="'+esc(item.name)+' details">'+
+  const authorLabel=plain(item.author).replaceAll("_"," ").replace(/w/g,ch=>ch.toUpperCase());
+  return '<section class="ut-card" aria-label="'+esc(item.name)+' details>'+
    '<div class="ut-card-header"><div><p class="ut-overline">'+esc(plain(item.route))+' UTILITY</p>'+
-   '<h2>'+esc(item.name)+'</h2></div><span class="ut-tag">#'+esc(item.uid)+'</span></div>'+
+   '<h2>'+esc(item.name)+'</h2></div><span class="ut-card-badges">'+
+   '<span class="ut-tag ut-author-badge">'+esc(authorLabel)+'</span>'+
+   '<span class="ut-tag">#'+esc(item.uid)+'</span></span></div>'+
    '<p>'+esc(plain(item.label))+'</p><dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
    tagSection("Languages",item.languages_json)+tagSection("Ecosystems",item.ecosystems_json)+
    tagSection("Vendors",item.vendors_json)+tagSection("Subjects",item.subjects_json)+collectionSection+
@@ -219,9 +249,9 @@ export function initColosseumUtilities(){
  async function loadPage(index=0,cursor=null){
   const serial=++s.requestSeq;
   s.loading=true;busy(true);
-  elements.list.setAttribute("aria-busy","true");
   if(!s.loaded)skeletons();
-  report("Loading live catalog utilities…");
+  setSummaryLoading(true);
+  report("");
   try{
    const query=clean(elements.query.value).slice(0,160);
    const args={action:"list",query,sort:elements.sort.value,page_size:s.pageSize,
@@ -230,7 +260,8 @@ export function initColosseumUtilities(){
    if(!Array.isArray(result.items))throw Error("The catalog returned an unexpected listing.");
    s.items=result.items.filter(x=>UID.test(x?.uid));s.detailCache.clear();s.page=index;
    s.query=query;s.sort=args.sort;s.nextCursor=result.next_cursor||null;
-   s.revision=result.catalog_revision||"—";s.loaded=true;
+   if(Number.isSafeInteger(result.total_items)&&result.total_items>=0)s.total=result.total_items;
+   s.updatedAt=new Date();s.revision=result.catalog_revision||"—";s.loaded=true;
    s.activeUid=null;s.detail=null;s.detailError=null;s.detailSeq++;
    s.selection.clear();s.selectionMode=false;
    elements.select.dataset.mode="off";elements.select.setAttribute("aria-pressed","false");
@@ -239,7 +270,7 @@ export function initColosseumUtilities(){
    if(s.nextCursor)s.cursors[index+1]=s.nextCursor;
    summary();renderList();report("");
   }catch(error){if(serial===s.requestSeq){actionError(error);if(!s.loaded){s.items=[];renderList();}}}
-  finally{if(serial===s.requestSeq){s.loading=false;busy(false);}}
+  finally{if(serial===s.requestSeq){s.loading=false;setSummaryLoading(false);busy(false);}}
  }
  async function loadDetails(uid,{force=false}={}){
   if(!UID.test(uid))return;
@@ -610,7 +641,7 @@ export function initColosseumUtilities(){
  elements.deletePlan.addEventListener("click",()=>void reviewDelete());
  elements.deletePublish.addEventListener("click",()=>void publishDelete());
  elements.deleteDialog.addEventListener("close",()=>{s.pendingDelete=null;elements.deleteInput.disabled=false;});
- renderFilterControls();filterDot();summary();skeletons();
+ renderFilterControls();filterDot();summary();skeletons();setSummaryLoading(true);
  // Request D1 only upon actual Utilities route entry, never on other workspace pages.
  // Navigation commits view.hidden before emitting hashchange/popstate; no observer or timer.
  let routeVisible=false;
