@@ -206,8 +206,8 @@ test("No polling or scroll-driven translation remains; Studio stays isolated",()
   const nav=source("sites/_apex/app/assets/workspace-nav.js");
   const workflow=source(".github/workflows/site.yml");
   const studio=source("studio/sidebar/index.html");
-  assert.match(nav,/import \{initCollectionsTitleTransition\} from "\.\/collections-title-transition\.js"/);
-  assert.match(nav,/collectionsTitleTransition\.setRoute\(route\)/);
+  assert.match(nav,/import \{initWorkspaceTitleTransition\} from "\.\/workspace-title-transition\.js"/);
+  assert.match(nav,/workspaceTitleTransition\.setRoute\(route\)/);
   assert.match(js,/win\.addEventListener\("scroll",onScroll,\{passive:true\}\)/);
   assert.match(js,/heading\.getBoundingClientRect\(\),header\.getBoundingClientRect\(\)/);
   assert.match(js,/headingRect\.top\+headingRect\.height\/2-barRect\.bottom/);

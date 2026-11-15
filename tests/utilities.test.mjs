@@ -120,7 +120,7 @@ test("Utilities exactly matches the Collections title handoff and black canvas",
   assert.deepEqual(utilitiesTitleFrame(scroll,{top:140-scroll,height:52},{bottom:94}),
     collectionsTitleFrame(scroll,{top:140-scroll,height:52},{bottom:94}));
  const nav=source("sites/_apex/app/assets/workspace-nav.js");
- assert.match(nav,/utilitiesTitleTransition\.setRoute\(route\)/);
+ assert.match(nav,/workspaceTitleTransition\.setRoute\(route\)/);
  assert.match(css,/--ui-canvas:#0a0a0a/);
  assert.match(css,/body\.utilities-title-transition\.utilities-title-passed #project-utilities-title/);
  assert.match(css,/body\.utilities-title-transition #workspace-shell \.shadcn-breadcrumb-item/);
@@ -134,10 +134,59 @@ test("Collection filter choices are loaded only when opened and never polled",()
  assert.ok(js.includes('method:cursor?"POST":"GET"'));
  assert.ok(js.includes('if(open)void loadCollectionChoices();'));
  assert.ok(js.includes('collection_names'));
- assert.ok(js.includes('s.pageSize:10')||js.includes('pageSize:10'));
+ assert.ok(js.includes('pageSize:25'));
  assert.ok(css.includes('appearance:none;-webkit-appearance:none'));
  assert.ok(css.includes('background-position:right 10px center'));
  assert.ok(css.includes('.ut-title-measure'));
- assert.ok(css.includes('.ut-row.ut-active .ut-row-main{padding:21px'));
+ assert.ok(css.includes('height:calc(var(--ut-row-height) - var(--ut-row-divider))'));
  assert.ok(css.includes('max-height:480px'));
+});
+
+test("Utilities summary shows exact total and app-configured local refresh time",()=>{
+ const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
+ assert.match(view,/class="ut-summary ut-summary-loading"/);
+ assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
+ assert.match(view,/class="ut-summary-skeleton"/);
+ assert.equal((view.match(/class="ut-summary-dot"/g)||[]).length,2);
+ assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);
+ assert.match(js,/formatWorkspaceTime\(s\.updatedAt,\{hour12:true\}\)/);
+ assert.doesNotMatch(js,/report\("Loading live catalog utilities/);
+ assert.match(js,/Array\.from\(\{length:s\.pageSize\}/);
+ assert.match(css,/#ut-root \.ut-skeleton-bar\{[\s\S]*?width:86%/);
+ assert.match(css,/#ut-root \.ut-summary-dot\{[\s\S]*?animation:ut-summary-spin 600ms linear infinite/);
+});
+test("Utilities restores twenty-five compact row headers and keeps authors in badges",()=>{
+ assert.match(js,/pageSize:25/);
+ assert.match(css,/#ut-root \.ut-row-main,#ut-root \.ut-row\.ut-active \.ut-row-main\{/);
+ assert.match(css,/height:calc\(var\(--ut-row-height\) - var\(--ut-row-divider\)\)/);
+ assert.match(css,/#ut-root\{--ut-row-height:54px\}/);
+ assert.match(css,/#ut-root\{--ut-row-height:48px\}/);
+ assert.doesNotMatch(js,/'<span class="ut-row-side">'\+esc/);
+ assert.match(js,/ut-author-badge/);
+ assert.doesNotMatch(js,/\["Author",item\.author\]/);
+});
+test("Utilities dock uses full circular Add and invariant Select glyph dimensions",()=>{
+ assert.match(view,/id="ut-add"[^>]*><img src="\/app\/assets\/add-collection\.v3\.svg"/);
+ assert.match(css,/#ut-root \.ut-control-center #ut-add img\{/);
+ assert.match(css,/#ut-root \.ut-control-center \.ut-dock-button img\{/);
+ assert.match(css,/width:calc\(19px \* var\(--ut-dock-scale\)\)/);
+ assert.match(css,/--ut-dock-scale:1\.5/);
+ assert.match(view,/<div class="ut-refresh-stack">[\s\S]*id="ut-update-check"[\s\S]*id="ut-refresh"/);
+ assert.equal((view.match(/id="ut-update-check"/g)||[]).length,1);
+ assert.match(css,/#ut-root \.ut-refresh-stack \.ut-update-check\{[\s\S]*?position:absolute/);
+});
+test("Shared non-dashboard canvas and scroll-title template has one owner",async()=>{
+ const commonCss=source("sites/_apex/app/assets/workspace-title.css");
+ const commonJs=source("sites/_apex/app/assets/workspace-title-transition.js");
+ const nav=source("sites/_apex/app/assets/workspace-nav.js");
+ const {initWorkspaceTitleTransition}=await import("../sites/_apex/app/assets/workspace-title-transition.js");
+ assert.equal(typeof initWorkspaceTitleTransition,"function");
+ assert.match(commonCss,/\.view\[data-view\]:not\(\[data-view="home"\]\):not\(\[hidden\]\)/);
+ assert.match(commonCss,/body\.workspace-title-transition\.workspace-title-passed \.workspace-scroll-heading\{\s*opacity:0/);
+ assert.match(commonJs,/heading\.getBoundingClientRect\(\),header\.getBoundingClientRect\(\)/);
+ assert.match(nav,/workspaceTitleTransition\.setRoute\(route\)/);
+ assert.doesNotMatch(nav,/collectionsTitleTransition\.setRoute|utilitiesTitleTransition\.setRoute/);
+ assert.doesNotMatch(commonJs,/setTimeout|setInterval|requestAnimationFrame|MutationObserver|ResizeObserver/);
+ assert.match(source(".github/workflows/site.yml"),/cp sites\/_apex\/app\/assets\/workspace-title\.css dist\/app\/assets\/workspace-title\.css/);
+ assert.match(html,/href="\/app\/assets\/workspace-title\.css"/);
 });
