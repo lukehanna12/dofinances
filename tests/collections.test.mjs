@@ -558,7 +558,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     assert.ok(navCss.includes('nav-icon-asset--'+icon),'Missing vector mask for '+icon);
 });
 
-test("Add collection uses ChatGPT's 36px white send-control geometry and black plus glyph",()=>{
+test("Add collection preserves native plus.circle.fill geometry before dock enlargement",()=>{
   const desc="Organize your utilities into collections, inspect their live memberships, and manage what belongs together.";
   assert.ok(!html.includes(desc),"Removed introduction must remain absent");
   const start=html.indexOf('id="cs-summary"'),btn=html.indexOf('id="cs-create"'),refresh=html.indexOf('id="cs-refresh"');
@@ -581,7 +581,7 @@ test("Add collection uses ChatGPT's 36px white send-control geometry and black p
   assert.match(js,/createButton\.addEventListener\("click",\(\)=>\{if\(!localEditorActive\(\)\)openForm\("create"\);\}\)/);
 });
 
-test("Add collection tooltip mirrors ChatGPT timing and displays the Shift-Command-N shortcut",()=>{
+test("Add collection tooltip preserves shortcut timing and floats above the new dock",()=>{
   assert.match(html,/id="cs-create-tooltip" role="tooltip"/);
   assert.match(html,/>Add collection<\/span><span class="cs-create-tooltip-shortcut" aria-label="Shift Command N">/);
   assert.match(html,/<kbd>⇧<\/kbd><kbd>⌘<\/kbd><kbd>N<\/kbd>/);
@@ -990,36 +990,28 @@ test("Select and Edit remain visually unframed until hovered while retaining cir
   assert.ok(!css.includes("#cs-root.cs-collection-selecting .cs-select-icon-button{background:"));
 });
 
-test("Add, Edit, Select live inside the reconstructed ChatGPT composer background shell only",()=>{
+test("Add, Edit and Select keep their controller identities inside the fixed black-glass dock",()=>{
  const start=html.indexOf('<div class="cs-control-center" role="group" aria-label="Collection controls">');
- assert.ok(start>0,"Expected self-contained control center");
+ assert.ok(start>0,"Expected one self-contained control center");
  const end=html.indexOf("</div>",start);
- assert.ok(end>start);
  const inside=html.slice(start,end);
  for(const id of ['id="cs-create"','id="cs-edit"','id="cs-select-collections"'])
-   assert.ok(inside.includes(id),"Must wrap "+id);
- assert.ok(!inside.includes('id="cs-refresh"'),"Refresh must remain outside the composer-like group");
+  assert.ok(inside.includes(id),"Preserve "+id+" and its click handlers");
+ assert.ok(!inside.includes('id="cs-refresh"'),"Refresh remains in the list header");
  assert.ok(html.indexOf('id="cs-refresh"')>end);
- const styleStart=css.indexOf("#cs-root .cs-control-center{");
- assert.ok(styleStart>0);
- const block=css.slice(styleStart,css.indexOf("}",styleStart)+1);
- assert.ok(block.includes("background:#212121"),"Measured archived dark composer fill");
- assert.ok(!block.includes("background:#303030"),"Must not use bright elevated surface");
- assert.ok(block.includes("border:0 solid rgba(255,255,255,.05)"),"Computed border width was zero; border-color alone does not mean a visible border");
- assert.ok(!block.includes("border:1px"),"No 1px solid border is rendered");
- assert.ok(block.includes("border-radius:28px"),"Measured composer radius");
- assert.ok(block.includes("min-height:52px"),"Measured collapsed composer height");
- assert.ok(block.includes("padding:5px 8px"),"Measured composer vertical and horizontal inset");
- assert.ok(block.includes("background-clip:padding-box"),"Measured composer clipping behavior");
- assert.ok(block.includes("box-shadow:inset 0 0 1px rgba(255,255,255,.2)"),"Only nontransparent computed shadow is a 1px inset white blur");
- assert.ok(!block.includes("0 1px 2px rgba(0,0,0"),"No invented external shadow");
- assert.ok(block.includes("outline-style:none"),"Composer surface itself has no CSS outline");
- assert.ok(block.includes("width:max-content"),"Do not stretch toolbar across viewport");
- assert.ok(!css.includes("#cs-root .cs-control-center:hover{border-color:"),"Hover must not invent a border the composer lacks");
- assert.ok(!css.includes("#cs-root .cs-control-center:focus-within{border-color:"),"Focus must not invent a border; child focus-visible remains intact");
- for(const name of ["cs-create-control","cs-edit-control","cs-select-control"])
-   assert.ok(css.includes(".cs-control-center > ."+name),"Control positions stay inside the existing shell");
- assert.ok(css.includes("Measured source: archived ui-decomposition.json"),"Reference the measured composer surface rather than the speculative reconstruction");
+ assert.equal((html.match(/class="cs-control-center"/g)||[]).length,1,"No cloned toolbar or duplicate IDs");
+ const anchor=css.lastIndexOf("#cs-root .cs-control-center{");
+ assert.ok(anchor>0,"Expected the fixed dock's override after the legacy composer style");
+ const block=css.slice(anchor,css.indexOf("}",anchor)+1);
+ assert.ok(block.includes("--cs-dock-scale:2.5"));
+ assert.ok(block.includes("position:fixed"));
+ assert.ok(block.includes("background:rgba(2,3,5,.51)"));
+ assert.ok(block.includes("border:1px solid rgba(253,254,255,.27)"));
+ assert.ok(block.includes('backdrop-filter:blur(var(--cs-oracle-blur,16px))'));
+ assert.ok(block.includes("width:max-content"),"Dock remains only as wide as its buttons");
+ assert.ok(!block.includes("background:#212121"),"The opaque composer style is overridden");
+ assert.ok(css.includes(".cs-control-center.cs-oracle-ready{"),"Enable native SourceGraphic SVG only once all exact maps exist");
+ assert.ok(css.includes("font-size:13px;padding:10px 13px"),"Floating tooltips remain legible");
 });
 
 test("Collections anchors its top and bottom photo strips under the moving black surface only on this route",()=>{
