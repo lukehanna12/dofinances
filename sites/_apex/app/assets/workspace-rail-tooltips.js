@@ -67,8 +67,13 @@ export function initCollapsedRailTooltips(doc=document,win=window,shell,sidebar)
   });
   link.addEventListener("click",()=>{hovered=null;focused=null;hide();});
  }
+ // Native keyboard focus can scroll a clipped navigation list. Preserve
+ // and re-anchor its tooltip instead of hiding it on that very same scroll.
+ // Mouse-hover tips do dismiss on scroll; this is event-driven, not polling.
  sidebar.querySelector(".sidebar-navigation")?.addEventListener("scroll",()=>{
-  hovered=null;focused=null;hide();
+  hovered=null;
+  if(focused)show(focused);
+  else hide();
  },{passive:true});
  win.addEventListener?.("resize",hide,{passive:true});
  win.addEventListener?.("pagehide",hide,{passive:true});
