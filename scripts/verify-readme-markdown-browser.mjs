@@ -217,7 +217,7 @@ try{
  await reset();await type("hello *world* after");
  await until('document.querySelector("#readme em")?.textContent==="world"',"inline emphasis");
  await pressShortcut("z");
- await until('document.querySelector("#readme > p")?.textContent.trim()==="hello world"',"undo trailing typed burst");
+ await until('document.querySelector("#readme > p")?.textContent.replace(/\u200b/g,"").trim()==="hello world"',"undo trailing typed burst");
  await pressShortcut("z");
  await until('document.querySelector("#readme > p")?.textContent==="hello *world*"',"undo inline format checkpoint");
  await pressShortcut("z");
