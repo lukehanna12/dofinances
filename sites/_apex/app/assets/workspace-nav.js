@@ -205,12 +205,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
       startSidebarMotion("drawer");
     shell.classList.remove("is-mobile-open");
     scrim.hidden=true;
+    mobileToggle.tabIndex=0;
     mobileToggle.setAttribute("aria-expanded","false");
     mobileToggle.setAttribute("aria-label","Open navigation");
   }
   function openDrawer(){
     if(isMobile())startSidebarMotion("drawer");
     shell.classList.add("is-mobile-open");
+    // The fading-out control cannot retain keyboard focus while invisible.
+    mobileToggle.tabIndex=-1;
+    if(doc.activeElement===mobileToggle)desktopToggle.focus();
     scrim.hidden=false;
     mobileToggle.setAttribute("aria-expanded","true");
     mobileToggle.setAttribute("aria-label","Close navigation");
