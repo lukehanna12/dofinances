@@ -174,7 +174,7 @@ export function initColosseumUtilities(){
   const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
     (linked.length?'<div class="ut-tag-list">'+linked.map(name=>'<span class="ut-tag">'+esc(name)+'</span>').join("")+'</div>':
      '<p>Not a direct member of any collection.</p>')+'</section>';
-  return '<section class="ut-card"' aria-label="'+esc(item.name)+' details">'+
+  return '<section class="ut-card" aria-label="'+esc(item.name)+' details">'+
    '<div class="ut-card-header"><div><p class="ut-overline">'+esc(plain(item.route))+' UTILITY</p>'+
    '<h2>'+esc(item.name)+'</h2></div><span class="ut-tag">#'+esc(item.uid)+'</span></div>'+
    '<p>'+esc(plain(item.label))+'</p><dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
