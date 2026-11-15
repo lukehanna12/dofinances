@@ -34,6 +34,10 @@ export function initColosseumPermissions(){
  }
  async function load(){
   const seq=++loadSeq;
+  const refresh=$("pm-refresh");
+  refresh.disabled=true;
+  refresh.classList.add("pm-refreshing");
+  refresh.setAttribute("aria-busy","true");
   show("Reading the local gateway's effective permissions…");
   try{
    const reply=await request("status",{},"GET");
@@ -42,6 +46,13 @@ export function initColosseumPermissions(){
    const available=state.source==="local"&&state.policyCurrent===true;
    show(available?"":"The local permission authority is unavailable or stale; edits are disabled.",!available);
   }catch(error){if(seq===loadSeq)show(error.message,true);}
+  finally{
+   if(seq===loadSeq){
+    refresh.classList.remove("pm-refreshing");
+    refresh.setAttribute("aria-busy","false");
+    refresh.disabled=false;
+   }
+  }
  }
 
  const rowValues=item=>Array.isArray(item?.values)?item.values:[];
@@ -65,10 +76,7 @@ export function initColosseumPermissions(){
  }
  function render(){
   if(!state)return;
-  const rows=allRows(),local=state.source==="local",current=local&&state.policyCurrent===true;
-  $("pm-source").textContent=current?"Local authority active":local?"Local policy out of date":"Local authority unavailable";
-  $("pm-source").dataset.local=String(current);
-  $("pm-revision").textContent=local?"Revision "+state.revision:"";
+  const rows=allRows(),local=state.source==="local";
   $("pm-count").textContent=rows.length+" RULES / "+rows.filter(x=>!!rowValues(x)[0]).length+" ENABLED";
   $("pm-add").disabled=!canEdit();
   $("pm-pin-status").textContent=state.pinConfigured?"Hazard PIN configured":"Hazard PIN not configured";
@@ -218,7 +226,21 @@ export function initColosseumPermissions(){
    state=reply;$("pm-pin-dialog").close();render();notify("Hazard PIN updated.");
   }catch(error){$("pm-pin-error").textContent=error.message;}
  });
- $("pm-refresh").addEventListener("click",()=>void load());
+ $("pm-refresh").addEventListener("click",()=>{if(!$("pm-refresh").disabled)void load();});
+ // Mirror Collections' Control-Shift-R refresh behavior, scoped to Permissions.
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.isComposing||event.repeat||
+     !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;
+  if(event.code!=="KeyR"&&event.key?.toLowerCase()!=="r")return;
+  if(!routeActive()||root.closest(".view")?.hidden||
+     $("pm-refresh").disabled||document.querySelector("dialog[open]"))return;
+  const target=event.target;
+  if(target instanceof Element&&
+     target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+  event.preventDefault();
+  void load();
+ },{capture:true});
+
 
 
  document.addEventListener("keydown",event=>{

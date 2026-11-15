@@ -72,6 +72,33 @@ test("Permissions omits the effective-access card and the redundant authority su
  assert.match(script,/finally\{working=false;render\(\);\}/);
 });
 
+test("Permissions hides the registry legend and authority metadata, and mirrors Collections refresh behavior",()=>{
+ const start=index.indexOf('data-view="colosseum/permissions"');
+ const end=index.indexOf('data-view="colosseum/diagnostics"',start);
+ const view=index.slice(start,end);
+ assert.ok(!view.includes("R = Read"));
+ assert.ok(!view.includes('id="pm-source"'));
+ assert.ok(!view.includes('id="pm-revision"'));
+ assert.ok(!view.includes("Revision 5"));
+ assert.ok(!styles.includes(".pm-footnote"));
+ assert.match(view,/id="pm-refresh"[^>]*aria-keyshortcuts="Control\+Shift\+R"/);
+ assert.match(view,/class="pm-refresh-icon lucide lucide-rotate-cw"/);
+ assert.match(view,/M21 12a9 9 0 1 1-9-9/);
+ assert.match(view,/id="pm-refresh-tooltip" role="tooltip"/);
+ assert.match(view,/<kbd>⌃<\/kbd><kbd>⇧<\/kbd><kbd>R<\/kbd>/);
+ assert.match(styles,/#pm-root #pm-refresh:hover:not\(:disabled\)\{background:#262626;border-color:#525252\}/);
+ assert.match(styles,/#pm-root #pm-refresh:active:not\(:disabled\)\{transform:translateY\(1px\)\}/);
+ assert.match(styles,/#pm-root #pm-refresh\.pm-refreshing::before/);
+ assert.match(styles,/animation:pm-refresh-spin 600ms linear infinite/);
+ assert.match(script,/event\.code!=="KeyR"&&event\.key\?\.toLowerCase\(\)!=="r"/);
+ assert.match(script,/event\.ctrlKey/);
+ assert.match(script,/event\.shiftKey/);
+ assert.match(script,/root\.closest\("\.view"\)\?\.hidden/);
+ assert.match(script,/document\.querySelector\("dialog\[open\]"\)/);
+ assert.match(script,/refresh\.setAttribute\("aria-busy","true"\)/);
+ assert.match(script,/refresh\.setAttribute\("aria-busy","false"\)/);
+});
+
 test("DoFinances enforces its current immutable owner identity and Cloudflare Access before policy mutations",()=>{
  assert.match(router,/const permissions=pathname==="\/api\/colosseum\/permissions"/);
  assert.match(router,/verifyColosseumOwnerJwt/);

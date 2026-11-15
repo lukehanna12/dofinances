@@ -656,9 +656,10 @@
             <div class="pm-overview" aria-label="Local policy authority">
               <span id="pm-count" class="pm-eyebrow" aria-live="polite">FILESYSTEM RULES —</span>
               <div class="pm-overview-right">
-                <strong id="pm-source" class="pm-source">Checking authority</strong>
-                <span id="pm-revision" class="pm-revision"></span>
-                <button id="pm-refresh" class="pm-icon-button" type="button" aria-label="Refresh permissions"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5 M4 17v-5h5 M5.9 8.5A7.5 7.5 0 0 1 19 9 M18.1 15.5A7.5 7.5 0 0 1 5 15"/></svg></button>
+                <span class="pm-refresh-control">
+                  <button id="pm-refresh" class="pm-refresh-button" type="button" aria-label="Refresh permissions" aria-keyshortcuts="Control+Shift+R" aria-describedby="pm-refresh-tooltip" aria-busy="false"><svg class="pm-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+                  <span class="pm-refresh-tooltip" id="pm-refresh-tooltip" role="tooltip"><span class="pm-refresh-tooltip-label">Refresh</span><span class="pm-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span>
+                </span>
               </div>
             </div>
             <p id="pm-notice" class="pm-notice" role="status" aria-live="polite"></p>
@@ -679,7 +680,6 @@
                 </div>
                 <div id="pm-cards" class="pm-rule-list" aria-live="polite"></div>
               </div>
-              <p class="pm-footnote">R = Read · W = Write · S = Script · A = Add · D = Delete. Checks represent configured grants, not final authorization; the local gateway resolves overlapping paths.</p>
             </section>
             <section class="pm-section" aria-labelledby="pm-policy-heading">
               <div class="pm-section-header">

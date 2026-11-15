@@ -28,13 +28,58 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-quiet,#pm-root .pm-small{font-size:12px;color:var(--pm-muted);line-height:1.55}
 #pm-root .pm-overview{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 #pm-root .pm-overview-right{display:flex;align-items:center;gap:14px;min-width:0}
-#pm-root .pm-source{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--pm-muted)}
-#pm-root .pm-source::before{content:"";width:6px;height:6px;border-radius:50%;background:#b98a49;flex:none}
-#pm-root .pm-source[data-local="true"]::before{background:#65ad81}
-#pm-root .pm-revision{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--pm-dim)}
 #pm-root .pm-notice{color:var(--pm-muted);font-size:12px;line-height:1.5;min-height:0;margin:9px 0 0}
 #pm-root .pm-notice:empty{display:none}
 #pm-root .pm-notice[data-error="true"]{color:#f87171}
+/* Collections refresh control: same Lucide rotate-cw, 32px shell, hover/press motion and loading ring. */
+#pm-root .pm-refresh-control{position:relative;display:inline-flex;width:32px;height:32px;flex:none;align-items:center;justify-content:center}
+#pm-root #pm-refresh{
+ width:32px;min-width:32px;height:32px;min-height:32px;padding:0;gap:0;
+ display:inline-flex;align-items:center;justify-content:center;
+ border:1px solid var(--pm-line);border-radius:10px;background:var(--pm-fill);color:var(--pm-ink);
+ font-size:12px;font-weight:500;line-height:1.3;
+ transition:color .2s,background .2s,border-color .2s,transform .2s;
+}
+#pm-root #pm-refresh:hover:not(:disabled){background:#262626;border-color:#525252}
+#pm-root #pm-refresh:active:not(:disabled){transform:translateY(1px)}
+#pm-root #pm-refresh .pm-refresh-icon{width:14px;height:14px;flex:none;stroke-width:1.7}
+#pm-root #pm-refresh.pm-refreshing .pm-refresh-icon{display:none}
+#pm-root #pm-refresh.pm-refreshing::before{
+ content:"";display:inline-block;box-sizing:border-box;width:14px;height:14px;flex:none;
+ border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;
+ animation:pm-refresh-spin 600ms linear infinite
+}
+@keyframes pm-refresh-spin{to{transform:rotate(360deg)}}
+/* Same tooltip disclosure as Collections: 150ms hover delay, immediate keyboard focus. */
+#pm-root .pm-refresh-tooltip{
+ position:absolute;top:calc(100% + 5px);right:0;z-index:80;
+ display:inline-flex;align-items:center;gap:0;
+ width:max-content;max-width:calc(100vw - 30px);padding:7px 10px;
+ border:1px solid rgba(255,255,255,.08);border-radius:10px;
+ background:#101010;color:#f6f6f6;
+ font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ font-size:12px;font-weight:520;line-height:1.25;letter-spacing:0;
+ white-space:nowrap;pointer-events:none;
+ box-shadow:0 5px 17px rgba(0,0,0,.29);
+ opacity:0;visibility:hidden;transform-origin:top right;
+ transform:translateY(-2px) scale(.94);
+ transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility 0s linear .25s
+}
+#pm-root .pm-refresh-tooltip-label{display:inline-block;white-space:nowrap}
+#pm-root .pm-refresh-tooltip-shortcut{
+ display:inline-flex;align-items:center;gap:2px;margin-left:14px;
+ color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25
+}
+#pm-root .pm-refresh-tooltip-shortcut kbd{
+ display:inline-block;margin:0;padding:0;border:0;background:none;
+ color:inherit;font:inherit;line-height:inherit
+}
+#pm-root .pm-refresh-control:hover .pm-refresh-tooltip,
+#pm-root #pm-refresh:focus-visible + .pm-refresh-tooltip{
+ opacity:1;visibility:visible;transform:translateY(0) scale(1);
+ transition-delay:.15s,.15s,.15s
+}
+#pm-root #pm-refresh:focus-visible + .pm-refresh-tooltip{transition-delay:0s,0s,0s}
 #pm-root .pm-icon-button{width:32px;height:32px;flex:none;display:grid;place-items:center;border:1px solid var(--pm-line);background:var(--pm-fill);color:#cecece;border-radius:9px;padding:0;transition:background .17s ease,border-color .17s ease,color .17s ease}
 #pm-root .pm-icon-button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 #pm-root .pm-icon-button:hover:not(:disabled){background:#252525;color:#fff;border-color:#414141}
@@ -82,7 +127,6 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-edit-rule:hover:not(:disabled){background:#252525;color:#eee}
 #pm-root .pm-edit-rule svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 #pm-root .pm-empty{padding:24px 0;color:var(--pm-muted);font-size:12px}
-#pm-root .pm-footnote{font-size:11px;line-height:1.55;color:#777;margin:12px 0 0}
 #pm-root .pm-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:16px}
 #pm-root .pm-policy-grid:has(#pm-lifecycle[hidden]){grid-template-columns:1fr}
 #pm-root .pm-policy-details{border-top:1px solid var(--pm-line);border-bottom:1px solid var(--pm-line);min-width:0}
@@ -126,10 +170,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root #pm-toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:calc(24px + env(safe-area-inset-right,0px));z-index:300;padding:12px 16px;background:#262626;border:1px solid #444;color:#fafafa;border-radius:10px;box-shadow:0 10px 28px #0005;font-size:12px;max-width:min(370px,calc(100vw - 32px))}
 @media(max-width:900px){#pm-root .pm-policy-grid{grid-template-columns:1fr;gap:0}#pm-root .pm-policy-details+.pm-policy-details{border-top:0}}
 @media(max-width:650px){
+ #pm-root .pm-refresh-control{width:30px;height:30px}
+ #pm-root #pm-refresh{width:30px;min-width:30px;height:30px;min-height:30px}
+
  #pm-root{margin-top:-25px}
  #pm-root .pm-overview{align-items:flex-start}
  #pm-root .pm-overview-right{gap:9px}
- #pm-root .pm-revision{display:none}
  #pm-root .pm-registry-head,#pm-root .pm-rule-row{grid-template-columns:minmax(0,1fr) 126px 28px;column-gap:7px}
  #pm-root .pm-registry-head .pm-status-col,#pm-root .pm-rule-status{display:none}
  #pm-root .pm-op-head{font-size:9px}
