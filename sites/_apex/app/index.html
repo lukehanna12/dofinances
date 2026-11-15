@@ -20,11 +20,13 @@
   <link rel="stylesheet" href="/app/assets/utilities.css">
   <link rel="stylesheet" href="/app/assets/site-skeleton.css">
   <link rel="stylesheet" href="/app/assets/workspace-title.css">
+  <link rel="stylesheet" href="/app/assets/settings.css">
   <link rel="stylesheet" href="/app/assets/github-markdown.css">
   <link rel="stylesheet" href="/app/assets/project-readme.css">
   <link rel="stylesheet" href="/app/assets/project-showcase.css">
   <link rel="stylesheet" href="/app/assets/dashboard-home.css">
   <script src="/app/assets/dashboard.js" type="module"></script>
+  <script src="/app/assets/settings.js" type="module"></script>
   <script src="/app/assets/dashboard-home-loader.js" type="module"></script>
 </head>
 <body>
@@ -183,12 +185,21 @@
             </form>
           </dialog>
         </section>
-        <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
-          <div class="page-heading"><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
-        <section class="panel settings-panel clock-settings" aria-labelledby="clock-settings-heading">
-          <h2 id="clock-settings-heading">Clock & time zone</h2>
-          <p class="note">Choose the single time zone shown in the global top bar.</p>
-          <div class="clock-settings-fields">
+        <section class="view settings-view" data-view="settings" aria-labelledby="settings-title" hidden>
+          <div class="page-heading"><h1 id="settings-title">Settings</h1></div>
+          <div id="st-root" class="st-root">
+            <nav class="st-section-index" aria-label="Settings sections">
+              <button type="button" data-st-target="st-general">General</button>
+              <button type="button" data-st-target="st-security">Account &amp; security</button>
+              <button type="button" data-st-target="st-connections">Connections</button>
+              <button type="button" data-st-target="st-advanced">Advanced</button>
+            </nav>
+            <section id="st-general" class="st-group" aria-labelledby="st-general-heading">
+              <header class="st-group-heading"><h2 id="st-general-heading">General</h2></header>
+              <section class="panel settings-panel clock-settings st-setting-item" aria-labelledby="clock-settings-heading">
+          <div class="st-item-label"><h3 id="clock-settings-heading">Time zone</h3>
+          <p class="st-help">Choose the time zone shown in the global top bar.</p></div>
+          <div class="clock-settings-fields st-item-control">
             <label for="clock-zone-select">Display time zone</label>
             <select id="clock-zone-select">
               <option value="local">Your current time zone (automatic)</option>
@@ -204,98 +215,37 @@
             <p id="clock-settings-feedback" class="note" role="status" aria-live="polite"></p>
           </div>
         </section>
-        <section id="cloudflare-account-connection" class="panel settings-panel cf-panel" aria-labelledby="cf-heading">
-          <div class="cf-heading">
-            <div><p class="cf-eyebrow">ACCOUNT INTEGRATIONS</p><h2 id="cf-heading">Cloudflare</h2>
-              <p class="note">Verify your Cloudflare identity, then authorize API access with a token you control. Once connected, manage permissions and disconnect here without affecting project-specific providers.</p></div>
-            <span class="cf-connection-status" id="cf-connection-status" role="status" aria-live="polite">Checking…</span>
-          </div>
-          <div class="cf-onboarding" aria-label="Cloudflare connection setup">
-            <div class="cf-onboarding-step"><span class="cf-onboarding-number" aria-hidden="true">1</span><div><h3>Verify identity</h3><p class="note">Cloudflare Access confirms that you are the account owner. Authentication alone does not grant Cloudflare API permissions.</p></div></div>
-            <div class="cf-onboarding-step"><span class="cf-onboarding-number" aria-hidden="true">2</span><div><h3>Authorize API access</h3><p class="note">Create a Cloudflare <strong>user API token</strong> with <strong>User Details Read</strong> and the permissions you want, then paste it below. Your token is encrypted and never returned to the browser.</p></div></div>
-          </div>
-          <div class="cf-status-summary">
-            <div><span>Verified Cloudflare identity</span><strong id="cf-owner-email">Checking…</strong></div>
-            <div><span>Effective API permissions</span><strong id="cf-active-scope">—</strong></div>
-            <div><span>API token expiry</span><strong id="cf-expiry">—</strong></div>
-          </div>
-          <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Verify Cloudflare identity</a>
-            <button type="button" class="secondary" id="cf-refresh">Refresh status</button></div>
-          <p class="cf-message" id="cf-feedback" role="status" aria-live="polite"></p>
-          <form class="cf-connect-form" id="cf-connect-form">
-            <div class="cf-form-heading"><h3 id="cf-connect-title">Authorize API access</h3><p class="note">After verifying your identity above, paste a Cloudflare <strong>user API token</strong> created in your Cloudflare profile. It must include <strong>User Details Read</strong>, plus the API permissions you intend to use. Choose your initial effective scope before connecting. Identity verification alone cannot create this token.</p></div>
-            <label for="cf-token">Cloudflare API token</label>
-            <input id="cf-token" type="password" name="token" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Paste your Cloudflare API token" required>
-            <div class="cf-actions"><button type="submit" class="secondary" id="cf-connect-button" disabled>Authorize API connection</button>
-              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer">Create a user API token in Cloudflare</a></div>
-          </form>
-          <form class="cf-scope-form" id="cf-scope-form">
-            <div class="cf-form-heading"><h3>Effective permissions</h3><p class="note">These settings can only restrict your token, never expand the privileges Cloudflare grants it. An asterisk permits all resources within that token's permissions; IDs restrict access to specific resources.</p></div>
-            <div class="cf-form-grid">
-              <label for="cf-mode">Allowed operations
-                <select id="cf-mode"><option value="read">Read-only · GET</option><option value="full">Full · GET, POST, PUT, PATCH, DELETE</option></select>
-              </label>
-              <label for="cf-accounts">Account IDs
-                <input id="cf-accounts" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
-              </label>
-              <label for="cf-zones">Zone IDs
-                <input id="cf-zones" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
-              </label>
-            </div>
-            <label class="cf-checkbox"><input id="cf-user" type="checkbox"> Allow Cloudflare user-level API endpoints</label>
-            <p class="note">Global endpoints outside accounts, zones and user require full operations, unrestricted resources, and user API access. Narrow scopes block collection listing where the resulting list would expose other resources.</p>
-            <div class="cf-actions"><button type="submit" class="secondary" id="cf-save-scope" disabled>Save permission scope</button>
-              <button type="button" class="secondary" id="cf-full-scope">Select full access</button></div>
-          </form>
-          <details class="cf-explorer" id="cf-explorer" hidden>
-            <summary>Cloudflare API console</summary>
-            <p class="note">Issue requests using your stored, server-side connection. Requests are validated against the scope above, and are sent only to Cloudflare's official API endpoint.</p>
-            <form id="cf-api-form">
-              <div class="cf-api-target"><label for="cf-api-method">Method<select id="cf-api-method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></label>
-                <label for="cf-api-path">API path<input id="cf-api-path" spellcheck="false" value="/accounts" placeholder="/accounts/{account_id}/workers/scripts"></label></div>
-              <label for="cf-api-body">JSON request body (optional)</label>
-              <textarea id="cf-api-body" spellcheck="false" rows="4" placeholder='{"example":"value"}'></textarea>
-              <div class="cf-actions"><button type="submit" class="secondary" id="cf-api-send">Send request</button></div>
-            </form>
-            <pre class="cf-api-output" id="cf-api-output" aria-live="polite" tabindex="0">No request sent.</pre>
-          </details>
-          <div class="cf-disconnect" id="cf-disconnect-area" hidden><div><strong>Disconnect Cloudflare</strong>
-            <p class="note">Remove the encrypted credential from DoFinances immediately. This does not delete the token in Cloudflare, which you can revoke separately.</p></div>
-            <button type="button" class="destructive" id="cf-disconnect">Remove connection</button></div>
-        </section>
-        <section id="github-readme-connection" class="panel settings-panel rm-settings" aria-labelledby="github-readme-heading">
-          <div class="rm-settings-heading"><div><span class="cf-eyebrow">REPOSITORY ACCESS</span><h2 id="github-readme-heading">GitHub README access</h2>
-            <p class="note">GitHub sign-in is identity-only. Add a separate fine-grained personal access token to read private READMEs or edit repository files.</p></div>
-            <strong id="github-readme-status" role="status" aria-live="polite">Checking…</strong></div>
-          <p class="note">Grant <strong>Contents: Read-only</strong> to view private repositories, or <strong>Contents: Read and write</strong> to save edits. Select only the repositories you need.</p>
-          <form id="github-readme-form" class="rm-settings-form"><label for="github-readme-token">Personal access token</label>
-            <div class="rm-settings-input"><input id="github-readme-token" type="password" maxlength="1024" required autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="submit" class="rm-save">Connect / replace token</button></div></form>
-          <div class="rm-settings-footer"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a GitHub token</a><button id="github-readme-remove" type="button">Disconnect</button></div>
-          <p class="rm-help">Encrypted credentials stay server-side and are never returned to the browser. Disconnecting does not unlink GitHub sign-in or Colosseum providers.</p>
-          <p id="github-readme-feedback" class="rm-notice" role="status" aria-live="polite" hidden></p>
-        </section>
-        <section id="account" class="panel settings-panel" aria-label="Account and security settings">
-          <h2>Account & security</h2>
-          <p>Signed in as <strong id="account-email-detail">Loading…</strong></p>
-          <p class="note">Your account security settings are below. No banking connections or sensitive financial records are stored in this dashboard.</p>
-          <div id="security-controls" style="margin-top:24px;border-top:1px solid #304058;padding-top:18px">
-            <section id="linked-accounts" style="margin-top:27px;border-top:1px solid #304058;padding-top:18px" aria-label="Linked sign-in accounts">
-              <h3>Connected sign-in accounts</h3>
+            </section>
+            <section id="st-security" class="st-group" aria-labelledby="st-security-heading">
+              <header class="st-group-heading"><h2 id="st-security-heading">Account &amp; security</h2></header>
+              <section id="account" class="panel settings-panel st-account" aria-label="Account and security settings">
+                <div class="st-setting-item st-setting-item--inline st-account-identity">
+                  <div class="st-item-label"><h3>Account</h3><p class="st-help">Signed in as <strong id="account-email-detail">Loading…</strong></p></div>
+                </div>
+                <div id="security-controls">
+                  <section id="linked-accounts" class="st-setting-item st-setting-item--stack" aria-label="Linked sign-in accounts">
+              <h3>Sign-in accounts</h3>
               <p class="note">Link up to five Google accounts and three GitHub accounts. Each external account belongs to only one Dofinances user.</p>
               <p id="federation-feedback" role="status"></p>
               <div id="linked-identity-list" aria-live="polite"><p>Loading connected accounts…</p></div>
-              <div id="add-identity-buttons" class="security-form" style="margin-top:16px"></div>
+              <div id="add-identity-buttons" class="security-form"></div>
             </section>
-            <div class="settings-divider"><h3>Email verification</h3></div>
-            <p id="verification-state" role="status">Checking account…</p>
-            <button id="resend-verification" type="button" class="secondary" hidden style="margin-top:12px">Send verification email</button>
-            <p id="verification-feedback" role="alert"></p>
-
-            <h3 style="margin-top:27px">Two-factor authentication</h3>
-            <label for="enable-password" style="display:block;margin-top:16px;font-size:13px">Current password (required to enable MFA)</label>
-            <input id="enable-password" type="password" autocomplete="current-password" style="margin-top:8px">
-            <p id="mfa-state" role="status">Loading MFA status…</p>
-            <button id="start-mfa" type="button" class="secondary" style="margin-top:12px">Enable authenticator MFA</button>
+                  <section class="st-setting-item st-setting-item--inline" aria-labelledby="st-verification-heading">
+  <div class="st-item-label"><h3 id="st-verification-heading">Email verification</h3>
+    <p id="verification-state" class="st-help" role="status">Checking account…</p>
+    <p id="verification-feedback" class="st-error" role="alert"></p></div>
+  <button id="resend-verification" type="button" class="secondary" hidden>Send verification email</button>
+</section>
+                  <section class="st-setting-item st-setting-item--stack st-mfa" aria-labelledby="st-mfa-heading">
+                    <div class="st-item-label"><h3 id="st-mfa-heading">Two-factor authentication</h3>
+                      <p id="mfa-state" class="st-help" role="status">Loading MFA status…</p></div>
+                    <details class="st-disclosure st-disclosure--inline" id="st-mfa-details">
+                      <summary>Manage authenticator <span class="st-chevron" aria-hidden="true"></span></summary>
+                      <div class="st-disclosure-body">
+            <div class="st-mfa-enroll"><label for="enable-password">Current password (required to enable MFA)</label>
+            <input id="enable-password" type="password" autocomplete="current-password">
+            
+            <button id="start-mfa" type="button" class="secondary">Enable authenticator MFA</button></div>
             <section id="mfa-setup" hidden class="security-setup">
               <p>In your authenticator app, add an account manually using this secret (30-second codes, SHA-1, 6 digits):</p>
               <p class="secret" id="mfa-secret"></p>
@@ -321,19 +271,15 @@
               <input id="disable-code" name="code" type="text" autocomplete="one-time-code" maxlength="48" required>
               <button class="destructive" type="submit">Disable MFA</button>
               <p id="mfa-disable-feedback" role="alert"></p>
-            </form>
-          </div>
-          <section id="colosseum-owner-connection" class="settings-divider" aria-labelledby="colosseum-owner-connection-title">
-            <h3 id="colosseum-owner-connection-title">Project-specific authorization</h3>
-            <p class="note">Existing Colosseum administration is independently protected by Cloudflare Access. This project-specific enrollment does not manage the Cloudflare account connection above.</p>
-            <a class="secondary" id="connect-cloudflare-owner" href="/api/colosseum/connect" style="display:inline-block;margin-top:14px;padding:10px 17px;border:1px solid var(--ui-border-strong);border-radius:10px">Connect project administrator</a>
-            <p id="colosseum-owner-feedback" class="note" role="status" hidden>Colosseum ownership is now connected to this DoFinances account.</p>
-          </section>
-          <section class="manage-account settings-divider" aria-labelledby="manage-account-title">
-            <h3 id="manage-account-title">Manage Account</h3>
+            </form></div>
+                    </details>
+                  </section>
+                </div>
+                <section class="manage-account st-setting-item st-setting-item--inline" aria-labelledby="manage-account-title">
+            <h3 id="manage-account-title">Session</h3>
             <button id="signout" type="button" class="secondary">Sign out</button>
           </section>
-          <details class="danger">
+                <details class="danger">
             <summary>Delete my account</summary>
             <p>This permanently deletes your registered account and all sessions. This cannot be undone.</p>
             <form id="delete-form">
@@ -345,8 +291,98 @@
               <p id="delete-feedback" role="alert" aria-live="polite"></p>
             </form>
           </details>
+              </section>
+            </section>
+            <section id="st-connections" class="st-group" aria-labelledby="st-connections-heading">
+              <header class="st-group-heading"><h2 id="st-connections-heading">Connections</h2></header>
+              <section id="cloudflare-account-connection" class="panel settings-panel cf-panel st-connection" aria-labelledby="cf-heading">
+          <div class="cf-heading">
+            <div><p class="cf-eyebrow">ACCOUNT INTEGRATIONS</p><h2 id="cf-heading">Cloudflare</h2>
+              <p class="st-help">Verified identity and API permissions are separate authorizations.</p></div>
+            <span class="cf-connection-status" id="cf-connection-status" role="status" aria-live="polite">Checking…</span>
+          </div>
+          <div class="cf-status-summary">
+            <div><span>Verified Cloudflare identity</span><strong id="cf-owner-email">Checking…</strong></div>
+            <div><span>Effective API permissions</span><strong id="cf-active-scope">—</strong></div>
+            <div><span>API token expiry</span><strong id="cf-expiry">—</strong></div>
+          </div>
+          <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Verify Cloudflare identity</a>
+            <button type="button" class="secondary" id="cf-refresh">Refresh status</button></div>
+          <p class="cf-message" id="cf-feedback" role="status" aria-live="polite"></p>
+          <details class="st-disclosure" id="st-cloudflare-token">
+            <summary>Manage API token <span class="st-chevron" aria-hidden="true"></span></summary>
+            <div class="st-disclosure-body"><form class="cf-connect-form" id="cf-connect-form">
+            <div class="cf-form-heading"><h3 id="cf-connect-title">Authorize API access</h3><p class="note">After verifying your identity above, paste a Cloudflare <strong>user API token</strong> created in your Cloudflare profile. It must include <strong>User Details Read</strong>, plus the API permissions you intend to use. Choose your initial effective scope before connecting. Identity verification alone cannot create this token.</p></div>
+            <label for="cf-token">Cloudflare API token</label>
+            <input id="cf-token" type="password" name="token" autocomplete="off" spellcheck="false" maxlength="512" placeholder="Paste your Cloudflare API token" required>
+            <div class="cf-actions"><button type="submit" class="secondary" id="cf-connect-button" disabled>Authorize API connection</button>
+              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer">Create a user API token in Cloudflare</a></div>
+          </form></div></details>
+          <details class="st-disclosure" id="st-cloudflare-scope">
+            <summary>Effective API permissions <span class="st-chevron" aria-hidden="true"></span></summary>
+            <div class="st-disclosure-body"><form class="cf-scope-form" id="cf-scope-form">
+            <div class="cf-form-heading"><h3>Effective permissions</h3><p class="note">These settings can only restrict your token, never expand the privileges Cloudflare grants it. An asterisk permits all resources within that token's permissions; IDs restrict access to specific resources.</p></div>
+            <div class="cf-form-grid">
+              <label for="cf-mode">Allowed operations
+                <select id="cf-mode"><option value="read">Read-only · GET</option><option value="full">Full · GET, POST, PUT, PATCH, DELETE</option></select>
+              </label>
+              <label for="cf-accounts">Account IDs
+                <input id="cf-accounts" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
+              </label>
+              <label for="cf-zones">Zone IDs
+                <input id="cf-zones" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
+              </label>
+            </div>
+            <label class="cf-checkbox"><input id="cf-user" type="checkbox"> Allow Cloudflare user-level API endpoints</label>
+            <p class="note">Global endpoints outside accounts, zones and user require full operations, unrestricted resources, and user API access. Narrow scopes block collection listing where the resulting list would expose other resources.</p>
+            <div class="cf-actions"><button type="submit" class="secondary" id="cf-save-scope" disabled>Save permission scope</button>
+              <button type="button" class="secondary" id="cf-full-scope">Select full access</button></div>
+          </form></div></details>
+          <div class="cf-disconnect" id="cf-disconnect-area" hidden><div><strong>Disconnect Cloudflare</strong>
+            <p class="note">Remove the encrypted credential from DoFinances immediately. This does not delete the token in Cloudflare, which you can revoke separately.</p></div>
+            <button type="button" class="destructive" id="cf-disconnect">Remove connection</button></div>
         </section>
-
+              <section id="github-readme-connection" class="panel settings-panel rm-settings st-connection" aria-labelledby="github-readme-heading">
+          <div class="rm-settings-heading"><div><span class="cf-eyebrow">REPOSITORY ACCESS</span><h2 id="github-readme-heading">GitHub README access</h2>
+            <p class="st-help">A repository token is separate from your GitHub sign-in identity.</p></div>
+            <strong id="github-readme-status" role="status" aria-live="polite">Checking…</strong></div>
+          <details class="st-disclosure" id="st-github-token">
+          <summary>Manage repository token <span class="st-chevron" aria-hidden="true"></span></summary>
+          <div class="st-disclosure-body"><p class="note">Grant <strong>Contents: Read-only</strong> to view private repositories, or <strong>Contents: Read and write</strong> to save edits. Select only the repositories you need.</p>
+          <form id="github-readme-form" class="rm-settings-form"><label for="github-readme-token">Personal access token</label>
+            <div class="rm-settings-input"><input id="github-readme-token" type="password" maxlength="1024" required autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="submit" class="rm-save">Connect / replace token</button></div></form>
+          <div class="rm-settings-footer"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a GitHub token</a><button id="github-readme-remove" type="button">Disconnect</button></div>
+          <p class="rm-help">Encrypted credentials stay server-side and are never returned to the browser. Disconnecting does not unlink GitHub sign-in or Colosseum providers.</p>
+          <p id="github-readme-feedback" class="rm-notice" role="status" aria-live="polite" hidden></p>
+          </div></details>
+        </section>
+              <section id="colosseum-owner-connection" class="panel settings-panel st-connection st-owner" aria-labelledby="colosseum-owner-connection-title">
+            <h3 id="colosseum-owner-connection-title">Project-specific authorization</h3>
+            <p class="note">Existing Colosseum administration is independently protected by Cloudflare Access. This project-specific enrollment does not manage the Cloudflare account connection above.</p>
+            <a class="secondary" id="connect-cloudflare-owner" href="/api/colosseum/connect" >Connect project administrator</a>
+            <p id="colosseum-owner-feedback" class="note" role="status" hidden>Colosseum ownership is now connected to this DoFinances account.</p>
+          </section>
+            </section>
+            <section id="st-advanced" class="st-group" aria-labelledby="st-advanced-heading">
+              <header class="st-group-heading"><h2 id="st-advanced-heading">Advanced</h2></header>
+              <div class="st-setting-item st-setting-item--stack st-advanced-console">
+                <div class="st-item-label"><h3>Cloudflare API console</h3>
+                  <p class="st-help">Send scoped API requests using the existing server-side connection. Only available while connected.</p></div>
+                <details class="cf-explorer" id="cf-explorer" hidden>
+            <summary>Cloudflare API console</summary>
+            <p class="note">Issue requests using your stored, server-side connection. Requests are validated against the scope above, and are sent only to Cloudflare's official API endpoint.</p>
+            <form id="cf-api-form">
+              <div class="cf-api-target"><label for="cf-api-method">Method<select id="cf-api-method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></label>
+                <label for="cf-api-path">API path<input id="cf-api-path" spellcheck="false" value="/accounts" placeholder="/accounts/{account_id}/workers/scripts"></label></div>
+              <label for="cf-api-body">JSON request body (optional)</label>
+              <textarea id="cf-api-body" spellcheck="false" rows="4" placeholder='{"example":"value"}'></textarea>
+              <div class="cf-actions"><button type="submit" class="secondary" id="cf-api-send">Send request</button></div>
+            </form>
+            <pre class="cf-api-output" id="cf-api-output" aria-live="polite" tabindex="0">No request sent.</pre>
+          </details>
+              </div>
+            </section>
+          </div>
         </section>
         <section class="view project-view" data-view="apple-hig-reader/overview" hidden aria-labelledby="apple-hig-reader-title">
           <div class="page-heading"><h1 id="apple-hig-reader-title">Apple HIG Reader</h1></div>

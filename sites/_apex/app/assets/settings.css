@@ -1,0 +1,194 @@
+/* Settings: one compact, native-feeling preferences page.
+ * Every selector is scoped to this authenticated screen. */
+html:has(body > #workspace-shell .settings-view:not([hidden])){--ui-canvas:#0a0a0a}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell){padding-bottom:var(--workspace-footer-height)}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell)::before{position:fixed}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell) > #workspace-shell{position:relative;z-index:1}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell) > #workspace-shell::after{
+ content:"";position:absolute;inset:var(--workspace-banner-height) 0 0;z-index:-1;pointer-events:none;background:var(--ui-canvas,#0a0a0a)
+}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell) > .workspace-footer{position:fixed;inset:auto 0 0;z-index:0}
+html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
+#st-root{
+ --st-ink:#fafafa;--st-secondary:#a3a3a3;--st-muted:#858585;--st-line:#292929;
+ --st-surface:#171717;--st-raised:#202020;--st-ease:cubic-bezier(.22,1,.36,1);
+ max-width:1030px;width:100%;min-height:70vh;margin:14px 0 65px;padding:0;
+ color:var(--st-ink);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ -webkit-font-smoothing:antialiased
+}
+#st-root *,#st-root *::before,#st-root *::after{box-sizing:border-box}
+#st-root [hidden]{display:none!important}
+#st-root :is(button,input,select,textarea){font:inherit}
+#st-root button{cursor:pointer}
+#st-root button:disabled{opacity:.45;cursor:not-allowed}
+#st-root :is(button,input,select,textarea,a,summary):focus-visible{outline:2px solid #e5e5e5;outline-offset:3px}
+#st-root .st-section-index{display:flex;flex-wrap:wrap;align-items:center;column-gap:23px;row-gap:8px;padding:4px 0 20px;border-bottom:1px solid var(--st-line)}
+#st-root .st-section-index button{border:0;background:transparent;color:#a8a8a8;font-size:12px;font-weight:530;padding:5px 0;border-radius:2px;line-height:1.4;text-align:left;transition:color .16s}
+#st-root .st-section-index button:hover{color:#fff}
+#st-root .st-group{margin-top:31px;scroll-margin-top:110px;min-width:0}
+#st-root .st-group-heading{display:flex;align-items:center;min-height:30px;margin:0 0 2px}
+#st-root .st-group-heading h2{margin:0;color:#bcbcbc;font-size:11px;font-weight:600;letter-spacing:.13em;line-height:1.4;text-transform:uppercase}
+#st-root .panel,#st-root .settings-panel,#st-root .security-setup{
+ max-width:none;width:100%;margin:0;padding:0;box-shadow:none;background:transparent;border:0;border-radius:0;color:var(--st-ink)
+}
+#st-root .st-setting-item,#st-root .st-connection{
+ width:100%;min-width:0;padding:16px 0;border-top:1px solid var(--st-line);border-bottom:0;
+ background:transparent;box-shadow:none;border-radius:0
+}
+#st-root .st-setting-item--inline,#st-root .clock-settings{
+ display:flex;align-items:center;justify-content:space-between;gap:23px
+}
+#st-root .st-setting-item--stack{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+#st-root .st-item-label{min-width:0;flex:1 1 auto}
+#st-root :is(.st-item-label,.st-connection) h3,#st-root .panel h3{
+ margin:0;color:#eee;font-size:13px;font-weight:570;letter-spacing:-.01em;line-height:1.45
+}
+#st-root .st-help,#st-root .panel .st-help{
+ margin:4px 0 0;font-size:11px;line-height:1.55;color:var(--st-secondary);max-width:730px
+}
+#st-root .panel strong{color:var(--st-ink);font-weight:550}
+#st-root .panel p,#st-root .panel .note{font-size:11px;line-height:1.6;color:var(--st-secondary)}
+#st-root .panel a{color:#e5e5e5;text-decoration:underline;text-underline-offset:3px}
+#st-root .panel a.secondary{color:#e5e5e5;text-decoration:none}
+#st-root .panel a:hover{color:#fff}
+#st-root .panel label,#st-root .security-form label,#st-root .danger label{font-size:11px;line-height:1.45;color:#b9b9b9}
+#st-root .panel :is(input:not([type=checkbox]),select,textarea){
+ width:100%;max-width:none;min-width:0;min-height:34px;padding:7px 10px;
+ background:var(--st-surface);border:1px solid #373737;border-radius:9px;color:var(--st-ink);
+ box-shadow:none;font-size:12px;line-height:1.5
+}
+#st-root .panel :is(input,select,textarea):hover{border-color:#525252}
+#st-root .panel :is(input,select,textarea):focus-visible{border-color:#858585;box-shadow:none}
+#st-root .panel input[type=checkbox]{width:16px;height:16px;flex:none;accent-color:#d1d1d1;margin:0}
+#st-root :is(.secondary,.rm-save,.cf-panel button,.st-disclosure button){
+ display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:32px;
+ padding:7px 12px;background:#1a1a1a;color:#eee;border:1px solid #3a3a3a;
+ border-radius:9px;font-size:11px;font-weight:530;text-decoration:none;
+ transition:background .16s,border-color .16s,transform .16s
+}
+#st-root :is(.secondary,.rm-save,.cf-panel button,.st-disclosure button):hover:not(:disabled){
+ background:#292929;border-color:#5a5a5a;color:#fff
+}
+#st-root :is(.secondary,.rm-save,.cf-panel button,.st-disclosure button):active:not(:disabled){transform:translateY(1px)}
+#st-root .destructive{border-color:#61383d;background:rgba(124,40,48,.12);color:#f9a7ae}
+#st-root .destructive:hover:not(:disabled){background:rgba(153,48,58,.2);border-color:#96525a}
+#st-root .clock-settings-fields{max-width:350px;min-width:210px;flex:0 1 350px;display:grid;gap:6px;margin:0;padding:0}
+#st-root .clock-settings-fields > label{font-size:10px;color:#9a9a9a}
+#st-root .clock-settings-fields #clock-settings-feedback{font-size:11px;min-height:0;margin:0;color:#b7b7b7}
+#st-root .clock-settings-fields #clock-settings-feedback:empty{display:none}
+#st-root .clock-custom-row{margin-top:4px;gap:6px}
+#st-root .clock-custom-row .note{margin:0;font-size:10px}
+#st-root .clock-custom-entry{display:flex;align-items:center;gap:8px}
+#st-root .clock-custom-entry #clock-custom-apply{flex:none}
+/* Account and security: one list of real settings, not nested cards. */
+#st-root #security-controls{margin:0!important;padding:0!important;border:0!important}
+#st-root #linked-accounts{margin:0!important;padding:16px 0!important;border-top:1px solid var(--st-line)!important}
+#st-root #linked-accounts > .note{margin:4px 0 0}
+#st-root #linked-identity-list{margin-top:8px}
+#st-root #linked-identity-list > div{margin:0!important;padding:10px 0;border-bottom:1px solid #242424}
+#st-root #linked-identity-list > div:last-child{border-bottom:0}
+#st-root #linked-identity-list > div span{font-size:11px;overflow-wrap:anywhere}
+#st-root #linked-identity-list > p{margin:7px 0 0}
+#st-root #linked-identity-list button{min-height:29px}
+#st-root #add-identity-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;max-width:none}
+#st-root #add-identity-buttons a{margin:0!important;display:inline-flex!important;min-height:30px;text-decoration:none}
+#st-root .st-account-identity{padding-top:16px}
+#st-root .st-account-identity .st-help strong{font-weight:550;overflow-wrap:anywhere}
+#st-root .st-error{font-size:11px;line-height:1.5;color:#f3a5a5;min-height:0}
+#st-root .st-error:empty,#st-root #federation-feedback:empty{display:none}
+#st-root #federation-feedback{font-size:11px;line-height:1.5;color:#bdc9d6;margin:7px 0 0}
+#st-root #resend-verification{flex:none}
+#st-root .st-mfa{gap:6px}
+#st-root .st-mfa-enroll{display:grid;gap:9px;max-width:410px}
+#st-root .st-mfa-enroll:has(> #start-mfa[hidden]){display:none}
+#st-root .st-mfa-enroll button{justify-self:start}
+#st-root .st-mfa .security-setup,#st-root .st-mfa .security-form{margin:11px 0 0;max-width:520px}
+#st-root #mfa-setup,#st-root #mfa-recovery{padding:13px 14px;background:#151515;border:1px solid #333;border-radius:10px}
+#st-root .secret{padding:12px;max-height:240px;overflow:auto;background:#151515;border:1px solid #383838;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+#st-root .st-mfa .security-form{display:grid;gap:9px}
+#st-root .st-mfa .security-form button{justify-self:start}
+#st-root .manage-account{margin:0!important;border-top:1px solid var(--st-line)!important;padding:15px 0!important}
+#st-root .manage-account h3{margin:0!important}
+#st-root .danger{border-top:1px solid var(--st-line);margin:0;padding:0}
+#st-root .danger summary{padding:16px 0;color:#f1a5ae;font-size:12px;font-weight:570}
+#st-root .danger p{margin:0 0 12px}
+#st-root .danger form{display:grid;gap:10px;padding:0 0 18px;max-width:430px}
+/* Connection summaries remain visible; credential forms open only on request. */
+#st-root .st-connection{display:block}
+#st-root .cf-heading,#st-root .rm-settings-heading{
+ display:flex;align-items:flex-start;justify-content:space-between;gap:18px
+}
+#st-root .cf-heading > div,#st-root .rm-settings-heading > div{min-width:0}
+#st-root .cf-heading h2,#st-root .rm-settings-heading h2{font-size:14px;font-weight:600;letter-spacing:-.015em;margin:2px 0 0;color:#fafafa}
+#st-root .cf-eyebrow{font-size:10px;letter-spacing:.13em;color:#868686;font-weight:550;margin:0 0 4px}
+#st-root .cf-connection-status,#st-root #github-readme-status{
+ font-size:10px;line-height:1.5;flex:none;min-width:0;
+ background:#171717;border:1px solid #333;color:#bbb;border-radius:7px;
+ padding:5px 9px;white-space:nowrap;font-weight:500
+}
+#st-root .cf-connection-status[data-state=connected]{border-color:#3d5344;color:#afd5b9}
+#st-root .cf-connection-status[data-state=verified]{color:#d5c29d;border-color:#564a36}
+#st-root .cf-status-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 10px;border:1px solid var(--st-line);border-radius:9px;overflow:hidden}
+#st-root .cf-status-summary>div{padding:11px 13px;gap:4px;display:flex;flex-direction:column}
+#st-root .cf-status-summary>div+div{border-left:1px solid var(--st-line)}
+#st-root .cf-status-summary span{font-size:10px;color:#898989}
+#st-root .cf-status-summary strong{font-size:11px;font-weight:530;color:#e4e4e4}
+#st-root .cf-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#st-root .cf-actions a:not(.secondary){font-size:11px;color:#bbb}
+#st-root .cf-message{font-size:11px;margin:9px 0 0;min-height:0}
+#st-root .cf-message:empty{display:none}
+#st-root .cf-connect-form,#st-root .cf-scope-form{margin:0;padding:0;border:0;display:grid;gap:11px}
+#st-root .cf-form-heading{margin:0}
+#st-root .cf-form-heading h3{font-size:12px;margin:0 0 4px}
+#st-root .cf-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#st-root .cf-form-grid>label:first-child{grid-column:1 / -1}
+#st-root .cf-panel :is(.cf-connect-form,.cf-scope-form) label{font-size:11px;gap:5px}
+#st-root .cf-panel .cf-checkbox{display:flex;flex-direction:row;gap:9px;align-items:center}
+#st-root #github-readme-connection > .note{margin:9px 0 0}
+#st-root .rm-settings-form{display:grid;gap:7px;margin:10px 0}
+#st-root .rm-settings-form .rm-settings-input{display:flex;gap:8px;flex-wrap:wrap}
+#st-root .rm-settings-form input{min-width:180px;flex:1 1 240px}
+#st-root .rm-settings-form button{flex:none}
+#st-root .rm-settings-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#st-root .rm-help{margin-top:9px;font-size:10px}
+#st-root .rm-notice{font-size:11px;margin-top:8px}
+#st-root .cf-disconnect{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;padding:13px 0 0;border-top:1px solid var(--st-line)}
+#st-root .cf-disconnect strong{font-size:12px}
+#st-root .cf-disconnect .note{margin:3px 0 0}
+#st-root #colosseum-owner-connection{border-top:1px solid var(--st-line);margin:0!important;padding:16px 0!important}
+#st-root .st-owner h3{font-size:13px;margin:0 0 4px}
+#st-root .st-owner .note{max-width:730px;margin:0 0 10px}
+#st-root .st-owner #connect-cloudflare-owner{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:7px 12px;border:1px solid #3a3a3a;border-radius:9px;background:#1a1a1a;font-size:11px;text-decoration:none}
+/* Native disclosure affordance with no fake glass. */
+#st-root .st-disclosure{min-width:0;border-top:1px solid #292929;margin:12px 0 0;padding:0;background:transparent;border-radius:0}
+#st-root .st-disclosure > summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:41px;list-style:none;cursor:pointer;font-size:11px;font-weight:550;color:#dadada;padding:9px 3px}
+#st-root .st-disclosure > summary::-webkit-details-marker{display:none}
+#st-root .st-disclosure > summary:hover{color:#fff}
+#st-root .st-chevron{display:inline-block;flex:none;width:7px;height:7px;border-right:1.5px solid #aaa;border-bottom:1.5px solid #aaa;transform:rotate(45deg);margin:0 6px 4px 0;transition:transform .2s var(--st-ease)}
+#st-root .st-disclosure[open] .st-chevron{transform:rotate(225deg);margin-bottom:0}
+#st-root .st-disclosure-body{padding:2px 4px 17px;min-width:0}
+#st-root .st-disclosure--inline{max-width:530px;margin:0}
+#st-root .st-disclosure--inline .st-disclosure-body{padding:5px 3px 13px}
+#st-root .st-advanced-console .cf-explorer{background:transparent;border:0;border-top:1px solid var(--st-line);padding:0;margin:0;border-radius:0}
+#st-root .st-advanced-console .cf-explorer>summary{font-size:12px;font-weight:550;color:#e5e5e5;cursor:pointer;min-height:42px;padding:10px 0}
+#st-root .st-advanced-console .cf-explorer form{margin:9px 0 14px;display:grid;gap:9px}
+#st-root .cf-api-target{display:grid;grid-template-columns:120px minmax(0,1fr);gap:11px}
+#st-root #cf-api-output{padding:13px;max-width:100%;max-height:340px;overflow:auto;background:#141414;border:1px solid #343434;border-radius:9px;font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:720px){
+ #st-root{margin:14px 0 40px}
+ #st-root .st-section-index{column-gap:14px;padding-bottom:14px}
+ #st-root .st-section-index button{font-size:11px}
+ #st-root .st-group{margin-top:25px}
+ #st-root .st-setting-item--inline,#st-root .clock-settings{align-items:flex-start;flex-direction:column;gap:11px}
+ #st-root .clock-settings-fields{min-width:0;max-width:100%;width:100%;flex:1}
+ #st-root .cf-heading,#st-root .rm-settings-heading{flex-wrap:wrap;gap:8px}
+ #st-root .cf-status-summary{grid-template-columns:1fr}
+ #st-root .cf-status-summary>div+div{border-left:0;border-top:1px solid var(--st-line)}
+ #st-root .cf-form-grid,#st-root .cf-api-target{grid-template-columns:1fr}
+ #st-root .cf-form-grid>label:first-child{grid-column:auto}
+ #st-root .cf-disconnect{flex-direction:column;align-items:flex-start}
+ #st-root .rm-settings-form .rm-settings-input{flex-direction:column;align-items:stretch}
+}
+@media(prefers-reduced-motion:reduce){
+ #st-root *{transition:none!important;animation:none!important}
+}
