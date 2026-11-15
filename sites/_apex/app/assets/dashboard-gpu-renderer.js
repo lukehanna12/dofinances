@@ -29,6 +29,24 @@ const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
+// A user may navigate away while the AVIF decodes or WGSL compiles.
+// Defer first layout measurement until Home is visible again, rather than
+// interpreting zero-size hidden geometry as an unrecoverable GPU failure.
+async function waitForVisibleHome(){
+  if(homeActive())return;
+  await new Promise(resolve=>{
+    const check=()=>queueMicrotask(()=>{
+      if(!homeActive())return;
+      window.removeEventListener("hashchange",check);
+      window.removeEventListener("popstate",check);
+      resolve();
+    });
+    window.addEventListener("hashchange",check);
+    window.addEventListener("popstate",check);
+    check();
+  });
+}
+
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 const audit={
@@ -582,6 +600,7 @@ async function initialize(){
     scene?.destroy();offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();
   }
+  await waitForVisibleHome();
   engine={rebuild,render,dispose,device};
   if(root)root.dataset.gpuPhase="submit-first-gpu-frame";
   rebuild();
