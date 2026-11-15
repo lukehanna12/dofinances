@@ -261,11 +261,26 @@ export function initColosseumUtilities(){
  }
  function renderList(){
   elements.list.innerHTML=rowsMarkup();elements.list.setAttribute("aria-busy","false");
-  elements.pages.innerHTML=(s.page>0?'<button type="button" data-ut-page="prev" aria-label="Previous utilities page">Previous</button>':"")+
-   '<button type="button" aria-current="page" disabled>'+String(s.page+1)+'</button>'+
-   (s.nextCursor?'<button type="button" data-ut-page="next" aria-label="Next utilities page">Next</button>':"");
-  elements.count.textContent=s.items.length?
-   String(s.page*s.pageSize+1)+"–"+String(s.page*s.pageSize+s.items.length)+(s.nextCursor?" · more available":"")+" · live Colosseum":"0 matching utilities";
+  const unfiltered=!s.query&&!Object.keys(s.include).length&&!Object.keys(s.exclude).length;
+  const pages=unfiltered&&Number.isSafeInteger(s.total)?Math.max(1,Math.ceil(s.total/s.pageSize)):
+   Math.max(1,s.page+1+(s.nextCursor?1:0));
+  const current=s.page+1,first=s.page*s.pageSize+1;
+  elements.count.textContent=unfiltered&&Number.isSafeInteger(s.total)?
+   (s.total?first+"–"+Math.min(first+s.items.length-1,s.total)+" of "+s.total:"0 of 0"):
+   (s.items.length?first+"–"+(first+s.items.length-1)+(s.nextCursor?" matching · more available":" matching"):"0 matching utilities");
+  if(pages===1)elements.pages.replaceChildren();
+  else{
+   const from=Math.max(1,Math.min(current-2,pages-4)),to=Math.min(pages,from+4);
+   const numbers=new Set([1,pages]);for(let p=from;p<=to;p++)numbers.add(p);
+   let previous=0;
+   const cells=[...numbers].sort((x,y)=>x-y).map(n=>{
+    const dots=n>previous+1?'<span class="ut-page-gap" aria-hidden="true">…</span>':'';
+    previous=n;
+    return dots+'<button class="ut-page" type="button" data-ut-page="'+n+'" aria-label="Page '+n+'"'+(current===n?' aria-current="page"':'')+'>'+n+'</button>';
+   }).join("");
+   elements.pages.innerHTML='<button class="ut-page" type="button" data-ut-page="prev" aria-label="Previous utilities page"'+(current===1?' disabled':'')+'>'+PAGE_LEFT+'</button>'+
+    cells+'<button class="ut-page" type="button" data-ut-page="next" aria-label="Next utilities page"'+(current===pages?' disabled':'')+'>'+PAGE_RIGHT+'</button>';
+  }
   syncActive();renderDetail();
  }
  async function loadPage(index=0,cursor=null){
@@ -277,7 +292,7 @@ export function initColosseumUtilities(){
   try{
    const query=clean(elements.query.value).slice(0,160);
    const args={action:"list",query,sort:elements.sort.value,page_size:s.pageSize,
-    include:s.include,exclude:s.exclude,...(cursor?{cursor}:{})};
+    include:s.include,exclude:s.exclude,...(index>0?{offset:index*s.pageSize}:{})};
    const result=await api(args);if(serial!==s.requestSeq)return;
    if(!Array.isArray(result.items))throw Error("The catalog returned an unexpected listing.");
    s.items=result.items.filter(x=>UID.test(x?.uid));s.detailCache.clear();s.page=index;
@@ -285,11 +300,8 @@ export function initColosseumUtilities(){
    if(Number.isSafeInteger(result.total_items)&&result.total_items>=0)s.total=result.total_items;
    s.updatedAt=new Date();s.revision=result.catalog_revision||"—";s.loaded=true;
    s.activeUid=null;s.detail=null;s.detailError=null;s.detailSeq++;
-   s.selection.clear();s.selectionMode=false;
-   elements.select.dataset.mode="off";elements.select.setAttribute("aria-pressed","false");
-   s.cursors[index]=cursor;
-   s.cursors.length=index+1;
-   if(s.nextCursor)s.cursors[index+1]=s.nextCursor;
+   // Preserve transient selections and rename drafts when changing pages.
+   // Neither is persisted until the owner confirms the operation.
    summary();renderList();report("");
   }catch(error){if(serial===s.requestSeq){actionError(error);if(!s.loaded){s.items=[];renderList();}}}
   finally{if(serial===s.requestSeq){s.loading=false;setSummaryLoading(false);busy(false);}}
@@ -306,14 +318,7 @@ export function initColosseumUtilities(){
   }catch(error){if(seq===s.detailSeq&&s.activeUid===uid){actionError(error);s.detail=null;s.detailError=error.message||String(error);renderDetail();}}
  }
  function choose(uid){
-  if(s.selectionMode){
-   if(s.selection.has(uid))s.selection.delete(uid);else s.selection.add(uid);
-   const chosen=elements.list.querySelector('[data-ut-uid="'+uid+'"]');
-   chosen?.querySelector(".ut-pick")?.setAttribute("aria-pressed",String(s.selection.has(uid)));
-   elements.count.textContent=s.selection.size+" selected · "+s.items.length+" on this page";
-   if(s.selection.size===1){s.activeUid=[...s.selection][0];syncActive();renderDetail();void loadDetails(s.activeUid);}
-   return;
-  }
+  if(s.selectionMode||s.editMode||s.selectionTransitioning||s.editTransitioning)return;
   s.activeUid=s.activeUid===uid?null:uid;
   report("");
   s.detail=null;s.detailError=null;s.detailSeq++;
@@ -603,8 +608,13 @@ export function initColosseumUtilities(){
  });
  elements.pages.addEventListener("click",event=>{
   const action=event.target.closest("[data-ut-page]")?.dataset.utPage;
-  if(action==="prev"&&s.page>0)void loadPage(s.page-1,s.cursors[s.page-1]);
-  if(action==="next"&&s.nextCursor)void loadPage(s.page+1,s.nextCursor);
+  if(!action||s.working||s.loading||s.selectionTransitioning||s.editTransitioning)return;
+  const page=action==="prev"?s.page-1:action==="next"?s.page+1:Number(action)-1;
+  if(!Number.isSafeInteger(page)||page<0||page===s.page)return;
+  const filtered=!!s.query||!!Object.keys(s.include).length||!!Object.keys(s.exclude).length;
+  const max=filtered?s.page+(s.nextCursor?1:0):Math.max(0,Math.ceil((s.total??0)/s.pageSize)-1);
+  if(page>max)return;
+  void loadPage(page,null);
  });
  elements.submit.addEventListener("click",()=>void loadPage(0,null));
  elements.query.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();void loadPage(0,null);}});
