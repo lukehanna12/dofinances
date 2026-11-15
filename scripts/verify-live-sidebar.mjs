@@ -225,11 +225,38 @@ try{
     "After clicking a link, blank rail space must return to the expand cursor");
   assert.equal(await evaluate('document.querySelector(".sidebar-interaction-tooltip")'),null,
     "no custom expansion tooltip should be mounted");
+  // The lower bar is anchored to the collapsed rail's 74px slot, even
+  // while the sidebar itself transitions or is resized. Test real geometry.
+  const lowerBarFrame=()=>evaluate(String.raw`(()=>{
+    const r=document.querySelector(".topbar").getBoundingClientRect();
+    const crumb=document.getElementById("breadcrumb").getBoundingClientRect();
+    return {left:r.left,right:r.right,width:r.width,
+      breadcrumbLeft:crumb.left,viewport:document.documentElement.clientWidth};
+  })()`);
+  const assertLowerBarAnchor=(frame,description)=>{
+    assert.ok(Math.abs(frame.left-90)<1.6,
+      description+" — lower bar drifted from 16px gutter + 74px rail: "+JSON.stringify(frame));
+    assert.ok(Math.abs(frame.right-frame.viewport)<1.6,
+      description+" — lower bar no longer ends at viewport edge: "+JSON.stringify(frame));
+  };
+  const beforeExpansion=await lowerBarFrame();
+  assertLowerBarAnchor(beforeExpansion,"collapsed tablet rail");
   await down(blank.x,blank.y);await up(blank.x,blank.y);
+  await pause(75);
+  const duringExpansion=await lowerBarFrame();
+  assertLowerBarAnchor(duringExpansion,"mid-expansion");
+  assert.ok(Math.abs(duringExpansion.breadcrumbLeft-beforeExpansion.breadcrumbLeft)<1.6,
+    "Breadcrumb jumped during sidebar expansion: "+JSON.stringify({beforeExpansion,duringExpansion}));
+
   await until('document.querySelector("#workspace-shell").classList.contains("is-rail-expanded")',"click expansion");
   await until('!document.querySelector("#workspace-shell").classList.contains("is-sidebar-toggling")',"expanded header settle");
   await until('document.querySelector(".sidebar").getBoundingClientRect().width>=248 && !document.querySelector("#workspace-shell").classList.contains("is-collapsed")',
     "expanded pane becomes visible");
+  const expandedBar=await lowerBarFrame();
+  assertLowerBarAnchor(expandedBar,"expanded tablet rail");
+  assert.ok(Math.abs(expandedBar.breadcrumbLeft-beforeExpansion.breadcrumbLeft)<1.6,
+    "Expanded sidebar shifted lower navigation: "+JSON.stringify({beforeExpansion,expandedBar}));
+
   // State and width thresholds can clear before the CSS transition reaches
   // its final pixel. Wait for the actual pane edge and fixed 28px sibling
   // target to coincide; do not loosen the strict geometry assertion.
@@ -316,6 +343,11 @@ try{
   for(let step=1;step<=5;step++){
     await move(header.gripCenter+direction*travel*(step/5),header.gripY);
     await pause(55);
+    const dragBar=await lowerBarFrame();
+    assertLowerBarAnchor(dragBar,"sidebar drag step "+step);
+    assert.ok(Math.abs(dragBar.breadcrumbLeft-beforeExpansion.breadcrumbLeft)<1.6,
+      "Dragging sidebar displaced lower navigation: "+JSON.stringify({beforeExpansion,dragBar}));
+
   }
   await up(header.gripCenter+direction*travel,header.gripY);
   const target=direction>0?bounds.width+Math.max(4,travel-4):bounds.width-Math.max(4,travel-4);

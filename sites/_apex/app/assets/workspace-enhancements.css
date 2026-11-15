@@ -1,6 +1,15 @@
 /* Dedicated coordination layer for global navigation, compact workspace
  * header, accessible React Bits-inspired pill breadcrumbs, and resizable rail.
  * Kept last in the cascade so the original oracle optics remain unchanged. */
+/* Animate one registered length for BOTH the sidebar layout spacer and the
+ * header's inverse offset. Using the same interpolated value prevents a
+ * one-frame jump during button/blank-rail expansion; drag updates stay instant.
+ * The fixed 74px rail is the header's sole desktop sidebar allowance. */
+@property --workspace-rail-space-width {
+  syntax:"<length>";
+  inherits:true;
+  initial-value:260px;
+}
 :root{
   --global-menu-height:44px;
   --workspace-header-height:50px;
@@ -155,6 +164,7 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 @media(min-width:761px){
   .shell {
     --workspace-rail-space-width:var(--sidebar-expanded-width,260px);
+    transition:--workspace-rail-space-width var(--sidebar-layout-duration) var(--ui-ease);
   }
   .shell.is-collapsed,
   .shell.is-compact-rail:not(.is-rail-expanded) {
@@ -164,11 +174,21 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
     content:"";
     display:block;
     flex:0 0 calc(var(--workspace-sidebar-left-gap) + var(--workspace-rail-space-width));
-    /* Match the pane's 210ms toggle animation. Without this, the main column
-       jumps to its final position while the fixed sidebar is still shrinking. */
-    transition:flex-basis var(--sidebar-layout-duration) var(--ui-ease);
+    /* The registered token itself interpolates with the pane's 210ms easing.
+       Do not transition flex-basis separately: that would desynchronize the
+       header's inverse offset during an expand/collapse gesture. */
+    transition:none;
     pointer-events:none;
     visibility:hidden;
+  }
+  /* The lower bar is part of .main but must NOT inherit the variable-width
+     sidebar inset. Exactly cancel the interpolated width above the collapsed
+     74px rail; both its navigation and absolute compact title then stay put.
+     Mobile has no in-flow rail, so the bar occupies the complete viewport. */
+  body:has(> #workspace-shell) .topbar{
+    box-sizing:border-box;
+    margin-left:calc(74px - var(--workspace-rail-space-width));
+    width:calc(100% + var(--workspace-rail-space-width) - 74px);
   }
   /* A direct drag changes the width every pointer frame; don't ease behind it. */
   .shell.is-sidebar-resizing::before{transition:none;}

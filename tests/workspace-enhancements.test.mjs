@@ -126,6 +126,31 @@ test("desktop pane stays fixed and reserves its responsive width",()=>{
   assert.doesNotMatch(css,/--workspace-sidebar-end-shrink/);
   assert.doesNotMatch(js,/sidebarEndShrink|new Resize\(sync\)/);
 });
+test("lower topbar and scroll title retain the 74px collapsed-rail anchor during sidebar expansion",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const title=read("../sites/_apex/app/assets/workspace-title.css");
+  // One registered animated length drives BOTH the main spacer and inverse
+  // header compensation: no independent flex-basis transition or JS polling.
+  assert.match(css,/@property --workspace-rail-space-width\s*\{[\s\S]*?syntax:"<length>";/);
+  assert.match(css,/transition:--workspace-rail-space-width var\(--sidebar-layout-duration\) var\(--ui-ease\)/);
+  assert.match(css,/flex:0 0 calc\(var\(--workspace-sidebar-left-gap\) \+ var\(--workspace-rail-space-width\)\)/);
+  assert.match(css,/margin-left:calc\(74px - var\(--workspace-rail-space-width\)\)/);
+  assert.match(css,/width:calc\(100% \+ var\(--workspace-rail-space-width\) - 74px\)/);
+  assert.match(title,/topbar > \.workspace-inline-title\{/);
+  assert.match(title,/position:absolute;/);
+  assert.doesNotMatch(css,/transition:flex-basis var\(--sidebar-layout-duration\)/);
+});
+test("Diagnostics sidebar uses exact local waveform.path.ecg SF Symbol v2",()=>{
+  const source=read("../sites/_apex/app/assets/diagnostics-screen-sidebar-icon.v2.svg");
+  const theme=read("../sites/_apex/app/assets/workspace-theme.css");
+  assert.match(source,/data-sf-symbol="waveform\.path\.ecg"/);
+  assert.match(source,/data-sf-export="WaveformPathEcg"/);
+  assert.match(source,/viewBox="0 0 24\.8594 26\.3093"/);
+  assert.match(source,/M0\.601954 15\.2947L6\.13877 15\.2947/);
+  assert.match(source,/fill-opacity="0\.85"/);
+  assert.match(theme,/mask-image:url\("\/app\/assets\/diagnostics-screen-sidebar-icon\.v2\.svg"\)/);
+  assert.doesNotMatch(theme,/diagnostics-screen-sidebar-icon\.v1\.svg/);
+});
 test("sidebar admits blank-space expansion and bounded accessible pointer/keyboard resizing",()=>{
   const js=read("../sites/_apex/app/assets/workspace-nav.js");
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
