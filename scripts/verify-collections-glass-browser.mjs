@@ -209,7 +209,13 @@ try{
  assert.ok(narrow.right<=narrow.viewport[0]-10,"Floating glass dock stays within small viewport");
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
  assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
- assert.ok(Math.abs(narrow.viewport[1]-12-narrow.bottom)<2);
+ assert.ok(Math.abs(narrow.viewport[1]-24-narrow.bottom)<2);
+ const mobileEdge=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect();const s=getComputedStyle(p,"::before");const span=parseFloat(p.style.getPropertyValue("--cs-optical-overscan"))||0;return {span,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:document.documentElement.clientWidth,height:document.documentElement.clientHeight,masked:s.maskImage!=="none"}})()');
+ if(svg){
+  assert.ok(mobileEdge.masked,"Mobile curved edge optical mask must remain mounted");
+  assert.ok(mobileEdge.width-mobileEdge.right>=mobileEdge.span,"Right-hand glass halo must not be clipped by viewport");
+  assert.ok(mobileEdge.height-mobileEdge.bottom>=mobileEdge.span,"Bottom glass halo must not be clipped by viewport");
+ }
  await evaluate('document.querySelector(".view").hidden=true;true');
  assert.equal(await evaluate('document.querySelector(".cs-control-center").getBoundingClientRect().width'),0);
  console.log("Public Clear Collections: 1.5x fixed dock, exact-size one-pass warp, live backdrop, hit testing and mobile layout passed.");
