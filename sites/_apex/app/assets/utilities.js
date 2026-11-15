@@ -73,7 +73,7 @@ export function initColosseumUtilities(){
   deletePlan:$("ut-delete-plan"),deletePublish:$("ut-delete-publish"),deleteCancel:$("ut-delete-cancel")
  };
  const s={items:[],page:0,cursors:[null],nextCursor:null,loaded:false,loading:false,working:false,
-  activeUid:null,detail:null,detailCache:new Map(),detailSeq:0,requestSeq:0,
+  activeUid:null,detail:null,detailError:null,detailCache:new Map(),detailSeq:0,requestSeq:0,
   sort:"name_asc",query:"",include:{},exclude:{},collectionChoices:null,collectionChoicePending:false,pageSize:10,selectionMode:false,
   selection:new Set(),editorMode:"add",editorItem:null,planned:null,pendingDelete:null,
   fileOffset:0};
@@ -158,6 +158,7 @@ export function initColosseumUtilities(){
  function itemCard(){
   const item=s.detail?.item||selectedItem();
   if(!item)return "";
+  if(s.detailError)return '<section class="ut-card" role="alert"><p>'+esc(s.detailError)+'</p></section>';
   if(!s.detail||s.detail.item?.uid!==item.uid)
    return '<section class="ut-card" role="status"><p>Loading live utility details…</p></section>';
   const rows=[
@@ -199,7 +200,10 @@ export function initColosseumUtilities(){
   if(!s.activeUid)return;
   const card=itemCard();elements.inspector.innerHTML=card;
   elements.list.querySelectorAll("[data-ut-mobile]").forEach(el=>{
-   if(el.closest(".ut-row")?.dataset.utUid===s.activeUid)el.innerHTML=card;
+   if(el.closest(".ut-row")?.dataset.utUid===s.activeUid){
+    el.innerHTML=card;
+    el.classList.toggle("ut-detail-ready",!!s.detail&&!s.detailError&&s.detail.item?.uid===s.activeUid);
+   }
    else if(el.innerHTML)el.replaceChildren();
   });
  }
@@ -227,7 +231,7 @@ export function initColosseumUtilities(){
    s.items=result.items.filter(x=>UID.test(x?.uid));s.detailCache.clear();s.page=index;
    s.query=query;s.sort=args.sort;s.nextCursor=result.next_cursor||null;
    s.revision=result.catalog_revision||"—";s.loaded=true;
-   s.activeUid=null;s.detail=null;s.detailSeq++;
+   s.activeUid=null;s.detail=null;s.detailError=null;s.detailSeq++;
    s.selection.clear();s.selectionMode=false;
    elements.select.dataset.mode="off";elements.select.setAttribute("aria-pressed","false");
    s.cursors[index]=cursor;
@@ -245,8 +249,8 @@ export function initColosseumUtilities(){
    const item=await api({action:"get",uid,files_limit:30,files_offset:0});
    if(seq!==s.detailSeq||s.activeUid!==uid)return;
    if(!item.found)throw Error("This utility no longer exists in the catalog.");
-   s.detail=item;s.detailCache.set(uid,item);renderDetail();
-  }catch(error){if(seq===s.detailSeq&&s.activeUid===uid){actionError(error);s.detail=null;renderDetail();}}
+   s.detail=item;s.detailError=null;s.detailCache.set(uid,item);renderDetail();
+  }catch(error){if(seq===s.detailSeq&&s.activeUid===uid){actionError(error);s.detail=null;s.detailError=error.message||String(error);renderDetail();}}
  }
  function choose(uid){
   if(s.selectionMode){
@@ -258,14 +262,14 @@ export function initColosseumUtilities(){
    return;
   }
   s.activeUid=s.activeUid===uid?null:uid;
-  s.detail=null;s.detailSeq++;
+  s.detail=null;s.detailError=null;s.detailSeq++;
   syncActive();renderDetail();
   if(s.activeUid)void loadDetails(s.activeUid);
  }
  function renderFilterControls(){
   elements.fields.innerHTML=FILTER_GROUPS.flatMap(([field,label,choices])=>
    ["include","exclude"].map(mode=>
-    '<label class="ut-filter-field"><span>'+esc(mode==="include"?"Include ":"Exclude ")+esc(label)+'</span>'+
+    '<label class="ut-filter-field" data-ut-filter-side="'+mode+'"><span>'+esc(label)+'</span>'+
     (choices?
       '<select data-ut-filter-field="'+field+'" data-ut-filter-mode="'+mode+'"><option value="">Any</option>'+
        choices.map(value=>'<option value="'+esc(value)+'">'+esc(value.replaceAll("_"," "))+'</option>').join("")+'</select>':
@@ -556,6 +560,15 @@ export function initColosseumUtilities(){
  elements.filterToggle.addEventListener("click",()=>{
   const open=elements.filters.hidden;elements.filters.hidden=!open;elements.filterToggle.setAttribute("aria-expanded",String(open));
   if(open)void loadCollectionChoices();
+ });
+ elements.filters.addEventListener("click",event=>{
+  const tab=event.target.closest("[data-ut-filter-tab]");
+  if(!tab)return;
+  const mode=tab.dataset.utFilterTab;
+  if(mode!=="include"&&mode!=="exclude")return;
+  elements.filters.dataset.mode=mode;
+  for(const button of elements.filters.querySelectorAll("[data-ut-filter-tab]"))
+    button.setAttribute("aria-pressed",String(button.dataset.utFilterTab===mode));
  });
  elements.filters.addEventListener("submit",event=>{event.preventDefault();
   const filters=gatherFilters();s.include=filters.include;s.exclude=filters.exclude;filterDot();
