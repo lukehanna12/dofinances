@@ -290,11 +290,13 @@ test("Editing is directly on the stable GitHub-rendered document, with no split 
  assert.ok(ui.includes('reading.contentEditable="false"'));
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
- assert.ok(ui.includes('reading.addEventListener("paste"'));
- assert.ok(ui.includes('event.clipboardData?.getData("text/plain")'));
- assert.ok(ui.includes('reading.addEventListener("drop"'));
+ const interaction=source("sites/_apex/app/assets/readme-editor-interactions.js");
+ assert.ok(ui.includes('installReadmeEditorInteractions(reading'));
+ assert.ok(interaction.includes('root.addEventListener("paste"'));
+ assert.ok(interaction.includes('event.clipboardData?.getData("text/plain")'));
+ assert.ok(interaction.includes('root.addEventListener("drop"'));
  assert.ok(!ui.includes('textarea.focus(')&&!ui.includes('reading.focus('));
- assert.ok(ui.includes('state.draft')&&ui.includes('reading.addEventListener("input"'));
+ assert.ok(ui.includes('state.draft')&&interaction.includes('root.addEventListener("input"'));
  assert.ok(ui.includes('makeReadmeDiff(state.original,state.draft)'));
  assert.ok(ui.includes('state.source?.sha||null'),"Keep SHA-based concurrency protection");
 });
@@ -383,69 +385,78 @@ test("Markdown autoformats headings, quotes, lists, tasks, code fences and rules
  assert.equal(readmeBlockRule("normal prose "),null);
 });
 
-test("Markdown input engine is wired to existing rendered README without split view",()=>{
+test("Production editor uses the same event engine as the Chromium fixture",()=>{
  const rules=source("sites/_apex/app/assets/readme-markdown-input-rules.js");
- assert.ok(ui.includes('import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput}'));
- assert.ok(ui.includes('reading.addEventListener("beforeinput",event=>'));
- assert.ok(ui.includes('applyReadmeMarkdownBeforeInput(reading,event,hooks)'));
- assert.ok(ui.includes('reading.addEventListener("input",event=>'));
- assert.ok(ui.includes('applyReadmeMarkdownInput(reading,event)'));
- assert.ok(ui.includes('reading.addEventListener("compositionend"'));
+ const engine=source("sites/_apex/app/assets/readme-editor-interactions.js");
+ assert.ok(ui.includes('import {installReadmeEditorInteractions}'));
+ assert.ok(ui.includes('history=installReadmeEditorInteractions(reading,'));
+ assert.ok(engine.includes('import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput}'));
+ for(const part of [
+  'root.addEventListener("beforeinput",event=>','applyReadmeMarkdownBeforeInput(root,event,hooks)',
+  'root.addEventListener("input",event=>','applyReadmeMarkdownInput(root,event)',
+  'root.addEventListener("compositionstart"','root.addEventListener("compositionend"',
+  'root.addEventListener("paste"','root.addEventListener("change"',
+  'history.noteBeforeInput(event)','history.recordNative(event)'
+ ])assert.ok(engine.includes(part),part);
  assert.ok(ui.includes('scheduleRichDraftUpdate()'));
  assert.ok(ui.includes('converter.turndown(reading)'));
  assert.ok(rules.includes('original.data=CARET_ANCHOR+following;'));
  assert.ok(rules.includes('ctx.node.replaceData(0,ctx.offset,CARET_ANCHOR)'));
  assert.ok(rules.includes('transferChildren(block,caretTarget)'));
- assert.ok(!rules.includes('range.deleteContents();range.insertNode(replacement);'),
-  "Never destroy the active text node during native input");
+ assert.ok(!rules.includes('range.deleteContents();range.insertNode(replacement);'));
  assert.ok(rules.includes('placeCaret('));
  assert.ok(rules.includes('readmeBlockRule(prefix+pendingSpace,{trigger,inList:isList})'));
- assert.ok(rules.includes('event.preventDefault()'));
  assert.ok(rules.includes('return defer(ctx,()=>applyBlock(root,ctx,"space"," ")," ")'));
  assert.ok(rules.includes('return defer(ctx,()=>applyInline(root,ctx,event.data),event.data)'));
- assert.ok(rules.includes('setTimeout(()=>{'));
- assert.ok(rules.includes('const CARET_ANCHOR="\\u200b"'));
+ assert.ok(rules.includes('queueMicrotask(()=>{'),"Formatting must not race later keystrokes");
+ assert.ok(!rules.includes('setTimeout(()=>{'),"No timer-based Markdown transformation");
+ assert.ok(rules.includes('const CARET_ANCHOR="\u200b"'));
  assert.ok(rules.includes('clearCaretAnchor(root)'));
- assert.ok(ui.includes('converter.turndown(reading).replace(/\\u200b/g,"")'));
- assert.ok(rules.includes('event.preventDefault()'));
+ assert.ok(ui.includes('converter.turndown(reading).replace(/\u200b/g,"")'));
  assert.ok(rules.includes('node.parentElement?.closest("code,pre,kbd,samp,a")'));
  assert.ok(html.includes('id="rm-reading" class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
- assert.ok(!html.includes('id="rm-editor"')&&!html.includes('id="rm-markdown"'));
  assert.equal(typeof applyReadmeMarkdownInput,"function");
  assert.equal(typeof applyReadmeMarkdownBeforeInput,"function");
 });
 
-
-test("README rich-text history covers native typing, formatting, keyboard undo and redo",()=>{
- const module=source("sites/_apex/app/assets/readme-edit-history.js");
- const rules=source("sites/_apex/app/assets/readme-markdown-input-rules.js");
+test("README history isolates formatting but groups adjacent native edits",()=>{
+ const history=source("sites/_apex/app/assets/readme-edit-history.js");
+ const engine=source("sites/_apex/app/assets/readme-editor-interactions.js");
  for(const fragment of [
-  'createReadmeEditHistory(reading)','history.reset()','history.clear()',
-  'history.rememberCaret()','history.synthesizeInsertion(literal)',
-  'history.push(checkpoint)','history.record()','history.undo()','history.redo()',
-  'event.inputType==="historyUndo"||event.inputType==="historyRedo"',
-  'event.code==="KeyZ"','event.code==="KeyY"','history.snapshot()'
- ])assert.ok(ui.includes(fragment),fragment);
- assert.ok(rules.includes('historyHooks?.prepare?.(literal)'));
- assert.ok(rules.includes('historyHooks?.commit?.(pending)'));
+  'history.reset()','history.clear()', 'history.rememberCaret()',
+  'history.synthesizeInsertion(literal)','history.push(checkpoint)',
+  'history.record()','history.undo()','history.redo()','history.snapshot()'
+ ])assert.ok(engine.includes(fragment)||ui.includes(fragment),fragment);
  for(const fragment of [
   'function selectionState(root)','selection.setBaseAndExtent(',
-  'const synthesizeInsertion=literal=>','const undo=()=>','const redo=()=>',
-  'frames.splice(cursor+1)','oldBoxes.forEach(',
-  'root.focus({preventScroll:true})'
- ])assert.ok(module.includes(fragment),fragment);
- assert.ok(!module.includes('setInterval('));
+  'const synthesizeInsertion=literal=>','const undo=({skipSync=false}={})=>',
+  'const redo=({skipSync=false}={})=>','frames.splice(cursor+1)',
+  'oldBoxes.forEach(', 'root.focus({preventScroll:true})',
+  'const GROUP_DELAY_MS=1100','const recordNative=event=>',
+  'group.after===before.start','const isolate=()=>',
+  'const synchronize=()=>'
+ ])assert.ok(history.includes(fragment),fragment);
+ for(const fragment of [
+  'event.inputType==="historyUndo"||event.inputType==="historyRedo"',
+  'event.code==="KeyZ"','event.code==="KeyY"',
+  'insertingPaste=true','history.recordNative(event)',
+  'composing=true','history.isolate()','event.preventDefault()'
+ ])assert.ok(engine.includes(fragment),fragment);
+ assert.ok(!history.includes('setInterval('));
 });
 
 test("Chromium verifies undo past autoformat, redo, and redo-branch invalidation",()=>{
  const runner=source("scripts/verify-readme-markdown-browser.mjs");
  const workflow=source(".github/workflows/site.yml");
  for(const fragment of [
-  '"/assets/history.js"','createReadmeEditHistory(root)',
+  '"/assets/readme-editor-interactions.js"','installReadmeEditorInteractions(root)',
   '"undo autoformat to Markdown marker"','"undo earlier typing past formatting"',
   '"redo formatted heading"','"undo backticks to literal Markdown"',
   '"Ctrl+Z alternate undo"','"Ctrl+Y alternate redo"',
-  '"New edit must invalidate redo branch"'
+  '"New edit must invalidate redo branch"',
+  '"grouped paragraph undo"','"rapid heading typing redo"',
+  '"caret movement isolates undo"','"atomic paste redo"',
+  '"single composition undo"','"checkbox redo"'
  ])assert.ok(runner.includes(fragment),fragment);
  assert.ok(workflow.includes("node scripts/verify-readme-markdown-browser.mjs"));
 });
