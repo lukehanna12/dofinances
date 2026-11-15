@@ -187,6 +187,167 @@ export function initColosseumUtilities(){
     '<div class="ut-mobile-detail" data-ut-mobile></div></div></div></article>';
   }).join("");
  }
+
+ // Matching Collections' transient edit/select modes: neither mode changes
+ // persisted data until the owner explicitly finishes an edit.
+ const modeLabel=(button,label,id)=>{
+  button.setAttribute("aria-label",label);
+  button.setAttribute("aria-pressed",String(id==="edit"?s.editMode:s.selectionMode));
+  const target=root.querySelector("#ut-"+id+"-tooltip-label");
+  if(target)target.textContent=label;
+ };
+ function syncModes(){
+  root.classList.toggle("ut-editing",s.editMode);
+  root.classList.toggle("ut-selecting",s.selectionMode);
+  modeLabel(elements.edit,s.editMode?"Done editing utilities":"Edit utilities","edit");
+  modeLabel(elements.select,s.selectionMode?"Done selecting utilities":"Select utilities","select");
+  busy(s.working);
+  for(const row of elements.list.querySelectorAll(".ut-row")){
+   const uid=row.dataset.utUid,editable=utilityCanManage(s.items.find(x=>x.uid===uid));
+   const main=row.querySelector(".ut-row-main");
+   if(main){main.disabled=s.editMode||s.selectionMode||s.editTransitioning||s.selectionTransitioning;main.tabIndex=main.disabled?-1:0;}
+   const pick=row.querySelector(".ut-row-pick");
+   if(pick){
+    pick.disabled=!s.selectionMode||s.selectionTransitioning||s.working;
+    pick.tabIndex=pick.disabled?-1:0;
+    if(pick.disabled)pick.setAttribute("aria-hidden","true");else pick.removeAttribute("aria-hidden");
+    const chosen=s.selection.has(uid);
+    pick.setAttribute("aria-pressed",String(chosen));
+    pick.setAttribute("aria-label",(chosen?"Deselect ":"Select ")+(s.items.find(x=>x.uid===uid)?.name||uid));
+   }
+   const pencil=row.querySelector(".ut-name-pencil");
+   if(pencil){
+    pencil.disabled=!s.editMode||!editable||s.editTransitioning||s.working;
+    pencil.tabIndex=pencil.disabled?-1:0;
+    if(pencil.disabled)pencil.setAttribute("aria-hidden","true");else pencil.removeAttribute("aria-hidden");
+   }
+   const input=row.querySelector(".ut-inline-name");
+   if(input){
+    input.disabled=s.renamingUid!==uid||!s.editMode||s.editTransitioning||s.working;
+    input.tabIndex=input.disabled?-1:0;
+    if(input.disabled)input.setAttribute("aria-hidden","true");else input.removeAttribute("aria-hidden");
+   }
+   if(s.editMode)sizeInlineName(row.querySelector(".ut-name-field"));
+  }
+ }
+ function sizeInlineName(field){
+  const input=field?.querySelector(".ut-inline-name"),measure=field?.querySelector(".ut-name-measure");
+  if(!input||!measure)return;
+  measure.textContent=input.value||" ";
+  const width=Math.ceil(measure.getBoundingClientRect().width+3);
+  field.style.setProperty("--ut-inline-name-width",Math.max(24,Math.min(width,Math.max(24,field.clientWidth-75)))+"px");
+ }
+ function finishInlineRename(restore=false){
+  if(!s.renamingUid)return true;
+  const uid=s.renamingUid,field=elements.list.querySelector('[data-ut-name-field="'+uid+'"]');
+  const input=field?.querySelector(".ut-inline-name");
+  const name=restore?s.renameInitial:clean(input?.value).normalize("NFKC").replace(/\s+/gu," ");
+  if(!restore&&(!name||name.length>200)){report("A utility name must be 1–200 characters.",true);return false;}
+  const item=s.items.find(x=>x.uid===uid);
+  if(item&&!restore){
+   if(name!==item.name)s.renameDrafts.set(uid,{name,base:{uid,revision:item.revision,updated_at:item.updated_at,name:item.name}});
+   else s.renameDrafts.delete(uid);
+  }
+  if(input)input.value=restore?s.renameInitial:name;
+  s.renamingUid=null;s.renameInitial="";
+  field?.classList.remove("ut-renaming","ut-underline-extended");
+  const actions=field?.querySelector(".ut-name-actions");if(actions)actions.hidden=true;
+  const pencil=field?.querySelector(".ut-name-pencil");if(pencil)pencil.hidden=false;
+  syncModes();return true;
+ }
+ function startInlineRename(uid){
+  if(!s.editMode||s.editTransitioning||s.working)return;
+  const item=s.items.find(x=>x.uid===uid);
+  if(!utilityCanManage(item))return;
+  if(s.renamingUid===uid)return;
+  if(!finishInlineRename())return;
+  const field=elements.list.querySelector('[data-ut-name-field="'+uid+'"]');
+  const input=field?.querySelector(".ut-inline-name"),actions=field?.querySelector(".ut-name-actions");
+  if(!input||!actions)return;
+  s.renamingUid=uid;s.renameInitial=input.value;
+  actions.hidden=false;
+  field.querySelector(".ut-name-pencil").hidden=true;
+  field.classList.add("ut-renaming");
+  syncModes();sizeInlineName(field);
+  const underline=field.querySelector(".ut-name-underline");
+  void underline.offsetWidth;
+  field.classList.add("ut-underline-extended");
+  input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);
+ }
+ // Native animation completion, not a timer or a polling loop.
+ async function waitForMotion(node,property){
+  if(!node||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  void getComputedStyle(node).opacity;
+  const animations=node.getAnimations().filter(x=>x.transitionProperty===property||x.animationName===property);
+  if(animations.length)await Promise.allSettled(animations.map(x=>x.finished));
+ }
+ async function closeExpandedForMode(){
+  const panel=elements.list.querySelector(".ut-row.ut-active .ut-row-panel");
+  if(!panel)return;
+  s.activeUid=null;s.detail=null;s.detailError=null;++s.detailSeq;
+  syncActive();
+  await waitForMotion(panel,"grid-template-rows");
+ }
+ async function enterSelectMode(){
+  if(s.selectionMode||s.selectionTransitioning||s.editMode||s.editTransitioning||s.working||!s.loaded)return;
+  s.selectionTransitioning=true;syncModes();
+  await closeExpandedForMode();
+  if(root.closest(".view")?.hidden){s.selectionTransitioning=false;syncModes();return;}
+  s.selection.clear();s.selectionMode=true;
+  root.classList.add("ut-entering-selection");syncModes();
+  await waitForMotion(elements.list.querySelector(".ut-row-pick"),"ut-pick-enter-right");
+  root.classList.remove("ut-entering-selection");s.selectionTransitioning=false;syncModes();
+ }
+ async function exitSelectMode(){
+  if(!s.selectionMode||s.selectionTransitioning)return;
+  s.selectionTransitioning=true;s.selectionMode=false;
+  root.classList.add("ut-leaving-selection");syncModes();
+  await waitForMotion(elements.list.querySelector(".ut-row-pick"),"ut-pick-exit-left");
+  root.classList.remove("ut-leaving-selection");s.selection.clear();
+  s.selectionTransitioning=false;syncModes();
+ }
+ function toggleSelectMode(){if(s.selectionMode)void exitSelectMode();else void enterSelectMode();}
+ function toggleRowPick(uid){
+  if(!s.selectionMode||s.selectionTransitioning||s.working||!s.items.some(x=>x.uid===uid))return;
+  if(s.selection.has(uid))s.selection.delete(uid);else s.selection.add(uid);
+  syncModes();
+ }
+ async function enterEditMode(){
+  if(s.editMode||s.editTransitioning||s.selectionMode||s.selectionTransitioning||s.working||!s.loaded)return;
+  s.editTransitioning=true;syncModes();
+  await closeExpandedForMode();
+  if(root.closest(".view")?.hidden){s.editTransitioning=false;syncModes();return;}
+  s.editMode=true;root.classList.add("ut-entering-edit");syncModes();
+  await waitForMotion(elements.list.querySelector(".ut-name-field"),"ut-name-enter-right");
+  root.classList.remove("ut-entering-edit");s.editTransitioning=false;syncModes();
+ }
+ async function exitEditMode(){
+  if(!s.editMode||s.editTransitioning||s.working||!finishInlineRename())return;
+  const changes=[...s.renameDrafts.values()].filter(x=>x.name!==x.base.name);
+  if(changes.length){
+   busy(true);report("Saving "+changes.length+" utility name"+(changes.length===1?"":"s")+"…");
+   try{
+    for(const change of changes){
+     const body={uid:change.base.uid,phase:"plan",record:{name:change.name},
+      expected_revision:change.base.revision,expected_updated_at:change.base.updated_at};
+     const plan=await mutation("update",body);
+     if(!plan?.manifest_digest)throw Error("Colosseum did not confirm the rename plan for "+change.base.uid);
+     const result=await mutation("update",{...body,phase:"publish"});
+     if(result?.phase!=="complete")throw Error("Rename requires manual reconciliation for "+change.base.uid+
+      (result?.mutation_id?" ("+result.mutation_id+")":""));
+     s.renameDrafts.delete(change.base.uid);
+    }
+   }catch(error){actionError(error);busy(false);syncModes();return;}
+   busy(false);
+  }
+  s.editTransitioning=true;s.editMode=false;
+  root.classList.add("ut-leaving-edit");syncModes();
+  await waitForMotion(elements.list.querySelector(".ut-name-field"),"ut-name-exit-left");
+  root.classList.remove("ut-leaving-edit");
+  s.editTransitioning=false;s.renameDrafts.clear();syncModes();
+  if(changes.length)void loadPage(0,null);
+ }
+ function toggleEditMode(){if(s.editMode)void exitEditMode();else void enterEditMode();}
  function syncActive(){
   elements.layout.classList.toggle("ut-open",!!s.activeUid);
   elements.inspector.setAttribute("aria-hidden",String(!s.activeUid));
@@ -587,6 +748,14 @@ export function initColosseumUtilities(){
   finally{busy(false);}
  }
  elements.list.addEventListener("click",event=>{
+  const pick=event.target.closest("[data-ut-pick]");
+  if(pick){toggleRowPick(pick.dataset.utPick);return;}
+  const pencil=event.target.closest("[data-ut-start-rename]");
+  if(pencil){startInlineRename(pencil.dataset.utStartRename);return;}
+  const confirm=event.target.closest("[data-ut-confirm-rename]");
+  if(confirm){finishInlineRename();return;}
+  const cancel=event.target.closest("[data-ut-cancel-rename]");
+  if(cancel){finishInlineRename(true);return;}
   const open=event.target.closest("[data-ut-open]");
   if(open){choose(open.dataset.utOpen);return;}
   const edit=event.target.closest("[data-ut-edit]");
@@ -605,6 +774,15 @@ export function initColosseumUtilities(){
   const remove=event.target.closest("[data-ut-remove]");
   if(remove){openDelete(remove.dataset.utRemove);return;}
   if(event.target.closest("[data-ut-more-files]"))void moreFiles();
+ });
+ elements.list.addEventListener("input",event=>{
+  const field=event.target.closest(".ut-name-field");
+  if(field&&s.renamingUid===field.dataset.utNameField)sizeInlineName(field);
+ });
+ elements.list.addEventListener("keydown",event=>{
+  if(!event.target.matches?.("[data-ut-name]"))return;
+  if(event.key==="Escape"){event.preventDefault();finishInlineRename(true);}
+  else if(event.key==="Enter"){event.preventDefault();finishInlineRename();}
  });
  elements.pages.addEventListener("click",event=>{
   const action=event.target.closest("[data-ut-page]")?.dataset.utPage;
@@ -645,20 +823,8 @@ export function initColosseumUtilities(){
  });
  elements.updates.addEventListener("click",()=>void checkUpdates());
  elements.add.addEventListener("click",()=>openEditor("add"));
- elements.edit.addEventListener("click",()=>{const item=selectedItem();if(item)openEditor("edit",s.detail?.item?.uid===item.uid?s.detail.item:item);});
- elements.select.addEventListener("click",()=>{
-  s.selectionMode=!s.selectionMode;s.selection.clear();
-  elements.select.setAttribute("aria-pressed",String(s.selectionMode));
-  elements.select.dataset.mode=s.selectionMode?"on":"off";
-  for(const row of elements.list.querySelectorAll(".ut-row")){
-   const active=!!s.selectionMode,rowButton=row.querySelector(".ut-row-main");
-   const pick=row.querySelector(".ut-pick");
-   if(pick)pick.remove();
-   if(active)rowButton.insertAdjacentHTML("beforeend",
-    '<span class="ut-pick" role="img" aria-label="Select utility" aria-pressed="false">✓</span>');
-  }
-  elements.count.textContent=s.selectionMode?"Select utilities to inspect; click Select again to exit.":String(s.page*s.pageSize+1)+"–"+String(s.page*s.pageSize+s.items.length)+" · live Colosseum";
- });
+ elements.edit.addEventListener("click",toggleEditMode);
+ elements.select.addEventListener("click",toggleSelectMode);
  elements.editorCancel.addEventListener("click",()=>elements.editor.close());
  elements.editor.addEventListener("close",()=>{s.planned=null;});
  elements.editorForm.addEventListener("submit",event=>{event.preventDefault();void publishEditor();});
