@@ -245,7 +245,7 @@ test("Edit Utilities dock enters inline rename mode while detailed metadata edit
 });
 test("Select Utilities is a transient unchecked picker with native CSS swap",()=>{
  assert.match(js,/elements\.select\.addEventListener\("click",toggleSelectMode\)/);
- assert.match(js,/const selected=s\.selection\.has\(item\.uid\)/);
+ assert.match(js,/selected=s\.selection\.has\(item\.uid\)/);
  assert.match(js,/class="ut-row-pick"/);
  assert.match(js,/aria-pressed="'\+String\(selected\)/);
  assert.match(js,/function toggleRowPick\(uid\)/);
@@ -259,7 +259,10 @@ test("Select Utilities is a transient unchecked picker with native CSS swap",()=
 });
 test("Tooltips and shortcuts are scoped to Utilities and avoid input interception",()=>{
  for(const [id,key] of [["ut-search-submit","F"],["ut-add","N"],["ut-edit","E"],["ut-update-check","U"]]){
-  assert.match(view,new RegExp('id="'+id+'"[^>]*aria-keyshortcuts="Meta\\\\+Shift\\\\+'+key+'"'));
+  const at=view.indexOf('id="'+id+'"');
+  assert.ok(at>=0,"Missing control "+id);
+  assert.ok(view.slice(at,view.indexOf(">",at)).includes('aria-keyshortcuts="Meta+Shift+'+key+'"'),
+    "Missing route-scoped shortcut on "+id);
  }
  assert.match(view,/id="ut-refresh"[^>]*aria-keyshortcuts="Control\+Shift\+R"/);
  for(const id of ["ut-search-tooltip","ut-add-tooltip","ut-edit-tooltip","ut-update-tooltip","ut-refresh-tooltip"])
