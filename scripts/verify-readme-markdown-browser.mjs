@@ -41,7 +41,9 @@ const chrome=spawn(executable,[
  "--headless=new","--no-sandbox","--disable-dev-shm-usage",
  "--no-first-run","--no-default-browser-check","--remote-debugging-port=0",
  "--window-size=1050,850","--user-data-dir="+profile,"about:blank"
-],{stdio:"ignore"});
+],{stdio:["ignore","ignore","pipe"]});
+let chromeErrors="";
+chrome.stderr?.on("data",chunk=>{chromeErrors=(chromeErrors+String(chunk)).slice(-7000);});
 let socket;
 try{
  let port;
@@ -52,7 +54,8 @@ try{
   if(chrome.exitCode!==null)throw Error("Chrome exited before debugging was ready.");
   await pause(100);
  }
- assert.ok(port,"Chrome remote debugging port unavailable");
+ assert.ok(port,"Chrome remote debugging port unavailable; executable="+executable+
+  "; exit="+chrome.exitCode+"; stderr="+chromeErrors);
  const tab=await fetch("http://127.0.0.1:"+port+"/json/new?about:blank",{method:"PUT"}).then(r=>r.json());
  socket=new WebSocket(tab.webSocketDebuggerUrl);
  await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
