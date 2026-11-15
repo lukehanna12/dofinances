@@ -104,7 +104,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
     cloud:"cloud-utility.v2.svg",
     direct:"direct-utility.v1.svg",
     local:"local-provider.v1.svg",
-    ported:"external-provider.v2.svg"
+    ported:"external-provider.v3.svg"
   };
   for(const [mode,file] of Object.entries(expected)){
     assert.ok(js.includes(mode+':{src:"/app/assets/'+file+'"'),
@@ -113,7 +113,7 @@ test("Collection route indicators retain the supplied vector SVGs and replace te
     assert.ok(svg.startsWith("<svg "),file+" must remain a native SVG");
     assert.match(svg,/viewBox="[^"]+"/);
     assert.match(svg,/<path\s/);
-    assert.match(svg,/fill="white"/);
+    assert.match(svg,mode==="ported"?/fill="currentColor"/:/fill="white"/);
     assert.doesNotMatch(svg,/<(?:script|foreignObject|image)\b|\b(?:href|xlink:href)=|<!DOCTYPE|<\?xml|\.png|data:image/i);
   }
   const cloud=src("sites/_apex/app/assets/cloud-utility.v2.svg");
@@ -136,6 +136,11 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   const scales={cloud:.9,direct:.85,local:.8,ported:1.1};
   const parts=css.split("@media(max-width:639px){");
   assert.ok(parts.length>=2,"Keep the original mobile breakpoint and its overrides");
+  // Other screen components also have their own max-width:639px blocks,
+  // including the new skeletons. Find the one containing ALL route sizes.
+  const mobilePart=parts.slice(1).find(part=>Object.keys(scales).every(mode=>
+    part.includes("#cs-root .cs-utility-route-icon--"+mode+"{height:calc(")));
+  assert.ok(mobilePart,"Missing responsive route icon breakpoint");
   const findSizes=(source,mode)=>{
     const start=source.indexOf("#cs-root .cs-utility-route-icon--"+mode+"{height:calc(clamp(");
     assert.ok(start>=0,"Missing "+mode+" responsive SVG sizing");
@@ -146,7 +151,7 @@ test("Cloud, Direct, Local, and External SVGs use independent exact relative sca
   };
   for(const [mode,scale] of Object.entries(scales)){
     const desktop=findSizes(parts[0],mode);
-    const mobile=findSizes(parts[1],mode);
+    const mobile=findSizes(mobilePart,mode);
     for(const [sizes,base] of [[desktop,[12,1.2,14.4,11.2]],[mobile,[12,1.2,14.4,8]]])
       sizes.forEach((actual,i)=>assert.ok(Math.abs(actual-base[i]*scale)<1e-9,mode+" size factor at component "+i));
     assert.ok(!css.includes(".cs-utility-route-icon--"+mode+"{transform:"),"SVG must never be stretched using transform");
