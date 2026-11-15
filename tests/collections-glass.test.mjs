@@ -93,7 +93,8 @@ test("Public Clear warped rim is alpha-masked beyond the actual curved edge",()=
  const f=generatePublicClearPillField(w,h,r);
  const {width,height,bodyWidth,bodyHeight,overscan,pixels}=f;
  assert.deepEqual([bodyWidth,bodyHeight,overscan,width,height,pixels.length],
-  [w,h,20,w+40,h+40,(w+40)*(h+40)*4]);
+  [w,h,Math.ceil(Math.min(20,.25*h)),
+   w+2*overscan,h+2*overscan,(w+2*overscan)*(h+2*overscan)*4]);
  const cell=(x,y)=>Array.from(pixels.slice((y*width+x)*4,(y*width+x+1)*4));
  const midY=overscan+r;
  assert.equal(cell(0,midY)[3],0,"The exterior beyond source-derived reach must be transparent");
