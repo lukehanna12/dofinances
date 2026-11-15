@@ -47,6 +47,7 @@ const files=new Map([
  ["collections-glass-field-worker.js","sites/_apex/app/assets/collections-glass-field-worker.js"],
  ["sidebar-glass-oracle.js","sites/_apex/app/assets/sidebar-glass-oracle.js"],
  ["add-collection.v3.svg","sites/_apex/app/assets/add-collection.v3.svg"],
+ ["add-utilities.v1.svg","sites/_apex/app/assets/add-utilities.v1.svg"],
  ["edit-collections.v1.svg","sites/_apex/app/assets/edit-collections.v1.svg"],
  ["select-collections.v3.svg","sites/_apex/app/assets/select-collections.v3.svg"]
 ]);
@@ -135,6 +136,23 @@ try{
  assert.equal(overlay.count,1,"No duplicate buttons or overlay clone");
  assert.ok(overlay.top<overlay.panelTop,"Tooltips open upward above bottom dock");
  assert.deepEqual(overlay.buttons,["cs-create","cs-edit","cs-select-collections"]);
+ // The Add utilities SVG must fill the rounded-square button pixel for pixel.
+ // Probe the actual production CSS rather than assuming icon dimensions.
+ await evaluate('(()=>{const el=document.createElement("div");el.id="utility-square-probe";el.innerHTML=\'<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)"><img src="/app/assets/add-utilities.v1.svg" alt="" aria-hidden="true"></button></span>\';document.getElementById("cs-root").append(el);return true})()');
+ await until('document.querySelector("#utility-square-probe img")?.complete===true',
+   "Full-size utility icon asset downloaded");
+ const squareMetrics='(()=>{const p=document.getElementById("utility-square-probe"),b=p.querySelector("button"),img=p.querySelector("img"),r=b.getBoundingClientRect(),i=img.getBoundingClientRect(),bs=getComputedStyle(b),is=getComputedStyle(img);return {button:[r.x,r.y,r.width,r.height],icon:[i.x,i.y,i.width,i.height],buttonRadius:bs.borderRadius,iconRadius:is.borderRadius,iconFit:is.objectFit,clip:bs.overflow,disabled:b.disabled,natural:[img.naturalWidth,img.naturalHeight]}})()';
+ const desktopSquare=await evaluate(squareMetrics);
+ assert.equal(desktopSquare.buttonRadius,"7px");
+ assert.equal(desktopSquare.iconRadius,desktopSquare.buttonRadius);
+ assert.equal(desktopSquare.iconFit,"fill");
+ assert.equal(desktopSquare.clip,"hidden");
+ assert.equal(desktopSquare.disabled,true,"Add utilities stays non-operational");
+ assert.ok(desktopSquare.natural.every(n=>n>0),"Full-bleed SVG should decode");
+ assert.deepEqual(desktopSquare.icon,desktopSquare.button,"Icon must touch each edge of the actual 24px rounded-square button");
+ assert.equal(desktopSquare.button[2],24);
+ assert.equal(desktopSquare.button[3],24);
+
  const surface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p),a=getComputedStyle(p,"::before"),b=getComputedStyle(p,"::after");return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter,box:s.boxShadow,before:a.content,after:b.content,svgFilters:document.querySelectorAll("#collections-oracle-live-glass").length,ready:p.classList.contains("cs-oracle-ready"),inlineMask:p.style.getPropertyValue("--cs-optical-mask")}})()');
  assert.equal(surface.background,"rgb(22, 22, 22)","The dock is solid dark charcoal");
  assert.equal(surface.filter,"none","No CSS blur, SVG refraction or backdrop sampling");
@@ -158,6 +176,14 @@ try{
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
  assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-24-narrow.bottom)<2);
+ const mobileSquare=await evaluate(squareMetrics);
+ assert.equal(mobileSquare.buttonRadius,"6px");
+ assert.equal(mobileSquare.iconRadius,mobileSquare.buttonRadius,"Mobile corners must match exactly, not approximately");
+ assert.deepEqual(mobileSquare.icon,mobileSquare.button);
+ assert.equal(mobileSquare.button[2],20);
+ assert.equal(mobileSquare.button[3],20);
+ assert.equal(mobileSquare.disabled,true);
+
  const mobileSurface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p);return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter}})()');
  assert.deepEqual(mobileSurface,{background:"rgb(22, 22, 22)",filter:"none"},
    "Mobile must render the same flat panel without optical filters");
