@@ -42,8 +42,8 @@ test("WebGPU is lazy-loaded for Home, suspended on departure, restored on return
   assert.match(gpu,/const homeActive=/);
   assert.match(gpu,/if\(!homeActive\(\)\|\|!engine\|\|stopped\|\|raf\)return/);
   assert.match(gpu,/function syncDashboardRoute\(\)/);
-  assert.match(gpu,/window\.addEventListener\("hashchange"/);
-  assert.match(gpu,/window\.addEventListener\("popstate"/);
+  assert.ok(gpu.includes('window.addEventListener?.("hashchange"'));
+  assert.ok(gpu.includes('window.addEventListener?.("popstate"'));
   assert.match(gpu,/trackRunning=false/);
   assert.doesNotMatch(loader,/setInterval\(/);
 });
