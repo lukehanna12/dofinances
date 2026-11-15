@@ -430,7 +430,8 @@ body:has(> #workspace-shell .dashboard-home){
  * DOM remains responsible only for semantic icons/controls and layout.
  * The original photograph stays as accessible fallback until first GPU
  * frame has been validated and submitted. Never overlay separate DOM glass
- * or blur filters on a successful WebGPU frame.
+ * or blur filters on a successful WebGPU frame. Cloud foreground belongs to
+ * the final GPU pass and reads the very same scene's authored mip chain.
  *
  * GAP PUBLIC-DOM-BACKDROP: arbitrary external DOM cannot be captured by
  * WebGPU without moving that DOM into the GPU scene. The included image,

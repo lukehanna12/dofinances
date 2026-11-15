@@ -39,6 +39,7 @@ jobs:
           cp studio/dashboard-preview/gpu-scene.wgsl dist/app/assets/dashboard-gpu-scene.wgsl
           cp studio/dashboard-preview/gpu-mipmap.wgsl dist/app/assets/dashboard-gpu-mipmap.wgsl
           cp studio/dashboard-preview/gpu-glass.wgsl dist/app/assets/dashboard-gpu-glass.wgsl
+          cp studio/dashboard-preview/gpu-cloud-foreground.wgsl dist/app/assets/dashboard-gpu-cloud-foreground.wgsl
           # Copy the exact original AVIF; no optimize/resize/transcode step.
           cp studio/dashboard-preview/assets/cloud-veiled-colorful-fields.avif dist/app/assets/dashboard-cloud-veiled-colorful-fields.avif
           cp studio/dashboard-preview/test-gpu.mjs dist/app/assets/dashboard-gpu.test.mjs
@@ -78,6 +79,7 @@ jobs:
           test -s dist/app/assets/dashboard-gpu-scene.wgsl
           test -s dist/app/assets/dashboard-gpu-mipmap.wgsl
           test -s dist/app/assets/dashboard-gpu-glass.wgsl
+          test -s dist/app/assets/dashboard-gpu-cloud-foreground.wgsl
           test -s dist/app/assets/dashboard-cloud-veiled-colorful-fields.avif
           # Verify byte-identical source retention; preserve AVIF metadata,
           # native 2400×1600 image payload and the original compression.
@@ -91,6 +93,8 @@ jobs:
           grep -Fq 'textureStore(dst' dist/app/assets/dashboard-gpu-mipmap.wgsl
           grep -Fq 'fn mode5SDF' dist/app/assets/dashboard-gpu-glass.wgsl
           grep -Fq 'fn mipSample' dist/app/assets/dashboard-gpu-glass.wgsl
+          grep -Fq 'fn fsCloud' dist/app/assets/dashboard-gpu-cloud-foreground.wgsl
+          grep -Fq 'textureLoad(backdrop' dist/app/assets/dashboard-gpu-cloud-foreground.wgsl
           grep -Fq 'copyExternalImageToTexture' dist/app/assets/dashboard-gpu-renderer.js
           node --check dist/app/assets/dashboard-gpu-renderer.js
           node --check dist/app/assets/dashboard-interaction.js

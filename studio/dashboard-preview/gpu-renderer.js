@@ -36,6 +36,8 @@ const audit={
   sceneCapture:"No DOM screenshot/readback. Arbitrary external DOM is NOT included.",
   backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
+  cloudForeground:"original cloud photograph's own mip chain, corners/sides only, after glass",
+  cloudForegroundPasses:0,
   oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
   mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[]
 };
@@ -272,7 +274,8 @@ async function initialize(){
   const sources=await Promise.all([
     "dashboard-gpu-scene.wgsl",
     "dashboard-gpu-mipmap.wgsl",
-    "dashboard-gpu-glass.wgsl"
+    "dashboard-gpu-glass.wgsl",
+    "dashboard-gpu-cloud-foreground.wgsl"
   ].map(async name=>{
     const r=await fetch(base+name);
     if(!r.ok)throw new Error(name+" HTTP "+r.status);
@@ -285,9 +288,9 @@ async function initialize(){
   if(sources[2].includes("__ORACLE_HALF_BODY__"))
     throw Error("Native half-conversion shader specialization did not apply");
   const modules=sources.map((code,i)=>device.createShaderModule({
-    label:["background","explicit mip reduction","oracle glass"][i],code
+    label:["background","explicit mip reduction","oracle glass","photographic foreground clouds"][i],code
   }));
-  await Promise.all(modules.map((x,i)=>compileCheck(x,["scene","mips","glass"][i])));
+  await Promise.all(modules.map((x,i)=>compileCheck(x,["scene","mips","glass","clouds"][i])));
   device.pushErrorScope("validation");
   const backdropPipeline=device.createRenderPipeline({
     label:"GPU-owned scene -> mip0",
@@ -319,6 +322,18 @@ async function initialize(){
       }
     }]},primitive:{topology:"triangle-list"}
   });
+  const cloudPipeline=device.createRenderPipeline({
+    label:"Cloud-brightness foreground mist above the glass, outer corners and sides",
+    layout:"auto",
+    vertex:{module:modules[3],entryPoint:"vsCloud"},
+    fragment:{module:modules[3],entryPoint:"fsCloud",targets:[{
+      format,blend:{
+        color:{srcFactor:"src-alpha",dstFactor:"one-minus-src-alpha",operation:"add"},
+        alpha:{srcFactor:"one",dstFactor:"one-minus-src-alpha",operation:"add"}
+      }
+    }]},
+    primitive:{topology:"triangle-list"}
+  });
   if(root)root.dataset.gpuPhase="validate-pipelines";
   const pipelineError=await device.popErrorScope();
   if(pipelineError)throw Error("GPU pipeline validation: "+pipelineError.message);
@@ -330,7 +345,7 @@ async function initialize(){
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
-    glassGroup=null,backgroundGroup=null,offscreenFrame=null,
+    glassGroup=null,cloudGroup=null,backgroundGroup=null,offscreenFrame=null,
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
@@ -426,6 +441,10 @@ async function initialize(){
       }
       copyGroup=device.createBindGroup({
         layout:copyPipeline.getBindGroupLayout(0),
+        entries:[{binding:0,resource:sceneView}]
+      });
+      cloudGroup=device.createBindGroup({
+        layout:cloudPipeline.getBindGroupLayout(0),
         entries:[{binding:0,resource:sceneView}]
       });
       scenePending=true;
@@ -556,7 +575,7 @@ async function initialize(){
       for(let i=0;i<tileCount;i++)tileData[i*TILE_FLOATS+18]=trackOpacity[i];
       device.queue.writeBuffer(tileBuffer,0,tileData);
     }
-    const encoder=device.createCommandEncoder({label:"Glass only frame"});
+    const encoder=device.createCommandEncoder({label:"Glass and photographic cloud foreground frame"});
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:OFFSCREEN_CI?
           offscreenFrame.createView():context.getCurrentTexture().createView(),
@@ -568,6 +587,12 @@ async function initialize(){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
       pass.draw(6,tileCount);
     }
+    // The cloud color/shape comes from the SAME image scene that the glass
+    // refracts. This presentation-only pass never changes interaction hit
+    // testing or the precomputed mipmap chain.
+    pass.setPipeline(cloudPipeline);pass.setBindGroup(0,cloudGroup);
+    pass.draw(3);
+    audit.cloudForegroundPasses++;
     pass.end();
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;

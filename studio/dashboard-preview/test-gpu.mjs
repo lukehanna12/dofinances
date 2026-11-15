@@ -50,6 +50,30 @@ test("GPU loop uses the same DOM displacement and fade as shader geometry",()=>{
   assert.match(renderer,/TRACK_FRAME_INTERVAL=1000\/30/);
   assert.match(shader,/coverage\*in\.introAlpha\*clamp\(tile\.motion\.z,0\.0,1\.0\)/);
 });
+test("foreground clouds reuse original photo mips above the glass without taking pointer hits",()=>{
+  const clouds=fs.readFileSync(new URL("./dashboard-gpu-cloud-foreground.wgsl",import.meta.url),"utf8");
+  const renderer=fs.readFileSync(new URL("./dashboard-gpu-renderer.js",import.meta.url),"utf8");
+  const css=fs.readFileSync(new URL("./dashboard-home.css",import.meta.url),"utf8");
+  assert.match(clouds,/fn vsCloud/);
+  assert.match(clouds,/fn fsCloud/);
+  assert.match(clouds,/textureNumLevels\(backdrop\)/);
+  assert.match(clouds,/textureLoad\(backdrop,point,i32\(mipLevel\)\)/);
+  assert.match(clouds,/let cloudiness=smoothstep/);
+  assert.match(clouds,/let envelope=side\*mix/);
+  assert.match(clouds,/if\(side<=0\.0\)/);
+  assert.doesNotMatch(clouds,/textureStore|textureSampleLevel\(image/);
+  assert.match(renderer,/cloudGroup=device\.createBindGroup/);
+  assert.match(renderer,/entries:\[\{binding:0,resource:sceneView\}\]/);
+  const copy=renderer.lastIndexOf("pass.setPipeline(copyPipeline)");
+  const glass=renderer.lastIndexOf("pass.setPipeline(glassPipeline)");
+  const cloud=renderer.lastIndexOf("pass.setPipeline(cloudPipeline)");
+  assert.ok(copy>=0&&glass>copy&&cloud>glass,
+    "Foreground must be drawn after the glass and not sampled back into its refraction");
+  assert.match(renderer,/audit\.cloudForegroundPasses\+\+/);
+  assert.match(css,/#dashboard-webgpu-scene\{[\s\S]*?pointer-events:none/);
+  assert.doesNotMatch(renderer,/cloudOverlay\.addEventListener|cloudCanvas\.addEventListener/);
+});
+
 test("visible wallpaper begins below global bar rather than at page origin",()=>{
   assert.deepEqual(sceneViewportHeight(900,44),{top:44,height:856});
   assert.deepEqual(sceneViewportHeight(640,44),{top:44,height:596});
