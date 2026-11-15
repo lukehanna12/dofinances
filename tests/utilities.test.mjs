@@ -89,8 +89,8 @@ test("Update inspection is manual, bounded, and cannot change the catalog",()=>{
  assert.ok(js.includes('const body={action:"updates"}'));
  assert.ok(js.includes('["safe_update","manual_update"].includes(chosen.source_mode)'));
  assert.ok(!/loadPage\(0,null\)[\s\S]*checkUpdates\(\)/.test(js.slice(js.lastIndexOf("renderFilterControls();"))));
- assert.ok(!/setInterval|setTimeout|requestAnimationFrame|MutationObserver|IntersectionObserver|\\bpoll\\(/.test(js));
- assert.ok(!/setInterval|setTimeout|requestAnimationFrame|MutationObserver|IntersectionObserver|\\bpoll\\(/.test(css));
+ assert.ok(!/setInterval|setTimeout|requestAnimationFrame|MutationObserver|IntersectionObserver/.test(js));
+ assert.ok(!/setInterval|setTimeout|requestAnimationFrame|MutationObserver|IntersectionObserver/.test(css));
 });
 test("Read-only Utilities endpoint retains the existing sole-owner security stack",()=>{
  assert.ok(edge.includes('const utilities=pathname==="/api/colosseum/utilities"'));
