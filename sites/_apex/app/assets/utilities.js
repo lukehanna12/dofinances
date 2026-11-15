@@ -6,6 +6,12 @@ import {formatWorkspaceTime} from "./workspace-nav.js";
 const API="/api/colosseum/utilities";
 const CATALOG_API="/api/colosseum/catalog/";
 const UID=/^[0-9a-f]{6}$/;
+const PAGE_LEFT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+const PAGE_RIGHT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+const PICK_CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 3 3 7-7"/></svg>';
+const NAME_PENCIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.8 4.7 3.5 3.5M4 20l4.8-1.1L19.6 8.1a2.45 2.45 0 0 0-3.5-3.5L5.3 15.4 4 20Z"/></svg>';
+const NAME_APPLY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg>';
+const NAME_CANCEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 const ICON_DOWN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const clean=value=>String(value??"").trim();
@@ -76,7 +82,8 @@ export function initColosseumUtilities(){
  const s={items:[],page:0,cursors:[null],nextCursor:null,loaded:false,loading:false,working:false,
   activeUid:null,detail:null,detailError:null,detailCache:new Map(),detailSeq:0,requestSeq:0,
   sort:"name_asc",query:"",include:{},exclude:{},collectionChoices:null,collectionChoicePending:false,pageSize:25,total:null,updatedAt:null,selectionMode:false,
-  selection:new Set(),editorMode:"add",editorItem:null,planned:null,pendingDelete:null,
+  selection:new Set(),selectionTransitioning:false,editMode:false,editTransitioning:false,
+   renamingUid:null,renameInitial:"",renameDrafts:new Map(),editorMode:"add",editorItem:null,planned:null,pendingDelete:null,
   fileOffset:0};
  const selectedItem=()=>s.items.find(x=>x.uid===s.activeUid)||null;
  const report=(message,error=false)=>{elements.status.textContent=message||"";elements.status.dataset.error=error?"true":"false";};
@@ -101,15 +108,15 @@ export function initColosseumUtilities(){
  const mutation=(kind,payload)=>fetchJSON(CATALOG_API+kind,payload);
  function busy(value){
   s.working=value;
-  elements.add.disabled=value;
-  elements.edit.disabled=value||!utilityCanManage(selectedItem());
-  elements.select.disabled=value;
+  elements.add.disabled=value||s.editMode||s.selectionMode||s.editTransitioning||s.selectionTransitioning;
+  elements.edit.disabled=value||s.selectionMode||s.editTransitioning||s.selectionTransitioning;
+  elements.select.disabled=value||s.editMode||s.editTransitioning||s.selectionTransitioning;
   elements.refresh.disabled=value;
   elements.updates.disabled=value;
-  elements.sort.disabled=value;
-  elements.query.disabled=value;
-  elements.submit.disabled=value;
-  elements.filterToggle.disabled=value;
+  elements.sort.disabled=value||s.editMode||s.selectionMode;
+  elements.query.disabled=value||s.editMode||s.selectionMode;
+  elements.submit.disabled=value||s.editMode||s.selectionMode;
+  elements.filterToggle.disabled=value||s.editMode||s.selectionMode;
  }
  // Share Collections' geometry-measured, non-jumping two-ring loading state.
  function measureSummaryDivider(){
@@ -153,8 +160,12 @@ export function initColosseumUtilities(){
    "No catalog utilities match these search and filter conditions.":"No utilities were returned by the live catalog.")+'</p>';
   return s.items.map((item,i)=>{
    const title=esc(plain(item.name)),uid=esc(item.uid);
+   const nameDraft=s.renameDrafts.get(item.uid)?.name??item.name;
+   const name=esc(nameDraft),selected=s.selection.has(item.uid),editable=utilityCanManage(item);
+   const pickInactive=s.selectionMode?'':' disabled tabindex="-1" aria-hidden="true"';
+   const editInactive=s.editMode&&editable?'':' disabled tabindex="-1" aria-hidden="true"';
    return '<article class="ut-row" data-ut-uid="'+uid+'">'+
-    '<button type="button" class="ut-row-main" data-ut-open="'+uid+'" aria-expanded="false" aria-controls="ut-panel-'+uid+'">'+
+    '<button type="button" class="ut-row-main" data-ut-open="'+uid+'" aria-expanded="false" aria-controls="ut-panel-'+uid+'"'+(s.editMode||s.selectionMode?' disabled tabindex="-1"':'')+'>'+
     '<span class="ut-row-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
     '<span class="ut-route-icon" data-route="'+esc(item.route||"unknown")+'" aria-label="'+esc(plain(item.route))+' utility" role="img"></span>'+
     '<span class="ut-row-copy"><span class="ut-row-title">'+
@@ -163,6 +174,14 @@ export function initColosseumUtilities(){
     '<span class="ut-title-expanded">'+title+'</span></span>'+
     '<span class="ut-row-sub">'+uid+' · '+esc(plain(item.class))+'</span></span>'+
     '<span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
+    '<button type="button" class="ut-row-pick" data-ut-pick="'+uid+'" aria-label="'+(selected?'Deselect ':'Select ')+title+'" aria-pressed="'+String(selected)+'"'+pickInactive+'><span class="ut-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
+    '<span class="ut-name-field" data-ut-name-field="'+uid+'">'+
+     '<span class="ut-name-editor"><span class="ut-name-measure" aria-hidden="true">'+(name||' ')+'</span>'+
+     '<input class="ut-inline-name" type="text" data-ut-name="'+uid+'" value="'+name+'" aria-label="Rename '+title+'" maxlength="200" autocomplete="off" spellcheck="false" disabled tabindex="-1" aria-hidden="true">'+
+     '<span class="ut-name-underline" aria-hidden="true"></span></span>'+
+     (editable?'<button class="ut-name-pencil" type="button" data-ut-start-rename="'+uid+'" aria-label="Rename '+title+'"'+editInactive+'>'+NAME_PENCIL+'</button>':'')+
+     '<span class="ut-name-actions" hidden><button class="ut-name-confirm" type="button" data-ut-confirm-rename="'+uid+'" aria-label="Apply name change">'+NAME_APPLY+'</button>'+
+     '<button class="ut-name-cancel" type="button" data-ut-cancel-rename="'+uid+'" aria-label="Cancel name change">'+NAME_CANCEL+'</button></span></span>'+
     '<div class="ut-row-panel" id="ut-panel-'+uid+'" role="region" aria-hidden="true"><div class="ut-row-panel-inner">'+
     '<p class="ut-row-description">'+esc(plain(item.label))+'</p>'+
     '<div class="ut-mobile-detail" data-ut-mobile></div></div></div></article>';
@@ -178,7 +197,7 @@ export function initColosseumUtilities(){
    el.querySelector(".ut-row-main")?.setAttribute("aria-expanded",String(open));
    el.querySelector(".ut-row-panel")?.setAttribute("aria-hidden",String(!open));
   }
-  elements.edit.disabled=s.working||!utilityCanManage(selectedItem());
+  syncModes();
  }
  const metadata=(name,value)=>'<div><dt>'+esc(name)+'</dt><dd>'+esc(plain(value))+'</dd></div>';
  const tagSection=(label,tags)=>{
