@@ -18,6 +18,7 @@ Cloudflare Access protects **both owner API prefixes within a single 30-day Acce
 | `/api/colosseum/status` | GET | Local owner-binding status (no router operation) |
 | `/api/colosseum/connect` | GET, POST | Owner enrollment/status (no router operation) |
 | `/api/colosseum/collections` | GET, POST | `collection.manage`; GET becomes an upstream `list` action |
+| `/api/colosseum/utilities` | POST | `utilities.catalog`; bounded owner catalog list, detail, membership filters, and explicit revision checks |
 | `/api/colosseum/permissions` | GET, POST | `permissions.manage`; GET becomes upstream `status` |
 | `/api/colosseum/providers` | GET, POST | `provider.admin`; GET becomes upstream `list` |
 | `/api/colosseum/providers/callback` | GET | Validated upstream provider OAuth completion through `provider.admin` |
@@ -31,6 +32,7 @@ The Worker signs and forwards approved internal operations with protected server
 ## What each control panel actually manages
 
 - **Collections:** live Colosseum collection listing/details and revision-aware collection edits; the interface currently lists ten per page, and the utility-admission button remains disabled.
+- **Utilities:** 10-row live, keyset-paginated D1 registry with indexed name/time sort, FTS5 search, validated include/exclude filters, and per-entry static asset metadata. Collection filters read the existing per-owner `ColosseumCollectionCoordinator` once per filtered request; membership UID sets are passed as SQL JSON parameters before pagination, and details obtain direct membership names with a single coordinator read. Disabled catalog entries remain visible and read-only. Cloud/direct catalog and asset mutations use GitHub-first plan/publish; upstream update checks require explicit clicks. No application timers, polling, or periodic synchronization are introduced.
 - **Providers:** federated vault credentials and tool grants, plus independently governed local provider registry profiles and dynamically discovered upstream MCP tools, resources, prompts, skills, and adapters. The Dofinances Worker does not store those provider secrets.
 - **Permissions:** effective local filesystem and execution policy obtained from Colosseum's local gateway; changes use an upstream prepare/confirm mechanism and hazard PIN where required. The previous Google Sheets permission manager is retired.
 - **Diagnostics:** on-demand status and health queries; no periodic polling is required.
