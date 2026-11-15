@@ -121,7 +121,7 @@ test("README editing offers larger Collections-style controls, live preview, dif
  assert.ok(css.includes(".rm-confirm{background:#fff;color:#141414"));
  assert.ok(ui.includes('state.source.requiresConnection'));
  assert.ok(ui.includes('window.confirm("Discard your unsaved README changes?")'));
- assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){state.slug=null;exitEdit();return;}'),
+ assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){'),
    "A draft must not be silently discarded on navigation out of the README screen");
  assert.ok(!ui.includes('if(!confirm("Discard your unsaved README changes?")'));
  assert.ok(ui.includes("GitHub token with Contents: Read and write permission"));
