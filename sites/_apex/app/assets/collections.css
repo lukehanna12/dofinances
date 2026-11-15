@@ -919,7 +919,8 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root .cs-utility-action-control{position:relative;display:grid;place-items:center;flex:none;width:28px;height:28px}
 #cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:#f5f5f5;line-height:0;transition:color .15s ease,background-color .15s ease,transform .12s ease}
 #cs-root .cs-utility-action img{display:block;width:14px;height:14px;object-fit:contain;pointer-events:none}
-#cs-root .cs-utility-action--add img{width:24px;height:24px}
+#cs-root .cs-utility-action--add img{width:24px;height:24px;border-radius:inherit;object-fit:fill}
+#cs-root .cs-utility-action--add{overflow:hidden}
 #cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
 #cs-root .cs-utility-action--add:hover:not(:disabled) img{filter:brightness(1.12)}
 #cs-root .cs-utility-action:active:not(:disabled){transform:scale(.95)}
