@@ -40,7 +40,7 @@ test("Providers has three independent, real routes with compact shared controls"
   assert.ok(js.includes(capability),"Missing real provider action "+capability);
  assert.match(js,/revision-bound change|expected_revision/);
  assert.match(js,/actual\.profile/);
- assert.match(js,/function routeMode\(\)/);
+ assert.match(js,/const routeMode=\(\)=>/);
  assert.match(js,/state\.mode==="credentials"&&d\.kind!=="builtin"/);
  assert.match(js,/mountLocalProviderProvisions/);
  assert.match(js,/state\.expandedLocal/);

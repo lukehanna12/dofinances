@@ -15,7 +15,7 @@ test("Production Home replaces only its own view with the exact CTA6 mosaic",()=
   assert.match(home,/<h1 id="home-title">Workspace<\/h1>/);
   assert.match(home,/href="#projects"/);
   assert.doesNotMatch(home,/Your workspace, all in one place/);
-  for(const slug of ["projects","settings","colosseum/collections","colosseum/providers","colosseum/permissions","colosseum/diagnostics"])
+  for(const slug of ["projects","settings","colosseum/collections","colosseum/providers/local","colosseum/providers/external","colosseum/providers/credentials","colosseum/permissions","colosseum/diagnostics"])
     assert.ok(html.includes('data-view="'+slug+'"'),"Preserve "+slug+" view");
   assert.ok(html.includes('/app/assets/dashboard.js'),"Keep the authenticated production controller");
   assert.ok(html.includes('/app/assets/dashboard-home-loader.js'));

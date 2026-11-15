@@ -552,6 +552,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   });
   for(const link of links){
     link.addEventListener("click",()=>{
+      if(link===providerParent)return; // Disclosure opens children; it is not a fourth view.
       // Never wait for later hashchange delivery to show the selected route.
       const target=link.href?.split("#")[1];
       if(target)render(target);

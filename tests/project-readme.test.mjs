@@ -23,7 +23,7 @@ const router=source("edge/router.mjs");
 const workflow=source(".github/workflows/site.yml");
 
 test("Every project has a README-first route, with earlier sections still addressable",()=>{
- assert.ok(nav.includes('["readme","utilities","collections","providers","permissions","diagnostics","settings"]'));
+ assert.ok(nav.includes('["readme","utilities","collections","providers/local","providers/external","providers/credentials","permissions","diagnostics","settings"]'));
  assert.ok(nav.includes('["readme","overview"]'));
  assert.ok(nav.includes('if(raw==="colosseum")return "colosseum/readme"'));
  assert.ok(nav.includes('if(raw==="apple-hig-reader")return "apple-hig-reader/readme"'));

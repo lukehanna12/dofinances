@@ -529,13 +529,18 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     ["home","#home","dashboard"],
     ["utilities","#colosseum/utilities","utilities"],
     ["collections","#colosseum/collections","collections"],
-    ["providers","#colosseum/providers","providers"],
     ["permissions","#colosseum/permissions","permissions"],
     ["diagnostics","#colosseum/diagnostics","diagnostics"],
     ["settings","#settings","settings"],
     ["settings","#colosseum/settings","settings"]
   ];
   for(const markup of [html,preview]){
+    const providerLink=markup===html?
+      '<a class="nav-link" data-route="providers" data-providers-toggle href="#colosseum/providers/local"':
+      '<a class="nav-link" data-route="providers" href="#colosseum/providers"';
+    assert.ok(markup.includes(providerLink),"Providers parent retains its native sidebar icon.");
+    const providerRow=markup.slice(markup.indexOf(providerLink),markup.indexOf("</a>",markup.indexOf(providerLink)));
+    assert.ok(providerRow.includes('class="nav-icon nav-icon-asset nav-icon-asset--providers"'));
     for(const [route,href,icon] of routes){
       const link='<a class="nav-link" data-route="'+route+'" href="'+href+'"';
       assert.ok(markup.includes(link),'Missing navigation destination '+href);

@@ -327,7 +327,7 @@ test("dashboard HTML provides every requested view and preserves existing authen
   for(const name of COLOSSEUM_ROUTES.filter(name=>!["settings","readme"].includes(name)))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
   assert.match(html,/data-view="project\/readme"/);
-  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-2+APPLE_HIG_ROUTES.length-1);
+  assert.equal((html.match(/class="view project-view(?: [^"]+)?"/g)||[]).length,COLOSSEUM_ROUTES.length-2+APPLE_HIG_ROUTES.length-1);
   assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
   assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
@@ -493,8 +493,8 @@ test("current Permissions breadcrumb is a pointer button that returns to top wit
  assert.equal(m.scrollCalls.length,priorCalls,"Same-page breadcrumb does not invoke route-reset logic");
  assert.equal(m.views.find(v=>v.dataset.view==="colosseum/permissions").hidden,false);
  m.win.location.hash="#colosseum/providers";m.fire("hashchange");
- assert.equal(crumb.textContent,"Providers","Button label updates with the current page");
- assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Providers");
+ assert.equal(crumb.textContent,"Local","Legacy Providers route resolves to its Local child");
+ assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Local");
  m.scrollRoot.scrollTop=120;
  crumb.dispatch("click");
  assert.equal(m.scrollRoot.scrollTop,0,"Same behavior works for every current page");
@@ -503,14 +503,14 @@ test("current Permissions breadcrumb is a pointer button that returns to top wit
 test("click selects route immediately, without awaiting the browser hashchange event",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
-  const target=m.links.find(item=>item.href.endsWith("#colosseum/providers"));
+  const target=m.links.find(item=>item.href.endsWith("#colosseum/providers/local"));
   assert.equal(m.win.location.hash,"");
   target.dispatch("click");
   assert.equal(m.win.location.hash,"","Default anchor navigation has not occurred yet");
   assert.equal(target.getAttribute("aria-current"),"page");
   assert.equal(m.elements["project-navigation"].hidden,false);
-  assert.equal(m.views.find(item=>item.dataset.view==="colosseum/providers").hidden,false);
-  m.win.location.hash="#colosseum/providers";
+  assert.equal(m.views.find(item=>item.dataset.view==="colosseum/providers/local").hidden,false);
+  m.win.location.hash="#colosseum/providers/local";
   m.fire("hashchange");
   assert.equal(target.getAttribute("aria-current"),"page");
 });
