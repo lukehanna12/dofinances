@@ -132,6 +132,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const globalLinks=[...doc.querySelectorAll("[data-global-route]")];
   const searchable=[...doc.querySelectorAll("#global-search-results a")];
   const views=[...doc.querySelectorAll(".view[data-view]")];
+  // Studio retains its original single Providers showcase. Production uses
+  // three real child routes; route-to-view fallback is Studio-only.
+  const legacyStudioProviders=views.some(v=>v.dataset.view==="colosseum/providers")&&
+    !views.some(v=>v.dataset.view==="colosseum/providers/local");
   const links=[...doc.querySelectorAll(".nav-link[data-route]")];
   const providerParent=doc.querySelector?.("[data-providers-toggle]");
   const providerSubnav=doc.getElementById?.("providers-subnavigation");
@@ -271,6 +275,10 @@ export function initWorkspaceNavigation(doc=document,win=window){
     if(route===lastRenderedRoute)return;
     const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
+    if(legacyStudioProviders&&route==="colosseum/providers/local"){
+      meta.label="Providers";
+      meta.breadcrumb="Projects / Colosseum / Providers";
+    }
     if(customNav){
       const custom=meta.projectKey?.startsWith("project/");
       customNav.hidden=!custom;
@@ -304,7 +312,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }else breadcrumb.textContent=meta.breadcrumb; // Lightweight DOM-test fixture.
     subtitle.textContent=""; // The former second header line is retired.
     for(const link of globalLinks){
-      const selected=link.href?.split("#")[1]===route;
+      const href=link.href?.split("#")[1];
+      const selected=href===route||(legacyStudioProviders&&
+        route==="colosseum/providers/local"&&href==="colosseum/providers");
       link.classList.toggle("is-current",selected);
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
@@ -315,10 +325,14 @@ export function initWorkspaceNavigation(doc=document,win=window){
     syncProviderNav();
     providerParent?.classList?.toggle("is-parent-current",route.startsWith("colosseum/providers/"));
     // One Settings DOM view for both Workspace and every project.
-    const visibleView=route==="colosseum/settings"?"settings":route.endsWith("/readme")?"project/readme":route;
+    const visibleView=route==="colosseum/settings"?"settings":
+      route.endsWith("/readme")?"project/readme":
+      legacyStudioProviders&&route==="colosseum/providers/local"?"colosseum/providers":route;
     for(const view of views)view.hidden=view.dataset.view!==visibleView;
     for(const link of links){
-      const selected=link!==providerParent&&link.href?.split("#")[1]===route;
+      const href=link.href?.split("#")[1];
+      const selected=link!==providerParent&&(href===route||
+        legacyStudioProviders&&route==="colosseum/providers/local"&&href==="colosseum/providers");
       link.classList.toggle("active",selected);
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");

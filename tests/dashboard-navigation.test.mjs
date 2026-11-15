@@ -500,6 +500,24 @@ test("current Permissions breadcrumb is a pointer button that returns to top wit
  assert.equal(m.scrollRoot.scrollTop,0,"Same behavior works for every current page");
 });
 
+test("Studio legacy Providers view remains navigable while production uses nested children",()=>{
+ const m=mockNavigation();
+ const legacy=element({dataset:{view:"colosseum/providers"}});
+ m.views.splice(0,m.views.length,...m.views.filter(v=>!v.dataset.view.startsWith("colosseum/providers/")),legacy);
+ const oldLink=element({href:"https://dofinances.com/app#colosseum/providers"});
+ m.links.splice(0,m.links.length,...m.links.filter(l=>!l.href.includes("#colosseum/providers/")),oldLink);
+ initWorkspaceNavigation(m.doc,m.win);
+ m.win.location.hash="#colosseum/providers";
+ m.fire("hashchange");
+ assert.equal(legacy.hidden,false,"Studio's existing single Providers demo must be visible");
+ assert.equal(m.views.find(v=>v.dataset.view==="home").hidden,true);
+ assert.equal(m.elements["breadcrumb-current"].textContent,"Providers");
+ assert.equal(m.elements["project-navigation"].hidden,false);
+ assert.equal(oldLink.getAttribute("aria-current"),"page");
+ oldLink.dispatch("click");
+ assert.equal(legacy.hidden,false,"Studio's original link must continue to work");
+});
+
 test("click selects route immediately, without awaiting the browser hashchange event",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
