@@ -87,14 +87,21 @@ export function mountCollectionsGlass(root,doc=document,win=window){
  let worker=null,disposed=false,desired="",committed="",fallbackQueued=false;
  let pending=null;
  const alive=()=>!disposed&&panel.isConnected&&view.isConnected&&!view.hidden;
- const apply=(key,w,h,url)=>{
+ const apply=(key,w,h,mapWidth,mapHeight,overscan,url)=>{
   if(!alive()||key!==desired||typeof url!=="string"||!url.startsWith("data:image/png"))
    return;
   const inputs=projectPublicClearInputs(w,h);
   blur.setAttribute("stdDeviation",String(inputs.browserGaussianSigma));
   if(field.getAttribute("href")!==url)field.setAttribute("href",url);
-  if(field.getAttribute("width")!==String(w))field.setAttribute("width",String(w));
-  if(field.getAttribute("height")!==String(h))field.setAttribute("height",String(h));
+  if(field.getAttribute("width")!==String(mapWidth))field.setAttribute("width",String(mapWidth));
+  if(field.getAttribute("height")!==String(mapHeight))field.setAttribute("height",String(mapHeight));
+  // The same lossless RGBA PNG is the distortion texture AND the CSS
+  // alpha mask of the real, overscanned glass silhouette. No assumed
+  // background images or extra geometry textures are necessary.
+  panel.style.setProperty("--cs-optical-mask",`url("${url}")`);
+  panel.style.setProperty("--cs-optical-overscan",overscan+"px");
+  panel.style.setProperty("--cs-optical-width",mapWidth+"px");
+  panel.style.setProperty("--cs-optical-height",mapHeight+"px");
   // Preserve every RGBA pixel of the emitted map across repaints. Only
   // the browser compositor resamples the REAL backdrop during scroll.
   committed=key;
@@ -104,13 +111,13 @@ export function mountCollectionsGlass(root,doc=document,win=window){
  const accept=response=>{
   if(disposed||!response?.key)return;
   if(response.error){fail();return;}
-  const {key,w,h}=response;
+  const {key,w,h,mapWidth,mapHeight,overscan}=response;
   const url=response.png||(
-   response.pixels?pngURL(doc,response.pixels,w,h):null);
+   response.pixels?pngURL(doc,response.pixels,mapWidth,mapHeight):null);
   if(!url?.startsWith("data:image/png"))return;
-  cache.delete(key);cache.set(key,{w,h,url});
+  cache.delete(key);cache.set(key,{w,h,mapWidth,mapHeight,overscan,url});
   while(cache.size>2)cache.delete(cache.keys().next().value);
-  apply(key,w,h,url);
+  apply(key,w,h,mapWidth,mapHeight,overscan,url);
  };
  const fail=()=>{
   try{worker?.terminate();}catch{}
@@ -134,7 +141,8 @@ export function mountCollectionsGlass(root,doc=document,win=window){
   desired=key;
   panel.classList.remove("cs-oracle-ready");
   const cached=cache.get(key);
-  if(cached){apply(key,cached.w,cached.h,cached.url);return;}
+  if(cached){apply(key,cached.w,cached.h,cached.mapWidth,cached.mapHeight,
+    cached.overscan,cached.url);return;}
   if(worker){
    try{worker.postMessage({key,w,h,radius});return;}
    catch{try{worker.terminate();}catch{}worker=null;}
@@ -150,6 +158,7 @@ export function mountCollectionsGlass(root,doc=document,win=window){
    const r=Math.min(width,height)/2;
    const computed=generatePublicClearPillField(width,height,r);
    accept({key:width+"x"+height+"@"+r,w:width,h:height,
+    mapWidth:computed.width,mapHeight:computed.height,overscan:computed.overscan,
     pixels:computed.pixels});
   };
   if(win.requestIdleCallback)win.requestIdleCallback(build,{timeout:350});
