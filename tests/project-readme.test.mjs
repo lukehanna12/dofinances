@@ -387,7 +387,7 @@ test("Markdown input engine is wired to existing rendered README without split v
  const rules=source("sites/_apex/app/assets/readme-markdown-input-rules.js");
  assert.ok(ui.includes('import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput}'));
  assert.ok(ui.includes('reading.addEventListener("beforeinput",event=>'));
- assert.ok(ui.includes('applyReadmeMarkdownBeforeInput(reading,event)'));
+ assert.ok(ui.includes('applyReadmeMarkdownBeforeInput(reading,event,hooks)'));
  assert.ok(ui.includes('reading.addEventListener("input",event=>'));
  assert.ok(ui.includes('applyReadmeMarkdownInput(reading,event)'));
  assert.ok(ui.includes('reading.addEventListener("compositionend"'));
@@ -401,8 +401,8 @@ test("Markdown input engine is wired to existing rendered README without split v
  assert.ok(rules.includes('placeCaret('));
  assert.ok(rules.includes('readmeBlockRule(prefix+pendingSpace,{trigger,inList:isList})'));
  assert.ok(rules.includes('event.preventDefault()'));
- assert.ok(rules.includes('return defer(ctx,()=>applyBlock(root,ctx,"space"," "))'));
- assert.ok(rules.includes('return defer(ctx,()=>applyInline(root,ctx,event.data))'));
+ assert.ok(rules.includes('return defer(ctx,()=>applyBlock(root,ctx,"space"," ")," ")'));
+ assert.ok(rules.includes('return defer(ctx,()=>applyInline(root,ctx,event.data),event.data)'));
  assert.ok(rules.includes('setTimeout(()=>{'));
  assert.ok(rules.includes('const CARET_ANCHOR="\\u200b"'));
  assert.ok(rules.includes('clearCaretAnchor(root)'));
