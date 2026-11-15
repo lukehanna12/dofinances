@@ -128,6 +128,9 @@ export function initColosseumUtilities(){
   elements.summary.style.setProperty("--ut-summary-slash-left",((slash.left-origin)/font).toFixed(5)+"em");
  }
  function setSummaryLoading(value){
+  // Once the route is visible, measure the placeholder before the first fetch;
+  // Collections uses the same actual-font geometry to center both rings.
+  if(value)measureSummaryDivider();
   elements.summary.classList.toggle("ut-summary-loading",value);
   elements.summary.setAttribute("aria-busy",String(value));
   elements.list.classList.toggle("ut-list-loading",value);
