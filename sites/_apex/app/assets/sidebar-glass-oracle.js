@@ -329,7 +329,23 @@ export function decodeOracleDisplacement(encoded){
   return (encoded-128)*128/255;
 }
 
-export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTION){
+/* Symmetric, fully rounded four-corner mode5 adapter for a free-standing
+ * clear-glass pill. This uses the SAME retained AIR function and signed
+ * corner ordering as the sidebar. A browser CSS radius -> native signed
+ * producer is not established by the Oracle; this mapping stays explicit.
+ * SourceGraphic is always the live backdrop, never a copied page texture. */
+export function controlPillField(x,y,w,h,radius){
+  if(![x,y,w,h,radius].every(Number.isFinite)||w<=0||h<=0||radius<=0)
+    throw new RangeError("Finite positive pill geometry required");
+  const corner=-Math.max(ORACLE_CORNER_FLOOR,Math.min(radius,w*.5,h*.5));
+  const field=airMode5SDF(x-w*.5,h*.5-y,w*.5,h*.5,
+    [corner,corner,corner,corner]);
+  return {distance:field.distance,nx:field.nx,ny:-field.ny};
+}
+
+export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTION,shape="sidebar"){
+  if(shape!=="sidebar"&&shape!=="pill")
+    throw new RangeError("Unknown Oracle geometry: "+shape);
   if(!Number.isFinite(w)||!Number.isFinite(h)||w<1||h<1||w*h>6000000)
     throw new RangeError("Invalid filter field dimensions");
   const width=Math.round(w),height=Math.round(h);
@@ -360,7 +376,7 @@ export function generateOracleField(w,h,radius,parameters=ORACLE_FINITE_REFRACTI
       blurMask[i+3]=255;
       continue;
     }
-    const p=paneField(x+.5,y+.5,width,height,radius);
+    const p=(shape==="pill"?controlPillField:paneField)(x+.5,y+.5,width,height,radius);
     // AIR produces the refraction coefficient from signed distance.
     // Native displacement_mat converts normal to texture coordinates.
     // Pixel-space identity here is the browser adapter's explicit mapping.
