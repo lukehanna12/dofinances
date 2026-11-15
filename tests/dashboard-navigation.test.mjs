@@ -327,7 +327,7 @@ test("dashboard HTML provides every requested view and preserves existing authen
   for(const name of COLOSSEUM_ROUTES.filter(name=>!["settings","readme"].includes(name)))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
   assert.match(html,/data-view="project\/readme"/);
-  assert.equal((html.match(/class="view project-view(?: [^"]+)?"/g)||[]).length,COLOSSEUM_ROUTES.length-2+APPLE_HIG_ROUTES.length-1);
+  assert.equal((html.match(/class="view project-view(?: [^"]+)?"/g)||[]).length,COLOSSEUM_ROUTES.length-2+APPLE_HIG_ROUTES.length);
   assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
   assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
