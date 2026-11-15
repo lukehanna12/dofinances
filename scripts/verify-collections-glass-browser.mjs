@@ -23,6 +23,8 @@ const page=[
  '<link rel="stylesheet" href="/app/assets/workspace-theme.css">',
  '<link rel="stylesheet" href="/app/assets/workspace-enhancements.css">',
  '<link rel="stylesheet" href="/app/assets/collections.css">',
+ '<link rel="stylesheet" href="/app/assets/utilities.css">',
+ '<link rel="stylesheet" href="/app/assets/site-skeleton.css">',
  '<style>body{margin:0;min-height:3000px;color:#fff;background:linear-gradient(40deg,#131920,#252a32)}',
  '.test-scenery{position:absolute;inset:0;min-height:3000px;pointer-events:none;',
  'background:repeating-linear-gradient(45deg,transparent 0 8px,rgba(245,250,255,.12) 8px 12px,transparent 12px 31px)}',
@@ -42,6 +44,8 @@ const files=new Map([
  ["workspace-theme.css","sites/_apex/app/assets/workspace-theme.css"],
  ["workspace-enhancements.css","sites/_apex/app/assets/workspace-enhancements.css"],
  ["collections.css","sites/_apex/app/assets/collections.css"],
+ ["utilities.css","sites/_apex/app/assets/utilities.css"],
+ ["site-skeleton.css","sites/_apex/app/assets/site-skeleton.css"],
  ["workspace-rail-tooltips.js","sites/_apex/app/assets/workspace-rail-tooltips.js"],
  ["cloud-utility-mask.v1.svg","sites/_apex/app/assets/cloud-utility-mask.v1.svg"],
  ["direct-utility-mask.v1.svg","sites/_apex/app/assets/direct-utility-mask.v1.svg"],
@@ -119,6 +123,74 @@ try{
  await command("Runtime.enable");await command("Page.enable");
  await command("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/"});
  await until("window.__ready===true","module initialized");
+
+ // Test real browser computed styles, including two animation frames,
+ // for BOTH screens. The loaded text must be visibility:hidden whenever
+ // the parent list's Skeleton pseudo-element is generated. Unlike opacity,
+ // visibility cannot interpolate and leak text under its replacement.
+ const skeletonStates=await evaluate(String.raw`(async()=>{
+  const host=document.querySelector("#cs-root");
+  const fixture=document.createElement("div");
+  fixture.style.cssText="position:fixed;left:-10000px;top:0;width:480px;pointer-events:none";
+  fixture.innerHTML=
+   '<div class="cs-accordion"><article class="cs-entry">'+
+    '<div class="cs-entry-title"><span class="cs-title-compact">Collection title</span>'+
+    '<span class="cs-title-expanded">Collection title</span></div></article></div>'+
+   '<div id="ut-root"><div class="ut-list"><article class="ut-row">'+
+    '<div class="ut-row-title"><span class="ut-title-compact">Utility title</span>'+
+    '<span class="ut-title-expanded">Utility title</span></div></article></div></div>';
+  host.append(fixture);
+  const configs=[
+   {name:"Collections",list:fixture.querySelector(".cs-accordion"),
+    loading:"cs-list-loading",parent:fixture.querySelector(".cs-entry-title"),
+    layers:[...fixture.querySelectorAll(".cs-title-compact,.cs-title-expanded")]},
+   {name:"Utilities",list:fixture.querySelector(".ut-list"),
+    loading:"ut-list-loading",parent:fixture.querySelector(".ut-row-title"),
+    layers:[...fixture.querySelectorAll(".ut-title-compact,.ut-title-expanded")]}
+  ];
+  const snapshot=x=>({
+   layers:x.layers.map(el=>{
+    const c=getComputedStyle(el);
+    return {visibility:c.visibility,opacity:c.opacity,transition:c.transitionProperty};
+   }),
+   pseudoContent:getComputedStyle(x.parent,"::after").content,
+   pseudoAnimation:getComputedStyle(x.parent,"::after").animationName
+  });
+  const results=[];
+  for(const x of configs){
+   const idle=snapshot(x);
+   x.list.classList.add(x.loading);
+   const atToggle=snapshot(x);
+   await new Promise(requestAnimationFrame);
+   const firstFrame=snapshot(x);
+   await new Promise(requestAnimationFrame);
+   const secondFrame=snapshot(x);
+   x.list.classList.remove(x.loading);
+   const restored=snapshot(x);
+   results.push({name:x.name,idle,atToggle,firstFrame,secondFrame,restored});
+  }
+  fixture.remove();
+  return results;
+ })()`);
+ for(const item of skeletonStates){
+  for(const stage of ["atToggle","firstFrame","secondFrame"]){
+   const state=item[stage];
+   assert.ok(state.layers.every(x=>x.visibility==="hidden"&&x.transition==="none"),
+    item.name+" leaked loaded titles under Skeleton at "+stage+": "+JSON.stringify(state));
+   assert.equal(state.pseudoContent,'""',
+    item.name+" had no pseudo-element Skeleton during "+stage);
+   assert.equal(state.pseudoAnimation,"site-skeleton-pulse",
+    item.name+" did not use standard pulsing Skeleton at "+stage);
+  }
+  assert.ok(item.idle.layers.every(x=>x.visibility==="visible"),
+   item.name+" titles were invisible before loading");
+  assert.ok(item.restored.layers.every(x=>x.visibility==="visible"),
+   item.name+" titles did not appear immediately after loading");
+  assert.ok(item.restored.pseudoContent==="none"||item.restored.pseudoContent==="normal",
+   item.name+" Skeleton persisted after real content reappeared");
+ }
+ console.log("Collections and Utilities: Skeleton/text exclusive at toggle and across animation frames.");
+
  const metrics='(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect(),s=getComputedStyle(p),'+
   'b=[...p.querySelectorAll("button")].map(x=>{const q=x.getBoundingClientRect();return {w:q.width,h:q.height,id:x.id}});'+
   'return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,'+

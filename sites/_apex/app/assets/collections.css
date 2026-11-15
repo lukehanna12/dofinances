@@ -77,10 +77,22 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-control-center > .cs-edit-control,
 #cs-root .cs-control-center > .cs-select-control{margin:0;vertical-align:middle}
 #cs-root .cs-eyebrow{display:block;position:relative;color:var(--cs-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;letter-spacing:.16em;text-transform:uppercase}
-/* The real summary text retains its original layout while the standard
-   shadcn Skeleton covers it during a collection load. No extra spinner
-   measurement, painted text, or width animation is required. */
+/* Two hollow 1em/currentColor loading rings share one compositor-friendly
+   transform animation, synchronized without timers, observers, or extra paints. */
+/* Geometry measured from TOTAL's left edge; all positions scale in em.
+   A = left edge of " / ", B = right edge, S = left edge of "/".
+   First ring center = B/2; second ring center = A+B/2.
+   Therefore their midpoint is (A+B)/2, precisely the separator's center.
+   Only the rings animate; the slash and ring positions are static. */
+/* Loading rings overlay the normally laid-out summary rather than replacing
+   its inline box. The eyebrow and all content below it keep identical geometry
+   during refresh, including when its live value is temporarily hidden. */
+#cs-root .cs-summary-skeleton{display:block;position:absolute;left:0;top:.32em;height:1em;line-height:1em;width:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 + .5em);pointer-events:none}
+#cs-root .cs-summary-dot{position:absolute;top:0;left:calc(var(--cs-summary-group-end,8em) / 2 - .5em);display:inline-block;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
+#cs-root .cs-summary-divider{position:absolute;top:0;left:var(--cs-summary-slash-left,7em);white-space:nowrap}
+#cs-root .cs-summary-dot:last-child{left:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 - .5em)}
 #cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}
+#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}
 @keyframes cs-summary-spin{to{transform:rotate(360deg)}}
 /* Preserve the 36px control slot while the native SF Symbol, including
    its circle and knockout plus, fills the 32.4px transparent hit target. */
@@ -361,7 +373,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 }
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
-  #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
+  #cs-root .cs-summary-dot{animation:none!important;opacity:.65}
+ #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
  #cs-root .cs-create-tooltip{transition-delay:0s!important}
 }
 

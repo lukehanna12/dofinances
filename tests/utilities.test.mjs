@@ -146,21 +146,25 @@ test("Collection filter choices are loaded only when opened and never polled",()
  assert.ok(css.includes('max-height:480px'));
 });
 
-test("Utilities summary uses the shared pulsing Skeleton and keeps exact totals",()=>{
+test("Utilities summary shows exact total and app-configured local refresh time",()=>{
  const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
  assert.match(view,/class="ut-summary ut-summary-loading"/);
  assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
- assert.match(view,/class="ut-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"/);
- assert.doesNotMatch(view,/class="ut-summary-dot"|class="ut-summary-skeleton"|site-text-shimmer/);
+ assert.match(view,/class="ut-summary-skeleton"/);
+ assert.equal((view.match(/class="ut-summary-dot"/g)||[]).length,2);
  assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);
  assert.match(js,/formatWorkspaceTime\(s\.updatedAt,\{hour12:true\}\)/);
  assert.doesNotMatch(js,/report\("Loading live catalog utilities/);
  assert.match(js,/Array\.from\(\{length:s\.pageSize\}/);
- assert.match(css,/#ut-root \.ut-skeleton-bar\{width:86%;min-width:0;height:12px;flex:none\}/);
+ assert.match(css,/#ut-root \.ut-skeleton-bar\{[\s\S]*?width:86%/);
+ assert.match(css,/#ut-root \.ut-summary-dot\{[\s\S]*?animation:ut-summary-spin 600ms linear infinite/);
  assert.ok(js.includes('class="ut-skeleton-bar site-skeleton" data-slot="skeleton"'));
  const skeleton=source("sites/_apex/app/assets/site-skeleton.css");
  assert.match(skeleton,/animation:site-skeleton-pulse 2s cubic-bezier\(\.4,0,\.6,1\) infinite/);
  assert.match(skeleton,/@keyframes site-skeleton-pulse\{50%\{opacity:\.5\}\}/);
+ assert.ok(skeleton.includes("visibility:hidden"));
+ assert.ok(skeleton.includes("transition:none"));
+ assert.doesNotMatch(skeleton,/cs-summary-placeholder|ut-summary-placeholder/);
  assert.doesNotMatch(skeleton,/background-clip:text|text-shimmer/);
 });
 test("Utilities restores twenty-five compact row headers and keeps authors in badges",()=>{
