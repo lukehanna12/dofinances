@@ -309,7 +309,7 @@ export function initColosseumCollections(){
        '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Remove selected utilities</span></span></span>'+
      '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
        '<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
-         '<img src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true"></button>'+
+         '<img src="/app/assets/add-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
          '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
        '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="'+(activeEdit?'Done editing utilities':'Edit utilities')+'" aria-pressed="'+String(activeEdit)+'"'+(!enabled||activeSelect?' disabled':'')+'>'+
          '<img class="cs-utility-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+

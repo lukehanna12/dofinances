@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25.0701 25.0701" color="#fff" data-icon="add-utilities-rounded-square" data-plus-source="SFSymbols.20261112.tsx:plus.circle.fill">
+  <!-- The original SF plus knockout is preserved exactly. The square extends
+       to all four image edges; CSS border-radius:inherit clips it to the
+       rounded-square BUTTON, including the mobile 6px and desktop 7px radius. -->
+  <path d="M0 0H25.0701V25.0701H0Z M11.8234 7.48379L11.8234 11.8137L7.49356 11.8137C7.07315 11.8137 6.76963 12.1128 6.76963 12.5399C6.76963 12.9348 7.0792 13.2272 7.49356 13.2272L11.8234 13.2272L11.8234 17.5638C11.8234 17.9714 12.1226 18.284 12.5174 18.284C12.9408 18.284 13.2369 17.9842 13.2369 17.5638L13.2369 13.2272L17.5803 13.2272C17.9812 13.2272 18.2938 12.9348 18.2938 12.5399C18.2938 12.1128 17.9939 11.8137 17.5803 11.8137L13.2369 11.8137L13.2369 7.48379C13.2369 7.05664 12.9408 6.75986 12.5174 6.75986C12.1226 6.75986 11.8234 7.06943 11.8234 7.48379Z" fill="currentColor" fill-rule="evenodd" fill-opacity="0.85"/>
+</svg>

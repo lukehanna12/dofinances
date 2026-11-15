@@ -1410,7 +1410,7 @@ test("Two matching utility footer bubbles replace the old count badge above Util
  assert.ok(css.includes("#cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height)"));
  assert.ok(css.includes("#cs-root .cs-inline-utility-count{min-width:100px}"));
  assert.ok(js.includes('for(const badge of root.querySelectorAll(".cs-summary .cs-inline-utility-count"))'));
- for(const asset of ["add-collection.v3.svg","edit-collections.v1.svg","select-collections.v3.svg"])
+ for(const asset of ["add-utilities.v1.svg","edit-collections.v1.svg","select-collections.v3.svg"])
    assert.ok(controls.includes("/app/assets/"+asset));
  assert.ok(controls.includes('role="group" aria-label="Utility management"'));
  assert.ok(controls.includes('class="cs-utility-management"'));
@@ -1421,6 +1421,27 @@ test("Two matching utility footer bubbles replace the old count badge above Util
  assert.ok(js.includes('handleUtilityAction(button.dataset.csAction);'));
  assert.ok(!js.includes('>Delete collection</button>'));
 });
+test("Add utilities uses a button-filling square glyph, preserving exact original plus void",()=>{
+ const add=src("sites/_apex/app/assets/add-utilities.v1.svg");
+ const original=src("sites/_apex/app/assets/add-collection.v3.svg");
+ const plus=original.match(/M11\.8234 7\.48379L[\s\S]*?(?=Z" fill="currentColor")/)?.[0];
+ assert.ok(plus,"Retained native SF plus knock-out contour is available");
+ assert.match(add,/viewBox="0 0 25\.0701 25\.0701"/);
+ assert.match(add,/d="M0 0H25\.0701V25\.0701H0Z M11\.8234/);
+ assert.ok(add.includes(plus+"Z"),"Preserve full exact source plus geometry");
+ assert.ok(add.includes('fill-rule="evenodd"'),"Transparent knockout plus is cut out of solid square");
+ assert.doesNotMatch(add,/data-sf-symbol="plus\.circle\.fill"/);
+ const controls=js.slice(js.indexOf('function utilityToolbarMarkup(){'),js.indexOf("function rowMarkup("));
+ assert.match(controls,/data-cs-action="admit" disabled aria-label="Add utilities \(coming later\)"/);
+ assert.match(controls,/src="\/app\/assets\/add-utilities\.v1\.svg"/);
+ assert.doesNotMatch(controls,/src="\/app\/assets\/add-collection\.v3\.svg"/);
+ const collectionButton=html.match(/<button[^>]*id="cs-create"[\s\S]*?<\/button>/)?.[0]||"";
+ assert.match(collectionButton,/src="\/app\/assets\/add-collection\.v3\.svg"/);
+ assert.match(css,/#cs-root \.cs-utility-action--add\{overflow:hidden\}/);
+ assert.match(css,/#cs-root \.cs-utility-action--add img\{width:24px;height:24px;border-radius:inherit;object-fit:fill\}/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-utility-action--add img\{width:20px;height:20px\}/);
+});
+
 test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
  assert.ok(css.includes("--cs-utility-bubble-height:34px"));
  assert.ok(css.includes("--cs-utility-bubble-height:28px"));
@@ -1428,7 +1449,7 @@ test("Utility management is a scaled Collections-like shell matching count-bubbl
  assert.ok(css.includes("#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height)"));
  assert.ok(css.includes("background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)"));
  assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent"));
- assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px;border-radius:inherit;object-fit:fill}"));
  assert.ok(css.includes("#cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}"));
  assert.ok(css.includes("#cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}"));
 });
@@ -1562,7 +1583,7 @@ test("Utility controls are rounded squares in a rounded rectangular toolbar",()=
  assert.ok(css.includes(" #cs-root .cs-utility-toolbar{gap:2px;padding:2px 4px;border-radius:9px}"));
  assert.ok(css.includes(" #cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}"));
  assert.ok(css.includes(" #cs-root .cs-utility-trash{width:20px;height:20px;border-radius:6px}"));
- assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px;border-radius:inherit;object-fit:fill}"));
 });
 
 test("Utilities search exactly matches Collection search scale without changing its width",()=>{
