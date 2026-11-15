@@ -311,3 +311,129 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 }
 
 
+
+
+/* Collections parity: precise 10-row geometry, intrinsic accordion expansion,
+ * stable title layers, and one native CSS transition for the detail track. */
+#ut-root{--ut-dim:#525252;--ut-row-height:54px;--ut-motion:240ms}
+#ut-root .ut-layout{min-height:calc(10 * var(--ut-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
+#ut-root .ut-row{--ut-row-divider:0px}
+#ut-root .ut-row+.ut-row{--ut-row-divider:1px}
+#ut-root .ut-row-main{
+ position:relative;
+ height:auto;
+ min-height:calc(var(--ut-row-height) - var(--ut-row-divider));
+ padding:0 24px 0 0;
+ gap:12px;
+ transition:padding .45s cubic-bezier(.22,1,.36,1);
+}
+#ut-root .ut-row:not(.ut-active) .ut-row-main{padding:0 24px 0 0;transition-timing-function:cubic-bezier(.4,0,.2,1)}
+#ut-root .ut-row.ut-active .ut-row-main{padding:21px 24px 21px 0}
+#ut-root .ut-row-number{width:24px;font-weight:500;color:#525252}
+#ut-root .ut-route-icon{width:21px;height:23px;flex-basis:21px;flex-shrink:0}
+#ut-root .ut-row-copy{min-width:0;flex:1;gap:3px}
+#ut-root .ut-row-title{
+ position:relative;display:grid;grid-template-rows:0fr;
+ min-height:1lh;min-width:0;overflow:hidden;
+ color:#a3a3a3;font-size:clamp(14px,1.35vw,16px);
+ font-weight:500;line-height:1.4;letter-spacing:-.025em;
+ transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1),color .2s;
+}
+#ut-root .ut-row.ut-active .ut-row-title{grid-template-rows:1fr;color:#fafafa}
+#ut-root .ut-title-measure{min-height:0;min-width:0;overflow:hidden;visibility:hidden;white-space:normal;overflow-wrap:anywhere}
+#ut-root .ut-title-compact,#ut-root .ut-title-expanded{
+ position:absolute;top:0;left:0;right:0;min-width:0;overflow:hidden;
+}
+#ut-root .ut-title-compact{white-space:nowrap;text-overflow:ellipsis;opacity:1;transition:opacity .14s linear}
+#ut-root .ut-title-expanded{white-space:normal;opacity:0;overflow-wrap:anywhere;transition:opacity .14s linear}
+#ut-root .ut-row.ut-active .ut-title-compact{opacity:0;transition-delay:.1s}
+#ut-root .ut-row.ut-active .ut-title-expanded{opacity:1}
+#ut-root .ut-row:not(.ut-active) .ut-title-compact{transition-delay:0s}
+#ut-root .ut-row:not(.ut-active) .ut-title-expanded{transition-delay:.1s}
+#ut-root .ut-row-sub{font-variant-numeric:tabular-nums;color:#525252}
+#ut-root .ut-chevron{
+ position:absolute;right:0;top:50%;width:14px;height:14px;
+ transform:translateY(-50%);
+ transition:transform .3s cubic-bezier(.22,1,.36,1),color .2s;
+ pointer-events:none;color:#525252;
+}
+#ut-root .ut-row.ut-active .ut-chevron{transform:translateY(-50%) rotate(180deg);color:#fafafa}
+#ut-root .ut-row-panel{
+ display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;
+ transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1),
+            opacity .45s cubic-bezier(.22,1,.36,1),visibility .45s;
+}
+#ut-root .ut-row:not(.ut-active) .ut-row-panel{
+ transition-timing-function:cubic-bezier(.4,0,.2,1),cubic-bezier(.4,0,.2,1),ease;
+}
+#ut-root .ut-row.ut-active .ut-row-panel{grid-template-rows:1fr;opacity:1;visibility:visible}
+#ut-root .ut-row-panel-inner{overflow:hidden;min-height:0;padding:0 32px 28px 44px}
+#ut-root .ut-row-description{
+ margin:0;max-width:448px;padding:0;
+ font-size:clamp(14px,1.35vw,16px);line-height:1.65;
+ white-space:pre-line;overflow-wrap:anywhere;
+}
+#ut-root .ut-pages{margin-top:25px;flex-wrap:wrap}
+#ut-root .ut-pages button{width:auto;min-width:36px;height:36px;transition:background .2s,color .2s,transform .2s}
+#ut-root .ut-pages button[aria-current="page"]{
+ background:#fff;color:#171717;border-color:#fff;font-weight:600;transform:scale(1.03);opacity:1;
+}
+#ut-root .ut-inspector{overflow-anchor:none}
+#ut-root .ut-inspector.ut-empty{opacity:0;transform:translateX(56px);pointer-events:none}
+#ut-root .ut-layout.ut-open .ut-inspector:not(.ut-empty){opacity:1;transform:translateX(0);pointer-events:auto}
+#ut-root .ut-card{max-height:480px;box-shadow:0 1px 3px #00000008}
+#ut-root .ut-card-header{align-items:center}
+#ut-root .ut-card h2{font-size:clamp(16px,1.4vw,18px)}
+#ut-root .ut-mobile-detail{margin-top:24px;padding:0}
+#ut-root .ut-mobile-detail .ut-card{max-height:440px}
+#ut-root .ut-count{color:#a3a3a3;font-variant-numeric:tabular-nums}
+#ut-root .ut-status:not([data-error="true"]){color:#a3a3a3}
+
+/* The native select marker is suppressed on every Utilities dropdown, then
+   replaced at a fixed right inset. Default native ticks were misaligned and
+   overlapping labels (especially with narrower filter controls). */
+#ut-root :is(.ut-order,.ut-filter-field select,.ut-field select){
+ appearance:none;-webkit-appearance:none;
+ background-color:#171717;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='m6 9 6 6 6-6' stroke='%23a3a3a3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 10px center;background-size:14px 14px;
+ padding-right:33px;line-height:normal;
+}
+#ut-root :is(.ut-order,.ut-filter-field select,.ut-field select)::-ms-expand{display:none}
+#ut-root .ut-order{max-width:none;width:150px}
+#ut-root .ut-filter-field select,#ut-root .ut-field select{background-color:#1d1d1d}
+#ut-root .ut-filter-field select:focus-visible,#ut-root .ut-order:focus-visible,#ut-root .ut-field select:focus-visible{
+ outline:2px solid #fafafa;outline-offset:2px;
+}
+
+/* Collections-sized owner controls, with the same glass surface and spacing. */
+#ut-root .ut-control-center{gap:9px;padding:7px 12px;min-height:78px}
+#ut-root .ut-control-center > .ut-tooltip-wrap{width:54px;height:54px}
+#ut-root .ut-dock-button{width:49px;height:49px;min-width:49px;min-height:49px}
+#ut-root .ut-dock-button img{width:29px;height:29px}
+#ut-root .ut-tooltip{
+ padding:10px 13px;font-size:13px;line-height:1.25;
+ border:1px solid rgba(255,255,255,.08);border-radius:10px;
+ background:#101010;color:#f6f6f6;
+ box-shadow:0 5px 17px rgba(0,0,0,.29);
+}
+
+/* Mobile follows the same collapse geometry without a second inspector track. */
+@media(max-width:1023px){
+ #ut-root .ut-layout,#ut-root .ut-layout.ut-open{grid-template-columns:1fr}
+ #ut-root .ut-mobile-detail{display:block}
+ #ut-root .ut-row-panel-inner{padding:0 0 24px}
+ #ut-root .ut-row-description{padding:0 20px 0 44px}
+ #ut-root .ut-mobile-detail{padding:0}
+}
+@media(max-width:639px){
+ #ut-root{--ut-row-height:48px}
+ #ut-root .ut-row-main{gap:10px}
+ #ut-root .ut-row.ut-active .ut-row-main{padding:20px 24px 20px 0}
+ #ut-root .ut-row-number{width:22px;font-size:10px}
+ #ut-root .ut-row-title{font-size:clamp(12.5px,2.7vw,14px)}
+ #ut-root .ut-row-description{padding:0 20px 0 44px}
+ #ut-root .ut-order{max-width:160px;width:135px}
+ #ut-root .ut-chevron{width:12px;height:12px}
+ #ut-root .ut-mobile-detail{margin-top:20px}
+}
