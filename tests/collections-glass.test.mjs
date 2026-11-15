@@ -6,7 +6,8 @@ import {
  SVG_DISPLACEMENT_NEUTRAL_BIAS
 } from "../sites/_apex/app/assets/sidebar-glass-oracle.js";
 import {
- CLEAR_OBSERVED_128_84,projectPublicClearInputs,generatePublicClearPillField
+ CLEAR_OBSERVED_128_84,projectPublicClearInputs,
+ cssCapsuleField,generatePublicClearPillField
 } from "../sites/_apex/app/assets/collections-glass-public-clear.js";
 
 const src=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
@@ -65,20 +66,57 @@ test("Native-derived pill geometry is four-corner, not estimated rectangular SDF
   "Do not change previously shipped sidebar field bytes");
 });
 
-test("Public Clear retains one exact byte field with measurable nonneutral warp",()=>{
+test("The CSS border radius and optical contour share the exact analytic semicircle",()=>{
+ const w=210,h=78,r=h/2,cx=r,cy=r;
+ const sqrt2=Math.SQRT1_2;
+ for(const point of [
+  [0,cy,-1,0],
+  [cx-r*sqrt2,cy-r*sqrt2,-sqrt2,-sqrt2],
+  [w-r+r*sqrt2,cy-r*sqrt2,sqrt2,-sqrt2],
+  [w,cy,1,0],
+  [cx-r*sqrt2,cy+r*sqrt2,-sqrt2,sqrt2]
+ ]){
+  const [x,y,nx,ny]=point;
+  const f=cssCapsuleField(x,y,w,h,r);
+  assert.ok(Math.abs(f.distance)<.00001,"At real CSS outline: "+point);
+  assert.ok(Math.abs(f.nx-nx)<.00001);
+  assert.ok(Math.abs(f.ny-ny)<.00001);
+ }
+ assert.equal(cssCapsuleField(w/2,h/2,w,h,r).distance,-r);
+ assert.ok(cssCapsuleField(-5,h/2,w,h,r).distance>0);
+ assert.throws(()=>cssCapsuleField(0,0,w,h,r-1),RangeError,
+  "Do not let public CSS and optical radii silently diverge");
+});
+
+test("Public Clear warped rim is alpha-masked beyond the actual curved edge",()=>{
  const w=98,h=56,r=28;
- const {width,height,pixels}=generatePublicClearPillField(w,h,r);
- assert.deepEqual([width,height,pixels.length],[w,h,w*h*4]);
- assert.ok(pixels.every((v,i)=>i%4!==3||v===255));
- assert.ok(pixels.every((v,i)=>i%4!==2||v===0));
- const active=Array.from({length:w*h},(_,i)=>i).filter(i=>
-  pixels[i*4]!==128||pixels[i*4+1]!==128);
- assert.ok(active.length>100,"Refraction mask must not collapse to a neutral image");
- assert.ok(active.length<w*h,"Interior should have neutral displacement");
+ const f=generatePublicClearPillField(w,h,r);
+ const {width,height,bodyWidth,bodyHeight,overscan,pixels}=f;
+ assert.deepEqual([bodyWidth,bodyHeight,overscan,width,height,pixels.length],
+  [w,h,Math.ceil(Math.min(20,.25*h)),
+   w+2*overscan,h+2*overscan,(w+2*overscan)*(h+2*overscan)*4]);
+ const cell=(x,y)=>Array.from(pixels.slice((y*width+x)*4,(y*width+x+1)*4));
+ const midY=overscan+r;
+ assert.equal(cell(0,0)[3],0,"Far corner beyond source-derived reach must be transparent");
+ assert.ok(cell(0,midY)[3]<=2,"The halo must approach zero at its outer sample edge");
+ assert.equal(cell(overscan,midY)[3],255,"The exact circular outline must not be cut off");
+ const justOutside=cell(overscan-5,midY);
+ assert.ok(justOutside[3]>0&&justOutside[3]<255,
+  "The outer optical halo must fade, not clip abruptly");
+ assert.notEqual(justOutside[0],128,"The refraction must extend beyond the circular end");
+ assert.equal(cell(overscan+r+5,midY)[3],255);
+ assert.equal(cell(overscan+r+5,midY)[0],128,
+  "Deep interior must have neutral refraction");
+ const corner=cell(overscan+1,overscan+1);
+ assert.ok(corner[3]<255,"Top-left corner outside the semicircle must not be filled");
+ assert.ok(corner[3]>0,"The circular corner needs a real exterior halo");
+ assert.ok(pixels.some((v,i)=>i%4===3&&v===0));
+ assert.ok(pixels.some((v,i)=>i%4===3&&v>0&&v<255));
  assert.equal(SVG_DISPLACEMENT_NEUTRAL_BIAS,1/(2*255));
  assert.throws(()=>generatePublicClearPillField(-1,h,r),RangeError);
  assert.throws(()=>generatePublicClearPillField(w,h,999),RangeError);
 });
+
 
 test("Dock is 150% OF original (1.5×), not 150% additional (2.5×)",()=>{
  assert.match(css,/#cs-root \.cs-control-center\{\s*--cs-dock-scale:1\.5;\s*position:fixed;/);
@@ -89,6 +127,10 @@ test("Dock is 150% OF original (1.5×), not 150% additional (2.5×)",()=>{
  assert.match(css,/border-radius:9999px;/);
  assert.match(css,/background:rgba\(0,0,0,\.24\)/);
  assert.match(css,/#cs-root \.cs-control-center\.cs-oracle-ready\{/);
+ assert.match(css,/#cs-root \.cs-control-center\.cs-oracle-ready::before\{/);
+ assert.match(css,/mask-image:var\(--cs-optical-mask,none\)/);
+ assert.match(css,/backdrop-filter:url\("#collections-oracle-live-glass"\)/);
+ assert.match(css,/#cs-root \.cs-control-center\.cs-oracle-ready::after\{/);
  assert.ok(!css.includes("--cs-dock-scale:2.5"));
  assert.match(css,/bottom:calc\(100% \+ 13px\)/);
  assert.match(css,/@keyframes cs-floating-view-arrive/);
@@ -101,6 +143,7 @@ test("One lossless worker mask; no private diagnostic multi-pass mixing",()=>{
  assert.match(worker,/generatePublicClearPillField\(w,h,radius\)/);
  assert.match(worker,/OffscreenCanvas/);
  assert.match(worker,/FileReaderSync/);
+ assert.match(worker,/mapWidth:field\.width,mapHeight:field\.height,overscan:field\.overscan/);
  assert.match(worker,/convertToBlob\(\{type:"image\/png"\}\)/);
  assert.match(mount,/new win\.ResizeObserver\(requestField\)/);
  assert.match(mount,/new win\.MutationObserver\(requestField\)/);
@@ -108,6 +151,8 @@ test("One lossless worker mask; no private diagnostic multi-pass mixing",()=>{
  assert.match(mount,/while\(cache\.size>2\)/);
  assert.match(mount,/in:"SourceGraphic"/);
  assert.match(mount,/feDisplacementMap/);
+ assert.match(mount,/panel\.style\.setProperty\("--cs-optical-mask"/);
+ assert.match(mount,/panel\.style\.setProperty\("--cs-optical-overscan"/);
  assert.equal((mount.match(/make\(doc,"feImage"/g)||[]).length,1);
  assert.equal((mount.match(/make\(doc,"feGaussianBlur"/g)||[]).length,1);
  assert.ok(!mount.includes('outerShift'),"Clear outer branch must be absent");

@@ -15,7 +15,7 @@
  * writer are still unproved. Never label this global Apple exactness.
  */
 import {
- airRefractionEnvelope,controlPillField,encodeOracleDisplacement,
+ airRefractionEnvelope,encodeOracleDisplacement,
  nativePublicBlurRadius,observedBlurWord
 } from "./sidebar-glass-oracle.js";
 
@@ -45,25 +45,60 @@ export function projectPublicClearInputs(w,h){
  return {d,amount,height,blurRadius,word,
   browserGaussianSigma:word/cachedScale};
 }
+/*
+ * The CSS panel uses border-radius:9999px (height/2): a straight strip
+ * between TWO precise semicircles. This is its analytic signed-distance
+ * function, not a guessed border. We cannot substitute the private AIR
+ * mode5 signed-corner-radii path for CSS capsule geometry: the repository
+ * explicitly DOES NOT prove the browser-radius -> native mode5 producer.
+ * We do reuse the recorded public Clear CAFilter coefficients and the AIR
+ * signed-distance -> refraction equation, evaluated against this exact CSS
+ * outline. Positive distance is exterior, zero lies on the perimeter.
+ */
+export function cssCapsuleField(x,y,w,h,radius=h/2){
+ if(![x,y,w,h,radius].every(Number.isFinite)||w<h||h<=0||
+    radius<=0||Math.abs(radius-h/2)>1e-6)
+  throw new RangeError("A finite horizontal CSS capsule is required");
+ const cx=Math.max(radius,Math.min(w-radius,x));
+ const dx=x-cx,dy=y-h/2,len=Math.hypot(dx,dy);
+ return {distance:Math.fround(len-radius),
+  nx:len===0?0:Math.fround(dx/len),
+  ny:len===0?0:Math.fround(dy/len)};
+}
+const smooth01=t=>{const v=Math.max(0,Math.min(1,t));return v*v*(3-2*v);};
 export function generatePublicClearPillField(w,h,radius){
  if(!Number.isFinite(w)||!Number.isFinite(h)||w<1||h<1||w*h>6000000)
   throw new RangeError("Invalid public-Clear displacement-map dimensions");
- const width=Math.round(w),height=Math.round(h);
- const r=Math.min(width,height)*.5;
- if(!Number.isFinite(radius)||radius<=0||radius>r)
-  throw new RangeError("Radius must be within the actual pill geometry");
- const inputs=projectPublicClearInputs(width,height);
+ const bodyWidth=Math.round(w),bodyHeight=Math.round(h);
+ if(bodyWidth<bodyHeight||!Number.isFinite(radius)||
+    Math.abs(radius-bodyHeight*.5)>1e-6)
+  throw new RangeError("The map must match the CSS capsule's actual half-height radius");
+ const inputs=projectPublicClearInputs(bodyWidth,bodyHeight);
+ // The *measured public* inner-refraction height sets the optical reach.
+ // Overscan and exterior fade therefore have a source-derived dimension,
+ // rather than an arbitrary artist-chosen halo thickness.
+ const overscan=Math.ceil(inputs.height);
+ const width=bodyWidth+2*overscan,height=bodyHeight+2*overscan;
  const pixels=new Uint8ClampedArray(width*height*4);
- // This is a complete 2D mode5 four-corner evaluation. No stretched maps,
- // nine-slice field, assumed source background, or lossy color quantization.
+ const invHeight=f32(1/inputs.height);
  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-  const p=controlPillField(x+.5,y+.5,width,height,radius);
-  const offset=airRefractionEnvelope(p.distance,inputs.amount,
-    f32(1/inputs.height));
+  const p=cssCapsuleField(x+.5-overscan,y+.5-overscan,
+    bodyWidth,bodyHeight,radius);
+  // The public AIR refraction envelope is defined across the glass body.
+  // Extend its exterior contribution to zero over one measured refraction
+  // height so the blur/warp does not terminate abruptly at the CSS clip.
+  const outerFade=p.distance<=0?1:
+   1-smooth01(p.distance/inputs.height);
+  const offset=airRefractionEnvelope(p.distance,inputs.amount,invHeight);
+  const displacement=f32(offset*f32(outerFade));
   const i=(y*width+x)*4;
-  pixels[i]=encodeOracleDisplacement(p.nx*offset);
-  pixels[i+1]=encodeOracleDisplacement(p.ny*offset);
-  pixels[i+2]=0;pixels[i+3]=255;
+  pixels[i]=encodeOracleDisplacement(p.nx*displacement);
+  pixels[i+1]=encodeOracleDisplacement(p.ny*displacement);
+  pixels[i+2]=0;
+  // Reuse SAME lossless PNG as CSS alpha mask: alpha=1 throughout the
+  // actual capsule, gradually zero outside. No second map, no extra
+  // browser pixels copied, and the warped halo is rendered beyond the rim.
+  pixels[i+3]=Math.round(255*outerFade);
  }
- return {width,height,pixels,inputs};
+ return {width,height,bodyWidth,bodyHeight,overscan,pixels,inputs};
 }
