@@ -43,6 +43,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   color:var(--cs-text);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --cs-row-height:54px;--cs-control-swap:480ms;--cs-control-ease:cubic-bezier(.22,1,.36,1);
   --cs-detail-motion:240ms;--cs-detail-ease:cubic-bezier(.22,1,.36,1);
+  --cs-detail-max-width:479.17px;
   -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:-44px;padding:0;
 }
 #cs-root *{box-sizing:border-box}
@@ -188,18 +189,30 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    black canvas edge upward. Expanded content may grow beyond the minimum. */
 #cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr);gap:40px;align-items:start;min-height:calc(10 * var(--cs-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
 #cs-root .cs-collection-column{min-width:0}
+/* Only Collections should escape the workspace-wide 1110px .content cap.
+   Retain the shared padding and sidebar-left geometry, so all added width
+   appears on the right-hand side of the collection list. */
+@media(min-width:1024px){
+ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden]))
+ body:has(> #workspace-shell) .content{max-width:none;width:100%}
+}
 /* Wide-screen Collections uses one synchronized width/gutter motion.
-   No selection: the list occupies every available pixel. An open row
-   creates the original split; selecting another row preserves that split. */
+   The collapsed list occupies 100% of the now-fluid content area.
+   In the split, the detail track keeps its previous 1.05:1 proportion
+   below the former content cap. Its previous maximum (~479.17px, based
+   on 1110px overall width, 52.48px/58px padding, and a 64px gutter)
+   becomes a ceiling. Every additional pixel belongs to the list.
+   Matching minmax(0,<length-percentage>) tracks preserve 240ms
+   grid interpolation alongside the panel translation and gutter. */
 @media(min-width:1024px){
  #cs-root .cs-layout{
-  grid-template-columns:minmax(0,1fr) minmax(0,0fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,0px);
   column-gap:0;
   transition:grid-template-columns var(--cs-detail-motion) var(--cs-detail-ease),
              column-gap var(--cs-detail-motion) var(--cs-detail-ease);
  }
  #cs-root .cs-layout.cs-detail-open{
-  grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,min(var(--cs-detail-max-width),calc((100% - 64px) * .51219512195)));
   column-gap:64px;
  }
  /* Clip the card only while its track contracts/expands; otherwise

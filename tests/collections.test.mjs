@@ -825,7 +825,7 @@ test("Collection search and Refresh occupy one aligned row, retaining list width
  assert.match(css,/#cs-root #cs-refresh\{width:32px;min-width:32px;height:32px;min-height:32px/);
  assert.ok(css.includes("#cs-root .cs-search-focus{width:100%;height:100%}"));
  assert.ok(css.includes("#cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}"));
- assert.match(css,/#cs-root \.cs-layout\.cs-detail-open\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1\.05fr\)/);
+ assert.match(css,/#cs-root \.cs-layout\.cs-detail-open\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,min\(var\(--cs-detail-max-width\),calc\(\(100% - 64px\) \* \.51219512195\)\)\)/);
 });
 
 test("Collections header has circular Select after Edit with tooltip and no shortcut",()=>{
