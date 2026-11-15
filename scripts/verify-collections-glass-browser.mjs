@@ -148,6 +148,30 @@ try{
   await pause(250);
   const current=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
   assert.deepEqual(current,old,"Changing real backdrop pixels must not regenerate geometry");
+
+  // OBJECTIVE optical browser regression, not a screenshot comparison to
+  // Apple output. A synthetic fiducial is placed BEHIND a separate empty
+  // lens only inside this isolated test page. No copy of site content and no
+  // test-image assumptions are shipped to the production renderer.
+  await evaluate('(()=>{const bg=document.createElement("div");bg.style.cssText="position:fixed;left:42px;top:133px;width:270px;height:120px;z-index:400;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.15),rgba(255,255,255,.18)),repeating-linear-gradient(90deg,#fafafa 0 10px,#151515 10px 20px)";const lens=document.createElement("div");const r=document.querySelector(".cs-control-center").getBoundingClientRect();lens.id="optical-probe";lens.style.cssText="position:fixed;left:62px;top:152px;z-index:401;pointer-events:none;border-radius:9999px;background:rgba(0,0,0,.04);width:"+Math.round(r.width)+"px;height:"+Math.round(r.height)+"px";document.body.append(bg,lens);})()');
+  const readScreenshot=async(filterType)=>{
+   await evaluate('document.getElementById("optical-probe").style.backdropFilter='+JSON.stringify(filterType));
+   await pause(130);
+   return (await command("Page.captureScreenshot",{format:"png",captureBeyondViewport:false})).data;
+  };
+  const plain=await readScreenshot("none");
+  const nativeBlur=await readScreenshot("blur(12px)");
+  const oracleSVG=await readScreenshot('url("#collections-oracle-live-glass")');
+  const images=JSON.stringify([plain,nativeBlur,oracleSVG]);
+  const optics=await evaluate('(async()=>{const images='+images+';const canvases=await Promise.all(images.map(async s=>{const image=new Image();image.src="data:image/png;base64,"+s;await image.decode();const c=document.createElement("canvas");c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(image,0,0);return ctx.getImageData(0,0,c.width,c.height)}));const [raw,blur,svg]=canvases;const index=(x,y)=>((y*raw.width+x)*4);const gray=(frame,x,y)=>{const i=index(x,y);return (frame.data[i]+frame.data[i+1]+frame.data[i+2])/3};const std=(frame)=>{const a=[];for(let y=177;y<203;y+=2)for(let x=130;x<192;x++)a.push(gray(frame,x,y));const avg=a.reduce((s,v)=>s+v,0)/a.length;return Math.sqrt(a.reduce((s,v)=>s+(v-avg)*(v-avg),0)/a.length)};let dist=0,count=0;for(let y=178;y<200;y++)for(let x=73;x<114;x++){dist+=Math.abs(gray(svg,x,y)-gray(blur,x,y));count++}return {rawStd:std(raw),nativeBlurStd:std(blur),svgStd:std(svg),edgeDifference:dist/count}})()');
+  console.log("Objective Chromium live-refraction metrics:",JSON.stringify(optics));
+  assert.ok(optics.rawStd>30,"Fiducial backdrop must have measurable texture");
+  assert.ok(optics.svgStd<optics.rawStd*.80,
+    "SVG must REALLY blur pixels, not just expose a CSS.supports token");
+  assert.ok(optics.edgeDifference>3,
+    "Oracle SVG displacement must differ from pure Gaussian blur near its live edge");
+  await evaluate('document.getElementById("optical-probe")?.remove();true');
+
  }
  await command("Emulation.setDeviceMetricsOverride",{width:365,height:740,deviceScaleFactor:2,mobile:true});
  await pause(300);
