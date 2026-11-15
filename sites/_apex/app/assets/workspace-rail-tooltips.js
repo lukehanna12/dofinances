@@ -61,7 +61,7 @@ export function initCollapsedRailTooltips(doc=document,win=window,shell,sidebar)
   link.addEventListener("pointerleave",()=>{
    if(hovered===link){hovered=null;sync();}
   },{passive:true});
-  link.addEventListener("focus",()=>{focused=link;sync();});
+  link.addEventListener("focus",()=>{hovered=null;focused=link;sync();});
   link.addEventListener("blur",()=>{
    if(focused===link){focused=null;sync();}
   });
