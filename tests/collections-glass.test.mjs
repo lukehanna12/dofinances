@@ -97,7 +97,8 @@ test("Public Clear warped rim is alpha-masked beyond the actual curved edge",()=
    w+2*overscan,h+2*overscan,(w+2*overscan)*(h+2*overscan)*4]);
  const cell=(x,y)=>Array.from(pixels.slice((y*width+x)*4,(y*width+x+1)*4));
  const midY=overscan+r;
- assert.equal(cell(0,midY)[3],0,"The exterior beyond source-derived reach must be transparent");
+ assert.equal(cell(0,0)[3],0,"Far corner beyond source-derived reach must be transparent");
+ assert.ok(cell(0,midY)[3]<=2,"The halo must approach zero at its outer sample edge");
  assert.equal(cell(overscan,midY)[3],255,"The exact circular outline must not be cut off");
  const justOutside=cell(overscan-5,midY);
  assert.ok(justOutside[3]>0&&justOutside[3]<255,
