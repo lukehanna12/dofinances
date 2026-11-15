@@ -51,6 +51,12 @@ test("Six sort orders, separate filter modes and keyset pagination are present",
  ]),{include:{routes:["cloud","direct"]},exclude:{languages:["JavaScript","Swift"]}});
  assert.match(utilitySearchIndex({name:"Utility",uid:"000a11",languages_json:'["Swift"]',subjects_json:'["Rendering"]'}),/swift.*rendering/);
 });
+test("Catalog requests are lazy until the Utilities route is visible",()=>{
+ assert.ok(js.includes("const visible=!root.closest(\".view\")?.hidden"));
+ assert.ok(js.includes("if(visible&&!routeVisible){routeVisible=true;void loadPage(0,null);}"));
+ assert.ok(js.includes('window.addEventListener("hashchange",onRouteVisibility)'));
+ assert.ok(js.includes('window.addEventListener("popstate",onRouteVisibility)'));
+});
 test("Lazy, accessible one-at-a-time list expansion and detail reads",()=>{
  assert.ok(js.includes("s.activeUid=s.activeUid===uid?null:uid"));
  assert.ok(js.includes('el.classList.toggle("ut-active",open)'));

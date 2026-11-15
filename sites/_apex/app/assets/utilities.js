@@ -548,5 +548,16 @@ export function initColosseumUtilities(){
  elements.deletePlan.addEventListener("click",()=>void reviewDelete());
  elements.deletePublish.addEventListener("click",()=>void publishDelete());
  elements.deleteDialog.addEventListener("close",()=>{s.pendingDelete=null;elements.deleteInput.disabled=false;});
- renderFilterControls();filterDot();summary();skeletons();void loadPage(0,null);
+ renderFilterControls();filterDot();summary();skeletons();
+ // Request D1 only upon actual Utilities route entry, never on other workspace pages.
+ // Navigation commits view.hidden before emitting hashchange/popstate; no observer or timer.
+ let routeVisible=false;
+ const onRouteVisibility=()=>{
+  const visible=!root.closest(".view")?.hidden;
+  if(visible&&!routeVisible){routeVisible=true;void loadPage(0,null);}
+  else if(!visible)routeVisible=false;
+ };
+ window.addEventListener("hashchange",onRouteVisibility);
+ window.addEventListener("popstate",onRouteVisibility);
+ onRouteVisibility();
 }
