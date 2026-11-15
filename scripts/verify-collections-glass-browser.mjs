@@ -1,7 +1,7 @@
 /*
- * Actual Chromium geometry/interaction test for the fixed Collections dock.
- * Renders the REAL control markup and production CSS/optical modules, using
- * arbitrary DOM scenery to ensure that backdrop pixels are never stored.
+ * Chromium geometry/interaction test for the flat fixed Collections dock.
+ * Renders the real controls with production CSS on arbitrary page scenery,
+ * verifying that no shader, backdrop-filter, or optical overlay is active.
  * It does not contact the authenticated Collections API or any real account.
  */
 import assert from "node:assert/strict";
@@ -35,9 +35,7 @@ const page=[
  '<span class="cs-eyebrow">TOTAL 12 / UPDATED 4:32</span>',panel,
  '</div></header></div></div></section>',
  '</div></main></div>',
- '<script type="module">import {mountCollectionsGlass} from "/app/assets/collections-glass.js";',
- 'window.__glass=mountCollectionsGlass(document.getElementById("cs-root"));',
- 'window.__ready=true;</script></body></html>'
+ '<script>window.__ready=true;</script></body></html>'
 ].join("");
 const files=new Map([
  ["dashboard.css","sites/_apex/app/assets/dashboard.css"],
@@ -137,72 +135,22 @@ try{
  assert.equal(overlay.count,1,"No duplicate buttons or overlay clone");
  assert.ok(overlay.top<overlay.panelTop,"Tooltips open upward above bottom dock");
  assert.deepEqual(overlay.buttons,["cs-create","cs-edit","cs-select-collections"]);
- const svg=await evaluate('CSS.supports("backdrop-filter",\'url("#collections-oracle-live-glass")\')');
- if(svg){
-  await until('window.__glass?.active===true',"SVG geometry maps available");
-  const widths=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect();return [...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>({w:+x.getAttribute("width"),h:+x.getAttribute("height"),png:x.getAttribute("href")?.startsWith("data:image/png")}))})()');
-  assert.equal(widths.length,1);
-  assert.ok(widths.every(x=>x.w===Math.round(before.width)+40&&x.h===Math.round(before.height)+40&&x.png),
-   "Actual optical PNG must contain 20px on every circular and straight edge");
-  const actualLens=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),q=getComputedStyle(p,"::before");return {filter:q.backdropFilter||q.webkitBackdropFilter,mask:q.maskImage||q.webkitMaskImage,box:[q.width,q.height],over:p.style.getPropertyValue("--cs-optical-overscan")}})()');
-  assert.ok(actualLens.filter.includes("collections-oracle-live-glass"),"Actual curved pseudo lens must use live SVG");
-  assert.ok(actualLens.mask.includes("data:image/png"),"Curved edge must use exact alpha mask");
-  assert.equal(actualLens.over,"20px");
-  const old=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
-  await evaluate('(()=>{document.querySelector(".test-scenery").style.background="repeating-linear-gradient(95deg,red 0 8px,blue 8px 16px)";scrollTo(0,1800);return true})()');
-  await pause(250);
-  const current=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
-  assert.deepEqual(current,old,"Changing real backdrop pixels must not regenerate geometry");
+ const surface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p),a=getComputedStyle(p,"::before"),b=getComputedStyle(p,"::after");return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter,box:s.boxShadow,before:a.content,after:b.content,svgFilters:document.querySelectorAll("#collections-oracle-live-glass").length,ready:p.classList.contains("cs-oracle-ready"),inlineMask:p.style.getPropertyValue("--cs-optical-mask")}})()');
+ assert.equal(surface.background,"rgb(22, 22, 22)","The dock is solid dark charcoal");
+ assert.equal(surface.filter,"none","No CSS blur, SVG refraction or backdrop sampling");
+ assert.equal(surface.box,"none","No inset fake-glass outline or shadow");
+ assert.equal(surface.before,"none","No optical overlay pseudo-element");
+ assert.equal(surface.after,"none","No optical tint/lighting pseudo-element");
+ assert.equal(surface.svgFilters,0,"No glass SVG filter should mount");
+ assert.equal(surface.ready,false,"The oracle readiness class must not appear");
+ assert.equal(surface.inlineMask,"","No optical displacement texture should be generated");
+ const originalSurface=surface;
+ await evaluate('(()=>{document.querySelector(".test-scenery").style.background="repeating-linear-gradient(95deg,red 0 8px,blue 8px 16px)";scrollTo(0,1800);return true})()');
+ await pause(160);
+ const later=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p);return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter,box:s.boxShadow}})()');
+ assert.deepEqual(later,{background:originalSurface.background,filter:"none",box:"none"},
+  "The panel remains flat and unchanged above arbitrary scrolling page content");
 
-  // A measurement on the REAL CSS pseudo-lens, including the same capsule
-  // alpha mask, border radius, and overscan as production. Earlier tests
-  // used a stand-alone rectangular lens and MISSED the circular clipping.
-  // This is a numerical browser test on controlled source scenery, NOT a
-  // screenshot comparison to native Apple output.
-  await evaluate(`(()=>{
-   const root=document.getElementById("cs-root");
-   const original=document.querySelector(".cs-control-center");
-   const r=original.getBoundingClientRect();
-   const scene=document.createElement("div");
-   scene.id="optical-fiducial";
-   scene.style.cssText="position:fixed;left:37px;top:109px;width:395px;height:245px;z-index:400;pointer-events:none;background:repeating-linear-gradient(111deg,#f5f5f5 0 26px,#171717 26px 56px)";
-   const lens=document.createElement("div");
-   lens.id="optical-probe";lens.className="cs-control-center cs-oracle-ready";
-   lens.style.cssText="position:fixed;left:62px;top:152px;right:auto;bottom:auto;z-index:401;width:"+Math.round(r.width)+"px;height:"+Math.round(r.height)+"px;min-height:0;max-width:none;padding:0;gap:0;pointer-events:none";
-   for(const name of ["--cs-optical-mask","--cs-optical-overscan",
-     "--cs-optical-width","--cs-optical-height","--cs-oracle-blur"])
-    lens.style.setProperty(name,original.style.getPropertyValue(name));
-   const style=document.createElement("style");style.id="optical-probe-rules";
-   style.textContent='#cs-root .cs-control-center.cs-oracle-ready.probe-native::before{-webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important}'+
-    '#cs-root .cs-control-center.cs-oracle-ready.probe-off::before{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}';
-   root.append(scene,lens,style);
-  })()
- `);
-  const readScreenshot=async(mode)=>{
-   await evaluate('(()=>{const p=document.getElementById("optical-probe");p.classList.remove("probe-native","probe-off");if('+JSON.stringify(mode)+'==="native")p.classList.add("probe-native");if('+JSON.stringify(mode)+'==="off")p.classList.add("probe-off");return true})()');
-   await pause(180);
-   return (await command("Page.captureScreenshot",{format:"png",captureBeyondViewport:false})).data;
-  };
-  const plain=await readScreenshot("off");
-  const native=await readScreenshot("native");
-  const refracted=await readScreenshot("oracle");
-  const images=JSON.stringify([plain,native,refracted]);
-  const optics=await evaluate('(async()=>{const images='+images+';const frames=await Promise.all(images.map(async b64=>{const img=new Image();img.src="data:image/png;base64,"+b64;await img.decode();const c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0);return ctx.getImageData(0,0,c.width,c.height)}));const gray=(frame,x,y)=>{const i=(y*frame.width+x)*4;return (frame.data[i]+frame.data[i+1]+frame.data[i+2])/3};const avg=(a,b,pts)=>pts.reduce((s,[x,y])=>s+Math.abs(gray(a,x,y)-gray(b,x,y)),0)/pts.length;const region=(x0,x1,y0,y1)=>{const out=[];for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)out.push([x,y]);return out};const [off,blur,warp]=frames;const left=region(53,73,179,203),right=region(262,284,179,203),inner=region(130,196,176,208),outer=region(49,62,184,196);const mean=(a)=>a.reduce((s,v)=>s+v,0)/a.length;const std=(frame,pts)=>{const a=pts.map(([x,y])=>gray(frame,x,y)),m=mean(a);return Math.sqrt(mean(a.map(v=>(v-m)**2)))};const rounded=region(68,85,158,178);return {innerOffStd:std(off,inner),innerBlurStd:std(blur,inner),innerWarpStd:std(warp,inner),leftBlur:avg(off,blur,left),rightBlur:avg(off,blur,right),leftWarp:avg(blur,warp,left),rightWarp:avg(blur,warp,right),outerBlur:avg(off,blur,outer),outerWarp:avg(blur,warp,outer),cornerBlur:avg(off,blur,rounded),cornerWarp:avg(blur,warp,rounded)}})()');
-  console.log("Actual capsule curved-edge browser optical metrics:",JSON.stringify(optics));
-  assert.ok(optics.innerBlurStd<optics.innerOffStd*.87,
-   "CSS pseudo lens must really blur the backdrop, not just report a URL");
-  assert.ok(optics.leftBlur>1.5&&optics.rightBlur>1.5,
-   "BOTH semicircular ends must exhibit blurred live backdrop");
-  assert.ok(optics.leftWarp>2&&optics.rightWarp>2,
-   "BOTH semicircular ends must actually warp differently from pure blur");
-  assert.ok(optics.outerBlur>1&&optics.outerWarp>1,
-   "Outside the left circular rim the overscan must remain optically active");
-  assert.ok(optics.cornerBlur>1&&optics.cornerWarp>1,
-   "Quarter-circle regions must warp and blur, not be rectangularly clipped");
-  await evaluate('(()=>{for(const id of ["optical-probe","optical-fiducial","optical-probe-rules"])document.getElementById(id)?.remove();return true})()');
-
-
- }
  await command("Emulation.setDeviceMetricsOverride",{width:365,height:740,deviceScaleFactor:2,mobile:true});
  await pause(300);
  const narrow=await evaluate(metrics);
@@ -210,15 +158,12 @@ try{
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
  assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-24-narrow.bottom)<2);
- const mobileEdge=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect();const s=getComputedStyle(p,"::before");const span=parseFloat(p.style.getPropertyValue("--cs-optical-overscan"))||0;return {span,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:document.documentElement.clientWidth,height:document.documentElement.clientHeight,masked:s.maskImage!=="none"}})()');
- if(svg){
-  assert.ok(mobileEdge.masked,"Mobile curved edge optical mask must remain mounted");
-  assert.ok(mobileEdge.width-mobileEdge.right>=mobileEdge.span,"Right-hand glass halo must not be clipped by viewport");
-  assert.ok(mobileEdge.height-mobileEdge.bottom>=mobileEdge.span,"Bottom glass halo must not be clipped by viewport");
- }
+ const mobileSurface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p);return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter}})()');
+ assert.deepEqual(mobileSurface,{background:"rgb(22, 22, 22)",filter:"none"},
+   "Mobile must render the same flat panel without optical filters");
  await evaluate('document.querySelector(".view").hidden=true;true');
  assert.equal(await evaluate('document.querySelector(".cs-control-center").getBoundingClientRect().width'),0);
- console.log("Public Clear Collections: 1.5x fixed dock, exact-size one-pass warp, live backdrop, hit testing and mobile layout passed.");
+ console.log("Collections flat dark dock: fixed 1.5x size, unchanged hit testing, no optical shader/filter/blur, and mobile layout passed.");
 }finally{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");

@@ -990,7 +990,7 @@ test("Select and Edit remain visually unframed until hovered while retaining cir
   assert.ok(!css.includes("#cs-root.cs-collection-selecting .cs-select-icon-button{background:"));
 });
 
-test("Add, Edit and Select keep their controller identities inside the fixed black-glass dock",()=>{
+test("Add, Edit and Select keep their controller identities inside the fixed flat dark dock",()=>{
  const start=html.indexOf('<div class="cs-control-center" role="group" aria-label="Collection controls">');
  assert.ok(start>0,"Expected one self-contained control center");
  const end=html.indexOf("</div>",start);
@@ -1005,12 +1005,16 @@ test("Add, Edit and Select keep their controller identities inside the fixed bla
  const block=css.slice(anchor,css.indexOf("}",anchor)+1);
  assert.ok(block.includes("--cs-dock-scale:1.5"));
  assert.ok(block.includes("position:fixed"));
- assert.ok(block.includes("background:rgba(0,0,0,.24)"));
- assert.ok(block.includes("border:0"),"No guessed solid bright rim");
- assert.ok(block.includes('backdrop-filter:blur(var(--cs-oracle-blur,16px))'));
+ assert.ok(block.includes("background:#161616"),"An opaque flat dark surface replaces fake glass");
+ assert.ok(block.includes("border:0"),"No fake glass rim");
+ assert.ok(block.includes("box-shadow:none"),"No inset faux glass outline");
+ assert.ok(block.includes("-webkit-backdrop-filter:none"),"No blur or backdrop sampling");
+ assert.ok(block.includes("backdrop-filter:none"),"No backdrop sampling");
  assert.ok(block.includes("width:max-content"),"Dock remains only as wide as its buttons");
- assert.ok(!block.includes("background:#212121"),"The opaque composer style is overridden");
- assert.ok(css.includes(".cs-control-center.cs-oracle-ready{"),"Enable native SourceGraphic SVG only once all exact maps exist");
+ assert.ok(!block.includes("background:#212121"),"The legacy composer style is overridden");
+ assert.ok(!css.includes(".cs-control-center.cs-oracle-ready{"),"No active SVG glass optics");
+ assert.ok(css.includes(".cs-control-center::before,\n#cs-root .cs-control-center::after{\n content:none;"),
+  "No fake glass light/shadow overlays");
  assert.ok(css.includes("font-size:13px;padding:10px 13px"),"Floating tooltips remain legible");
 });
 

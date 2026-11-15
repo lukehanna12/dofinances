@@ -30,7 +30,7 @@ jobs:
         run: npm run check
       - name: Verify README Markdown typing in Chromium
         run: node scripts/verify-readme-markdown-browser.mjs
-      - name: Verify floating Collections Oracle glass in Chromium
+      - name: Verify flat Collections controls in Chromium
         run: node scripts/verify-collections-glass-browser.mjs
       - name: Build site
         run: npm run build
