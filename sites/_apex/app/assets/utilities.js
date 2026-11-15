@@ -465,7 +465,7 @@ export function initColosseumUtilities(){
    // Neither is persisted until the owner confirms the operation.
    summary();renderList();report("");
   }catch(error){if(serial===s.requestSeq){actionError(error);if(!s.loaded){s.items=[];renderList();}}}
-  finally{if(serial===s.requestSeq){s.loading=false;setSummaryLoading(false);busy(false);}}
+  finally{if(serial===s.requestSeq){s.loading=false;setSummaryLoading(false);busy(false);syncModes();}}
  }
  async function loadDetails(uid,{force=false}={}){
   if(!UID.test(uid))return;
@@ -794,7 +794,7 @@ export function initColosseumUtilities(){
   if(page>max)return;
   void loadPage(page,null);
  });
- elements.submit.addEventListener("click",()=>void loadPage(0,null));
+ elements.submit.addEventListener("click",()=>{if(!elements.query.disabled)elements.query.focus({preventScroll:true});});
  elements.query.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();void loadPage(0,null);}});
  elements.query.addEventListener("search",()=>void loadPage(0,null));
  elements.sort.addEventListener("change",()=>void loadPage(0,null));
@@ -825,6 +825,34 @@ export function initColosseumUtilities(){
  elements.add.addEventListener("click",()=>openEditor("add"));
  elements.edit.addEventListener("click",toggleEditMode);
  elements.select.addEventListener("click",toggleSelectMode);
+ // Match Collections' route-scoped ⇧⌘F / ⇧⌘N / ⇧⌘E shortcuts.
+ // Update uses ⇧⌘U; Refresh uses ⌃⇧R. Never intercept inputs, dialogs,
+ // other workspace routes or an unfinished asynchronous catalog mutation.
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.isComposing||event.repeat||event.altKey||
+     root.closest(".view")?.hidden||document.querySelector("dialog[open]"))return;
+  const code=event.code||"",letter=(event.key||"").toLowerCase();
+  const editable=event.target instanceof Element&&
+   !!event.target.closest('input,textarea,select,[contenteditable="true"],[role="textbox"]');
+  if(event.metaKey&&event.shiftKey&&!event.ctrlKey){
+   if((code==="KeyF"||letter==="f")&&!elements.query.disabled){
+    event.preventDefault();elements.query.focus({preventScroll:true});elements.query.select();return;
+   }
+   if(editable&&!s.editMode)return;
+   if((code==="KeyN"||letter==="n")&&!elements.add.disabled&&!editable){
+    event.preventDefault();openEditor("add");return;
+   }
+   if((code==="KeyE"||letter==="e")&&!elements.edit.disabled){
+    event.preventDefault();toggleEditMode();return;
+   }
+   if((code==="KeyU"||letter==="u")&&!elements.updates.disabled&&!editable){
+    event.preventDefault();void checkUpdates();
+   }
+  }else if(event.ctrlKey&&event.shiftKey&&!event.metaKey&&!editable&&
+           (code==="KeyR"||letter==="r")&&!elements.refresh.disabled){
+   event.preventDefault();s.collectionChoices=null;void loadPage(0,null);
+  }
+ },{capture:true});
  elements.editorCancel.addEventListener("click",()=>elements.editor.close());
  elements.editor.addEventListener("close",()=>{s.planned=null;});
  elements.editorForm.addEventListener("submit",event=>{event.preventDefault();void publishEditor();});
