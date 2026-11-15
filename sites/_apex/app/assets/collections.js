@@ -105,6 +105,16 @@ export function initColosseumCollections(){
    collectionSelecting:false,selectedCollections:new Set(),collectionSelectTransitioning:false
  };
  const list=$("cs-list"),detail=$("cs-detail"),pagination=$("cs-pagination");
+ const layout=list.closest(".cs-layout");
+ // Let a closed card finish sliding offscreen before removing its content.
+ // Native CSS events keep motion synchronized without polling or timers.
+ function finishDesktopDetailMotion(event){
+   if(event.target!==layout||event.propertyName!=="grid-template-columns")return;
+   layout.classList.remove("cs-detail-resizing");
+   if(!state.activeId&&detail.classList.contains("cs-empty"))detail.replaceChildren();
+ }
+ layout.addEventListener("transitionend",finishDesktopDetailMotion);
+ layout.addEventListener("transitioncancel",finishDesktopDetailMotion);
  const collectionSearch=$("cs-collection-search"),collectionSearchFocus=$("cs-focus-collection-search");
  const status=$("cs-status"),summary=$("cs-summary"),summaryValue=summary.querySelector(".cs-summary-value"),createButton=$("cs-create"),refreshButton=$("cs-refresh");
  const editDialog=$("cs-form-dialog"),deleteDialog=$("cs-delete-dialog"),contextDialog=$("cs-context-dialog"),editButton=$("cs-edit"),selectButton=$("cs-select-collections");
@@ -487,10 +497,22 @@ export function initColosseumCollections(){
  }
  function renderCard(){
    const selected=!!state.activeId;
+   const wasOpen=layout.classList.contains("cs-detail-open");
+   // An open-to-open row change replaces the content without reanimating
+   // the grid. Only null-to-open and open-to-null animate both columns.
+   if(wasOpen!==selected){
+     const animate=window.matchMedia?.("(min-width:1024px) and (prefers-reduced-motion:no-preference)")?.matches &&
+       !root.closest(".view")?.hidden;
+     layout.classList.toggle("cs-detail-resizing",!!animate);
+   }
+   layout.classList.toggle("cs-detail-open",selected);
    detail.classList.toggle("cs-empty",!selected);
    detail.setAttribute("aria-hidden",String(!selected));
    const markup=selected?cardMarkup():"";
-   if(detail.innerHTML!==markup)detail.innerHTML=markup;
+   // On an explicit close, keep the outgoing card painted during its
+   // rightward slide. The grid transitionend handler removes it after.
+   if((selected||!layout.classList.contains("cs-detail-resizing"))&&detail.innerHTML!==markup)
+     detail.innerHTML=markup;
    syncDescriptionEditor();
    const mobile=list.querySelector(".cs-entry.cs-open [data-cs-mobile]");
    if(mobile){

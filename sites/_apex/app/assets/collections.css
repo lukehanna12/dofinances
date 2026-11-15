@@ -42,6 +42,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   --cs-red:#f87171;--cs-red-border:#87373b;--cs-red-surface:#2b1518;
   color:var(--cs-text);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --cs-row-height:54px;--cs-control-swap:480ms;--cs-control-ease:cubic-bezier(.22,1,.36,1);
+  --cs-detail-motion:240ms;--cs-detail-ease:cubic-bezier(.22,1,.36,1);
   -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:-44px;padding:0;
 }
 #cs-root *{box-sizing:border-box}
@@ -185,7 +186,26 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    trailing) reserve 645px on BOTH pages. Keep the minimum on the layout,
    not the list, so a short final page moves pagination without pulling the
    black canvas edge upward. Expanded content may grow beyond the minimum. */
-#cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:64px;align-items:start;min-height:calc(10 * var(--cs-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
+#cs-root .cs-layout{margin-top:48px;display:grid;grid-template-columns:minmax(0,1fr);gap:40px;align-items:start;min-height:calc(10 * var(--cs-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
+#cs-root .cs-collection-column{min-width:0}
+/* Wide-screen Collections uses one synchronized width/gutter motion.
+   No selection: the list occupies every available pixel. An open row
+   creates the original split; selecting another row preserves that split. */
+@media(min-width:1024px){
+ #cs-root .cs-layout{
+  grid-template-columns:minmax(0,1fr) minmax(0,0fr);
+  column-gap:0;
+  transition:grid-template-columns var(--cs-detail-motion) var(--cs-detail-ease),
+             column-gap var(--cs-detail-motion) var(--cs-detail-ease);
+ }
+ #cs-root .cs-layout.cs-detail-open{
+  grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  column-gap:64px;
+ }
+ /* Clip the card only while its track contracts/expands; otherwise
+    preserve the existing tooltip overflow of the open panel. */
+ #cs-root .cs-layout.cs-detail-resizing .cs-desktop-detail{overflow:hidden}
+}
 /* Collections-only bottom inset: the previous 26px produced an estimated
    38px below the full ten-row count line. Increase it to 32px for 44px total
    (~15.8% more). The 729px full-page layout reserve stays unchanged. */
@@ -238,8 +258,11 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-page[aria-current="page"]{background:#fff;border-color:#fff;color:#171717;font-weight:600;transform:scale(1.03)}
 #cs-root .cs-page svg{width:16px;height:16px}
 #cs-root .cs-countline{color:var(--cs-muted);font-size:12px;margin-top:12px;text-align:center;font-variant-numeric:tabular-nums}
-#cs-root .cs-desktop-detail{min-width:0;transition:opacity .25s cubic-bezier(.22,1,.36,1),transform .25s cubic-bezier(.22,1,.36,1);overflow-anchor:none}
-#cs-root .cs-desktop-detail.cs-empty{opacity:0;transform:translateY(-8px);pointer-events:none}
+/* Rightward slide, reveal and retreat use the exact same 240ms curve
+   as the list's responsive CSS-grid tracks. */
+#cs-root .cs-desktop-detail{min-width:0;opacity:0;transform:translateX(56px);pointer-events:none;transition:opacity var(--cs-detail-motion) var(--cs-detail-ease),transform var(--cs-detail-motion) var(--cs-detail-ease);overflow-anchor:none}
+#cs-root .cs-desktop-detail.cs-empty{opacity:0;transform:translateX(56px);pointer-events:none}
+#cs-root .cs-layout.cs-detail-open .cs-desktop-detail:not(.cs-empty){opacity:1;transform:translateX(0);pointer-events:auto}
 #cs-root .cs-card{width:100%;border:1px solid var(--cs-border);border-radius:24px;background:var(--cs-card);display:flex;flex-direction:column;padding:40px clamp(26px,3.3vw,52px);max-height:480px;min-width:0;box-shadow:0 1px 3px #00000008}
 #cs-root .cs-card-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0}
 #cs-root .cs-card-label{display:flex;align-items:center;gap:10px;font-size:clamp(16px,1.4vw,18px);font-weight:600;letter-spacing:-.02em;color:var(--cs-text)}
