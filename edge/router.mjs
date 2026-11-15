@@ -306,7 +306,7 @@ async function colosseumOwnerApi(request,env,pathname) {
     if(!state.owner)return json({error:"Only the connected Colosseum administrator may manage providers."},403);
     if(providerCallback){
       const u=new URL(request.url),q=u.searchParams;
-      const errorPage=code=>redirect("https://dofinances.com/app/?providers_error="+encodeURIComponent(code)+"#colosseum/providers",303);
+      const errorPage=code=>redirect("https://dofinances.com/app/?providers_error="+encodeURIComponent(code)+"#colosseum/providers/credentials",303);
       const val=(key,maximum)=>{const values=q.getAll(key);
         if(values.length>1)return null;
         const v=values[0]||"";return v.length<=maximum?v:null;};
@@ -322,7 +322,7 @@ async function colosseumOwnerApi(request,env,pathname) {
       const parsed=await result.json();
       if(!result.ok||parsed.status!=="connected"&&parsed.status!=="cancelled")
         return errorPage(String(parsed.error||"authorization_failed").slice(0,96));
-      return redirect("https://dofinances.com/app/?providers_result="+encodeURIComponent(parsed.status)+"#colosseum/providers",303);
+      return redirect("https://dofinances.com/app/?providers_result="+encodeURIComponent(parsed.status)+"#colosseum/providers/credentials",303);
     }
     if(method==="POST"&&request.headers.get("Sec-Fetch-Site")&&request.headers.get("Sec-Fetch-Site")!=="same-origin")
       return json({error:"Cross-site provider management request denied."},403);
@@ -491,6 +491,7 @@ const WORKSPACE_VIEW_PATHS = new Set([
   "/app/home", "/app/projects", "/app/settings", "/app/account",
   "/app/colosseum", "/app/colosseum/readme", "/app/colosseum/utilities", "/app/colosseum/capabilities",
   "/app/colosseum/collections", "/app/colosseum/providers",
+  "/app/colosseum/providers/local", "/app/colosseum/providers/external", "/app/colosseum/providers/credentials",
   "/app/colosseum/permissions", "/app/colosseum/diagnostics",
   "/app/colosseum/settings",
   "/app/apple-hig-reader", "/app/apple-hig-reader/readme", "/app/apple-hig-reader/overview",

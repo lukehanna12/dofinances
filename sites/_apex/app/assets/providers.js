@@ -4,7 +4,7 @@
  * invoke grants and independently enforced local registry. */
 import {mountLocalProviderProvisions,invalidateLocalProviderProvisions} from "./provider-provisions.js";
 const API="/api/colosseum/providers";
-const ROUTE='[data-view="colosseum/providers"]';
+const ROUTES=Object.freeze({local:"colosseum/providers/local",federated:"colosseum/providers/external",credentials:"colosseum/providers/credentials"});
 const FIELDS=["connection","operations","resources","effects","credentials"];
 const FALLBACK_CHOICES=Object.freeze({
  connection:["stdio","http","browser","native","cli","library"],
@@ -64,9 +64,9 @@ function marker(label,status){
 }
 function header(target,label,name,symbol,description){
  append(target,"p","pv-detail-overline",label);
- const h=e("div","pv-detail-heading"),icon=e("span","pv-detail-mark",symbol),text=e("div");
+ const h=e("div","pv-detail-heading"),text=e("div");
  append(text,"h3","",name);append(text,"p","pv-detail-description",description);
- h.append(icon,text);target.append(h);
+ h.append(text);target.append(h);
 }
 function pairs(target,rows){
  const dl=e("dl","pv-detail-grid");
@@ -78,17 +78,17 @@ export function initColosseumProviders(){
  root.dataset.ready="true";
  const $=id=>document.getElementById(id);
  const list=$("pv-list"),detail=$("pv-detail"),status=$("pv-status"),search=$("pv-search"),
-  remoteTab=$("pv-federated-tab"),localTab=$("pv-local-tab"),refresh=$("pv-refresh"),
-  localCount=$("pv-local-count"),remoteCount=$("pv-cloud-count"),indexTitle=$("pv-index-title"),
-  total=$("pv-index-total"),browser=$("pv-browser");
- const state={mode:"federated",selected:{federated:null,local:null},
+  refresh=$("pv-refresh"),indexTitle=$("pv-index-title"),total=$("pv-index-total"),
+  summary=$("pv-summary"),summaryValue=$("pv-summary-value");
+ const state={mode:"local",selected:{federated:null,local:null,credentials:null},
   federated:[],local:[],details:new Map(),choices:FALLBACK_CHOICES,
   localRevision:null,busy:false,loadSeq:0,detailSeq:0,loaded:{federated:false,local:false},
-  pending:null};
+  pending:null,profileEditor:null,expandedLocal:new Set(),deferredLoad:false};
+ const dataMode=()=>state.mode==="local"?"local":"federated";
  const setStatus=(text,tone)=>{status.textContent=text;status.dataset.tone=tone||"info";};
  const active=()=>state.selected[state.mode];
- const items=()=>state[state.mode];
- const key=x=>state.mode==="federated"?x.uid:x.provider_id;
+ const items=()=>state[dataMode()];
+ const key=x=>dataMode()==="federated"?x.uid:x.provider_id;
  const item=()=>items().find(x=>key(x)===active())||null;
  async function request(body,method="POST"){
   const opts={method,credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}};
@@ -108,55 +108,92 @@ export function initColosseumProviders(){
   if(state.busy)return;
   state.busy=true;refresh.disabled=true;
   try{return await fn();}catch(err){setStatus(err?.name==="AbortError"?"Provider operation timed out.":String(err?.message||err),"error");}
-  finally{state.busy=false;refresh.disabled=false;}
+  finally{state.busy=false;refresh.disabled=false;
+   if(state.deferredLoad){state.deferredLoad=false;window.queueMicrotask?.(onRoute);}}
  };
+ const selectedId=()=>active();
+ const statusOf=x=>state.mode==="local"?(x.available?"available":"unavailable"):
+   x.status==="connected"?"available":x.status==="pending"?"pending":"unavailable";
  function renderList(){
   list.replaceChildren();
-  const term=search.value.trim().toLocaleLowerCase();
-  const shown=items().filter(x=>(x.name||x.provider_id).toLocaleLowerCase().includes(term)||key(x).toLowerCase().includes(term));
-  total.textContent=String(shown.length);
+  const term=search.value.trim().toLocaleLowerCase(),rows=items();
+  if(!selectedId()&&rows.length)state.selected[state.mode]=key(rows[0]);
+  const shown=rows.filter(x=>((x.name||x.provider_id||"")+" "+key(x)).toLocaleLowerCase().includes(term));
+  total.textContent=shown.length+" shown";
   for(const x of shown){
-   const id=key(x),selected=active()===id;
-   const b=e("button","pv-provider-item"+(selected?" is-active":""));b.type="button";b.dataset.providerId=id;
-   b.setAttribute("aria-pressed",String(selected));b.append(e("span","pv-provider-icon",(x.name||id)[0].toUpperCase()));
-   const copy=e("span");
+   const id=key(x),selected=selectedId()===id;
+   const button=e("button","pv-provider-item"+(selected?" is-active":""));button.type="button";button.dataset.providerId=id;
+   button.setAttribute("aria-pressed",String(selected));
+   const dot=e("span","pv-provider-mark");dot.dataset.state=statusOf(x);dot.setAttribute("aria-hidden","true");
+   const copy=e("span","pv-provider-copy");
    append(copy,"strong","",x.name||title(id));
-   append(copy,"small","",state.mode==="federated"?(x.status==="connected"?"Connected":x.status==="pending"?"Pending verification":x.status==="disconnected"?"Not connected":"Registered")+" · "+x.uid:
-      (x.available?"Gateway available":"Unavailable")+" · "+x.tool_count+" tools");
-   b.append(copy,e("span","pv-chevron","›"));
-   b.addEventListener("click",()=>{
-    state.selected[state.mode]=id;state.pending=null;
+   append(copy,"small","",dataMode()==="federated"?
+    (x.status==="connected"?"Connected":x.status==="pending"?"Pending verification":x.status==="disconnected"?"Not connected":"Registered")+" · "+x.uid:
+    (x.available?"Available":"Unavailable")+" · "+x.tool_count+" tools");
+   const chevron=e("span","pv-chevron","›");chevron.setAttribute("aria-hidden","true");
+   button.append(dot,copy,chevron);
+   button.addEventListener("click",()=>{
+    state.selected[state.mode]=id;state.pending=null;state.profileEditor=null;
     renderList();renderDetails();
-   });list.append(b);
+   });list.append(button);
   }
-  if(!shown.length)list.append(e("p","pv-empty-list",state.loaded[state.mode]?
-   "No providers match the current filter.":"Retrieving provider data…"));
+  if(!shown.length)list.append(e("p","pv-empty-list",state.loaded[dataMode()]?
+   (term?"No providers match your search.":"No registered providers were returned."):
+   "Retrieving provider data…"));
  }
- function changeMode(mode){
-  if(state.mode===mode)return;
-  state.mode=mode;state.pending=null;search.value="";
-  render();
-  if(!state.loaded[mode])void load(mode);
+ function alignSummarySkeleton(){
+  const node=summaryValue.firstChild;
+  if(!node||node.nodeType!==3)return;
+  const text=node.textContent||"",slash=text.indexOf(" / ");
+  if(slash<0)return;
+  const range=document.createRange(),base=summary.getBoundingClientRect();
+  const center=(a,b)=>{
+   range.setStart(node,a);range.setEnd(node,b);
+   const r=range.getBoundingClientRect();
+   return r.left-base.left+r.width/2;
+  };
+  summary.style.setProperty("--pv-ring-one",center(0,slash)+"px");
+  summary.style.setProperty("--pv-ring-two",center(slash+3,text.length)+"px");
  }
  function render(){
-  remoteTab.classList.toggle("active",state.mode==="federated");
-  localTab.classList.toggle("active",state.mode==="local");
-  remoteTab.setAttribute("aria-selected",String(state.mode==="federated"));
-  localTab.setAttribute("aria-selected",String(state.mode==="local"));
-  browser.setAttribute("aria-labelledby",state.mode==="federated"?"pv-federated-tab":"pv-local-tab");
-  indexTitle.textContent=state.mode==="federated"?"Federated connections":"Local provider contracts";
-  refresh.querySelector("span").textContent="Refresh";
-  renderList();renderDetails();
+  const mode=state.mode,local=mode==="local";
+  root.dataset.mode=mode;
+  indexTitle.textContent=local?"Registered Mac providers":mode==="credentials"?"Credential owners":"Hosted and external providers";
+  const rows=items(),connected=local?rows.filter(x=>x.available).length:rows.filter(x=>x.status==="connected").length;
+  summaryValue.textContent=(local?"LOCAL":mode==="credentials"?"CREDENTIALS":"EXTERNAL")+" · "+rows.length+
+    " REGISTERED / "+connected+(local?" AVAILABLE":" CONNECTED");
+  alignSummarySkeleton();renderList();renderDetails();
+ }
+ function showSkeleton(){
+  if(state.loaded[dataMode()])return;
+  list.replaceChildren();
+  for(const width of [78,53,69,82,57,72,48,64]){
+   const row=e("div","pv-skeleton-row");row.setAttribute("aria-hidden","true");
+   const mark=e("span","pv-skeleton-dot site-skeleton");
+   const line=e("span","pv-skeleton-bar site-skeleton");line.style.setProperty("--site-skeleton-text-width",width+"%");
+   row.append(mark,line);list.append(row);
+  }
+ }
+ function setLoading(value,mode){
+  if(dataMode()!==mode)return;
+  root.classList.toggle("pv-loading",value);
+  refresh.classList.toggle("pv-refreshing",value);
+  refresh.setAttribute("aria-busy",String(value));
+  summary.setAttribute("aria-busy",String(value));
+  list.setAttribute("aria-busy",String(value));
+  if(value){alignSummarySkeleton();showSkeleton();}
  }
  async function load(mode){
+  if(state.busy)return;
   const seq=++state.loadSeq;
+  setLoading(true,mode);
   await busy(async()=>{
-   setStatus(mode==="local"?"Reading current Mac provider contracts…":"Loading Colosseum connection states…");
+   setStatus("");
    const result=await request(mode==="local"?{action:"local.list"}:null,mode==="local"?"POST":"GET");
    if(seq!==state.loadSeq)return;
    if(mode==="federated"){
     state.federated=Array.isArray(result.providers)?result.providers:[];
-    remoteCount.textContent=state.federated.length+" registered";
+
    }else{
     if(!/^[a-f0-9]{64}$/.test(result.revision)||!Array.isArray(result.providers))
      throw Error("The local gateway did not return an authoritative provider contract.");
@@ -169,22 +206,26 @@ export function initColosseumProviders(){
     });
     state.choices=result.choices||FALLBACK_CHOICES;
     state.localRevision=result.revision;
-    localCount.textContent=state.local.length+" registered";
+
    }
    state.loaded[mode]=true;
-   if(!itemsFor(mode).some(x=>(mode==="local"?x.provider_id:x.uid)===state.selected[mode]))
-    state.selected[mode]=itemsFor(mode)[0]&&(mode==="local"?itemsFor(mode)[0].provider_id:itemsFor(mode)[0].uid);
-   if(state.mode===mode){render();setStatus(mode==="federated"?
-     "Federated connection states are read from the Colosseum vault and account grants.":
-     "Local profiles and effective gateway status were read directly from the independent registry.");}
+   if(mode==="local"){
+    if(!itemsFor(mode).some(x=>x.provider_id===state.selected.local))
+     state.selected.local=itemsFor(mode)[0]?.provider_id||null;
+   }else for(const view of ["federated","credentials"])
+    if(!itemsFor(mode).some(x=>x.uid===state.selected[view]))
+     state.selected[view]=itemsFor(mode)[0]?.uid||null;
+   if(dataMode()===mode){render();setStatus("");}
   });
+  if(seq===state.loadSeq){setLoading(false,mode);
+   if(!state.loaded[mode]&&dataMode()===mode)list.replaceChildren(e("p","pv-empty-list","Unable to load providers. Refresh to retry."));}
  }
  function itemsFor(mode){return state[mode];}
  async function details(uid){
   const seq=++state.detailSeq;
   try{
    const data=await request({action:"detail",uid});
-   if(seq!==state.detailSeq||state.mode!=="federated"||state.selected.federated!==uid)return;
+   if(seq!==state.detailSeq||state.mode==="local"||active()!==uid)return;
    state.details.set(uid,data);renderDetails();
   }catch(err){if(seq===state.detailSeq){setStatus(String(err?.message||err),"error");}}
  }
@@ -193,17 +234,17 @@ export function initColosseumProviders(){
    const mode=state.mode,uid=active();
    const data=await request(actionName);
    if(data?.status==="rejected"||data?.status==="error")throw Error(data.error||data.summary||"Permission operation rejected");
-   if(mode==="federated"){
+   if(mode!=="local"){
     state.details.delete(uid);
     state.loaded.federated=false;
     state.busy=false;await load("federated");state.busy=true;
-    if(state.selected.federated===uid)await details(uid);
+    if(active()===uid)await details(uid);
    }
    setStatus("Colosseum confirmed the change. Current grants and connection states were refreshed.");
   });
  }
  function renderDetails(){
-  detail.replaceChildren();detail.classList.remove("is-changing");void detail.offsetWidth;detail.classList.add("is-changing");
+  detail.replaceChildren();
   const selected=item();
   if(!selected){
    append(detail,"p","pv-inspector-placeholder",
@@ -218,20 +259,29 @@ export function initColosseumProviders(){
   }
   remoteDetail(remote);
  }
+ function routeLink(label,mode,uid){
+  const link=e("a","pv-detail-action secondary",label);
+  link.href="#"+ROUTES[mode];
+  link.addEventListener("click",()=>{state.selected[mode]=uid;});
+  return link;
+ }
  function remoteDetail(d){
   const linkedinOAuth=d.route_mode==="local"&&d.local_provider_id==="linkedin";
-  header(detail,linkedinOAuth?"FEDERATED HOST / LINKEDIN OAUTH":"FEDERATED CONNECTION",d.name,(d.name||"?")[0],
-   linkedinOAuth?"LinkedIn authorization uses the shared encrypted Colosseum account vault. The provider's local MCP tool permissions remain in Local.":
-   d.kind==="builtin"?"Native, read-only cloud adapter; authorization is per tool.":
-    "Hosted MCP connection managed by your existing Colosseum credential vault.");
+  header(detail,state.mode==="credentials"?"SECURE ACCOUNT CREDENTIALS":"EXTERNAL / CONNECTED CAPABILITIES",
+   d.name,(d.name||"?")[0],
+   state.mode==="credentials"?"Connection configuration and secrets are managed by the Colosseum vault. Sensitive values are never returned to this screen.":
+   linkedinOAuth?"LinkedIn uses a shared encrypted account vault; locally exposed tools remain regulated under Local.":
+   d.kind==="builtin"?"Native cloud adapter. Capabilities require separate authorization.":
+    "Inspect live upstream capabilities and their individual invocation grants.");
   const tags=e("div","pv-detail-state");
   tags.append(marker(d.status==="connected"?"Connected":d.status==="pending"?"Verification pending":"Not connected",
    d.status==="connected"?"available":d.status==="pending"?"": "unavailable"));
-  tags.append(marker((d.tools||[]).filter(t=>t.approved_effect).length+" authorized tools"));
+  if(state.mode!=="credentials")tags.append(marker((d.tools||[]).filter(t=>t.approved_effect).length+" authorized tools"));
   detail.append(tags);
-  pairs(detail,[["Source UID",d.uid],["Connection",d.kind||"Not connected"],
-   ["Approval policy","Per tool"],["Expires",d.expires_at?new Date(d.expires_at).toLocaleString():"Not reported"]]);
-  if(d.kind!=="builtin"){
+  pairs(detail,state.mode==="credentials"?
+   [["Source UID",d.uid],["Connection",d.kind||"Not connected"],["Expires",d.expires_at?new Date(d.expires_at).toLocaleString():"Not reported"]]:
+   [["Source UID",d.uid],["Connection",d.kind||"Not connected"],["Authorization","Per tool"]]);
+  if(state.mode==="credentials"&&d.kind!=="builtin"){
    const section=e("section","pv-detail-section");
    append(section,"h4","","Connection");
    if(d.uid==="000008"){
@@ -290,6 +340,23 @@ export function initColosseumProviders(){
     if(d.kind==="oauth")section.append(action("Refresh OAuth token",()=>void reloadAfter({action:"refresh",uid:d.uid}),{secondary:true}));
    }
    detail.append(section);
+  }
+  if(state.mode==="credentials"){
+   if(d.kind==="builtin"){
+    const note=e("section","pv-detail-section");
+    append(note,"h4","","No credential configuration required");
+    append(note,"p","","This built-in adapter is authorized through its individual tool grants, not a separately configurable OAuth client or API key.");
+    note.append(routeLink("View tool permissions","federated",d.uid));
+    detail.append(note);
+   }
+   return;
+  }
+  if(d.kind!=="builtin"){
+   const credential=e("section","pv-detail-section pv-account-link");
+   append(credential,"h4","","Connection management");
+   append(credential,"p","","Credentials and OAuth authorization are managed separately from tool approvals.");
+   credential.append(routeLink("Manage credentials","credentials",d.uid));
+   detail.append(credential);
   }
   if(linkedinOAuth){
    const local=e("section","pv-detail-section");
@@ -350,6 +417,10 @@ export function initColosseumProviders(){
    append(section,"p","pv-form-error","The independent registry does not contain a profile for this provider. No editing is permitted.");
    detail.append(section);return;
   }
+  pairs(section,[["Operations",p.profile.operations],["Resources",p.profile.resources],["Effects",p.profile.effects],["Credential policy",p.profile.credentials]]);
+  section.append(action(state.profileEditor===p.provider_id?"Close profile editor":"Edit permission profile",()=>{
+   state.profileEditor=state.profileEditor===p.provider_id?null:p.provider_id;renderDetails();
+  },{secondary:true}));
   const form=e("form","pv-provider-form"),controls={};
   for(const k of FIELDS){
    const label=e("label","pv-form-field");
@@ -369,7 +440,7 @@ export function initColosseumProviders(){
    if(FIELDS.every(k=>profile[k]===p.profile[k])){setStatus("No permission fields have changed.");return;}
    void prepareLocal(p.provider_id,profile);
   });
-  section.append(form);
+  if(state.profileEditor===p.provider_id)section.append(form);
   if(state.pending?.provider_id===p.provider_id){
    const panel=e("div","pv-confirm-panel");
    append(panel,"strong","","Confirm effective provider permission change");
@@ -380,7 +451,19 @@ export function initColosseumProviders(){
    section.append(panel);
   }
   detail.append(section);
-  mountLocalProviderProvisions({provider:p,container:detail,request,notify:(message,tone)=>setStatus(message,tone)});
+  const advanced=e("details","pv-advanced"),head=e("summary","pv-advanced-summary","Upstream capabilities, adapters & lifecycle"),content=e("div","pv-advanced-body");
+  const mount=()=>{
+   if(content.dataset.mounted)return;
+   content.dataset.mounted="true";
+   mountLocalProviderProvisions({provider:p,container:content,request,notify:(message,tone)=>setStatus(message,tone)});
+  };
+  advanced.append(head,content);
+  if(state.expandedLocal.has(p.provider_id)){advanced.open=true;mount();}
+  advanced.addEventListener("toggle",()=>{
+   if(advanced.open){state.expandedLocal.add(p.provider_id);mount();}
+   else state.expandedLocal.delete(p.provider_id);
+  });
+  detail.append(advanced);
  }
  async function prepareLocal(provider_id,profile){
   await busy(async()=>{
@@ -409,20 +492,45 @@ export function initColosseumProviders(){
    setStatus("Local provider contract changed and verified against the authoritative registry.");
   });
  }
- remoteTab.addEventListener("click",()=>changeMode("federated"));
- localTab.addEventListener("click",()=>changeMode("local"));
- [remoteTab,localTab].forEach((tab,i)=>tab.addEventListener("keydown",ev=>{
-  if(!["ArrowLeft","ArrowRight","Home","End"].includes(ev.key))return;
-  ev.preventDefault();
-  const idx=ev.key==="Home"?0:ev.key==="End"?1:(i+(ev.key==="ArrowRight"?1:-1)+2)%2;
-  [remoteTab,localTab][idx].focus();changeMode(idx===0?"federated":"local");
- }));
  search.addEventListener("input",renderList);
- refresh.addEventListener("click",()=>void load(state.mode));
- function onRoute(){
-  const active=!document.querySelector(ROUTE)?.hidden;
-  if(active&&!state.loaded[state.mode]&&!state.busy)void load(state.mode);
+ refresh.addEventListener("click",()=>{if(!refresh.disabled)void load(dataMode());});
+ const routeMode=()=>{
+  const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
+  const path=location.pathname.replace(/\/+$/,"").replace(/^\/(?:app|dashboard)\//,"").toLowerCase();
+  const route=hash||path;
+  if(route==="colosseum/providers")return "local";
+  return Object.keys(ROUTES).find(mode=>ROUTES[mode]===route)||null;
+ };
+ function activateProviderScreen(mode){
+  const host=mode==="local"?document.querySelector('[data-view="colosseum/providers/local"]'):
+   document.getElementById(mode==="credentials"?"pv-credentials-mount":"pv-external-mount");
+  if(host&&root.parentElement!==host)host.append(root);
+  if(state.mode!==mode){
+   state.mode=mode;state.pending=null;state.profileEditor=null;
+   search.value="";render();
+  }
+  if(!state.loaded[dataMode()]){
+   if(state.busy)state.deferredLoad=true;
+   else void load(dataMode());
+  }
  }
+ function onRoute(){
+  const mode=routeMode();if(mode)activateProviderScreen(mode);
+ }
+ document.querySelectorAll("#project-navigation .pv-provider-child").forEach(link=>{
+  link.addEventListener("click",()=>{
+   const mode=Object.keys(ROUTES).find(key=>"#"+ROUTES[key]===link.getAttribute("href"));
+   if(mode)activateProviderScreen(mode);
+  });
+ });
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.isComposing||event.repeat||
+     !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;
+  if(event.code!=="KeyR"&&event.key?.toLowerCase()!=="r")return;
+  if(!routeMode()||refresh.disabled||document.querySelector("dialog[open]"))return;
+  if(event.target?.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+  event.preventDefault();void load(dataMode());
+ },{capture:true});
  window.addEventListener("hashchange",()=>window.queueMicrotask(onRoute));
  const url=new URL(location.href);
  const result=url.searchParams.get("providers_result"),error=url.searchParams.get("providers_error");

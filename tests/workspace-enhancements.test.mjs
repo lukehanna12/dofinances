@@ -44,7 +44,7 @@ test("account deletion disclosure has a subtly richer coral tone without changin
 });
 test("unfinished Colosseum screens keep compact headings; Collections and Permissions use dedicated interfaces",()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
-    const removed=path.includes("studio")?["utilities","collections","providers","permissions"]:["utilities","providers"];
+    const removed=path.includes("studio")?["utilities","collections","providers","permissions"]:["utilities"];
     const html=read(path);
     for(const slug of removed){
       const name=slug[0].toUpperCase()+slug.slice(1);
@@ -53,6 +53,9 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
       assert.ok(!html.includes('<p class="lead">Colosseum · '+name+'</p>'),
         slug+" subtitle must be fully removed on "+path);
     }
+    if(!path.includes("studio"))for(const child of ["local","external","credentials"])
+      assert.ok(html.includes('<div class="page-heading"><h1 id="project-providers-'+child+'-title">'+
+        child[0].toUpperCase()+child.slice(1)+'</h1></div>'));
     assert.match(html,/<h1 id="projects-title">Projects<\/h1><p class="lead">/);
     assert.match(html,/<h1 id="settings-title">Settings<\/h1><p class="lead">/);
     if(path.includes("studio/sidebar")){
