@@ -148,14 +148,17 @@ test("Utilities summary shows exact total and app-configured local refresh time"
  const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
  assert.match(view,/class="ut-summary ut-summary-loading"/);
  assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
- assert.match(view,/class="ut-summary-skeleton"/);
- assert.equal((view.match(/class="ut-summary-dot"/g)||[]).length,2);
+ assert.match(view,/class="ut-summary-value site-text-shimmer"/);
+ assert.doesNotMatch(view,/class="ut-summary-dot"|class="ut-summary-skeleton"/);
  assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);
  assert.match(js,/formatWorkspaceTime\(s\.updatedAt,\{hour12:true\}\)/);
  assert.doesNotMatch(js,/report\("Loading live catalog utilities/);
  assert.match(js,/Array\.from\(\{length:s\.pageSize\}/);
- assert.match(css,/#ut-root \.ut-skeleton-bar\{[\s\S]*?width:86%/);
- assert.match(css,/#ut-root \.ut-summary-dot\{[\s\S]*?animation:ut-summary-spin 600ms linear infinite/);
+ assert.match(css,/#ut-root \.ut-skeleton-text\{/);
+ assert.ok(js.includes('class="ut-skeleton-text site-text-shimmer'));
+ const siteShimmer=source("sites/_apex/app/assets/site-text-shimmer.css");
+ assert.match(siteShimmer,/-webkit-background-clip:text;background-clip:text/);
+ assert.match(siteShimmer,/animation:site-text-shimmer var\(--site-shimmer-duration\) linear infinite/);
 });
 test("Utilities restores twenty-five compact row headers and keeps authors in badges",()=>{
  assert.match(js,/pageSize:25/);
@@ -173,9 +176,12 @@ test("Utilities dock uses full circular Add and invariant Select glyph dimension
  assert.match(css,/#ut-root \.ut-control-center \.ut-dock-button img\{/);
  assert.match(css,/width:calc\(19px \* var\(--ut-dock-scale\)\)/);
  assert.match(css,/--ut-dock-scale:1\.5/);
- assert.match(view,/<div class="ut-refresh-stack">[\s\S]*id="ut-update-check"[\s\S]*id="ut-refresh"/);
- assert.equal((view.match(/id="ut-update-check"/g)||[]).length,1);
- assert.match(css,/#ut-root \.ut-refresh-stack \.ut-update-check\{[\s\S]*?position:absolute/);
+ assert.ok(view.includes('id="ut-refresh"'));
+ assert.ok(view.includes('Refresh utilities and check for updates'));
+ assert.doesNotMatch(view,/id="ut-update-check"|id="ut-update-tooltip"|Meta\+Shift\+U/);
+ assert.doesNotMatch(css,/ut-refresh-stack|ut-update-check/);
+ assert.ok(js.includes('if(await loadPage(0,null))await checkUpdates(selectedBeforeRefresh)'));
+ assert.doesNotMatch(js,/elements\.updates|KeyU/);
 });
 test("Shared non-dashboard canvas and scroll-title template has one owner",async()=>{
  const commonCss=source("sites/_apex/app/assets/workspace-title.css");
@@ -258,14 +264,15 @@ test("Select Utilities is a transient unchecked picker with native CSS swap",()=
  assert.match(js,/waitForMotion\(elements\.list\.querySelector\("\.ut-row-pick"\),"ut-pick-enter-right"\)/);
 });
 test("Tooltips and shortcuts are scoped to Utilities and avoid input interception",()=>{
- for(const [id,key] of [["ut-search-submit","F"],["ut-add","N"],["ut-edit","E"],["ut-update-check","U"]]){
+ for(const [id,key] of [["ut-search-submit","F"],["ut-add","N"],["ut-edit","E"]]){
   const at=view.indexOf('id="'+id+'"');
   assert.ok(at>=0,"Missing control "+id);
   assert.ok(view.slice(at,view.indexOf(">",at)).includes('aria-keyshortcuts="Meta+Shift+'+key+'"'),
     "Missing route-scoped shortcut on "+id);
  }
  assert.match(view,/id="ut-refresh"[^>]*aria-keyshortcuts="Control\+Shift\+R"/);
- for(const id of ["ut-search-tooltip","ut-add-tooltip","ut-edit-tooltip","ut-update-tooltip","ut-refresh-tooltip"])
+ assert.doesNotMatch(view,/ut-update-tooltip|ut-update-check|Meta\+Shift\+U/);
+ for(const id of ["ut-search-tooltip","ut-add-tooltip","ut-edit-tooltip","ut-refresh-tooltip"])
   assert.ok(view.includes('id="'+id+'"'));
  assert.match(js,/root\.closest\("\.view"\)\?\.hidden\|\|document\.querySelector\("dialog\[open\]"\)/);
  assert.match(js,/event\.target instanceof Element/);

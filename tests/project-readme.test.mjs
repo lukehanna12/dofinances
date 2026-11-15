@@ -32,7 +32,9 @@ test("Every project has a README-first route, with earlier sections still addres
  assert.ok(html.includes('data-view="project/readme"'));
  assert.ok(html.includes('href="#colosseum/readme"'));
  assert.ok(html.includes('href="#apple-hig-reader/readme"'));
- assert.ok(html.includes('nav-icon-asset--readme'));
+ assert.ok(html.includes('nav-icon-asset--docs'));
+ assert.ok(html.includes('<h1 id="readme-title">README</h1>'));
+ assert.ok(nav.includes('settings:"Settings",readme:"Docs"'));
  assert.ok(router.includes('"/app/colosseum/readme"'));
  assert.ok(router.includes('"/app/apple-hig-reader/readme"'));
  assert.ok(router.includes('^\\/app\\/project\\/'));
@@ -168,8 +170,13 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(ui.includes('target.replaceChildren(sanitizeMarkdown('));
 });
 
-test("Exact local README vector, exact text.page paths and original lossless wallpaper",()=>{
- const original=source("sites/_apex/app/assets/readme-screen-sidebar-icon.v1.svg");
+test("Docs sidebar retains the exact README vector and original wallpaper",()=>{
+ const original=source("sites/_apex/app/assets/docs-screen-sidebar-icon.v1.svg");
+ const legacy=source("sites/_apex/app/assets/readme-screen-sidebar-icon.v1.svg");
+ const theme=source("sites/_apex/app/assets/workspace-theme.css");
+ assert.equal(original,legacy,"Docs icon alias must preserve the original SVG");
+ assert.ok(theme.includes('nav-icon-asset--docs'));
+ assert.ok(theme.includes('/app/assets/docs-screen-sidebar-icon.v1.svg'));
  const diff=source("sites/_apex/app/assets/readme-diff-text-page.v1.svg");
  assert.ok(original.includes('viewBox="0 0 28.149 22.0377"'));
  assert.ok(original.includes("Apple Native CoreSVG"));

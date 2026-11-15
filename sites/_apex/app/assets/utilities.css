@@ -53,11 +53,11 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 #ut-root .ut-filter-control:is(:hover,:focus-within) .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s}
 #ut-root .ut-filter-toggle[data-active="true"]::after{content:"";position:absolute;right:4px;top:3px;width:4px;height:4px;border-radius:50%;background:#f5f5f5}
 #ut-root .ut-order{min-width:0;flex:none;height:32px;max-width:150px;padding:0 9px;color:#c9c9c9;background:var(--ut-fill);border:1px solid var(--ut-line);border-radius:9px;font-size:11px}
-#ut-root .ut-refresh,#ut-root .ut-update-check{height:32px;min-width:32px;display:grid;place-items:center;border:1px solid var(--ut-line);border-radius:9px;background:var(--ut-fill);color:#cecece;padding:0 9px;font-size:11px}
+#ut-root .ut-refresh{height:32px;min-width:32px;display:grid;place-items:center;border:1px solid var(--ut-line);border-radius:9px;background:var(--ut-fill);color:#cecece;padding:0 9px;font-size:11px}
 #ut-root .ut-refresh{width:32px;padding:0}
-#ut-root .ut-refresh svg,#ut-root .ut-update-check svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7}
-#ut-root .ut-update-check{gap:7px;display:inline-flex;justify-content:center}
-#ut-root .ut-refresh:hover,#ut-root .ut-update-check:hover{background:#262626;border-color:#525252}
+#ut-root .ut-refresh svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+#ut-root .ut-refresh:hover{background:#262626;border-color:#525252}
 #ut-root .ut-filter-panel{margin:-3px 0 15px;padding:18px;border:1px solid var(--ut-line);border-radius:14px;background:#121212}
 #ut-root .ut-filter-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px;color:#e8e8e8;font-size:12px;font-weight:600}
 #ut-root .ut-filter-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
@@ -116,9 +116,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 #ut-root .ut-file small{color:#727272;flex:none}
 #ut-root .ut-empty{padding:24px 6px;font-size:13px;color:#898989;line-height:1.6}
 #ut-root .ut-skeleton{height:var(--ut-row-height);display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--ut-line)}
-#ut-root .ut-skeleton span{width:24px;font:11px ui-monospace,monospace;color:#676767}
-#ut-root .ut-skeleton::after{content:"";display:block;width:86%;height:8px;border-radius:999px;background:#262626 linear-gradient(100deg,transparent 8%,rgba(140,140,140,.03) 21%,rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,rgba(130,130,130,.025) 88%,transparent 100%) no-repeat;background-size:250% 100%;animation:ut-shimmer 1.35s linear infinite}
-@keyframes ut-shimmer{from{background-position:100% 0}to{background-position:0 0}}
+
 #ut-root .ut-tooltip-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
 #ut-root .ut-tooltip{position:absolute;z-index:35;bottom:calc(100% + 12px);left:0;white-space:nowrap;padding:9px 12px;background:#101010;color:#f5f5f5;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:12px;box-shadow:0 5px 17px rgba(0,0,0,.29);pointer-events:none;opacity:0;visibility:hidden;transform:translateY(2px) scale(.95);transition:opacity .25s var(--ut-ease),transform .25s var(--ut-ease),visibility 0s linear .25s}
 #ut-root .ut-tooltip-wrap:is(:hover,:focus-within) .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s}
@@ -156,14 +154,14 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
  #ut-root .ut-search-icon,#ut-root .ut-filter-toggle{height:28px}
  #ut-root .ut-refresh{height:30px;width:30px;min-width:30px}
  #ut-root .ut-order{height:30px;max-width:120px}
- #ut-root .ut-update-check{height:30px}
+ 
  #ut-root .ut-filter-fields{grid-template-columns:1fr}
  #ut-root .ut-row-main{gap:10px}
  #ut-root .ut-row-number{width:22px}
  #ut-root .ut-row-title{font-size:13px}
  #ut-root .ut-row-side{display:none}
  #ut-root .ut-row-description,#ut-root .ut-mobile-detail{padding-left:53px}
- #ut-root .ut-skeleton::after{height:7px}
+ 
  #ut-root .ut-dialog{padding:20px}
  #ut-root .ut-form-grid{grid-template-columns:1fr}
 }
@@ -489,30 +487,11 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-card-badges{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px}
 #ut-root .ut-author-badge{text-transform:none;color:#d4d4d4;background:#222}
 
-/* Exact Collections shimmer: 25 natural-height rows, 86% thin bars,
-   unchanged 1.35s linear pulse and faint, gradually fading tail. */
+/* Site-standard Text Shimmer rows preserve actual utility row metrics. */
 #ut-root .ut-skeleton{height:auto;display:block;border-bottom:1px solid var(--ut-line)}
 #ut-root .ut-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:calc(var(--ut-row-height) - 1px);padding-right:24px}
 #ut-root .ut-skeleton-number{width:24px;flex:none;color:#525252;font:500 11px/1.4 var(--ui-font-sans,system-ui)}
-#ut-root .ut-skeleton::after{content:none}
-#ut-root .ut-skeleton-bar{
- display:block;width:86%;min-width:0;height:8px;border-radius:999px;
- background-color:#262626;
- background-image:linear-gradient(100deg,transparent 8%,rgba(140,140,140,.03) 21%,rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,rgba(130,130,130,.025) 88%,transparent 100%);
- background-repeat:no-repeat;background-size:250% 100%;
- animation:ut-shimmer 1.35s linear infinite;pointer-events:none;
-}
-/* A refresh leaves already-mounted headers and their geometry untouched. */
-#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{
- content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
- width:86%;height:8px;border-radius:999px;
- background-color:#262626;
- background-image:linear-gradient(100deg,transparent 8%,rgba(140,140,140,.03) 21%,rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,rgba(130,130,130,.025) 88%,transparent 100%);
- background-repeat:no-repeat;background-size:250% 100%;
- animation:ut-shimmer 1.35s linear infinite;
-}
-#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-title-compact,.ut-title-expanded){opacity:0}
-
+#ut-root .ut-skeleton-text{min-width:0;font:500 14px/1.4 var(--ui-font-sans,system-ui);white-space:nowrap}
 /* Collections' two independently drawn rings centered around the slash;
    data and skeleton occupy precisely the same text line and line box. */
 #ut-root .ut-summary{display:block;position:relative}
@@ -529,7 +508,7 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 }
 #ut-root .ut-summary-divider{position:absolute;top:0;left:var(--ut-summary-slash-left,7em);white-space:nowrap}
 #ut-root .ut-summary-dot:last-child{left:calc(var(--ut-summary-group-start,6em) + var(--ut-summary-group-end,8em) / 2 - .5em)}
-#ut-root .ut-summary-loading .ut-summary-value{visibility:hidden}
+#ut-root .ut-summary-loading .ut-summary-value{visibility:visible}
 #ut-root .ut-summary:not(.ut-summary-loading) .ut-summary-skeleton{display:none}
 @keyframes ut-summary-spin{to{transform:rotate(360deg)}}
 
@@ -568,14 +547,9 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  height:calc(32.4px * var(--ut-dock-scale));
 }
 
-/* Check-for-updates is positioned above Refresh with no normal-flow
-   footprint, leaving the summary, search bar and list y-coordinates intact. */
-#ut-root .ut-refresh-stack{width:32px;height:32px;flex:none;position:relative}
-#ut-root .ut-refresh-stack .ut-update-check{
- position:absolute;right:0;bottom:calc(100% + 9px);z-index:5;
- white-space:nowrap;min-width:max-content;
-}
-#ut-root .ut-refresh-stack .ut-refresh{width:32px;height:32px}
+/* One refresh control loads inventory and checks upstream updates. */
+#ut-root .ut-refresh-control{width:32px;height:32px;display:inline-flex}
+#ut-root .ut-refresh-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 12px);transform-origin:bottom right}
 @media(max-width:639px){
  #ut-root{--ut-row-height:48px}
  #ut-root .ut-row-main,#ut-root .ut-row.ut-active .ut-row-main{
@@ -585,11 +559,11 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  }
  #ut-root .ut-skeleton-row{gap:10px}
  #ut-root .ut-skeleton-number{width:22px;font-size:10px}
- #ut-root .ut-skeleton-bar,#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{height:7px}
- #ut-root .ut-refresh-stack,#ut-root .ut-refresh-stack .ut-refresh{width:30px;height:30px}
+ #ut-root .ut-skeleton-text{font-size:13px}
+ #ut-root .ut-refresh-control{width:30px;height:30px}
 }
 @media(prefers-reduced-motion:reduce){
- #ut-root .ut-skeleton-bar,#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{animation:none;background-position:50% 0}
+ 
  #ut-root .ut-summary-dot{animation:none}
 }
 
@@ -609,11 +583,8 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-shortcut-tooltip{display:flex;align-items:center;justify-content:space-between;gap:17px}
 #ut-root .ut-shortcut-keys{display:inline-flex;gap:3px;align-items:center;color:#adadad;font-size:12px}
 #ut-root .ut-shortcut-keys kbd{font:inherit;white-space:nowrap}
-#ut-root .ut-refresh-stack .ut-update-control{position:absolute;right:0;bottom:calc(100% + 9px);z-index:5;width:max-content;height:32px;display:inline-flex;justify-content:flex-end}
-#ut-root .ut-refresh-stack .ut-update-control .ut-update-check{position:relative;inset:auto;height:32px;white-space:nowrap;min-width:max-content}
-#ut-root .ut-refresh-stack .ut-refresh-control{width:32px;height:32px;display:inline-flex}
-#ut-root .ut-refresh-stack .ut-update-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 11px);transform-origin:bottom right}
-#ut-root .ut-refresh-stack .ut-refresh-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 12px);transform-origin:bottom right}
+#ut-root .ut-refresh-control{width:32px;height:32px;display:inline-flex}
+#ut-root .ut-refresh-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 12px);transform-origin:bottom right}
 #ut-root .ut-control-center > .ut-tooltip-wrap:last-child .ut-tooltip{left:auto;right:0;transform-origin:bottom right}
 
 /* Collections' numbered circular pagination with ellipses and real page
@@ -701,8 +672,8 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  #ut-root .ut-search-control{width:27px}
  #ut-root .ut-search-focus{border-radius:8px 0 0 8px}
  #ut-root .ut-search-focus img{width:13px;height:13px}
- #ut-root .ut-refresh-stack .ut-update-control .ut-update-check{height:30px}
- #ut-root .ut-refresh-stack .ut-refresh-control{height:30px;width:30px}
+ 
+ #ut-root .ut-refresh-control{height:30px;width:30px}
 }
 @media(prefers-reduced-motion:reduce){
  #ut-root .ut-row-pick,#ut-root .ut-name-field,#ut-root .ut-chevron,#ut-root .ut-name-underline{animation:none!important;transition:none!important}

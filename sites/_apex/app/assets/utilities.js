@@ -69,7 +69,7 @@ export function initColosseumUtilities(){
   list:$("ut-list"),inspector:$("ut-inspector"),pages:$("ut-pages"),count:$("ut-count"),
   query:$("ut-search"),submit:$("ut-search-submit"),filters:$("ut-filters"),
   fields:$("ut-filter-fields"),filterToggle:$("ut-filter-toggle"),clear:$("ut-filters-clear"),
-  sort:$("ut-sort"),refresh:$("ut-refresh"),updates:$("ut-update-check"),updateResults:$("ut-update-results"),
+  sort:$("ut-sort"),refresh:$("ut-refresh"),updateResults:$("ut-update-results"),
   add:$("ut-add"),edit:$("ut-edit"),select:$("ut-select"),editor:$("ut-editor"),
   editorTitle:$("ut-editor-title"),editorCopy:$("ut-editor-copy"),editorFields:$("ut-editor-fields"),
   editorForm:$("ut-editor-form"),editorError:$("ut-editor-error"),
@@ -112,7 +112,6 @@ export function initColosseumUtilities(){
   elements.edit.disabled=value||s.selectionMode||s.editTransitioning||s.selectionTransitioning;
   elements.select.disabled=value||s.editMode||s.editTransitioning||s.selectionTransitioning;
   elements.refresh.disabled=value;
-  elements.updates.disabled=value;
   elements.sort.disabled=value||s.editMode||s.selectionMode;
   elements.query.disabled=value||s.editMode||s.selectionMode;
   elements.submit.disabled=value||s.editMode||s.selectionMode;
@@ -153,7 +152,7 @@ export function initColosseumUtilities(){
   elements.list.innerHTML=Array.from({length:s.pageSize},(_,i)=>
    '<article class="ut-skeleton" aria-hidden="true"><div class="ut-skeleton-row">'+
    '<span class="ut-skeleton-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
-   '<span class="ut-skeleton-bar"></span></div></article>').join("");
+   '<span class="ut-skeleton-text site-text-shimmer">Loading utility</span></div></article>').join("");
  }
  function rowsMarkup(){
   if(!s.items.length)return '<p class="ut-empty">'+(s.query||Object.keys(s.include).length||Object.keys(s.exclude).length?
@@ -463,7 +462,7 @@ export function initColosseumUtilities(){
    s.activeUid=null;s.detail=null;s.detailError=null;s.detailSeq++;
    // Preserve transient selections and rename drafts when changing pages.
    // Neither is persisted until the owner confirms the operation.
-   summary();renderList();report("");
+   summary();renderList();report("");return true;
   }catch(error){if(serial===s.requestSeq){actionError(error);if(!s.loaded){s.items=[];renderList();}}}
   finally{if(serial===s.requestSeq){s.loading=false;setSummaryLoading(false);busy(false);syncModes();}}
  }
@@ -728,12 +727,12 @@ export function initColosseumUtilities(){
    s.detailCache.set(s.activeUid,s.detail);renderDetail();
   }catch(error){actionError(error);}
  }
- async function checkUpdates(){
+ async function checkUpdates(previousSelection=null){
   if(s.working)return;
   try{
    busy(true);
    elements.updateResults.textContent="Checking upstream revision records on request…";
-   const chosen=selectedItem();
+   const chosen=previousSelection||selectedItem();
    const body={action:"updates"};
    if(chosen?.uid&&["safe_update","manual_update"].includes(chosen.source_mode))
     body.inventory_uids=[chosen.uid];
@@ -800,7 +799,15 @@ export function initColosseumUtilities(){
  elements.query.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();void loadPage(0,null);}});
  elements.query.addEventListener("search",()=>void loadPage(0,null));
  elements.sort.addEventListener("change",()=>void loadPage(0,null));
- elements.refresh.addEventListener("click",()=>{s.collectionChoices=null;void loadPage(0,null);});
+ async function refreshCatalog(){
+  if(s.working)return;
+  const selectedBeforeRefresh=selectedItem();
+  s.collectionChoices=null;elements.updateResults.textContent="";
+  // Updates are read-only and run only on explicit user refresh.
+  // Initial route entry, search, filters and pagination remain list-only.
+  if(await loadPage(0,null))await checkUpdates(selectedBeforeRefresh);
+ }
+ elements.refresh.addEventListener("click",()=>void refreshCatalog());
  elements.filterToggle.addEventListener("click",()=>{
   const open=elements.filters.hidden;elements.filters.hidden=!open;elements.filterToggle.setAttribute("aria-expanded",String(open));
   if(open)void loadCollectionChoices();
@@ -823,12 +830,12 @@ export function initColosseumUtilities(){
   elements.fields.querySelectorAll("input,select").forEach(x=>x.value="");
   s.include={};s.exclude={};filterDot();void loadPage(0,null);
  });
- elements.updates.addEventListener("click",()=>void checkUpdates());
+ 
  elements.add.addEventListener("click",()=>openEditor("add"));
  elements.edit.addEventListener("click",toggleEditMode);
  elements.select.addEventListener("click",toggleSelectMode);
  // Match Collections' route-scoped ⇧⌘F / ⇧⌘N / ⇧⌘E shortcuts.
- // Update uses ⇧⌘U; Refresh uses ⌃⇧R. Never intercept inputs, dialogs,
+ // Refresh includes the read-only update check (⌃⇧R). Never intercept inputs, dialogs,
  // other workspace routes or an unfinished asynchronous catalog mutation.
  window.addEventListener("keydown",event=>{
   if(event.defaultPrevented||event.isComposing||event.repeat||event.altKey||
@@ -847,12 +854,9 @@ export function initColosseumUtilities(){
    if((code==="KeyE"||letter==="e")&&!elements.edit.disabled){
     event.preventDefault();toggleEditMode();return;
    }
-   if((code==="KeyU"||letter==="u")&&!elements.updates.disabled&&!editable){
-    event.preventDefault();void checkUpdates();
-   }
   }else if(event.ctrlKey&&event.shiftKey&&!event.metaKey&&!editable&&
            (code==="KeyR"||letter==="r")&&!elements.refresh.disabled){
-   event.preventDefault();s.collectionChoices=null;void loadPage(0,null);
+   event.preventDefault();void refreshCatalog();
   }
  },{capture:true});
  elements.editorCancel.addEventListener("click",()=>elements.editor.close());

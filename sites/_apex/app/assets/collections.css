@@ -91,7 +91,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-summary-dot{position:absolute;top:0;left:calc(var(--cs-summary-group-end,8em) / 2 - .5em);display:inline-block;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite}
 #cs-root .cs-summary-divider{position:absolute;top:0;left:var(--cs-summary-slash-left,7em);white-space:nowrap}
 #cs-root .cs-summary-dot:last-child{left:calc(var(--cs-summary-group-start,6em) + var(--cs-summary-group-end,8em) / 2 - .5em)}
-#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}
+#cs-root .cs-summary-loading .cs-summary-value{visibility:visible}
 #cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}
 @keyframes cs-summary-spin{to{transform:rotate(360deg)}}
 /* Preserve the 36px control slot while the native SF Symbol, including
@@ -316,36 +316,14 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-summary{border-top:1px solid var(--cs-weak);padding-top:20px;margin-top:27px;display:flex;align-items:center;justify-content:space-between;gap:11px;color:var(--cs-muted);font-size:13px;line-height:1.5;flex:none}
 #cs-root .cs-mobile-detail{display:none;margin-top:24px;overflow-anchor:none}
 #cs-root .cs-loading{font-size:13px;line-height:1.7;color:var(--cs-muted);padding:20px 0}
-/* Initial placeholders match the collapsed row height. A single loading class
-   starts the rightward light pulse in all visible rows on the same frame. */
+/* Shadcn Text Shimmer placeholders preserve real collection row geometry. */
 #cs-root .cs-entry--skeleton .cs-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:var(--cs-row-height);padding-right:24px}
 #cs-root .cs-skeleton-number{width:24px;flex:none;color:var(--cs-dim);font:500 11px/1.4 var(--ui-font-sans,system-ui)}
-#cs-root .cs-skeleton-bar,
-#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{
- display:block;width:86%;min-width:0;height:8px;border-radius:999px;
- background-color:#262626;
- /* Lower-contrast, broad highlight with a gradual falloff behind and ahead of the pulse. */
- background-image:linear-gradient(100deg,
-   transparent 8%,rgba(140,140,140,.03) 21%,
-   rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,
-   rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,
-   rgba(130,130,130,.025) 88%,transparent 100%);
- background-repeat:no-repeat;background-size:250% 100%;
- animation:cs-row-pulse 1.35s linear infinite;pointer-events:none;
-}
-#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%)}
-#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-title-compact,
-#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-title-expanded{opacity:0}
-@keyframes cs-row-pulse{from{background-position:100% 0}to{background-position:0 0}}
+#cs-root .cs-skeleton-text{min-width:0;font:500 14px/1.4 var(--ui-font-sans,system-ui);white-space:nowrap}
 @media(max-width:639px){
  #cs-root .cs-skeleton-number{width:22px;font-size:10px}
  #cs-root .cs-entry--skeleton .cs-skeleton-row{gap:10px}
- #cs-root .cs-skeleton-bar,
- #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{height:7px}
-}
-@media(prefers-reduced-motion:reduce){
- #cs-root .cs-skeleton-bar,
- #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{animation:none;background-position:50% 0}
+ #cs-root .cs-skeleton-text{font-size:13px}
 }
 #cs-root .cs-notice{font-size:13px;color:var(--cs-muted);line-height:1.6;padding:12px 0}
 #cs-root .cs-notice.cs-error{color:var(--cs-red)}

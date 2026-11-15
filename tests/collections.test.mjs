@@ -1406,20 +1406,20 @@ test("Collections external provider v3 retains two exact TSX symbol paths",()=>{
  assert.ok(icon.includes('fill-opacity="0.85"')&&mask.includes('fill-opacity="1"'));
  assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v3.svg")'));
 });
-test("Collapsed list rows shimmer on initial load and refresh without reflow",()=>{
+test("ShadCN Text Shimmer is the shared Collections loading skeleton",()=>{
+ const shimmer=src("sites/_apex/app/assets/site-text-shimmer.css");
  assert.ok(js.includes("function renderLoadingRows(){")&&js.includes("length:state.pageSize"));
  assert.ok(js.includes('if(loading&&!state.loaded)renderLoadingRows();'));
  assert.ok(js.includes('list.classList.toggle("cs-list-loading",loading)'));
- assert.ok(js.includes('list.setAttribute("aria-busy",String(loading))'));
- assert.ok(css.includes(".cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after"));
- assert.ok(css.includes("animation:cs-row-pulse 1.35s linear infinite"));
- assert.ok(css.includes("@keyframes cs-row-pulse{from{background-position:100% 0}to{background-position:0 0}}"));
- assert.ok(css.includes("display:block;width:86%;min-width:0;height:8px;border-radius:999px"));
- assert.ok(css.includes("background-color:#262626"));
- assert.ok(css.includes("rgba(140,140,140,.03) 21%"));
- assert.ok(css.includes("rgba(130,130,130,.025) 88%,transparent 100%"));
- assert.ok(css.includes("background-repeat:no-repeat;background-size:250% 100%"));
- assert.ok(css.includes(".cs-entry-title::after{height:7px}"));
+ assert.ok(js.includes('class="cs-skeleton-text site-text-shimmer'));
+ assert.ok(css.includes(".cs-entry--skeleton .cs-skeleton-row"));
+ assert.ok(css.includes("height:var(--cs-row-height)"));
+ assert.ok(css.includes(".cs-skeleton-text{"));
+ assert.ok(shimmer.includes("shadcn-ui/ui c0d63c339d6cd2fc26135590a54cf1f362269451"));
+ assert.ok(shimmer.includes("-webkit-background-clip:text;background-clip:text"));
+ assert.ok(shimmer.includes("site-text-shimmer var(--site-shimmer-duration) linear infinite"));
+ assert.ok(shimmer.includes("@media(prefers-reduced-motion:reduce)"));
+ assert.doesNotMatch(css,/cs-row-pulse|cs-skeleton-bar/);
 });
 test("Adjacent utility edit/select buttons preserve the separated add control",()=>{
  const a=js.indexOf("cs-utility-action-control--add");

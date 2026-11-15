@@ -20,7 +20,7 @@ export function setWorkspaceProjectRegistry(projects){
   if(typeof window!=="undefined")window.dispatchEvent(new Event("workspace-projects-updated"));
 }
 
-const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",readme:"README",
+const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",readme:"Docs",
   utilities:"Utilities",collections:"Collections",providers:"Providers",
   permissions:"Permissions",diagnostics:"Diagnostics",overview:"Overview"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
@@ -82,7 +82,7 @@ export function workspaceRouteDetails(route){
       subtitle:"Colosseum project workspace"};
   }
   if(selected.startsWith("apple-hig-reader/")){
-    const section=selected.split("/")[1],label=TITLE_CASE[section]||"README";
+    const section=selected.split("/")[1],label=TITLE_CASE[section]||"Docs";
     return {route:selected,project:true,projectKey:"apple-hig-reader",projectName:"Apple HIG Reader",label,
       breadcrumb:"Projects / Apple HIG Reader / "+label,
       subtitle:"Apple HIG Reader project workspace"};
@@ -90,8 +90,8 @@ export function workspaceRouteDetails(route){
   const custom=PROJECT_README_PATTERN.exec(selected);
   if(custom){
     const projectName=PROJECT_REGISTRY.get(custom[1])||custom[1].replace(/-/g," ");
-    return {route:selected,project:true,projectKey:"project/"+custom[1],projectName,label:"README",
-      breadcrumb:"Projects / "+projectName+" / README",subtitle:projectName+" project workspace"};
+    return {route:selected,project:true,projectKey:"project/"+custom[1],projectName,label:"Docs",
+      breadcrumb:"Projects / "+projectName+" / Docs",subtitle:projectName+" project workspace"};
   }
   const label=TITLE_CASE[selected];
   return {route:selected,project:false,projectKey:null,label,
@@ -267,7 +267,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
         const name=customNav.querySelector(".nav-section-label");
         if(name)name.textContent=(meta.projectName||"PROJECT").toUpperCase();
         const link=customNav.querySelector(".nav-link");
-        if(link){link.href="#"+route;link.dataset.route=route;link.setAttribute("aria-label","README for "+meta.projectName);}
+        if(link){link.href="#"+route;link.dataset.route=route;link.setAttribute("aria-label","Docs for "+meta.projectName);}
       }
     }
     mainNav.hidden=meta.project;

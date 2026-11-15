@@ -1,0 +1,33 @@
+/* DoFinances standard Text Shimmer, adapted from utility 00017b.
+   Source: shadcn-ui/ui c0d63c339d6cd2fc26135590a54cf1f362269451,
+   apps/v4/content/docs/utils/shimmer.mdx. Text, not placeholder bars. */
+:root{--site-shimmer-duration:2s;--site-shimmer-ink:var(--ui-secondary,#8c8c8c);--site-shimmer-spread:calc(3ch + 40px)}
+.site-text-shimmer,
+#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) :is(.cs-title-compact,.cs-title-expanded),
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-title-compact,.ut-title-expanded){
+ color:var(--site-shimmer-ink);
+ background-image:linear-gradient(110deg,color-mix(in srgb,currentColor 48%,transparent) 0%,color-mix(in srgb,currentColor 48%,transparent) 40%,currentColor 50%,color-mix(in srgb,currentColor 48%,transparent) 60%,color-mix(in srgb,currentColor 48%,transparent) 100%);
+ background-size:calc(200% + var(--site-shimmer-spread)) 100%;
+ background-position:100% 0;
+ -webkit-background-clip:text;background-clip:text;
+ -webkit-text-fill-color:transparent;
+ animation:site-text-shimmer var(--site-shimmer-duration) linear infinite;
+}
+@keyframes site-text-shimmer{from{background-position:100% 0}to{background-position:0 0}}
+[dir="rtl"] .site-text-shimmer{animation-direction:reverse}
+#cs-root .cs-summary-loading .cs-summary-value,
+#ut-root .ut-summary-loading .ut-summary-value{visibility:visible}
+#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-value,
+#ut-root .ut-summary:not(.ut-summary-loading) .ut-summary-value{animation:none;background-image:none;-webkit-text-fill-color:currentColor}
+#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after,
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{content:none}
+#cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) :is(.cs-title-compact,.cs-title-expanded),
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-title-compact,.ut-title-expanded){opacity:1}
+#cs-root .cs-summary-skeleton,#ut-root .ut-summary-skeleton{display:none}
+@media(prefers-reduced-motion:reduce){
+ .site-text-shimmer,
+ #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) :is(.cs-title-compact,.cs-title-expanded),
+ #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-title-compact,.ut-title-expanded){
+  animation:none;background-image:none;-webkit-text-fill-color:currentColor
+ }
+}
