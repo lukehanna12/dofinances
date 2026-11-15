@@ -151,7 +151,7 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(ui.includes('reading.contentEditable="true"'));
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
- assert.ok(ui.includes('reading.addEventListener("input"'));
+ assert.ok(source("sites/_apex/app/assets/readme-editor-interactions.js").includes('root.addEventListener("input"'));
  assert.ok(ui.includes('converter.turndown(reading)'));
  assert.ok(!ui.includes('renderMarkup(textarea.value'));
  assert.ok(html.includes('option value="github"'));
@@ -410,9 +410,9 @@ test("Production editor uses the same event engine as the Chromium fixture",()=>
  assert.ok(rules.includes('return defer(ctx,()=>applyInline(root,ctx,event.data),event.data)'));
  assert.ok(rules.includes('queueMicrotask(()=>{'),"Formatting must not race later keystrokes");
  assert.ok(!rules.includes('setTimeout(()=>{'),"No timer-based Markdown transformation");
- assert.ok(rules.includes('const CARET_ANCHOR="\u200b"'));
+ assert.ok(rules.includes('const CARET_ANCHOR="\\u200b"'));
  assert.ok(rules.includes('clearCaretAnchor(root)'));
- assert.ok(ui.includes('converter.turndown(reading).replace(/\u200b/g,"")'));
+ assert.ok(ui.includes('converter.turndown(reading).replace(/\\u200b/g,"")'));
  assert.ok(rules.includes('node.parentElement?.closest("code,pre,kbd,samp,a")'));
  assert.ok(html.includes('id="rm-reading" class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
  assert.equal(typeof applyReadmeMarkdownInput,"function");
@@ -425,7 +425,7 @@ test("README history isolates formatting but groups adjacent native edits",()=>{
  for(const fragment of [
   'history.reset()','history.clear()', 'history.rememberCaret()',
   'history.synthesizeInsertion(literal)','history.push(checkpoint)',
-  'history.record()','history.undo()','history.redo()','history.snapshot()'
+  'history.record()','history.undo(options)','history.redo(options)','history.snapshot()'
  ])assert.ok(engine.includes(fragment)||ui.includes(fragment),fragment);
  for(const fragment of [
   'function selectionState(root)','selection.setBaseAndExtent(',
