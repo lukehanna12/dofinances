@@ -17,47 +17,26 @@ for(const name of binaries){
 assert.ok(executable,"Chromium is required for actual README input checks");
 const moduleFile=new URL("../sites/_apex/app/assets/readme-markdown-input-rules.js",import.meta.url);
 const historyFile=new URL("../sites/_apex/app/assets/readme-edit-history.js",import.meta.url);
+const editorFile=new URL("../sites/_apex/app/assets/readme-editor-interactions.js",import.meta.url);
 const fixture=[
  '<!doctype html><html><head><meta charset="utf-8"></head><body>',
  '<article id="readme" contenteditable="true"><p><br></p></article>',
  '<script type="module">',
- 'import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "/assets/rules.js";',
- 'import {createReadmeEditHistory} from "/assets/history.js";',
+ 'import {installReadmeEditorInteractions} from "/assets/readme-editor-interactions.js";',
  'const root=document.getElementById("readme");',
- 'const history=createReadmeEditHistory(root);window.__history=history;',
- 'const travel=redo=>redo?history.redo():history.undo();',
- 'root.addEventListener("keydown",event=>{',
- ' const shortcut=(event.metaKey||event.ctrlKey)&&!event.altKey;',
- ' const undo=event.code==="KeyZ"&&!event.shiftKey;',
- ' const redo=(event.code==="KeyZ"&&event.shiftKey)||(event.code==="KeyY"&&event.ctrlKey&&!event.metaKey);',
- ' if(shortcut&&(undo||redo)){event.preventDefault();travel(redo);}',
- '},true);',
- 'root.addEventListener("beforeinput",event=>{',
- ' if(event.inputType==="historyUndo"||event.inputType==="historyRedo"){',
- '  event.preventDefault();travel(event.inputType==="historyRedo");return;',
- ' }',
- ' history.rememberCaret();',
- ' applyReadmeMarkdownBeforeInput(root,event,{',
- '  prepare:literal=>history.synthesizeInsertion(literal),',
- '  commit:frame=>{if(frame)history.push(frame);history.record();}',
- ' });',
- '});',
- 'root.addEventListener("input",event=>{',
- ' const native=history.snapshot();',
- ' if(applyReadmeMarkdownInput(root,event))history.push(native);',
- ' history.record();',
- '});',
+ 'const history=installReadmeEditorInteractions(root);window.__history=history;',
  'window.__rulesReady=true;',
  '</script></body></html>'
 ].join("\n");
 const server=createServer((request,response)=>{
- if(request.url==="/assets/history.js"){
+ const files=new Map([
+  ["/assets/readme-edit-history.js",historyFile],
+  ["/assets/readme-markdown-input-rules.js",moduleFile],
+  ["/assets/readme-editor-interactions.js",editorFile]
+ ]);
+ if(files.has(request.url)){
   response.writeHead(200,{"Content-Type":"text/javascript","Cache-Control":"no-store"});
-  response.end(readFileSync(historyFile));return;
- }
- if(request.url==="/assets/rules.js"){
-  response.writeHead(200,{"Content-Type":"text/javascript","Cache-Control":"no-store"});
-  response.end(readFileSync(moduleFile));return;
+  response.end(readFileSync(files.get(request.url)));return;
  }
  response.writeHead(200,{"Content-Type":"text/html","Cache-Control":"no-store"});
  response.end(fixture);
@@ -115,7 +94,7 @@ try{
   'e.focus();const range=document.createRange();range.setStart(p,0);range.collapse(true);'+
   'const s=getSelection();s.removeAllRanges();s.addRange(range);'+
   'window.__history.reset();return document.activeElement===e;})()');
- const type=async text=>{
+ const type=async(text,{interval=25}={})=>{
   // Dispatch real keydown/keyup pairs, not IME-style Input.insertText.
   // The latter can clear a contenteditable selection after preventDefault.
   for(const char of text){
@@ -129,7 +108,7 @@ try{
     windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});
    // CDP dispatches keystrokes faster than any physical keyboard. Allow the
    // one-shot Markdown DOM replacement to settle before the next keystroke.
-   await pause(25);
+   if(interval)await pause(interval);
   }
  };
  const pressShortcut=async(key,{meta=true,ctrl=false,shift=false}={})=>{
@@ -189,9 +168,9 @@ try{
  await until('!!document.querySelector("#readme > h1")',"redo formatted heading");
  await type("more");
  await pressShortcut("z");
- await until('document.querySelector("#readme > h1")?.textContent==="mor"',"undo regular typing after autoformat");
+ await until('document.querySelector("#readme > h1")?.textContent.replace(/\u200b/g,"")===""',"undo grouped typing after autoformat");
  await pressShortcut("z",{meta:true,shift:true});
- await until('document.querySelector("#readme > h1")?.textContent==="more"',"redo regular typing after autoformat");
+ await until('document.querySelector("#readme > h1")?.textContent==="more"',"redo grouped typing after autoformat");
 
  await reset();await type("`word`");
  await until('document.querySelector("#readme code")?.textContent==="word"',"history inline code");
@@ -214,6 +193,73 @@ try{
  await until('document.querySelector("#readme > p")?.textContent==="> "',"undo quote to literal marker");
  await pressShortcut("z",{meta:true,shift:true});
  await until('!!document.querySelector("#readme > blockquote")',"redo quote formatting");
+
+ // Consecutive typing is one transaction, not a separate undo per glyph.
+ await reset();await type("An ordinary paragraph with many words");
+ assert.ok(await evaluate("window.__history.length<=3"),"native typing is grouped");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent===""',"grouped paragraph undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > p")?.textContent==="An ordinary paragraph with many words"',"grouped paragraph redo");
+
+ // Microtask formatting must run before fast subsequent native keystrokes.
+ await reset();await type("## Rapid heading",{interval:0});
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")==="Rapid heading"',"rapid heading conversion");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")===""',"rapid typing group undo");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="## "',"rapid heading formatting undo");
+ await pressShortcut("z",{shift:true});
+ await until('!!document.querySelector("#readme > h2")',"rapid heading formatting redo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")==="Rapid heading"',"rapid heading typing redo");
+
+ await reset();await type("hello *world* after");
+ await until('document.querySelector("#readme em")?.textContent==="world"',"inline emphasis");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent.replace(/\u200b/g,"").trim()==="hello world"',"undo trailing typed burst");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world*"',"undo inline format checkpoint");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world"',"undo inline delimiter");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world*"',"redo inline delimiter");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme em")?.textContent==="world"',"redo inline emphasis");
+
+ // Moving the caret creates a new transaction boundary.
+ await reset();await type("abc");
+ await evaluate('(()=>{const p=document.querySelector("#readme p"),t=p.firstChild,r=document.createRange();r.setStart(t,0);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);})()');
+ await type("X");await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent==="abc"',"caret movement isolates undo");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"prior typing remains undoable");
+
+ // Programmatic plaintext paste has one history checkpoint even when
+ // execCommand dispatches nested native input events.
+ await reset();
+ await evaluate('(()=>{const d=new DataTransfer();d.setData("text/plain","Pasted words");document.getElementById("readme").dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:d}));})()');
+ await until('document.querySelector("#readme p")?.textContent==="Pasted words"',"plaintext paste");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"atomic paste undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme p")?.textContent==="Pasted words"',"atomic paste redo");
+
+ // Three provisional IME inputs produce one committed composition checkpoint.
+ await reset();
+ await evaluate('(()=>{const root=document.getElementById("readme"),p=root.querySelector("p");root.dispatchEvent(new CompositionEvent("compositionstart",{bubbles:true}));for(const word of ["に","日本","日本語"]){p.textContent=word;p.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertCompositionText",isComposing:true,data:word}));}root.dispatchEvent(new CompositionEvent("compositionend",{bubbles:true,data:"日本語"}));})()');
+ await until('window.__history.length===2',"single composition checkpoint");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"single composition undo");
+
+ // Checkbox property state and its historical checked attribute are restored.
+ await reset();
+ await evaluate('(()=>{const root=document.getElementById("readme");root.innerHTML="<ul><li><input type=checkbox> Task</li></ul>";window.__history.reset();const b=root.querySelector("input");b.checked=true;b.dispatchEvent(new Event("change",{bubbles:true}));})()');
+ assert.equal(await evaluate('document.querySelector("#readme input").checked'),true);
+ await pressShortcut("z");
+ await until('document.querySelector("#readme input")?.checked===false',"checkbox undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme input")?.checked===true',"checkbox redo");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
  try{socket?.close();}catch{}

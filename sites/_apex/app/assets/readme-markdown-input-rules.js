@@ -299,19 +299,22 @@ export function applyReadmeMarkdownBeforeInput(root,event,historyHooks=null){
  if(!root||!event?.cancelable||event.isComposing)return false;
  // Removing the active text node synchronously inside beforeinput can make
  // Chromium revoke its Selection when the key event finishes. Cancel the
- // trigger, then transform in a one-shot post-event task. This is neither
- // polling nor a document re-render; the caret stays in the same document.
+ // trigger, then transform in a microtask after the event. This prevents a
+ // subsequent keystroke from racing the original selection/history checkpoint.
  const defer=(ctx,operation,literal=null)=>{
   event.preventDefault();
-  setTimeout(()=>{
-   if(!root.isConnected||!root.isContentEditable||!root.contains(ctx.node))return;
+  queueMicrotask(()=>{
+   if(!root.isConnected||!root.isContentEditable||!root.contains(ctx.node)){
+    historyHooks?.cancel?.();return;
+   }
    // The typed delimiter was prevented from reaching the DOM. Save a
    // synthetic literal checkpoint before the rich-text transformation, so
    // Undo first restores Markdown syntax and then continues into earlier
    // native keystrokes. Redo follows the same timeline in reverse.
    const pending=literal===null?null:historyHooks?.prepare?.(literal);
    if(operation())historyHooks?.commit?.(pending);
-  },0);
+   else historyHooks?.cancel?.();
+  });
   return true;
  };
  if(event.inputType==="insertText"&&typeof event.data==="string"){
@@ -343,14 +346,16 @@ export function applyReadmeMarkdownBeforeInput(root,event,historyHooks=null){
     const content=selection.toString();
     if(content&&!content.includes("\n")){
      event.preventDefault();
-     setTimeout(()=>{
-      if(!root.isConnected||!root.isContentEditable||!root.contains(range.startContainer))return;
+     queueMicrotask(()=>{
+      if(!root.isConnected||!root.isContentEditable||!root.contains(range.startContainer)){
+       historyHooks?.cancel?.();return;
+      }
       const code=root.ownerDocument.createElement("code");code.textContent=content;
       range.deleteContents();range.insertNode(code);
       placeCaret(root.ownerDocument,code.parentNode,
        Array.prototype.indexOf.call(code.parentNode.childNodes,code)+1);
       historyHooks?.commit?.(null);
-     },0);
+     });
      return true;
     }
    }
