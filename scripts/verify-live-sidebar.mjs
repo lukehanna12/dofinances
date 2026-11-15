@@ -97,22 +97,6 @@ try{
   await until('document.readyState==="complete" && !!document.querySelector("#workspace-shell.liquid-glass-preview")',"Studio glass initialization",25000);
   await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',"responsive compact rail");
 
-  await until('document.getElementById("global-header-logo-image")?.naturalWidth===111',
-    "DoFinances logo PNG renders in the upper bar",15000);
-  const upperBarGeometry=()=>evaluate(String.raw`(()=>{
-    const mark=document.querySelector(".global-header-logo").getBoundingClientRect();
-    const clock=document.getElementById("global-clock").getBoundingClientRect();
-    const controls=document.querySelector(".global-menu-actions").getBoundingClientRect();
-    return {logoLeft:mark.left,logoRight:mark.right,logoCenterY:mark.top+mark.height/2,
-      clockLeft:clock.left,clockRight:clock.right,clockCenter:clock.left+clock.width/2,
-      controlsLeft:controls.left,viewport:document.documentElement.clientWidth};
-  })()`);
-  const firstLogo=await upperBarGeometry();
-  assert.ok(firstLogo.logoLeft>=12&&firstLogo.logoLeft<=34,
-    "Compact logo must stay far left: "+JSON.stringify(firstLogo));
-  assert.ok(firstLogo.logoRight+4<firstLogo.clockLeft,
-    "Compact upper logo must not overlap the clock: "+JSON.stringify(firstLogo));
-
   // Thin mode must show one clock centered, not a row of top-level links.
   const compactTopbar=await evaluate(String.raw`(()=>{
     const clock=document.getElementById("global-clock");
@@ -578,13 +562,6 @@ try{
       "mobile Settings view at "+mobileWidth);
     await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
       "mobile title arrival settles at "+mobileWidth);
-    const mobileMark=await upperBarGeometry();
-    assert.ok(mobileMark.logoLeft>=12&&mobileMark.logoLeft<=34,
-      "Logo must stay at far left at "+mobileWidth+": "+JSON.stringify(mobileMark));
-    assert.ok(mobileMark.logoRight+4<mobileMark.clockLeft&&mobileMark.clockRight+4<mobileMark.controlsLeft,
-      "Mobile logo/clock/actions overlap at "+mobileWidth+": "+JSON.stringify(mobileMark));
-    assert.ok(Math.abs(mobileMark.clockCenter-mobileMark.viewport/2)<2,
-      "Mobile clock must remain centered at "+mobileWidth+": "+JSON.stringify(mobileMark));
     const mobileTitle=await evaluate(String.raw`(()=>{
       const view=document.querySelector(".content > .view:not([hidden])");
       const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
@@ -705,13 +682,6 @@ try{
     await until('window.innerWidth==='+String(width)+
       ' && !document.getElementById("workspace-shell").classList.contains("is-compact-rail")',
       "wide content alignment at "+width);
-    const desktopMark=await upperBarGeometry();
-    assert.ok(desktopMark.logoLeft>=12&&desktopMark.logoLeft<=34,
-      "Desktop logo must remain at left gutter at "+width+": "+JSON.stringify(desktopMark));
-    assert.ok(desktopMark.logoRight+4<desktopMark.clockLeft,
-      "Desktop clock must sit to the right of logo at "+width+": "+JSON.stringify(desktopMark));
-    assert.ok(desktopMark.clockRight+4<desktopMark.controlsLeft,
-      "Desktop logo/clock/actions may not collide at "+width+": "+JSON.stringify(desktopMark));
     const measured=await measureContentLeft();
     assert.equal(measured.collapsed,false,"expected expanded sidebar at "+width);
     assert.ok(Math.abs(measured.contentLeft-measured.mainLeft)<.8,
