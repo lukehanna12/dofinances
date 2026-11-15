@@ -6,6 +6,9 @@ import {githubReadme,githubRepository,githubSaveReadme,githubMarkdown,githubRequ
 import {projectApi} from "../edge/project-api.mjs";
 import {makeReadmeDiff} from "../sites/_apex/app/assets/project-readme-ui.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "../sites/_apex/app/assets/readme-rich-markdown.js";
+import {
+ readmeInlineRule,readmeBlockRule,applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput
+} from "../sites/_apex/app/assets/readme-markdown-input-rules.js";
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const html=source("sites/_apex/app/index.html");
@@ -330,4 +333,73 @@ test("In-place GFM conversion ships locally, preserving rich and unchanged sourc
  const insertion="# Title\n\nOne **newer bold** word.";
  const patched=preserveReadmeSource(original,canonical,insertion);
  assert.ok(patched.includes("newer bold"));
+});
+
+
+test("Markdown autoformats inline backticks, emphasis, strikethrough and safe links",()=>{
+ const tick=String.fromCharCode(96);
+ assert.deepEqual(readmeInlineRule(tick+"hello"+tick),{kind:"code",start:0,text:"hello"});
+ assert.deepEqual(readmeInlineRule("A "+tick+"word"+tick),{kind:"code",start:2,text:"word"});
+ assert.deepEqual(readmeInlineRule(tick.repeat(2)+"has "+tick+" tick"+tick.repeat(2)),
+  {kind:"code",start:0,text:"has "+tick+" tick"});
+ assert.equal(readmeInlineRule(tick.repeat(3)),null,"Unclosed fence is not inline code");
+ assert.deepEqual(readmeInlineRule("**bold**"),{kind:"strong",start:0,text:"bold"});
+ assert.deepEqual(readmeInlineRule("__bold__"),{kind:"strong",start:0,text:"bold"});
+ assert.deepEqual(readmeInlineRule("*italic*"),{kind:"em",start:0,text:"italic"});
+ assert.deepEqual(readmeInlineRule("_italic_"),{kind:"em",start:0,text:"italic"});
+ assert.deepEqual(readmeInlineRule("~~removed~~"),{kind:"strike",start:0,text:"removed"});
+ assert.deepEqual(readmeInlineRule("***bold italic***"),{kind:"strongEm",start:0,text:"bold italic"});
+ assert.deepEqual(readmeInlineRule("Read [docs](https://example.com)"),
+  {kind:"link",start:5,text:"docs",href:"https://example.com",title:""});
+ assert.deepEqual(readmeInlineRule("![logo](https://example.com/a.png)"),
+  {kind:"image",start:0,text:"logo",href:"https://example.com/a.png",title:""});
+ assert.equal(readmeInlineRule("word_internal_"),null,"Underscores within identifiers are not emphasis");
+ assert.equal(readmeInlineRule("\\*escaped*"),null,"Backslash-escaped Markdown stays literal");
+ assert.equal(readmeInlineRule("[X](javascript:evil)"),null,"Unsafe schemes must not turn into links");
+ assert.equal(readmeInlineRule("line\n"+tick+"no"+tick),null);
+});
+
+test("Markdown autoformats headings, quotes, lists, tasks, code fences and rules",()=>{
+ for(let level=1;level<=6;level++){
+  assert.deepEqual(readmeBlockRule("#".repeat(level)+" "),{kind:"heading",level});
+ }
+ assert.equal(readmeBlockRule("#".repeat(7)+" "),null);
+ assert.deepEqual(readmeBlockRule("> "),{kind:"quote"});
+ for(const marker of ["- ","+ ","* "])assert.deepEqual(readmeBlockRule(marker),{kind:"ul"});
+ assert.deepEqual(readmeBlockRule("1. "),{kind:"ol",start:1});
+ assert.deepEqual(readmeBlockRule("42) "),{kind:"ol",start:42});
+ assert.deepEqual(readmeBlockRule("[ ] ",{inList:true}),{kind:"task",checked:false});
+ assert.deepEqual(readmeBlockRule("[x] ",{inList:true}),{kind:"task",checked:true});
+ assert.equal(readmeBlockRule("[x] "),null,"Task markers only work inside lists");
+ const tick=String.fromCharCode(96);
+ assert.deepEqual(readmeBlockRule(tick.repeat(3)+"js",{trigger:"enter"}),{kind:"fence",language:"js"});
+ assert.deepEqual(readmeBlockRule(tick.repeat(3)+" "),{kind:"fence",language:""});
+ assert.deepEqual(readmeBlockRule("---",{trigger:"enter"}),{kind:"hr"});
+ assert.deepEqual(readmeBlockRule("*** ",{trigger:"space"}),{kind:"hr"});
+ assert.deepEqual(readmeBlockRule("##\u00a0"),{kind:"heading",level:2},
+  "Contenteditable non-breaking spaces must be recognized");
+ assert.deepEqual(readmeBlockRule(">\u00a0"),{kind:"quote"});
+ assert.equal(readmeBlockRule("##title"),null);
+ assert.equal(readmeBlockRule("normal prose "),null);
+});
+
+test("Markdown input engine is wired to existing rendered README without split view",()=>{
+ const rules=source("sites/_apex/app/assets/readme-markdown-input-rules.js");
+ assert.ok(ui.includes('import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput}'));
+ assert.ok(ui.includes('reading.addEventListener("beforeinput",event=>'));
+ assert.ok(ui.includes('applyReadmeMarkdownBeforeInput(reading,event)'));
+ assert.ok(ui.includes('reading.addEventListener("input",event=>'));
+ assert.ok(ui.includes('applyReadmeMarkdownInput(reading,event)'));
+ assert.ok(ui.includes('reading.addEventListener("compositionend"'));
+ assert.ok(ui.includes('scheduleRichDraftUpdate()'));
+ assert.ok(ui.includes('converter.turndown(reading)'));
+ assert.ok(rules.includes('range.deleteContents();range.insertNode(replacement);'));
+ assert.ok(rules.includes('placeCaret('));
+ assert.ok(rules.includes('readmeBlockRule(prefix,{trigger,inList:isList})'));
+ assert.ok(rules.includes('event.preventDefault()'));
+ assert.ok(rules.includes('node.parentElement?.closest("code,pre,kbd,samp,a")'));
+ assert.ok(html.includes('id="rm-reading" class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
+ assert.ok(!html.includes('id="rm-editor"')&&!html.includes('id="rm-markdown"'));
+ assert.equal(typeof applyReadmeMarkdownInput,"function");
+ assert.equal(typeof applyReadmeMarkdownBeforeInput,"function");
 });

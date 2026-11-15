@@ -3,6 +3,7 @@
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
+import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
 
 const $=id=>document.getElementById(id);
 const routeSlug=()=>{
@@ -123,7 +124,7 @@ export function makeReadmeDiff(before,after){
    else lines.push({type:"added",text:b[j++]});
   }
  }
- // Keep context near changes; the raw textarea always retains every line.
+ // Keep unchanged context near the edited lines for a compact live diff.
  const changes=lines.flatMap((x,i)=>x.type==="context"?[]:[i]);
  if(!changes.length)return [];
  const keep=new Set();for(const i of changes)for(let j=Math.max(0,i-3);j<=Math.min(lines.length-1,i+3);j++)keep.add(j);
@@ -320,10 +321,27 @@ export function initProjectReadme(){
   updateDraft();
  });
  reading.addEventListener("drop",event=>{if(state.editing)event.preventDefault();});
- reading.addEventListener("input",()=>{
-  if(!state.editing)return;
+ function scheduleRichDraftUpdate(){
   if(state.renderDelay!==null)clearTimeout(state.renderDelay);
   state.renderDelay=setTimeout(updateDraft,80);
+ }
+ reading.addEventListener("beforeinput",event=>{
+  if(!state.editing||state.processing||event.isComposing)return;
+  // Handle code-fence/HR Enter before Chromium splits its current block.
+  // This also supports wrapping a selected word in inline code.
+  if(applyReadmeMarkdownBeforeInput(reading,event))scheduleRichDraftUpdate();
+ });
+ reading.addEventListener("input",event=>{
+  if(!state.editing||state.processing)return;
+  if(!event.isComposing){
+   // Match Markdown delimiters and replace only the edited range; never
+   // reconstruct the whole GitHub-rendered document while typing.
+   applyReadmeMarkdownInput(reading,event);
+  }
+  scheduleRichDraftUpdate();
+ });
+ reading.addEventListener("compositionend",()=>{
+  if(state.editing&&!state.processing)scheduleRichDraftUpdate();
  });
  reading.addEventListener("change",event=>{
   if(state.editing&&event.target.matches?.('input[type="checkbox"]'))updateDraft();
