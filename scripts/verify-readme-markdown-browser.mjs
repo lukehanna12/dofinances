@@ -126,5 +126,8 @@ try{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");
  await new Promise(resolve=>server.close(resolve));
- rmSync(profile,{recursive:true,force:true});
+ // Chrome can still be flushing profile files after SIGTERM. Do not let
+ // cleanup override the original browser assertion or test result.
+ try{rmSync(profile,{recursive:true,force:true,maxRetries:12,retryDelay:120});}
+ catch(error){console.warn("Chrome temporary-profile cleanup:",error.message);}
 }
