@@ -52,7 +52,7 @@ test("Account-scoped project creation auto-seeds README and stores repository as
  assert.ok(html.includes('id="project-create-form"'));
 });
 
-test("GitHub private credential pathway is encrypted, independently linked, and checked on every write",()=>{
+test("GitHub private credential pathway is encrypted, independently linked, and checked on every write",async()=>{
  assert.ok(store.includes('CREATE TABLE IF NOT EXISTS github_project_connections'));
  assert.ok(store.includes('token_ciphertext TEXT NOT NULL'));
  assert.ok(api.includes('githubIdentity(body.token)'));
