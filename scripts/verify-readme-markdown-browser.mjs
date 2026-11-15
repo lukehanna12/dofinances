@@ -100,6 +100,9 @@ try{
     text:char,unmodifiedText:char,windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});
    await command("Input.dispatchKeyEvent",{type:"keyUp",key:char,code,
     windowsVirtualKeyCode:keyCode,nativeVirtualKeyCode:keyCode});
+   // CDP dispatches keystrokes faster than any physical keyboard. Allow the
+   // one-shot Markdown DOM replacement to settle before the next keystroke.
+   await pause(25);
   }
  };
  const pressEnter=async()=>{
