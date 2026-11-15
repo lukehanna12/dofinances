@@ -47,22 +47,6 @@ function metricCard(label,q){
 }
 function sectionOf(report,name){return report?.sections?.[name]||null;}
 function missing(name){return name==="local"?"Not included or local diagnostics unavailable.":"Not included in this query or unavailable from the source.";}
-function panel(title,right){
- const outer=make("div","dg-panel"),head=make("div","dg-panel-head");
- head.append(make("span","",title));if(right)head.append(make("span","dg-small",right));
- outer.append(head);return outer;
-}
-function pair(label,value,detail){
- const el=make("div","dg-pair");
- el.append(make("span","dg-pair-label",label),make("strong","dg-pair-value",value));
- if(detail)el.append(make("span","dg-pair-detail",detail));
- return el;
-}
-function pairs(rows){
- const el=make("div","dg-pairs");
- rows.forEach(([k,v,sub])=>el.append(pair(k,v,sub)));
- return el;
-}
 function renderOverview(report){
  const top=clear("dg-top"),w=sectionOf(report,"workers"),kv=sectionOf(report,"kv"),
   d=sectionOf(report,"d1"),o=sectionOf(report,"durable_objects");
@@ -131,7 +115,7 @@ function batteryGraphic(m){
  const raw=m?.battery_percent,pct=typeof raw==="number"&&Number.isFinite(raw)?Math.max(0,Math.min(100,raw)):null;
  const charging=m?.battery_charging===true||String(m?.battery_state||"").toLowerCase()==="charging";
  const lowPower=m?.battery_low_power_mode===true;
- const tone=pct===null?"unknown":pct<=20?"low":lowPower?"low-power":charging?"charging":"normal";
+ const tone=pct===null?"unknown":lowPower?"low-power":charging?"charging":pct<=20?"low":"normal";
  const glyph=make("div","dg-battery-graphic");glyph.dataset.tone=tone;
  glyph.setAttribute("role","img");
  glyph.setAttribute("aria-label",pct===null?"Battery charge unavailable":
