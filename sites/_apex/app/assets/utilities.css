@@ -467,3 +467,125 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 @media(prefers-reduced-motion:reduce){
  #ut-root .ut-mobile-detail{transition:none!important}
 }
+
+
+/* Restore the ORIGINAL Utilities header rhythm while retaining independent
+   accordion content animation. Paginate 25 entries and reserve 25 rows. */
+#ut-root{--ut-row-height:54px}
+#ut-root .ut-layout{min-height:calc(25 * var(--ut-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
+#ut-root .ut-row-main,#ut-root .ut-row.ut-active .ut-row-main{
+ height:calc(var(--ut-row-height) - var(--ut-row-divider));
+ min-height:calc(var(--ut-row-height) - var(--ut-row-divider));
+ padding:0 20px 0 0;
+}
+#ut-root .ut-row-title,#ut-root .ut-row.ut-active .ut-row-title{
+ grid-template-rows:0fr;max-height:1.4em;overflow:hidden;
+}
+#ut-root .ut-title-expanded{white-space:nowrap;text-overflow:ellipsis}
+#ut-root .ut-row-side{display:none}
+#ut-root .ut-card-badges{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px}
+#ut-root .ut-author-badge{text-transform:none;color:#d4d4d4;background:#222}
+
+/* Exact Collections shimmer: 25 natural-height rows, 86% thin bars,
+   unchanged 1.35s linear pulse and faint, gradually fading tail. */
+#ut-root .ut-skeleton{height:auto;display:block;border-bottom:1px solid var(--ut-line)}
+#ut-root .ut-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:calc(var(--ut-row-height) - 1px);padding-right:24px}
+#ut-root .ut-skeleton-number{width:24px;flex:none;color:#525252;font:500 11px/1.4 var(--ui-font-sans,system-ui)}
+#ut-root .ut-skeleton::after{content:none}
+#ut-root .ut-skeleton-bar{
+ display:block;width:86%;min-width:0;height:8px;border-radius:999px;
+ background-color:#262626;
+ background-image:linear-gradient(100deg,transparent 8%,rgba(140,140,140,.03) 21%,rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,rgba(130,130,130,.025) 88%,transparent 100%);
+ background-repeat:no-repeat;background-size:250% 100%;
+ animation:ut-shimmer 1.35s linear infinite;pointer-events:none;
+}
+/* A refresh leaves already-mounted headers and their geometry untouched. */
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{
+ content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+ width:86%;height:8px;border-radius:999px;
+ background-color:#262626;
+ background-image:linear-gradient(100deg,transparent 8%,rgba(140,140,140,.03) 21%,rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,rgba(130,130,130,.025) 88%,transparent 100%);
+ background-repeat:no-repeat;background-size:250% 100%;
+ animation:ut-shimmer 1.35s linear infinite;
+}
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-title-compact,.ut-title-expanded){opacity:0}
+
+/* Collections' two independently drawn rings centered around the slash;
+   data and skeleton occupy precisely the same text line and line box. */
+#ut-root .ut-summary{display:block;position:relative}
+#ut-root .ut-summary-skeleton{
+ display:block;position:absolute;left:0;top:.32em;height:1em;line-height:1em;
+ width:calc(var(--ut-summary-group-start,6em) + var(--ut-summary-group-end,8em) / 2 + .5em);
+ pointer-events:none;
+}
+#ut-root .ut-summary-dot{
+ position:absolute;top:0;left:calc(var(--ut-summary-group-end,8em) / 2 - .5em);
+ display:inline-block;box-sizing:border-box;width:1em;height:1em;
+ border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;
+ background:transparent;animation:ut-summary-spin 600ms linear infinite;
+}
+#ut-root .ut-summary-divider{position:absolute;top:0;left:var(--ut-summary-slash-left,7em);white-space:nowrap}
+#ut-root .ut-summary-dot:last-child{left:calc(var(--ut-summary-group-start,6em) + var(--ut-summary-group-end,8em) / 2 - .5em)}
+#ut-root .ut-summary-loading .ut-summary-value{visibility:hidden}
+#ut-root .ut-summary:not(.ut-summary-loading) .ut-summary-skeleton{display:none}
+@keyframes ut-summary-spin{to{transform:rotate(360deg)}}
+
+/* Match Collections' dock: every button is 32.4px × 1.5, the
+   Add circle is full bleed, Edit/Select glyphs exactly 19px × 1.5.
+   Pressed state changes background only, never scale or layout. */
+#ut-root .ut-control-center{
+ --ut-dock-scale:1.5;
+ gap:calc(6px * var(--ut-dock-scale));
+ width:max-content;max-width:calc(100vw - 24px);
+ min-height:calc(52px * var(--ut-dock-scale));
+ padding:calc(5px * var(--ut-dock-scale)) calc(8px * var(--ut-dock-scale));
+ contain:layout style;
+}
+#ut-root .ut-control-center > .ut-tooltip-wrap{
+ width:calc(36px * var(--ut-dock-scale));height:calc(36px * var(--ut-dock-scale));
+ min-width:calc(36px * var(--ut-dock-scale));position:relative;flex:none;
+}
+#ut-root .ut-control-center .ut-dock-button{
+ position:relative;
+ width:calc(32.4px * var(--ut-dock-scale));
+ height:calc(32.4px * var(--ut-dock-scale));
+ min-width:calc(32.4px * var(--ut-dock-scale));
+ min-height:calc(32.4px * var(--ut-dock-scale));
+ border-radius:50%;padding:0;margin:0;transform:none;
+ -webkit-tap-highlight-color:transparent;
+}
+#ut-root .ut-control-center .ut-dock-button img{
+ position:absolute;inset:50% auto auto 50%;translate:-50% -50%;transform:none;
+ width:calc(19px * var(--ut-dock-scale));
+ height:calc(19px * var(--ut-dock-scale));
+ max-width:none;max-height:none;object-fit:contain;flex:none;
+}
+#ut-root .ut-control-center #ut-add img{
+ width:calc(32.4px * var(--ut-dock-scale));
+ height:calc(32.4px * var(--ut-dock-scale));
+}
+
+/* Check-for-updates is positioned above Refresh with no normal-flow
+   footprint, leaving the summary, search bar and list y-coordinates intact. */
+#ut-root .ut-refresh-stack{width:32px;height:32px;flex:none;position:relative}
+#ut-root .ut-refresh-stack .ut-update-check{
+ position:absolute;right:0;bottom:calc(100% + 9px);z-index:5;
+ white-space:nowrap;min-width:max-content;
+}
+#ut-root .ut-refresh-stack .ut-refresh{width:32px;height:32px}
+@media(max-width:639px){
+ #ut-root{--ut-row-height:48px}
+ #ut-root .ut-row-main,#ut-root .ut-row.ut-active .ut-row-main{
+  height:calc(var(--ut-row-height) - var(--ut-row-divider));
+  min-height:calc(var(--ut-row-height) - var(--ut-row-divider));
+  padding:0 20px 0 0;
+ }
+ #ut-root .ut-skeleton-row{gap:10px}
+ #ut-root .ut-skeleton-number{width:22px;font-size:10px}
+ #ut-root .ut-skeleton-bar,#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{height:7px}
+ #ut-root .ut-refresh-stack,#ut-root .ut-refresh-stack .ut-refresh{width:30px;height:30px}
+}
+@media(prefers-reduced-motion:reduce){
+ #ut-root .ut-skeleton-bar,#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{animation:none;background-position:50% 0}
+ #ut-root .ut-summary-dot{animation:none}
+}
