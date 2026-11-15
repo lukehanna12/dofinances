@@ -1,12 +1,11 @@
-// Bounded, selection-aware history for the README rich-text contenteditable.
-//
-// Browser undo tracks native keystrokes but not our Markdown DOM transforms.
-// Using that native stack after a transform can jump across changes, orphan
-// the caret, or stop at the formatting boundary. Keep one coherent timeline
-// for native input, autoformatting, paste, checkboxes and keyboard redo.
+// One bounded, selection-aware history for the rendered README editor.
+// Unlike a keystroke stack, adjacent native text edits are grouped. Markdown
+// transformations, paste, composition, and checkboxes are explicit boundaries.
 const CHECKBOX='input[type="checkbox"]';
 const DEFAULT_LIMIT=128;
 const DEFAULT_BYTES=16*1024*1024;
+const GROUP_DELAY_MS=1100;
+const BLOCKS="p,div,h1,h2,h3,h4,h5,h6,li,blockquote,pre";
 function pathTo(root,node){
  if(!node||!root.contains(node))return null;
  const path=[];
@@ -34,6 +33,21 @@ function selectionState(root){
  const anchorPath=pathTo(root,sel.anchorNode),focusPath=pathTo(root,sel.focusNode);
  if(!anchorPath||!focusPath)return null;
  return {anchorPath,anchorOffset:sel.anchorOffset,focusPath,focusOffset:sel.focusOffset};
+}
+// A logical position within the same block is stable across browser text-node
+// splits and merges, but changes when a user moves the caret or changes blocks.
+function caretKey(root){
+ const sel=root.ownerDocument.getSelection?.();
+ if(!sel?.isCollapsed||!sel.rangeCount||!root.contains(sel.anchorNode))return null;
+ const node=sel.anchorNode;
+ const element=node.nodeType===3?node.parentElement:node;
+ const block=element?.closest?.(BLOCKS);
+ if(!block||!root.contains(block))return null;
+ try{
+  const range=root.ownerDocument.createRange();
+  range.setStart(block,0);range.setEnd(node,sel.anchorOffset);
+  return JSON.stringify([pathTo(root,block),range.toString().length]);
+ }catch{return null;}
 }
 function snapshot(root){
  const dom=root.cloneNode(true);
@@ -66,25 +80,28 @@ function restore(root,frame){
   }catch{}
  }
 }
-export function createReadmeEditHistory(root,{limit=DEFAULT_LIMIT,maxBytes=DEFAULT_BYTES}={}){
+export function createReadmeEditHistory(root,{limit=DEFAULT_LIMIT,maxBytes=DEFAULT_BYTES,groupDelay=GROUP_DELAY_MS}={}){
  if(!root||typeof root.cloneNode!=="function")throw TypeError("A README DOM root is required.");
  const cap=Math.max(2,Math.min(512,Math.floor(Number(limit)||DEFAULT_LIMIT)));
  const budget=Math.max(100000,Number(maxBytes)||DEFAULT_BYTES);
- let frames=[],cursor=-1,bytes=0;
+ const delay=Math.max(100,Math.min(3000,Number(groupDelay)||GROUP_DELAY_MS));
+ let frames=[],cursor=-1,bytes=0,group=null,pending=null;
+ const isolate=()=>{group=null;pending=null;};
  const trim=()=>{
-  // Drop the oldest checkpoints while preserving at least one undo position.
   while(frames.length>2&&(frames.length>cap||bytes>budget)&&cursor>1){
    bytes-=frames.shift().bytes;cursor--;
+   if(group)group.index--;
   }
   while(frames.length>cap&&cursor>0){
    bytes-=frames.shift().bytes;cursor--;
+   if(group)group.index--;
   }
  };
  const push=frame=>{
+  isolate();
   if(!frame)return false;
   const previous=frames[cursor];
   if(previous?.html===frame.html){
-   // Moving the caret is not a content edit. Preserve the current position.
    previous.selection=frame.selection;return false;
   }
   if(cursor<frames.length-1){
@@ -94,12 +111,44 @@ export function createReadmeEditHistory(root,{limit=DEFAULT_LIMIT,maxBytes=DEFAU
   return true;
  };
  const reset=()=>{
-  frames=[snapshot(root)];cursor=0;bytes=frames[0].bytes;
+  frames=[snapshot(root)];cursor=0;bytes=frames[0].bytes;isolate();
  };
  reset();
+ // Structural mutations and administrative changes are always separate steps.
  const record=()=>push(snapshot(root));
  const rememberCaret=()=>{
   if(cursor>=0&&frames[cursor])frames[cursor].selection=selectionState(root);
+ };
+ const kindFor=inputType=>({
+  insertText:"text",deleteContentBackward:"backward",deleteContentForward:"forward"
+ })[inputType]||null;
+ const noteBeforeInput=event=>{
+  const kind=kindFor(event?.inputType);
+  pending={kind,start:caretKey(root),at:Date.now()};
+  rememberCaret();
+ };
+ const discardPending=()=>{pending=null;};
+ const recordNative=event=>{
+  const before=pending;pending=null;
+  const afterPosition=caretKey(root),next=snapshot(root);
+  if(frames[cursor]?.html===next.html){
+   if(frames[cursor])frames[cursor].selection=next.selection;
+   return false;
+  }
+  const now=Date.now(),kind=kindFor(event?.inputType);
+  const canGroup=!!kind&&kind===before?.kind&&before.start!==null&&
+   afterPosition!==null&&group?.kind===kind&&group.after===before.start&&
+   group.index===cursor&&cursor===frames.length-1&&
+   now-group.at<=delay;
+  if(canGroup){
+   bytes-=frames[cursor].bytes;frames[cursor]=next;bytes+=next.bytes;
+   group.after=afterPosition;group.at=now;trim();
+   return true;
+  }
+  push(next);
+  group=kind&&before?.kind===kind&&before.start!==null&&afterPosition!==null?
+   {kind,after:afterPosition,at:now,index:cursor}:null;
+  return true;
  };
  const synthesizeInsertion=literal=>{
   if(typeof literal!=="string"||literal.length>10)return null;
@@ -115,19 +164,27 @@ export function createReadmeEditHistory(root,{limit=DEFAULT_LIMIT,maxBytes=DEFAU
   const html=clone.innerHTML;
   return {dom:clone,html,selection:next,bytes:html.length*2};
  };
- const undo=()=>{
-  // Capture any native change that was not followed by its input event.
-  record();
+ // Only record a genuinely untracked DOM change before time travel. Calling
+ // record() on every undo/redo would manufacture entries after DOM restoration.
+ const synchronize=()=>{
+  const actual=snapshot(root);
+  if(frames[cursor]?.html!==actual.html)push(actual);
+ };
+ const undo=({skipSync=false}={})=>{
+  if(!skipSync)synchronize();
+  isolate();
   if(cursor<=0)return false;
   cursor--;restore(root,frames[cursor]);return true;
  };
- const redo=()=>{
-  record();
+ const redo=({skipSync=false}={})=>{
+  if(!skipSync)synchronize();
+  isolate();
   if(cursor>=frames.length-1)return false;
   cursor++;restore(root,frames[cursor]);return true;
  };
- const clear=()=>{frames=[];cursor=-1;bytes=0;};
- return {reset,clear,record,snapshot:()=>snapshot(root),rememberCaret,synthesizeInsertion,push,undo,redo,
+ const clear=()=>{frames=[];cursor=-1;bytes=0;isolate();};
+ return {reset,clear,isolate,record,recordNative,noteBeforeInput,discardPending,
+  snapshot:()=>snapshot(root),rememberCaret,synthesizeInsertion,push,undo,redo,
   get canUndo(){return cursor>0;},get canRedo(){return cursor>=0&&cursor<frames.length-1;},
   get length(){return frames.length;},get index(){return cursor;}};
 }
