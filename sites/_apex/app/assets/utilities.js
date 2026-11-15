@@ -202,7 +202,7 @@ export function initColosseumUtilities(){
   const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
     (linked.length?'<div class="ut-tag-list">'+linked.map(name=>'<span class="ut-tag">'+esc(name)+'</span>').join("")+'</div>':
      '<p>Not a direct member of any collection.</p>')+'</section>';
-  const authorLabel=plain(item.author).replaceAll("_"," ").replace(/w/g,ch=>ch.toUpperCase());
+  const authorLabel=plain(item.author).replaceAll("_"," ").replace(/(^| )[a-z]/g,ch=>ch.toUpperCase());
   return '<section class="ut-card" aria-label="'+esc(item.name)+' details>'+
    '<div class="ut-card-header"><div><p class="ut-overline">'+esc(plain(item.route))+' UTILITY</p>'+
    '<h2>'+esc(item.name)+'</h2></div><span class="ut-card-badges">'+
