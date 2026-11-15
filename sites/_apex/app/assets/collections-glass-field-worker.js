@@ -1,34 +1,33 @@
 /*
- * Geometry-only worker for the fixed Collections glass pill.
- * Uses the exact retained AIR mode5 browser field; never samples or
- * transports the page's backdrop. Three lossless 8-bit PNG fields are
- * encoded off the UI thread. Resize requests are demand-driven, not polled.
+ * Public Clear (finite scope): one optical branch, one displacement field.
+ * Native Clear CAFilter outer refraction = 0, mixture opacity = 0. The old
+ * private diagnostic mixed TWO displacement branches + THREE PNG textures.
+ * One full-resolution field is lossless relative to this chosen public Clear
+ * adapter, and its PNG transport preserves every generated RGBA byte.
+ * Worker never receives or reads page/background pixels.
  */
-import {generateOracleField} from "./sidebar-glass-oracle.js";
+import {generatePublicClearPillField} from "./collections-glass-public-clear.js";
 
-const canEncode=typeof OffscreenCanvas==="function"&&
-  typeof FileReaderSync==="function";
-const reader=canEncode?new FileReaderSync():null;
-async function encode(pixels,width,height){
- const canvas=new OffscreenCanvas(width,height);
- const ctx=canvas.getContext("2d");
- if(!ctx)throw Error("Offscreen Canvas2D unavailable");
- const data=ctx.createImageData(width,height);
- data.data.set(pixels);ctx.putImageData(data,0,0);
- return reader.readAsDataURL(await canvas.convertToBlob({type:"image/png"}));
-}
+const encodeHere=typeof OffscreenCanvas==="function"&&
+ typeof FileReaderSync==="function";
+const reader=encodeHere?new FileReaderSync():null;
+
 self.onmessage=async({data:request})=>{
  const {key,w,h,radius}=request||{};
  try{
-  const field=generateOracleField(w,h,radius,undefined,"pill");
-  if(canEncode){
-   const urls=await Promise.all([field.inner,field.outer,field.blurMask]
-     .map(pixels=>encode(pixels,field.width,field.height)));
-   self.postMessage({key,w:field.width,h:field.height,urls});
+  const field=generatePublicClearPillField(w,h,radius);
+  if(encodeHere){
+   const canvas=new OffscreenCanvas(field.width,field.height);
+   const ctx=canvas.getContext("2d");
+   if(!ctx)throw Error("Worker Canvas2D unavailable");
+   const img=ctx.createImageData(field.width,field.height);
+   img.data.set(field.pixels);ctx.putImageData(img,0,0);
+   const blob=await canvas.convertToBlob({type:"image/png"});
+   self.postMessage({key,w:field.width,h:field.height,
+    png:reader.readAsDataURL(blob)});
   }else{
    self.postMessage({key,w:field.width,h:field.height,
-     inner:field.inner,outer:field.outer,blurMask:field.blurMask},
-     [field.inner.buffer,field.outer.buffer,field.blurMask.buffer]);
+    pixels:field.pixels},[field.pixels.buffer]);
   }
  }catch(error){self.postMessage({key,error:String(error)});}
 };
