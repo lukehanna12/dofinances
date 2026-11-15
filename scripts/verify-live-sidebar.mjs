@@ -282,14 +282,60 @@ try{
   })()`);
   assert.ok(gripHit.onTarget,
     "The resize grip must receive pointer events at its visible center: "+JSON.stringify(gripHit));
-  const startWidth=await evaluate('Math.round(document.querySelector(".sidebar").getBoundingClientRect().width)');
+  // The expanded sidebar can already be at its responsive upper bound.
+  // Choose a direction with actual available travel rather than demanding
+  // +40px at a width where the CSS/JS clamp permits less (or no) growth.
+  const bounds=await evaluate(String.raw`(()=>{
+    const side=document.querySelector(".sidebar").getBoundingClientRect();
+    const grip=document.getElementById("sidebar-resize-handle");
+    return {width:side.width,min:Number(grip.getAttribute("aria-valuemin")),
+      max:Number(grip.getAttribute("aria-valuemax")),
+      shell:document.getElementById("workspace-shell").className};
+  })()`);
+  assert.ok(bounds.max-bounds.min>=45,
+    "Responsive sidebar must expose at least 45px of draggable range: "+JSON.stringify(bounds));
+  const rightRoom=Math.max(0,bounds.max-bounds.width);
+  const leftRoom=Math.max(0,bounds.width-bounds.min);
+  const direction=rightRoom>=40?1:leftRoom>=40?-1:rightRoom>=leftRoom?1:-1;
+  const travel=Math.min(50,direction>0?rightRoom:leftRoom);
+  assert.ok(travel>=8,"No available resize travel: "+JSON.stringify(bounds));
+  // Capture diagnostics independently of the resulting geometry: a hit-test
+  // success alone does not establish that pointerdown/drag actually fired.
+  await evaluate(String.raw`(()=>{
+    const grip=document.getElementById("sidebar-resize-handle");
+    window.__sidebarDragSmokeEvents=[];
+    for(const name of ["pointerdown","pointermove","pointerup","pointercancel","lostpointercapture"]){
+      grip.addEventListener(name,event=>{
+        window.__sidebarDragSmokeEvents.push({event:name,x:event.clientX,
+          pointerId:event.pointerId,buttons:event.buttons});
+      },{capture:true});
+    }
+    return true;
+  })()`);
   await down(header.gripCenter,header.gripY);
   for(let step=1;step<=5;step++){
-    await move(header.gripCenter+step*10,header.gripY);
-    await pause(35);
+    await move(header.gripCenter+direction*travel*(step/5),header.gripY);
+    await pause(55);
   }
-  await up(header.gripCenter+50,header.gripY);
-  await until('Math.round(document.querySelector(".sidebar").getBoundingClientRect().width)>='+String(startWidth+40),"dragged width response");
+  await up(header.gripCenter+direction*travel,header.gripY);
+  const target=direction>0?bounds.width+Math.max(4,travel-4):bounds.width-Math.max(4,travel-4);
+  try{
+    const predicate=direction>0
+      ? 'document.querySelector(".sidebar").getBoundingClientRect().width>='+target
+      : 'document.querySelector(".sidebar").getBoundingClientRect().width<='+target;
+    await until(predicate,"dragged width response",6000);
+  }catch(error){
+    const observed=await evaluate(String.raw`(()=>{
+      const grip=document.getElementById("sidebar-resize-handle");
+      const shell=document.getElementById("workspace-shell");
+      return {width:document.querySelector(".sidebar").getBoundingClientRect().width,
+        styleWidth:shell.style.getPropertyValue("--sidebar-expanded-width"),
+        shell:shell.className,ariaNow:grip.getAttribute("aria-valuenow"),
+        events:window.__sidebarDragSmokeEvents||[]};
+    })()`);
+    throw new Error(error.message+"; bounds="+JSON.stringify(bounds)+
+      "; direction="+direction+"; travel="+travel+"; observed="+JSON.stringify(observed));
+  }
   const linkGeometry=await evaluate(String.raw`(()=>{
     const shell=document.querySelector(".sidebar").getBoundingClientRect();
     return [...document.querySelectorAll(".sidebar-navigation .nav-link")]
