@@ -446,12 +446,16 @@ export function initColosseumCollections(){
      const routeIcon=Object.hasOwn(COLLECTION_ROUTE_ICONS,routes)?COLLECTION_ROUTE_ICONS[routes]:null;
      const selected=state.selected.has(uid);
      const searchIndex=esc([item.name||uid,uid,annotation.context,routes||""].join(" "));
-     const content='<span class="cs-dot" aria-hidden="true"></span>'+
+     // The former right-aligned route icon now occupies a CONSTANT-width
+     // left slot in every row, including unknown route modes. Both the name
+     // and UID therefore begin at exactly the same horizontal coordinate.
+     const content='<span class="cs-utility-route-slot">'+
+       (routeIcon?'<span class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" role="img" aria-label="'+routeIcon.label+'"></span>':"")+
+       '</span>'+
        '<span class="cs-utility-info"><span class="cs-utility-name">'+esc(item.name||uid)+'</span>'+
          '<span class="cs-utility-uid">'+uid+'</span>'+contextMarkup+'</span>'+
        annotationControls+
        '<span class="cs-utility-trailing">'+
-       (routeIcon?'<span class="cs-utility-route-slot"><span class="cs-utility-route-icon cs-utility-route-icon--'+routes+'" role="img" aria-label="'+routeIcon.label+'"></span></span>':"")+
        '<button type="button" class="cs-utility-pick" data-cs-pick-utility="'+uid+'" data-cs-utility-name="'+esc(item.name||uid)+'" aria-label="'+(selected?'Deselect ':'Select ')+esc(item.name||uid)+'" aria-pressed="'+String(selected)+'"'+(!state.selecting?' disabled tabindex="-1" aria-hidden="true"':'')+'><span class="cs-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button></span>';
      return '<div class="cs-utility-row'+(hiddenMember?' cs-utility-is-hidden':'')+'" data-cs-utility-index="'+searchIndex+'">'+content+'</div>';
    }).join("");

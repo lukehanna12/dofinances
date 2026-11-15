@@ -1,6 +1,7 @@
 import {initCollectionsTitleTransition} from "./collections-title-transition.js";
 import {initWorkspaceScroll} from "./workspace-scroll.js";
 import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
+import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
@@ -136,6 +137,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   // Match the reference's xl breakpoint: mobile drawer, compact desktop rail,
   // then an expandable full-width sidebar at 1280px and above.
   const isCompactRail=()=>!!win.matchMedia?.("(min-width: 761px) and (max-width: 1279px)").matches;
+  const railTooltips=initCollapsedRailTooltips(doc,win,shell,sidebar);
   // A viewport breakpoint is a layout change, not an expand/collapse action.
   // Keep transitions off unless a user actually clicked a sidebar control.
   let motionTimeout=null;
@@ -208,6 +210,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   }
   setSidebarWidth(expandedWidth,true);
   function updateCollapse(){
+    railTooltips?.hide();
     const forcedRail=isCompactRail();
     const effectiveCollapsed=forcedRail?!railExpanded:collapsed;
     shell.classList.toggle("is-compact-rail",forcedRail);
@@ -305,6 +308,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     }
+    railTooltips?.hide();
     closeDrawer();
     lastRenderedRoute=route;
     // Content and active navigation commit first. Loading/decoding a new

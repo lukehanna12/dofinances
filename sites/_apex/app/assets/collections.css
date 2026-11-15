@@ -291,20 +291,22 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-utility-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 #cs-root .cs-utility-name{color:#fff;font-size:clamp(12px,1.15vw,14px);line-height:1.45;font-weight:500;overflow-wrap:anywhere}
 #cs-root .cs-utility-uid{font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--cs-dim);font-variant-numeric:tabular-nums}
-/* The external/ported SVG is the geometric reference. Its new viewBox is
-   28.9096 x 20.5045: rendered width / rendered height = 1.40991490. A fixed
-   reference slot sits flush against the utility box's content-right edge;
-   every icon's CENTER is placed exactly half a ported width from that edge,
-   retaining each route image's individual height and aspect ratio. */
+/* Every utility (including one without route metadata) has exactly ONE
+   leading 24px slot. Names and UIDs therefore begin at the same coordinate
+   regardless of cloud/direct/local/external silhouette or icon aspect ratio.
+   Source SVG ratios and existing per-route sizes remain untouched: the
+   requested 60% visual scale is uniform around the icon center only. */
 #cs-root .cs-utility-route-slot{
- --cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px);
  display:flex;align-items:center;justify-content:center;
- width:calc(var(--cs-ported-route-height) * 1.40991490);
- height:var(--cs-ported-route-height);flex:none;margin-left:auto;align-self:center;
+ width:24px;min-width:24px;height:29px;flex:0 0 24px;align-self:center;
 }
-#cs-root .cs-utility-route-icon{display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);width:auto;max-width:none;flex:none;align-self:center;object-fit:contain}
-/* Route-specific optical sizes relative to the existing 80%-scaled SVGs.
-   No transform: width:auto preserves each SVG's intrinsic viewBox geometry. */
+#cs-root .cs-utility-route-icon{
+ display:block;height:calc(clamp(12px,1.2vw,14.4px) + 11.2px);
+ width:auto;max-width:none;flex:none;align-self:center;object-fit:contain;
+ transform:scale(.6);transform-origin:center;
+}
+/* Preserve independently sized, native-aspect-ratio route silhouettes;
+   all are visually scaled to exactly 60%, without altering path geometry. */
 #cs-root .cs-utility-route-icon--cloud{height:calc(clamp(10.8px,1.08vw,12.96px) + 10.08px)}
 #cs-root .cs-utility-route-icon--direct{height:calc(clamp(10.2px,1.02vw,12.24px) + 9.52px)}
 #cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 8.96px)}
@@ -356,7 +358,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-utility-route-icon--direct{height:calc(clamp(10.2px,1.02vw,12.24px) + 6.8px)}
  #cs-root .cs-utility-route-icon--local{height:calc(clamp(9.6px,0.96vw,11.52px) + 6.4px)}
  #cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}
- #cs-root .cs-utility-route-slot{--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}
+ #cs-root .cs-utility-route-slot{width:21px;min-width:21px;height:24px;flex-basis:21px}
  #cs-root .cs-summary{font-size:11px;margin-top:22px;padding-top:16px}
 }
 @media(prefers-reduced-motion:reduce){
