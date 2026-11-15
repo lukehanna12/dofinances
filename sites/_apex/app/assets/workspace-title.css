@@ -1,0 +1,151 @@
+/* Shared default for every workspace screen except Home/Dashboard.
+   Covers Projects, Settings, Colosseum, Apple HIG and project README routes.
+   Background belongs to the real workspace canvas, not an overlay. */
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])){--ui-canvas:#0a0a0a}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell){padding-bottom:var(--workspace-footer-height)}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell)::before{position:fixed}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell{position:relative;z-index:1}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell::after{
+ content:"";position:absolute;inset:var(--workspace-banner-height) 0 0;
+ z-index:-1;pointer-events:none;background:var(--ui-canvas,#0a0a0a)}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > .workspace-footer{position:fixed;inset:auto 0 0;z-index:0}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
+
+/* Workspace only: scroll-dependent large-title/edge treatment, followed by
+   a BINARY threshold-triggered breadcrumb handoff. The document does not
+   need to continue scrolling for the handoff to finish. Duration/delay
+   values animate only CSS transforms/opacity; no JS animation clock. */
+/* The large heading does not lose opacity until exactly half its line box
+   has passed behind the sticky lower bar. Class toggling triggers a discrete,
+   self-finishing fade in either direction at the identical crossing point. */
+body.workspace-title-transition .workspace-scroll-heading{
+  filter:blur(var(--workspace-large-blur,0px));
+  opacity:1;
+  transition:opacity 180ms cubic-bezier(.4,0,.2,1);
+  will-change:filter,opacity;
+}
+body.workspace-title-transition.workspace-title-passed .workspace-scroll-heading{
+  opacity:0;
+}
+/* Blur only the actual top wallpaper: this is an identically cropped PHOTO
+   layer behind #workspace-shell, not a backdrop sampler above the document.
+   Its finite-height mask follows the original growing 0..64px strip below
+   the sticky navigation bar. Text, rows and controls never enter the filter
+   input, even when the scrolled document passes through that area. */
+body.workspace-title-transition::after{
+  content:"";
+  position:fixed;
+  inset:calc(-1 * var(--workspace-top-overpull)) 0 auto;
+  width:100%;
+  height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
+  z-index:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
+    var(--workspace-wallpaper-image,none);
+  background-size:cover,cover;
+  background-position:center,var(--workspace-wallpaper-position,center 46%);
+  background-repeat:no-repeat;
+  filter:blur(var(--workspace-strip-blur,0px));
+  opacity:var(--workspace-strip-opacity,0);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,rgba(0,0,0,.9) 36%,transparent 100%);
+  -webkit-mask-position:left calc(var(--workspace-top-overpull) + var(--global-menu-height) + var(--workspace-header-height));
+  mask-position:left calc(var(--workspace-top-overpull) + var(--global-menu-height) + var(--workspace-header-height));
+  -webkit-mask-size:100% var(--workspace-strip-height,0px);
+  mask-size:100% var(--workspace-strip-height,0px);
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+}
+/* Compact Workspace title: same system-family, cap-height rhythm and
+   responsive font size as the global clock digits (15/14/13px, weight 620,
+   line-height 1). Its resting ink is the sidebar toggle's --ui-secondary.
+   The overlay occupies the ENTIRE bottom bar, not its remaining flex space:
+   the title is centered against the real bar on every viewport width.
+   Opacity timing remains independent of the breadcrumb handoff. */
+body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:none;
+  box-sizing:border-box;
+  max-width:none;
+  padding-inline:70px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  pointer-events:none;
+  user-select:none;
+  color:var(--ui-secondary);
+  font:620 15px/1 var(--ui-font-sans,system-ui);
+  letter-spacing:-.02em;
+  opacity:0;
+  transition:opacity 180ms cubic-bezier(.4,0,.2,1) 0ms;
+}
+@media(max-width:1279px){
+  body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title{
+    font-size:14px;
+  }
+}
+@media(max-width:450px){
+  body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title{
+    font-size:13px;
+  }
+}
+body.workspace-title-transition.workspace-title-passed #workspace-shell .topbar > .workspace-inline-title{
+  opacity:1;
+  transition:opacity 220ms cubic-bezier(.4,0,.2,1) 230ms;
+}
+body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-item{
+  transform:translate3d(0,0,0);
+  opacity:1;
+  will-change:transform,opacity;
+  transition:transform 220ms cubic-bezier(.22,1,.36,1),opacity 88ms linear;
+  transition-delay:var(--workspace-in-delay,210ms),var(--workspace-in-delay,210ms);
+}
+body.workspace-title-transition.workspace-title-passed #workspace-shell .shadcn-breadcrumb-item{
+  transform:translate3d(var(--workspace-crumb-distance,0px),0,0);
+  opacity:0;
+  transition-delay:var(--workspace-out-delay,0ms),var(--workspace-out-delay,0ms);
+}
+body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-separator{
+  opacity:1;
+  will-change:opacity;
+  transition:opacity 58ms linear var(--workspace-arrow-in-fade,204ms);
+}
+body.workspace-title-transition.workspace-title-passed #workspace-shell .shadcn-breadcrumb-separator{
+  opacity:0;
+  transition-delay:var(--workspace-arrow-out-fade,115ms);
+}
+body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-separator svg{
+  transform:rotateY(0deg);
+  transform-origin:center;
+  backface-visibility:visible;
+  transition:transform 66ms cubic-bezier(.4,0,.2,1) var(--workspace-arrow-in-flip,216ms);
+}
+body.workspace-title-transition.workspace-title-passed #workspace-shell .shadcn-breadcrumb-separator svg{
+  transform:rotateY(180deg);
+  transition-delay:var(--workspace-arrow-out-flip,40ms);
+}
+@media(prefers-reduced-motion:reduce){
+  body.workspace-title-transition .workspace-scroll-heading{
+    filter:none;
+    transition:none;
+    will-change:auto;
+  }
+  body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-item,
+  body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-separator,
+  body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-separator svg,
+  body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title{
+    transition-duration:0ms;
+    transition-delay:0ms;
+    will-change:auto;
+  }
+}
+
+
+
+
