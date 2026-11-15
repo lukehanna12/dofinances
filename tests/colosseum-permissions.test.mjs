@@ -60,16 +60,16 @@ test("Filesystem controls remain complete but appear only inside the focused rul
  assert.match(script,/data-lifecycle-key/);
 });
 
-test("Effective access is prominent and resolved by the live gateway, not simulated from rule flags",()=>{
+test("Permissions omits the effective-access card and the redundant authority success message",()=>{
  const view=index.slice(index.indexOf('data-view="colosseum/permissions"'),index.indexOf('data-view="colosseum/diagnostics"'));
- assert.ok(view.indexOf('id="pm-effective-form"')<view.indexOf('id="pm-cards"'));
- assert.match(view,/id="pm-effective-result"/);
- assert.match(view,/id="pm-effective-verdict"/);
- assert.match(script,/request\("explain",\{path,operation\}\)/);
- assert.match(script,/d\.policyRule\?\.path/);
- assert.match(script,/decisionRevision/);
+ assert.ok(!view.includes('id="pm-effective-form"'));
+ assert.ok(!view.includes("Check effective access"));
+ assert.ok(!styles.includes(".pm-effective-inspector"));
+ assert.ok(!script.includes('request("explain"'));
+ assert.ok(!script.includes("The local permission authority is active and the gateway enforces its policy."));
+ assert.match(script,/show\(available\?"":"The local permission authority is unavailable or stale; edits are disabled\.",!available\)/);
+ assert.match(script,/if\(seq===loadSeq\)show\(error\.message,true\)/);
  assert.match(script,/finally\{working=false;render\(\);\}/);
- assert.ok(!script.includes("root.append(inspector)"));
 });
 
 test("DoFinances enforces its current immutable owner identity and Cloudflare Access before policy mutations",()=>{

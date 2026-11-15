@@ -14,7 +14,7 @@ export function initColosseumPermissions(){
  const root=document.getElementById("pm-root");
  if(!root||root.dataset.ready==="true")return;
  root.dataset.ready="true";
- let state=null,working=false,pending=null,loadSeq=0,editingRow=null,decisionRevision=null;
+ let state=null,working=false,pending=null,loadSeq=0,editingRow=null;
  const $=id=>root.querySelector("#"+id);
  const show=(message,error=false)=>{const n=$("pm-notice");n.textContent=message||"";n.dataset.error=error?"true":"false";};
  const canEdit=()=>state?.source==="local"&&state.policyCurrent===true&&!working;
@@ -38,9 +38,9 @@ export function initColosseumPermissions(){
   try{
    const reply=await request("status",{},"GET");
    if(seq!==loadSeq)return;
-   state=reply;closeRule();render();show(state.source==="local"&&state.policyCurrent?
-    "The local permission authority is active and the gateway enforces its policy.":
-    "The local permission authority is unavailable or stale; edits are disabled.",!(state.source==="local"&&state.policyCurrent));
+   state=reply;closeRule();render();
+   const available=state.source==="local"&&state.policyCurrent===true;
+   show(available?"":"The local permission authority is unavailable or stale; edits are disabled.",!available);
   }catch(error){if(seq===loadSeq)show(error.message,true);}
  }
 
@@ -76,10 +76,6 @@ export function initColosseumPermissions(){
   $("pm-pin-settings").hidden=!local;
   $("pm-exec").hidden=!local;
   $("pm-lifecycle").hidden=!local||!state.lifecycle;
-  $("pm-effective-submit").disabled=!local;
-  if(decisionRevision!==null&&decisionRevision!==state.revision){
-   $("pm-effective-result").hidden=true;decisionRevision=null;
-  }
   const term=$("pm-filter").value.trim().toLowerCase();
   const visible=rows.filter(row=>(String(rowValues(row)[2]||"")+" "+String(rowValues(row)[1]||"")).toLowerCase().includes(term));
   $("pm-cards").innerHTML=visible.map(ruleRow).join("")||
@@ -225,37 +221,6 @@ export function initColosseumPermissions(){
  $("pm-refresh").addEventListener("click",()=>void load());
 
 
- // Inspect the effective authorization through the gateway, never via a
- // client-side reimplementation of path precedence.
- const resetDecision=()=>{$("pm-effective-result").hidden=true;decisionRevision=null;};
- $("pm-effective-form").addEventListener("input",resetDecision);
- $("pm-effective-form").addEventListener("change",resetDecision);
- $("pm-effective-form").addEventListener("submit",async event=>{
-  event.preventDefault();
-  const button=$("pm-effective-submit"),out=$("pm-effective-result");
-  const form=event.currentTarget;
-  const path=form.elements.namedItem("path").value.trim();
-  const operation=form.elements.namedItem("operation").value;
-  if(!path||!state||state.source!=="local")return;
-  button.disabled=true;out.hidden=false;out.dataset.verdict="";
-  $("pm-effective-verdict").textContent="Checking…";
-  $("pm-effective-meta").textContent="";
-  $("pm-effective-reason").textContent="Consulting the active gateway.";
-  try{
-   const data=await request("explain",{path,operation}),d=data.decision||{};
-   decisionRevision=data.revision??null;
-   out.dataset.verdict=d.allowed===true?"allowed":"denied";
-   $("pm-effective-verdict").textContent=d.allowed===true?"Allowed":"Denied";
-   $("pm-effective-meta").textContent="Operation: "+operation+" · Revision "+(data.revision??"unknown");
-   $("pm-effective-reason").textContent="Resolved path: "+(d.target||path)+"\n"+
-    "Reason: "+(d.reason||"No explanatory reason returned")+"\n"+
-    "Winning rule: "+(d.policyRule?.path||"None");
-  }catch(error){
-   out.dataset.verdict="error";$("pm-effective-verdict").textContent="Unable to check";
-   $("pm-effective-meta").textContent="";
-   $("pm-effective-reason").textContent=String(error.message||error);
-  }finally{button.disabled=!state||state.source!=="local";}
- });
  document.addEventListener("keydown",event=>{
   if(!routeActive()||!event.metaKey||!event.shiftKey||event.altKey||event.key.toLowerCase()!=="n"||
      event.target.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]')||
@@ -269,5 +234,5 @@ export function initColosseumPermissions(){
  };
  window.addEventListener("hashchange",()=>{if(routeActive())void load();});
  if(routeActive())void load();
- else show("Open Permissions to load live gateway policy.");
+
 }

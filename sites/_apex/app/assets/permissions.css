@@ -48,23 +48,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-section-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
 #pm-root .pm-section-title{font-size:17px;font-weight:600;letter-spacing:-.025em;line-height:1.3;margin:0}
 #pm-root .pm-section-copy{font-size:12px;line-height:1.5;color:var(--pm-muted);margin:5px 0 0}
-#pm-root .pm-effective-inspector{margin-top:23px;border:1px solid var(--pm-line);border-radius:13px;padding:18px 20px;background:#111}
-#pm-root .pm-effective-form{display:grid;grid-template-columns:minmax(0,1fr) 155px auto;gap:9px;align-items:end}
-#pm-root .pm-effective-form label,#pm-root .pm-form-field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:11px;color:var(--pm-muted)}
-#pm-root .pm-effective-form input,#pm-root .pm-effective-form select,#pm-root .pm-field-input{
+#pm-root .pm-form-field{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:11px;color:var(--pm-muted)}
+#pm-root .pm-field-input{
  background:var(--pm-fill);border:1px solid #343434;border-radius:9px;color:var(--pm-ink);
  width:100%;min-width:0;min-height:34px;padding:7px 10px;font-size:12px;outline:none}
-#pm-root .pm-effective-form input:hover,#pm-root .pm-effective-form select:hover,#pm-root .pm-field-input:hover{border-color:#525252}
-#pm-root .pm-effective-form input:focus,#pm-root .pm-effective-form select:focus,#pm-root .pm-field-input:focus{border-color:#858585}
-#pm-root .pm-effective-form .pm-btn{min-height:34px}
-#pm-root .pm-effective-result{margin-top:14px;padding-top:13px;border-top:1px solid var(--pm-line)}
-#pm-root .pm-result-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#pm-root .pm-result-verdict{font-size:12px;font-weight:650;letter-spacing:.02em}
-#pm-root .pm-effective-result[data-verdict="allowed"] .pm-result-verdict{color:#86c8a0}
-#pm-root .pm-effective-result[data-verdict="denied"] .pm-result-verdict,
-#pm-root .pm-effective-result[data-verdict="error"] .pm-result-verdict{color:#f87171}
-#pm-root .pm-result-meta{font-size:11px;color:var(--pm-dim)}
-#pm-root .pm-result-reason{font-size:12px;color:#c5c5c5;margin:8px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+#pm-root .pm-field-input:hover{border-color:#525252}
+#pm-root .pm-field-input:focus{border-color:#858585}
 #pm-root .pm-rule-toolbar{display:flex;align-items:center;gap:9px;margin:15px 0 10px}
 #pm-root .pm-search{height:32px;display:flex;align-items:center;flex:1;min-width:0;border-radius:9px;border:1px solid var(--pm-line);background:var(--pm-fill)}
 #pm-root .pm-search:focus-within,#pm-root .pm-search:hover{border-color:#525252}
@@ -141,9 +130,6 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
  #pm-root .pm-overview{align-items:flex-start}
  #pm-root .pm-overview-right{gap:9px}
  #pm-root .pm-revision{display:none}
- #pm-root .pm-effective-inspector{padding:15px;margin-top:22px}
- #pm-root .pm-effective-form{grid-template-columns:minmax(0,1fr) 111px}
- #pm-root .pm-effective-form .pm-btn{grid-column:1 / -1;justify-self:start}
  #pm-root .pm-registry-head,#pm-root .pm-rule-row{grid-template-columns:minmax(0,1fr) 126px 28px;column-gap:7px}
  #pm-root .pm-registry-head .pm-status-col,#pm-root .pm-rule-status{display:none}
  #pm-root .pm-op-head{font-size:9px}

@@ -661,25 +661,7 @@
                 <button id="pm-refresh" class="pm-icon-button" type="button" aria-label="Refresh permissions"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5 M4 17v-5h5 M5.9 8.5A7.5 7.5 0 0 1 19 9 M18.1 15.5A7.5 7.5 0 0 1 5 15"/></svg></button>
               </div>
             </div>
-            <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
-            <section class="pm-effective-inspector" aria-labelledby="pm-effective-heading">
-              <div class="pm-section-header">
-                <div><h2 id="pm-effective-heading" class="pm-section-title">Check effective access</h2>
-                  <p class="pm-section-copy">Ask the gateway which rule actually governs an operation.</p></div>
-              </div>
-              <form id="pm-effective-form" class="pm-effective-form">
-                <label>Absolute path<input name="path" type="text" spellcheck="false" autocomplete="off" placeholder="/Users/…/project" required></label>
-                <label>Operation<select name="operation">
-                  <option value="read">Read</option><option value="write">Write</option><option value="add">Add</option>
-                  <option value="delete">Delete</option><option value="write_or_add">Write or add</option><option value="execute">Execute</option>
-                </select></label>
-                <button type="submit" class="pm-btn pm-primary" id="pm-effective-submit">Check access</button>
-              </form>
-              <div id="pm-effective-result" class="pm-effective-result" role="status" aria-live="polite" hidden>
-                <div class="pm-result-top"><strong id="pm-effective-verdict" class="pm-result-verdict"></strong><span id="pm-effective-meta" class="pm-result-meta"></span></div>
-                <p id="pm-effective-reason" class="pm-result-reason"></p>
-              </div>
-            </section>
+            <p id="pm-notice" class="pm-notice" role="status" aria-live="polite"></p>
             <section class="pm-section" aria-labelledby="pm-rules-heading">
               <div class="pm-section-header">
                 <div><h2 id="pm-rules-heading" class="pm-section-title">Filesystem access</h2>
@@ -697,7 +679,7 @@
                 </div>
                 <div id="pm-cards" class="pm-rule-list" aria-live="polite"></div>
               </div>
-              <p class="pm-footnote">R = Read · W = Write · S = Script · A = Add · D = Delete. Checks represent configured grants, not final authorization; use Check effective access to resolve precedence.</p>
+              <p class="pm-footnote">R = Read · W = Write · S = Script · A = Add · D = Delete. Checks represent configured grants, not final authorization; the local gateway resolves overlapping paths.</p>
             </section>
             <section class="pm-section" aria-labelledby="pm-policy-heading">
               <div class="pm-section-header">
