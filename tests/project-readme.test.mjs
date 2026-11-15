@@ -395,7 +395,7 @@ test("Markdown input engine is wired to existing rendered README without split v
  assert.ok(ui.includes('converter.turndown(reading)'));
  assert.ok(rules.includes('range.deleteContents();range.insertNode(replacement);'));
  assert.ok(rules.includes('placeCaret('));
- assert.ok(rules.includes('readmeBlockRule(prefix,{trigger,inList:isList})'));
+ assert.ok(rules.includes('readmeBlockRule(prefix+pendingSpace,{trigger,inList:isList})'));
  assert.ok(rules.includes('event.preventDefault()'));
  assert.ok(rules.includes('transformed=applyBlock(root,ctx,"space"," ")'));
  assert.ok(rules.includes('transformed=applyInline(root,ctx,event.data)'));
