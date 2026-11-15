@@ -1,4 +1,5 @@
 import {WORKSPACE_WALLPAPERS} from "../sites/_apex/app/assets/workspace-wallpapers.js";
+import {projectApi} from "./project-api.mjs";
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {verifyColosseumOwnerJwt} from "./colosseum-owner.mjs";
@@ -477,11 +478,11 @@ async function serveAsset(request,env,folder,path,privatePage=false) {
 // Deep workspace URLs are exact allowlisted views; static assets remain distinct.
 const WORKSPACE_VIEW_PATHS = new Set([
   "/app/home", "/app/projects", "/app/settings", "/app/account",
-  "/app/colosseum", "/app/colosseum/utilities", "/app/colosseum/capabilities",
+  "/app/colosseum", "/app/colosseum/readme", "/app/colosseum/utilities", "/app/colosseum/capabilities",
   "/app/colosseum/collections", "/app/colosseum/providers",
   "/app/colosseum/permissions", "/app/colosseum/diagnostics",
   "/app/colosseum/settings",
-  "/app/apple-hig-reader", "/app/apple-hig-reader/overview",
+  "/app/apple-hig-reader", "/app/apple-hig-reader/readme", "/app/apple-hig-reader/overview",
 ]);
 
 export async function handleRequest(request,env={}) {
@@ -489,7 +490,7 @@ export async function handleRequest(request,env={}) {
   const folder=siteFolder(url.hostname);
   if(folder===null) return new Response("Unknown host",{status:404,headers:NO_STORE});
   // www has no authentication cookies; preserve canonical apex origin for all auth routes.
-  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")))) {
+  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")||url.pathname.startsWith("/api/projects")||url.pathname.startsWith("/api/github/")))) {
     url.hostname=ROOT;
     return redirect(url.href,301);
   }
@@ -504,6 +505,15 @@ export async function handleRequest(request,env={}) {
   if(folder==="_apex" && url.pathname.startsWith("/api/cloudflare/")) {
     try{return await cloudflareAccountApi(request,env,url.pathname);}
     catch{return json({error:"Cloudflare account service unavailable."},503);}
+  }
+  if(folder==="_apex" && (url.pathname.startsWith("/api/projects")||url.pathname.startsWith("/api/github/"))) {
+    try{
+      const user=await getUser(request,env);
+      if(!user)return json({error:"Sign in to access projects."},401);
+      const stub=store(env);
+      if(!stub)return json({error:"Account store unavailable."},503);
+      return await projectApi(request,env,url.pathname,user,stub);
+    }catch{return json({error:"Project README service temporarily unavailable."},503);}
   }
   if(folder==="_apex" && url.pathname.startsWith("/api/colosseum/")) {
     try {return await colosseumOwnerApi(request,env,url.pathname);}
@@ -520,7 +530,7 @@ export async function handleRequest(request,env={}) {
       const path=url.pathname.replace(/^\/dashboard(?=\/|$)/,"/app");
       const viewPath=path.replace(/\/+$/,"");
       const asset=await serveAsset(request,env,folder,
-        WORKSPACE_VIEW_PATHS.has(viewPath)?"/app/":path,true);
+        WORKSPACE_VIEW_PATHS.has(viewPath)||/^\/app\/project\/[a-z0-9-]{1,48}\/readme$/.test(viewPath)?"/app/":path,true);
       return asset||new Response("Not found",{status:404,headers:NO_STORE});
     } catch{return new Response("Authentication service unavailable",{status:503,headers:NO_STORE});}
   }

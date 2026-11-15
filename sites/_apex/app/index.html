@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="/app/assets/providers.css">
   <link rel="stylesheet" href="/app/assets/permissions.css">
   <link rel="stylesheet" href="/app/assets/collections.css">
+  <link rel="stylesheet" href="/app/assets/github-markdown.css">
+  <link rel="stylesheet" href="/app/assets/project-readme.css">
   <link rel="stylesheet" href="/app/assets/dashboard-home.css">
   <script src="/app/assets/dashboard.js" type="module"></script>
   <script src="/app/assets/dashboard-home-loader.js" type="module"></script>
@@ -28,7 +30,7 @@
       <div class="global-menu-links" id="global-menu-links">
         <a data-global-route href="#home">Workspace</a>
         <a data-global-route href="#projects">Projects</a>
-        <a data-global-route href="#colosseum/utilities">Colosseum</a>
+        <a data-global-route href="#colosseum/readme">Colosseum</a>
         <a data-global-route href="#colosseum/collections">Collections</a>
         <a data-global-route href="#colosseum/providers">Providers</a>
         <a data-global-route href="#settings">Settings</a>
@@ -47,13 +49,15 @@
         <a data-global-route href="#home">Home</a>
         <a data-global-route href="#projects">Projects</a>
         <a data-global-route href="#settings">Account Settings</a>
+        <a data-global-route href="#colosseum/readme">Colosseum README</a>
         <a data-global-route href="#colosseum/utilities">Utilities</a>
         <a data-global-route href="#colosseum/collections">Collections</a>
         <a data-global-route href="#colosseum/providers">Providers</a>
         <a data-global-route href="#colosseum/permissions">Permissions</a>
         <a data-global-route href="#colosseum/diagnostics">Diagnostics</a>
         <a data-global-route href="#colosseum/settings">Colosseum Settings</a>
-        <a data-global-route href="#apple-hig-reader/overview">Apple HIG Reader</a>
+        <a data-global-route href="#apple-hig-reader/readme">Apple HIG Reader</a>
+        <a data-global-route href="#apple-hig-reader/overview">Apple HIG Overview</a>
       </div>
     </div>
   </nav>
@@ -93,6 +97,7 @@
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
+          <a class="nav-link" data-route="readme" href="#colosseum/readme" aria-label="README"><span class="nav-icon nav-icon-asset nav-icon-asset--readme" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">README</span></span></a>
           <a class="nav-link" data-route="utilities" href="#colosseum/utilities" aria-label="Utilities"><span class="nav-icon nav-icon-asset nav-icon-asset--utilities" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Utilities</span></span></a>
           <a class="nav-link" data-route="collections" href="#colosseum/collections" aria-label="Collections"><span class="nav-icon nav-icon-asset nav-icon-asset--collections" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Collections</span></span></a>
           <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers"><span class="nav-icon nav-icon-asset nav-icon-asset--providers" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Providers</span></span></a>
@@ -102,7 +107,12 @@
         </nav>
         <nav id="apple-hig-navigation" class="nav-stack" aria-label="Apple HIG Reader navigation" hidden>
           <div class="nav-section-label">APPLE HIG READER</div>
+          <a class="nav-link" data-route="apple-hig-reader/readme" href="#apple-hig-reader/readme" aria-label="README"><span class="nav-icon nav-icon-asset nav-icon-asset--readme" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">README</span></span></a>
           <a class="nav-link" data-route="apple-hig-reader/overview" href="#apple-hig-reader/overview" aria-label="Apple HIG Reader overview"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-docs"></use></svg><span class="nav-label"><span class="nav-label-text">Overview</span></span></a>
+        </nav>
+        <nav id="custom-project-navigation" class="nav-stack" aria-label="Project navigation" hidden>
+          <div class="nav-section-label">PROJECT</div>
+          <a class="nav-link" data-route="project/readme" href="#project/readme" aria-label="README"><span class="nav-icon nav-icon-asset nav-icon-asset--readme" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">README</span></span></a>
         </nav>
       </div>
       <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
@@ -146,13 +156,28 @@
 </section>
         <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
           <div class="page-heading"><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
-          <div class="section-subheading"><h2>All projects</h2><span class="count-label">2 projects</span></div>
-          <a class="project-card" href="#colosseum/utilities" aria-label="Open Colosseum project">
+          <div class="section-subheading"><h2>All projects</h2><span class="count-label" id="project-count">2 projects</span><button id="project-create" type="button" class="rm-new-project">+ New project</button></div>
+          <div id="project-list" aria-live="polite">
+          <a class="project-card" href="#colosseum/readme" aria-label="Open Colosseum project">
             <span class="project-emblem large">C</span><span class="project-card-copy"><strong>Colosseum</strong><span>Open project workspace</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
           </a>
-          <a class="project-card" href="#apple-hig-reader/overview" aria-label="Open Apple HIG Reader project">
+          <a class="project-card" href="#apple-hig-reader/readme" aria-label="Open Apple HIG Reader project">
             <span class="project-emblem large">H</span><span class="project-card-copy"><strong>Apple HIG Reader</strong><span>Google Apps Script · Live documentation reader</span></span><span class="open-project"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-chevron"></use></svg></span>
           </a>
+          </div>
+          <p id="project-list-feedback" class="rm-notice" role="status" aria-live="polite" hidden></p>
+          <dialog id="project-create-dialog" class="rm-dialog" aria-labelledby="project-create-title">
+            <form id="project-create-form">
+              <h2 id="project-create-title">New project</h2>
+              <label for="project-create-name">Name</label>
+              <input id="project-create-name" type="text" required minlength="2" maxlength="80" autocomplete="off" placeholder="Project name">
+              <label for="project-create-repository">GitHub repository (optional)</label>
+              <input id="project-create-repository" type="text" autocomplete="off" placeholder="owner/repository">
+              <p class="rm-help">Every new project automatically receives a README landing screen. Associate a repository now or later.</p>
+              <p id="project-create-error" class="rm-notice rm-error" role="alert" hidden></p>
+              <div class="rm-dialog-actions"><button id="project-create-cancel" type="button">Cancel</button><button type="submit" class="rm-save">Create project</button></div>
+            </form>
+          </dialog>
         </section>
         <section class="view" data-view="settings" aria-labelledby="settings-title" hidden>
           <div class="page-heading"><h1 id="settings-title">Settings</h1><p class="lead">Manage your sign-in connections and account security.</p></div>
@@ -233,6 +258,17 @@
           <div class="cf-disconnect" id="cf-disconnect-area" hidden><div><strong>Disconnect Cloudflare</strong>
             <p class="note">Remove the encrypted credential from DoFinances immediately. This does not delete the token in Cloudflare, which you can revoke separately.</p></div>
             <button type="button" class="destructive" id="cf-disconnect">Remove connection</button></div>
+        </section>
+        <section id="github-readme-connection" class="panel settings-panel rm-settings" aria-labelledby="github-readme-heading">
+          <div class="rm-settings-heading"><div><span class="cf-eyebrow">REPOSITORY ACCESS</span><h2 id="github-readme-heading">GitHub README access</h2>
+            <p class="note">GitHub sign-in is identity-only. Add a separate fine-grained personal access token to read private READMEs or edit repository files.</p></div>
+            <strong id="github-readme-status" role="status" aria-live="polite">Checking…</strong></div>
+          <p class="note">Grant <strong>Contents: Read-only</strong> to view private repositories, or <strong>Contents: Read and write</strong> to save edits. Select only the repositories you need.</p>
+          <form id="github-readme-form" class="rm-settings-form"><label for="github-readme-token">Personal access token</label>
+            <div class="rm-settings-input"><input id="github-readme-token" type="password" maxlength="1024" required autocomplete="off" spellcheck="false" placeholder="github_pat_…"><button type="submit" class="rm-save">Connect / replace token</button></div></form>
+          <div class="rm-settings-footer"><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a GitHub token</a><button id="github-readme-remove" type="button">Disconnect</button></div>
+          <p class="rm-help">Encrypted credentials stay server-side and are never returned to the browser. Disconnecting does not unlink GitHub sign-in or Colosseum providers.</p>
+          <p id="github-readme-feedback" class="rm-notice" role="status" aria-live="polite" hidden></p>
         </section>
         <section id="account" class="panel settings-panel" aria-label="Account and security settings">
           <h2>Account & security</h2>
@@ -378,6 +414,27 @@
               <span>Cloud integration is read-only; live token-authenticated availability is not asserted here.</span>
             </footer>
           </div>
+        </section>
+        <section class="view project-view rm-view" data-view="project/readme" hidden aria-labelledby="readme-title">
+          <div class="rm-heading"><div><p id="rm-project-label" class="rm-overline">PROJECT README</p><h1 id="readme-title">README</h1><p id="rm-repository-label" class="rm-repository-label">Loading project…</p></div></div>
+          <div class="rm-toolbar" aria-label="README tools">
+            <div class="rm-toolbar-start"><span class="rm-control-wrap">
+              <button type="button" id="rm-diff" class="rm-icon-button rm-diff-button" aria-label="Show README changes" aria-pressed="false" hidden><img src="/app/assets/readme-diff-text-page.v1.svg" alt="" aria-hidden="true"><span>Diff</span></button>
+              <span class="rm-tooltip" role="tooltip">Highlight changes</span></span></div>
+            <div class="rm-toolbar-end">
+              <span class="rm-control-wrap"><button type="button" id="rm-confirm" class="rm-icon-button rm-confirm" aria-label="Save README" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg></button><span class="rm-tooltip" role="tooltip">Confirm and save changes</span></span>
+              <span class="rm-control-wrap"><button type="button" id="rm-edit" class="rm-icon-button" aria-label="Edit README" aria-keyshortcuts="Meta+Shift+E"><img class="rm-edit-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"><svg class="rm-cancel-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button><span id="rm-edit-tooltip" class="rm-tooltip" role="tooltip">Edit README · ⇧⌘E</span></span>
+            </div>
+          </div>
+          <p id="rm-notice" class="rm-notice" role="status" aria-live="polite" hidden></p>
+          <article id="rm-reading" class="rm-reading markdown-body" data-theme="dark"><p>Loading README…</p></article>
+          <div id="rm-editor" class="rm-editor" hidden><div class="rm-editor-pane"><label for="rm-markdown">Markdown</label><textarea id="rm-markdown" spellcheck="false" aria-label="Edit README Markdown"></textarea></div><div class="rm-preview-pane"><h2>Live preview</h2><article id="rm-preview" class="markdown-body" data-theme="dark"></article></div></div>
+          <section id="rm-diff-panel" class="rm-diff-panel" hidden aria-label="README changes"><h2>Changes to README</h2><div id="rm-diff-content"></div></section>
+          <details class="rm-repository-config"><summary>README presentation &amp; GitHub repository</summary>
+            <label for="rm-presentation">Presentation style</label>
+            <select id="rm-presentation" aria-label="README presentation style">
+              <option value="github">GitHub (default)</option><option value="minimal">Minimal</option><option value="reader">Reader</option>
+            </select><form id="rm-repository-form"><label for="rm-repository-input">Repository</label><div class="rm-repository-entry"><input id="rm-repository-input" type="text" autocomplete="off" spellcheck="false" placeholder="owner/repository"><button type="submit" class="rm-save">Save association</button></div></form><p class="rm-help">Leave empty for a local README. Private repository access requires separate GitHub credentials in <a href="#settings">Settings</a>.</p></details>
         </section>
         <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>

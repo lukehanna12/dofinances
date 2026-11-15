@@ -184,6 +184,10 @@ a:hover {text-decoration: none;}
   -webkit-mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
   mask-image:url("/app/assets/settings-screen-sidebar-icon.v1.svg");
 }
+.nav-link .nav-icon-asset--readme{
+  -webkit-mask-image:url("/app/assets/readme-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/readme-screen-sidebar-icon.v1.svg");
+}
 .nav-link .nav-icon-asset--utilities{
   -webkit-mask-image:url("/app/assets/utilities-screen-sidebar-icon.v1.svg");
   mask-image:url("/app/assets/utilities-screen-sidebar-icon.v1.svg");

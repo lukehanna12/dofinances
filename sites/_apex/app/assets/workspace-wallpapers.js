@@ -24,6 +24,13 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
     "position": "center 45%",
     "footerInk": "#626262"
   },
+  "colosseum/readme": {
+    "sha": "ade03e6d5958ddb9e1e5098ad67d46b7f4c801057aa77c85510d846ef8f75091",
+    "ext": "png",
+    "name": "golden-ridges-dark-sand.png",
+    "position": "center 48%",
+    "footerInk": "#b1a59a"
+  },
   "colosseum/utilities": {
     "sha": "c49181be2b93fe24a44774a7c6f4253f23ec3bf0cfc369a318e420d7418f9eb2",
     "ext": "jpg",
@@ -61,7 +68,9 @@ export const WORKSPACE_WALLPAPERS = Object.freeze({
   }
 });
 export function workspaceWallpaperForRoute(route) {
-  const key=route==="colosseum/settings"?"settings":route.startsWith("apple-hig-reader/")?"projects":route;
+  const key=route==="colosseum/settings"?"settings":
+    route==="apple-hig-reader/readme"||/^project\/[a-z0-9-]+\/readme$/.test(route)?"colosseum/readme":
+    route.startsWith("apple-hig-reader/")?"projects":route;
   return WORKSPACE_WALLPAPERS[key]||WORKSPACE_WALLPAPERS.home;
 }
 export function applyWorkspaceWallpaper(doc,route) {

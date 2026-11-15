@@ -13,7 +13,7 @@ test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
     assert.match(ext,/^(jpg|png|webp|avif)$/);
     assert.match(position,/^center [0-9]+%$/);
   }
-  assert.equal(Object.keys(WORKSPACE_WALLPAPERS).length,8);
+  assert.equal(Object.keys(WORKSPACE_WALLPAPERS).length,9);
 });
 test("wallpaper geometry derives both the image and spacer from header height",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
@@ -31,6 +31,7 @@ test("every named page has the exact owner-selected wallpaper",()=>{
     home:"clouds-over-rice-terraces-high-quality.jpg",
     projects:"winding-icelandic-river-mountains.webp",
     settings:"misty-tropical-forest-hillside.avif",
+    "colosseum/readme":"golden-ridges-dark-sand.png",
     "colosseum/utilities":"waterfall-between-mossy-cliffs.jpg",
     "colosseum/collections":"misty-alpine-mountain-valley.jpg",
     "colosseum/providers":"green-water-foam-swirls.jpg",
@@ -47,6 +48,7 @@ test("footer ink colors reflect the six page-specific contrast adjustments",()=>
     home:"#5c5c5c",
     projects:"#454545",
     settings:"#626262",
+    "colosseum/readme":"#b1a59a",
     "colosseum/utilities":"#666666",
     "colosseum/collections":"#303030",
     "colosseum/providers":"#c5d0ca",

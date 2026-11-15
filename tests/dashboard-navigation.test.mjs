@@ -52,7 +52,7 @@ test("Mobile opener reuses the original panel glyph; collapse buttons horizontal
 
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
-  assert.deepEqual(COLOSSEUM_ROUTES,["utilities","collections","providers","permissions","diagnostics","settings"]);
+  assert.deepEqual(COLOSSEUM_ROUTES,["readme","utilities","collections","providers","permissions","diagnostics","settings"]);
   assert.equal(resolveWorkspaceRoute(""),"home");
   assert.equal(resolveWorkspaceRoute("#home"),"home");
   assert.equal(resolveWorkspaceRoute("#projects"),"projects");
@@ -60,7 +60,7 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.equal(resolveWorkspaceRoute("#account"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_linked=1"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_error=identity_used"),"settings");
-  assert.equal(resolveWorkspaceRoute("#colosseum"),"colosseum/utilities");
+  assert.equal(resolveWorkspaceRoute("#colosseum"),"colosseum/readme");
   assert.equal(resolveWorkspaceRoute("#colosseum/capabilities"),"colosseum/utilities",
     "previous Capabilities bookmarks remain valid");
   assert.equal(workspaceRouteDetails("colosseum/utilities").label,"Utilities");
@@ -70,8 +70,8 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   }
   assert.equal(workspaceRouteDetails("settings").project,false);
   assert.equal(workspaceRouteDetails("colosseum/settings").label,"Settings");
-  assert.deepEqual(APPLE_HIG_ROUTES,["overview"]);
-  assert.equal(resolveWorkspaceRoute("#apple-hig-reader"),"apple-hig-reader/overview");
+  assert.deepEqual(APPLE_HIG_ROUTES,["readme","overview"]);
+  assert.equal(resolveWorkspaceRoute("#apple-hig-reader"),"apple-hig-reader/readme");
   assert.equal(resolveWorkspaceRoute("#apple-hig-reader/overview"),"apple-hig-reader/overview");
   assert.equal(workspaceRouteDetails("apple-hig-reader/overview").projectKey,"apple-hig-reader");
   assert.equal(resolveWorkspaceRoute("#apple-hig-reader/missing"),"home");
@@ -89,14 +89,14 @@ test("direct nested app paths resolve the same screens as hash navigation",()=>{
     assert.equal(resolveWorkspaceRoute("","","/dashboard/"+route),route);
   }
   assert.equal(resolveWorkspaceRoute("","","/app/account"),"settings");
-  assert.equal(resolveWorkspaceRoute("","","/app/colosseum"),"colosseum/utilities");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum"),"colosseum/readme");
   assert.equal(resolveWorkspaceRoute("","","/app/colosseum/capabilities"),"colosseum/utilities",
     "previous direct page URLs remain valid");
   assert.equal(resolveWorkspaceRoute("#settings","","/app/projects"),"settings");
   assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/home"),"settings");
   assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"home");
   assert.equal(resolveWorkspaceRoute("","","/app/colosseum/unknown"),"home");
-  assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader"),"apple-hig-reader/overview");
+  assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader"),"apple-hig-reader/readme");
   assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader/overview"),"apple-hig-reader/overview");
   assert.equal(resolveWorkspaceRoute("","","/dashboard/apple-hig-reader/overview"),"apple-hig-reader/overview");
 });
@@ -287,17 +287,18 @@ test("navigation is stationary except for the 170ms content-only arrival, withou
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
-  for(const name of COLOSSEUM_ROUTES.filter(name=>name!=="settings"))
+  for(const name of COLOSSEUM_ROUTES.filter(name=>!["settings","readme"].includes(name)))
     assert.match(html,new RegExp('data-view="colosseum/'+name+'"'));
-  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-1+APPLE_HIG_ROUTES.length);
+  assert.match(html,/data-view="project\/readme"/);
+  assert.equal((html.match(/class="view project-view"/g)||[]).length,COLOSSEUM_ROUTES.length-2+APPLE_HIG_ROUTES.length-1);
   assert.equal((html.match(/data-view="settings"/g)||[]).length,1,"Settings is shared across both scopes");
   assert.equal(html.includes('data-view="colosseum/settings"'),false);
   assert.match(html,/id="main-navigation"/);
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="apple-hig-navigation"/);
   assert.match(html,/data-view="apple-hig-reader\/overview"/);
-  assert.match(html,/<span class="count-label">2 projects<\/span>/);
-  assert.match(html,/href="#apple-hig-reader\/overview"/);
+  assert.match(html,/<span class="count-label" id="project-count">2 projects<\/span>/);
+  assert.match(html,/href="#apple-hig-reader\/readme"/);
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);
   assert.match(html,/id="back-to-workspace"/);
@@ -625,7 +626,9 @@ test("Apple HIG Reader showcases its Google Apps Script API rather than presenti
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=await read(path);
     const start=html.indexOf('<section class="view project-view" data-view="apple-hig-reader/overview"');
-    const end=html.indexOf('<section class="view project-view" data-view="colosseum/utilities"',start);
+    const end=path.includes("studio/sidebar")?
+      html.indexOf('<section class="view project-view" data-view="colosseum/utilities"',start):
+      html.indexOf('<section class="view project-view rm-view" data-view="project/readme"',start);
     assert.ok(start>0 && end>start,"dedicated Apple HIG project view exists");
     const page=html.slice(start,end);
     assert.match(page,/<div class="page-heading"><h1 id="apple-hig-reader-title">Apple HIG Reader<\/h1><\/div>/,

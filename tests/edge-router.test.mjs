@@ -120,10 +120,10 @@ test("a valid session serves app HTML and assets privately",async()=>{
 });
 test("nested workspace pages remain authenticated and serve the same app document",async()=>{
   const routes=["/app/home","/app/projects","/app/settings","/app/account",
-    "/app/colosseum","/app/colosseum/utilities","/app/colosseum/capabilities","/app/colosseum/collections",
+    "/app/colosseum","/app/colosseum/readme","/app/colosseum/utilities","/app/colosseum/capabilities","/app/colosseum/collections",
     "/app/colosseum/providers","/app/colosseum/permissions",
     "/app/colosseum/diagnostics","/app/colosseum/settings",
-    "/app/apple-hig-reader","/app/apple-hig-reader/overview"];
+    "/app/apple-hig-reader","/app/apple-hig-reader/readme","/app/apple-hig-reader/overview"];
   for(const path of routes){
     const unauthenticated=await handleRequest(
       new Request("https://dofinances.com"+path),authed);

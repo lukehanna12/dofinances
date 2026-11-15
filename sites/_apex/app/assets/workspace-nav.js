@@ -4,12 +4,22 @@ import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
-export const COLOSSEUM_ROUTES=Object.freeze(["utilities","collections","providers","permissions","diagnostics","settings"]);
-export const APPLE_HIG_ROUTES=Object.freeze(["overview"]);
+export const COLOSSEUM_ROUTES=Object.freeze(["readme","utilities","collections","providers","permissions","diagnostics","settings"]);
+export const APPLE_HIG_ROUTES=Object.freeze(["readme","overview"]);
 const MAIN_SET=new Set(MAIN_ROUTES);
 const PROJECT_SET=new Set(COLOSSEUM_ROUTES);
 const APPLE_HIG_SET=new Set(APPLE_HIG_ROUTES);
-const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",
+const PROJECT_README_PATTERN=/^project\/([a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?)\/readme$/;
+const PROJECT_REGISTRY=new Map();
+export function setWorkspaceProjectRegistry(projects){
+  PROJECT_REGISTRY.clear();
+  for(const p of Array.isArray(projects)?projects:[])
+    if(p&&typeof p.slug==="string"&&typeof p.name==="string")
+      PROJECT_REGISTRY.set(p.slug,p.name);
+  if(typeof window!=="undefined")window.dispatchEvent(new Event("workspace-projects-updated"));
+}
+
+const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",readme:"README",
   utilities:"Utilities",collections:"Collections",providers:"Providers",
   permissions:"Permissions",diagnostics:"Diagnostics",overview:"Overview"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
@@ -32,8 +42,9 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
   if(MAIN_SET.has(raw))return raw;
   if(raw==="account")return "settings"; // old dashboard deep-link
-  if(raw==="colosseum")return "colosseum/utilities";
-  if(raw==="apple-hig-reader")return "apple-hig-reader/overview";
+  if(raw==="colosseum")return "colosseum/readme";
+  if(raw==="apple-hig-reader")return "apple-hig-reader/readme";
+  if(PROJECT_README_PATTERN.test(raw))return raw;
   if(raw.startsWith("apple-hig-reader/")){
     const section=raw.slice("apple-hig-reader/".length);
     if(APPLE_HIG_SET.has(section))return "apple-hig-reader/"+section;
@@ -51,8 +62,9 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const slug=urlPath.startsWith("/app/")?urlPath.slice("/app/".length):"";
   if(MAIN_SET.has(slug))return slug;
   if(slug==="account")return "settings";
-  if(slug==="colosseum")return "colosseum/utilities";
-  if(slug==="apple-hig-reader")return "apple-hig-reader/overview";
+  if(slug==="colosseum")return "colosseum/readme";
+  if(slug==="apple-hig-reader")return "apple-hig-reader/readme";
+  if(PROJECT_README_PATTERN.test(slug))return slug;
   if(slug.startsWith("apple-hig-reader/")&&APPLE_HIG_SET.has(slug.slice("apple-hig-reader/".length)))
     return slug;
   if(slug==="colosseum/capabilities")return "colosseum/utilities"; // legacy deep link
@@ -69,9 +81,16 @@ export function workspaceRouteDetails(route){
       subtitle:"Colosseum project workspace"};
   }
   if(selected.startsWith("apple-hig-reader/")){
-    return {route:selected,project:true,projectKey:"apple-hig-reader",label:"Overview",
-      breadcrumb:"Projects / Apple HIG Reader / Overview",
+    const section=selected.split("/")[1],label=TITLE_CASE[section]||"README";
+    return {route:selected,project:true,projectKey:"apple-hig-reader",projectName:"Apple HIG Reader",label,
+      breadcrumb:"Projects / Apple HIG Reader / "+label,
       subtitle:"Apple HIG Reader project workspace"};
+  }
+  const custom=PROJECT_README_PATTERN.exec(selected);
+  if(custom){
+    const projectName=PROJECT_REGISTRY.get(custom[1])||custom[1].replace(/-/g," ");
+    return {route:selected,project:true,projectKey:"project/"+custom[1],projectName,label:"README",
+      breadcrumb:"Projects / "+projectName+" / README",subtitle:projectName+" project workspace"};
   }
   const label=TITLE_CASE[selected];
   return {route:selected,project:false,projectKey:null,label,
@@ -88,6 +107,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const mainNav=doc.getElementById("main-navigation");
   const projectNav=doc.getElementById("project-navigation");
   const appleHigNav=doc.getElementById("apple-hig-navigation");
+  const customNav=doc.getElementById("custom-project-navigation");
   const breadcrumb=doc.getElementById("breadcrumb");
   const subtitle=doc.getElementById("location-subtitle");
   const back=doc.getElementById("back-to-workspace");
@@ -237,6 +257,16 @@ export function initWorkspaceNavigation(doc=document,win=window){
     if(route===lastRenderedRoute)return;
     const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
+    if(customNav){
+      const custom=meta.projectKey?.startsWith("project/");
+      customNav.hidden=!custom;
+      if(custom){
+        const name=customNav.querySelector(".nav-section-label");
+        if(name)name.textContent=(meta.projectName||"PROJECT").toUpperCase();
+        const link=customNav.querySelector(".nav-link");
+        if(link){link.href="#"+route;link.dataset.route=route;link.setAttribute("aria-label","README for "+meta.projectName);}
+      }
+    }
     mainNav.hidden=meta.project;
     projectNav.hidden=meta.projectKey!=="colosseum";
     if(appleHigNav)appleHigNav.hidden=meta.projectKey!=="apple-hig-reader";
@@ -246,8 +276,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     if(colosseumCrumb){
       colosseumCrumb.hidden=!meta.project;
       if(meta.project){
-        colosseumCrumb.textContent=meta.projectKey==="apple-hig-reader"?"Apple HIG Reader":"Colosseum";
-        colosseumCrumb.href=meta.projectKey==="apple-hig-reader"?"#apple-hig-reader/overview":"#colosseum/utilities";
+        colosseumCrumb.textContent=meta.projectName||(meta.projectKey==="apple-hig-reader"?"Apple HIG Reader":"Colosseum");
+        colosseumCrumb.href=meta.projectKey==="apple-hig-reader"?"#apple-hig-reader/readme":
+          meta.projectKey?.startsWith("project/")?"#"+meta.projectKey+"/readme":"#colosseum/readme";
       }
     }
     if(currentCrumb){
@@ -266,7 +297,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
     doc.title=meta.label+" · "+(meta.projectKey==="colosseum"?"Colosseum · ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader · ":"")+"DoFinances";
     // One Settings DOM view for both Workspace and every project.
-    const visibleView=route==="colosseum/settings"?"settings":route;
+    const visibleView=route==="colosseum/settings"?"settings":route.endsWith("/readme")?"project/readme":route;
     for(const view of views)view.hidden=view.dataset.view!==visibleView;
     for(const link of links){
       const selected=link.href?.split("#")[1]===route;
@@ -478,6 +509,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     link.addEventListener("focus",anticipate,{passive:true});
   }
   back.addEventListener("click",()=>{if(isMobile())closeDrawer(true);});
+  win.addEventListener("workspace-projects-updated",()=>{lastRenderedRoute=null;render();});
   win.addEventListener("hashchange",render);
   win.addEventListener("popstate",render);
   win.addEventListener("resize",()=>{
