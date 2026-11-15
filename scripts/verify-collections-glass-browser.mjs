@@ -240,7 +240,8 @@ try{
   'for(const n of sidebar.querySelectorAll(".nav-stack"))n.hidden=n.id!=="main-navigation";'+
   'const a=sidebar.querySelector("#main-navigation .nav-link");a.focus();'+
   'const t=document.getElementById("workspace-rail-tooltip");'+
-  'return {keyboard:t.classList.contains("is-keyboard"),visible:t.classList.contains("is-visible"),delay:getComputedStyle(t).transitionDelay,desc:a.getAttribute("aria-describedby")}})()');
+  'return {keyboard:t.classList.contains("is-keyboard"),visible:t.classList.contains("is-visible"),delay:getComputedStyle(t).transitionDelay,desc:a.getAttribute("aria-describedby"),active:document.activeElement===a,text:t.textContent,rectCount:a.getClientRects().length}})()');
+ console.log("Collapsed rail focus diagnostics:",JSON.stringify(focused));
  assert.equal(focused.keyboard,true,"Keyboard focus should bypass hover delay");
  assert.equal(focused.visible,true);
  assert.equal(focused.desc,"workspace-rail-tooltip");
