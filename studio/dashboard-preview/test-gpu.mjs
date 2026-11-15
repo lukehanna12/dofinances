@@ -43,6 +43,9 @@ test("GPU loop uses the same DOM displacement and fade as shader geometry",()=>{
   assert.match(renderer,/trackTiles\[i\]\.style\.transform/);
   assert.match(renderer,/trackTiles\[i\]\.style\.opacity/);
   assert.match(renderer,/trackOpacity\[i\]=pos\.opacity/);
+  assert.match(renderer,/trackColumns=all\.map\(cell=>columnIndex\.get\(cell\)\)/);
+  assert.match(renderer,/trackPosition\(trackRows\[i\],phase,trackColumns\[i\]\)/);
+  assert.match(renderer,/fadeContours:"upper convex, lower concave"/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+18\]=trackOpacity\[i\]/);
   assert.match(renderer,/TRACK_FRAME_INTERVAL=1000\/30/);
   assert.match(shader,/coverage\*in\.introAlpha\*clamp\(tile\.motion\.z,0\.0,1\.0\)/);

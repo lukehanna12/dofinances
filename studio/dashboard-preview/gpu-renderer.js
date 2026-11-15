@@ -334,7 +334,7 @@ async function initialize(){
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
-  let trackTiles=[],trackRows=[],baseTileY=new Float32Array(0),
+  let trackTiles=[],trackRows=[],trackColumns=[],baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0);
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
@@ -436,13 +436,16 @@ async function initialize(){
     for(const tile of all){tile.style.transform="";tile.style.opacity="";}
     const cells=[...root.querySelectorAll(".cta6-tile")];
     const rowIndex=new Map(cells.map((cell,i)=>[cell,Math.floor(i/11)]));
+    const columnIndex=new Map(cells.map((cell,i)=>[cell,i%11]));
     // offsetTop is invariant under CSS transform and entrance animations.
     pitchCSS=cells[11]?.offsetTop-cells[0]?.offsetTop;
     if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
     trackTiles=all;
     trackRows=all.map(cell=>rowIndex.get(cell));
-    if(trackRows.some(row=>row===undefined||row<0||row>6))
-      throw new Error("Invalid seven-row moving glass geometry");
+    trackColumns=all.map(cell=>columnIndex.get(cell));
+    if(trackRows.some(row=>row===undefined||row<0||row>6)||
+        trackColumns.some(column=>column===undefined||column<0||column>10))
+      throw new Error("Invalid seven-row, eleven-column moving glass geometry");
     const data=makeTileFloatData(all,dpr,sceneTop);
     baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
     trackOpacity=new Float32Array(all.length);
@@ -510,7 +513,7 @@ async function initialize(){
     const phase=phaseAtSeconds(trackSeconds);
     let fading=0;
     for(let i=0;i<trackTiles.length;i++){
-      const pos=trackPosition(trackRows[i],phase);
+      const pos=trackPosition(trackRows[i],phase,trackColumns[i]);
       const dy=pos.deltaRows*pitchCSS;
       tileData[i*TILE_FLOATS+1]=baseTileY[i]+dy*dpr;
       trackOpacity[i]=pos.opacity;
@@ -524,7 +527,8 @@ async function initialize(){
     interaction.retargetRects(tileData);
     audit.track={
       running:trackRunning,phase,elapsed:trackSeconds,
-      cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,
+      cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
+      fadeContours:"upper convex, lower concave",
       fadedTiles:fading
     };
   }
