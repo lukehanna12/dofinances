@@ -23,10 +23,12 @@ self.onmessage=async({data:request})=>{
    const img=ctx.createImageData(field.width,field.height);
    img.data.set(field.pixels);ctx.putImageData(img,0,0);
    const blob=await canvas.convertToBlob({type:"image/png"});
-   self.postMessage({key,w:field.width,h:field.height,
+   self.postMessage({key,w:field.bodyWidth,h:field.bodyHeight,
+    mapWidth:field.width,mapHeight:field.height,overscan:field.overscan,
     png:reader.readAsDataURL(blob)});
   }else{
-   self.postMessage({key,w:field.width,h:field.height,
+   self.postMessage({key,w:field.bodyWidth,h:field.bodyHeight,
+    mapWidth:field.width,mapHeight:field.height,overscan:field.overscan,
     pixels:field.pixels},[field.pixels.buffer]);
   }
  }catch(error){self.postMessage({key,error:String(error)});}
