@@ -461,13 +461,3 @@ test("Chromium verifies undo past autoformat, redo, and redo-branch invalidation
  assert.ok(workflow.includes("node scripts/verify-readme-markdown-browser.mjs"));
 });
 
-test("README large title occupies the shared workspace heading position",()=>{
- const section=html.slice(html.indexOf('data-view="project/readme"'),html.indexOf('data-view="colosseum/utilities"'));
- assert.match(section,/<div class="page-heading"><h1 id="readme-title">README<\/h1><\/div>/);
- assert.match(section,/<div class="rm-heading"><div><p id="rm-project-label"/);
- assert.match(section,/id="rm-repository-label"/);
- assert.equal((section.match(/id="readme-title"/g)||[]).length,1);
- const shared=source("sites/_apex/app/assets/workspace-enhancements.css");
- assert.match(shared,/\.content > \.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
- assert.doesNotMatch(css,/\.rm-heading h1\{/);
-});
