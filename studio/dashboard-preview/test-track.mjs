@@ -7,15 +7,15 @@ import {TRACK_ROWS,TRACK_LANES,TRACK_SECONDS,TRACK_FADE_ROWS,TRACK_COLUMNS,
 const near=(actual,expected,epsilon=1e-7)=>
   assert.ok(Math.abs(actual-expected)<epsilon,`Expected ${actual} ≈ ${expected}`);
 
-test("30%-faster seven-lane circuit retains its original geometry and timing",()=>{
+test("35%-faster seven-lane circuit retains its original geometry and timing",()=>{
   assert.equal(TRACK_ROWS,7);
   assert.equal(TRACK_LANES,7);
   assert.equal(TRACK_FADE_ROWS,2);
   assert.equal(TRACK_COLUMNS,11);
   assert.equal(TRACK_CURVE_STRENGTH,.8);
-  assert.equal(TRACK_SECONDS,84/(1.15*1.30));
-  near(TRACK_SECONDS,56.18729096989966,1e-10);
-  near((84/1.15)/TRACK_SECONDS,1.30,1e-10);
+  assert.equal(TRACK_SECONDS,84/(1.15*1.30*1.35));
+  near(TRACK_SECONDS,41.62021553325901,1e-10);
+  near((84/(1.15*1.30))/TRACK_SECONDS,1.35,1e-10);
   assert.equal(phaseAtSeconds(0),0);
   near(phaseAtSeconds(TRACK_SECONDS/7),1,1e-10);
   assert.equal(phaseAtSeconds(TRACK_SECONDS),0);

@@ -11,7 +11,7 @@ export const TRACK_LANES=7;
 export const TRACK_FADE_ROWS=2;
 export const TRACK_COLUMNS=11;
 export const TRACK_CURVE_STRENGTH=0.8;
-export const TRACK_SECONDS=84/(1.15*1.30); // 30% faster than the previous preview speed
+export const TRACK_SECONDS=84/(1.15*1.30*1.35); // 35% faster than the immediately preceding preview speed
 const smooth=t=>{
   const x=Math.max(0,Math.min(1,t));
   return x*x*(3-2*x);
