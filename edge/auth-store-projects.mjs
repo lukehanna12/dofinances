@@ -14,7 +14,7 @@ export class AuthStore extends FederatedAuthStore{
  }
  projectsSeed(userId){
   // Idempotent per-account initialization, also for accounts created pre-projects.
-  for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"]]){
+  for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"],["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12/protocol-monitor-pruner"]]){
    this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,repository,template(name),NOW());
   }
   // Upgrade previous repository-less Apple Reader records without overriding

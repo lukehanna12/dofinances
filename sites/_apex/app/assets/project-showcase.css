@@ -45,6 +45,8 @@
  font-size:12px;font-weight:500;line-height:18px;padding:2px 8px;
  border-radius:4px;white-space:nowrap;background:#173827;color:#86efac
 }
+/* Permissions Dormant badge, dark-mode palette: exact #382409 / #facc15. */
+.view[data-view="projects"] .project-showcase-badge--progress{background:#382409;color:#facc15}
 .view[data-view="projects"] .project-showcase-badge--soon{background:#3b235f;color:#e9d5ff}
 .view[data-view="projects"] .project-showcase-title{
  display:block;font-weight:500;font-size:clamp(21px,2vw,30px);

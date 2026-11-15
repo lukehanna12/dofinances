@@ -13,16 +13,22 @@ test("Utility 0001c4 Projects roster is complete and ordered",()=>{
  ]);
  assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,13);
 });
-test("Only two curated projects have unique GitHub repositories",()=>{
+test("Only Colosseum and the two in-progress projects have GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
-  ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"]
+  ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
+  ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,11);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,10);
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
+  "apple-hig-reader","protocol-monitor-pruner"
+ ]);
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
 });
 test("Design retains the recovered source image reveal and Permissions badge geometry",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
  const source=read("sites/_apex/app/assets/project-showcase.js");
  const permissions=read("sites/_apex/app/assets/permissions.css");
+ const store=read("edge/auth-store-projects.mjs");
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(css,/transform:scale\(1\.1\)/);
  assert.match(css,/transform:scale\(1\)/);
@@ -31,6 +37,10 @@ test("Design retains the recovered source image reveal and Permissions badge geo
  assert.match(css,/font-size:12px;font-weight:500;line-height:18px;padding:2px 8px/);
  assert.match(permissions,/\.pm-tag\{font-size:12px;font-weight:500;.*padding:2px 8px;border-radius:4px/);
  assert.match(css,/project-showcase-badge--soon\{background:#3b235f;color:#e9d5ff\}/);
+ assert.match(css,/project-showcase-badge--progress\{background:#382409;color:#facc15\}/);
+ assert.match(permissions,/\.pm-tag\{background:#382409;color:#facc15\}/);
+ assert.match(source,/const status=project\.status==="in-progress"\?"In Progress"/);
+ assert.match(store,/\["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12\/protocol-monitor-pruner"\]/);
  assert.match(source,/addEventListener\("pointerenter",reveal/);
  assert.match(source,/addEventListener\("focusin",reveal/);
  assert.match(source,/if\(active\)card\.href/);

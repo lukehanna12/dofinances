@@ -7,14 +7,14 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"github-readme-chrome-extension",name:"GitHub README Chrome Extension",kind:"Browser extension",repository:null},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatGPT Chat Save Chrome Extension",kind:"Browser extension",repository:null},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
- {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader"},
+ {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
  {slug:"terminal-scalars",name:"Terminal Scalars",kind:"Terminal utility",repository:null},
  {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:null},
  {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
  {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass 26 Swift Package",kind:"Swift package",repository:null},
  {slug:"3d-liquid-glass-27-swift-package",name:"3D Liquid Glass 27 Swift Package",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
- {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:null},
+ {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null}
 ]);
 const PHOTO_ROUTES=Object.freeze([
@@ -38,10 +38,12 @@ function row(text){
 }
 function makeCard(project,index,slugRoute){
  const active=!!project.repository;
+ const status=project.status==="in-progress"?"In Progress":active?"Active":"Coming Soon";
+ const statusClass=project.status==="in-progress"?"project-showcase-badge--progress":active?"project-showcase-badge--active":"project-showcase-badge--soon";
  const card=element(active?"a":"article","project-showcase-card "+(active?"is-active":"is-coming-soon"));
  card.dataset.projectSlug=project.slug;
  card.style.setProperty("--project-index",String(index));
- card.setAttribute("aria-label",project.name+" · "+(active?"Active project":"Coming Soon"));
+ card.setAttribute("aria-label",project.name+" · "+status);
  if(active)card.href="#"+slugRoute(project.slug);
  else card.tabIndex=0;
 
@@ -62,7 +64,7 @@ function makeCard(project,index,slugRoute){
  const top=element("span","project-showcase-top");
  const number=element("span","project-showcase-number",String(index+1));
  number.setAttribute("aria-hidden","true");
- const badge=element("span","project-showcase-badge "+(active?"project-showcase-badge--active":"project-showcase-badge--soon"),active?"Active":"Coming Soon");
+ const badge=element("span","project-showcase-badge "+statusClass,status);
  top.append(number,badge);
  const title=element("span","project-showcase-title",project.name);
  const action=element("span","project-showcase-action",active?"View project":"In development");
