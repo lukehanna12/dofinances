@@ -59,6 +59,7 @@ test("Lazy, accessible one-at-a-time list expansion and detail reads",()=>{
  assert.ok(js.includes('const seq=++s.detailSeq'));
  assert.ok(js.includes('if(seq!==s.detailSeq||s.activeUid!==uid)return'));
  assert.ok(css.includes("grid-template-rows:0fr"));
+ assert.ok(css.includes('data-view="colosseum/utilities":not([hidden])')||css.includes('data-view="colosseum/utilities"]:not([hidden])'));
  assert.ok(css.includes(".ut-row.ut-active .ut-row-panel{grid-template-rows:1fr"));
  assert.ok(css.includes(".ut-layout.ut-open{grid-template-columns:minmax(0,1fr)"));
  assert.ok(css.includes("@media(max-width:1023px)"));
@@ -80,6 +81,7 @@ test("Utility editor is revision-reviewed and mutations remain Git-first",()=>{
 test("Static asset counts and file lists are read on demand, not assembled from fake data",()=>{
  assert.ok(js.includes('asset_count'));
  assert.ok(js.includes("files_has_more"));
+ assert.ok(js.includes("s.detailCache.clear();s.page=index"));
  assert.ok(js.includes('files_offset:offset'));
  assert.ok(js.includes("s.detail?.item?.uid===item.uid"));
  assert.ok(!js.includes("Array.from({length:13}"));

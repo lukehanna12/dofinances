@@ -17,6 +17,11 @@
 #ut-root .ut-status{color:var(--ut-muted);font-size:12px;line-height:1.4;margin:8px 0 0;min-height:0}
 #ut-root .ut-status:empty{display:none}
 #ut-root .ut-status[data-error="true"]{color:#f87171}
+/* Match Collections' full-width desktop canvas without changing the shared rail. */
+@media(min-width:1024px){
+ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hidden]))
+ body:has(> #workspace-shell) .content{max-width:none;width:100%}
+}
 #ut-root .ut-layout{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0px);column-gap:0;align-items:start;transition:grid-template-columns var(--ut-motion) var(--ut-ease),column-gap var(--ut-motion) var(--ut-ease)}
 #ut-root .ut-layout.ut-open{grid-template-columns:minmax(0,1fr) minmax(0,min(479.17px,calc((100% - 64px) * .51219512195)));column-gap:64px}
 #ut-root .ut-list-column,#ut-root .ut-inspector{min-width:0}
@@ -31,6 +36,7 @@
 #ut-root .ut-filter-toggle{height:30px;width:30px;padding:0;border:0;border-radius:0 9px 9px 0;background:transparent;color:#9e9e9e;display:grid;place-items:center}
 #ut-root .ut-filter-toggle svg{width:15px;height:15px;stroke-width:1.7}
 #ut-root .ut-filter-toggle:hover,#ut-root .ut-filter-toggle[aria-expanded="true"]{color:#fff;background:#2a2a2a}
+#ut-root .ut-filter-control:is(:hover,:focus-within) .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s}
 #ut-root .ut-filter-toggle[data-active="true"]::after{content:"";position:absolute;right:4px;top:3px;width:4px;height:4px;border-radius:50%;background:#f5f5f5}
 #ut-root .ut-order{min-width:0;flex:none;height:32px;max-width:150px;padding:0 9px;color:#c9c9c9;background:var(--ut-fill);border:1px solid var(--ut-line);border-radius:9px;font-size:11px}
 #ut-root .ut-refresh,#ut-root .ut-update-check{height:32px;min-width:32px;display:grid;place-items:center;border:1px solid var(--ut-line);border-radius:9px;background:var(--ut-fill);color:#cecece;padding:0 9px;font-size:11px}

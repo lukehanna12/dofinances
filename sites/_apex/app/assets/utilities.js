@@ -170,7 +170,7 @@ export function initColosseumUtilities(){
    '<h2>'+esc(item.name)+'</h2></div><span class="ut-tag">#'+esc(item.uid)+'</span></div>'+
    '<p>'+esc(plain(item.label))+'</p><dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
    tagSection("Languages",item.languages_json)+tagSection("Ecosystems",item.ecosystems_json)+
-   tagSection("Vendors",item.vendors_json)+tagSection("Subjects / indexed catalog terms",item.subjects_json)+
+   tagSection("Vendors",item.vendors_json)+tagSection("Subjects",item.subjects_json)+
    '<section class="ut-card-section"><h3>Source & dependencies</h3>'+
    (url?'<p><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(url)+'</a></p>':
       '<p>'+esc(plain(item.reference))+'</p>')+
@@ -213,7 +213,7 @@ export function initColosseumUtilities(){
     include:s.include,exclude:s.exclude,...(cursor?{cursor}:{})};
    const result=await api(args);if(serial!==s.requestSeq)return;
    if(!Array.isArray(result.items))throw Error("The catalog returned an unexpected listing.");
-   s.items=result.items.filter(x=>UID.test(x?.uid));s.page=index;
+   s.items=result.items.filter(x=>UID.test(x?.uid));s.detailCache.clear();s.page=index;
    s.query=query;s.sort=args.sort;s.nextCursor=result.next_cursor||null;
    s.revision=result.catalog_revision||"—";s.loaded=true;
    s.activeUid=null;s.detail=null;s.detailSeq++;
@@ -475,7 +475,7 @@ export function initColosseumUtilities(){
     Array.isArray(data?.updates)?data.updates:Array.isArray(data?.results)?data.results:[];
    elements.updateResults.textContent=results.length?
     results.map(x=>esc(x.name||x.inventory_uid)+": "+esc(x.status||"indeterminate")+
-     (x.observed_revision&&x.observed_revision!==x.saved_revision?" · newer upstream revision":"")).join(" · "):
+     (x.observed_revision&&x.observed_revision!==x.saved_revision?" · revision differs (unverified)":"")).join(" · "):
     "No update candidates were returned. No changes were installed or published.";
   }catch(error){elements.updateResults.textContent=error.message||String(error);}
   finally{busy(false);}
