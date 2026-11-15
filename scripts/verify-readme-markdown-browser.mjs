@@ -193,6 +193,73 @@ try{
  await until('document.querySelector("#readme > p")?.textContent==="> "',"undo quote to literal marker");
  await pressShortcut("z",{meta:true,shift:true});
  await until('!!document.querySelector("#readme > blockquote")',"redo quote formatting");
+
+ // Consecutive typing is one transaction, not a separate undo per glyph.
+ await reset();await type("An ordinary paragraph with many words");
+ assert.ok(await evaluate("window.__history.length<=3"),"native typing is grouped");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent===""',"grouped paragraph undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > p")?.textContent==="An ordinary paragraph with many words"',"grouped paragraph redo");
+
+ // Microtask formatting must run before fast subsequent native keystrokes.
+ await reset();await type("## Rapid heading",{interval:0});
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")==="Rapid heading"',"rapid heading conversion");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")===""',"rapid typing group undo");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="## "',"rapid heading formatting undo");
+ await pressShortcut("z",{shift:true});
+ await until('!!document.querySelector("#readme > h2")',"rapid heading formatting redo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > h2")?.textContent.replace(/\u200b/g,"")==="Rapid heading"',"rapid heading typing redo");
+
+ await reset();await type("hello *world* after");
+ await until('document.querySelector("#readme em")?.textContent==="world"',"inline emphasis");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent.trim()==="hello world"',"undo trailing typed burst");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world*"',"undo inline format checkpoint");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world"',"undo inline delimiter");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme > p")?.textContent==="hello *world*"',"redo inline delimiter");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme em")?.textContent==="world"',"redo inline emphasis");
+
+ // Moving the caret creates a new transaction boundary.
+ await reset();await type("abc");
+ await evaluate('(()=>{const p=document.querySelector("#readme p"),t=p.firstChild,r=document.createRange();r.setStart(t,0);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);})()');
+ await type("X");await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent==="abc"',"caret movement isolates undo");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"prior typing remains undoable");
+
+ // Programmatic plaintext paste has one history checkpoint even when
+ // execCommand dispatches nested native input events.
+ await reset();
+ await evaluate('(()=>{const d=new DataTransfer();d.setData("text/plain","Pasted words");document.getElementById("readme").dispatchEvent(new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:d}));})()');
+ await until('document.querySelector("#readme p")?.textContent==="Pasted words"',"plaintext paste");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"atomic paste undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme p")?.textContent==="Pasted words"',"atomic paste redo");
+
+ // Three provisional IME inputs produce one committed composition checkpoint.
+ await reset();
+ await evaluate('(()=>{const root=document.getElementById("readme"),p=root.querySelector("p");root.dispatchEvent(new CompositionEvent("compositionstart",{bubbles:true}));for(const word of ["に","日本","日本語"]){p.textContent=word;p.dispatchEvent(new InputEvent("input",{bubbles:true,inputType:"insertCompositionText",isComposing:true,data:word}));}root.dispatchEvent(new CompositionEvent("compositionend",{bubbles:true,data:"日本語"}));})()');
+ await until('window.__history.length===2',"single composition checkpoint");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme p")?.textContent===""',"single composition undo");
+
+ // Checkbox property state and its historical checked attribute are restored.
+ await reset();
+ await evaluate('(()=>{const root=document.getElementById("readme");root.innerHTML="<ul><li><input type=checkbox> Task</li></ul>";window.__history.reset();const b=root.querySelector("input");b.checked=true;b.dispatchEvent(new Event("change",{bubbles:true}));})()');
+ assert.equal(await evaluate('document.querySelector("#readme input").checked'),true);
+ await pressShortcut("z");
+ await until('document.querySelector("#readme input")?.checked===false',"checkbox undo");
+ await pressShortcut("z",{shift:true});
+ await until('document.querySelector("#readme input")?.checked===true',"checkbox redo");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
  try{socket?.close();}catch{}
