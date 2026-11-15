@@ -69,6 +69,20 @@ test("Providers routes keep credential mutations in the secure vault and tool gr
  assert.match(js,/event\.ctrlKey/);
  assert.match(js,/event\.shiftKey/);
 });
+test("Public Studio retains its original two-pane Providers geometry alongside private child screens",async()=>{
+ const studio=await read("../studio/sidebar/index.html");
+ const production=await read("../sites/_apex/app/index.html");
+ const css=await read("../sites/_apex/app/assets/providers.css");
+ assert.match(studio,/data-view="colosseum\/providers"/);
+ assert.match(studio,/class="pv-index"/);
+ assert.match(studio,/class="pv-inspector"/);
+ assert.match(css,/\.view\[data-view="colosseum\/providers"\] #pv-root \.pv-browser\{display:grid;grid-template-columns:minmax\(260px,4fr\) minmax\(0,8fr\)/);
+ assert.match(css,/\.view\[data-view="colosseum\/providers"\] #pv-root \.pv-index/);
+ assert.match(css,/@media\(max-width:860px\)/);
+ assert.match(production,/data-view="colosseum\/providers\/local"/);
+ assert.doesNotMatch(production,/data-view="colosseum\/providers" hidden/);
+});
+
 test("Provider management is single-origin, double-authorized and never stores credentials in the browser",async()=>{
  const router=await read("../edge/router.mjs");
  assert.match(router,/pathname==="\/api\/colosseum\/providers"/);
