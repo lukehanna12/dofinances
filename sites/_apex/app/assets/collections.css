@@ -319,7 +319,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 /* Standard shadcn/ui Skeleton placeholders preserve real collection row geometry. */
 #cs-root .cs-entry--skeleton .cs-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:var(--cs-row-height);padding-right:24px}
 #cs-root .cs-skeleton-number{width:24px;flex:none;color:var(--cs-dim);font:500 11px/1.4 var(--ui-font-sans,system-ui)}
-#cs-root .cs-skeleton-bar{width:86%;min-width:0;height:12px;flex:none}
+#cs-root .cs-skeleton-bar{width:var(--site-skeleton-text-width,68%);min-width:0;height:12px;flex:none}
 @media(max-width:639px){
  #cs-root .cs-skeleton-number{width:22px;font-size:10px}
  #cs-root .cs-entry--skeleton .cs-skeleton-row{gap:10px}

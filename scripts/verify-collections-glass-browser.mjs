@@ -191,6 +191,34 @@ try{
  }
  console.log("Collections and Utilities: Skeleton/text exclusive at toggle and across animation frames.");
 
+ // Check the computed CSS variables for 25 initial and refresh rows.
+ // nth-child must provide distinct, bounded and stable lengths.
+ const sampleWidths=await evaluate(String.raw`(async()=>{
+   const host=document.querySelector("#cs-root"),fixture=document.createElement("div");
+   fixture.style.cssText="position:fixed;left:-10000px;top:0;width:480px";
+   const rows=(name,real)=>Array.from({length:25},()=>name==="cs"?
+     '<article class="cs-entry'+(real?'':' cs-entry--skeleton')+'">'+(real?'<div class="cs-entry-title"></div>':'<div class="cs-skeleton-row"><span class="cs-skeleton-bar site-skeleton"></span></div>')+'</article>':
+     '<article class="'+(real?'ut-row':'ut-skeleton')+'">'+(real?'<div class="ut-row-title"></div>':'<div class="ut-skeleton-row"><span class="ut-skeleton-bar site-skeleton"></span></div>')+'</article>').join("");
+   fixture.innerHTML='<div class="cs-accordion">'+rows("cs",false)+'</div>'+
+     '<div class="cs-accordion cs-list-loading">'+rows("cs",true)+'</div>'+
+     '<div id="ut-root"><div class="ut-list">'+rows("ut",false)+'</div>'+
+     '<div class="ut-list ut-list-loading">'+rows("ut",true)+'</div></div>';
+   host.append(fixture);
+   const capture=()=>[...fixture.querySelectorAll(".cs-accordion,.ut-list")].map(group=>
+     [...group.children].map(row=>Number.parseFloat(getComputedStyle(row).getPropertyValue("--site-skeleton-text-width"))));
+   const before=capture();await new Promise(requestAnimationFrame);
+   const after=capture();fixture.remove();return {before,after};
+ })()`);
+ const expectedWidths=[79,51,68,84,56,72,45,63,81,53,70,60,76,48,66,83,57,74,50,69,80,55,62,79,51];
+ assert.equal(sampleWidths.before.length,4);
+ for(const [i,values] of sampleWidths.before.entries()){
+   assert.deepEqual(values,expectedWidths,"Unexpected skeleton width distribution in group "+i);
+   assert.deepEqual(sampleWidths.after[i],values,"Skeleton widths changed after animation frame "+i);
+   assert.ok(values.every(v=>v>=45&&v<=84),"Skeleton widths outside bounds "+i);
+ }
+ console.log("PASS: variable bounded Skeleton line lengths for both initial and refresh states.");
+
+
  const metrics='(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect(),s=getComputedStyle(p),'+
   'b=[...p.querySelectorAll("button")].map(x=>{const q=x.getBoundingClientRect();return {w:q.width,h:q.height,id:x.id}});'+
   'return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height,'+

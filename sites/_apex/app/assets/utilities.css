@@ -491,7 +491,7 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-skeleton{height:auto;display:block;border-bottom:1px solid var(--ut-line)}
 #ut-root .ut-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:calc(var(--ut-row-height) - 1px);padding-right:24px}
 #ut-root .ut-skeleton-number{width:24px;flex:none;color:#525252;font:500 11px/1.4 var(--ui-font-sans,system-ui)}
-#ut-root .ut-skeleton-bar{width:86%;min-width:0;height:12px;flex:none}
+#ut-root .ut-skeleton-bar{width:var(--site-skeleton-text-width,68%);min-width:0;height:12px;flex:none}
 /* Collections' two independently drawn rings centered around the slash;
    data and skeleton occupy precisely the same text line and line box. */
 #ut-root .ut-summary{display:block;position:relative}

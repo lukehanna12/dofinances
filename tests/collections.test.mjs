@@ -1417,7 +1417,16 @@ test("Plain shadcn/ui Skeleton is shared by Collections and Utilities",()=>{
   assert.ok(utilityJs.includes('class="ut-skeleton-bar site-skeleton" data-slot="skeleton"'));
   assert.ok(css.includes(".cs-entry--skeleton .cs-skeleton-row"));
   assert.ok(css.includes("height:var(--cs-row-height)"));
-  assert.ok(css.includes(".cs-skeleton-bar{width:86%;min-width:0;height:12px;flex:none}"));
+  assert.ok(css.includes(".cs-skeleton-bar{width:var(--site-skeleton-text-width,68%);min-width:0;height:12px;flex:none}"));
+  assert.ok(skeleton.includes("width:var(--site-skeleton-text-width,68%);height:12px"));
+  const widths=[79,51,68,84,56,72,45,63,81,53,70,60,76,48,66,83,57,74,50,69,80,55,62];
+  assert.equal(widths.length,23);
+  assert.ok(widths.every(n=>n>=45&&n<=84),"Bounded 45–84%");
+  assert.ok(new Set(widths).size>=18,"Multiple distinctly sized lines");
+  for(const [i,width] of widths.entries()){
+    assert.ok(skeleton.includes("#cs-root .cs-entry:nth-child(23n + "+(i+1)+")"));
+    assert.ok(skeleton.includes("#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + "+(i+1)+"){--site-skeleton-text-width:"+width+"%}"));
+  }
   assert.ok(skeleton.includes("shadcn-ui/ui"));
   assert.ok(skeleton.includes("c0d63c339d6cd2fc26135590a54cf1f362269451"));
   assert.ok(skeleton.includes("rounded-md bg-accent"));

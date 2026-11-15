@@ -156,7 +156,7 @@ test("Utilities summary shows exact total and app-configured local refresh time"
  assert.match(js,/formatWorkspaceTime\(s\.updatedAt,\{hour12:true\}\)/);
  assert.doesNotMatch(js,/report\("Loading live catalog utilities/);
  assert.match(js,/Array\.from\(\{length:s\.pageSize\}/);
- assert.match(css,/#ut-root \.ut-skeleton-bar\{[\s\S]*?width:86%/);
+ assert.match(css,/#ut-root \.ut-skeleton-bar\{width:var\(--site-skeleton-text-width,68%\)/);
  assert.match(css,/#ut-root \.ut-summary-dot\{[\s\S]*?animation:ut-summary-spin 600ms linear infinite/);
  assert.ok(js.includes('class="ut-skeleton-bar site-skeleton" data-slot="skeleton"'));
  const skeleton=source("sites/_apex/app/assets/site-skeleton.css");

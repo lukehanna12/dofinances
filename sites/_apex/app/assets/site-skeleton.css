@@ -16,12 +16,63 @@
  pointer-events:none;
 }
 @keyframes site-skeleton-pulse{50%{opacity:.5}}
+/* Stable pseudo-random-looking 23-row widths, bounded 45–84%.
+ * Shared by first-load and refresh Skeletons. No per-render randomness,
+ * width animation, DOM mutation, or extra fetch required. */
+#cs-root .cs-entry,
+#ut-root :is(.ut-row,.ut-skeleton){--site-skeleton-text-width:68%}
+#cs-root .cs-entry:nth-child(23n + 1),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 1){--site-skeleton-text-width:79%}
+#cs-root .cs-entry:nth-child(23n + 2),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 2){--site-skeleton-text-width:51%}
+#cs-root .cs-entry:nth-child(23n + 3),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 3){--site-skeleton-text-width:68%}
+#cs-root .cs-entry:nth-child(23n + 4),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 4){--site-skeleton-text-width:84%}
+#cs-root .cs-entry:nth-child(23n + 5),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 5){--site-skeleton-text-width:56%}
+#cs-root .cs-entry:nth-child(23n + 6),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 6){--site-skeleton-text-width:72%}
+#cs-root .cs-entry:nth-child(23n + 7),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 7){--site-skeleton-text-width:45%}
+#cs-root .cs-entry:nth-child(23n + 8),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 8){--site-skeleton-text-width:63%}
+#cs-root .cs-entry:nth-child(23n + 9),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 9){--site-skeleton-text-width:81%}
+#cs-root .cs-entry:nth-child(23n + 10),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 10){--site-skeleton-text-width:53%}
+#cs-root .cs-entry:nth-child(23n + 11),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 11){--site-skeleton-text-width:70%}
+#cs-root .cs-entry:nth-child(23n + 12),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 12){--site-skeleton-text-width:60%}
+#cs-root .cs-entry:nth-child(23n + 13),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 13){--site-skeleton-text-width:76%}
+#cs-root .cs-entry:nth-child(23n + 14),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 14){--site-skeleton-text-width:48%}
+#cs-root .cs-entry:nth-child(23n + 15),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 15){--site-skeleton-text-width:66%}
+#cs-root .cs-entry:nth-child(23n + 16),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 16){--site-skeleton-text-width:83%}
+#cs-root .cs-entry:nth-child(23n + 17),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 17){--site-skeleton-text-width:57%}
+#cs-root .cs-entry:nth-child(23n + 18),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 18){--site-skeleton-text-width:74%}
+#cs-root .cs-entry:nth-child(23n + 19),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 19){--site-skeleton-text-width:50%}
+#cs-root .cs-entry:nth-child(23n + 20),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 20){--site-skeleton-text-width:69%}
+#cs-root .cs-entry:nth-child(23n + 21),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 21){--site-skeleton-text-width:80%}
+#cs-root .cs-entry:nth-child(23n + 22),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 22){--site-skeleton-text-width:55%}
+#cs-root .cs-entry:nth-child(23n + 23),
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(23n + 23){--site-skeleton-text-width:62%}
 /* Existing text title boxes keep their exact dimensions through refresh.
  * Only the visible paint changes, never the row's size, line-height or flow. */
 #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after,
 #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{
  content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
- width:86%;height:12px;
+ width:var(--site-skeleton-text-width,68%);height:12px;
 }
 /* A single list-loading state atomically hides the REAL title layers while
  * their ::after Skeleton is visible. Visibility is discrete, unlike opacity:
