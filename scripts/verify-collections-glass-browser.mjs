@@ -45,6 +45,7 @@ const files=new Map([
  ["workspace-enhancements.css","sites/_apex/app/assets/workspace-enhancements.css"],
  ["collections.css","sites/_apex/app/assets/collections.css"],
  ["collections-glass.js","sites/_apex/app/assets/collections-glass.js"],
+ ["collections-glass-public-clear.js","sites/_apex/app/assets/collections-glass-public-clear.js"],
  ["collections-glass-field-worker.js","sites/_apex/app/assets/collections-glass-field-worker.js"],
  ["sidebar-glass-oracle.js","sites/_apex/app/assets/sidebar-glass-oracle.js"],
  ["add-collection.v3.svg","sites/_apex/app/assets/add-collection.v3.svg"],
@@ -121,9 +122,9 @@ try{
   'buttons:b,visible:!!p.offsetWidth,ready:p.classList.contains("cs-oracle-ready")};})()';
  const before=await evaluate(metrics);
  assert.equal(before.position,"fixed");
- assert.ok(before.width>=335&&before.width<=360,"Desktop dock width should be 2.5x baseline");
- assert.ok(before.height>=128&&before.height<=145);
- assert.ok(before.buttons.every(b=>b.w>78&&b.h>78));
+ assert.ok(before.width>=195&&before.width<=218,"Desktop dock should be 150% of original");
+ assert.ok(before.height>=76&&before.height<=85);
+ assert.ok(before.buttons.every(b=>b.w>=47&&b.h>=47&&b.w<52&&b.h<52));
  assert.ok(Math.abs(innerNumber(before.viewport[0])-24-before.right)<2);
  assert.ok(Math.abs(before.viewport[1]-24-before.bottom)<2);
  assert.equal(await evaluate('(()=>{const b=document.getElementById("cs-create"),r=b.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest("button")?.id})()'),"cs-create");
@@ -140,24 +141,52 @@ try{
  if(svg){
   await until('window.__glass?.active===true',"SVG geometry maps available");
   const widths=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),r=p.getBoundingClientRect();return [...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>({w:+x.getAttribute("width"),h:+x.getAttribute("height"),png:x.getAttribute("href")?.startsWith("data:image/png")}))})()');
-  assert.equal(widths.length,3);
+  assert.equal(widths.length,1);
   assert.ok(widths.every(x=>x.w===Math.round(before.width)&&x.h===Math.round(before.height)&&x.png));
   const old=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
   await evaluate('(()=>{document.querySelector(".test-scenery").style.background="repeating-linear-gradient(95deg,red 0 8px,blue 8px 16px)";scrollTo(0,1800);return true})()');
   await pause(250);
   const current=await evaluate('[...document.querySelectorAll("#collections-oracle-live-glass feImage")].map(x=>x.getAttribute("href"))');
   assert.deepEqual(current,old,"Changing real backdrop pixels must not regenerate geometry");
+
+  // OBJECTIVE optical browser regression, not a screenshot comparison to
+  // Apple output. A synthetic fiducial is placed BEHIND a separate empty
+  // lens only inside this isolated test page. No copy of site content and no
+  // test-image assumptions are shipped to the production renderer.
+  await evaluate('(()=>{const bg=document.createElement("div");bg.style.cssText="position:fixed;left:42px;top:133px;width:270px;height:120px;z-index:400;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.75),rgba(255,255,255,.75)),repeating-linear-gradient(90deg,#fafafa 0 10px,#151515 10px 20px)";const lens=document.createElement("div");const r=document.querySelector(".cs-control-center").getBoundingClientRect();lens.id="optical-probe";lens.style.cssText="position:fixed;left:62px;top:152px;z-index:401;pointer-events:none;border-radius:9999px;background:rgba(0,0,0,.04);width:"+Math.round(r.width)+"px;height:"+Math.round(r.height)+"px";document.body.append(bg,lens);})()');
+  const readScreenshot=async(filterType)=>{
+   await evaluate('document.getElementById("optical-probe").style.backdropFilter='+JSON.stringify(filterType));
+   await pause(130);
+   return (await command("Page.captureScreenshot",{format:"png",captureBeyondViewport:false})).data;
+  };
+  const plain=await readScreenshot("none");
+  const nativeBlur=await readScreenshot("blur(12px)");
+  const oracleSVG=await readScreenshot('url("#collections-oracle-live-glass")');
+  await evaluate('(()=>{const f=document.getElementById("collections-oracle-live-glass"),copy=f.cloneNode(true);copy.id="optical-constant-control";const original=document.querySelector(".cs-control-center").getBoundingClientRect();const w=Math.round(original.width),h=Math.round(original.height),canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;const ctx=canvas.getContext("2d"),img=ctx.createImageData(w,h);for(let i=0;i<img.data.length;i+=4){img.data[i]=68;img.data[i+1]=128;img.data[i+2]=0;img.data[i+3]=255}ctx.putImageData(img,0,0);copy.querySelector("feImage").setAttribute("href",canvas.toDataURL("image/png"));f.parentNode.append(copy);})()');
+  const constantSVG=await readScreenshot('url("#optical-constant-control")');
+  const images=JSON.stringify([plain,nativeBlur,oracleSVG,constantSVG]);
+  const optics=await evaluate('(async()=>{const images='+images+';const canvases=await Promise.all(images.map(async s=>{const image=new Image();image.src="data:image/png;base64,"+s;await image.decode();const c=document.createElement("canvas");c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(image,0,0);return ctx.getImageData(0,0,c.width,c.height)}));const [raw,blur,svg,constant]=canvases;const index=(x,y)=>((y*raw.width+x)*4);const gray=(frame,x,y)=>{const i=index(x,y);return (frame.data[i]+frame.data[i+1]+frame.data[i+2])/3};const std=(frame)=>{const a=[];for(let y=177;y<203;y+=2)for(let x=130;x<192;x++)a.push(gray(frame,x,y));const avg=a.reduce((s,v)=>s+v,0)/a.length;return Math.sqrt(a.reduce((s,v)=>s+(v-avg)*(v-avg),0)/a.length)};let dist=0,count=0;for(let y=184;y<198;y++)for(let x=63;x<68;x++){dist+=Math.abs(gray(svg,x,y)-gray(blur,x,y));count++}return {rawStd:std(raw),nativeBlurStd:std(blur),svgStd:std(svg),edgeDifference:dist/count,constantDifference:Math.abs(gray(constant,162,190)-gray(blur,162,190))}})()');
+  console.log("Objective Chromium live-refraction metrics:",JSON.stringify(optics));
+  const offsets=await evaluate('(async()=>{const {generatePublicClearPillField}=await import("/app/assets/collections-glass-public-clear.js");const r=document.querySelector(".cs-control-center").getBoundingClientRect(),w=Math.round(r.width),h=Math.round(r.height),f=generatePublicClearPillField(w,h,h/2),y=Math.floor(h/2);return [0,1,2,4,8,12,16,20,28,36,48,64,80].filter(x=>x<w).map(x=>({x,rx:f.pixels[(y*w+x)*4],ry:f.pixels[(y*w+x)*4+1]}))})()');
+  console.log("Public Clear centerline refraction bytes:",JSON.stringify(offsets));
+  assert.ok(optics.rawStd>30,"Fiducial backdrop must have measurable texture");
+  assert.ok(optics.svgStd<optics.rawStd*.80,
+    "SVG must REALLY blur pixels, not just expose a CSS.supports token");
+  assert.ok(optics.edgeDifference>3,
+    "Oracle SVG displacement must differ from pure Gaussian blur near its live edge");
+  await evaluate('document.getElementById("optical-probe")?.remove();true');
+
  }
  await command("Emulation.setDeviceMetricsOverride",{width:365,height:740,deviceScaleFactor:2,mobile:true});
  await pause(300);
  const narrow=await evaluate(metrics);
  assert.ok(narrow.right<=narrow.viewport[0]-10,"Floating glass dock stays within small viewport");
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
- assert.ok(narrow.buttons.every(b=>b.w>=60&&b.h>=60));
+ assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-12-narrow.bottom)<2);
  await evaluate('document.querySelector(".view").hidden=true;true');
  assert.equal(await evaluate('document.querySelector(".cs-control-center").getBoundingClientRect().width'),0);
- console.log("Floating Collections dark-clear glass: fixed desktop/mobile geometry, live SourceGraphic, hit testing and exact-sized maps passed.");
+ console.log("Public Clear Collections: 1.5x fixed dock, exact-size one-pass warp, live backdrop, hit testing and mobile layout passed.");
 }finally{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");
