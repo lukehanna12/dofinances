@@ -30,6 +30,25 @@ test("Settings sidebar links use the native SVG while the Home Settings feature 
 });
 
 
+test("Mobile opener reuses the original panel glyph; collapse buttons horizontally mirror it",async()=>{
+  for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=await read(path);
+    const panel=html.match(/<symbol id="icon-panel"[^>]+>[^]*?<\/symbol>/)?.[0];
+    assert.ok(panel?.includes('M9 4v16m5-11 3 3-3 3'),"Preserve the current original panel glyph");
+    const desktop=html.match(/<button id="sidebar-toggle"[^]*?<\/button>/)?.[0];
+    const mobile=html.match(/<button id="mobile-nav-toggle"[^]*?<\/button>/)?.[0];
+    assert.ok(desktop?.includes('<use href="#icon-panel"></use>'));
+    assert.ok(mobile?.includes('<use href="#icon-panel"></use>'),"Mobile lower top bar must show the same original panel icon");
+    assert.ok(!mobile?.includes('href="#icon-menu"'),"Hamburger must not be displayed in the mobile opener");
+    assert.ok(mobile?.includes('aria-label="Open navigation"'),"Keep the opener's accessible name");
+    assert.ok(desktop?.includes('aria-label="Collapse sidebar"'),"Keep collapse semantics");
+  }
+  const css=await read("../sites/_apex/app/assets/workspace-theme.css");
+  assert.ok(css.includes(".sidebar-toggle > .nav-icon {transform:scaleX(-1);transform-origin:center;}"),
+    "Flip only the collapse control; leave the mobile open control unmirrored");
+  assert.ok(!css.includes(".mobile-nav-toggle > .nav-icon {transform:scaleX(-1)"));
+});
+
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
   assert.deepEqual(COLOSSEUM_ROUTES,["utilities","collections","providers","permissions","diagnostics","settings"]);

@@ -114,6 +114,9 @@ a:hover {text-decoration: none;}
     right var(--sidebar-layout-duration) var(--ui-ease),
     background-color 160ms ease, color 160ms ease;
 }
+/* The drawer's mobile opener uses the original panel glyph, while every
+   expanded-sidebar collapse control displays its precise horizontal mirror. */
+.sidebar-toggle > .nav-icon {transform:scaleX(-1);transform-origin:center;}
 /* A grid track's automatic min-content width used to retain hidden label
    text and leave active-link backgrounds cropped by the narrow rail. */
 .sidebar-navigation {
@@ -190,8 +193,8 @@ a:hover {text-decoration: none;}
   mask-image:url("/app/assets/providers-screen-sidebar-icon.v1.svg");
 }
 .nav-link .nav-icon-asset--permissions{
-  -webkit-mask-image:url("/app/assets/permissions-screen-sidebar-icon.v1.svg");
-  mask-image:url("/app/assets/permissions-screen-sidebar-icon.v1.svg");
+  -webkit-mask-image:url("/app/assets/permissions-screen-sidebar-icon.v2.svg");
+  mask-image:url("/app/assets/permissions-screen-sidebar-icon.v2.svg");
 }
 .nav-link .nav-icon-asset--diagnostics{
   -webkit-mask-image:url("/app/assets/diagnostics-screen-sidebar-icon.v1.svg");

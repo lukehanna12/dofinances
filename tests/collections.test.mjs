@@ -541,7 +541,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     ["settings-screen-sidebar-icon.v1.svg","0 0 26.7968 26.0794"],
     ["utilities-screen-sidebar-icon.v1.svg","0 0 29.3483 29.6524"],
     ["providers-screen-sidebar-icon.v1.svg","0 0 32.4458 30.9494"],
-    ["permissions-screen-sidebar-icon.v1.svg","0 0 29.7726 22.632"],
+    ["permissions-screen-sidebar-icon.v2.svg","0 0 20.5504 25.5361"],
     ["diagnostics-screen-sidebar-icon.v1.svg","0 0 27.9802 22.8475"],
     ["add-collection.v1.svg","0 0 31.9317 23.3643"]
   ]){
@@ -1353,7 +1353,7 @@ test("New sidebar symbols and externaldrive v2 preserve exact SF Symbol metadata
  const entries=[
    ["utilities","utilities-screen-sidebar-icon.v1.svg","wrench.and.screwdriver.fill",2],
    ["providers","providers-screen-sidebar-icon.v1.svg","tray.2.fill",2],
-   ["permissions","permissions-screen-sidebar-icon.v1.svg","lock.rectangle.fill",1],
+   ["permissions","permissions-screen-sidebar-icon.v2.svg","shield.righthalf.filled",1],
    ["diagnostics","diagnostics-screen-sidebar-icon.v1.svg","chart.bar.xaxis.descending",5]
  ];
  for(const [route,file,symbol,count] of entries){
