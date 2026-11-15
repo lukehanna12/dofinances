@@ -817,19 +817,7 @@
         <section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">
           <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>
           <div id="diagnostics-root" data-health="unknown">
-  <section class="dg-section" aria-labelledby="dg-query-title"><div class="dg-controls"><div class="dg-controls-top"><h2 id="dg-query-title">Diagnostic query</h2><span class="dg-small" id="dg-query-summary">All 5 sections · Gateway · Quick</span></div><details id="dg-query"><summary>Configure sections and local health check</summary>
-    <div class="dg-controls-body"><fieldset style="border:0;padding:0;margin:0;min-width:0"><legend class="dg-small" style="margin-bottom:12px">Include sections</legend><div class="dg-checks">
-      <label class="dg-check"><input type="checkbox" data-dg-section value="workers" checked> Workers</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="kv" checked> Workers KV</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="d1" checked> D1</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="durable_objects" checked> Durable Objects</label>
-      <label class="dg-check"><input type="checkbox" data-dg-section value="local" checked> Local gateway</label>
-    </div></fieldset><div class="dg-field-row">
-      <div class="dg-field"><label for="dg-check">Local health check</label><select id="dg-check">
-        <option value="gateway">Gateway</option><option value="ping">Ping</option><option value="oauth">OAuth</option><option value="ingress">Ingress</option><option value="registry">Registry</option><option value="providers">Providers</option><option value="browser">Browser</option><option value="filesystem">Filesystem</option><option value="execution">Execution</option><option value="policy">Policy</option><option value="sync">Sync</option><option value="artifacts">Artifacts</option><option value="full">Full</option>
-      </select></div><div class="dg-field"><label for="dg-depth">Check depth</label><select id="dg-depth"><option value="quick">Quick</option><option value="standard">Standard</option><option value="deep">Deep</option></select></div>
-    </div></div></details><div class="dg-controls-foot"><button id="dg-run" class="dg-btn" type="button">Run diagnostics</button><span class="dg-small">No scheduled polling · each run uses one fresh query</span></div></div>
-  </section>
+  
     <div class="dg-header">
     
     <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><button class="dg-btn" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l1 5a7.5 7.5 0 0 0 13.4-2"/></svg><span>Refresh</span></button></div>
@@ -838,14 +826,27 @@
   <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
   
   
-  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">At a glance</h2><p>Cloudflare account-wide quotas, UTC day</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">Quota overview</h2><p>Selected account-wide usage · UTC daily window</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
   
   <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance · account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Per-service invocations and execution cost</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local environment</h2><p>Gateway telemetry only · provider configuration lives in Local Port Broker</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Ranked requests · CPU p90 / p99</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local Mac &amp; gateway</h2><p>Battery charge, storage, and gateway performance</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
   
   
   
+  <section class="dg-section" aria-labelledby="dg-query-title"><div class="dg-controls"><div class="dg-controls-top"><h2 id="dg-query-title">Query options</h2><span class="dg-small" id="dg-query-summary">All 5 sections · Gateway · Quick</span></div><details id="dg-query"><summary>Configure sections and local health check</summary>
+      <div class="dg-controls-body"><fieldset style="border:0;padding:0;margin:0;min-width:0"><legend class="dg-small" style="margin-bottom:12px">Include sections</legend><div class="dg-checks">
+        <label class="dg-check"><input type="checkbox" data-dg-section value="workers" checked> Workers</label>
+        <label class="dg-check"><input type="checkbox" data-dg-section value="kv" checked> Workers KV</label>
+        <label class="dg-check"><input type="checkbox" data-dg-section value="d1" checked> D1</label>
+        <label class="dg-check"><input type="checkbox" data-dg-section value="durable_objects" checked> Durable Objects</label>
+        <label class="dg-check"><input type="checkbox" data-dg-section value="local" checked> Local gateway</label>
+      </div></fieldset><div class="dg-field-row">
+        <div class="dg-field"><label for="dg-check">Local health check</label><select id="dg-check">
+          <option value="gateway">Gateway</option><option value="ping">Ping</option><option value="oauth">OAuth</option><option value="ingress">Ingress</option><option value="registry">Registry</option><option value="providers">Providers</option><option value="browser">Browser</option><option value="filesystem">Filesystem</option><option value="execution">Execution</option><option value="policy">Policy</option><option value="sync">Sync</option><option value="artifacts">Artifacts</option><option value="full">Full</option>
+        </select></div><div class="dg-field"><label for="dg-depth">Check depth</label><select id="dg-depth"><option value="quick">Quick</option><option value="standard">Standard</option><option value="deep">Deep</option></select></div>
+      </div></div></details><div class="dg-controls-foot"><button id="dg-run" class="dg-btn" type="button">Run diagnostics</button><span class="dg-small">No scheduled polling · each run uses one fresh query</span></div></div>
+    </section>
 </div>
         </section>
               </main>

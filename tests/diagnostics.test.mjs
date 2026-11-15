@@ -14,8 +14,8 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     assert.ok(html.includes('<section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">\\n          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>'.replace('\\n','\n')),
       "Diagnostics title must use the same shared heading position as other screens");
     const diagnostics=html.slice(html.indexOf('data-view="colosseum/diagnostics"'));
-    assert.ok(diagnostics.indexOf('aria-labelledby="dg-query-title"')<diagnostics.indexOf('aria-labelledby="dg-overview-title"'),
-      "Diagnostic query must be first");
+    assert.ok(diagnostics.indexOf('aria-labelledby="dg-query-title"')>diagnostics.indexOf('aria-labelledby="dg-local-title"'),
+      "Infrequent query controls must follow diagnostic measurements");
     for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks ·","Source: Colosseum"])
       assert.ok(!diagnostics.includes(removed),"Diagnostics must not show "+removed);
 
@@ -32,6 +32,33 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
   assert.doesNotMatch(css,/font-weight:740;/,"no Diagnostics-specific override of the native page title");
   assert.match(css,/#diagnostics-root \.dg-header/);
 });
+test("Native Apple battery assets keep their original CoreSVG geometry and semantic colors",async()=>{
+ const base="../sites/_apex/app/assets/battery/";
+ const originalNames=["0percent","25percent","50percent","75percent","100percent","100percent.bolt"];
+ const originals=await Promise.all(originalNames.map(n=>read(base+"battery."+n+".svg")));
+ for(const svg of originals){
+  assert.match(svg,/Apple Native CoreSVG 341/);
+  assert.match(svg,/viewBox="0 0 35\.9904 (?:16\.024|20\.0588)"/);
+ }
+ for(const n of [25,50,75,100]){
+  const source=originals[n/25];
+  const expected=[...source.matchAll(/<path d="([^"]+)" fill="white" fill-opacity="0\.85"\/>/g)][1]?.[1];
+  const fill=await read(base+"battery.fill."+n+"percent.svg");
+  assert.ok(expected&&fill.includes('d="'+expected+'"'),"native silhouette changed at "+n+"%");
+ }
+ const bolt=[...originals[5].matchAll(/<path d="([^"]+)" fill="white" fill-opacity="0\.85"\/>/g)][2]?.[1];
+ const symbol=await read(base+"battery.bolt.symbol.svg");
+ assert.ok(bolt&&symbol.includes('d="'+bolt+'"'));
+ const css=await read("../sites/_apex/app/assets/diagnostics.css");
+ const js=await read("../sites/_apex/app/assets/diagnostics.js");
+ for(const hex of ["#30d158","#ffd600","#ff4245"])assert.ok(css.includes(hex));
+ assert.match(css,/battery\.0percent\.svg/);
+ assert.match(css,/battery\.bolt\.symbol\.svg/);
+ assert.match(js,/battery\.fill\./);
+ assert.match(js,/batteryGraphic\(m\)/);
+ assert.match(js,/Charge level, not battery health/);
+});
+
 test("Diagnostics initializes an on-demand, owner-gated system.status client",async()=>{
   const mod=await import("../sites/_apex/app/assets/diagnostics.js");
   assert.equal(typeof mod.initColosseumDiagnostics,"function");
