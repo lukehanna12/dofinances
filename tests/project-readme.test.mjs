@@ -414,3 +414,38 @@ test("Markdown input engine is wired to existing rendered README without split v
  assert.equal(typeof applyReadmeMarkdownInput,"function");
  assert.equal(typeof applyReadmeMarkdownBeforeInput,"function");
 });
+
+
+test("README rich-text history covers native typing, formatting, keyboard undo and redo",()=>{
+ const module=source("sites/_apex/app/assets/readme-edit-history.js");
+ const rules=source("sites/_apex/app/assets/readme-markdown-input-rules.js");
+ for(const fragment of [
+  'createReadmeEditHistory(reading)','history.reset()','history.clear()',
+  'history.rememberCaret()','history.synthesizeInsertion(literal)',
+  'history.push(checkpoint)','history.record()','history.undo()','history.redo()',
+  'event.inputType==="historyUndo"||event.inputType==="historyRedo"',
+  'event.code==="KeyZ"','event.code==="KeyY"','history.snapshot()'
+ ])assert.ok(ui.includes(fragment),fragment);
+ assert.ok(rules.includes('historyHooks?.prepare?.(literal)'));
+ assert.ok(rules.includes('historyHooks?.commit?.(pending)'));
+ for(const fragment of [
+  'function selectionState(root)','selection.setBaseAndExtent(',
+  'const synthesizeInsertion=literal=>','const undo=()=>','const redo=()=>',
+  'frames.splice(cursor+1)','oldBoxes.forEach(',
+  'root.focus({preventScroll:true})'
+ ])assert.ok(module.includes(fragment),fragment);
+ assert.ok(!module.includes('setInterval('));
+});
+
+test("Chromium verifies undo past autoformat, redo, and redo-branch invalidation",()=>{
+ const runner=source("scripts/verify-readme-markdown-browser.mjs");
+ const workflow=source(".github/workflows/site.yml");
+ for(const fragment of [
+  '"/assets/history.js"','createReadmeEditHistory(root)',
+  '"undo autoformat to Markdown marker"','"undo earlier typing past formatting"',
+  '"redo formatted heading"','"undo backticks to literal Markdown"',
+  '"Ctrl+Z alternate undo"','"Ctrl+Y alternate redo"',
+  '"New edit must invalidate redo branch"'
+ ])assert.ok(runner.includes(fragment),fragment);
+ assert.ok(workflow.includes("node scripts/verify-readme-markdown-browser.mjs"));
+});

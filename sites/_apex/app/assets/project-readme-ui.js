@@ -4,6 +4,7 @@
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
+import {createReadmeEditHistory} from "./readme-edit-history.js";
 
 const $=id=>document.getElementById(id);
 const routeSlug=()=>{
@@ -140,6 +141,7 @@ export function initProjectReadme(){
  const edit=$("rm-edit"),confirm=$("rm-confirm"),diffButton=$("rm-diff");
  const reading=$("rm-reading"),notice=$("rm-notice");
  const converter=createReadmeMarkdownConverter();
+ const history=createReadmeEditHistory(reading);
  const diffPanel=$("rm-diff-panel"),diffContent=$("rm-diff-content");
  const form=$("project-create-form"),repoForm=$("rm-repository-form");
  const state={projects:[],slug:null,source:null,original:"",dirty:false,editing:false,canEdit:false,
@@ -165,13 +167,15 @@ export function initProjectReadme(){
   if(!dirty){diffPanel.hidden=true;diffButton.setAttribute("aria-pressed","false");}
  };
  const exitEdit=(restore=true)=>{
+  if(state.renderDelay!==null){clearTimeout(state.renderDelay);state.renderDelay=null;}
   reading.contentEditable="false";
   if(restore&&state.savedDom)
    reading.replaceChildren(...Array.from(state.savedDom.childNodes,node=>node.cloneNode(true)));
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=true;
   state.savedDom=null;state.editing=false;state.dirty=false;state.conversionError=null;
   state.draft=state.original;state.richBaseline="";
-  ++state.previewRenderTicket;paintControls();
+  ++state.previewRenderTicket;
+  history.clear();paintControls();
  };
  function updateDraft(){
   if(!state.editing||state.processing)return;
@@ -246,6 +250,7 @@ export function initProjectReadme(){
   $("rm-project-label").textContent=(state.projects.find(p=>p.slug===slug)?.name||slug).toUpperCase();
   $("rm-repository-label").textContent="Loading repository association…";
   reading.contentEditable="false";state.dirty=false;state.savedDom=null;
+  history.clear();
   diffContent.replaceChildren();paintControls();
   try{
    const data=await api("/api/projects/"+encodeURIComponent(slug)+"/readme");
@@ -286,6 +291,7 @@ export function initProjectReadme(){
   state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;
   reading.contentEditable="true";
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=false;
+  history.reset();
   paintControls();
   // Do not focus here; the same GitHub-rendered document remains stationary.
   // The first click on text places the caret exactly where the user wants it.
@@ -305,8 +311,8 @@ export function initProjectReadme(){
   event.preventDefault();target.scrollIntoView({behavior:"smooth",block:"start"});
  });
  reading.addEventListener("paste",event=>{
-  if(!state.editing)return;
-  event.preventDefault();
+  if(!state.editing||state.processing)return;
+  event.preventDefault();history.rememberCaret();
   const plain=event.clipboardData?.getData("text/plain")||"";
   // Plain text prevents cross-origin HTML paste from injecting active
   // elements into the authenticated reading document.
@@ -318,33 +324,73 @@ export function initProjectReadme(){
     range.setStartAfter(node);range.collapse(true);selection.removeAllRanges();selection.addRange(range);
    }
   }
-  updateDraft();
+  history.record();updateDraft();
  });
  reading.addEventListener("drop",event=>{if(state.editing)event.preventDefault();});
  function scheduleRichDraftUpdate(){
   if(state.renderDelay!==null)clearTimeout(state.renderDelay);
   state.renderDelay=setTimeout(updateDraft,80);
  }
+ function travelHistory(redo=false){
+  if(state.renderDelay!==null){clearTimeout(state.renderDelay);state.renderDelay=null;}
+  const changed=redo?history.redo():history.undo();
+  if(changed)updateDraft();
+  return changed;
+ }
+ // Prevent the browser's native history from competing with the in-place
+ // Markdown history after DOM transformations. Handle both keyboard shortcuts
+ // and native historyUndo/historyRedo beforeinput (e.g. Edit menu commands).
+ reading.addEventListener("keydown",event=>{
+  if(!state.editing||state.processing||event.isComposing||event.altKey)return;
+  const shortcut=event.metaKey||event.ctrlKey;
+  if(!shortcut)return;
+  const z=event.code==="KeyZ",y=event.code==="KeyY";
+  const undo=z&&!event.shiftKey;
+  const redo=z&&event.shiftKey||y&&event.ctrlKey&&!event.metaKey&&!event.shiftKey;
+  if(!undo&&!redo)return;
+  event.preventDefault();event.stopPropagation();
+  travelHistory(redo);
+ },true);
  reading.addEventListener("beforeinput",event=>{
   if(!state.editing||state.processing||event.isComposing)return;
-  // Handle code-fence/HR Enter before Chromium splits its current block.
-  // This also supports wrapping a selected word in inline code.
-  if(applyReadmeMarkdownBeforeInput(reading,event))scheduleRichDraftUpdate();
+  if(event.inputType==="historyUndo"||event.inputType==="historyRedo"){
+   event.preventDefault();travelHistory(event.inputType==="historyRedo");return;
+  }
+  history.rememberCaret();
+  // A blocked native delimiter is recorded as literal Markdown BEFORE
+  // it becomes a rich-text block/inline span. Undo returns to that syntax,
+  // and further Undo passes back through preceding ordinary typing.
+  const hooks={
+   prepare:literal=>history.synthesizeInsertion(literal),
+   commit:checkpoint=>{
+    if(checkpoint)history.push(checkpoint);
+    history.record();scheduleRichDraftUpdate();
+   }
+  };
+  if(applyReadmeMarkdownBeforeInput(reading,event,hooks))scheduleRichDraftUpdate();
  });
  reading.addEventListener("input",event=>{
   if(!state.editing||state.processing)return;
   if(!event.isComposing){
-   // Match Markdown delimiters and replace only the edited range; never
-   // reconstruct the whole GitHub-rendered document while typing.
-   applyReadmeMarkdownInput(reading,event);
+   // Autoformat's fallback can normalize an invisible caret anchor. Snapshot
+   // the native input before that conversion, but only retain the separate
+   // native checkpoint if a visible Markdown transformation occurred.
+   // Otherwise only the final DOM is an undo step (never a hidden anchor).
+   const nativeFrame=history.snapshot();
+   if(applyReadmeMarkdownInput(reading,event))history.push(nativeFrame);
   }
+  history.record();
   scheduleRichDraftUpdate();
  });
  reading.addEventListener("compositionend",()=>{
-  if(state.editing&&!state.processing)scheduleRichDraftUpdate();
+  if(state.editing&&!state.processing){
+   history.record();scheduleRichDraftUpdate();
+  }
  });
  reading.addEventListener("change",event=>{
-  if(state.editing&&event.target.matches?.('input[type="checkbox"]'))updateDraft();
+  if(state.editing&&event.target.matches?.('input[type="checkbox"]')){
+   history.record();updateDraft();
+  }
  });
  edit.addEventListener("click",()=>void startEdit());
  function drawDiff(){

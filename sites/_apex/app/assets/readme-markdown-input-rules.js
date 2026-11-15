@@ -295,17 +295,22 @@ export function applyReadmeMarkdownInput(root,event){
  return false;
 }
 /** Handle Enter before the browser splits a fence or horizontal-rule line. */
-export function applyReadmeMarkdownBeforeInput(root,event){
+export function applyReadmeMarkdownBeforeInput(root,event,historyHooks=null){
  if(!root||!event?.cancelable||event.isComposing)return false;
  // Removing the active text node synchronously inside beforeinput can make
  // Chromium revoke its Selection when the key event finishes. Cancel the
  // trigger, then transform in a one-shot post-event task. This is neither
  // polling nor a document re-render; the caret stays in the same document.
- const defer=(ctx,operation)=>{
+ const defer=(ctx,operation,literal=null)=>{
   event.preventDefault();
   setTimeout(()=>{
    if(!root.isConnected||!root.isContentEditable||!root.contains(ctx.node))return;
-   operation();
+   // The typed delimiter was prevented from reaching the DOM. Save a
+   // synthetic literal checkpoint before the rich-text transformation, so
+   // Undo first restores Markdown syntax and then continues into earlier
+   // native keystrokes. Redo follows the same timeline in reverse.
+   const pending=literal===null?null:historyHooks?.prepare?.(literal);
+   if(operation())historyHooks?.commit?.(pending);
   },0);
   return true;
  };
@@ -318,13 +323,13 @@ export function applyReadmeMarkdownBeforeInput(root,event){
      const {prefix}=prefixToCaret(ctx,block);
      const rule=readmeBlockRule(prefix+" ",{trigger:"space",inList:block.localName==="li"});
      if(rule&&(!["task"].includes(rule.kind)||block.localName==="li"))
-      return defer(ctx,()=>applyBlock(root,ctx,"space"," "));
+      return defer(ctx,()=>applyBlock(root,ctx,"space"," ")," ");
     }
    }else if(event.data.length===1&&RULE_ENDING.test(event.data)&&
       !ctx.node.parentElement?.closest("code,pre,kbd,samp,a")){
     const rule=readmeInlineRule(ctx.node.data.slice(0,ctx.offset)+event.data);
     if(rule&&(rule.kind!=="image"||/^https:\/\//i.test(rule.href)))
-     return defer(ctx,()=>applyInline(root,ctx,event.data));
+     return defer(ctx,()=>applyInline(root,ctx,event.data),event.data);
    }
   }
  }
@@ -344,6 +349,7 @@ export function applyReadmeMarkdownBeforeInput(root,event){
       range.deleteContents();range.insertNode(code);
       placeCaret(root.ownerDocument,code.parentNode,
        Array.prototype.indexOf.call(code.parentNode.childNodes,code)+1);
+      historyHooks?.commit?.(null);
      },0);
      return true;
     }

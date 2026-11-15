@@ -16,18 +16,45 @@ for(const name of binaries){
 }
 assert.ok(executable,"Chromium is required for actual README input checks");
 const moduleFile=new URL("../sites/_apex/app/assets/readme-markdown-input-rules.js",import.meta.url);
+const historyFile=new URL("../sites/_apex/app/assets/readme-edit-history.js",import.meta.url);
 const fixture=[
  '<!doctype html><html><head><meta charset="utf-8"></head><body>',
  '<article id="readme" contenteditable="true"><p><br></p></article>',
  '<script type="module">',
  'import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "/assets/rules.js";',
+ 'import {createReadmeEditHistory} from "/assets/history.js";',
  'const root=document.getElementById("readme");',
- 'root.addEventListener("beforeinput",event=>applyReadmeMarkdownBeforeInput(root,event));',
- 'root.addEventListener("input",event=>applyReadmeMarkdownInput(root,event));',
+ 'const history=createReadmeEditHistory(root);window.__history=history;',
+ 'const travel=redo=>redo?history.redo():history.undo();',
+ 'root.addEventListener("keydown",event=>{',
+ ' const shortcut=(event.metaKey||event.ctrlKey)&&!event.altKey;',
+ ' const undo=event.code==="KeyZ"&&!event.shiftKey;',
+ ' const redo=(event.code==="KeyZ"&&event.shiftKey)||(event.code==="KeyY"&&event.ctrlKey&&!event.metaKey);',
+ ' if(shortcut&&(undo||redo)){event.preventDefault();travel(redo);}',
+ '},true);',
+ 'root.addEventListener("beforeinput",event=>{',
+ ' if(event.inputType==="historyUndo"||event.inputType==="historyRedo"){',
+ '  event.preventDefault();travel(event.inputType==="historyRedo");return;',
+ ' }',
+ ' history.rememberCaret();',
+ ' applyReadmeMarkdownBeforeInput(root,event,{',
+ '  prepare:literal=>history.synthesizeInsertion(literal),',
+ '  commit:frame=>{if(frame)history.push(frame);history.record();}',
+ ' });',
+ '});',
+ 'root.addEventListener("input",event=>{',
+ ' const native=history.snapshot();',
+ ' if(applyReadmeMarkdownInput(root,event))history.push(native);',
+ ' history.record();',
+ '});',
  'window.__rulesReady=true;',
  '</script></body></html>'
 ].join("\n");
 const server=createServer((request,response)=>{
+ if(request.url==="/assets/history.js"){
+  response.writeHead(200,{"Content-Type":"text/javascript","Cache-Control":"no-store"});
+  response.end(readFileSync(historyFile));return;
+ }
  if(request.url==="/assets/rules.js"){
   response.writeHead(200,{"Content-Type":"text/javascript","Cache-Control":"no-store"});
   response.end(readFileSync(moduleFile));return;
@@ -87,7 +114,7 @@ try{
   'const p=document.createElement("p");p.append(document.createElement("br"));e.append(p);'+
   'e.focus();const range=document.createRange();range.setStart(p,0);range.collapse(true);'+
   'const s=getSelection();s.removeAllRanges();s.addRange(range);'+
-  'return document.activeElement===e;})()');
+  'window.__history.reset();return document.activeElement===e;})()');
  const type=async text=>{
   // Dispatch real keydown/keyup pairs, not IME-style Input.insertText.
   // The latter can clear a contenteditable selection after preventDefault.
@@ -104,6 +131,15 @@ try{
    // one-shot Markdown DOM replacement to settle before the next keystroke.
    await pause(25);
   }
+ };
+ const pressShortcut=async(key,{meta=true,ctrl=false,shift=false}={})=>{
+  const modifiers=(meta?4:0)|(ctrl?2:0)|(shift?8:0);
+  const windowsVirtualKeyCode=key.toUpperCase().charCodeAt(0);
+  await command("Input.dispatchKeyEvent",{type:"rawKeyDown",key,code:"Key"+key.toUpperCase(),
+   windowsVirtualKeyCode,nativeVirtualKeyCode:windowsVirtualKeyCode,modifiers});
+  await command("Input.dispatchKeyEvent",{type:"keyUp",key,code:"Key"+key.toUpperCase(),
+   windowsVirtualKeyCode,nativeVirtualKeyCode:windowsVirtualKeyCode,modifiers});
+  await pause(35);
  };
  const pressEnter=async()=>{
   await command("Input.dispatchKeyEvent",{type:"keyDown",key:"Enter",code:"Enter",text:"\r",unmodifiedText:"\r",windowsVirtualKeyCode:13,nativeVirtualKeyCode:13});
@@ -139,7 +175,46 @@ try{
  await until('!!document.querySelector("#readme pre > code.language-js")',"fenced code");
  await reset();await type("---");await pressEnter();
  await until('!!document.querySelector("#readme > hr")',"horizontal rule");
- console.log("README live Markdown browser tests passed.");
+ // Undo must cross a DOM-changing autoformat boundary, restore its literal
+ // Markdown marker and then keep stepping back through ordinary keystrokes.
+ await reset();await type("# ");
+ await until('!!document.querySelector("#readme > h1")',"history autoformat heading");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="# "',"undo autoformat to Markdown marker");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="#"',"undo earlier typing past formatting");
+ await pressShortcut("z",{meta:true,shift:true});
+ await until('document.querySelector("#readme > p")?.textContent==="# "',"redo literal marker");
+ await pressShortcut("z",{meta:true,shift:true});
+ await until('!!document.querySelector("#readme > h1")',"redo formatted heading");
+ await type("more");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > h1")?.textContent==="mor"',"undo regular typing after autoformat");
+ await pressShortcut("z",{meta:true,shift:true});
+ await until('document.querySelector("#readme > h1")?.textContent==="more"',"redo regular typing after autoformat");
+
+ await reset();await type("`word`");
+ await until('document.querySelector("#readme code")?.textContent==="word"',"history inline code");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="`word`"',"undo backticks to literal Markdown");
+ await pressShortcut("z",{ctrl:true,meta:false,shift:true});
+ await until('document.querySelector("#readme code")?.textContent==="word"',"Ctrl+Shift+Z redo inline formatting");
+ await pressShortcut("z",{meta:false,ctrl:true});
+ await until('document.querySelector("#readme > p")?.textContent==="`word`"',"Ctrl+Z alternate undo");
+ await type("!");
+ assert.equal(await evaluate("window.__history.canRedo"),false,"New edit must invalidate redo branch");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="`word`"',"undo new edit");
+ await pressShortcut("y",{meta:false,ctrl:true});
+ await until('document.querySelector("#readme > p")?.textContent==="`word`!"',"Ctrl+Y alternate redo");
+
+ await reset();await type("> ");
+ await until('!!document.querySelector("#readme > blockquote")',"quote before undo");
+ await pressShortcut("z");
+ await until('document.querySelector("#readme > p")?.textContent==="> "',"undo quote to literal marker");
+ await pressShortcut("z",{meta:true,shift:true});
+ await until('!!document.querySelector("#readme > blockquote")',"redo quote formatting");
+ console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");
