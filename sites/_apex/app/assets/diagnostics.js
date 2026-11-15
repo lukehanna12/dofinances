@@ -11,58 +11,80 @@ function placeholder(host,text){clear(host).append(make("div","dg-empty",text));
 function pair(label,value,detail){const el=make("div");el.append(make("span","dg-pair-label",label),make("strong","dg-pair-value",value));if(detail)el.append(make("span","dg-pair-detail",detail));return el;}
 function pairs(rows){const el=make("div","dg-pairs");rows.forEach(([k,v,sub])=>el.append(pair(k,v,sub)));return el;}
 function panel(title,right){const outer=make("div","dg-panel"),head=make("div","dg-panel-head"),label=make("span","",title);head.append(label);if(right)head.append(make("span","dg-small",right));outer.append(head);return outer;}
+// A missing observation is unknown—not zero. Never paint an empty bar as a
+// reassuring zero-consumption measurement.
+function usage(q){
+ const used=q?.used,limit=q?.limit;
+ if(q?.status==="unavailable"||q?.status==="not_queried"||typeof used!=="number"||!Number.isFinite(used)||
+    typeof limit!=="number"||!Number.isFinite(limit)||limit<=0)return null;
+ return Math.max(0,used/limit*100);
+}
 function progress(q){
- const used=q?.used,limit=q?.limit,ok=typeof used==="number"&&typeof limit==="number"&&limit>0;
- const p=make("progress","dg-progress");p.max=100;p.value=ok?Math.max(0,Math.min(100,used/limit*100)):0;
- p.setAttribute("aria-label",ok?quantity(used/limit*100,1)+"% used":"Usage unavailable");
+ const pct=usage(q);
+ if(pct===null)return make("span","dg-unavailable","Unavailable");
+ const p=make("progress","dg-progress");
+ p.max=100;p.value=Math.min(100,pct);
+ p.setAttribute("aria-label",quantity(pct,1)+"% consumed");
  return p;
 }
+function tone(pct){return pct===null?"unknown":pct>=90?"critical":pct>=75?"warning":"normal";}
 function quota(label,q,formatter=integer){
- const el=make("div","dg-quota");
- const p=q?.percent??(typeof q?.used==="number"&&q?.limit>0?100*q.used/q.limit:null);
- el.dataset.level=p===null?"unknown":p>=90?"critical":p>=75?"warning":"normal";
- el.append(make("span","dg-quota-name",label));
- const nums=make("span","dg-quota-numbers"),used=make("b","",formatter(q?.used));
- nums.append(used,document.createTextNode(" / "+formatter(q?.limit)));
- el.append(nums,progress(q));
- if(q?.status==="unavailable"||q?.status==="not_queried")el.append(make("span","dg-quota-sub","Not available from this report"));
+ const pct=usage(q),el=make("div","dg-quota");
+ el.dataset.level=tone(pct);
+ const head=make("div","dg-quota-head");
+ head.append(make("span","dg-quota-name",label));
+ const nums=make("span","dg-quota-numbers");
+ nums.append(make("b","",formatter(q?.used)),document.createTextNode(" / "+formatter(q?.limit)));
+ head.append(nums);el.append(head,progress(q));
  return el;
 }
-function metricCard(label,q,number,sub){
- const c=make("div","dg-card"),p=q?.percent;
- c.dataset.level=p>=90?"critical":p>=75?"warning":"normal";
- c.append(make("div","dg-card-label",label),make("div","dg-card-num",number),make("div","dg-card-note",sub),progress(q));
+function metricCard(label,q){
+ const pct=usage(q),c=make("div","dg-card");c.dataset.level=tone(pct);
+ const head=make("div","dg-card-head");
+ head.append(make("span","dg-card-label",label),make("strong","dg-card-percent",pct===null?"—":quantity(pct,1)+"%"));
+ c.append(head,make("div","dg-card-note",pct===null?"Measurement unavailable":integer(q.used)+" of "+integer(q.limit)+" consumed"),progress(q));
  return c;
 }
 function sectionOf(report,name){return report?.sections?.[name]||null;}
 function missing(name){return name==="local"?"Not included or local diagnostics unavailable.":"Not included in this query or unavailable from the source.";}
-function unavailablePanel(name){const p=panel(name);p.append(make("p","dg-small",missing(name)));return p;}
-function ring(percent,value,unit){const outer=make("div","dg-ring"),inner=make("div","dg-ring-content");
- outer.style.setProperty("--dg-percent",String(Math.max(0,Math.min(100,percent||0))));
- inner.append(make("strong","",value),make("span","",unit));outer.append(inner);return outer;
+function panel(title,right){
+ const outer=make("div","dg-panel"),head=make("div","dg-panel-head");
+ head.append(make("span","",title));if(right)head.append(make("span","dg-small",right));
+ outer.append(head);return outer;
+}
+function pair(label,value,detail){
+ const el=make("div","dg-pair");
+ el.append(make("span","dg-pair-label",label),make("strong","dg-pair-value",value));
+ if(detail)el.append(make("span","dg-pair-detail",detail));
+ return el;
+}
+function pairs(rows){
+ const el=make("div","dg-pairs");
+ rows.forEach(([k,v,sub])=>el.append(pair(k,v,sub)));
+ return el;
 }
 function renderOverview(report){
- const top=clear("dg-top"),w=sectionOf(report,"workers")?.account?.requests,
-   d=sectionOf(report,"d1")?.account,
-   o=sectionOf(report,"durable_objects")?.account;
+ const top=clear("dg-top"),w=sectionOf(report,"workers"),kv=sectionOf(report,"kv"),
+  d=sectionOf(report,"d1"),o=sectionOf(report,"durable_objects");
  top.append(
-   metricCard("Worker requests",w,compact(w?.used),integer(w?.remaining)+" remaining"),
-   metricCard("D1 rows read",d?.rows_read,compact(d?.rows_read?.used),integer(d?.rows_read?.remaining)+" remaining"),
-   metricCard("D1 rows written",d?.rows_written,compact(d?.rows_written?.used),integer(d?.rows_written?.remaining)+" remaining"),
-   metricCard("DO SQLite writes",o?.sqlite_rows_written,compact(o?.sqlite_rows_written?.used),integer(o?.sqlite_rows_written?.remaining)+" remaining")
+  metricCard("Worker requests",w?.account?.requests),
+  metricCard("Workers KV writes",kv?.account?.writes),
+  metricCard("D1 rows read",d?.account?.rows_read),
+  metricCard("Durable Object requests",o?.account?.requests)
  );
 }
 function renderQuotas(report){
  const host=clear("dg-quotas"),w=sectionOf(report,"workers"),kv=sectionOf(report,"kv"),
- d1=sectionOf(report,"d1"),durable=sectionOf(report,"durable_objects");
+  d1=sectionOf(report,"d1"),durable=sectionOf(report,"durable_objects");
  const groups=[
-  ["Workers","Cloudflare daily request quota",w?.account,[["Invocations",w?.account?.requests]]],
-  ["Workers KV","Cloudflare daily operation quotas",kv?.account,[["Reads",kv?.account?.reads],["Writes",kv?.account?.writes],["Deletes",kv?.account?.deletes],["Lists",kv?.account?.lists],["Storage",kv?.account?.storage_bytes]]],
-  ["D1","Cloudflare daily database quotas",d1?.account,[["Rows read",d1?.account?.rows_read],["Rows written",d1?.account?.rows_written],["Storage",d1?.account?.storage_bytes]]],
-  ["Durable Objects","Cloudflare daily object and SQLite quotas",durable?.account,[["Requests",durable?.account?.requests],["GB-seconds",durable?.account?.gb_seconds],["SQLite rows read",durable?.account?.sqlite_rows_read],["SQLite rows written",durable?.account?.sqlite_rows_written],["SQLite storage",durable?.account?.sqlite_storage_bytes]]]
+  ["Workers","Account-wide request quota",w?.account,[["Invocations",w?.account?.requests]]],
+  ["Workers KV","Account-wide operations and capacity",kv?.account,[["Reads",kv?.account?.reads],["Writes",kv?.account?.writes],["Deletes",kv?.account?.deletes],["Lists",kv?.account?.lists],["Storage",kv?.account?.storage_bytes]]],
+  ["D1","Account-wide database quotas",d1?.account,[["Rows read",d1?.account?.rows_read],["Rows written",d1?.account?.rows_written],["Storage",d1?.account?.storage_bytes]]],
+  ["Durable Objects","Account-wide object and SQLite quotas",durable?.account,[["Requests",durable?.account?.requests],["GB-seconds",durable?.account?.gb_seconds],["SQLite rows read",durable?.account?.sqlite_rows_read],["SQLite rows written",durable?.account?.sqlite_rows_written],["SQLite storage",durable?.account?.sqlite_storage_bytes]]]
  ];
  for(const [title,caption,data,items] of groups){
-  const p=panel(title,caption);if(!data){p.append(make("p","dg-small",missing(title)));host.append(p);continue;}
+  const p=panel(title,caption);
+  if(!data){p.append(make("p","dg-small",missing(title)));host.append(p);continue;}
   items.forEach(([label,q])=>p.append(quota(label,q,label.includes("Storage")?bytes:label==="GB-seconds"?n=>quantity(n,2):integer)));
   host.append(p);
  }
@@ -72,45 +94,114 @@ function renderWorkers(report){
  if(!workers||workers.status==="unavailable"){host.append(make("div","dg-empty",missing("workers")));return;}
  const entries=Object.entries(workers.by_worker||{}).sort((a,b)=>(b[1]?.requests||0)-(a[1]?.requests||0));
  if(!entries.length){host.append(make("div","dg-empty","No Worker activity reported in this window."));return;}
+ const max=Math.max(1,...entries.map(([,v])=>v?.requests||0));
  const wrap=make("div","dg-table-scroll"),table=make("table","dg-table"),thead=make("thead"),tr=make("tr");
- ["Service","Requests","Errors","Subrequests","CPU p90","CPU p99"].forEach(s=>tr.append(make("th","",s)));thead.append(tr);
+ ["Service · relative volume","Requests","Errors","Subrequests","CPU p90","CPU p99"].forEach(label=>tr.append(make("th","",label)));
+ thead.append(tr);
  const body=make("tbody");
  entries.forEach(([name,v])=>{
-  const row=make("tr");row.append(make("td","",name),
-    make("td","",integer(v.requests)),make("td","",integer(v.errors)),make("td","",integer(v.subrequests)),
-    make("td","",typeof v.cpu_time_p90_us==="number"?quantity(v.cpu_time_p90_us/1000,2)+" ms":"—"),
-    make("td","",typeof v.cpu_time_p99_us==="number"?quantity(v.cpu_time_p99_us/1000,2)+" ms":"—"));
+  const row=make("tr"),service=make("td","dg-worker-cell");
+  service.append(make("span","dg-worker-name",name));
+  const track=make("div","dg-worker-track"),bar=make("span","dg-worker-bar");
+  track.setAttribute("aria-hidden","true");
+  bar.style.width=(100*Math.max(0,v?.requests||0)/max)+"%";
+  track.append(bar);service.append(track);
+  row.append(service,make("td","",integer(v?.requests)),make("td","",integer(v?.errors)),
+   make("td","",integer(v?.subrequests)),
+   make("td","",typeof v?.cpu_time_p90_us==="number"?quantity(v.cpu_time_p90_us/1000,2)+" ms":"—"),
+   make("td","",typeof v?.cpu_time_p99_us==="number"?quantity(v.cpu_time_p99_us/1000,2)+" ms":"—"));
   body.append(row);
  });
  table.append(thead,body);wrap.append(table);host.append(wrap);
- const caption=make("p","dg-footnote",integer(workers.colosseum?.requests)+" Colosseum Worker requests · "+integer(workers.worker_count)+" configured Workers reported");
- host.append(caption);
+ host.append(make("p","dg-footnote",
+  integer(workers.colosseum?.requests)+" Colosseum Worker requests · "+
+  integer(workers.worker_count)+" configured Workers · "+entries.length+
+  " Workers with reported activity. Bars are relative to the busiest Worker."));
 }
 function findGatewayMetrics(local){
  const layers=Array.isArray(local?.layers)?local.layers:[];
- return layers.find(l=>l.layer==="gateway"&&l.metrics)?.metrics||layers.find(l=>l.metrics?.battery_percent!==undefined||l.metrics?.storage_free_bytes!==undefined)?.metrics||null;
+ return layers.find(l=>l.layer==="gateway"&&l.metrics)?.metrics||
+  layers.find(l=>l.metrics?.battery_percent!==undefined||l.metrics?.storage_free_bytes!==undefined)?.metrics||null;
+}
+// Shape geometry is never synthesized: the battery outline, charge fills, and
+// bolt are derived directly from the user's six Apple CoreSVG bases.
+// Charge level is reported exactly in text; the artwork uses the nearest
+// provided quarter-step shape (0/25/50/75/100).
+function batteryGraphic(m){
+ const raw=m?.battery_percent,pct=typeof raw==="number"&&Number.isFinite(raw)?Math.max(0,Math.min(100,raw)):null;
+ const charging=m?.battery_charging===true||String(m?.battery_state||"").toLowerCase()==="charging";
+ const lowPower=m?.battery_low_power_mode===true;
+ const tone=pct===null?"unknown":pct<=20?"low":lowPower?"low-power":charging?"charging":"normal";
+ const glyph=make("div","dg-battery-graphic");glyph.dataset.tone=tone;
+ glyph.setAttribute("role","img");
+ glyph.setAttribute("aria-label",pct===null?"Battery charge unavailable":
+  "Battery "+quantity(pct,0)+"%"+(charging?", charging":""));
+ glyph.append(make("span","dg-battery-outline"));
+ if(pct!==null){
+  const step=Math.max(0,Math.min(100,Math.round(pct/25)*25));
+  if(step>0){
+   const fill=make("span","dg-battery-fill");
+   fill.style.setProperty("--dg-battery-fill-mask",'url("/app/assets/battery/battery.fill.'+step+'percent.svg")');
+   glyph.append(fill);
+  }
+ }
+ glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)+"%"));
+ return {glyph,pct,charging};
 }
 function renderLocal(report){
  const host=clear("dg-local"),local=sectionOf(report,"local"),m=findGatewayMetrics(local);
- const machine=panel("Mac · storage & power",local?.status?statusText(local.status):"Unavailable");
- if(m){
-  const free=m.storage_free_bytes,total=m.storage_total_bytes,used=typeof total==="number"&&total>0?total-free:null;
-  const usable=typeof total==="number"&&total>0&&typeof free==="number";
-  const body=make("div","dg-ring-row");
-  body.append(ring(usable?used/total*100:0,usable?quantity(free/1073741824,1):"—","GiB free"));
-  const detail=make("div","dg-ring-copy");detail.append(pair("Drive capacity",bytes(total)),pair("Storage used",usable?quantity(used/total*100,1)+"%":"—"),pair("Available",bytes(free)));
-  body.append(detail);machine.append(body);
-  const battery=make("div","dg-ring-row");battery.style.marginTop="24px";
-  const pct=typeof m.battery_percent==="number"?m.battery_percent:null;
-  battery.append(ring(pct,pct===null?"—":quantity(pct,0)+"%","battery"));
-  const bd=make("div","dg-ring-copy");bd.append(pair("Power source",m.battery_power_source||"—"),pair("Battery",m.battery_state||"—"),pair("Charging",m.battery_charging===true?"Yes":m.battery_charging===false?"No":"—"));
-  battery.append(bd);machine.append(battery);
- }else machine.append(make("p","dg-small","Mac storage and battery readings are not present in the selected local health check. Choose Gateway / Quick to retrieve them."));
- host.append(machine);
+ const battery=panel("Mac · battery",m?.battery_status==="reported"?"Charge level":"Status unavailable");
+ battery.classList.add("dg-battery-panel");
+ if(m&&typeof m.battery_percent==="number"&&Number.isFinite(m.battery_percent)){
+  const visual=batteryGraphic(m),layout=make("div","dg-battery-layout");
+  layout.append(visual.glyph);
+  const details=make("div","dg-battery-info");
+  const state=make("div","dg-battery-state");
+  if(visual.charging)state.append(make("span","dg-battery-bolt-symbol"));
+  state.append(make("span","",visual.charging?"Charging":m.battery_state||"Charge available"));
+  details.append(state,pairs([
+   ["Power source",m.battery_power_source||"—"],
+   ["Charging",m.battery_charging===true?"Yes":m.battery_charging===false?"No":"—"]
+  ]));
+  layout.append(details);battery.append(layout);
+  battery.append(make("p","dg-footnote","Charge level, not battery health or maximum capacity."));
+ }else battery.append(make("p","dg-small","Battery charge unavailable from this diagnostic check."));
+ host.append(battery);
+ const storage=panel("Mac · storage",m?.storage_status==="reported"?"Internal drive":"Status unavailable");
+ storage.classList.add("dg-storage-panel");
+ const free=m?.storage_free_bytes,total=m?.storage_total_bytes;
+ if(typeof free==="number"&&typeof total==="number"&&Number.isFinite(free)&&Number.isFinite(total)&&total>0){
+  const used=Math.max(0,total-free),fraction=100*used/total;
+  storage.append(make("div","dg-storage-available",bytes(free)),
+   make("div","dg-storage-subtitle","available of "+bytes(total)+" total"));
+  const bar=progress({used,limit:total});bar.classList.add("dg-storage-progress");
+  storage.append(bar);
+  const legend=make("div","dg-storage-legend");
+  legend.append(make("span","",quantity(fraction,1)+"% used"),make("span","",bytes(used)+" occupied"));
+  storage.append(legend);
+ }else storage.append(make("p","dg-small","Storage capacity unavailable from this diagnostic check."));
+ host.append(storage);
  const gateway=panel("Local gateway",local?.check?local.check+" · "+(local.depth||"quick"):"No reading");
- if(!local||local.status==="unavailable"){gateway.append(make("p","dg-small",missing("local")));host.append(gateway);return;}
- gateway.append(pairs([["Health",statusText(local.status)],["Diagnostic latency",typeof local.duration_ms==="number"?quantity(local.duration_ms,1)+" ms":"—"],["Uptime",m?.uptime_seconds!==undefined?quantity(m.uptime_seconds/3600,1)+" h":"—"],["Memory (RSS)",bytes(m?.rss_bytes)],["Event-loop lag",typeof m?.event_loop_lag_ms==="number"?quantity(m.event_loop_lag_ms,2)+" ms":"—"],["Request p95",typeof m?.request_p95_ms==="number"?quantity(m.request_p95_ms,1)+" ms":"—"],["Active / queued",integer(m?.active_requests)+" / "+integer(m?.queued_requests)],["Error rate",typeof m?.error_rate==="number"?quantity(m.error_rate*100,2)+"%":"—"]]));
- if(Array.isArray(local.layers)&&local.layers.length>1){const layers=local.layers.map(x=>x.layer+": "+statusText(x.status)).join(" · ");gateway.append(make("p","dg-footnote",layers));}
+ gateway.classList.add("dg-gateway-panel");
+ if(!local||local.status==="unavailable"){
+  gateway.append(make("p","dg-small",missing("local")));host.append(gateway);return;
+ }
+ const latency=make("div","dg-latency");
+ const p50=m?.request_p50_ms,p95=m?.request_p95_ms;
+ latency.append(pair("Request p50",typeof p50==="number"?quantity(p50,1)+" ms":"—"),
+  pair("Request p95",typeof p95==="number"?quantity(p95,1)+" ms":"—"));
+ gateway.append(latency);
+ gateway.append(pairs([
+  ["Health",statusText(local.status)],
+  ["Diagnostic latency",typeof local.duration_ms==="number"?quantity(local.duration_ms,1)+" ms":"—"],
+  ["Uptime",typeof m?.uptime_seconds==="number"?quantity(m.uptime_seconds/3600,1)+" h":"—"],
+  ["Memory (RSS)",bytes(m?.rss_bytes)],
+  ["Event-loop lag",typeof m?.event_loop_lag_ms==="number"?quantity(m.event_loop_lag_ms,2)+" ms":"—"],
+  ["Active / queued",integer(m?.active_requests)+" / "+integer(m?.queued_requests)],
+  ["Error rate",typeof m?.error_rate==="number"?quantity(m.error_rate*100,2)+"%":"—"]
+ ]));
+ if(Array.isArray(local.layers)&&local.layers.length>1)
+  gateway.append(make("p","dg-footnote",local.layers.map(x=>x.layer+": "+statusText(x.status)).join(" · ")));
  host.append(gateway);
 }
 function renderReport(report){
