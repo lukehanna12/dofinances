@@ -301,7 +301,7 @@ export function initColosseumUtilities(){
  }
  function editorData(){
   const data=Object.fromEntries(new FormData(elements.editorForm).entries());
-  const uid=clean(data.uid).toLowerCase(),route=data.route;
+  const uid=clean(data.uid).toLowerCase(),route=data.route||s.editorItem?.route;
   if(!UID.test(uid))throw Error("UID must be exactly six lowercase hexadecimal digits.");
   if(!["cloud","direct"].includes(route))throw Error("Only cloud and direct utilities may be managed.");
   for(const k of ["name","label","class","reference","revision"])
@@ -357,7 +357,7 @@ export function initColosseumUtilities(){
     "Edit this existing catalog record. Changes must pass revision checks and a read-only plan before publishing.";
   elements.editorFields.innerHTML=fieldsMarkup(item||{uid:randomUid()});
   if(mode==="edit")elements.editorFields.querySelector('[name="uid"]').readOnly=true;
-  if(mode==="edit")elements.editorFields.querySelector('[name="route"]').disabled=true;
+  if(mode==="edit"){const routeField=elements.editorFields.querySelector('[name="route"]');routeField.disabled=true;routeField.dataset.originalRoute=item.route;}
   const disabled=mode==="edit"&&item?.route!=="cloud";
   elements.assets.hidden=disabled;
   elements.files.value="";elements.existingFiles.replaceChildren();
