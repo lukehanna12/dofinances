@@ -312,6 +312,24 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}
+  /* The lower top-bar's mobile sidebar opener releases its full layout slot as
+     it fades/translates left, allowing the breadcrumb navigation to glide
+     left in the same 210ms gesture. Closing the drawer reverses both paths. */
+  body:has(> #workspace-shell) .topbar-start{
+    gap:10px;
+    transition:gap 210ms var(--ui-ease);
+  }
+  #workspace-shell #mobile-nav-toggle{
+    box-sizing:border-box;min-width:0;width:36px;flex:0 0 36px;
+    opacity:1;transform:translateX(0);
+    transition:opacity 155ms ease,transform 210ms var(--ui-ease),
+      width 210ms var(--ui-ease),flex-basis 210ms var(--ui-ease);
+  }
+  #workspace-shell.is-mobile-open #mobile-nav-toggle{
+    width:0;flex-basis:0;border-width:0;
+    opacity:0;transform:translateX(-20px);pointer-events:none;
+  }
+  body:has(> #workspace-shell.is-mobile-open) .topbar-start{gap:0;}
   /* Start BELOW both stationary bars with the regular sidebar gap,
      rather than overlaying the lower bar with an over-tall drawer. */
   .shell.liquid-glass-preview .sidebar{
@@ -353,6 +371,12 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   .global-menu-account{display:none;}
   .shadcn-breadcrumbs{font-size:11.5px;}
   .shadcn-breadcrumb-list{gap:4px;}
+}
+/* Reduced motion settles both the button and the breadcrumb layout
+   immediately; no staged timers or animation frames are required. */
+@media(max-width:760px) and (prefers-reduced-motion:reduce){
+  body:has(> #workspace-shell) .topbar-start,
+  #workspace-shell #mobile-nav-toggle{transition:none!important;}
 }
 @keyframes nav-label-marquee{
   0%,12%{transform:translateX(0)}

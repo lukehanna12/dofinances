@@ -476,6 +476,50 @@ test("click selects route immediately, without awaiting the browser hashchange e
   assert.equal(target.getAttribute("aria-current"),"page");
 });
 
+test("Mobile drawer button exits left and the lower-bar breadcrumbs reclaim its slot, reversing on close",async()=>{
+ const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+ const base=css.indexOf("@media(max-width:760px){");
+ const end=css.indexOf("@keyframes nav-label-marquee",base);
+ assert.ok(base>=0 && end>base,"Mobile-only animation rules must exist");
+ const mobile=css.slice(base,end);
+ assert.ok(mobile.includes("body:has(> #workspace-shell) .topbar-start{"));
+ assert.ok(mobile.includes("gap:10px;"));
+ assert.ok(mobile.includes("transition:gap 210ms var(--ui-ease)"));
+ assert.ok(mobile.includes("#workspace-shell #mobile-nav-toggle{"));
+ assert.ok(mobile.includes("width:36px;flex:0 0 36px"));
+ assert.ok(mobile.includes("opacity:1;transform:translateX(0)"));
+ assert.ok(mobile.includes("transition:opacity 155ms ease,transform 210ms var(--ui-ease)"));
+ assert.ok(mobile.includes("width 210ms var(--ui-ease),flex-basis 210ms var(--ui-ease)"));
+ assert.ok(mobile.includes("#workspace-shell.is-mobile-open #mobile-nav-toggle{"));
+ assert.ok(mobile.includes("width:0;flex-basis:0;border-width:0"));
+ assert.ok(mobile.includes("opacity:0;transform:translateX(-20px);pointer-events:none"));
+ assert.ok(mobile.includes("body:has(> #workspace-shell.is-mobile-open) .topbar-start{gap:0;}"));
+ assert.ok(mobile.includes("@media(max-width:760px) and (prefers-reduced-motion:reduce){"));
+ assert.ok(mobile.includes("#workspace-shell #mobile-nav-toggle{transition:none!important;}"));
+ // The same authoritative drawer class drives opacity, geometry, and the
+ // existing functional close control, without a timer or extra state machine.
+ const m=mockNavigation();m.mobile(true);
+ initWorkspaceNavigation(m.doc,m.win);
+ const shell=m.elements["workspace-shell"];
+ const opener=m.elements["mobile-nav-toggle"];
+ assert.equal(shell.classList.contains("is-mobile-open"),false);
+ opener.dispatch("click");
+ assert.equal(shell.classList.contains("is-mobile-open"),true);
+ assert.equal(opener.tabIndex,-1,"Hidden mobile opener is removed from tab order");
+ assert.equal(opener.getAttribute("aria-expanded"),"true");
+ m.elements["sidebar-toggle"].dispatch("click");
+ assert.equal(shell.classList.contains("is-mobile-open"),false);
+ assert.equal(opener.tabIndex,0,"The returning opener is keyboard reachable");
+ assert.equal(opener.getAttribute("aria-expanded"),"false");
+ opener.dispatch("click");
+ m.elements["sidebar-scrim"].dispatch("click");
+ assert.equal(opener.tabIndex,0,"Scrim dismissal re-enters the opener");
+ opener.dispatch("click");
+ m.mobile(false);m.fire("resize");
+ assert.equal(shell.classList.contains("is-mobile-open"),false);
+ assert.equal(opener.tabIndex,0,"Desktop resize restores the mobile button's default focusability");
+});
+
 test("sidebar changes nav scope, highlights selected view, and supports collapse and mobile drawer",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
