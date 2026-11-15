@@ -792,6 +792,8 @@ export function initColosseumUtilities(){
   const filtered=!!s.query||!!Object.keys(s.include).length||!!Object.keys(s.exclude).length;
   const max=filtered?s.page+(s.nextCursor?1:0):Math.max(0,Math.ceil((s.total??0)/s.pageSize)-1);
   if(page>max)return;
+  // Stage an active inline edit before the page's row DOM is replaced.
+  if(s.renamingUid&&!finishInlineRename())return;
   void loadPage(page,null);
  });
  elements.submit.addEventListener("click",()=>{if(!elements.query.disabled)elements.query.focus({preventScroll:true});});
@@ -874,7 +876,19 @@ export function initColosseumUtilities(){
  const onRouteVisibility=()=>{
   const visible=!root.closest(".view")?.hidden;
   if(visible&&!routeVisible){routeVisible=true;void loadPage(0,null);}
-  else if(!visible)routeVisible=false;
+  else if(!visible){
+   routeVisible=false;
+   if(!s.working){
+    // Collections clears transient edit/select sessions on navigation away.
+    s.renamingUid=null;s.renameInitial="";s.renameDrafts.clear();
+    s.selectionMode=false;s.selectionTransitioning=false;s.editMode=false;s.editTransitioning=false;
+    s.selection.clear();
+    root.classList.remove("ut-entering-selection","ut-leaving-selection","ut-entering-edit","ut-leaving-edit");
+    syncModes();
+    if(elements.editor.open)elements.editor.close();
+    if(elements.deleteDialog.open)elements.deleteDialog.close();
+   }
+  }
  };
  window.addEventListener("hashchange",onRouteVisibility);
  window.addEventListener("popstate",onRouteVisibility);
