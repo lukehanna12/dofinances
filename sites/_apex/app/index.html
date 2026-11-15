@@ -651,46 +651,132 @@
           </div>
         </section>
         <section class="view project-view" data-view="colosseum/permissions" hidden aria-labelledby="project-permissions-title">
-          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1><p class="lead">Manage the local gateway's filesystem, execution, and maximum idle-duration limits.</p></div>
+          <div class="page-heading"><h1 id="project-permissions-title">Permissions</h1></div>
           <div id="pm-root" class="pm-screen">
-            <div class="pm-summary"><strong id="pm-source" class="pm-source">Loading permission authority…</strong><span id="pm-revision" class="pm-small"></span><span id="pm-count" class="pm-small"></span><button type="button" id="pm-refresh" class="pm-btn">Refresh</button></div>
+            <div class="pm-overview" aria-label="Local policy authority">
+              <span id="pm-count" class="pm-eyebrow" aria-live="polite">FILESYSTEM RULES —</span>
+              <div class="pm-overview-right">
+                <strong id="pm-source" class="pm-source">Checking authority</strong>
+                <span id="pm-revision" class="pm-revision"></span>
+                <button id="pm-refresh" class="pm-icon-button" type="button" title="Refresh permissions" aria-label="Refresh permissions"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5 M4 17v-5h5 M5.9 8.5A7.5 7.5 0 0 1 19 9 M18.1 15.5A7.5 7.5 0 0 1 5 15"/></svg></button>
+              </div>
+            </div>
             <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
-            <div class="pm-heading"><div><h2>Filesystem paths</h2><span class="pm-quiet">The most-specific enabled rule controls the requested path.</span></div><input type="search" id="pm-filter" class="pm-filter" placeholder="Find path or alias…" aria-label="Filter filesystem paths"></div>
-            <div class="pm-cards" id="pm-cards" aria-live="polite"></div>
-            <section class="pm-add" aria-label="Add filesystem path">
-              <h3>Add a path</h3><p class="pm-quiet">Set an optional alias and explicitly grant only the required operations.</p>
-              <form id="pm-add-form">
-                <div class="pm-add-fields"><label>Filesystem path<input id="pm-new-path" required placeholder="HOME/Projects" spellcheck="false"></label><label>Env Var alias<input id="pm-new-alias" placeholder="PROJECTS" spellcheck="false"></label></div>
-                <div class="pm-perm-line"><span>Enabled</span><label class="pm-switch"><input id="pm-add-enabled" type="checkbox" checked><span class="pm-track"></span></label></div>
-                <div class="pm-perm-line"><span>Read</span><label class="pm-switch"><input id="pm-add-read" type="checkbox"><span class="pm-track"></span></label></div>
-                <div class="pm-perm-line"><span>Write</span><label class="pm-switch"><input id="pm-add-write" type="checkbox"><span class="pm-track"></span></label></div>
-                <div class="pm-perm-line"><span>Script</span><label class="pm-switch"><input id="pm-add-script" type="checkbox"><span class="pm-track"></span></label></div>
-                <div class="pm-perm-line"><span>Add</span><label class="pm-switch"><input id="pm-add-add" type="checkbox"><span class="pm-track"></span></label></div>
-                <div class="pm-perm-line"><span>Delete</span><label class="pm-switch"><input id="pm-add-delete" type="checkbox"><span class="pm-track"></span></label></div>
-                <button type="submit" class="pm-btn pm-primary">Add path</button>
+            <section class="pm-effective-inspector" aria-labelledby="pm-effective-heading">
+              <div class="pm-section-header">
+                <div><h2 id="pm-effective-heading" class="pm-section-title">Check effective access</h2>
+                  <p class="pm-section-copy">Ask the gateway which rule actually governs an operation.</p></div>
+              </div>
+              <form id="pm-effective-form" class="pm-effective-form">
+                <label>Absolute path<input name="path" type="text" spellcheck="false" autocomplete="off" placeholder="/Users/…/project" required></label>
+                <label>Operation<select name="operation">
+                  <option value="read">Read</option><option value="write">Write</option><option value="add">Add</option>
+                  <option value="delete">Delete</option><option value="write_or_add">Write or add</option><option value="execute">Execute</option>
+                </select></label>
+                <button type="submit" class="pm-btn pm-primary" id="pm-effective-submit">Check access</button>
               </form>
+              <div id="pm-effective-result" class="pm-effective-result" role="status" aria-live="polite" hidden>
+                <div class="pm-result-top"><strong id="pm-effective-verdict" class="pm-result-verdict"></strong><span id="pm-effective-meta" class="pm-result-meta"></span></div>
+                <p id="pm-effective-reason" class="pm-result-reason"></p>
+              </div>
             </section>
-            <hr class="pm-divider">
-            <section id="pm-exec" class="pm-exec" hidden>
-              <div class="pm-heading"><div><h2>Execution controls</h2><span class="pm-quiet">Limits and execution gates remain distinct from filesystem permissions.</span></div><div class="pm-actions"><span id="pm-pin-status" class="pm-small"></span><button type="button" id="pm-pin-edit" class="pm-btn">Manage hazard PIN</button></div></div>
-              <details><summary>Review and edit execution settings</summary><div id="pm-execution-fields" class="pm-exec-grid"></div></details>
+            <section class="pm-section" aria-labelledby="pm-rules-heading">
+              <div class="pm-section-header">
+                <div><h2 id="pm-rules-heading" class="pm-section-title">Filesystem access</h2>
+                  <p class="pm-section-copy">Configured rules. The most-specific enabled path takes precedence.</p></div>
+              </div>
+              <div class="pm-rule-toolbar">
+                <label class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m21 21-4.3-4.3 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"/></svg><input type="search" id="pm-filter" class="pm-filter" placeholder="Search paths and aliases" aria-label="Search filesystem rules" autocomplete="off" spellcheck="false"></label>
+                <button type="button" id="pm-add" class="pm-icon-button" title="Add path rule (⇧⌘N)" aria-label="Add path rule" aria-keyshortcuts="Meta+Shift+N"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14 M5 12h14"/></svg></button>
+              </div>
+              <div class="pm-registry" aria-label="Configured filesystem rules">
+                <div class="pm-registry-head" aria-hidden="true">
+                  <span>Path / alias</span>
+                  <div class="pm-operations"><span class="pm-op-head" title="Read">R</span><span class="pm-op-head" title="Write">W</span><span class="pm-op-head" title="Script">S</span><span class="pm-op-head" title="Add">A</span><span class="pm-op-head" title="Delete">D</span></div>
+                  <span class="pm-status-col">Status</span><span></span>
+                </div>
+                <div id="pm-cards" class="pm-rule-list" aria-live="polite"></div>
+              </div>
+              <p class="pm-footnote">Checks show configured grants, not final authorization. Disabled rules grant nothing; use Check effective access to resolve precedence.</p>
             </section>
-            <hr class="pm-divider">
-            <section id="pm-lifecycle" class="pm-exec pm-lifecycle" hidden>
-              <div class="pm-heading"><div><h2>Local provider lifecycle limits</h2>
-                <span class="pm-quiet">The authoritative maximum idle duration is an upper bound. Providers may request a shorter duration, but can never exceed this limit. Active operations and protected unsaved sessions block unsafe shutdown.</span></div></div>
-              <div id="pm-lifecycle-fields" class="pm-exec-grid"></div>
+            <section class="pm-section" aria-labelledby="pm-policy-heading">
+              <div class="pm-section-header">
+                <div><h2 id="pm-policy-heading" class="pm-section-title">Execution &amp; safeguards</h2>
+                  <p class="pm-section-copy">Resource ceilings and provider lifecycle limits are independent of filesystem rules.</p></div>
+              </div>
+              <div class="pm-policy-grid">
+                <section id="pm-exec" class="pm-exec" hidden>
+                  <details class="pm-policy-details"><summary>Execution controls <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+                    <div id="pm-execution-fields" class="pm-exec-grid"></div>
+                  </details>
+                </section>
+                <section id="pm-lifecycle" class="pm-lifecycle" hidden>
+                  <details class="pm-policy-details"><summary>Provider lifecycle <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg></summary>
+                    <p class="pm-quiet">Maximum idle duration is a ceiling. Active operations and protected unsaved sessions prevent unsafe shutdown.</p>
+                    <div id="pm-lifecycle-fields" class="pm-exec-grid"></div>
+                  </details>
+                </section>
+              </div>
+              <div id="pm-pin-settings" class="pm-pin-line" hidden>
+                <div><strong>Hazard protection</strong><span id="pm-pin-status" class="pm-small"></span></div>
+                <button type="button" id="pm-pin-edit" class="pm-btn">Manage hazard PIN</button>
+              </div>
             </section>
+            <dialog id="pm-rule-dialog" aria-labelledby="pm-rule-title">
+              <div class="pm-dialog-head">
+                <div><h3 id="pm-rule-title">Edit filesystem rule</h3>
+                  <span id="pm-rule-subtitle" class="pm-small">Changes are reviewed by the local gateway before application.</span></div>
+                <button id="pm-rule-close" type="button" class="pm-icon-button" title="Close editor" aria-label="Close editor"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18 M6 6l12 12"/></svg></button>
+              </div>
+              <form id="pm-rule-form">
+                <div class="pm-dialog-fields">
+                  <label class="pm-form-field">Filesystem path<input id="pm-rule-path" class="pm-field-input" required spellcheck="false" autocomplete="off" placeholder="HOME/Projects"></label>
+                  <label class="pm-form-field">Environment alias (optional)<input id="pm-rule-alias" class="pm-field-input" spellcheck="false" autocomplete="off" placeholder="PROJECTS"></label>
+                </div>
+                <label class="pm-active-field">Rule enabled <input id="pm-rule-enabled" type="checkbox"></label>
+                <p class="pm-form-subheading">Configured operations</p>
+                <div class="pm-choice-grid">
+                  <label class="pm-choice"><input id="pm-rule-read" type="checkbox"><span class="pm-choice-mark" aria-hidden="true">✓</span><span>Read</span></label>
+                  <label class="pm-choice"><input id="pm-rule-write" type="checkbox"><span class="pm-choice-mark" aria-hidden="true">✓</span><span>Write</span></label>
+                  <label class="pm-choice"><input id="pm-rule-script" type="checkbox"><span class="pm-choice-mark" aria-hidden="true">✓</span><span>Script</span></label>
+                  <label class="pm-choice"><input id="pm-rule-add" type="checkbox"><span class="pm-choice-mark" aria-hidden="true">✓</span><span>Add</span></label>
+                  <label class="pm-choice"><input id="pm-rule-delete" type="checkbox"><span class="pm-choice-mark" aria-hidden="true">✓</span><span>Delete</span></label>
+                </div>
+                <p class="pm-quiet">Operation grants apply only while this rule is enabled. The gateway resolves overlapping paths.</p>
+                <div class="pm-dialog-foot">
+                  <button type="button" id="pm-rule-remove" class="pm-btn pm-remove">Remove rule</button>
+                  <button type="button" id="pm-rule-cancel" class="pm-btn">Cancel</button>
+                  <button type="submit" id="pm-rule-save" class="pm-btn pm-primary">Save changes</button>
+                </div>
+              </form>
+            </dialog>
             <dialog id="pm-confirm" aria-labelledby="pm-confirm-title">
-              <span id="pm-confirm-kind" class="pm-small"></span><h3 id="pm-confirm-title">Review permission change</h3><p id="pm-confirm-copy"></p>
-              <label id="pm-confirm-pin-label" hidden>Four-digit hazard PIN<input type="password" id="pm-confirm-pin" inputmode="numeric" maxlength="4" autocomplete="off"></label>
-              <p id="pm-confirm-error" role="alert"></p><div class="pm-dialog-foot"><button type="button" id="pm-confirm-cancel" class="pm-btn">Go back</button><button type="button" id="pm-confirm-apply" class="pm-btn pm-primary">Confirm</button></div>
+              <span id="pm-confirm-kind" class="pm-small"></span>
+              <h3 id="pm-confirm-title">Review permission change</h3>
+              <p id="pm-confirm-copy"></p>
+              <label id="pm-confirm-pin-label" class="pm-pin-label" hidden>Four-digit hazard PIN
+                <input class="pm-pin-input" type="password" id="pm-confirm-pin" inputmode="numeric" maxlength="4" autocomplete="off">
+              </label>
+              <p id="pm-confirm-error" role="alert"></p>
+              <div class="pm-dialog-foot">
+                <button type="button" id="pm-confirm-cancel" class="pm-btn">Go back</button>
+                <button type="button" id="pm-confirm-apply" class="pm-btn pm-primary">Confirm</button>
+              </div>
             </dialog>
             <dialog id="pm-pin-dialog" aria-label="Configure hazard PIN">
-              <h3>Hazard PIN</h3><p>Hazardous permission changes require a separate four-digit PIN. The local gateway stores only a salted hash.</p>
-              <label>Current PIN (if configured)<input type="password" id="pm-pin-current" inputmode="numeric" maxlength="4" autocomplete="off"></label>
-              <label>New PIN<input type="password" id="pm-pin-new" inputmode="numeric" maxlength="4" autocomplete="off"></label>
-              <p id="pm-pin-error" role="alert"></p><div class="pm-dialog-foot"><button type="button" id="pm-pin-cancel" class="pm-btn">Go back</button><button type="button" id="pm-pin-save" class="pm-btn pm-primary">Save PIN</button></div>
+              <h3>Hazard PIN</h3>
+              <p>Hazardous changes require a separate four-digit PIN; the gateway stores only a salted hash.</p>
+              <label class="pm-pin-label">Current PIN (if configured)
+                <input class="pm-pin-input" type="password" id="pm-pin-current" inputmode="numeric" maxlength="4" autocomplete="off">
+              </label>
+              <label class="pm-pin-label">New PIN
+                <input class="pm-pin-input" type="password" id="pm-pin-new" inputmode="numeric" maxlength="4" autocomplete="off">
+              </label>
+              <p id="pm-pin-error" role="alert"></p>
+              <div class="pm-dialog-foot">
+                <button type="button" id="pm-pin-cancel" class="pm-btn">Go back</button>
+                <button type="button" id="pm-pin-save" class="pm-btn pm-primary">Save PIN</button>
+              </div>
             </dialog>
             <div id="pm-toast" role="status" aria-live="polite" hidden></div>
           </div>
