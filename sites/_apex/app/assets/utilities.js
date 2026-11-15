@@ -39,7 +39,7 @@ export function utilityFiltersFromFields(rows){
  }
  return result;
 }
-export function utilityCanManage(item){return !!item&&UID.test(item.uid)&&["direct","cloud"].includes(item.route);}
+export function utilityCanManage(item){return !!item&&UID.test(item.uid)&&item.enabled!==0&&["direct","cloud"].includes(item.route);}
 export function utilityResultLabel(item){return item?.name||item?.uid||"Utility";}
 export function utilitySearchIndex(item){
  return [item.name,item.uid,item.label,item.class,item.author,item.platform,item.route,
@@ -156,7 +156,7 @@ export function initColosseumUtilities(){
   if(!s.detail||s.detail.item?.uid!==item.uid)
    return '<section class="ut-card" role="status"><p>Loading live utility details…</p></section>';
   const rows=[
-   ["UID",item.uid],["Route",item.route],["Class",item.class],["Type",item.type],
+   ["UID",item.uid],["Enabled",item.enabled===0?"No":"Yes"],["Route",item.route],["Class",item.class],["Type",item.type],
    ["Cardinality",item.cardinality],["Author",item.author],["Platform",item.platform],
    ["Source mode",item.source_mode],["Revision",item.revision],["Created",displayDate(item.source_created_at)],
    ["Last updated",displayDate(item.updated_at)],["Runtime",item.runtime],["Assets",String(s.detail.asset_count??0)]
@@ -182,7 +182,7 @@ export function initColosseumUtilities(){
    '<section class="ut-card-section"><h3>Management</h3><div class="ut-card-actions">'+
    (canEdit?'<button type="button" class="ut-small-button" data-ut-edit="'+esc(item.uid)+'">Edit utility</button>'+
      '<button type="button" class="ut-small-button" data-ut-remove="'+esc(item.uid)+'">Remove utility</button>':
-     '<p>Catalog edits are available for cloud and direct utilities only.</p>')+
+     '<p>Catalog edits are available for enabled cloud and direct utilities only.</p>')+
    '</div></section></section>';
  }
  function renderDetail(){

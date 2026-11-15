@@ -74,6 +74,7 @@ test("Utility editor is revision-reviewed and mutations remain Git-first",()=>{
  assert.ok(utilityCanManage({uid:"a012bc",route:"cloud"}));
  assert.ok(utilityCanManage({uid:"a012bc",route:"direct"}));
  assert.equal(utilityCanManage({uid:"a012bc",route:"ported"}),false);
+ assert.equal(utilityCanManage({uid:"a012bc",route:"cloud",enabled:0}),false);
  assert.equal(utilityCanManage({uid:"a012bc",route:"local"}),false);
  assert.equal(utilityCanManage({uid:"a012bc",route:"cloudish"}),false);
  for(const kind of ["add","update","remove"])
@@ -86,6 +87,7 @@ test("Utility editor is revision-reviewed and mutations remain Git-first",()=>{
 });
 test("Static asset counts and file lists are read on demand, not assembled from fake data",()=>{
  assert.ok(js.includes('asset_count'));
+ assert.ok(js.includes('["Enabled",item.enabled===0?"No":"Yes"]'));
  assert.ok(js.includes("files_has_more"));
  assert.ok(js.includes("s.detailCache.clear();s.page=index"));
  assert.ok(js.includes('files_offset:offset'));
