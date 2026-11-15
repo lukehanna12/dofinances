@@ -121,7 +121,7 @@ test("README editing offers larger Collections-style controls, live preview, dif
  assert.ok(css.includes(".rm-confirm{background:#fff;color:#141414"));
  assert.ok(ui.includes('state.source.requiresConnection'));
  assert.ok(ui.includes('window.confirm("Discard your unsaved README changes?")'));
- assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){state.slug=null;exitEdit();return;}'),
+ assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){'),
    "A draft must not be silently discarded on navigation out of the README screen");
  assert.ok(!ui.includes('if(!confirm("Discard your unsaved README changes?")'));
  assert.ok(ui.includes("GitHub token with Contents: Read and write permission"));
@@ -210,4 +210,55 @@ test("Projects API enforces account scope, route ownership, payload fields and s
  assert.equal(response.status,404);
  response=await projectApi(make("/api/projects/sandbox/readme","PUT",{markdown:"Allowed",surprise:true}),env,"/api/projects/sandbox/readme",user,stub);
  assert.equal(response.status,400);
+});
+
+
+test("An existing public README still loads if the saved PAT cannot access that repository",async()=>{
+ const encryptionSecret="independent-project-credential-key-which-is-long-enough";
+ const encrypted=await sealGithubToken("github_pat_restricted_public_fixture",encryptionSecret,"account-public-test");
+ const stub={
+  projectGet:async({userId,slug})=>{
+   assert.equal(userId,"account-public-test");
+   assert.equal(slug,"open");
+   return {status:200,project:{slug:"open",name:"Open",repository:"example/open",
+    presentation:"github",defaultReadme:"# Placeholder",updatedAt:1}};
+  },
+  githubProjectConnection:async()=>({status:200,connected:true,ciphertext:encrypted,login:"example"})
+ };
+ const originalFetch=globalThis.fetch;
+ const requests=[];
+ globalThis.fetch=async(url,opts)=>{
+  const authorized=!!opts.headers.Authorization;
+  requests.push({url,authorized});
+  if(url==="https://api.github.com/repos/example/open"&&authorized)
+   return Response.json({message:"Resource not accessible by personal access token"},{status:403});
+  if(url==="https://api.github.com/repos/example/open"&&!authorized)
+   return Response.json({default_branch:"main",private:false,permissions:{}});
+  if(url==="https://api.github.com/repos/example/open/readme"&&!authorized)
+   return Response.json({encoding:"base64",content:Buffer.from("# Public\n").toString("base64"),
+     sha:"a".repeat(40),path:"README.md",size:9});
+  throw Error("Unexpected request "+url+" authorization="+authorized);
+ };
+ try{
+  const response=await projectApi(new Request("https://dofinances.com/api/projects/open/readme"),
+   {MFA_ENCRYPTION_KEY:encryptionSecret},"/api/projects/open/readme",{id:"account-public-test"},stub);
+  assert.equal(response.status,200);
+  const json=await response.json();
+  assert.equal(json.source,"github");
+  assert.equal(json.markdown,"# Public\n");
+  assert.equal(json.canEdit,false,"Restricted token must not confer editing access via anonymous fallback");
+  assert.deepEqual(requests.map(x=>x.authorized),[true,false,false]);
+ }finally{globalThis.fetch=originalFetch;}
+});
+
+test("Reading and live editor use independent, route-bound rendering revisions",()=>{
+ assert.ok(ui.includes('readingRenderTicket:0,previewRenderTicket:0,loadTicket:0'));
+ assert.ok(ui.includes('const key=target===reading?"readingRenderTicket":"previewRenderTicket";'));
+ assert.ok(ui.includes('ticket!==state[key]||state.slug!==slug'),
+  "Stale render results must not update a different project's README");
+ assert.ok(ui.includes('++state.readingRenderTicket;++state.previewRenderTicket;'),
+  "Navigating between projects invalidates both pending render streams");
+ assert.ok(ui.includes('++state.loadTicket;++state.readingRenderTicket;'),
+  "Leaving the README must invalidate in-flight reads");
+ assert.ok(!ui.includes("state.renderTicket"),"The single shared render revision was a race condition");
 });

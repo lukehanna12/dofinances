@@ -38,14 +38,25 @@ function formatGithubError(status,detail,token){
 async function projectReadmeGet(stub,env,userId,slug){
  const project=await findProject(stub,userId,slug);
  if(!project.repository)return json({source:"local",project,markdown:project.defaultReadme,sha:null,path:null,canEdit:true});
- const token=await storedToken(stub,env,userId);
- const repo=await githubRepository(project.repository,token);
+ let token=await storedToken(stub,env,userId);
+ const credentialsConfigured=!!token;
+ let repo=await githubRepository(project.repository,token);
+ // A fine-grained PAT may be valid but restricted to different repositories.
+ // Never let that block a README which GitHub exposes without authentication.
+ if(!repo.ok&&token){
+  const publiclyAccessible=await githubRepository(project.repository,null);
+  if(publiclyAccessible.ok){repo=publiclyAccessible;token=null;}
+ }
  if(!repo.ok)return json({source:"unavailable",project,markdown:project.defaultReadme,
-  sha:null,path:null,canEdit:false,error:repo.error,requiresConnection:!token,githubStatus:repo.status});
- const readme=await githubReadme(project.repository,token);
+  sha:null,path:null,canEdit:false,error:repo.error,requiresConnection:!credentialsConfigured,githubStatus:repo.status});
+ let readme=await githubReadme(project.repository,token);
+ if(!readme.ok&&token&&!repo.private){
+  const publicReadme=await githubReadme(project.repository,null);
+  if(publicReadme.ok){readme=publicReadme;repo={...repo,canEdit:false};}
+ }
  if(!readme.ok)return json({source:readme.status===404?"missing":"unavailable",project,
   markdown:project.defaultReadme,sha:null,path:"README.md",canEdit:repo.canEdit,
-  error:readme.error,requiresConnection:!token,githubStatus:readme.status});
+  error:readme.error,requiresConnection:!credentialsConfigured,githubStatus:readme.status});
  return json({source:"github",project,markdown:readme.markdown,sha:readme.sha,path:readme.path,
   canEdit:repo.canEdit,defaultBranch:repo.defaultBranch,private:repo.private});
 }
