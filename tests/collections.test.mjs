@@ -67,8 +67,9 @@ test("Collection title pixels remain visible and loading rings cannot reflow lay
  assert.match(css,/#cs-root \.cs-entry-title \.cs-title-measure\{[^}]*visibility:hidden/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-expanded\{opacity:1\}/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-title-compact\{transition-delay:0s\}/);
- assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:visible\}/);
- assert.ok(html.includes('class="cs-summary-value site-text-shimmer"'));
+ assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:hidden\}/);
+ assert.ok(html.includes('class="cs-summary-value">TOTAL — / UPDATED —</span>'));
+  assert.ok(html.includes('class="cs-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"'));
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*transition:padding \.45s/);
  assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
  assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
@@ -279,10 +280,10 @@ test("Collections positions both ring centers symmetrically around the complete 
    assert.ok(Math.abs((first+second)/2-dividerMiddle)<1e-12); // Reflection
    assert.ok(Math.abs((dividerMiddle-first)-(second-dividerMiddle))<1e-12);
  }
- assert.match(css,/\.cs-summary-dot\{[^}]*left:calc\(var\(--cs-summary-group-end,8em\) \/ 2 - \.5em\)/);
- assert.match(css,/\.cs-summary-dot:last-child\{left:calc\(var\(--cs-summary-group-start,6em\) \+ var\(--cs-summary-group-end,8em\) \/ 2 - \.5em\)/);
- assert.match(css,/\.cs-summary-divider\{[^}]*left:var\(--cs-summary-slash-left,7em\)/);
- assert.doesNotMatch(css,/\.cs-summary-skeleton\{[^}]*gap:/);
+ assert.ok(css.includes("#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}"));
+ assert.ok(html.includes('class="cs-summary-placeholder site-skeleton"'));
+ assert.doesNotMatch(css, /\.cs-summary-dot\{|\.cs-summary-divider\{/);
+ assert.doesNotMatch(css,/\.cs-summary-skeleton\{/);
  assert.match(js,/range\.setEnd\(text,index\+3\); \/\/ Both spaces AND the slash/);
  assert.match(js,/range\.setEnd\(text,index\+2\)/);
  assert.match(js,/window\.localStorage\.getItem\(SUMMARY_GEOMETRY_KEY\)/);
@@ -397,20 +398,21 @@ test("Collections search sits close to the summary on desktop and mobile",()=>{
  assert.ok(html.includes('class="cs-search cs-collection-search"'));
 });
 
-test("Collections summary uses the site-standard Text Shimmer without reflow",()=>{
- const shimmer=src("sites/_apex/app/assets/site-text-shimmer.css");
- const summary=html.slice(html.indexOf('id="cs-summary"'),html.indexOf('id="cs-summary"')+250);
- assert.ok(summary.includes('aria-busy="true"'));
- assert.ok(summary.includes('class="cs-summary-value site-text-shimmer"'));
- assert.doesNotMatch(summary,/cs-summary-skeleton|cs-summary-dot/);
- assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:visible}'));
- assert.ok(shimmer.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-value'));
- assert.ok(shimmer.includes('animation:site-text-shimmer var(--site-shimmer-duration) linear infinite'));
- assert.ok(js.includes('setSummaryLoading(true);'));
- assert.ok(js.includes('setSummaryLoading(false);'));
- assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
- assert.ok(js.includes('summary.setAttribute("aria-busy",String(loading))'));
- assert.ok(!js.includes("setInterval("));
+test("Collections summary overlays a plain pulsing Skeleton without reflow",()=>{
+  const skeleton=src("sites/_apex/app/assets/site-skeleton.css");
+  const summary=html.slice(html.indexOf('id="cs-summary"'),html.indexOf('id="cs-summary"')+350);
+  assert.ok(summary.includes('aria-busy="true"'));
+  assert.ok(summary.includes('class="cs-summary-value">TOTAL — / UPDATED —'));
+  assert.ok(summary.includes('class="cs-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"'));
+  assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}'));
+  assert.ok(skeleton.includes('#cs-root .cs-summary-loading .cs-summary-placeholder'));
+  assert.ok(skeleton.includes('position:absolute;top:50%;left:0;'));
+  assert.ok(skeleton.includes('@keyframes site-skeleton-pulse{50%{opacity:.5}}'));
+  assert.ok(js.includes('setSummaryLoading(true);'));
+  assert.ok(js.includes('setSummaryLoading(false);'));
+  assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
+  assert.ok(js.includes('summary.setAttribute("aria-busy",String(loading))'));
+  assert.ok(!js.includes("setInterval("));
 });
 test("Collections legacy live-status skeleton occupies no space, while failures can surface",()=>{
  assert.ok(html.includes('<p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>'));
@@ -443,7 +445,7 @@ test("Collections refresh shows a fast arrow-free ring while both skeletons rema
  assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
  assert.ok(!css.includes('cs-refreshing .cs-refresh-icon{animation:'));
  assert.equal((css.match(/@keyframes cs-summary-spin/g)||[]).length,1);
- assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2);
+ assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,1); // Only Refresh spins; skeletons pulse.
  assert.ok(!js.includes('setInterval('));
 });
 
@@ -1399,20 +1401,29 @@ test("Collections external provider v3 retains two exact TSX symbol paths",()=>{
  assert.ok(icon.includes('fill-opacity="0.85"')&&mask.includes('fill-opacity="1"'));
  assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v3.svg")'));
 });
-test("ShadCN Text Shimmer is the shared Collections loading skeleton",()=>{
- const shimmer=src("sites/_apex/app/assets/site-text-shimmer.css");
- assert.ok(js.includes("function renderLoadingRows(){")&&js.includes("length:state.pageSize"));
- assert.ok(js.includes('if(loading&&!state.loaded)renderLoadingRows();'));
- assert.ok(js.includes('list.classList.toggle("cs-list-loading",loading)'));
- assert.ok(js.includes('class="cs-skeleton-text site-text-shimmer'));
- assert.ok(css.includes(".cs-entry--skeleton .cs-skeleton-row"));
- assert.ok(css.includes("height:var(--cs-row-height)"));
- assert.ok(css.includes(".cs-skeleton-text{"));
- assert.ok(shimmer.includes("shadcn-ui/ui c0d63c339d6cd2fc26135590a54cf1f362269451"));
- assert.ok(shimmer.includes("-webkit-background-clip:text;background-clip:text"));
- assert.ok(shimmer.includes("site-text-shimmer var(--site-shimmer-duration) linear infinite"));
- assert.ok(shimmer.includes("@media(prefers-reduced-motion:reduce)"));
- assert.doesNotMatch(css,/cs-row-pulse|cs-skeleton-bar/);
+test("Plain shadcn/ui Skeleton is shared by Collections and Utilities",()=>{
+  const skeleton=src("sites/_apex/app/assets/site-skeleton.css");
+  const utilityJs=src("sites/_apex/app/assets/utilities.js");
+  const appHtml=src("sites/_apex/app/index.html");
+  assert.ok(js.includes("function renderLoadingRows(){")&&js.includes("length:state.pageSize"));
+  assert.ok(js.includes('if(loading&&!state.loaded)renderLoadingRows();'));
+  assert.ok(js.includes('list.classList.toggle("cs-list-loading",loading)'));
+  assert.ok(js.includes('class="cs-skeleton-bar site-skeleton" data-slot="skeleton"'));
+  assert.ok(utilityJs.includes('class="ut-skeleton-bar site-skeleton" data-slot="skeleton"'));
+  assert.ok(css.includes(".cs-entry--skeleton .cs-skeleton-row"));
+  assert.ok(css.includes("height:var(--cs-row-height)"));
+  assert.ok(css.includes(".cs-skeleton-bar{width:86%;min-width:0;height:12px;flex:none}"));
+  assert.ok(skeleton.includes("shadcn-ui/ui"));
+  assert.ok(skeleton.includes("c0d63c339d6cd2fc26135590a54cf1f362269451"));
+  assert.ok(skeleton.includes("rounded-md bg-accent"));
+  assert.ok(skeleton.includes("border-radius:.375rem"));
+  assert.ok(skeleton.includes("animation:site-skeleton-pulse 2s cubic-bezier(.4,0,.6,1) infinite"));
+  assert.ok(skeleton.includes("@keyframes site-skeleton-pulse{50%{opacity:.5}}"));
+  assert.ok(skeleton.includes("@media(prefers-reduced-motion:reduce)"));
+  assert.ok(appHtml.includes('/app/assets/site-skeleton.css'));
+  assert.ok(!appHtml.includes('site-text-shimmer'));
+  assert.doesNotMatch(skeleton, /background-clip:text|text-shimmer|background-position:/);
+  assert.doesNotMatch(css,/cs-row-pulse/);
 });
 test("Adjacent utility edit/select buttons preserve the separated add control",()=>{
  const a=js.indexOf("cs-utility-action-control--add");

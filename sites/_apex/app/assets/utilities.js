@@ -152,7 +152,7 @@ export function initColosseumUtilities(){
   elements.list.innerHTML=Array.from({length:s.pageSize},(_,i)=>
    '<article class="ut-skeleton" aria-hidden="true"><div class="ut-skeleton-row">'+
    '<span class="ut-skeleton-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
-   '<span class="ut-skeleton-text site-text-shimmer">Loading utility</span></div></article>').join("");
+   '<span class="ut-skeleton-bar site-skeleton" data-slot="skeleton"></span></div></article>').join("");
  }
  function rowsMarkup(){
   if(!s.items.length)return '<p class="ut-empty">'+(s.query||Object.keys(s.include).length||Object.keys(s.exclude).length?

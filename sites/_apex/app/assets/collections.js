@@ -227,7 +227,7 @@ export function initColosseumCollections(){
    list.innerHTML=Array.from({length:state.pageSize},(_,i)=>
      '<article class="cs-entry cs-entry--skeleton" aria-hidden="true">'+
      '<div class="cs-skeleton-row"><span class="cs-skeleton-number">'+String(i+1).padStart(2,"0")+'</span>'+
-     '<span class="cs-skeleton-text site-text-shimmer">Loading collection</span></div></article>').join("");
+     '<span class="cs-skeleton-bar site-skeleton" data-slot="skeleton"></span></div></article>').join("");
  }
  function setSummaryLoading(loading){
    if(loading)ensureInitialGeometry();

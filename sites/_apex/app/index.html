@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="/app/assets/permissions.css">
   <link rel="stylesheet" href="/app/assets/collections.css">
   <link rel="stylesheet" href="/app/assets/utilities.css">
-  <link rel="stylesheet" href="/app/assets/site-text-shimmer.css">
+  <link rel="stylesheet" href="/app/assets/site-skeleton.css">
   <link rel="stylesheet" href="/app/assets/workspace-title.css">
   <link rel="stylesheet" href="/app/assets/github-markdown.css">
   <link rel="stylesheet" href="/app/assets/project-readme.css">
@@ -438,7 +438,7 @@
         <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>
           <div id="ut-root" class="ut-screen">
-            <span class="ut-summary ut-summary-loading" id="ut-summary" aria-live="polite" aria-busy="true"><span class="ut-summary-value site-text-shimmer">TOTAL — / UPDATED —</span></span>
+            <span class="ut-summary ut-summary-loading" id="ut-summary" aria-live="polite" aria-busy="true"><span class="ut-summary-value">TOTAL — / UPDATED —</span><span class="ut-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"></span></span>
             <p class="ut-status" id="ut-status" role="status" aria-live="polite"></p>
             <div class="ut-layout" id="ut-layout">
               <div class="ut-list-column">
@@ -521,7 +521,7 @@
             <div class="cs-wrap">
               <header class="cs-head">
                 <div class="cs-head-copy">
-                  <span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true"><span class="cs-summary-value site-text-shimmer">TOTAL — / UPDATED —</span></span>
+                  <span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true"><span class="cs-summary-value">TOTAL — / UPDATED —</span><span class="cs-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"></span></span>
                   <div class="cs-control-center" role="group" aria-label="Collection controls">
                   <span class="cs-create-control">
                     <button class="cs-create-icon-button" id="cs-create" type="button" aria-label="Add collection" aria-keyshortcuts="Meta+Shift+N" aria-describedby="cs-create-tooltip"><img class="cs-create-plus-icon" width="32" height="32" src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true" decoding="async"></button>

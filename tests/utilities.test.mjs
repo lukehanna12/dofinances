@@ -146,21 +146,22 @@ test("Collection filter choices are loaded only when opened and never polled",()
  assert.ok(css.includes('max-height:480px'));
 });
 
-test("Utilities summary shows exact total and app-configured local refresh time",()=>{
+test("Utilities summary uses the shared pulsing Skeleton and keeps exact totals",()=>{
  const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
  assert.match(view,/class="ut-summary ut-summary-loading"/);
- assert.match(view,/class="ut-summary-value site-text-shimmer">TOTAL — \/ UPDATED —/);
- assert.match(view,/class="ut-summary-value site-text-shimmer"/);
- assert.doesNotMatch(view,/class="ut-summary-dot"|class="ut-summary-skeleton"/);
+ assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
+ assert.match(view,/class="ut-summary-placeholder site-skeleton" data-slot="skeleton" aria-hidden="true"/);
+ assert.doesNotMatch(view,/class="ut-summary-dot"|class="ut-summary-skeleton"|site-text-shimmer/);
  assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);
  assert.match(js,/formatWorkspaceTime\(s\.updatedAt,\{hour12:true\}\)/);
  assert.doesNotMatch(js,/report\("Loading live catalog utilities/);
  assert.match(js,/Array\.from\(\{length:s\.pageSize\}/);
- assert.match(css,/#ut-root \.ut-skeleton-text\{/);
- assert.ok(js.includes('class="ut-skeleton-text site-text-shimmer'));
- const siteShimmer=source("sites/_apex/app/assets/site-text-shimmer.css");
- assert.match(siteShimmer,/-webkit-background-clip:text;background-clip:text/);
- assert.match(siteShimmer,/animation:site-text-shimmer var\(--site-shimmer-duration\) linear infinite/);
+ assert.match(css,/#ut-root \.ut-skeleton-bar\{width:86%;min-width:0;height:12px;flex:none\}/);
+ assert.ok(js.includes('class="ut-skeleton-bar site-skeleton" data-slot="skeleton"'));
+ const skeleton=source("sites/_apex/app/assets/site-skeleton.css");
+ assert.match(skeleton,/animation:site-skeleton-pulse 2s cubic-bezier\(\.4,0,\.6,1\) infinite/);
+ assert.match(skeleton,/@keyframes site-skeleton-pulse\{50%\{opacity:\.5\}\}/);
+ assert.doesNotMatch(skeleton,/background-clip:text|text-shimmer/);
 });
 test("Utilities restores twenty-five compact row headers and keeps authors in badges",()=>{
  assert.match(js,/pageSize:25/);
