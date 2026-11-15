@@ -283,7 +283,7 @@ jobs:
             exit 1
           fi
           rm "$studio_body"
-          for route in /gallery/assets/gallery.css /gallery/assets/gallery.js /gallery/assets/gallery-field-worker.js /app/ /app/assets/collections-title-transition.js /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
+          for route in /gallery/assets/gallery.css /gallery/assets/gallery.js /gallery/assets/gallery-field-worker.js /app/ /app/assets/collections-title-transition.js /app/assets/utilities-title-transition.js /app/assets/sidebar-glass.css /app/assets/sidebar-glass.js /app/assets/sidebar-glass-oracle.js /app/assets/sidebar-glass-field-worker.js /app/assets/preview-bootstrap.js /assets/site-foundation.css; do
             code="$(curl --retry 3 --retry-delay 2 -sSL --max-time 20 -w '%{http_code}' -o /dev/null "https://stu.dofinances.com$route")"
             echo "Studio $route -> HTTP $code"
             test "$code" = 200
