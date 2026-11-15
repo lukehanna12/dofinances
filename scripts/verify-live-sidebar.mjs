@@ -800,25 +800,30 @@ try{
     const side=document.getElementById("workspace-sidebar");
     const main=document.querySelector(".main");
     const content=document.getElementById("main-content");
+    const bar=document.querySelector(".topbar");
+    const breadcrumb=document.getElementById("breadcrumb");
     const sample=()=>{
       const pane=side.getBoundingClientRect(),column=main.getBoundingClientRect();
       const body=content.getBoundingClientRect();
+      const barRect=bar.getBoundingClientRect();
       return {sidebarRight:pane.right,sidebarWidth:pane.width,
         mainLeft:column.left,
         contentStart:body.left+Number.parseFloat(getComputedStyle(content).paddingLeft),
+        barLeft:barRect.left,barRight:barRect.right,
+        breadcrumbLeft:breadcrumb.getBoundingClientRect().left,
         collapsed:shell.classList.contains("is-collapsed")};
     };
     const before=sample();
     document.getElementById("${target}").click();
     const immediate=sample();
-    const sideStyle=getComputedStyle(side),spacerStyle=getComputedStyle(shell,"::before");
+    const sideStyle=getComputedStyle(side),railStyle=getComputedStyle(shell);
     const timing={
       sidebarProperty:sideStyle.transitionProperty,
-      spacerProperty:spacerStyle.transitionProperty,
+      railProperty:railStyle.transitionProperty,
       sidebarDuration:sideStyle.transitionDuration.split(",")[0].trim(),
-      spacerDuration:spacerStyle.transitionDuration.split(",")[0].trim(),
+      railDuration:railStyle.transitionDuration.split(",")[0].trim(),
       sidebarEasing:sideStyle.transitionTimingFunction,
-      spacerEasing:spacerStyle.transitionTimingFunction,
+      railEasing:railStyle.transitionTimingFunction,
       reducedMotion:matchMedia("(prefers-reduced-motion: reduce)").matches
     };
     const frames=[];
@@ -838,14 +843,14 @@ try{
       const seconds=value=>value.endsWith("ms")?Number.parseFloat(value)/1000:Number.parseFloat(value);
       assert.ok(data.timing.sidebarProperty.split(",").map(x=>x.trim()).includes("width"),
         "The sidebar must animate its width: "+JSON.stringify(data.timing));
-      assert.equal(data.timing.spacerProperty,"flex-basis",
-        "The content spacer must animate its flex basis");
+      assert.equal(data.timing.railProperty,"--workspace-rail-space-width",
+        "The registered rail-space token must animate the spacer and bar together");
       assert.ok(Math.abs(seconds(data.timing.sidebarDuration)-.21)<.005,
         "Sidebar collapse/expand duration changed: "+JSON.stringify(data.timing));
-      assert.ok(Math.abs(seconds(data.timing.spacerDuration)-.21)<.005,
-        "Content spacer duration must match the sidebar: "+JSON.stringify(data.timing));
-      assert.ok(data.timing.sidebarEasing.startsWith(data.timing.spacerEasing),
-        "Content spacer and sidebar have different easing curves: "+JSON.stringify(data.timing));
+      assert.ok(Math.abs(seconds(data.timing.railDuration)-.21)<.005,
+        "Registered rail-space duration must match the sidebar: "+JSON.stringify(data.timing));
+      assert.ok(data.timing.sidebarEasing.startsWith(data.timing.railEasing),
+        "Registered rail-space and sidebar have different easing curves: "+JSON.stringify(data.timing));
     }
     for(const frame of [data.before,data.immediate,...data.frames]){
       assert.ok(Math.abs(frame.mainLeft-frame.sidebarRight)<2,
@@ -854,6 +859,11 @@ try{
       assert.ok(Math.abs((frame.contentStart-frame.mainLeft)-52.48)<1,
         "Content's fixed wide-screen inset drifted during "+name+": "+
         JSON.stringify(frame));
+      assert.ok(Math.abs(frame.barLeft-data.before.barLeft)<1.5 &&
+        Math.abs(frame.barRight-data.before.barRight)<1.5 &&
+        Math.abs(frame.breadcrumbLeft-data.before.breadcrumbLeft)<1.5,
+        "Lower navigation moved with the expanded pane during "+name+": "+
+        JSON.stringify({before:data.before,frame}));
     }
     // Headless Chrome may skip most of a 210ms compositor animation between
     // two requestAnimationFrame callbacks under CI load. Assert actual computed
