@@ -991,7 +991,7 @@ test("Select and Edit remain visually unframed until hovered while retaining cir
   assert.ok(!css.includes("#cs-root.cs-collection-selecting .cs-select-icon-button{background:"));
 });
 
-test("Add, Edit and Select keep their controller identities inside the fixed flat dark dock",()=>{
+test("Add, Edit and Select keep their identities within the fixed frosted dock",()=>{
  const start=html.indexOf('<div class="cs-control-center" role="group" aria-label="Collection controls">');
  assert.ok(start>0,"Expected one self-contained control center");
  const end=html.indexOf("</div>",start);
@@ -1006,11 +1006,11 @@ test("Add, Edit and Select keep their controller identities inside the fixed fla
  const block=css.slice(anchor,css.indexOf("}",anchor)+1);
  assert.ok(block.includes("--cs-dock-scale:1.5"));
  assert.ok(block.includes("position:fixed"));
- assert.ok(block.includes("background:#161616"),"An opaque flat dark surface replaces fake glass");
+ assert.ok(block.includes("background:rgba(14,15,17,.69)"),"Dock tint matches the lower topbar");
  assert.ok(block.includes("border:0"),"No fake glass rim");
  assert.ok(block.includes("box-shadow:none"),"No inset faux glass outline");
- assert.ok(block.includes("-webkit-backdrop-filter:none"),"No blur or backdrop sampling");
- assert.ok(block.includes("backdrop-filter:none"),"No backdrop sampling");
+ assert.ok(block.includes("-webkit-backdrop-filter:blur(18px) saturate(120%)"),"Match topbar blur");
+ assert.ok(block.includes("backdrop-filter:blur(18px) saturate(120%)"),"Match topbar blur");
  assert.ok(block.includes("width:max-content"),"Dock remains only as wide as its buttons");
  assert.ok(!block.includes("background:#212121"),"The legacy composer style is overridden");
  assert.ok(!css.includes(".cs-control-center.cs-oracle-ready{"),"No active SVG glass optics");
@@ -1305,8 +1305,7 @@ test("Original route geometry is retained while masked icons match the former #a
  const masks={
    cloud:["cloud-utility.v2.svg","cloud-utility-mask.v1.svg"],
    direct:["direct-utility.v1.svg","direct-utility-mask.v1.svg"],
-   local:["local-provider.v1.svg","local-provider-mask.v1.svg"],
-   ported:["external-provider.v2.svg","external-provider-mask.v2.svg"]
+   local:["local-provider.v1.svg","local-provider-mask.v1.svg"]
  };
  assert.ok(css.includes('--cs-bg:#0a0a0a;--cs-text:#fafafa;--cs-muted:#a3a3a3'));
  assert.ok(css.includes('#cs-root .cs-utility-name{color:#fff;'));
@@ -1346,7 +1345,7 @@ test("Compact Collection search matches Refresh on both breakpoints without narr
  assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"),"Utility search retains its original width and placement");
 });
 
-test("New sidebar symbols and externaldrive v2 preserve exact SF Symbol metadata and shapes",()=>{
+test("Sidebar symbols and legacy Studio externaldrive v2 preserve original source shapes",()=>{
  const navCss=src("sites/_apex/app/assets/workspace-theme.css");
  const workflow=src(".github/workflows/site.yml");
  const entries=[
@@ -1375,11 +1374,41 @@ test("New sidebar symbols and externaldrive v2 preserve exact SF Symbol metadata
  assert.ok(external.includes('fill-opacity="0.85"'));
  assert.ok(mask.includes('fill-opacity="1"'));
  assert.ok(mask.includes('data-mask-source="external-provider.v2.svg"'));
- assert.ok(js.includes('ported:{src:"/app/assets/external-provider.v2.svg",label:"External provider"}'));
- assert.ok(css.includes('#cs-root .cs-utility-route-icon--ported{aspect-ratio:28.9096/20.5045;'));
- assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v2.svg")'));
+ assert.ok(js.includes('ported:{src:"/app/assets/external-provider.v3.svg",label:"External provider"}'));
+ assert.ok(css.includes('#cs-root .cs-utility-route-icon--ported{aspect-ratio:42.9196/20.0701;'));
+ assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v3.svg")'));
  assert.ok(workflow.includes("cp sites/_apex/app/assets/external-provider.v2.svg dist/app/assets/external-provider.v2.svg"));
  assert.ok(workflow.includes("test -s dist/app/assets/external-provider-mask.v2.svg"));
+});
+test("Collections external provider v3 retains two exact TSX symbol paths",()=>{
+ const icon=src("sites/_apex/app/assets/external-provider.v3.svg");
+ const mask=src("sites/_apex/app/assets/external-provider-mask.v3.svg");
+ assert.ok(icon.includes('data-sf-symbol="person.line.dotted.person.fill"'));
+ assert.ok(icon.includes('data-sf-source="SFSymbols.20261112.tsx"'));
+ assert.ok(icon.includes('viewBox="0 0 42.9196 20.0701"'));
+ const paths=svg=>[...svg.matchAll(/<path d="([^"]+)"/g)].map(m=>m[1]);
+ assert.equal(paths(icon).length,2);
+ assert.deepEqual(paths(mask),paths(icon));
+ assert.ok(paths(icon)[0].startsWith("M9.10811 9.96758C11.6738"));
+ assert.ok(paths(icon)[1].startsWith("M17.6011 9.91953C18.0686"));
+ assert.ok(icon.includes('fill-opacity="0.85"')&&mask.includes('fill-opacity="1"'));
+ assert.ok(css.includes('mask-image:url("/app/assets/external-provider-mask.v3.svg")'));
+});
+test("Collapsed list rows shimmer on initial load and refresh without reflow",()=>{
+ assert.ok(js.includes("function renderLoadingRows(){")&&js.includes("length:state.pageSize"));
+ assert.ok(js.includes('if(loading&&!state.loaded)renderLoadingRows();'));
+ assert.ok(js.includes('list.classList.toggle("cs-list-loading",loading)'));
+ assert.ok(js.includes('list.setAttribute("aria-busy",String(loading))'));
+ assert.ok(css.includes(".cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after"));
+ assert.ok(css.includes("animation:cs-row-pulse 1.35s linear infinite"));
+ assert.ok(css.includes("@keyframes cs-row-pulse{from{background-position:100% 0}to{background-position:0 0}}"));
+});
+test("Adjacent utility edit/select buttons preserve the separated add control",()=>{
+ const a=js.indexOf("cs-utility-action-control--add");
+ const toolbar=js.indexOf('<span class="cs-utility-toolbar" role="group"');
+ assert.ok(a>0&&toolbar>a&&js.slice(a,toolbar).includes('add-utilities.v1.svg'));
+ assert.ok(css.includes('#cs-root .cs-utility-action-control--add{margin-right:4px}'));
+ assert.ok(css.includes('border-radius:7px 0 0 7px')&&css.includes('border-radius:0 7px 7px 0'));
 });
 test("Both search bars match Refresh border states without a hover background",()=>{
  const search=css.slice(css.indexOf("#cs-root .cs-search{"),css.indexOf("}",css.indexOf("#cs-root .cs-search{"))+1);
@@ -1444,11 +1473,11 @@ test("Add utilities uses a button-filling square glyph, preserving exact origina
  assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-utility-action--add img\{width:20px;height:20px\}/);
 });
 
-test("Utility management is a scaled Collections-like shell matching count-bubble height",()=>{
+test("Utility management separates Add and tightly joins Edit and Select",()=>{
  assert.ok(css.includes("--cs-utility-bubble-height:34px"));
  assert.ok(css.includes("--cs-utility-bubble-height:28px"));
  assert.ok(css.includes("#cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height)"));
- assert.ok(css.includes("#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height)"));
+ assert.ok(css.includes("#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:0;height:24px;width:max-content;padding:0"));
  assert.ok(css.includes("background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)"));
  assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent"));
  assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px;border-radius:inherit;object-fit:fill}"));
@@ -1571,18 +1600,18 @@ test("Select Collections uses pointer.arrow.click v3 with the original selection
  assert.ok(workflow.includes("test -s dist/app/assets/select-collections.v3.svg"));
 });
 
-test("Utility controls are rounded squares in a rounded rectangular toolbar",()=>{
+test("Joined utility buttons have flat inner faces and a perimeter-fit toolbar",()=>{
  const toolbar=css.match(/#cs-root \.cs-utility-toolbar\{[^}]+\}/)?.[0]||"";
  const buttons=css.match(/#cs-root \.cs-utility-action\{[^}]+\}/)?.[0]||"";
  const trash=css.match(/#cs-root \.cs-utility-trash\{[^}]+\}/)?.[0]||"";
- assert.ok(toolbar.includes("height:var(--cs-utility-bubble-height)"));
- assert.ok(toolbar.includes("border-radius:11px"));
+ assert.ok(toolbar.includes("height:24px;width:max-content;padding:0"));
+ assert.ok(toolbar.includes("border-radius:7px"));
  assert.ok(!toolbar.includes("border-radius:999px"));
  assert.ok(buttons.includes("width:24px;height:24px"));
  assert.ok(buttons.includes("border-radius:7px"));
  assert.ok(trash.includes("width:24px;height:24px"));
  assert.ok(trash.includes("border-radius:7px"));
- assert.ok(css.includes(" #cs-root .cs-utility-toolbar{gap:2px;padding:2px 4px;border-radius:9px}"));
+ assert.ok(css.includes(" #cs-root .cs-utility-toolbar{gap:0;padding:0;height:20px;border-radius:6px}"));
  assert.ok(css.includes(" #cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}"));
  assert.ok(css.includes(" #cs-root .cs-utility-trash{width:20px;height:20px;border-radius:6px}"));
  assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px;border-radius:inherit;object-fit:fill}"));

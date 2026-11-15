@@ -16,7 +16,7 @@ const COLLECTION_ROUTE_ICONS=Object.freeze({
   cloud:{src:"/app/assets/cloud-utility.v2.svg",label:"Cloud utility"},
   direct:{src:"/app/assets/direct-utility.v1.svg",label:"Direct utility"},
   local:{src:"/app/assets/local-provider.v1.svg",label:"Local provider"},
-  ported:{src:"/app/assets/external-provider.v2.svg",label:"External provider"}
+  ported:{src:"/app/assets/external-provider.v3.svg",label:"External provider"}
 });
 const SUMMARY_GEOMETRY_KEY="dofinances.collections.summary-divider-geometry.v2";
 const LEGACY_SUMMARY_SHIFT_KEY="dofinances.collections.summary-slash-shift.v1";
@@ -221,8 +221,20 @@ export function initColosseumCollections(){
    status.dataset.error=error?"true":"false";
    status.dataset.visible=error||visible?"true":"false";
  }
+ function renderLoadingRows(){
+   if(state.loaded)return;
+   // First load uses ten natural-height placeholders; never fabricate collection names.
+   list.innerHTML=Array.from({length:state.pageSize},(_,i)=>
+     '<article class="cs-entry cs-entry--skeleton" aria-hidden="true">'+
+     '<div class="cs-skeleton-row"><span class="cs-skeleton-number">'+String(i+1).padStart(2,"0")+'</span>'+
+     '<span class="cs-skeleton-bar"></span></div></article>').join("");
+ }
  function setSummaryLoading(loading){
    if(loading)ensureInitialGeometry();
+   if(loading&&!state.loaded)renderLoadingRows();
+   // A single parent state synchronizes pulses, preserving mounted rows and geometry.
+   list.classList.toggle("cs-list-loading",loading);
+   list.setAttribute("aria-busy",String(loading));
    summary.classList.toggle("cs-summary-loading",loading);
    summary.setAttribute("aria-busy",String(loading));
    refreshButton.classList.toggle("cs-refreshing",loading);
@@ -307,16 +319,17 @@ export function initColosseumCollections(){
        '<button class="cs-utility-trash" type="button" data-cs-action="remove" aria-label="Remove selected utilities"'+(!enabled||!activeSelect||!state.selected.size?' disabled':'')+'>'+
          '<img src="/app/assets/trash-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
        '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Remove selected utilities</span></span></span>'+
-     '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
-       '<span class="cs-utility-action-control"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
+     // Add remains disabled, but is outside the joined Edit/Select control.
+     '<span class="cs-utility-action-control cs-utility-action-control--add"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
          '<img src="/app/assets/add-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
-         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
+     '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
        '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="'+(activeEdit?'Done editing utilities':'Edit utilities')+'" aria-pressed="'+String(activeEdit)+'"'+(!enabled||activeSelect?' disabled':'')+'>'+
          '<img class="cs-utility-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+
-         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeEdit?'Done editing utilities':'Edit utilities')+'</span></span></span>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeEdit?'Done editing utilities':'Edit utilities')+'</span></span></span>'+
        '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="select" aria-label="'+(activeSelect?'Done selecting utilities':'Select utilities')+'" aria-pressed="'+String(activeSelect)+'"'+(!enabled||activeEdit||(!activeSelect&&!state.detail?.item_uids?.length)?' disabled':'')+'>'+
          '<img class="cs-utility-glyph" src="/app/assets/select-collections.v3.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+
-         '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeSelect?'Done selecting utilities':'Select utilities')+'</span></span></span></span></span>';
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">'+(activeSelect?'Done selecting utilities':'Select utilities')+'</span></span></span></span></span>';
  }
  function rowMarkup(collection,index){
    const n=(state.page-1)*state.pageSize+index+1;
@@ -639,6 +652,7 @@ export function initColosseumCollections(){
    }catch(error){
      if(seq===state.loadSeq){
        setSummaryLoading(false); // Preserve last successful values if this refresh failed.
+       if(!state.loaded)list.innerHTML='<p class="cs-loading">Unable to load collections. Use Refresh to try again.</p>';
        announce(error.message,true,false,error.reauthorize===true);
      }
    }

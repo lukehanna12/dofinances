@@ -1,7 +1,7 @@
 /*
- * Chromium geometry/interaction test for the flat fixed Collections dock.
+ * Chromium geometry/interaction test for the frosted fixed Collections dock.
  * Renders the real controls with production CSS on arbitrary page scenery,
- * verifying that no shader, backdrop-filter, or optical overlay is active.
+ * verifying native lower-topbar blur without fabricated SVG optics.
  * It does not contact the authenticated Collections API or any real account.
  */
 import assert from "node:assert/strict";
@@ -46,7 +46,7 @@ const files=new Map([
  ["cloud-utility-mask.v1.svg","sites/_apex/app/assets/cloud-utility-mask.v1.svg"],
  ["direct-utility-mask.v1.svg","sites/_apex/app/assets/direct-utility-mask.v1.svg"],
  ["local-provider-mask.v1.svg","sites/_apex/app/assets/local-provider-mask.v1.svg"],
- ["external-provider-mask.v2.svg","sites/_apex/app/assets/external-provider-mask.v2.svg"],
+ ["external-provider-mask.v3.svg","sites/_apex/app/assets/external-provider-mask.v3.svg"],
  ["collections-glass.js","sites/_apex/app/assets/collections-glass.js"],
  ["collections-glass-public-clear.js","sites/_apex/app/assets/collections-glass-public-clear.js"],
  ["collections-glass-field-worker.js","sites/_apex/app/assets/collections-glass-field-worker.js"],
@@ -159,8 +159,8 @@ try{
  assert.equal(desktopSquare.button[3],24);
 
  const surface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p),a=getComputedStyle(p,"::before"),b=getComputedStyle(p,"::after");return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter,box:s.boxShadow,before:a.content,after:b.content,svgFilters:document.querySelectorAll("#collections-oracle-live-glass").length,ready:p.classList.contains("cs-oracle-ready"),inlineMask:p.style.getPropertyValue("--cs-optical-mask")}})()');
- assert.equal(surface.background,"rgb(22, 22, 22)","The dock is solid dark charcoal");
- assert.equal(surface.filter,"none","No CSS blur, SVG refraction or backdrop sampling");
+ assert.equal(surface.background,"rgba(14, 15, 17, 0.69)","The dock matches the lower topbar tint");
+ assert.match(surface.filter,/blur\(18px\).*saturate\((?:1\.2|120%)\)/,"The dock matches 18px/120% topbar frost");
  assert.equal(surface.box,"none","No inset fake-glass outline or shadow");
  assert.equal(surface.before,"none","No optical overlay pseudo-element");
  assert.equal(surface.after,"none","No optical tint/lighting pseudo-element");
@@ -171,8 +171,8 @@ try{
  await evaluate('(()=>{document.querySelector(".test-scenery").style.background="repeating-linear-gradient(95deg,red 0 8px,blue 8px 16px)";scrollTo(0,1800);return true})()');
  await pause(160);
  const later=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p);return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter,box:s.boxShadow}})()');
- assert.deepEqual(later,{background:originalSurface.background,filter:"none",box:"none"},
-  "The panel remains flat and unchanged above arbitrary scrolling page content");
+ assert.deepEqual(later,{background:originalSurface.background,filter:originalSurface.filter,box:"none"},
+  "The dock keeps its topbar material unchanged above scrolling page content");
 
 
  // Real source sidebar markup and actual Collections utility route silhouettes.
@@ -290,11 +290,12 @@ try{
  assert.equal(mobileSquare.disabled,true);
 
  const mobileSurface=await evaluate('(()=>{const p=document.querySelector(".cs-control-center"),s=getComputedStyle(p);return {background:s.backgroundColor,filter:s.backdropFilter||s.webkitBackdropFilter}})()');
- assert.deepEqual(mobileSurface,{background:"rgb(22, 22, 22)",filter:"none"},
-   "Mobile must render the same flat panel without optical filters");
+ assert.equal(mobileSurface.background,"rgba(14, 15, 17, 0.69)");
+ assert.match(mobileSurface.filter,/blur\(18px\).*saturate\((?:1\.2|120%)\)/,
+    "Mobile dock matches topbar frost");
  await evaluate('document.querySelector(".view").hidden=true;true');
  assert.equal(await evaluate('document.querySelector(".cs-control-center").getBoundingClientRect().width'),0);
- console.log("Collections flat dark dock: fixed 1.5x size, unchanged hit testing, no optical shader/filter/blur, and mobile layout passed.");
+ console.log("Collections frosted dock: fixed 1.5x size, unchanged hit testing, native topbar blur, and mobile layout passed.");
 }finally{
  try{socket?.close();}catch{}
  chrome.kill("SIGTERM");
