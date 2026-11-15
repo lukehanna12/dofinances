@@ -190,3 +190,17 @@ test("Shared non-dashboard canvas and scroll-title template has one owner",async
  assert.match(source(".github/workflows/site.yml"),/cp sites\/_apex\/app\/assets\/workspace-title\.css dist\/app\/assets\/workspace-title\.css/);
  assert.match(html,/href="\/app\/assets\/workspace-title\.css"/);
 });
+
+test("Collapsed Utilities accordions have zero intrinsic panel padding on desktop and mobile",()=>{
+ // A grid child with padding:28px (24px mobile) forced the 0fr track
+ // to retain that minimum height. Keep decorative spacing on descendants.
+ assert.match(css,/#ut-root \.ut-row-panel-inner\{overflow:hidden;min-height:0;padding:0\}/);
+ assert.match(css,/@media\(max-width:1023px\)\{[\s\S]*?#ut-root \.ut-row-panel-inner\{padding:0\}/);
+ assert.match(css,/#ut-root \.ut-row-description\{\s*margin:0;max-width:448px;padding:0 32px 28px 44px;/);
+ assert.match(css,/#ut-root \.ut-mobile-detail\{margin-top:0;padding:0\}/);
+ assert.match(css,/#ut-root \.ut-row\.ut-active \.ut-mobile-detail\{margin-top:24px\}/);
+ assert.match(css,/#ut-root \.ut-row-panel\{\s*display:grid;grid-template-rows:0fr;/);
+ assert.match(css,/#ut-root \.ut-row-main,#ut-root \.ut-row\.ut-active \.ut-row-main\{\s*height:calc\(var\(--ut-row-height\) - var\(--ut-row-divider\)\);/);
+ assert.match(css,/#ut-root\{--ut-row-height:54px\}/);
+ assert.match(css,/#ut-root\{--ut-row-height:48px\}/);
+});
