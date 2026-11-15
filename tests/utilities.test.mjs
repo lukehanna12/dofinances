@@ -97,7 +97,9 @@ test("Static asset counts and file lists are read on demand, not assembled from 
  assert.ok(!js.includes("Array.from({length:13}"));
 });
 test("Update inspection is manual, bounded, and cannot change the catalog",()=>{
- assert.ok(js.includes('elements.updates.addEventListener("click",()=>void checkUpdates())'));
+ assert.ok(js.includes('elements.refresh.addEventListener("click",()=>void refreshCatalog())'));
+ assert.ok(js.includes('if(await loadPage(0,null))await checkUpdates(selectedBeforeRefresh)'));
+ assert.ok(!js.includes('elements.updates.addEventListener'));
  assert.ok(js.includes('const body={action:"updates"}'));
  assert.ok(js.includes('["safe_update","manual_update"].includes(chosen.source_mode)'));
  assert.ok(!/loadPage\(0,null\)[\s\S]*checkUpdates\(\)/.test(js.slice(js.lastIndexOf("renderFilterControls();"))));
@@ -147,7 +149,7 @@ test("Collection filter choices are loaded only when opened and never polled",()
 test("Utilities summary shows exact total and app-configured local refresh time",()=>{
  const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
  assert.match(view,/class="ut-summary ut-summary-loading"/);
- assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
+ assert.match(view,/class="ut-summary-value site-text-shimmer">TOTAL — \/ UPDATED —/);
  assert.match(view,/class="ut-summary-value site-text-shimmer"/);
  assert.doesNotMatch(view,/class="ut-summary-dot"|class="ut-summary-skeleton"/);
  assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);

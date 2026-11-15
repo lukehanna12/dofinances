@@ -67,8 +67,8 @@ test("Collection title pixels remain visible and loading rings cannot reflow lay
  assert.match(css,/#cs-root \.cs-entry-title \.cs-title-measure\{[^}]*visibility:hidden/);
  assert.match(css,/#cs-root \.cs-entry\.cs-open \.cs-title-expanded\{opacity:1\}/);
  assert.match(css,/#cs-root \.cs-entry:not\(\.cs-open\) \.cs-title-compact\{transition-delay:0s\}/);
- assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:hidden\}/);
- assert.match(css,/#cs-root \.cs-summary-skeleton\{[^}]*position:absolute;left:0;top:\.32em/);
+ assert.match(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{visibility:visible\}/);
+ assert.ok(html.includes('class="cs-summary-value site-text-shimmer"'));
  assert.match(css,/#cs-root \.cs-trigger\{[^}]*transition:padding \.45s/);
  assert.match(css,/#cs-root \.cs-accordion-panel\{[^}]*transition:grid-template-rows \.45s/);
  assert.doesNotMatch(js,/ResizeObserver|requestAnimationFrame|setInterval/);
@@ -397,22 +397,15 @@ test("Collections search sits close to the summary on desktop and mobile",()=>{
  assert.ok(html.includes('class="cs-search cs-collection-search"'));
 });
 
-test("Collections loading summary uses two synchronized, text-colored circular skeletons",()=>{
- const start=html.indexOf('id="cs-summary"');
- const summary=html.slice(start,html.indexOf("</span></span>",start)+14);
+test("Collections summary uses the site-standard Text Shimmer without reflow",()=>{
+ const shimmer=src("sites/_apex/app/assets/site-text-shimmer.css");
+ const summary=html.slice(html.indexOf('id="cs-summary"'),html.indexOf('id="cs-summary"')+250);
  assert.ok(summary.includes('aria-busy="true"'));
- assert.ok(summary.includes('class="cs-summary-skeleton" aria-hidden="true"'));
- assert.equal((summary.match(/class="cs-summary-dot"/g)||[]).length,2);
- assert.ok(summary.includes('class="cs-summary-divider">/</span>'));
- assert.ok(css.includes('width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:cs-summary-spin 600ms linear infinite'));
- assert.ok(css.includes('@keyframes cs-summary-spin{to{transform:rotate(360deg)}}'));
- assert.equal((css.match(/animation:cs-summary-spin 600ms/g)||[]).length,2); // Both share one keyframe.
- assert.ok(!css.includes('background:currentColor;animation:cs-summary-pulse'));
- assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:hidden}'));
- assert.doesNotMatch(css,/#cs-root \.cs-summary-loading \.cs-summary-value\{display:none/);
- assert.match(css,/#cs-root \.cs-summary-skeleton\{display:block;position:absolute;left:0;top:\.32em/);
- assert.ok(css.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-skeleton{display:none}'));
- assert.ok(css.includes('#cs-root .cs-summary-dot{animation:none!important;opacity:.65}'));
+ assert.ok(summary.includes('class="cs-summary-value site-text-shimmer"'));
+ assert.doesNotMatch(summary,/cs-summary-skeleton|cs-summary-dot/);
+ assert.ok(css.includes('#cs-root .cs-summary-loading .cs-summary-value{visibility:visible}'));
+ assert.ok(shimmer.includes('#cs-root .cs-eyebrow:not(.cs-summary-loading) .cs-summary-value'));
+ assert.ok(shimmer.includes('animation:site-text-shimmer var(--site-shimmer-duration) linear infinite'));
  assert.ok(js.includes('setSummaryLoading(true);'));
  assert.ok(js.includes('setSummaryLoading(false);'));
  assert.ok(js.includes('summary.classList.toggle("cs-summary-loading",loading)'));
