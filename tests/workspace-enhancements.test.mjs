@@ -55,7 +55,13 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
     }
     assert.match(html,/<h1 id="projects-title">Projects<\/h1><p class="lead">/);
     assert.match(html,/<h1 id="settings-title">Settings<\/h1><p class="lead">/);
-    assert.match(html,/<h1 id="home-title">Your workspace, all in one place\.<\/h1>/);
+    if(path.includes("studio/sidebar")){
+      assert.match(html,/<h1 id="home-title">Your workspace, all in one place\.<\/h1>/);
+    }else{
+      assert.match(html,/<section class="view dashboard-home" data-view="home"/);
+      assert.match(html,/id="cta6-mosaic"/);
+      assert.match(html,/<h1 id="home-title">Workspace<\/h1>/);
+    }
   }
 });
 test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",()=>{
@@ -74,7 +80,10 @@ test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",
     const html=read(path);
     const headings=[...html.matchAll(/<section class="view[^"]*"[^>]*data-view="([^"]+)"[^>]*>[\s\S]*?<div class="page-heading"><h1 /g)];
     assert.ok(headings.length>=2,"pages retain individually targeted headings");
-    assert.match(html,/<section class="view" data-view="home"[^>]*>[\s\S]*?<div class="page-heading"><h1 id="home-title"/);
+    if(path.includes("studio/sidebar"))
+      assert.match(html,/<section class="view" data-view="home"[^>]*>[\s\S]*?<div class="page-heading"><h1 id="home-title"/);
+    else
+      assert.match(html,/<section class="view dashboard-home" data-view="home"[\s\S]*?id="cta6-mosaic"/);
   }
 });
 test("two consistent header heights, viewport layers, and a stable responsive sidebar gap",()=>{
