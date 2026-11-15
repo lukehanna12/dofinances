@@ -915,9 +915,9 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root{--cs-utility-bubble-height:34px}
 #cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height);padding:0 14px}
 #cs-root .cs-inline-utility-count{min-width:100px}
-#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height);padding:3px 5px;border:0;border-radius:999px;background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)}
+#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height);padding:3px 5px;border:0;border-radius:11px;background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)}
 #cs-root .cs-utility-action-control{position:relative;display:grid;place-items:center;flex:none;width:28px;height:28px}
-#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:999px;background:transparent;color:#f5f5f5;line-height:0;transition:color .15s ease,background-color .15s ease,transform .12s ease}
+#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent;color:#f5f5f5;line-height:0;transition:color .15s ease,background-color .15s ease,transform .12s ease}
 #cs-root .cs-utility-action img{display:block;width:14px;height:14px;object-fit:contain;pointer-events:none}
 #cs-root .cs-utility-action--add img{width:24px;height:24px}
 #cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}
@@ -931,9 +931,9 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root{--cs-utility-bubble-height:28px}
  #cs-root .cs-card-badge{padding:0 10px}
  #cs-root .cs-inline-utility-count{min-width:83px}
- #cs-root .cs-utility-toolbar{gap:2px;padding:2px 4px}
+ #cs-root .cs-utility-toolbar{gap:2px;padding:2px 4px;border-radius:9px}
  #cs-root .cs-utility-action-control{width:22px;height:24px}
- #cs-root .cs-utility-action{width:20px;height:20px}
+ #cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}
  #cs-root .cs-utility-action img{width:13px;height:13px}
  #cs-root .cs-utility-action--add img{width:20px;height:20px}
 }
@@ -972,7 +972,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
    Its native SF Symbol matches the requested local TSX definition. */
 #cs-root .cs-utility-trash-control{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:0;height:var(--cs-utility-bubble-height);opacity:0;visibility:hidden;transform:translateX(10px);pointer-events:none;transition:width var(--cs-control-swap) var(--cs-control-ease),opacity var(--cs-control-swap) var(--cs-control-ease),transform var(--cs-control-swap) var(--cs-control-ease),visibility var(--cs-control-swap)}
 #cs-root.cs-utility-selecting .cs-utility-trash-control{width:28px;opacity:1;visibility:visible;transform:translateX(0);pointer-events:auto}
-#cs-root .cs-utility-trash{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer;transition:background-color .15s ease,transform .12s ease}
+#cs-root .cs-utility-trash{display:grid;place-items:center;width:24px;height:24px;padding:0;border:0;border-radius:7px;background:transparent;cursor:pointer;transition:background-color .15s ease,transform .12s ease}
 #cs-root .cs-utility-trash:hover:not(:disabled){background:rgba(239,68,68,.14)}
 #cs-root .cs-utility-trash:disabled{cursor:default;opacity:.45}
 #cs-root .cs-utility-trash img{display:block;width:16px;height:17px;object-fit:contain;pointer-events:none}
@@ -991,7 +991,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 @media(max-width:639px){
  #cs-root.cs-utility-selecting .cs-utility-pick{width:24px;margin-left:6px}
  #cs-root .cs-utility-pick{height:26px}
- #cs-root .cs-utility-trash{width:20px;height:20px}
+ #cs-root .cs-utility-trash{width:20px;height:20px;border-radius:6px}
  #cs-root .cs-utility-trash img{width:14px;height:15px}
  #cs-root.cs-utility-selecting .cs-utility-trash-control{width:23px}
  #cs-root .cs-utility-action .cs-utility-done{width:13px;height:13px}
@@ -1034,4 +1034,19 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-collection-search .cs-search-focus{border-radius:8px 0 0 8px}
  #cs-root .cs-collection-search .cs-search-focus img{width:13px;height:13px}
  #cs-root .cs-collection-search input[type="search"]{height:26px;font-size:11px}
+}
+
+/* Utilities search shares the exact Collections search scale on both
+   breakpoints. Its flex basis/width and placement are left untouched. */
+#cs-root .cs-utility-search{height:32px;min-height:32px;border-radius:10px}
+#cs-root .cs-utility-search .cs-search-control{width:29px}
+#cs-root .cs-utility-search .cs-search-focus{border-radius:9px 0 0 9px}
+#cs-root .cs-utility-search .cs-search-focus img{width:14px;height:14px}
+#cs-root .cs-utility-search input[type="search"]{height:28px;font-size:12px}
+@media(max-width:639px){
+ #cs-root .cs-utility-search{height:30px;min-height:30px;border-radius:9px}
+ #cs-root .cs-utility-search .cs-search-control{width:27px}
+ #cs-root .cs-utility-search .cs-search-focus{border-radius:8px 0 0 8px}
+ #cs-root .cs-utility-search .cs-search-focus img{width:13px;height:13px}
+ #cs-root .cs-utility-search input[type="search"]{height:26px;font-size:11px}
 }

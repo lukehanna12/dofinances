@@ -1345,7 +1345,7 @@ test("Compact Collection search matches Refresh on both breakpoints without narr
  assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-control{width:27px}"));
  assert.ok(css.includes("#cs-root .cs-collection-search .cs-search-focus img{width:13px;height:13px}"));
  assert.ok(css.includes('#cs-root .cs-collection-search input[type="search"]{height:26px;font-size:11px}'));
- assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"),"Utility search remains unchanged");
+ assert.ok(css.includes("#cs-root .cs-utility-search{margin-top:19px;flex:none}"),"Utility search retains its original width and placement");
 });
 
 test("New sidebar symbols and externaldrive v2 preserve exact SF Symbol metadata and shapes",()=>{
@@ -1431,7 +1431,7 @@ test("Utility management is a scaled Collections-like shell matching count-bubbl
  assert.ok(css.includes("#cs-root .cs-card-badge{display:inline-flex;align-items:center;justify-content:center;flex:none;height:var(--cs-utility-bubble-height)"));
  assert.ok(css.includes("#cs-root .cs-utility-toolbar{display:inline-flex;align-items:center;justify-content:center;flex:none;gap:3px;height:var(--cs-utility-bubble-height)"));
  assert.ok(css.includes("background:#212121;background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)"));
- assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:999px;background:transparent"));
+ assert.ok(css.includes("#cs-root .cs-utility-action{position:relative;display:grid;place-items:center;flex:none;width:24px;height:24px;min-height:0;padding:0;border:0;border-radius:7px;background:transparent"));
  assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
  assert.ok(css.includes("#cs-root .cs-utility-action:not(.cs-utility-action--add):hover:not(:disabled){background:rgba(255,255,255,.065);color:#fff}"));
  assert.ok(css.includes("#cs-root .cs-utility-action{width:20px;height:20px}"));
@@ -1550,4 +1550,46 @@ test("Select Collections uses pointer.arrow.click v3 with the original selection
  assert.ok(css.includes('#cs-root.cs-collection-selecting .cs-select-done{opacity:1'));
  assert.ok(workflow.includes("cp sites/_apex/app/assets/select-collections.v3.svg dist/app/assets/select-collections.v3.svg"));
  assert.ok(workflow.includes("test -s dist/app/assets/select-collections.v3.svg"));
+});
+
+test("Utility controls are rounded squares in a rounded rectangular toolbar",()=>{
+ const toolbar=css.match(/#cs-root \.cs-utility-toolbar\{[^}]+\}/)?.[0]||"";
+ const buttons=css.match(/#cs-root \.cs-utility-action\{[^}]+\}/)?.[0]||"";
+ const trash=css.match(/#cs-root \.cs-utility-trash\{[^}]+\}/)?.[0]||"";
+ assert.ok(toolbar.includes("height:var(--cs-utility-bubble-height)"));
+ assert.ok(toolbar.includes("border-radius:11px"));
+ assert.ok(!toolbar.includes("border-radius:999px"));
+ assert.ok(buttons.includes("width:24px;height:24px"));
+ assert.ok(buttons.includes("border-radius:7px"));
+ assert.ok(trash.includes("width:24px;height:24px"));
+ assert.ok(trash.includes("border-radius:7px"));
+ assert.ok(css.includes(" #cs-root .cs-utility-toolbar{gap:2px;padding:2px 4px;border-radius:9px}"));
+ assert.ok(css.includes(" #cs-root .cs-utility-action{width:20px;height:20px;border-radius:6px}"));
+ assert.ok(css.includes(" #cs-root .cs-utility-trash{width:20px;height:20px;border-radius:6px}"));
+ assert.ok(css.includes("#cs-root .cs-utility-action--add img{width:24px;height:24px}"));
+});
+
+test("Utilities search exactly matches Collection search scale without changing its width",()=>{
+ const rules=[
+  'height:32px;min-height:32px;border-radius:10px',
+  'height:30px;min-height:30px;border-radius:9px',
+  'width:29px','width:27px',
+  'border-radius:9px 0 0 9px','border-radius:8px 0 0 8px',
+  'width:14px;height:14px','width:13px;height:13px',
+  'height:28px;font-size:12px','height:26px;font-size:11px'
+ ];
+ const suffixes=[
+  ['',rules[0]],['',rules[1]],
+  [' .cs-search-control',rules[2]],[' .cs-search-control',rules[3]],
+  [' .cs-search-focus',rules[4]],[' .cs-search-focus',rules[5]],
+  [' .cs-search-focus img',rules[6]],[' .cs-search-focus img',rules[7]],
+  [' input[type="search"]',rules[8]],[' input[type="search"]',rules[9]]
+ ];
+ for(const [suffix,body] of suffixes){
+   assert.ok(css.includes('#cs-root .cs-collection-search'+suffix+'{'+body+'}'));
+   assert.ok(css.includes('#cs-root .cs-utility-search'+suffix+'{'+body+'}'));
+ }
+ assert.ok(css.includes('#cs-root .cs-utility-search{margin-top:19px;flex:none}'));
+ assert.ok(css.includes(' #cs-root .cs-utility-search{margin-top:15px}'));
+ assert.doesNotMatch(css,/#cs-root \.cs-utility-search\{[^}]*\bwidth:/);
 });
