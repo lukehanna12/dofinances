@@ -367,9 +367,11 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  transition-timing-function:cubic-bezier(.4,0,.2,1),cubic-bezier(.4,0,.2,1),ease;
 }
 #ut-root .ut-row.ut-active .ut-row-panel{grid-template-rows:1fr;opacity:1;visibility:visible}
-#ut-root .ut-row-panel-inner{overflow:hidden;min-height:0;padding:0 32px 28px 44px}
+/* Padding on the 0fr grid item forced a nonzero minimum track height even
+   when closed. Put spacing on the descendant, not the grid track. */
+#ut-root .ut-row-panel-inner{overflow:hidden;min-height:0;padding:0}
 #ut-root .ut-row-description{
- margin:0;max-width:448px;padding:0;
+ margin:0;max-width:448px;padding:0 32px 28px 44px;
  font-size:clamp(14px,1.35vw,16px);line-height:1.65;
  white-space:pre-line;overflow-wrap:anywhere;
 }
@@ -384,7 +386,8 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-card{max-height:480px;box-shadow:0 1px 3px #00000008}
 #ut-root .ut-card-header{align-items:center}
 #ut-root .ut-card h2{font-size:clamp(16px,1.4vw,18px)}
-#ut-root .ut-mobile-detail{margin-top:24px;padding:0}
+#ut-root .ut-mobile-detail{margin-top:0;padding:0}
+#ut-root .ut-row.ut-active .ut-mobile-detail{margin-top:24px}
 #ut-root .ut-mobile-detail .ut-card{max-height:440px}
 #ut-root .ut-count{color:#a3a3a3;font-variant-numeric:tabular-nums}
 #ut-root .ut-status:not([data-error="true"]){color:#a3a3a3}
@@ -422,8 +425,8 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 @media(max-width:1023px){
  #ut-root .ut-layout,#ut-root .ut-layout.ut-open{grid-template-columns:1fr}
  #ut-root .ut-mobile-detail{display:block}
- #ut-root .ut-row-panel-inner{padding:0 0 24px}
- #ut-root .ut-row-description{padding:0 20px 0 44px}
+ #ut-root .ut-row-panel-inner{padding:0}
+ #ut-root .ut-row-description{padding:0 20px 24px 44px}
  #ut-root .ut-mobile-detail{padding:0}
 }
 @media(max-width:639px){
@@ -432,10 +435,10 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
  #ut-root .ut-row.ut-active .ut-row-main{padding:20px 24px 20px 0}
  #ut-root .ut-row-number{width:22px;font-size:10px}
  #ut-root .ut-row-title{font-size:clamp(12.5px,2.7vw,14px)}
- #ut-root .ut-row-description{padding:0 20px 0 44px}
+ #ut-root .ut-row-description{padding:0 20px 24px 44px}
  #ut-root .ut-order{max-width:160px;width:135px}
  #ut-root .ut-chevron{width:12px;height:12px}
- #ut-root .ut-mobile-detail{margin-top:20px}
+ #ut-root .ut-row.ut-active .ut-mobile-detail{margin-top:20px}
 }
 
 
