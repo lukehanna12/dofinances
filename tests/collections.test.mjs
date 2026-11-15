@@ -390,6 +390,13 @@ test("Expanded collection cards omit redundant Colosseum membership caption on d
  assert.ok(js.includes('Revision '),"Retain the actual collection revision and utility summary");
 });
 
+test("Collections search sits close to the summary on desktop and mobile",()=>{
+ assert.match(css,/#cs-root \.cs-layout\{margin-top:24px;display:grid;/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-layout\{margin-top:20px\}/);
+ assert.ok(html.includes('id="cs-summary"'));
+ assert.ok(html.includes('class="cs-search cs-collection-search"'));
+});
+
 test("Collections loading summary uses two synchronized, text-colored circular skeletons",()=>{
  const start=html.indexOf('id="cs-summary"');
  const summary=html.slice(start,html.indexOf("</span></span>",start)+14);
