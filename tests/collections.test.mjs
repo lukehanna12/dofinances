@@ -935,8 +935,11 @@ test("Collection Edit and Select cannot overlap, selected rows survive paginatio
 
 
 test("Every utility name and UID starts at a constant distance from the left edge",()=>{
- const source=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function renderPages(){"));
- const row=source.slice(source.indexOf("const content="),source.indexOf("return '<div class=\"cs-utility-row'"));
+ const start=js.indexOf("function cardMarkup(){");
+ const rowStart=js.indexOf("const content=",start);
+ const rowEnd=js.indexOf("return '<div class=\"cs-utility-row'",rowStart);
+ assert.ok(start>=0&&rowStart>start&&rowEnd>rowStart);
+ const row=js.slice(rowStart,rowEnd);
  assert.ok(row.includes("'<span class=\"cs-utility-route-slot\">'+"),
   "A leading slot must exist for every utility, even with an unknown route");
  assert.ok(row.indexOf("cs-utility-route-slot")<row.indexOf("cs-utility-info"));
