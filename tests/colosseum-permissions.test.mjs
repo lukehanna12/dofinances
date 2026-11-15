@@ -68,7 +68,7 @@ test("Permissions omits the effective-access card and the redundant authority su
  assert.ok(!script.includes('request("explain"'));
  assert.ok(!script.includes("The local permission authority is active and the gateway enforces its policy."));
  assert.match(script,/show\(available\?"":"The local permission authority is unavailable or stale; edits are disabled\.",!available\)/);
- assert.match(script,/if\(seq===loadSeq\)show\(error\.message,true\)/);
+ assert.match(script,/if\(seq===loadSeq\)\{\s*show\(error\.message,true\)/);
  assert.match(script,/finally\{working=false;render\(\);\}/);
 });
 
