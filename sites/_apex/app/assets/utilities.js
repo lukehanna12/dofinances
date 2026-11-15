@@ -272,6 +272,38 @@ export function initColosseumUtilities(){
       '<input type="text" data-ut-filter-field="'+field+'" data-ut-filter-mode="'+mode+'" placeholder="Comma-separated values" autocomplete="off">')+
     '</label>')).join("");
  }
+ // Load collection choices only on first opening of filter controls.
+ async function loadCollectionChoices(){
+  if(s.collectionChoices||s.collectionChoicePending)return;
+  s.collectionChoicePending=true;
+  try{
+   const choices=[],seen=new Set();
+   let cursor=null;
+   for(let batch=0;batch<20;batch++){
+    const response=await fetch("/api/colosseum/collections",{
+     method:cursor?"POST":"GET",credentials:"same-origin",cache:"no-store",
+     ...(cursor?{headers:{"Content-Type":"application/json"},
+       body:JSON.stringify({action:"list",page_size:100,cursor})}:{})
+    });
+    if(!response.ok)throw Error("Could not load the live Collections registry (HTTP "+response.status+").");
+    const result=await response.json();
+    if(!Array.isArray(result.collections))throw Error("Invalid live Collections registry response.");
+    choices.push(...result.collections.filter(item=>typeof item?.name==="string"));
+    if(!result.next_cursor){cursor=null;break;}
+    if(seen.has(result.next_cursor))throw Error("Repeated Collections pagination cursor.");
+    seen.add(result.next_cursor);cursor=result.next_cursor;
+   }
+   if(cursor)throw Error("The Collections registry exceeded the bounded page limit.");
+   s.collectionChoices=choices.sort((a,b)=>a.name.localeCompare(b.name));
+   for(const select of elements.fields.querySelectorAll('select[data-ut-filter-field="collections"]')){
+    const previous=select.value;
+    select.innerHTML='<option value="">Any collection</option>'+
+      s.collectionChoices.map(item=>'<option value="'+esc(item.name)+'">'+esc(item.name)+'</option>').join("");
+    select.value=previous;
+   }
+  }catch(error){actionError(error);}
+  finally{s.collectionChoicePending=false;}
+ }
  function gatherFilters(){
   const rows=[...elements.fields.querySelectorAll("[data-ut-filter-field]")].map(el=>({
    field:el.dataset.utFilterField,mode:el.dataset.utFilterMode,value:el.value
@@ -523,6 +555,7 @@ export function initColosseumUtilities(){
  elements.refresh.addEventListener("click",()=>void loadPage(0,null));
  elements.filterToggle.addEventListener("click",()=>{
   const open=elements.filters.hidden;elements.filters.hidden=!open;elements.filterToggle.setAttribute("aria-expanded",String(open));
+  if(open)void loadCollectionChoices();
  });
  elements.filters.addEventListener("submit",event=>{event.preventDefault();
   const filters=gatherFilters();s.include=filters.include;s.exclude=filters.exclude;filterDot();
