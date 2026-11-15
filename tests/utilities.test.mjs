@@ -38,12 +38,14 @@ test("Live catalog search and include/exclude filter toggle share one search bar
  assert.ok(js.includes('query,sort:elements.sort.value,page_size:s.pageSize'));
  assert.ok(js.includes('include:s.include,exclude:s.exclude'));
 });
-test("Six sort orders, separate filter modes and keyset pagination are present",()=>{
+test("Six sort orders, separate filter modes and numbered indexed-offset pagination are present",()=>{
  for(const name of ["name_asc","name_desc","uid_asc","uid_desc","time_new","time_old"])
   assert.ok(view.includes('value="'+name+'"'),"Missing "+name);
  assert.ok(js.includes('["include","exclude"]'));
- assert.ok(js.includes('s.cursors[index+1]=s.nextCursor'));
- assert.ok(js.includes('s.cursors[s.page-1]'));
+ assert.ok(js.includes('index>0?{offset:index*s.pageSize}'));
+ assert.match(js,/class="ut-page"/);
+ assert.match(js,/aria-current="page"/);
+ assert.match(js,/s\.total\/s\.pageSize/);
  assert.deepEqual(utilityFiltersFromFields([
   {field:"routes",mode:"include",value:"cloud,direct,cloud"},
   {field:"languages",mode:"exclude",value:"JavaScript, Swift"},
@@ -203,4 +205,67 @@ test("Collapsed Utilities accordions have zero intrinsic panel padding on deskto
  assert.match(css,/#ut-root \.ut-row-main,#ut-root \.ut-row\.ut-active \.ut-row-main\{\s*height:calc\(var\(--ut-row-height\) - var\(--ut-row-divider\)\);/);
  assert.match(css,/#ut-root\{--ut-row-height:54px\}/);
  assert.match(css,/#ut-root\{--ut-row-height:48px\}/);
+});
+
+test("Collections-style search focuses without requesting a catalog page",()=>{
+ assert.match(view,/class="ut-search-control"/);
+ assert.match(view,/class="ut-search-focus"/);
+ assert.match(view,/id="ut-search-submit"[^>]*aria-keyshortcuts="Meta\+Shift\+F"/);
+ assert.match(js,/elements\.submit\.addEventListener\("click",\(\)=>\{if\(!elements\.query\.disabled\)elements\.query\.focus/);
+ assert.match(css,/#ut-root \.ut-search-control\{/);
+ assert.match(css,/#ut-root \.ut-search-focus:hover/);
+});
+test("Default footer and numbered pagination match Collections",()=>{
+ assert.match(js,/first\+"–"\+Math\.min\(first\+s\.items\.length-1,s\.total\)\+" of "\+s\.total/);
+ assert.match(js,/const numbers=new Set\(\[1,pages\]\)/);
+ assert.match(js,/class="ut-page-gap"/);
+ assert.match(js,/data-ut-page="prev"/);
+ assert.match(js,/data-ut-page="next"/);
+ assert.match(js,/PAGE_LEFT/);
+ assert.match(js,/PAGE_RIGHT/);
+ assert.match(css,/#ut-root \.ut-pages \.ut-page\{/);
+ assert.match(css,/\.ut-page\[aria-current="page"\]/);
+ assert.doesNotMatch(js,/more available"\)\+" · live Colosseum/);
+});
+test("Edit Utilities dock enters inline rename mode while detailed metadata editor remains",()=>{
+ assert.match(js,/elements\.edit\.addEventListener\("click",toggleEditMode\)/);
+ assert.match(js,/function startInlineRename\(uid\)/);
+ assert.match(js,/function finishInlineRename\(restore=false\)/);
+ assert.match(js,/function enterEditMode\(\)/);
+ assert.match(js,/function exitEditMode\(\)/);
+ assert.match(js,/record:\{name:change\.name\}/);
+ assert.match(js,/expected_revision:change\.base\.revision/);
+ assert.match(js,/phase:"publish"/);
+ assert.match(js,/data-ut-start-rename/);
+ assert.match(js,/data-ut-confirm-rename/);
+ assert.match(js,/data-ut-cancel-rename/);
+ assert.match(js,/data-ut-edit/);
+ assert.match(css,/\.ut-name-underline\{/);
+ assert.match(css,/\.ut-underline-extended \.ut-name-underline\{/);
+});
+test("Select Utilities is a transient unchecked picker with native CSS swap",()=>{
+ assert.match(js,/elements\.select\.addEventListener\("click",toggleSelectMode\)/);
+ assert.match(js,/const selected=s\.selection\.has\(item\.uid\)/);
+ assert.match(js,/class="ut-row-pick"/);
+ assert.match(js,/aria-pressed="'\+String\(selected\)/);
+ assert.match(js,/function toggleRowPick\(uid\)/);
+ assert.match(js,/if\(s\.selection\.has\(uid\)\)s\.selection\.delete\(uid\);else s\.selection\.add\(uid\)/);
+ assert.doesNotMatch(js,/'<span class="ut-pick" role="img" aria-label="Select utility" aria-pressed="false">✓<\/span>'/);
+ assert.match(css,/#ut-root \.ut-select-bubble svg\{[^}]*opacity:0/);
+ assert.match(css,/#ut-root \.ut-row-pick\[aria-pressed="true"\] \.ut-select-bubble svg\{opacity:1\}/);
+ assert.match(css,/@keyframes ut-pick-enter-right/);
+ assert.match(css,/@keyframes ut-pick-exit-left/);
+ assert.match(js,/waitForMotion\(elements\.list\.querySelector\("\.ut-row-pick"\),"ut-pick-enter-right"\)/);
+});
+test("Tooltips and shortcuts are scoped to Utilities and avoid input interception",()=>{
+ for(const [id,key] of [["ut-search-submit","F"],["ut-add","N"],["ut-edit","E"],["ut-update-check","U"]]){
+  assert.match(view,new RegExp('id="'+id+'"[^>]*aria-keyshortcuts="Meta\\\\+Shift\\\\+'+key+'"'));
+ }
+ assert.match(view,/id="ut-refresh"[^>]*aria-keyshortcuts="Control\+Shift\+R"/);
+ for(const id of ["ut-search-tooltip","ut-add-tooltip","ut-edit-tooltip","ut-update-tooltip","ut-refresh-tooltip"])
+  assert.ok(view.includes('id="'+id+'"'));
+ assert.match(js,/root\.closest\("\.view"\)\?\.hidden\|\|document\.querySelector\("dialog\[open\]"\)/);
+ assert.match(js,/event\.target instanceof Element/);
+ assert.match(js,/window\.addEventListener\("keydown",event=>/);
+ assert.doesNotMatch(js,/setTimeout|setInterval|requestAnimationFrame/);
 });
