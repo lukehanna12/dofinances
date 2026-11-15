@@ -284,6 +284,20 @@ test("navigation is stationary except for the 170ms content-only arrival, withou
   assert.deepEqual(m.scrollCalls,[]);
   assert.equal(m.elements["main-navigation"].hidden,false);
 });
+test("sidebar drag survives transient pointer-capture loss without polling",async()=>{
+  const nav=await read("../sites/_apex/app/assets/workspace-nav.js");
+  assert.match(nav,/resizeHandle\.addEventListener\("pointermove",onMove\)/);
+  assert.match(nav,/doc\.addEventListener\?\.\("pointermove",event=>/);
+  assert.match(nav,/doc\.addEventListener\?\.\("pointerup",event=>/);
+  assert.match(nav,/doc\.addEventListener\?\.\("pointercancel",event=>/);
+  assert.match(nav,/resizeHandle\.addEventListener\("lostpointercapture",event=>/);
+  assert.match(nav,/if\(event\.buttons\) return;/,
+    "A held button with lost capture must not terminate the drag");
+  assert.match(nav,/event\.pointerId===drag\.pointerId/,
+    "Document fallback must be bound to the captured drag's pointer identity");
+  assert.match(nav,/pendingWidth=clampWidth\(rawWidth\)/);
+});
+
 test("dashboard HTML provides every requested view and preserves existing authentication handlers",async()=>{
   const html=await read("../sites/_apex/app/index.html");
   for(const name of MAIN_ROUTES)assert.match(html,new RegExp('data-view="'+name+'"'));
