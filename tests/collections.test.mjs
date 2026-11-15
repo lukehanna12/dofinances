@@ -1000,13 +1000,13 @@ test("Add, Edit and Select keep their controller identities inside the fixed bla
  assert.ok(!inside.includes('id="cs-refresh"'),"Refresh remains in the list header");
  assert.ok(html.indexOf('id="cs-refresh"')>end);
  assert.equal((html.match(/class="cs-control-center"/g)||[]).length,1,"No cloned toolbar or duplicate IDs");
- const anchor=css.indexOf("#cs-root .cs-control-center{\n --cs-dock-scale:2.5;");
+ const anchor=css.indexOf("#cs-root .cs-control-center{\n --cs-dock-scale:1.5;");
  assert.ok(anchor>0,"Expected the fixed dock's override after the legacy composer style");
  const block=css.slice(anchor,css.indexOf("}",anchor)+1);
- assert.ok(block.includes("--cs-dock-scale:2.5"));
+ assert.ok(block.includes("--cs-dock-scale:1.5"));
  assert.ok(block.includes("position:fixed"));
- assert.ok(block.includes("background:rgba(2,3,5,.51)"));
- assert.ok(block.includes("border:1px solid rgba(253,254,255,.27)"));
+ assert.ok(block.includes("background:rgba(0,0,0,.24)"));
+ assert.ok(block.includes("border:0"),"No guessed solid bright rim");
  assert.ok(block.includes('backdrop-filter:blur(var(--cs-oracle-blur,16px))'));
  assert.ok(block.includes("width:max-content"),"Dock remains only as wide as its buttons");
  assert.ok(!block.includes("background:#212121"),"The opaque composer style is overridden");
