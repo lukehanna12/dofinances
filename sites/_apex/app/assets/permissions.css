@@ -126,7 +126,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-choice:has(input:checked){border-color:#666;color:#f7f7f7;background:#262626}
 #pm-root .pm-choice:has(input:focus-visible){outline:2px solid #fff;outline-offset:2px}
 #pm-root .pm-choice input{position:absolute;opacity:0;width:1px;height:1px}
-#pm-root .pm-choice-mark{font-size:12px;color:#a7a7a7}
+#pm-root .pm-choice-mark{font-size:12px;color:#a7a7a7;opacity:0}
+#pm-root .pm-choice:has(input:checked) .pm-choice-mark{opacity:1}
 #pm-root .pm-choice:has(input:checked) .pm-choice-mark{color:#f7f7f7}
 #pm-root .pm-dialog-foot{display:flex;justify-content:flex-end;align-items:center;gap:9px;flex-wrap:wrap;margin-top:24px;padding-top:16px;border-top:1px solid var(--pm-line)}
 #pm-root .pm-dialog-foot .pm-remove{margin-right:auto}

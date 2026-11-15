@@ -53,15 +53,15 @@ export function initColosseumPermissions(){
   const access=BITS.map((bit,i)=>{
    const granted=!!bits[i];
    const desc=(enabled?"":"Rule disabled; ")+bit+" "+(granted?"configured":"not granted");
-   return '<span class="pm-permission-cell" role="img" title="'+esc(desc)+'" aria-label="'+esc(desc)+'">'+
+   return '<span class="pm-permission-cell" role="img" aria-label="'+esc(desc)+'">'+
     '<span class="pm-permission-mark" data-allowed="'+granted+'" aria-hidden="true">'+(granted?"✓":"–")+'</span></span>';
   }).join("");
   return '<div class="pm-rule-row" data-row="'+item.row+'" data-enabled="'+!!enabled+'">'+
-   '<button class="pm-rule-main" type="button" data-edit-rule="'+item.row+'" title="Edit '+esc(label)+'" aria-label="Edit rule for '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+
+   '<button class="pm-rule-main" type="button" data-edit-rule="'+item.row+'" aria-label="Edit rule for '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+
    '<span class="pm-rule-title">'+esc(label)+'</span><span class="pm-rule-path">'+esc(path)+'</span></button>'+
    '<div class="pm-operations">'+access+'</div>'+
    '<span class="pm-rule-status">'+(enabled?"Enabled":"Off")+'</span>'+
-   '<button class="pm-edit-rule" type="button" data-edit-rule="'+item.row+'" title="Edit rule" aria-label="Edit filesystem rule '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+pencil+'</button></div>';
+   '<button class="pm-edit-rule" type="button" data-edit-rule="'+item.row+'" aria-label="Edit filesystem rule '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+pencil+'</button></div>';
  }
  function render(){
   if(!state)return;
@@ -193,7 +193,7 @@ export function initColosseumPermissions(){
   if(!button)return;
   const line=button.closest("[data-lifecycle-key]"),input=line.querySelector("[data-lifecycle-input]");
   const value=Number(input.value);
-  if(!canEdit()||!Number.isSafeInteger(value)||!input.checkValidity()){show("Enter a valid idle duration in seconds.",true);return;}
+  if(!canEdit()||input.value.trim()===""||!Number.isSafeInteger(value)||!input.checkValidity()){show("Enter a valid idle duration in seconds.",true);return;}
   void prepare({kind:"lifecycle",key:line.dataset.lifecycleKey,value});
  });
  $("pm-confirm-pin").addEventListener("input",event=>{$("pm-confirm-apply").disabled=!/^[0-9]{4}$/.test(event.target.value)});
@@ -227,6 +227,9 @@ export function initColosseumPermissions(){
 
  // Inspect the effective authorization through the gateway, never via a
  // client-side reimplementation of path precedence.
+ const resetDecision=()=>{$("pm-effective-result").hidden=true;decisionRevision=null;};
+ $("pm-effective-form").addEventListener("input",resetDecision);
+ $("pm-effective-form").addEventListener("change",resetDecision);
  $("pm-effective-form").addEventListener("submit",async event=>{
   event.preventDefault();
   const button=$("pm-effective-submit"),out=$("pm-effective-result");

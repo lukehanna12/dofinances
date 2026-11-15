@@ -24,7 +24,7 @@ test("Only Colosseum and the two in-progress projects have GitHub repositories",
  ]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
 });
-test("Design retains the recovered source image reveal and Permissions badge geometry",()=>{
+test("Design retains the recovered source image reveal and compact Permissions registry",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
  const source=read("sites/_apex/app/assets/project-showcase.js");
  const permissions=read("sites/_apex/app/assets/permissions.css");
@@ -35,10 +35,10 @@ test("Design retains the recovered source image reveal and Permissions badge geo
  assert.match(css,/background:rgba\(0,0,0,\.6\)/);
  assert.match(css,/border-radius:16px/);
  assert.match(css,/font-size:12px;font-weight:500;line-height:18px;padding:2px 8px/);
- assert.match(permissions,/\.pm-tag\{font-size:12px;font-weight:500;.*padding:2px 8px;border-radius:4px/);
+ assert.match(permissions,/\.pm-rule-row\{min-height:56px;border-bottom:1px solid var\(--pm-line\)/);
  assert.match(css,/project-showcase-badge--soon\{background:#3b235f;color:#e9d5ff\}/);
  assert.match(css,/project-showcase-badge--progress\{background:#382409;color:#facc15\}/);
- assert.match(permissions,/\.pm-tag\{background:#382409;color:#facc15\}/);
+ assert.match(permissions,/\.pm-rule-row\[data-enabled="false"\] \.pm-rule-status\{color:#747474\}/);
  assert.match(source,/const status=project\.status==="in-progress"\?"In Progress"/);
  assert.match(store,/\["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12\/protocol-monitor-pruner"\]/);
  assert.match(source,/addEventListener\("pointerenter",reveal/);
