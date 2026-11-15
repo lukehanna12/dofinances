@@ -361,8 +361,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 }
 @media(prefers-reduced-motion:reduce){
  #cs-root *,#cs-root *::before,#cs-root *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
- #cs-root .cs-summary-dot{animation:none!important;opacity:.65}
- #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
+  #cs-root #cs-refresh.cs-refreshing::before{animation:none!important}
  #cs-root .cs-create-tooltip{transition-delay:0s!important}
 }
 
