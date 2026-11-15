@@ -266,35 +266,54 @@ export function applyReadmeMarkdownInput(root,event){
 /** Handle Enter before the browser splits a fence or horizontal-rule line. */
 export function applyReadmeMarkdownBeforeInput(root,event){
  if(!root||!event?.cancelable||event.isComposing)return false;
- // Transform before Chromium edits its contenteditable DOM. Rewriting in the
- // later input event can cause the browser to discard the restored selection
- // (e.g. typing after # followed by space). beforeinput is caret-safe.
+ // Removing the active text node synchronously inside beforeinput can make
+ // Chromium revoke its Selection when the key event finishes. Cancel the
+ // trigger, then transform in a one-shot post-event task. This is neither
+ // polling nor a document re-render; the caret stays in the same document.
+ const defer=(ctx,operation)=>{
+  event.preventDefault();
+  setTimeout(()=>{
+   if(!root.isConnected||!root.isContentEditable||!root.contains(ctx.node))return;
+   operation();
+  },0);
+  return true;
+ };
  if(event.inputType==="insertText"&&typeof event.data==="string"){
   const ctx=selectedCaret(root);
   if(ctx){
-   let transformed=false;
-   if(event.data===" "||event.data==="\u00a0")
-    transformed=applyBlock(root,ctx,"space"," ");
-   else if(event.data.length===1&&RULE_ENDING.test(event.data))
-    transformed=applyInline(root,ctx,event.data);
-   if(transformed){event.preventDefault();return true;}
+   if(event.data===" "||event.data==="\u00a0"){
+    const block=nearestBlock(root,ctx.node);
+    if(block){
+     const {prefix}=prefixToCaret(ctx,block);
+     const rule=readmeBlockRule(prefix+" ",{trigger:"space",inList:block.localName==="li"});
+     if(rule&&(!["task"].includes(rule.kind)||block.localName==="li"))
+      return defer(ctx,()=>applyBlock(root,ctx,"space"," "));
+    }
+   }else if(event.data.length===1&&RULE_ENDING.test(event.data)&&
+      !ctx.node.parentElement?.closest("code,pre,kbd,samp,a")){
+    const rule=readmeInlineRule(ctx.node.data.slice(0,ctx.offset)+event.data);
+    if(rule&&(rule.kind!=="image"||/^https:\/\//i.test(rule.href)))
+     return defer(ctx,()=>applyInline(root,ctx,event.data));
+   }
   }
  }
- // Wrapping a selected word with a single backtick is a useful direct-edit
- // convenience in addition to the usual typing of both delimiters.
+ // Selected text + a backtick is a one-gesture inline-code shortcut.
  if(event.inputType==="insertText"&&event.data==="\x60"){
   const selection=root.ownerDocument.getSelection?.();
   if(selection&&!selection.isCollapsed&&selection.rangeCount&&
     root.contains(selection.anchorNode)&&root.contains(selection.focusNode)){
-   const range=selection.getRangeAt(0);
+   const range=selection.getRangeAt(0).cloneRange();
    if(!range.startContainer.parentElement?.closest("code,pre")){
     const content=selection.toString();
     if(content&&!content.includes("\n")){
      event.preventDefault();
-     const code=root.ownerDocument.createElement("code");code.textContent=content;
-     range.deleteContents();range.insertNode(code);
-     placeCaret(root.ownerDocument,code.parentNode,
-      Array.prototype.indexOf.call(code.parentNode.childNodes,code)+1);
+     setTimeout(()=>{
+      if(!root.isConnected||!root.isContentEditable||!root.contains(range.startContainer))return;
+      const code=root.ownerDocument.createElement("code");code.textContent=content;
+      range.deleteContents();range.insertNode(code);
+      placeCaret(root.ownerDocument,code.parentNode,
+       Array.prototype.indexOf.call(code.parentNode.childNodes,code)+1);
+     },0);
      return true;
     }
    }
@@ -303,15 +322,12 @@ export function applyReadmeMarkdownBeforeInput(root,event){
  if(!["insertParagraph","insertLineBreak"].includes(event.inputType))return false;
  const ctx=selectedCaret(root);
  if(!ctx)return false;
- if(ctx.node.parentElement?.closest("pre > code")){
-  event.preventDefault();
-  return handleCodeEnter(root,ctx);
- }
+ if(ctx.node.parentElement?.closest("pre > code"))
+  return defer(ctx,()=>handleCodeEnter(root,ctx));
  const block=nearestBlock(root,ctx.node);
  if(!block||!["p","div"].includes(block.localName))return false;
  const {prefix}=prefixToCaret(ctx,block);
  const rule=readmeBlockRule(prefix,{trigger:"enter"});
  if(!rule||!["fence","hr"].includes(rule.kind))return false;
- event.preventDefault();
- return applyBlock(root,ctx,"enter");
+ return defer(ctx,()=>applyBlock(root,ctx,"enter"));
 }
