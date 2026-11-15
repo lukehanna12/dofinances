@@ -2,6 +2,7 @@
 // diff, repository association, and encrypted GitHub connection in Settings.
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
+import {renderProjectShowcase} from "./project-showcase.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
 import {installReadmeEditorInteractions} from "./readme-editor-interactions.js";
@@ -205,23 +206,8 @@ export function initProjectReadme(){
   if(target===reading)state.renderReady=true;
  }
  function populateProjectCards(projects){
-  const fragment=document.createDocumentFragment();
-  for(const p of projects){
-   const link=document.createElement("a");link.className="project-card";link.href="#"+slugRoute(p.slug);
-   link.setAttribute("aria-label","Open "+p.name+" project");
-   const emblem=document.createElement("span");emblem.className="project-emblem large";emblem.textContent=p.name.charAt(0).toUpperCase();
-   const copy=document.createElement("span");copy.className="project-card-copy";
-   const title=document.createElement("strong");title.textContent=p.name;
-   const meta=document.createElement("span");meta.textContent=p.repository||"Local README · No GitHub repository";
-   copy.append(title,meta);
-   const arrow=document.createElement("span");arrow.className="open-project";
-   const icon=document.createElementNS("http://www.w3.org/2000/svg","svg");
-   icon.setAttribute("class","nav-icon");icon.setAttribute("aria-hidden","true");
-   const use=document.createElementNS("http://www.w3.org/2000/svg","use");use.setAttribute("href","#icon-chevron");
-   icon.append(use);arrow.append(icon);link.append(emblem,copy,arrow);fragment.append(link);
-  }
-  cards.replaceChildren(fragment);
-  $("project-count").textContent=projects.length+" project"+(projects.length===1?"":"s");
+  const count=renderProjectShowcase(cards,projects,slugRoute);
+  $("project-count").textContent=count+" project"+(count===1?"":"s");
   setWorkspaceProjectRegistry(projects);
  }
  async function loadProjects(){
@@ -434,6 +420,7 @@ export function initProjectReadme(){
  function routeChanged(){void loadReadme();}
  window.addEventListener("hashchange",routeChanged);
  window.addEventListener("popstate",routeChanged);
+ populateProjectCards([]); // Render the curated cards before the account API responds.
  void loadProjects().then(()=>{if(active())void loadReadme()});
  void refreshConnection();
 }

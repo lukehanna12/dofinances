@@ -14,9 +14,13 @@ export class AuthStore extends FederatedAuthStore{
  }
  projectsSeed(userId){
   // Idempotent per-account initialization, also for accounts created pre-projects.
-  for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIG Reader",null]]){
+  for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"]]){
    this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,repository,template(name),NOW());
   }
+  // Upgrade previous repository-less Apple Reader records without overriding
+  // user-associated repositories or the account's saved README.
+  this.sql.exec("UPDATE project_records SET name='Apple HIGs Reader',repository='lukehanna12/apple-higs-reader' WHERE user_id=? AND slug='apple-hig-reader' AND repository IS NULL",userId);
+  this.sql.exec("UPDATE project_records SET name='Apple HIGs Reader' WHERE user_id=? AND slug='apple-hig-reader' AND name='Apple HIG Reader'",userId);
  }
  projectList({userId}){
   if(typeof userId!=="string"||!userId)return {status:401,error:"Sign-in required."};

@@ -1,0 +1,95 @@
+/* Colosseum utility 0001c4: How It Works 2 — native Projects adaptation.
+   Numbered markers, rounded three-column layout, hover image crossfade,
+   black 60% overlay, and fine divider rows. */
+.view[data-view="projects"] .project-showcase-heading{margin-bottom:22px}
+.view[data-view="projects"] .project-showcase-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,1.8vw,24px);margin:0 0 42px;align-items:stretch}
+.view[data-view="projects"] .project-showcase-card{
+ position:relative;isolation:isolate;overflow:hidden;min-width:0;
+ min-height:clamp(400px,36vw,500px);border-radius:16px;
+ display:flex;flex-direction:column;background:#242424;color:#f5f5f5;
+ text-decoration:none;cursor:default;box-shadow:0 1px 1px rgba(0,0,0,.12);
+ animation:project-showcase-enter .5s both;
+ animation-delay:calc(min(var(--project-index,0),12)*65ms)
+}
+.view[data-view="projects"] .project-showcase-card.is-active{cursor:pointer}
+.view[data-view="projects"] .project-showcase-card:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px}
+.view[data-view="projects"] .project-showcase-photo,.view[data-view="projects"] .project-showcase-shade{
+ position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none
+}
+.view[data-view="projects"] .project-showcase-photo{
+ object-fit:cover;object-position:center;opacity:0;transform:scale(1.1);
+ transition:opacity .5s ease-out,transform .5s ease-out
+}
+.view[data-view="projects"] .project-showcase-shade{
+ background:rgba(0,0,0,.6);opacity:0;transition:opacity .4s ease-out
+}
+.view[data-view="projects"] .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+ opacity:1;transform:scale(1)
+}
+.view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
+.view[data-view="projects"] .project-showcase-content{
+ position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
+ min-height:100%;padding:clamp(24px,2.4vw,32px) clamp(24px,2.4vw,32px) 0
+}
+.view[data-view="projects"] .project-showcase-upper{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0}
+.view[data-view="projects"] .project-showcase-top{
+ display:flex;justify-content:space-between;align-items:flex-start;
+ gap:10px;width:100%;margin-bottom:18px
+}
+.view[data-view="projects"] .project-showcase-number{
+ display:grid;place-items:center;flex:none;width:32px;height:32px;
+ border-radius:50%;font-size:14px;font-weight:700;background:#fff;color:#171717
+}
+/* Exactly the Permissions Active badge font, padding and corner radius. */
+.view[data-view="projects"] .project-showcase-badge{
+ font-size:12px;font-weight:500;line-height:18px;padding:2px 8px;
+ border-radius:4px;white-space:nowrap;background:#173827;color:#86efac
+}
+.view[data-view="projects"] .project-showcase-badge--soon{background:#3b235f;color:#e9d5ff}
+.view[data-view="projects"] .project-showcase-title{
+ display:block;font-weight:500;font-size:clamp(21px,2vw,30px);
+ line-height:1.16;letter-spacing:-.035em;overflow-wrap:anywhere;
+ margin:0 0 10px;color:#fff
+}
+.view[data-view="projects"] .project-showcase-action{
+ display:inline-flex;align-items:center;gap:8px;color:#bdbdbd;
+ font-size:14px;font-weight:500;line-height:1.5;transition:color .3s ease
+}
+.view[data-view="projects"] .project-showcase-action svg{transition:transform .2s ease}
+.view[data-view="projects"] .project-showcase-card.is-active:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(4px)}
+.view[data-view="projects"] .project-showcase-card:is(:hover,:focus-within) .project-showcase-action{color:rgba(255,255,255,.9)}
+.view[data-view="projects"] .project-showcase-details{
+ display:block;margin:20px calc(-1*clamp(24px,2.4vw,32px)) 0
+}
+.view[data-view="projects"] .project-showcase-row{
+ padding:12px clamp(24px,2.4vw,32px);border-top:1px solid #414141;
+ color:#d5d5d5;font-size:14px;line-height:1.5;overflow-wrap:anywhere;
+ transition:border-color .3s ease,color .3s ease
+}
+.view[data-view="projects"] .project-showcase-card:is(:hover,:focus-within) .project-showcase-row{
+ border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.9)
+}
+@keyframes project-showcase-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@media(min-width:1024px){
+ html:has(body > #workspace-shell .view[data-view="projects"]:not([hidden]))
+ body:has(> #workspace-shell) .content{max-width:none;width:100%}
+}
+@media(max-width:1099px){
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:699px){
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+ .view[data-view="projects"] .project-showcase-card{min-height:400px}
+ .view[data-view="projects"] .project-showcase-content{padding:24px 24px 0}
+ .view[data-view="projects"] .project-showcase-details{margin-left:-24px;margin-right:-24px}
+ .view[data-view="projects"] .project-showcase-row{padding:12px 24px}
+ .view[data-view="projects"] .project-showcase-title{font-size:clamp(23px,6vw,30px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .view[data-view="projects"] .project-showcase-card{animation:none}
+ .view[data-view="projects"] .project-showcase-photo,
+ .view[data-view="projects"] .project-showcase-shade,
+ .view[data-view="projects"] .project-showcase-action,
+ .view[data-view="projects"] .project-showcase-action svg,
+ .view[data-view="projects"] .project-showcase-row{transition:none}
+}
