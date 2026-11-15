@@ -35,7 +35,7 @@ test("Live catalog search and include/exclude filter toggle share one search bar
  assert.ok(view.includes('id="ut-filter-fields"'));
  assert.ok(js.includes('const API="/api/colosseum/utilities"'));
  assert.ok(js.includes('action:"list"'));
- assert.ok(js.includes('query,sort:elements.sort.value,page_size:25'));
+ assert.ok(js.includes('query,sort:elements.sort.value,page_size:s.pageSize'));
  assert.ok(js.includes('include:s.include,exclude:s.exclude'));
 });
 test("Six sort orders, separate filter modes and keyset pagination are present",()=>{
@@ -110,4 +110,34 @@ test("Read-only Utilities endpoint retains the existing sole-owner security stac
  assert.ok(edge.includes('request.headers.get("Origin")!=="https://dofinances.com"'));
  assert.ok(!view.includes('Nothing here yet'));
  assert.ok(!/ title="/.test(view),"No browser-native hover tooltips");
+});
+
+test("Utilities exactly matches the Collections title handoff and black canvas",async()=>{
+ const {utilitiesTitleFrame,initUtilitiesTitleTransition}=await import("../sites/_apex/app/assets/utilities-title-transition.js");
+ const {collectionsTitleFrame}=await import("../sites/_apex/app/assets/collections-title-transition.js");
+ assert.equal(typeof initUtilitiesTitleTransition,"function");
+ for(const scroll of [0,20,56,71,72,73,160])
+  assert.deepEqual(utilitiesTitleFrame(scroll,{top:140-scroll,height:52},{bottom:94}),
+    collectionsTitleFrame(scroll,{top:140-scroll,height:52},{bottom:94}));
+ const nav=source("sites/_apex/app/assets/workspace-nav.js");
+ assert.match(nav,/utilitiesTitleTransition\.setRoute\(route\)/);
+ assert.match(css,/--ui-canvas:#0a0a0a/);
+ assert.match(css,/body\.utilities-title-transition\.utilities-title-passed #project-utilities-title/);
+ assert.match(css,/body\.utilities-title-transition #workspace-shell \.shadcn-breadcrumb-item/);
+ assert.match(css,/body\.utilities-title-transition #workspace-shell \.topbar > \.utilities-inline-title/);
+ const entry=source(".github/workflows/site.yml");
+ assert.ok(entry.includes("cp sites/_apex/app/assets/utilities-title-transition.js dist/app/assets/utilities-title-transition.js"));
+});
+test("Collection filter choices are loaded only when opened and never polled",()=>{
+ assert.ok(js.includes('["collections","Collection",[]]'));
+ assert.ok(js.includes('async function loadCollectionChoices()'));
+ assert.ok(js.includes('method:cursor?"POST":"GET"'));
+ assert.ok(js.includes('if(open)void loadCollectionChoices();'));
+ assert.ok(js.includes('collection_names'));
+ assert.ok(js.includes('s.pageSize:10')||js.includes('pageSize:10'));
+ assert.ok(css.includes('appearance:none;-webkit-appearance:none'));
+ assert.ok(css.includes('background-position:right 10px center'));
+ assert.ok(css.includes('.ut-title-measure'));
+ assert.ok(css.includes('.ut-row.ut-active .ut-row-main{padding:21px'));
+ assert.ok(css.includes('max-height:480px'));
 });

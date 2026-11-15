@@ -104,6 +104,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-nav.js dist/app/assets/workspace-nav.js
           cp sites/_apex/app/assets/workspace-rail-tooltips.js dist/app/assets/workspace-rail-tooltips.js
           cp sites/_apex/app/assets/collections-title-transition.js dist/app/assets/collections-title-transition.js
+          cp sites/_apex/app/assets/utilities-title-transition.js dist/app/assets/utilities-title-transition.js
           cp sites/_apex/app/assets/workspace-scroll.js dist/app/assets/workspace-scroll.js
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
@@ -138,6 +139,7 @@ jobs:
           cp sites/_apex/assets/site-foundation.css dist/assets/site-foundation.css
           test -s dist/app/assets/workspace-rail-tooltips.js
           test -s dist/app/assets/collections-title-transition.js
+          test -s dist/app/assets/utilities-title-transition.js
           test -s dist/app/assets/magnifying-glass.v2.svg
           test -s dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/collections-screen-sidebar-icon.v1.svg
