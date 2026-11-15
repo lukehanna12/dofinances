@@ -99,6 +99,56 @@ test("Permissions hides the registry legend and authority metadata, and mirrors 
  assert.match(script,/refresh\.setAttribute\("aria-busy","false"\)/);
 });
 
+test("Permissions mirrors Collections' count and rule-loading skeletons without shifting content",()=>{
+ const view=index.slice(index.indexOf('data-view="colosseum/permissions"'),index.indexOf('data-view="colosseum/diagnostics"'));
+ assert.match(view,/class="pm-eyebrow pm-count-loading"/);
+ assert.match(view,/class="pm-count-value"/);
+ assert.match(view,/class="pm-count-skeleton"/);
+ assert.match(view,/class="pm-count-ring"/);
+ assert.match(view,/id="pm-cards"[^>]*aria-busy="true"/);
+ assert.match(styles,/\.pm-count-loading \.pm-count-value\{visibility:hidden\}/);
+ assert.match(styles,/\.pm-count-ring:first-child/);
+ assert.match(styles,/\.pm-count-ring:last-child/);
+ assert.match(styles,/\.pm-list-loading/);
+ assert.match(styles,/site-skeleton-pulse 2s/);
+ assert.match(script,/function alignSummarySkeleton\(\)/);
+ assert.match(script,/function showLoadingSkeleton\(\)/);
+ assert.match(script,/const skeletonWidths=\[68,56,79,45,72,59,83,52\]/);
+ assert.match(script,/if\(state\)return; \/\/ Like Collections/);
+ assert.match(script,/summaryLoading\(true\)/);
+ assert.match(script,/summaryLoading\(false\)/);
+ assert.match(script,/\.classList\.toggle\("pm-list-loading",value\)/);
+});
+
+test("Optional device unlock uses platform WebAuthn PRF encryption; gateway PIN remains mandatory",async()=>{
+ const vault=await fs.readFile(new URL("../sites/_apex/app/assets/permissions-device-unlock.js",import.meta.url),"utf8");
+ const view=index.slice(index.indexOf('data-view="colosseum/permissions"'),index.indexOf('data-view="colosseum/diagnostics"'));
+ assert.match(view,/id="pm-device-enroll"/);
+ assert.match(view,/id="pm-device-remove"/);
+ assert.match(view,/id="pm-confirm-device"/);
+ assert.match(view,/id="pm-confirm-pin"/);
+ assert.match(script,/from "\.\/permissions-device-unlock\.js"/);
+ assert.match(script,/await enrollDeviceUnlock\(pin\)/);
+ assert.match(script,/const pin=await unlockDevicePIN\(\)/);
+ assert.match(script,/await applyPending\(pin\)/);
+ assert.match(script,/await clearDeviceUnlock\(\)\.catch/);
+ assert.match(script,/request\("confirm",\{token:pending\.token,pin\}\)/);
+ assert.match(vault,/navigator\.credentials\.create/);
+ assert.match(vault,/navigator\.credentials\.get/);
+ assert.match(vault,/authenticatorAttachment:"platform"/);
+ assert.match(vault,/userVerification:"required"/);
+ assert.match(vault,/extensions:\{prf:/);
+ assert.match(vault,/auth\[32\]&0x04/);
+ assert.match(vault,/crypto\.subtle\.encrypt\(\{name:"AES-GCM"/);
+ assert.match(vault,/crypto\.subtle\.decrypt\(\{name:"AES-GCM"/);
+ assert.match(vault,/indexedDB\.open/);
+ assert.ok(!vault.includes("localStorage"));
+ assert.ok(!vault.includes("sessionStorage"));
+ assert.ok(!vault.includes("fetch("));
+ assert.ok(!vault.includes("pin,ENTRY"));
+ assert.match(router,/return colosseumCatalogForward\(request,env,"permissions\.manage"\)/);
+});
+
 test("DoFinances enforces its current immutable owner identity and Cloudflare Access before policy mutations",()=>{
  assert.match(router,/const permissions=pathname==="\/api\/colosseum\/permissions"/);
  assert.match(router,/verifyColosseumOwnerJwt/);

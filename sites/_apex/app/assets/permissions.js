@@ -1,3 +1,4 @@
+import {supportsDeviceUnlock,hasDeviceUnlock,enrollDeviceUnlock,unlockDevicePIN,clearDeviceUnlock} from "./permissions-device-unlock.js";
 const API="/api/colosseum/permissions";
 const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const MIB=1048576,GIB=1073741824;
@@ -18,6 +19,43 @@ export function initColosseumPermissions(){
  const $=id=>root.querySelector("#"+id);
  const show=(message,error=false)=>{const n=$("pm-notice");n.textContent=message||"";n.dataset.error=error?"true":"false";};
  const canEdit=()=>state?.source==="local"&&state.policyCurrent===true&&!working;
+
+ // The Collections summary uses two accurately positioned loading rings and
+ // keeps the text's inline geometry intact during refresh.
+ const summary=$("pm-count"),summaryValue=summary.querySelector(".pm-count-value");
+ function alignSummarySkeleton(){
+  const node=summaryValue.firstChild;
+  if(!node||node.nodeType!==3)return;
+  const value=node.textContent,index=value.indexOf(" / ");
+  if(index<0)return;
+  const base=summary.getBoundingClientRect(),range=document.createRange();
+  const center=(a,b)=>{
+   range.setStart(node,a);range.setEnd(node,b);
+   const rect=range.getBoundingClientRect();
+   return rect.left-base.left+rect.width/2;
+  };
+  summary.style.setProperty("--pm-ring-first",center(0,index)+"px");
+  summary.style.setProperty("--pm-ring-second",center(index+3,value.length)+"px");
+  range.setStart(node,index+1);range.setEnd(node,index+2);
+  summary.style.setProperty("--pm-ring-slash",range.getBoundingClientRect().left-base.left+"px");
+ }
+ const skeletonWidths=[68,56,79,45,72,59,83,52];
+ function showLoadingSkeleton(){
+  if(state)return; // Like Collections, preserve real rows on subsequent refresh.
+  $("pm-cards").innerHTML=skeletonWidths.map((width,i)=>
+   '<div class="pm-rule-row pm-rule-row--skeleton" aria-hidden="true">'+
+    '<div class="pm-skeleton-copy"><span class="pm-skeleton-number">'+String(i+1).padStart(2,"0")+'</span>'+
+    '<span class="pm-skeleton-text site-skeleton" data-slot="skeleton" style="--site-skeleton-text-width:'+width+'%"></span></div>'+
+    '<span></span><span></span><span></span></div>').join("");
+ }
+ function summaryLoading(value){
+  summary.classList.toggle("pm-count-loading",value);
+  summary.setAttribute("aria-busy",String(value));
+  $("pm-cards").setAttribute("aria-busy",String(value));
+  $("pm-cards").classList.toggle("pm-list-loading",value);
+  if(value){alignSummarySkeleton();showLoadingSkeleton();}
+ }
+
  async function request(action,data={},method="POST"){
   const opts={method,cache:"no-store",credentials:"same-origin",headers:{Accept:"application/json"}};
   if(method==="POST"){opts.headers["Content-Type"]="application/json";opts.body=JSON.stringify({action,...data});}
@@ -38,6 +76,7 @@ export function initColosseumPermissions(){
   refresh.disabled=true;
   refresh.classList.add("pm-refreshing");
   refresh.setAttribute("aria-busy","true");
+  summaryLoading(true);
   show("Reading the local gateway's effective permissions…");
   try{
    const reply=await request("status",{},"GET");
@@ -45,11 +84,17 @@ export function initColosseumPermissions(){
    state=reply;closeRule();render();
    const available=state.source==="local"&&state.policyCurrent===true;
    show(available?"":"The local permission authority is unavailable or stale; edits are disabled.",!available);
-  }catch(error){if(seq===loadSeq)show(error.message,true);}
+  }catch(error){
+   if(seq===loadSeq){
+    show(error.message,true);
+    if(!state)$("pm-cards").innerHTML='<p class="pm-empty">Unable to load permission rules. Refresh to try again.</p>';
+   }
+  }
   finally{
    if(seq===loadSeq){
     refresh.classList.remove("pm-refreshing");
     refresh.setAttribute("aria-busy","false");
+    summaryLoading(false);
     refresh.disabled=false;
    }
   }
@@ -77,7 +122,8 @@ export function initColosseumPermissions(){
  function render(){
   if(!state)return;
   const rows=allRows(),local=state.source==="local";
-  $("pm-count").textContent=rows.length+" RULES / "+rows.filter(x=>!!rowValues(x)[0]).length+" ENABLED";
+  summaryValue.textContent=rows.length+" RULES / "+rows.filter(x=>!!rowValues(x)[0]).length+" ENABLED";
+  alignSummarySkeleton();
   $("pm-add").disabled=!canEdit();
   $("pm-pin-status").textContent=state.pinConfigured?"Hazard PIN configured":"Hazard PIN not configured";
   $("pm-pin-edit").disabled=!canEdit();
@@ -150,11 +196,13 @@ export function initColosseumPermissions(){
    $("pm-confirm-title").textContent=reply.title;
    $("pm-confirm-copy").textContent=reply.message;
    $("pm-confirm-pin-label").hidden=!reply.requiresPin;
+   $("pm-confirm-device-wrap").hidden=true;
    $("pm-confirm-pin").value="";
    $("pm-confirm-apply").disabled=!!reply.requiresPin;
    $("pm-confirm-apply").textContent=reply.severity==="hazard"?"Apply change":reply.severity==="warning"?"Continue":"Confirm";
    $("pm-confirm-error").textContent="";
    $("pm-confirm").showModal();
+   if(reply.requiresPin)void showDeviceConfirm(reply.token);
   }catch(error){
    show(error.message,true);closeRule();await load().catch(()=>{});
   }finally{working=false;render();}
@@ -208,22 +256,74 @@ export function initColosseumPermissions(){
  }
  $("pm-confirm-cancel").addEventListener("click",()=>void cancel());
  $("pm-confirm").addEventListener("cancel",event=>{event.preventDefault();void cancel();});
- $("pm-confirm-apply").addEventListener("click",async()=>{
-  if(!pending||working)return;working=true;
+ // A WebAuthn PRF vault unlocks an encrypted PIN locally after real device
+ // verification; the existing gateway always checks the PIN on confirm.
+ async function showDeviceConfirm(token){
+  if(!supportsDeviceUnlock()||!await hasDeviceUnlock()||pending?.token!==token)return;
+  $("pm-confirm-device-wrap").hidden=false;
+  $("pm-confirm-device").focus({preventScroll:true});
+ }
+ async function applyPending(pin){
+  if(!pending||working)return;
+  working=true;
   try{
-   const reply=await request("confirm",{token:pending.token,pin:$("pm-confirm-pin").value});
+   const reply=await request("confirm",{token:pending.token,pin});
    pending=null;state=reply.state;$("pm-confirm").close();closeRule();render();
    show("The local gateway applied the confirmed policy revision.");
   }catch(error){$("pm-confirm-error").textContent=error.message;}
   finally{working=false;render();}
+ }
+ $("pm-confirm-device").addEventListener("click",async()=>{
+  if(!pending?.requiresPin||working)return;
+  const button=$("pm-confirm-device");
+  button.disabled=true;$("pm-confirm-error").textContent="";
+  try{
+   const pin=await unlockDevicePIN();
+   await applyPending(pin);
+  }catch(error){$("pm-confirm-error").textContent=error.message||"Device verification failed. Enter the PIN instead.";}
+  finally{button.disabled=false;}
+ });
+ $("pm-confirm-apply").addEventListener("click",()=>void applyPending($("pm-confirm-pin").value));
+ async function syncDeviceSetup(){
+  const supported=supportsDeviceUnlock();
+  $("pm-device-setup").hidden=!supported;
+  if(!supported)return;
+  const enrolled=await hasDeviceUnlock();
+  $("pm-device-status").textContent=enrolled?"Device unlock enrolled on this browser.":"Device unlock not enrolled on this browser.";
+  $("pm-device-remove").hidden=!enrolled;
+  $("pm-device-enroll").disabled=!state?.pinConfigured;
+ }
+ $("pm-device-enroll").addEventListener("click",async()=>{
+  if(!state?.pinConfigured||!supportsDeviceUnlock())return;
+  const pin=$("pm-pin-current").value;
+  if(!/^[0-9]{4}$/.test(pin)){
+   $("pm-pin-error").textContent="Enter your existing four-digit PIN above before enabling device unlock.";
+   return;
+  }
+  const button=$("pm-device-enroll");button.disabled=true;
+  $("pm-pin-error").textContent="";$("pm-device-status").textContent="Complete verification on your device…";
+  try{
+   await enrollDeviceUnlock(pin);
+   $("pm-pin-current").value="";
+   await syncDeviceSetup();
+   notify("Device unlock enrolled. The gateway will still verify your PIN.");
+  }catch(error){$("pm-pin-error").textContent=error.message||"Device enrollment failed.";await syncDeviceSetup();}
+  finally{button.disabled=false;}
+ });
+ $("pm-device-remove").addEventListener("click",async()=>{
+  try{await clearDeviceUnlock();await syncDeviceSetup();notify("Device unlock removed from this browser.");}
+  catch(error){$("pm-pin-error").textContent=error.message;}
  });
  $("pm-pin-edit").addEventListener("click",()=>{
   $("pm-pin-current").value="";$("pm-pin-new").value="";$("pm-pin-error").textContent="";$("pm-pin-dialog").showModal();
+  void syncDeviceSetup();
  });
  $("pm-pin-cancel").addEventListener("click",()=>$("pm-pin-dialog").close());
  $("pm-pin-save").addEventListener("click",async()=>{
   try{const reply=await request("set_pin",{pin:$("pm-pin-new").value,currentPin:$("pm-pin-current").value});
-   state=reply;$("pm-pin-dialog").close();render();notify("Hazard PIN updated.");
+   state=reply;$("pm-pin-dialog").close();render();
+   await clearDeviceUnlock().catch(()=>{});
+   notify("Hazard PIN updated. Re-enroll device unlock if desired.");
   }catch(error){$("pm-pin-error").textContent=error.message;}
  });
  $("pm-refresh").addEventListener("click",()=>{if(!$("pm-refresh").disabled)void load();});
