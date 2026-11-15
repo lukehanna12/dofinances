@@ -319,3 +319,29 @@ test("active global navigation title is styled like every other title",()=>{
   assert.match(css,/\.shadcn-breadcrumb-link,.shadcn-breadcrumb-page\{[\s\S]*?font-family:inherit;font-weight:inherit;letter-spacing:inherit;[\s\S]*?text-align:left;vertical-align:baseline/);
   assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-secondary\);font-weight:inherit/);
 });
+
+test("user-supplied DoFinances PNG is always at the upper bar's left, with the clock beside it on desktop",()=>{
+ const logoSrc="/app/assets/dofinances-logo-header.v1.png";
+ for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+  const html=read(file);
+  const navStart=html.indexOf('<nav class="global-menu"');
+  const logo=html.indexOf('class="global-header-logo" data-global-route href="#home" aria-label="DoFinances home"');
+  const clock=html.indexOf('id="global-clock"');
+  assert.ok(navStart>=0&&logo>navStart&&logo<clock,"Logo must precede upper clock: "+file);
+  assert.ok(html.slice(logo,clock).includes('id="global-header-logo-image"'));
+  assert.ok(html.slice(logo,clock).includes('src="'+logoSrc+'"'));
+  const lower=html.match(/<header class="topbar">([\\s\\S]*?)<\\/header>/)?.[1]||"";
+  assert.doesNotMatch(lower,/global-header-logo/,"Lower topbar must remain unchanged");
+ }
+ const png=readFileSync(new URL("../sites/_apex/app/assets/dofinances-logo-header.v1.png",import.meta.url));
+ assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
+ assert.equal(png.readUInt32BE(16),111);
+ assert.equal(png.readUInt32BE(20),96);
+ const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+ assert.match(css,/\\.global-header-logo\\{[\\s\\S]*?flex:0 0 36px;width:36px;height:36px/);
+ assert.match(css,/\\.global-header-logo-image\\{[\\s\\S]*?height:32px;object-fit:contain/);
+ assert.match(css,/@media\\(max-width:1279px\\)\\{\\s*\\.global-header-logo\\{[\\s\\S]*?position:absolute;top:50%;left:clamp\\(14px,2\\.1vw,32px\\)/);
+ const workflow=read("../.github/workflows/site.yml");
+ assert.ok(workflow.includes("cp sites/_apex/app/assets/dofinances-logo-header.v1.png dist/app/assets/dofinances-logo-header.v1.png"));
+ assert.ok(workflow.includes("test -s dist/app/assets/dofinances-logo-header.v1.png"));
+});

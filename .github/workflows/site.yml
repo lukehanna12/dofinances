@@ -111,6 +111,7 @@ jobs:
           cp sites/_apex/app/assets/workspace-wallpapers.js dist/app/assets/workspace-wallpapers.js
           cp sites/_apex/app/assets/workspace-wallpapers.css dist/app/assets/workspace-wallpapers.css
           cp sites/_apex/app/assets/workspace-enhancements.css dist/app/assets/workspace-enhancements.css
+          cp sites/_apex/app/assets/dofinances-logo-header.v1.png dist/app/assets/dofinances-logo-header.v1.png
           cp sites/_apex/app/assets/magnifying-glass.v2.svg dist/app/assets/magnifying-glass.v2.svg
           cp sites/_apex/app/assets/dashboard-screen-sidebar-icon.v1.svg dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
           cp sites/_apex/app/assets/collections-screen-sidebar-icon.v1.svg dist/app/assets/collections-screen-sidebar-icon.v1.svg
@@ -144,6 +145,7 @@ jobs:
           test -s dist/app/assets/utilities-title-transition.js
           test -s dist/app/assets/workspace-title-transition.js
           test -s dist/app/assets/workspace-title.css
+          test -s dist/app/assets/dofinances-logo-header.v1.png
           test -s dist/app/assets/magnifying-glass.v2.svg
           test -s dist/app/assets/dashboard-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/collections-screen-sidebar-icon.v1.svg

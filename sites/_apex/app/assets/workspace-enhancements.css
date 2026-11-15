@@ -416,6 +416,29 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }
 
+
+/* User-supplied DoFinances mark: always in the UPPER bar. On desktop it
+ * precedes the left-aligned clock in flex flow; below 1280px it stays
+ * independently anchored at the left while the clock stays centered. */
+.global-header-logo{
+ display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;flex:0 0 36px;width:36px;height:36px;
+ margin-right:-9px;border-radius:7px;text-decoration:none;
+ -webkit-tap-highlight-color:transparent;
+}
+.global-header-logo-image{
+ display:block;width:36px;height:32px;object-fit:contain;
+}
+.global-header-logo:focus-visible{
+ outline:2px solid var(--ui-focus);outline-offset:2px;
+}
+@media(max-width:1279px){
+ .global-header-logo{
+  position:absolute;top:50%;left:clamp(14px,2.1vw,32px);
+  transform:translateY(-50%);margin-right:0;z-index:3;
+ }
+}
+
 /* Global clock — replaces the former brand and its boxed D in the uppermost bar.
  * Desktop with visible navigation: far left. Smaller widths: precise center.
  * Only the search and menu controls anchor the right edge. */
