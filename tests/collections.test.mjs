@@ -934,27 +934,25 @@ test("Collection Edit and Select cannot overlap, selected rows survive paginatio
 });
 
 
-test("Utility icon centers share the exact External SVG-derived right-side reference axis",()=>{
- const external=src("sites/_apex/app/assets/external-provider.v2.svg");
- const match=external.match(/viewBox="([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)"/);
- assert.ok(match,"External route SVG must preserve its intrinsic viewBox");
- const [, , , width,height]=match.map(Number);
- const referenceRatio=width/height;
- assert.ok(Math.abs(referenceRatio-1.40991490)<1e-7,"Slot must derive from External viewBox, not an estimated optical offset");
- const slotStart=css.indexOf("#cs-root .cs-utility-route-slot{");
- assert.ok(slotStart>=0,"Shared reference slot must exist");
- const slot=css.slice(slotStart,css.indexOf("}",slotStart)+1);
- assert.ok(slot.includes("--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)"));
- assert.ok(slot.includes("width:calc(var(--cs-ported-route-height) * 1.40991490)"));
- assert.ok(slot.includes("justify-content:center"));
- assert.ok(slot.includes("align-items:center"));
- assert.ok(slot.includes("flex:none;margin-left:auto;align-self:center"));
- assert.ok(css.includes("#cs-root .cs-utility-route-slot{--cs-ported-route-height:calc(clamp(13.2px,1.32vw,15.84px) + 8.8px)}"),"Mobile reference width must follow smaller External height");
- assert.ok(js.includes('<span class="cs-utility-route-slot"><span class="cs-utility-route-icon'),"Every masked SVG must be centered inside the SAME slot");
- assert.ok(css.includes("#cs-root .cs-utility-route-icon--ported{height:calc(clamp(13.2px,1.32vw,15.84px) + 12.32px)}"),"Desktop external retains its original pixel size");
- for(const route of ["cloud","direct","local","ported"]){
-   assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),"Preserve independently sized "+route+" icon");
- }
+test("Every utility name and UID starts at a constant distance from the left edge",()=>{
+ const source=js.slice(js.indexOf("function cardMarkup(){"),js.indexOf("function renderPages(){"));
+ const row=source.slice(source.indexOf("const content="),source.indexOf("return '<div class=\"cs-utility-row'"));
+ assert.ok(row.includes("'<span class=\"cs-utility-route-slot\">'+"),
+  "A leading slot must exist for every utility, even with an unknown route");
+ assert.ok(row.indexOf("cs-utility-route-slot")<row.indexOf("cs-utility-info"));
+ assert.ok(row.indexOf("cs-utility-info")<row.indexOf("cs-utility-trailing"));
+ assert.doesNotMatch(row,/cs-dot/,"Do not draw the original left dot");
+ assert.ok(row.includes('role="img" aria-label="'),"Keep route image accessibility");
+ assert.equal((row.match(/cs-utility-route-slot/g)||[]).length,1,
+  "Do not keep a redundant right-hand route icon");
+ assert.match(css,/#cs-root \.cs-utility-route-slot\{[^}]*width:24px;min-width:24px;height:29px;flex:0 0 24px/);
+ assert.match(css,/#cs-root \.cs-utility-route-slot\{width:21px;min-width:21px;height:24px;flex-basis:21px\}/);
+ assert.match(css,/#cs-root \.cs-utility-row\{display:flex;align-items:center;gap:15px/);
+ assert.match(css,/#cs-root \.cs-utility-row\{min-height:58px;gap:10px;padding:12px 12px/);
+ assert.match(css,/#cs-root \.cs-utility-route-icon\{[^}]*transform:scale\(\.6\);transform-origin:center/);
+ for(const route of ["cloud","direct","local","ported"])
+  assert.ok(css.includes("#cs-root .cs-utility-route-icon--"+route+"{height:"),
+   "Retain the exact measured intrinsic size of "+route+" before scaling 60%");
 });
 test("Collections stylesheet has balanced CSS declaration blocks",()=>{
  // A missing closing brace can swallow every subsequent selector while still
@@ -1324,7 +1322,8 @@ test("Original route geometry is retained while masked icons match the former #a
    assert.ok(workflow.includes("cp sites/_apex/app/assets/"+mask+" dist/app/assets/"+mask));
    assert.ok(workflow.includes("test -s dist/app/assets/"+mask));
  }
- assert.ok(css.includes('width:calc(var(--cs-ported-route-height) * 1.40991490)'));
+ assert.ok(css.includes('width:24px;min-width:24px;height:29px;flex:0 0 24px'));
+ assert.ok(css.includes('transform:scale(.6);transform-origin:center'));
 });
 
 test("Compact Collection search matches Refresh on both breakpoints without narrowing its edges",()=>{
