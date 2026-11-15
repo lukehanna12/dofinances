@@ -393,7 +393,11 @@ test("Markdown input engine is wired to existing rendered README without split v
  assert.ok(ui.includes('reading.addEventListener("compositionend"'));
  assert.ok(ui.includes('scheduleRichDraftUpdate()'));
  assert.ok(ui.includes('converter.turndown(reading)'));
- assert.ok(rules.includes('range.deleteContents();range.insertNode(replacement);'));
+ assert.ok(rules.includes('original.data=CARET_ANCHOR+following;'));
+ assert.ok(rules.includes('ctx.node.replaceData(0,ctx.offset,CARET_ANCHOR)'));
+ assert.ok(rules.includes('transferChildren(block,caretTarget)'));
+ assert.ok(!rules.includes('range.deleteContents();range.insertNode(replacement);'),
+  "Never destroy the active text node during native input");
  assert.ok(rules.includes('placeCaret('));
  assert.ok(rules.includes('readmeBlockRule(prefix+pendingSpace,{trigger,inList:isList})'));
  assert.ok(rules.includes('event.preventDefault()'));

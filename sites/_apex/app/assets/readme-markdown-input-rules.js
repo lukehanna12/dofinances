@@ -142,8 +142,7 @@ function applyInline(root,ctx,pendingEnding=""){
  if(prefix.length>2000)return false;
  const rule=readmeInlineRule(prefix);
  if(!rule)return false;
- const doc=ctx.doc,range=doc.createRange();
- range.setStart(ctx.node,rule.start);range.setEnd(ctx.node,ctx.offset);
+ const doc=ctx.doc;
  let replacement;
  switch(rule.kind){
   case "code":replacement=doc.createElement("code");replacement.textContent=rule.text;break;
@@ -176,9 +175,17 @@ function applyInline(root,ctx,pendingEnding=""){
   }
   default:return false;
  }
- range.deleteContents();range.insertNode(replacement);
- placeCaret(doc,replacement.parentNode,
-  Array.prototype.indexOf.call(replacement.parentNode.childNodes,replacement)+1);
+ // Preserve the ORIGINAL active text node, rather than deleting it with a
+ // Range. Chromium revokes the Selection when its active node is destroyed,
+ // even if we immediately create another text node elsewhere.
+ const original=ctx.node;
+ const preceding=original.data.slice(0,rule.start);
+ const following=original.data.slice(ctx.offset);
+ const parent=original.parentNode;
+ original.data=CARET_ANCHOR+following;
+ if(preceding)parent.insertBefore(doc.createTextNode(preceding),original);
+ parent.insertBefore(replacement,original);
+ placeCaret(doc,original,CARET_ANCHOR.length);
  return true;
 }
 function applyBlock(root,ctx,trigger,pendingSpace=""){
@@ -194,17 +201,21 @@ function applyBlock(root,ctx,trigger,pendingSpace=""){
  if(!block.textContent?.startsWith(prefix))return false;
 
  const doc=ctx.doc;
+ // A normal typed shortcut starts in the block's first text node. Mutate the
+ // SAME node (retaining a nonempty zero-width caret anchor) and move it with
+ // the block; deleting it would clear Chromium's active Selection.
+ const typed=ctx.node.data.slice(0,ctx.offset);
+ if(ctx.node.parentNode!==block||
+  typed.replace(/\u00a0/g," ")!==prefix.replace(/\u00a0/g," "))return false;
+ ctx.node.replaceData(0,ctx.offset,CARET_ANCHOR);
  if(rule.kind==="task"){
-  range.deleteContents();
   const box=doc.createElement("input");box.type="checkbox";
   box.checked=rule.checked;box.disabled=false;
   block.insertBefore(box,block.firstChild);
-  const spacer=doc.createTextNode(" ");
-  box.after(spacer);
-  placeCaret(doc,spacer,1);
+  box.after(doc.createTextNode(" "));
+  placeCaret(doc,ctx.node,CARET_ANCHOR.length);
   return true;
  }
- range.deleteContents();
  let container,caretTarget;
  switch(rule.kind){
   case "heading":
@@ -226,13 +237,12 @@ function applyBlock(root,ctx,trigger,pendingSpace=""){
    container=doc.createElement("pre");
    caretTarget=doc.createElement("code");
    if(rule.language)caretTarget.className="language-"+rule.language;
-   // A text node allows a caret inside an initially empty code block.
-   caretTarget.append(doc.createTextNode(CARET_ANCHOR));
+   transferChildren(block,caretTarget);fillEmpty(doc,caretTarget);
    container.append(caretTarget);break;
   case "hr":
    container=doc.createElement("hr");
    caretTarget=doc.createElement("p");
-   fillEmpty(doc,caretTarget);
+   transferChildren(block,caretTarget);fillEmpty(doc,caretTarget);
    block.replaceWith(container,caretTarget);
    placeCaret(doc,caretTarget.firstChild,caretTarget.firstChild.length);
    return true;
