@@ -1364,7 +1364,7 @@ test("Sidebar symbols and legacy Studio externaldrive v2 preserve original sourc
    ["utilities","utilities-screen-sidebar-icon.v1.svg","wrench.and.screwdriver.fill",2],
    ["providers","providers-screen-sidebar-icon.v1.svg","tray.2.fill",2],
    ["permissions","permissions-screen-sidebar-icon.v2.svg","shield.righthalf.filled",1],
-   ["diagnostics","diagnostics-screen-sidebar-icon.v1.svg","chart.bar.xaxis.descending",5]
+   ["diagnostics","diagnostics-screen-sidebar-icon.v2.svg","waveform.path.ecg",1]
  ];
  for(const [route,file,symbol,count] of entries){
    const svg=src("sites/_apex/app/assets/"+file);

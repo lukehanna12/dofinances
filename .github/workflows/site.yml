@@ -118,7 +118,7 @@ jobs:
           cp sites/_apex/app/assets/utilities-screen-sidebar-icon.v1.svg dist/app/assets/utilities-screen-sidebar-icon.v1.svg
           cp sites/_apex/app/assets/providers-screen-sidebar-icon.v1.svg dist/app/assets/providers-screen-sidebar-icon.v1.svg
           cp sites/_apex/app/assets/permissions-screen-sidebar-icon.v2.svg dist/app/assets/permissions-screen-sidebar-icon.v2.svg
-          cp sites/_apex/app/assets/diagnostics-screen-sidebar-icon.v1.svg dist/app/assets/diagnostics-screen-sidebar-icon.v1.svg
+          cp sites/_apex/app/assets/diagnostics-screen-sidebar-icon.v2.svg dist/app/assets/diagnostics-screen-sidebar-icon.v2.svg
           cp sites/_apex/app/assets/external-provider.v2.svg dist/app/assets/external-provider.v2.svg
           cp sites/_apex/app/assets/external-provider-mask.v2.svg dist/app/assets/external-provider-mask.v2.svg
           cp sites/_apex/app/assets/add-collection.v1.svg dist/app/assets/add-collection.v1.svg
@@ -151,7 +151,7 @@ jobs:
           test -s dist/app/assets/utilities-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/providers-screen-sidebar-icon.v1.svg
           test -s dist/app/assets/permissions-screen-sidebar-icon.v2.svg
-          test -s dist/app/assets/diagnostics-screen-sidebar-icon.v1.svg
+          test -s dist/app/assets/diagnostics-screen-sidebar-icon.v2.svg
           test -s dist/app/assets/external-provider.v2.svg
           test -s dist/app/assets/external-provider-mask.v2.svg
           test -s dist/app/assets/add-collection.v1.svg

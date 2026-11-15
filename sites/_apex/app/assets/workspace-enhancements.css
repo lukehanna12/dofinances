@@ -328,6 +328,7 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 }
 /* The spacer is a real layout item: honor reduced-motion preferences too. */
 @media(min-width:761px) and (prefers-reduced-motion:reduce){
+  .shell{transition:none;}
   .shell::before{transition:none;}
 }
 @media(max-width:760px){
