@@ -53,15 +53,15 @@ export function initColosseumPermissions(){
   const access=BITS.map((bit,i)=>{
    const granted=!!bits[i];
    const desc=(enabled?"":"Rule disabled; ")+bit+" "+(granted?"configured":"not granted");
-   return '<span class="pm-permission-cell" role="img" title="'+esc(desc)+'" aria-label="'+esc(desc)+'">'+
+   return '<span class="pm-permission-cell" role="img" aria-label="'+esc(desc)+'">'+
     '<span class="pm-permission-mark" data-allowed="'+granted+'" aria-hidden="true">'+(granted?"✓":"–")+'</span></span>';
   }).join("");
   return '<div class="pm-rule-row" data-row="'+item.row+'" data-enabled="'+!!enabled+'">'+
-   '<button class="pm-rule-main" type="button" data-edit-rule="'+item.row+'" title="Edit '+esc(label)+'" aria-label="Edit rule for '+esc(path)+'">'+
+   '<button class="pm-rule-main" type="button" data-edit-rule="'+item.row+'" aria-label="Edit rule for '+esc(path)+'">'+
    '<span class="pm-rule-title">'+esc(label)+'</span><span class="pm-rule-path">'+esc(path)+'</span></button>'+
    '<div class="pm-operations">'+access+'</div>'+
    '<span class="pm-rule-status">'+(enabled?"Enabled":"Off")+'</span>'+
-   '<button class="pm-edit-rule" type="button" data-edit-rule="'+item.row+'" title="Edit rule" aria-label="Edit filesystem rule '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+pencil+'</button></div>';
+   '<button class="pm-edit-rule" type="button" data-edit-rule="'+item.row+'" aria-label="Edit filesystem rule '+esc(path)+'"'+(!canEdit()?' disabled':'')+'>'+pencil+'</button></div>';
  }
  function render(){
   if(!state)return;

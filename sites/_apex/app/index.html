@@ -658,7 +658,7 @@
               <div class="pm-overview-right">
                 <strong id="pm-source" class="pm-source">Checking authority</strong>
                 <span id="pm-revision" class="pm-revision"></span>
-                <button id="pm-refresh" class="pm-icon-button" type="button" title="Refresh permissions" aria-label="Refresh permissions"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5 M4 17v-5h5 M5.9 8.5A7.5 7.5 0 0 1 19 9 M18.1 15.5A7.5 7.5 0 0 1 5 15"/></svg></button>
+                <button id="pm-refresh" class="pm-icon-button" type="button" aria-label="Refresh permissions"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 7v5h-5 M4 17v-5h5 M5.9 8.5A7.5 7.5 0 0 1 19 9 M18.1 15.5A7.5 7.5 0 0 1 5 15"/></svg></button>
               </div>
             </div>
             <p id="pm-notice" class="pm-notice" role="status" aria-live="polite">Open Permissions to load live gateway policy.</p>
@@ -687,12 +687,12 @@
               </div>
               <div class="pm-rule-toolbar">
                 <label class="pm-search"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m21 21-4.3-4.3 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"/></svg><input type="search" id="pm-filter" class="pm-filter" placeholder="Search paths and aliases" aria-label="Search filesystem rules" autocomplete="off" spellcheck="false"></label>
-                <button type="button" id="pm-add" class="pm-icon-button" title="Add path rule (⇧⌘N)" aria-label="Add path rule" aria-keyshortcuts="Meta+Shift+N"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14 M5 12h14"/></svg></button>
+                <button type="button" id="pm-add" class="pm-icon-button" aria-label="Add path rule" aria-keyshortcuts="Meta+Shift+N"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14 M5 12h14"/></svg></button>
               </div>
               <div class="pm-registry" aria-label="Configured filesystem rules">
                 <div class="pm-registry-head" aria-hidden="true">
                   <span>Path / alias</span>
-                  <div class="pm-operations"><span class="pm-op-head" title="Read">R</span><span class="pm-op-head" title="Write">W</span><span class="pm-op-head" title="Script">S</span><span class="pm-op-head" title="Add">A</span><span class="pm-op-head" title="Delete">D</span></div>
+                  <div class="pm-operations"><span class="pm-op-head">R</span><span class="pm-op-head">W</span><span class="pm-op-head">S</span><span class="pm-op-head">A</span><span class="pm-op-head">D</span></div>
                   <span class="pm-status-col">Status</span><span></span>
                 </div>
                 <div id="pm-cards" class="pm-rule-list" aria-live="polite"></div>
@@ -726,7 +726,7 @@
               <div class="pm-dialog-head">
                 <div><h3 id="pm-rule-title">Edit filesystem rule</h3>
                   <span id="pm-rule-subtitle" class="pm-small">Changes are reviewed by the local gateway before application.</span></div>
-                <button id="pm-rule-close" type="button" class="pm-icon-button" title="Close editor" aria-label="Close editor"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18 M6 6l12 12"/></svg></button>
+                <button id="pm-rule-close" type="button" class="pm-icon-button" aria-label="Close editor"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 6 6 18 M6 6l12 12"/></svg></button>
               </div>
               <form id="pm-rule-form">
                 <div class="pm-dialog-fields">
