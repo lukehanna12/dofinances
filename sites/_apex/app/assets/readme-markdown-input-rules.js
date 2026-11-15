@@ -124,9 +124,9 @@ function fillEmpty(doc,node){
 function transferChildren(from,to){
  while(from.firstChild)to.append(from.firstChild);
 }
-function applyInline(root,ctx){
+function applyInline(root,ctx,pendingEnding=""){
  if(ctx.node.parentElement?.closest("code,pre,kbd,samp,a"))return false;
- const prefix=ctx.node.data.slice(0,ctx.offset);
+ const prefix=ctx.node.data.slice(0,ctx.offset)+pendingEnding;
  if(prefix.length>2000)return false;
  const rule=readmeInlineRule(prefix);
  if(!rule)return false;
@@ -169,12 +169,12 @@ function applyInline(root,ctx){
   Array.prototype.indexOf.call(replacement.parentNode.childNodes,replacement)+1);
  return true;
 }
-function applyBlock(root,ctx,trigger){
+function applyBlock(root,ctx,trigger,pendingSpace=""){
  const block=nearestBlock(root,ctx.node);
  if(!block)return false;
  const {range,prefix}=prefixToCaret(ctx,block);
  const isList=block.localName==="li";
- const rule=readmeBlockRule(prefix,{trigger,inList:isList});
+ const rule=readmeBlockRule(prefix+pendingSpace,{trigger,inList:isList});
  if(!rule)return false;
  if(isList&&rule.kind!=="task")return false;
  // Do not collapse existing structure if a nested inline element precedes
@@ -266,6 +266,20 @@ export function applyReadmeMarkdownInput(root,event){
 /** Handle Enter before the browser splits a fence or horizontal-rule line. */
 export function applyReadmeMarkdownBeforeInput(root,event){
  if(!root||!event?.cancelable||event.isComposing)return false;
+ // Transform before Chromium edits its contenteditable DOM. Rewriting in the
+ // later input event can cause the browser to discard the restored selection
+ // (e.g. typing after # followed by space). beforeinput is caret-safe.
+ if(event.inputType==="insertText"&&typeof event.data==="string"){
+  const ctx=selectedCaret(root);
+  if(ctx){
+   let transformed=false;
+   if(event.data===" "||event.data==="\u00a0")
+    transformed=applyBlock(root,ctx,"space"," ");
+   else if(event.data.length===1&&RULE_ENDING.test(event.data))
+    transformed=applyInline(root,ctx,event.data);
+   if(transformed){event.preventDefault();return true;}
+  }
+ }
  // Wrapping a selected word with a single backtick is a useful direct-edit
  // convenience in addition to the usual typing of both delimiters.
  if(event.inputType==="insertText"&&event.data==="\x60"){
