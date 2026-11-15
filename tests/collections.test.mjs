@@ -1414,6 +1414,12 @@ test("Collapsed list rows shimmer on initial load and refresh without reflow",()
  assert.ok(css.includes(".cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after"));
  assert.ok(css.includes("animation:cs-row-pulse 1.35s linear infinite"));
  assert.ok(css.includes("@keyframes cs-row-pulse{from{background-position:100% 0}to{background-position:0 0}}"));
+ assert.ok(css.includes("display:block;width:86%;min-width:0;height:8px;border-radius:999px"));
+ assert.ok(css.includes("background-color:#262626"));
+ assert.ok(css.includes("rgba(140,140,140,.03) 21%"));
+ assert.ok(css.includes("rgba(130,130,130,.025) 88%,transparent 100%"));
+ assert.ok(css.includes("background-repeat:no-repeat;background-size:250% 100%"));
+ assert.ok(css.includes(".cs-entry-title::after{height:7px}"));
 });
 test("Adjacent utility edit/select buttons preserve the separated add control",()=>{
  const a=js.indexOf("cs-utility-action-control--add");

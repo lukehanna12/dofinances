@@ -322,10 +322,15 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 #cs-root .cs-skeleton-number{width:24px;flex:none;color:var(--cs-dim);font:500 11px/1.4 var(--ui-font-sans,system-ui)}
 #cs-root .cs-skeleton-bar,
 #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{
- display:block;width:min(65%,320px);height:12px;border-radius:6px;
- background-color:#303030;
- background-image:linear-gradient(105deg,transparent 28%,rgba(207,207,207,.64) 49%,transparent 70%);
- background-repeat:no-repeat;background-size:230% 100%;
+ display:block;width:86%;min-width:0;height:8px;border-radius:999px;
+ background-color:#262626;
+ /* Lower-contrast, broad highlight with a gradual falloff behind and ahead of the pulse. */
+ background-image:linear-gradient(100deg,
+   transparent 8%,rgba(140,140,140,.03) 21%,
+   rgba(151,151,151,.09) 34%,rgba(175,175,175,.22) 49%,
+   rgba(170,170,170,.21) 57%,rgba(145,145,145,.10) 72%,
+   rgba(130,130,130,.025) 88%,transparent 100%);
+ background-repeat:no-repeat;background-size:250% 100%;
  animation:cs-row-pulse 1.35s linear infinite;pointer-events:none;
 }
 #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%)}
@@ -336,7 +341,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
  #cs-root .cs-skeleton-number{width:22px;font-size:10px}
  #cs-root .cs-entry--skeleton .cs-skeleton-row{gap:10px}
  #cs-root .cs-skeleton-bar,
- #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{height:10px}
+ #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after{height:7px}
 }
 @media(prefers-reduced-motion:reduce){
  #cs-root .cs-skeleton-bar,
