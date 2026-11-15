@@ -1,5 +1,3 @@
-import {macBatteryBody} from "./diagnostics-battery-ui.js";
-export {batteryPresentation,macBatteryBody} from "./diagnostics-battery-ui.js";
 // Read-only Colosseum observability. No sample telemetry and no background polling.
 const byId=(id)=>document.getElementById(id);
 const integer=(n)=>typeof n==="number"&&Number.isFinite(n)?Math.round(n).toLocaleString():"—";
@@ -39,6 +37,10 @@ function metricCard(label,q,number,sub){
 function sectionOf(report,name){return report?.sections?.[name]||null;}
 function missing(name){return name==="local"?"Not included or local diagnostics unavailable.":"Not included in this query or unavailable from the source.";}
 function unavailablePanel(name){const p=panel(name);p.append(make("p","dg-small",missing(name)));return p;}
+function ring(percent,value,unit){const outer=make("div","dg-ring"),inner=make("div","dg-ring-content");
+ outer.style.setProperty("--dg-percent",String(Math.max(0,Math.min(100,percent||0))));
+ inner.append(make("strong","",value),make("span","",unit));outer.append(inner);return outer;
+}
 function renderOverview(report){
  const top=clear("dg-top"),w=sectionOf(report,"workers")?.account?.requests,
    d=sectionOf(report,"d1")?.account,
@@ -90,10 +92,20 @@ function findGatewayMetrics(local){
 }
 function renderLocal(report){
  const host=clear("dg-local"),local=sectionOf(report,"local"),m=findGatewayMetrics(local);
- const machine=panel("Mac · battery & storage",local?.status?statusText(local.status):"Unavailable");
- if(m)machine.append(macBatteryBody(m));
- else machine.append(make("p","dg-small",
-  "Mac battery and storage readings were not included in the selected health check. Choose Gateway / Quick to retrieve them."));
+ const machine=panel("Mac · storage & power",local?.status?statusText(local.status):"Unavailable");
+ if(m){
+  const free=m.storage_free_bytes,total=m.storage_total_bytes,used=typeof total==="number"&&total>0?total-free:null;
+  const usable=typeof total==="number"&&total>0&&typeof free==="number";
+  const body=make("div","dg-ring-row");
+  body.append(ring(usable?used/total*100:0,usable?quantity(free/1073741824,1):"—","GiB free"));
+  const detail=make("div","dg-ring-copy");detail.append(pair("Drive capacity",bytes(total)),pair("Storage used",usable?quantity(used/total*100,1)+"%":"—"),pair("Available",bytes(free)));
+  body.append(detail);machine.append(body);
+  const battery=make("div","dg-ring-row");battery.style.marginTop="24px";
+  const pct=typeof m.battery_percent==="number"?m.battery_percent:null;
+  battery.append(ring(pct,pct===null?"—":quantity(pct,0)+"%","battery"));
+  const bd=make("div","dg-ring-copy");bd.append(pair("Power source",m.battery_power_source||"—"),pair("Battery",m.battery_state||"—"),pair("Charging",m.battery_charging===true?"Yes":m.battery_charging===false?"No":"—"));
+  battery.append(bd);machine.append(battery);
+ }else machine.append(make("p","dg-small","Mac storage and battery readings are not present in the selected local health check. Choose Gateway / Quick to retrieve them."));
  host.append(machine);
  const gateway=panel("Local gateway",local?.check?local.check+" · "+(local.depth||"quick"):"No reading");
  if(!local||local.status==="unavailable"){gateway.append(make("p","dg-small",missing("local")));host.append(gateway);return;}
