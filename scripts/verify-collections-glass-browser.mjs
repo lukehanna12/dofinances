@@ -42,6 +42,11 @@ const files=new Map([
  ["workspace-theme.css","sites/_apex/app/assets/workspace-theme.css"],
  ["workspace-enhancements.css","sites/_apex/app/assets/workspace-enhancements.css"],
  ["collections.css","sites/_apex/app/assets/collections.css"],
+ ["workspace-rail-tooltips.js","sites/_apex/app/assets/workspace-rail-tooltips.js"],
+ ["cloud-utility-mask.v1.svg","sites/_apex/app/assets/cloud-utility-mask.v1.svg"],
+ ["direct-utility-mask.v1.svg","sites/_apex/app/assets/direct-utility-mask.v1.svg"],
+ ["local-provider-mask.v1.svg","sites/_apex/app/assets/local-provider-mask.v1.svg"],
+ ["external-provider-mask.v2.svg","sites/_apex/app/assets/external-provider-mask.v2.svg"],
  ["collections-glass.js","sites/_apex/app/assets/collections-glass.js"],
  ["collections-glass-public-clear.js","sites/_apex/app/assets/collections-glass-public-clear.js"],
  ["collections-glass-field-worker.js","sites/_apex/app/assets/collections-glass-field-worker.js"],
@@ -169,6 +174,84 @@ try{
  assert.deepEqual(later,{background:originalSurface.background,filter:"none",box:"none"},
   "The panel remains flat and unchanged above arbitrary scrolling page content");
 
+
+ // Real source sidebar markup and actual Collections utility route silhouettes.
+ // Probe the LAYOUT geometry of all titles/UIDs rather than eyeballing icons.
+ const sidebarStart=original.indexOf('<aside class="sidebar" id="workspace-sidebar"');
+ const sidebarEnd=original.indexOf("</aside>",sidebarStart);
+ assert.ok(sidebarStart>=0&&sidebarEnd>sidebarStart);
+ const sidebarMarkup=original.slice(sidebarStart,sidebarEnd+8);
+ const fixtureSetup='(async()=>{'+
+  'const shell=document.getElementById("workspace-shell");'+
+  'shell.insertAdjacentHTML("afterbegin",'+JSON.stringify(sidebarMarkup)+');'+
+  'shell.classList.add("is-collapsed");'+
+  'const holder=document.createElement("section");holder.id="route-fixture";'+
+  'holder.style.cssText="position:absolute;left:35px;top:320px;width:440px;z-index:0";'+
+  'for(const mode of ["cloud","direct","local","ported","unknown"]){'+
+  'const row=document.createElement("div");row.className="cs-utility-row";row.dataset.mode=mode;'+
+  'row.innerHTML="<span class=cs-utility-route-slot>"+'+
+  '(mode!=="unknown"?"<span class=\\"cs-utility-route-icon cs-utility-route-icon--"+mode+"\\" role=img aria-label=\\""+mode+"\\"></span>":"")+'+
+  '"</span><span class=cs-utility-info><span class=cs-utility-name>"+mode+"</span><span class=cs-utility-uid>uid-"+mode+"</span></span><span class=cs-utility-trailing></span>";'+
+  'holder.append(row)};document.getElementById("cs-root").append(holder);'+
+  'const m=await import("/app/assets/workspace-rail-tooltips.js");'+
+  'window.__rail=m.initCollapsedRailTooltips(document,window,shell,document.getElementById("workspace-sidebar"));'+
+  'return !!window.__rail;})()';
+ assert.equal(await evaluate(fixtureSetup),true,"Collapsed rail tooltips must initialize");
+ const utilityMetrics= '(()=>[...document.querySelectorAll("#route-fixture .cs-utility-row")].map(row=>{'+
+  'const slot=row.querySelector(".cs-utility-route-slot"),info=row.querySelector(".cs-utility-info"),'+
+  'name=row.querySelector(".cs-utility-name"),uid=row.querySelector(".cs-utility-uid"),icon=row.querySelector(".cs-utility-route-icon");'+
+  'const rr=row.getBoundingClientRect(),sr=slot.getBoundingClientRect(),ir=info.getBoundingClientRect();'+
+  'const nr=name.getBoundingClientRect(),ur=uid.getBoundingClientRect();'+
+  'return {mode:row.dataset.mode,relativeX:ir.left-rr.left,uidX:ur.left,nameX:nr.left,'+
+  'slotWidth:sr.width,iconHeight:icon?.getBoundingClientRect().height,rawHeight:icon?parseFloat(getComputedStyle(icon).height):null,scale:icon?getComputedStyle(icon).transform:null}}))()';
+ const rows=await evaluate(utilityMetrics);
+ assert.equal(rows.length,5);
+ assert.ok(rows.every(r=>Math.abs(r.relativeX-rows[0].relativeX)<.06),
+  "Every title, including an unknown route, must share one fixed left inset");
+ assert.ok(rows.every(r=>Math.abs(r.uidX-r.nameX)<.06),
+  "Each UID must begin on the same axis as its title");
+ assert.ok(rows.every(r=>Math.abs(r.slotWidth-24)<.06),
+  "All desktop icon slots must be exactly 24px regardless of route");
+ for(const r of rows.filter(r=>r.mode!=="unknown")){
+  assert.ok(Math.abs(r.iconHeight/r.rawHeight-.6)<.003,
+   "Exact 60% optical scale of "+r.mode+" while preserving mask geometry");
+  assert.ok(r.scale.startsWith("matrix(0.6, 0, 0, 0.6, 0, 0)"));
+ }
+ console.log("Desktop utility left icons: fixed 24px slot, exact 60% per-route scaling, aligned name/UID",JSON.stringify(rows));
+
+ const tooltipProbe='(async()=>{const sidebar=document.getElementById("workspace-sidebar");'+
+  'const toTry=[["main-navigation",["Home","Projects","Settings"]],["project-navigation",["README","Utilities","Collections","Providers","Permissions","Diagnostics","Settings"]],["apple-hig-navigation",["README","Overview"]],["custom-project-navigation",["README"]]];'+
+  'const seen=[];for(const [navId,labels] of toTry){'+
+  'for(const node of sidebar.querySelectorAll(".nav-stack"))node.hidden=node.id!==navId;'+
+  'for(const label of labels){const nav=document.getElementById(navId);'+
+  'const a=[...nav.querySelectorAll(".nav-link")].find(x=>x.getAttribute("aria-label")===label);'+
+  'if(!a)throw Error("Missing nav screen link "+navId+":"+label);'+
+  'a.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
+  'const t=document.getElementById("workspace-rail-tooltip"),r=a.getBoundingClientRect();'+
+  'seen.push({nav:navId,label,rendered:t.textContent,role:t.getAttribute("role"),parent:t.parentElement===document.body,position:t.style.left,described:a.getAttribute("aria-describedby"),visible:t.classList.contains("is-visible"),gap:parseFloat(t.style.left)-r.right});'+
+  'a.dispatchEvent(new PointerEvent("pointerleave",{pointerType:"mouse"}));'+
+  '}}return seen})()';
+ const tips=await evaluate(tooltipProbe);
+ assert.equal(tips.length,13,"Every screen button across all four sidebar groups is covered");
+ assert.ok(tips.every(t=>t.label===t.rendered&&t.role==="tooltip"&&t.parent&&
+  t.described==="workspace-rail-tooltip"&&t.visible&&t.gap>=7),
+  "Each tooltip must be correctly named, un-clipped, and anchored right of its button");
+ const focused=await evaluate('(()=>{const sidebar=document.getElementById("workspace-sidebar");'+
+  'for(const n of sidebar.querySelectorAll(".nav-stack"))n.hidden=n.id!=="main-navigation";'+
+  'const a=sidebar.querySelector("#main-navigation .nav-link");a.focus();'+
+  'const t=document.getElementById("workspace-rail-tooltip");'+
+  'return {keyboard:t.classList.contains("is-keyboard"),visible:t.classList.contains("is-visible"),delay:getComputedStyle(t).transitionDelay,desc:a.getAttribute("aria-describedby")}})()');
+ assert.equal(focused.keyboard,true,"Keyboard focus should bypass hover delay");
+ assert.equal(focused.visible,true);
+ assert.equal(focused.desc,"workspace-rail-tooltip");
+ assert.ok(focused.delay.split(",").every(x=>parseFloat(x)===0),"Keyboard tooltip must appear immediately");
+ const hiddenExpanded=await evaluate('(()=>{const shell=document.getElementById("workspace-shell"),a=document.querySelector("#main-navigation .nav-link");'+
+  'a.blur();shell.classList.remove("is-collapsed");window.__rail.hide();'+
+  'a.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
+  'const visible=document.getElementById("workspace-rail-tooltip").classList.contains("is-visible");'+
+  'shell.classList.add("is-collapsed");return visible})()');
+ assert.equal(hiddenExpanded,false,"Expanded sidebar must never display rail tooltips");
+
  await command("Emulation.setDeviceMetricsOverride",{width:365,height:740,deviceScaleFactor:2,mobile:true});
  await pause(300);
  const narrow=await evaluate(metrics);
@@ -176,6 +259,20 @@ try{
  assert.ok(narrow.width<narrow.viewport[0]-20,"Pill is not clipped on mobile");
  assert.ok(narrow.buttons.every(b=>b.w>=47&&b.h>=47));
  assert.ok(Math.abs(narrow.viewport[1]-24-narrow.bottom)<2);
+ const mobileRoutes=await evaluate(utilityMetrics);
+ assert.ok(mobileRoutes.every(r=>Math.abs(r.slotWidth-21)<.06),
+  "All mobile route slots must be exactly 21px");
+ assert.ok(mobileRoutes.every(r=>Math.abs(r.relativeX-mobileRoutes[0].relativeX)<.06));
+ for(const r of mobileRoutes.filter(r=>r.mode!=="unknown"))
+  assert.ok(Math.abs(r.iconHeight/r.rawHeight-.6)<.003,
+   "Every mobile icon must retain the 60% scale");
+ const mobileRailTip=await evaluate('(()=>{const link=document.querySelector("#main-navigation .nav-link");'+
+  'link.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
+  'const t=document.getElementById("workspace-rail-tooltip");'+
+  'return {visible:t.classList.contains("is-visible"),display:getComputedStyle(t).display}})()');
+ assert.equal(mobileRailTip.visible,false);
+ assert.equal(mobileRailTip.display,"none","Never show collapsed-desktop rail labels in the mobile drawer");
+
  const mobileSquare=await evaluate(squareMetrics);
  assert.equal(mobileSquare.buttonRadius,"6px");
  assert.equal(mobileSquare.iconRadius,mobileSquare.buttonRadius,"Mobile corners must match exactly, not approximately");
