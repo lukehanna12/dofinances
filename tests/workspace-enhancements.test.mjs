@@ -70,7 +70,7 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
     }else{
       assert.match(html,/<section class="view dashboard-home" data-view="home"/);
       assert.match(html,/id="cta6-mosaic"/);
-      assert.match(html,/<h1 id="home-title">Workspace<\/h1>/);
+      assert.match(html,/<h1 id="home-title">doof<\/h1>/);
     }
   }
 });
