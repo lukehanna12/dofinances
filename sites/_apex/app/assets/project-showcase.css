@@ -1,11 +1,11 @@
-/* Colosseum utility 0001c4: How It Works 2 — native Projects adaptation.
-   Numbered markers, rounded three-column layout, hover image crossfade,
-   black 60% overlay, and fine divider rows. */
-.view[data-view="projects"] .project-showcase-heading{margin-bottom:22px}
-.view[data-view="projects"] .project-showcase-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,1.8vw,24px);margin:0 0 42px;align-items:stretch}
+/* Colosseum utility 0001c4: How It Works 2 — compact Projects adaptation.
+   Roughly half-size dimensions / quarter-size area, retaining numbered markers,
+   hover image crossfade, black 60% overlay, and fine divider rows. */
+.view[data-view="projects"] .project-showcase-heading{margin-bottom:12px}
+.view[data-view="projects"] .project-showcase-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);margin:0 0 24px;align-items:stretch}
 .view[data-view="projects"] .project-showcase-card{
  position:relative;isolation:isolate;overflow:hidden;min-width:0;
- min-height:clamp(400px,36vw,500px);border-radius:16px;
+ min-height:clamp(215px,18vw,250px);border-radius:10px;
  display:flex;flex-direction:column;background:#242424;color:#f5f5f5;
  text-decoration:none;cursor:default;box-shadow:0 1px 1px rgba(0,0,0,.12);
  animation:project-showcase-enter .5s both;
@@ -29,43 +29,43 @@
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
 .view[data-view="projects"] .project-showcase-content{
  position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
- min-height:100%;padding:clamp(24px,2.4vw,32px) clamp(24px,2.4vw,32px) 0
+ min-height:100%;padding:clamp(12px,1.2vw,16px) clamp(12px,1.2vw,16px) 0
 }
 .view[data-view="projects"] .project-showcase-upper{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0}
 .view[data-view="projects"] .project-showcase-top{
  display:flex;justify-content:space-between;align-items:flex-start;
- gap:10px;width:100%;margin-bottom:18px
+ gap:5px;width:100%;margin-bottom:9px
 }
 .view[data-view="projects"] .project-showcase-number{
- display:grid;place-items:center;flex:none;width:32px;height:32px;
- border-radius:50%;font-size:14px;font-weight:700;background:#fff;color:#171717
+ display:grid;place-items:center;flex:none;width:20px;height:20px;
+ border-radius:50%;font-size:10px;font-weight:700;background:#fff;color:#171717
 }
-/* Exactly the Permissions Active badge font, padding and corner radius. */
+/* Permissions-inspired status badges, scaled with the smaller cards. */
 .view[data-view="projects"] .project-showcase-badge{
- font-size:12px;font-weight:500;line-height:18px;padding:2px 8px;
+ font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;
  border-radius:4px;white-space:nowrap;background:#173827;color:#86efac
 }
 /* Permissions Dormant badge, dark-mode palette: exact #382409 / #facc15. */
 .view[data-view="projects"] .project-showcase-badge--progress{background:#382409;color:#facc15}
 .view[data-view="projects"] .project-showcase-badge--soon{background:#3b235f;color:#e9d5ff}
 .view[data-view="projects"] .project-showcase-title{
- display:block;font-weight:500;font-size:clamp(21px,2vw,30px);
+ display:block;font-weight:500;font-size:clamp(12px,1.05vw,16px);
  line-height:1.16;letter-spacing:-.035em;overflow-wrap:anywhere;
- margin:0 0 10px;color:#fff
+ margin:0 0 5px;color:#fff
 }
 .view[data-view="projects"] .project-showcase-action{
- display:inline-flex;align-items:center;gap:8px;color:#bdbdbd;
- font-size:14px;font-weight:500;line-height:1.5;transition:color .3s ease
+ display:inline-flex;align-items:center;gap:4px;color:#bdbdbd;
+ font-size:10px;font-weight:500;line-height:1.35;transition:color .3s ease
 }
-.view[data-view="projects"] .project-showcase-action svg{transition:transform .2s ease}
-.view[data-view="projects"] .project-showcase-card.is-active:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(4px)}
+.view[data-view="projects"] .project-showcase-action svg{width:12px;height:12px;transition:transform .2s ease}
+.view[data-view="projects"] .project-showcase-card.is-active:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(2px)}
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-within) .project-showcase-action{color:rgba(255,255,255,.9)}
 .view[data-view="projects"] .project-showcase-details{
- display:block;margin:20px calc(-1*clamp(24px,2.4vw,32px)) 0
+ display:block;margin:10px calc(-1*clamp(12px,1.2vw,16px)) 0
 }
 .view[data-view="projects"] .project-showcase-row{
- padding:12px clamp(24px,2.4vw,32px);border-top:1px solid #414141;
- color:#d5d5d5;font-size:14px;line-height:1.5;overflow-wrap:anywhere;
+ padding:6px clamp(12px,1.2vw,16px);border-top:1px solid #414141;
+ color:#d5d5d5;font-size:10px;line-height:1.35;overflow-wrap:anywhere;
  transition:border-color .3s ease,color .3s ease
 }
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-within) .project-showcase-row{
@@ -76,16 +76,22 @@
  html:has(body > #workspace-shell .view[data-view="projects"]:not([hidden]))
  body:has(> #workspace-shell) .content{max-width:none;width:100%}
 }
-@media(max-width:1099px){
- .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:1499px){
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media(max-width:1199px){
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:899px){
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:699px){
- .view[data-view="projects"] .project-showcase-grid{grid-template-columns:minmax(0,1fr);gap:16px}
- .view[data-view="projects"] .project-showcase-card{min-height:400px}
- .view[data-view="projects"] .project-showcase-content{padding:24px 24px 0}
- .view[data-view="projects"] .project-showcase-details{margin-left:-24px;margin-right:-24px}
- .view[data-view="projects"] .project-showcase-row{padding:12px 24px}
- .view[data-view="projects"] .project-showcase-title{font-size:clamp(23px,6vw,30px)}
+ .view[data-view="projects"] .project-showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .view[data-view="projects"] .project-showcase-card{min-height:220px}
+ .view[data-view="projects"] .project-showcase-content{padding:12px 12px 0}
+ .view[data-view="projects"] .project-showcase-details{margin-left:-12px;margin-right:-12px}
+ .view[data-view="projects"] .project-showcase-row{padding:6px 12px}
+ .view[data-view="projects"] .project-showcase-title{font-size:clamp(12px,3.2vw,15px)}
 }
 @media(prefers-reduced-motion:reduce){
  .view[data-view="projects"] .project-showcase-card{animation:none}

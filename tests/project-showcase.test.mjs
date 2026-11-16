@@ -24,17 +24,20 @@ test("Only Colosseum and the two in-progress projects have GitHub repositories",
  ]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
 });
-test("Design retains the recovered source image reveal and compact Permissions registry",()=>{
+test("Compact quarter-area Projects cards retain image reveal and status styling",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
  const source=read("sites/_apex/app/assets/project-showcase.js");
  const permissions=read("sites/_apex/app/assets/permissions.css");
  const store=read("edge/auth-store-projects.mjs");
- assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ assert.match(css,/min-height:clamp\(215px,18vw,250px\)/);
+ assert.match(css,/@media\(max-width:699px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.project-showcase-title\{[\s\S]*font-size:clamp\(12px,1\.05vw,16px\)/);
  assert.match(css,/transform:scale\(1\.1\)/);
  assert.match(css,/transform:scale\(1\)/);
  assert.match(css,/background:rgba\(0,0,0,\.6\)/);
- assert.match(css,/border-radius:16px/);
- assert.match(css,/font-size:12px;font-weight:500;line-height:18px;padding:2px 8px/);
+ assert.match(css,/border-radius:10px/);
+ assert.match(css,/font-size:9px;font-weight:500;line-height:12px;padding:1px 5px/);
  assert.match(permissions,/\.pm-rule-row\{min-height:56px;border-bottom:1px solid var\(--pm-line\)/);
  assert.match(css,/project-showcase-badge--soon\{background:#3b235f;color:#e9d5ff\}/);
  assert.match(css,/project-showcase-badge--progress\{background:#382409;color:#facc15\}/);
