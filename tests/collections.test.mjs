@@ -1060,7 +1060,7 @@ test("Collections anchors its top and bottom photo strips under the moving black
     /content:"";\s*position:absolute;\s*inset:var\(--workspace-banner-height\) 0 0;\s*z-index:-1;\s*pointer-events:none;\s*background:var\(--ui-canvas,#0a0a0a\)/);
   assert.match(get("body:has(> #workspace-shell) > .workspace-footer"),
     /position:fixed;\s*inset:auto 0 0;\s*z-index:0/);
-  assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
+  assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*><span class="workspace-footer-text">© DoFinances · 2026<\/span><\/footer>/);
 });
 
 test("Rating half-star toggling follows 3/4/5-star examples and collapses zero into unrated",async()=>{

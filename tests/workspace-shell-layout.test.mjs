@@ -13,7 +13,7 @@ test("production and Studio use one document-scrolling page beneath sticky navig
     assert.match(html,/<header class="topbar">/);
     assert.match(html,/id="workspace-scroll"/);
     assert.doesNotMatch(html,/workspace-scroll-end|workspace-home-art-bottom/);
-    assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*>© DoFinances · 2026<\/footer>/);
+    assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*><span class="workspace-footer-text">© DoFinances · 2026<\/span><\/footer>/);
     assert.ok(html.indexOf('id="workspace-scroll"')<html.indexOf('id="workspace-footer"'));
     assert.ok(html.indexOf('id="workspace-footer"')>html.lastIndexOf('</div>'),"bottom photo footer follows page shell");
     assert.doesNotMatch(html,/workspace-topbar-backdrop/);
