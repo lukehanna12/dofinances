@@ -11,9 +11,9 @@
  * Future freely moving tiles can update one GPU tile buffer (or vertex
  * shader motion formula) without changing the backdrop.
  *
- * GAP PUBLIC-SCENE: this GPU scene currently contains the original photograph
- * and overlay, not arbitrary external HTML/DOM. Future refractable content
- * must be added as a GPU scene layer; normal DOM above the canvas remains UI.
+ * GAP PUBLIC-SCENE: source GPU layers are the original photograph, its veil,
+ * and an explicitly uploaded transparent logo in the refraction scene only.
+ * Arbitrary HTML/DOM remains excluded; normal DOM above the canvas stays UI.
  * GAP R-MIP-KERNEL: authored 2x2 explicit reduction awaits native proof.
  * GAP Q: browser presentation/color/EDR not Apple's output pipeline.
  */
@@ -51,8 +51,9 @@ const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 const audit={
   path:"webgpu",status:"initializing",oracleTarget:"25F80/M2/G14G",
-  scene:"GPU-owned centered photograph + 12% authored veil",
-  sceneCapture:"No DOM screenshot/readback. Arbitrary external DOM is NOT included.",
+  scene:"Photo-only visible texture; separate photo+logo refractable mip pyramid",
+  sceneCapture:"No DOM screenshot/readback. Transparent logo exists only in lens source.",
+  logoWidthInGridRows:5.25,logoOnlyInRefraction:true,
   backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
   oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
@@ -191,6 +192,16 @@ function geometry(width,height,imgWidth,imgHeight){
 export function coverUVScale(width,height,imgWidth,imgHeight){
   return geometry(width,height,imgWidth,imgHeight);
 }
+/* 5.25 rows means 5.25 real vertical mosaic pitches (tile + gap).
+ * This rectangle stays centered in the GPU scene, and never enters the DOM. */
+export function lensLogoBounds(rowPitch,sceneWidth,sceneHeight,logoWidth,logoHeight){
+  if(![rowPitch,sceneWidth,sceneHeight,logoWidth,logoHeight].every(
+    n=>Number.isFinite(n)&&n>0))throw new TypeError("Positive finite lens logo geometry required");
+  const width=5.25*rowPitch;
+  const height=width*logoHeight/logoWidth;
+  return [(sceneWidth-width)/(2*sceneWidth),
+    (sceneHeight-height)/(2*sceneHeight),width/sceneWidth,height/sceneHeight];
+}
 
 async function initialize(){
   if(!root)return;
@@ -287,6 +298,39 @@ async function initialize(){
     }
   }
 
+  // The user-supplied transparent logo stays in GPU-only source memory.
+  // Never install it as a DOM layer or the visible photo background.
+  const logoImage=new Image();
+  logoImage.decoding="async";
+  const logoReady=new Promise((resolve,reject)=>{
+    logoImage.onload=resolve;
+    logoImage.onerror=()=>reject(new Error("Lens-only logo image load failed"));
+  });
+  logoImage.src="/app/assets/dashboard-doof-lens-logo.webp";
+  if(root)root.dataset.gpuPhase="load-lens-logo";
+  await logoReady;
+  const logoWidth=logoImage.naturalWidth,logoHeight=logoImage.naturalHeight;
+  if(!(logoWidth>0&&logoHeight>0))throw Error("Empty lens-only logo");
+  const logoTexture=device.createTexture({
+    label:"Transparent logo only for the glass refraction source",
+    size:[logoWidth,logoHeight,1],format:"rgba8unorm",
+    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST
+  });
+  try{
+    device.queue.copyExternalImageToTexture({source:logoImage},
+      {texture:logoTexture},[logoWidth,logoHeight]);
+    audit.logoUpload="direct-image";
+  }catch(directLogoError){
+    const bitmap=await createImageBitmap(logoImage);
+    try{
+      device.queue.copyExternalImageToTexture({source:bitmap},
+        {texture:logoTexture},[logoWidth,logoHeight]);
+      audit.logoUpload="image-bitmap";
+    }finally{bitmap.close();}
+  }
+  audit.logoSource="/app/assets/dashboard-doof-lens-logo.webp";
+  audit.logoDimensions=[logoWidth,logoHeight];
+
   const base="/app/assets/";
   const sources=await Promise.all([
     "dashboard-gpu-scene.wgsl",
@@ -313,6 +357,14 @@ async function initialize(){
     layout:"auto",
     vertex:{module:modules[0],entryPoint:"vsScene"},
     fragment:{module:modules[0],entryPoint:"fsScene",
+      targets:[{format:"rgba16float"}]},
+    primitive:{topology:"triangle-list"}
+  });
+  const lensScenePipeline=device.createRenderPipeline({
+    label:"Refractable photo plus transparent logo -> mip0",
+    layout:"auto",
+    vertex:{module:modules[0],entryPoint:"vsScene"},
+    fragment:{module:modules[0],entryPoint:"fsLensScene",
       targets:[{format:"rgba16float"}]},
     primitive:{topology:"triangle-list"}
   });
@@ -348,8 +400,13 @@ async function initialize(){
   const globalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
-  let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
-    glassGroup=null,backgroundGroup=null,offscreenFrame=null,
+  const logoBoundsBuffer=device.createBuffer({
+    label:"Centered lens-only logo rectangle in normalized UV",
+    size:16,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+  });
+  let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,
+    visibleScene=null,visibleSceneView=null,mipGroups=[],copyGroup=null,
+    glassGroup=null,backgroundGroup=null,lensSceneGroup=null,offscreenFrame=null,
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
@@ -409,6 +466,7 @@ async function initialize(){
     if(sized){
       canvas.width=w;canvas.height=h;
       scene?.destroy();
+      visibleScene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -422,6 +480,13 @@ async function initialize(){
       }
       scene=rgba16Texture(device,w,h);
       sceneView=scene.createView();
+      // The logo must never appear in this photo-only display texture.
+      visibleScene=device.createTexture({
+        label:"Photo-only display source: excludes the uploaded logo",
+        size:[w,h,1],format:"rgba16float",
+        usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT
+      });
+      visibleSceneView=visibleScene.createView();
       audit.mipCount=scene.mipLevelCount;
       backgroundGroup=device.createBindGroup({
         layout:backdropPipeline.getBindGroupLayout(0),
@@ -429,6 +494,16 @@ async function initialize(){
           {binding:0,resource:photo.createView()},
           {binding:1,resource:sampler},
           {binding:2,resource:{buffer:globalsBuffer}}
+        ]
+      });
+      lensSceneGroup=device.createBindGroup({
+        layout:lensScenePipeline.getBindGroupLayout(0),
+        entries:[
+          {binding:0,resource:photo.createView()},
+          {binding:1,resource:sampler},
+          {binding:2,resource:{buffer:globalsBuffer}},
+          {binding:3,resource:logoTexture.createView()},
+          {binding:4,resource:{buffer:logoBoundsBuffer}}
         ]
       });
       mipGroups=[];
@@ -445,7 +520,7 @@ async function initialize(){
       }
       copyGroup=device.createBindGroup({
         layout:copyPipeline.getBindGroupLayout(0),
-        entries:[{binding:0,resource:sceneView}]
+        entries:[{binding:0,resource:visibleSceneView}]
       });
       scenePending=true;
     }
@@ -459,6 +534,11 @@ async function initialize(){
     // offsetTop is invariant under CSS transform and entrance animations.
     pitchCSS=cells[11]?.offsetTop-cells[0]?.offsetTop;
     if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
+    const logoRegion=lensLogoBounds(pitchCSS,physicalWidth/dpr,
+      physicalHeight/dpr,logoWidth,logoHeight);
+    device.queue.writeBuffer(logoBoundsBuffer,0,new Float32Array(logoRegion));
+    audit.logoBoundsUV=logoRegion;
+    audit.logoWidthCSS=5.25*pitchCSS;
     trackTiles=all;
     trackRows=all.map(cell=>rowIndex.get(cell));
     trackColumns=all.map(cell=>columnIndex.get(cell));
@@ -507,14 +587,24 @@ async function initialize(){
   }
   function buildScene(){
     const encoder=device.createCommandEncoder({label:"Scene & full real mip chain"});
-    const pass=encoder.beginRenderPass({colorAttachments:[{
+    // The visible full-screen scene contains exactly the original photo.
+    const visiblePass=encoder.beginRenderPass({colorAttachments:[{
+      view:visibleSceneView,
+      loadOp:"clear",clearValue:[0.04,0.04,0.04,1],storeOp:"store"
+    }]});
+    visiblePass.setPipeline(backdropPipeline);
+    visiblePass.setBindGroup(0,backgroundGroup);
+    visiblePass.draw(3);
+    visiblePass.end();
+    // Only the separate sampled mip pyramid receives the alpha logo.
+    const lensPass=encoder.beginRenderPass({colorAttachments:[{
       view:scene.createView({baseMipLevel:0,mipLevelCount:1}),
       loadOp:"clear",clearValue:[0.04,0.04,0.04,1],storeOp:"store"
     }]});
-    pass.setPipeline(backdropPipeline);
-    pass.setBindGroup(0,backgroundGroup);
-    pass.draw(3);
-    pass.end();
+    lensPass.setPipeline(lensScenePipeline);
+    lensPass.setBindGroup(0,lensSceneGroup);
+    lensPass.draw(3);
+    lensPass.end();
     for(let level=1;level<scene.mipLevelCount;level++){
       const next=encoder.beginComputePass({label:"mip level "+level});
       next.setPipeline(mipPipeline);
@@ -597,8 +687,9 @@ async function initialize(){
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
-    scene?.destroy();offscreenFrame?.destroy();photo.destroy();
-    globalsBuffer.destroy();
+    scene?.destroy();visibleScene?.destroy();offscreenFrame?.destroy();
+    photo.destroy();logoTexture.destroy();
+    globalsBuffer.destroy();logoBoundsBuffer.destroy();
   }
   await waitForVisibleHome();
   engine={rebuild,render,dispose,device};
