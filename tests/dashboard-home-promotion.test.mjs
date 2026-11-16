@@ -14,6 +14,13 @@ test("Production Home replaces only its own view with the exact CTA6 mosaic",()=
   assert.match(home,/id="cta6-mosaic"/);
   assert.match(home,/<h1 id="home-title">Workspace<\/h1>/);
   assert.match(home,/href="#projects"/);
+  assert.ok(home.includes('<a class="cta6-action" href="#projects">See Projects</a>'));
+  assert.ok(home.indexOf('class="cta6-bottom-action"')>home.indexOf('class="cta6-center"'),
+    "See Projects should be separate from the centered title");
+  assert.ok(!home.slice(home.indexOf('class="cta6-center"'),home.indexOf('class="cta6-bottom-action"')).includes('cta6-action'),
+    "No action remains inside the centered mosaic title");
+  assert.ok(!home.slice(home.indexOf('class="cta6-bottom-action"'),home.indexOf("</section>")).includes("<svg"),
+    "No arrow remains in See Projects");
   assert.doesNotMatch(home,/Your workspace, all in one place/);
   for(const slug of ["projects","settings","colosseum/collections","colosseum/providers/local","colosseum/providers/external","colosseum/providers/credentials","colosseum/permissions","colosseum/diagnostics"])
     assert.ok(html.includes('data-view="'+slug+'"'),"Preserve "+slug+" view");
@@ -66,9 +73,23 @@ test("Palette's row gains exactly one glass tile, three slots to its right",()=>
   assert.equal(iconCoordinates["3:3"],undefined,"The added square is icon-free");
   const match=mosaic.match(/const centerGlass=new Set\((\[[^\n]*\])\);/);
   assert.ok(match,"Keep explicit center-grid additions");
-  assert.deepEqual(JSON.parse(match[1]).sort(),["2:4","2:6","3:3","3:5"]);
+  assert.deepEqual(JSON.parse(match[1]).sort(),["2:4","2:6","3:3","3:5","4:3"]);
   assert.match(mosaic,/const center=row>=2&&row<=3&&col>=3&&col<=7;/);
   assert.match(mosaic,/const filled=centerGlass\.has\(row\+":"\+col\) \|\|/);
   assert.match(mosaic,/for\(let index=0;index<66;index\+\+\)/,
     "Preserve the original 11 by 6 grid");
+});
+
+test("Home bottom action and global navigation hiding remain scoped to the active Home route",()=>{
+  const css=asset("dashboard-home.css"),html=read("index.html");
+  const scope='body:has(> #workspace-shell .dashboard-home:not([hidden]))';
+  assert.ok(css.includes('.dashboard-home .cta6-bottom-action{'));
+  assert.ok(css.includes('bottom:calc(clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px));'));
+  assert.ok(css.includes('transform:translateX(-50%);'));
+  assert.ok(css.includes('.dashboard-home .cta6-bottom-action .cta6-action{margin-top:0}'));
+  assert.ok(css.includes(scope+' #global-clock,'));
+  assert.ok(css.includes(scope+' #global-menu-links > a[href="#home"]{'));
+  assert.ok(html.includes('id="global-clock"'));
+  assert.ok(html.includes('href="#home">Workspace</a>'));
+  assert.ok(html.includes('<h1 id="home-title">Workspace</h1>'));
 });

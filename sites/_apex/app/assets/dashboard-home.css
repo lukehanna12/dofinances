@@ -226,6 +226,22 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .con
   flex:none;
   margin-inline:auto;
 }
+/* The action anchors to Home's fixed viewport, independent of moving glass. */
+.dashboard-home .cta6-bottom-action{
+  position:absolute;
+  bottom:calc(clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px));
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  justify-content:center;
+  z-index:4;
+}
+.dashboard-home .cta6-bottom-action .cta6-action{margin-top:0}
+/* Only Home hides its redundant global navigation label and clock. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-clock,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-menu-links > a[href="#home"]{
+  display:none!important;
+}
 /* Strip no longer paints or takes up document height. Copyright is a
    single unobscured text element, pinned to the viewport's bottom right. */
 body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
