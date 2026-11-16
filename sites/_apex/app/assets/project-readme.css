@@ -1,7 +1,7 @@
 /* Project README workspace. GitHub's Markdown typography lives in
    github-markdown.css; the surrounding controls follow Collections. */
 .rm-view{--rm-border:#393939;--rm-muted:#a3a3a3;color:#f4f4f4;min-width:0}
-.rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;margin-bottom:12px}
+.rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;padding-top:var(--workspace-summary-top);margin-bottom:12px}
 .rm-heading-text{min-width:0;flex:1 1 190px}
 .rm-heading h1{font-size:clamp(30px,3.2vw,40px);font-weight:630;letter-spacing:-.045em;margin:5px 0 0}
 .rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#b4b4b4;margin:0}

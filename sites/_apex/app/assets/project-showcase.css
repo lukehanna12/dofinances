@@ -1,6 +1,8 @@
 /* Colosseum utility 0001c4: How It Works 2 — compact Projects adaptation.
    Roughly half-size dimensions / quarter-size area, retaining numbered markers,
    hover image crossfade, black 60% overlay, and fine divider rows. */
+.view[data-view="projects"]{position:relative}
+.view[data-view="projects"] #project-create{position:absolute;right:0;top:var(--workspace-controls-top);min-height:var(--workspace-control-size);margin:0;padding:6px 11px;font-size:11px;z-index:2}
 .view[data-view="projects"] .project-showcase-heading{margin-bottom:12px}
 .view[data-view="projects"] .project-showcase-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);margin:0 0 24px;align-items:stretch}
 .view[data-view="projects"] .project-showcase-card{
