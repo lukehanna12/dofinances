@@ -1,0 +1,17 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+const app=name=>source("sites/_apex/app/assets/"+name);
+test("Collections and Utilities inherit Settings' exact 170ms 4px shared screen-entry motion",()=>{
+ const common=app("workspace-enhancements.css");
+ const collections=app("collections.css");
+ const utilities=app("utilities.css");
+ assert.match(common,/\.content > \.view:not\(\[hidden\]\)\{animation:workspace-content-arrive 170ms cubic-bezier\(\.16,1,\.3,1\) both;\}/);
+ assert.match(common,/@keyframes workspace-content-arrive\{\s*from\{opacity:\.83;transform:translateY\(4px\)\}\s*to\{opacity:1;transform:translateY\(0\)\}/);
+ assert.doesNotMatch(collections,/cs-floating-view-arrive|animation:[^;]*workspace-content-arrive/);
+ assert.doesNotMatch(utilities,/ut-view-arrive|animation:[^;]*workspace-content-arrive/);
+ assert.match(common,/@media\(prefers-reduced-motion:reduce\)\{\s*\.content > \.view:not\(\[hidden\]\)\{animation:none;\}/);
+ assert.match(collections,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(utilities,/@media\(prefers-reduced-motion:reduce\)/);
+});

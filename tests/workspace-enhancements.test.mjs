@@ -39,7 +39,7 @@ test("account deletion disclosure has a subtly richer coral tone without changin
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(path);
     assert.ok(html.includes('<details class="danger">'));
-    assert.ok(html.includes('<summary>Delete my account</summary>'));
+    assert.match(html,/<summary>Delete my account(?: <span class="st-chevron" aria-hidden="true"><\/span>)?<\/summary>/);
   }
 });
 test("unfinished Colosseum screens keep compact headings; Collections and Permissions use dedicated interfaces",()=>{

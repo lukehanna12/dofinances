@@ -75,14 +75,23 @@ test("Settings keeps server-side authorization and uses compact scoped styling",
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
 });
 
-test("Settings destructive buttons use the original Permissions Remove red",async()=>{
+test("Settings deletion disclosure and disconnection use the same red capsule token",async()=>{
  const css=await read("sites/_apex/app/assets/settings.css");
  const html=await read("sites/_apex/app/index.html");
- assert.match(css,/#st-root button\.destructive\{background:#b42318;border-color:#b42318;color:#fff\}/);
- assert.match(css,/#st-root button\.destructive:hover:not\(:disabled\)/);
+ assert.match(css,/--st-disconnect-red:#b42318/);
+ assert.match(css,/#st-root button\.destructive\{background:var\(--st-disconnect-red\);border-color:var\(--st-disconnect-red\);color:#fff\}/);
+ assert.match(css,/#st-root #delete-form > button\.destructive,#st-root #cf-disconnect\{/);
+ assert.match(css,/border:1px solid var\(--st-disconnect-red\);border-radius:999px;/);
+ assert.match(css,/background:#262626;color:var\(--st-disconnect-red\);/);
+ assert.match(css,/font-size:12px;font-weight:700;/);
+ assert.match(css,/#st-root \.danger > summary\{[^}]*color:var\(--st-disconnect-red\)/);
+ assert.match(css,/#st-root \.danger > summary \.st-chevron\{[^}]*border-right-color:currentColor;border-bottom-color:currentColor/);
+ assert.match(css,/#st-root \.danger\[open\] > summary \.st-chevron/);
  assert.match(html,/<button[^>]*class="destructive"[^>]*>Disable MFA<\/button>/);
  assert.match(html,/<button[^>]*class="destructive"[^>]*>Permanently delete account<\/button>/);
- assert.match(html,/<button[^>]*class="destructive"[^>]*id="cf-disconnect"[^>]*>Remove connection<\/button>/);
+ assert.match(html,/<button[^>]*class="destructive"[^>]*id="cf-disconnect"[^>]*>Disconnect<\/button>/);
+ assert.match(html,/<summary>Delete my account <span class="st-chevron" aria-hidden="true"><\/span><\/summary>/);
+ assert.doesNotMatch(html,/>Remove connection<\/button>/);
 });
 
 test("Settings section buttons scroll without changing the SPA route",()=>{

@@ -120,6 +120,22 @@ test("Permissions mirrors Collections' count and rule-loading skeletons without 
  assert.match(script,/\.classList\.toggle\("pm-list-loading",value\)/);
 });
 
+test("Filesystem heading sits on the exact same row as Refresh, with no empty section offset",()=>{
+ const view=index.slice(index.indexOf('data-view="colosseum/permissions"'),index.indexOf('data-view="colosseum/diagnostics"'));
+ const first=view.indexOf('<section class="pm-section pm-rules-section" aria-labelledby="pm-rules-heading">');
+ const summary=view.indexOf('id="pm-count"',first);
+ const heading=view.indexOf('class="pm-section-header pm-first-section-header"',summary);
+ const refresh=view.indexOf('id="pm-refresh"',heading);
+ const toolbar=view.indexOf('class="pm-rule-toolbar"',refresh);
+ assert.ok(first>=0&&summary>first&&heading>summary&&refresh>heading&&toolbar>refresh);
+ assert.equal((view.match(/id="pm-rules-heading"/g)||[]).length,1);
+ assert.match(styles,/#pm-root \.pm-first-section-header\{grid-column:1;grid-row:2;align-self:start;min-width:0;margin:0\}/);
+ assert.match(styles,/#pm-root \.pm-overview-right\{grid-column:2;grid-row:2;align-self:start/);
+ assert.match(styles,/#pm-root \.pm-section\.pm-rules-section\{margin-top:0\}/);
+ assert.match(styles,/grid-template-rows:var\(--workspace-summary-row-height\) minmax\(var\(--workspace-control-size\),auto\)/);
+ assert.match(styles,/#pm-root \.pm-rule-toolbar\{display:flex;align-items:center;gap:9px;margin:15px 0 10px\}/);
+});
+
 test("Optional device unlock uses platform WebAuthn PRF encryption; gateway PIN remains mandatory",async()=>{
  const vault=await fs.readFile(new URL("../sites/_apex/app/assets/permissions-device-unlock.js",import.meta.url),"utf8");
  const view=index.slice(index.indexOf('data-view="colosseum/permissions"'),index.indexOf('data-view="colosseum/diagnostics"'));
