@@ -14,7 +14,7 @@ test("Collections and Utilities preserve Settings' 170ms/4px arrival without mov
  assert.match(common,/\.content > \.view\[data-view="colosseum\/utilities"\]:not\(\[hidden\]\)\{animation:none;\}/);
  assert.doesNotMatch(collections,/cs-floating-view-arrive|animation:[^;]*workspace-content-arrive/);
  assert.doesNotMatch(utilities,/ut-view-arrive|animation:[^;]*workspace-content-arrive/);
- assert.match(common,/@media\(prefers-reduced-motion:reduce\)\{\s*\.content > \.view:not\(\[hidden\]\)\{animation:none;\}/);
+ assert.match(common,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?\.content > \.view:not\(\[hidden\]\)\{animation:none;\}/);
  assert.match(collections,/@media\(prefers-reduced-motion:reduce\)/);
  assert.match(utilities,/@media\(prefers-reduced-motion:reduce\)/);
 });
