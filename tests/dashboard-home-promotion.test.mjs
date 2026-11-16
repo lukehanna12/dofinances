@@ -29,6 +29,23 @@ test("Production Home replaces only its own view with the exact CTA6 mosaic",()=
   assert.ok(!html.includes('dashboard-preview.js'),"Do not disable production navigation");
 });
 
+test("Home's centered Workspace heading is real, selectable DOM text with unchanged appearance",()=>{
+  const html=read("index.html");
+  const css=asset("dashboard-home.css");
+  const home=html.slice(html.indexOf('<section class="view dashboard-home"'),html.indexOf('<section class="view" data-view="projects"'));
+  assert.match(home,/<div class="cta6-center">\s*<h1 id="home-title">Workspace<\/h1>\s*<\/div>/);
+  const container=css.match(/\.dashboard-home \.cta6-center\{([^}]+)\}/)?.[1];
+  const heading=css.match(/\.dashboard-home \.cta6-center h1\{([^}]+)\}/)?.[1];
+  assert.ok(container&&heading);
+  assert.match(container,/pointer-events:none/,"Mosaic overlay remains non-interactive outside the text");
+  assert.match(heading,/pointer-events:auto/,"Native heading receives direct mouse events");
+  assert.match(heading,/user-select:text/,"Heading can be selected by dragging");
+  assert.match(heading,/-webkit-user-select:text/,"Safari receives the same selection behavior");
+  for(const visual of ["font-size:clamp(22px,3.15vw,45px)","line-height:1.08","letter-spacing:-.055em","font-weight:600","color:#f7f9fa","text-shadow:0 2px 18px rgba(0,0,0,.22)"])
+    assert.ok(heading.includes(visual),visual+" must remain unchanged");
+  assert.match(css,/#dashboard-webgpu-scene\{[^}]*pointer-events:none/s,"GPU canvas must not intercept the heading");
+});
+
 test("Home-only CSS cannot hide the sidebar, topbar, or photo on other routes",()=>{
   const css=asset("dashboard-home.css");
   const active='body:has(> #workspace-shell .dashboard-home:not([hidden]))';
