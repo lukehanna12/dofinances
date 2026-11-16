@@ -130,7 +130,7 @@ function batteryGraphic(m){
   }
  }
  if(charging)glyph.append(make("span","dg-battery-bolt-symbol"));
- glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)+"%"));
+ glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)));
  return {glyph,pct,charging};
 }
 function renderLocal(report){
