@@ -1,9 +1,10 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
+import {initCollectionsAdmission} from "./collections-admit.js";
 import {normalizeCollectionConfiguration,orderedCollectionTree,collectionDescendsFrom,moveCollectionInConfiguration} from "./collections-organization.js";
 /* Live Colosseum Collections — no cached collection records, demo data, or polling.
  * The only write surface is /api/colosseum/collections behind the existing
  * DoFinances session + Cloudflare Access + bound owner + HMAC Router bridge.
- * Inventory admission (+) is intentionally disabled until separately designed.
+ * Owner-only admission adds existing catalog items to collections.
  */
 const COLLECTIONS_API="/api/colosseum/collections";
 const COLLECTIONS_ACCESS_REAUTH="/api/colosseum/connect?return=collections";
@@ -251,7 +252,7 @@ export function initColosseumCollections(){
    collectionSearchFocus.disabled=collectionSearch.disabled;
    root.querySelectorAll(".cs-actions button, .cs-utility-toolbar button, .cs-utility-trash").forEach(button=>{
      const action=button.dataset.csAction;
-     button.disabled=value||action==="admit"||
+     button.disabled=value||(action==="admit"&&(!state.detail||state.selecting||localEditorActive()||state.editing||state.collectionSelecting))||
        (action==="remove"&&(!state.selecting||!state.selected.size))||
        (action==="edit"&&(state.selecting||!state.detail))||
        (action==="select"&&(localEditorActive()||(!state.selecting&&!state.detail?.item_uids?.length)));
@@ -319,10 +320,10 @@ export function initColosseumCollections(){
        '<button class="cs-utility-trash" type="button" data-cs-action="remove" aria-label="Remove selected utilities"'+(!enabled||!activeSelect||!state.selected.size?' disabled':'')+'>'+
          '<img src="/app/assets/trash-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
        '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Remove selected utilities</span></span></span>'+
-     // Add remains disabled, but is outside the joined Edit/Select control.
-     '<span class="cs-utility-action-control cs-utility-action-control--add"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" disabled aria-label="Add utilities (coming later)" title="Utility admission will be configured later">'+
+     // The separate existing-utility popup reuses the current add icon.
+     '<span class="cs-utility-action-control cs-utility-action-control--add"><button class="cs-utility-action cs-utility-action--add" type="button" data-cs-action="admit" aria-label="Add utilities" aria-haspopup="dialog" aria-controls="cs-admit-dialog"'+(!enabled||activeEdit||activeSelect||state.editing||state.collectionSelecting?' disabled':'')+'>'+
          '<img src="/app/assets/add-utilities.v1.svg" alt="" aria-hidden="true"></button>'+
-       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities (coming later)</span></span></span>'+
+       '<span class="cs-create-tooltip" role="tooltip"><span class="cs-create-tooltip-label">Add utilities</span></span></span>'+
      '<span class="cs-utility-toolbar" role="group" aria-label="Utility management">'+
        '<span class="cs-utility-action-control"><button class="cs-utility-action" type="button" data-cs-action="edit" aria-label="'+(activeEdit?'Done editing utilities':'Edit utilities')+'" aria-pressed="'+String(activeEdit)+'"'+(!enabled||activeSelect?' disabled':'')+'>'+
          '<img class="cs-utility-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true">'+UTILITY_DONE_SVG+'</button>'+
@@ -550,6 +551,7 @@ export function initColosseumCollections(){
      const edit=card.querySelector('.cs-utility-toolbar [data-cs-action="edit"]');
      const select=card.querySelector('.cs-utility-toolbar [data-cs-action="select"]');
      const trash=card.querySelector(".cs-utility-trash");
+     const admitButton=card.querySelector('[data-cs-action="admit"]');
      const editing=localEditorActive();
      for(const [button,active,name] of [[edit,editing,"editing"],[select,state.selecting,"selecting"]]){
        if(!button)continue;
@@ -561,6 +563,7 @@ export function initColosseumCollections(){
        button.disabled=state.busy||!state.detail||
          (name==="editing"?state.selecting:editing||(!state.selecting&&!state.detail.item_uids?.length));
      }
+     if(admitButton)admitButton.disabled=state.busy||!state.detail||state.selecting||editing||state.editing||state.collectionSelecting;
      if(trash)trash.disabled=state.busy||!state.selecting||!state.selected.size;
      for(const pick of card.querySelectorAll(".cs-utility-pick")){
        const uid=pick.dataset.csPickUtility,chosen=state.selected.has(uid);
@@ -1319,9 +1322,39 @@ export function initColosseumCollections(){
    state.page=Math.floor(index/state.pageSize)+1;
    renderRows();openCollection(id);
  }
+ // One popup serves both the desktop utility card and mobile accordion.
+ const admission=initCollectionsAdmission({
+   root,
+   getSnapshot:()=>{
+     const col=activeCollection();
+     return col&&state.detail&&!state.busy&&!state.selecting&&!localEditorActive()&&
+       !state.editing&&!state.collectionSelecting?
+       {id:col.collection_id,name:col.name,revision:state.detail.revision,
+         item_uids:state.detail.item_uids||[]}:null;
+   },
+   admit:async (current,uids)=>{
+     const col=activeCollection();
+     if(!col||col.collection_id!==current.id||col.name!==current.name||
+       state.detail?.revision!==current.revision||state.busy)
+       throw Error("Collection changed. Refresh before adding utilities.");
+     setBusy(true);
+     try{
+       return await request("admit",{
+         name:current.name,item_uids:uids,expected_revision:current.revision
+       });
+     }finally{setBusy(false);}
+   },
+   onSaved:async (current,uids)=>{
+     await loadList({focusId:current.id});
+     const verified=state.activeId===current.id&&
+       uids.every(uid=>state.detail?.item_uids?.includes(uid));
+     announce(verified?uids.length+" "+(uids.length===1?"utility added":"utilities added")+
+       " to "+current.name+".":"Colosseum confirmed the addition; refresh to verify the new members.",!verified,true);
+   }
+ });
  function handleUtilityAction(action){
    if(!action||state.busy||state.editTransitioning||state.collectionSelectTransitioning)return;
-   if(action==="admit")return; // Intentionally dormant.
+   if(action==="admit"){admission.open();return;}
    if(action==="edit"){
      if(localEditorActive()){void finishLocalEditor();return;}
      enterLocalEditor();return;
@@ -1517,6 +1550,7 @@ export function initColosseumCollections(){
    if(state.localEditingId)exitLocalEditor();
    if(state.selecting){state.selecting=false;state.selected.clear();syncUtilityChrome();}
    if(evictDialog.open&&!state.busy)evictDialog.close();
+   admission.close();
    if(state.editing||state.editTransitioning)resetEditMode();
    if(state.collectionSelecting||state.collectionSelectTransitioning)resetCollectionSelectMode();
  });
