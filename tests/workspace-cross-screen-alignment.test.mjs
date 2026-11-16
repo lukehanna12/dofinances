@@ -57,7 +57,7 @@ test("Diagnostics refresh matches Collections geometry and busy/shortcut behavio
  assert.ok(el.includes('aria-keyshortcuts="Control+Shift+R"'));
  assert.ok(el.includes('id="dg-refresh-tooltip" role="tooltip"'));
  assert.ok(!el.includes('<span>Refresh</span></button>'));
- assert.ok(css.includes("margin-top:calc(var(--workspace-summary-row-height) + var(--workspace-summary-controls-gap) - var(--workspace-panel-overlap))"));
+ assert.ok(css.includes("margin-top:calc(-1 * var(--workspace-panel-overlap))"));
  for(const detail of ["border:1px solid #262626","border-radius:10px","background:#171717","color:#fafafa","width:14px;height:14px","stroke-width:1.7","animation:dg-spin 600ms linear infinite"]){
   assert.ok(css.includes(detail),detail);
  }

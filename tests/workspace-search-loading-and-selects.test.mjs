@@ -6,22 +6,29 @@ const read=path=>readFile(new URL("../"+path,import.meta.url),"utf8");
 const asset=name=>read("sites/_apex/app/assets/"+name);
 const app=()=>read("sites/_apex/app/index.html");
 
-test("Provider summary retains LOCAL / EXTERNAL / CREDENTIALS labels while precisely loading only counts",async()=>{
- const [html,css,js]=await Promise.all([app(),asset("providers.css"),asset("providers.js")]);
+test("Provider summaries replace entire first and second text groups with Collections-style rings",async()=>{
+ const [html,css,js,collections]=await Promise.all([app(),asset("providers.css"),asset("providers.js"),asset("collections.css")]);
  const block=html.slice(html.indexOf('id="pv-summary"'),html.indexOf('class="pv-list-meta"'));
  for(const id of ["pv-summary-mode","pv-summary-registered","pv-summary-connected","pv-summary-state"])
   assert.ok(block.includes('id="'+id+'"'),"Provider summary needs "+id);
+ assert.ok(html.includes('class="pv-workbench pv-loading" id="pv-root"'));
+ assert.equal((block.match(/class="pv-summary-group"/g)||[]).length,2);
  assert.equal((block.match(/class="pv-summary-count"/g)||[]).length,2);
+ assert.ok(block.includes('class="pv-summary-divider"> / </span>'));
+ assert.ok(css.includes('#pv-root.pv-loading .pv-summary-group{visibility:hidden}'));
+ assert.ok(css.includes('#pv-root.pv-loading .pv-summary-group::after{'));
+ for(const feature of ["content:\"\"","visibility:visible","width:1em;height:1em","border:1.5px solid currentColor","border-top-color:transparent","border-radius:50%","animation:pv-spin 600ms linear infinite"])
+  assert.ok(css.includes(feature),"Missing ring property "+feature);
+ assert.ok(css.includes('min-height:var(--workspace-summary-row-height)'));
+ assert.ok(collections.includes('.cs-summary-loading .cs-summary-value{visibility:hidden}'));
+ assert.ok(collections.includes('.cs-summary-divider{position:absolute'));
  assert.ok(js.includes('summaryMode.textContent=(local?"LOCAL":mode==="credentials"?"CREDENTIALS":"EXTERNAL")+" ·"'));
  assert.ok(js.includes('summaryRegistered.textContent=String(rows.length)'));
  assert.ok(js.includes('summaryConnected.textContent=String(connected)'));
  assert.ok(js.includes('summaryState.textContent=local?"AVAILABLE":"CONNECTED"'));
- assert.ok(css.includes("#pv-root.pv-loading .pv-summary-count > span{visibility:hidden}"));
- assert.ok(css.includes("#pv-root.pv-loading .pv-summary-count::after{"));
- assert.ok(css.includes("top:50%;left:50%;margin:-.5em 0 0 -.5em"));
+ assert.ok(js.includes('root.classList.toggle("pv-loading",value)'));
  assert.doesNotMatch(js,/alignSummarySkeleton|createRange\(/);
  assert.doesNotMatch(css,/--pv-ring-one|--pv-ring-two|\.pv-summary-skeleton/);
- assert.doesNotMatch(css,/\.pv-loading \.pv-summary-value\{visibility:hidden/);
 });
 test("Three Providers routes share a Collections-quality actionable search and tooltip",async()=>{
  const [html,css,js,collections]=await Promise.all([app(),asset("providers.css"),asset("providers.js"),asset("collections.css")]);

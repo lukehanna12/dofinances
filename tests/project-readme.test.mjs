@@ -120,8 +120,18 @@ test("GitHub renderer uses the GFM Markdown endpoint and constrains its context"
 });
 
 test("README editing offers larger Collections-style controls, live preview, diff and permission errors",()=>{
- for(const id of ["rm-edit","rm-confirm","rm-diff","rm-reading","rm-diff-panel",
-  "rm-repository-form","rm-presentation","rm-notice"])assert.ok(html.includes('id="'+id+'"'),id);
+ for(const id of ["rm-edit","rm-confirm","rm-diff","rm-reading","rm-diff-panel","rm-notice"])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ for(const retired of ["rm-repository-form","rm-repository-input","rm-presentation"])
+  assert.ok(!html.includes('id="'+retired+'"'),"Docs footer must not retain "+retired);
+ assert.ok(!html.includes("README presentation &amp; GitHub repository"));
+ assert.ok(!ui.includes('repoForm.addEventListener('));
+ assert.ok(!ui.includes('$(\"rm-presentation\")'));
+ assert.ok(!ui.includes('$(\"rm-repository-input\")'));
+ assert.ok(ui.includes('view.dataset.presentation=data.project.presentation||"github"'),
+  "Presentation metadata must still render project-specific Markdown");
+ assert.ok(ui.includes('if(repository&&!repoValid(repository))'),
+  "Project creation must still support repository association");
  assert.ok(html.includes('aria-keyshortcuts="Meta+Shift+E"'));
  assert.ok(css.includes(".rm-icon-button{width:42px;height:42px"));
  assert.ok(css.includes(".rm-confirm{background:#fff;color:#141414"));

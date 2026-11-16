@@ -82,7 +82,9 @@ test("Settings deletion disclosure and disconnection use the same red capsule to
  assert.match(css,/#st-root button\.destructive\{background:var\(--st-disconnect-red\);border-color:var\(--st-disconnect-red\);color:#fff\}/);
  assert.match(css,/#st-root #delete-form > button\.destructive,#st-root #cf-disconnect\{/);
  assert.match(css,/border:1px solid var\(--st-disconnect-red\);border-radius:999px;/);
- assert.match(css,/background:#262626;color:var\(--st-disconnect-red\);/);
+ assert.match(css,/background:transparent;color:var\(--st-disconnect-red\);/);
+ assert.match(css,/background:rgba\(180,35,24,\.09\);border-color:var\(--st-disconnect-red\);/);
+ assert.match(css,/background:rgba\(180,35,24,\.14\)/);
  assert.match(css,/font-size:12px;font-weight:700;/);
  assert.match(css,/#st-root \.danger > summary\{[^}]*color:var\(--st-disconnect-red\)/);
  assert.match(css,/#st-root \.danger > summary \.st-chevron\{[^}]*border-right-color:currentColor;border-bottom-color:currentColor/);
