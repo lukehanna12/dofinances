@@ -18,9 +18,10 @@ function spring(value,velocity,target,dt,rate){
   return [target+(offset+j*dt)*decay,(velocity-rate*j*dt)*decay];
 }
 export function createInteractionController(){
-  let bounds=[],state=[],focus=-1,pressed=false,px=-1,py=-1,hasPointer=false;
+  let bounds=[],state=[],inert=new Uint8Array(0),focus=-1,pressed=false,px=-1,py=-1,hasPointer=false;
   function hit(x,y){
     for(let i=bounds.length-1;i>=0;i--){
+      if(inert[i])continue;
       const b=bounds[i];
       if(x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])return i;
     }
@@ -28,6 +29,7 @@ export function createInteractionController(){
   }
   function configure(rects){
     const previous=state;
+    inert=new Uint8Array(rects.length);
     bounds=rects.map(b=>{
       if(!Array.isArray(b)||b.length!==4||b.some(v=>!Number.isFinite(v)))
         throw new TypeError("Four finite tile bounds required");
@@ -42,9 +44,14 @@ export function createInteractionController(){
     if(focus<0)pressed=false;
   }
   // Update moving GPU hit regions without rebuilding the hover springs.
-  function retargetRects(data){
+  function retargetRects(data,cornerInert=null){
     if(!(data instanceof Float32Array)||data.length!==bounds.length*TILE_FLOATS)
       throw new TypeError("Translated 20-float tile data required");
+    if(cornerInert!==null&&(!(cornerInert instanceof Uint8Array)||cornerInert.length!==bounds.length))
+      throw new TypeError("Full-length corner-only hit mask required");
+    // Never disable entire edge columns. Only the renderer's effectively
+    // invisible upper/lower corner portions may opt out of hit-testing.
+    inert=cornerInert||new Uint8Array(bounds.length);
     for(let i=0;i<bounds.length;i++){
       const p=i*TILE_FLOATS,b=bounds[i];
       b[0]=data[p];b[1]=data[p+1];b[2]=data[p+2];b[3]=data[p+3];

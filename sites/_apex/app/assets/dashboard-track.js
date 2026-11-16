@@ -11,6 +11,11 @@ export const TRACK_LANES=7;
 export const TRACK_FADE_ROWS=2;
 export const TRACK_COLUMNS=11;
 export const TRACK_CURVE_STRENGTH=0.8;
+// Permanent, subtle lateral transparency: two-pitch-wide sides with a
+// 0.35-pitch outward bow at the vertical midpoint, matching the existing
+// upper/lower half-alpha contour displacement without making edges disappear.
+export const TRACK_SIDE_EDGE_OPACITY=0.82;
+export const TRACK_SIDE_BULGE_ROWS=0.35;
 export const TRACK_SECONDS=84/(1.15*1.30*1.35); // 35% faster than the immediately preceding preview speed
 const smooth=t=>{
   const x=Math.max(0,Math.min(1,t));
@@ -28,6 +33,21 @@ export function trackCurve(column){
     throw new RangeError("Track column must be in [0,10]");
   const x=2*column/(TRACK_COLUMNS-1)-1;
   return 1-x*x;
+}
+// The side mask follows each tile's CURRENT row slot, not its original
+// row or entrance delay. At the top/bottom the fade extends 2.35 pitches
+// inward; at the middle it extends 1.65. Thus the left/right boundaries
+// bow outward centrally, while middle columns stay fully opaque. This
+// opacity is independent of the moving top/bottom gradients and hover.
+export function trackSideOpacity(slot,column){
+  if(!Number.isFinite(slot)||slot<-1||slot>6)
+    throw new RangeError("Current track slot must lie in [-1,6]");
+  trackCurve(column);
+  const vertical=(slot-2.5)/3.5;
+  const arch=Math.max(0,1-vertical*vertical);
+  const support=TRACK_FADE_ROWS+TRACK_SIDE_BULGE_ROWS*(1-2*arch);
+  const inset=Math.min(column,TRACK_COLUMNS-1-column);
+  return TRACK_SIDE_EDGE_OPACITY+(1-TRACK_SIDE_EDGE_OPACITY)*smooth(inset/support);
 }
 const shapedFade=(distance,column)=>{
   const t=Math.max(0,Math.min(1,distance/TRACK_FADE_ROWS));
