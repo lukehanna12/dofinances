@@ -134,7 +134,7 @@ test("README editing offers larger Collections-style controls, live preview, dif
   "Project creation must still support repository association");
  assert.ok(html.includes('aria-keyshortcuts="Meta+Shift+E"'));
  assert.ok(css.includes(".rm-icon-button{width:42px;height:42px"));
- assert.ok(css.includes(".rm-confirm{background:#fff;color:#141414"));
+ assert.ok(css.includes(".rm-confirm{background:#fff;color:#10243b"));
  assert.ok(ui.includes('state.source.requiresConnection'));
  assert.ok(ui.includes('window.confirm("Discard your unsaved README changes?")'));
  assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){'),
@@ -156,7 +156,7 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  const docs=html.slice(html.indexOf('data-view="project/readme"'),html.indexOf('<p id="rm-notice"'));
  const projects=source("sites/_apex/app/assets/project-showcase.css");
  assert.ok(docs.includes('<p id="rm-project-label" class="rm-overline">README.md</p>'));
- assert.ok(css.includes('.rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#fff;'));
+ assert.ok(css.includes('.rm-overline{font-size:19px;line-height:1.3;letter-spacing:-.02em;font-weight:600;color:#fff;'));
  assert.ok(docs.includes('id="rm-repository-label"'));
  assert.ok(css.includes('.rm-repository-label{margin:0;font-size:12px;color:#3d444d'));
  assert.ok(docs.includes('id="rm-visibility-badge" class="rm-visibility-badge" hidden>Private</span>'));
@@ -174,13 +174,16 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(docs.indexOf('id="rm-confirm"')<docs.indexOf('id="rm-diff"'));
  assert.ok(docs.includes('aria-describedby="rm-diff-tooltip"'));
  assert.ok(docs.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
- assert.ok(css.includes('.rm-toolbar{display:flex;width:100%;min-height:50px;margin:14px 0 4px}'));
+ assert.ok(css.includes('.rm-toolbar{display:flex;width:100%;min-height:50px;margin:14px 0 20px}'));
  assert.ok(css.includes('.rm-toolbar-end{display:flex;align-items:center;gap:8px;width:100%}'));
  assert.ok(css.includes('.rm-diff-control{margin-left:auto}'));
  assert.ok(css.includes('.rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}'));
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
+ assert.ok(css.includes('.rm-icon-button:hover:not(:disabled){background:rgba(75,125,186,.18)}'));
+ assert.ok(css.includes('.rm-confirm:hover:not(:disabled){background:#eff5ff;color:#10243b}'));
+ assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(78,132,195,.23);border-color:#496f98}'));
  assert.ok(css.includes('.rm-diff-control .rm-tooltip{right:0;left:auto;transform-origin:top right}'));
 });
 test("Docs tooltips match Collections and all three action buttons share one baseline",()=>{
@@ -213,8 +216,8 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(html.includes('rm-control-wrap rm-edit-surround'));
  assert.doesNotMatch(html,/id="rm-markdown"|id="rm-preview"|id="rm-editor"/);
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
- assert.ok(css.includes('background:#212121'));
- assert.ok(css.includes('box-shadow:inset 0 0 1px rgba(255,255,255,.2)'));
+ assert.ok(css.includes('background:#192b3d'));
+ assert.ok(css.includes('box-shadow:inset 0 0 0 1px rgba(114,157,203,.25)'));
  assert.ok(ui.includes('reading.contentEditable="true"'));
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
@@ -378,11 +381,11 @@ test("The edit control is enclosed by the Collections-style circular surface",()
  const surround=css.slice(css.indexOf(".rm-edit-surround,.rm-action-surround{"),css.indexOf(".rm-edit-surround #rm-edit,"));
  assert.match(surround,/padding:4px/);
  assert.match(surround,/border-radius:999px/);
- assert.match(surround,/background:#212121/);
- assert.match(surround,/box-shadow:inset 0 0 1px rgba\(255,255,255,\.2\)/);
+ assert.match(surround,/background:#192b3d/);
+ assert.match(surround,/box-shadow:inset 0 0 0 1px rgba\(114,157,203,\.25\)/);
  assert.ok(html.includes('class="rm-control-wrap rm-edit-surround"'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
- assert.ok(css.includes('.rm-confirm{background:#fff;color:#141414'));
+ assert.ok(css.includes('.rm-confirm{background:#fff;color:#10243b'));
  assert.ok(html.includes('id="rm-diff"'));
 });
 

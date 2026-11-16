@@ -311,8 +311,13 @@ try{
  assert.equal(otherCanvas,"#0a0a0a","The Docs override must not change other workspace screens");
  // Show dirty edit controls and check actual production markup/stylesheet geometry.
  await evaluate('(()=>{document.querySelector(\'[data-view="projects"]\').hidden=true;document.querySelector(\'[data-view="project/readme"]\').hidden=false;document.getElementById("rm-confirm").hidden=false;document.getElementById("rm-diff").hidden=false;document.getElementById("rm-visibility-badge").hidden=false;document.getElementById("rm-repository-label").textContent="lukehanna12/colosseum";return true;})()');
- const docsGeometry=await evaluate('(()=>{const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}},style=selector=>getComputedStyle(document.querySelector(selector));return {heading:rect(".rm-heading-text"),toolbar:rect(".rm-toolbar"),edit:rect(".rm-edit-surround"),editButton:rect("#rm-edit"),confirm:rect("#rm-confirm"),confirmOuter:rect("#rm-confirm").width,diff:rect("#rm-diff"),diffOuter:rect(".rm-diff-control"),document:rect("#rm-reading"),labelColor:style("#rm-project-label").color,repoColor:style("#rm-repository-label").color,badgeColor:style("#rm-visibility-badge").color,badgeBackground:style("#rm-visibility-badge").backgroundColor}})()');
+ const docsGeometry=await evaluate('(()=>{const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}},style=selector=>getComputedStyle(document.querySelector(selector));return {heading:rect(".rm-heading-text"),subtitle:rect("#rm-project-label"),repository:rect("#rm-repository-label"),toolbar:rect(".rm-toolbar"),edit:rect(".rm-edit-surround"),editButton:rect("#rm-edit"),confirm:rect("#rm-confirm"),confirmOuter:rect("#rm-confirm").width,diff:rect("#rm-diff"),diffOuter:rect(".rm-diff-control"),document:rect("#rm-reading"),labelColor:style("#rm-project-label").color,subtitleSize:style("#rm-project-label").fontSize,repoColor:style("#rm-repository-label").color,surroundBlue:style(".rm-edit-surround").backgroundColor,confirmWhite:style("#rm-confirm").backgroundColor,confirmInk:style("#rm-confirm").color,badgeColor:style("#rm-visibility-badge").color,badgeBackground:style("#rm-visibility-badge").backgroundColor}})()');
  assert.equal(docsGeometry.labelColor,"rgb(255, 255, 255)","README.md should be white");
+ assert.equal(docsGeometry.subtitleSize,"19px","README.md should read as a screen subtitle");
+ assert.ok(docsGeometry.subtitle.height>docsGeometry.repository.height,"Subtitle line must exceed repository text in size");
+ assert.equal(docsGeometry.surroundBlue,"rgb(25, 43, 61)","Circular controls must use the Docs blue palette");
+ assert.equal(docsGeometry.confirmWhite,"rgb(255, 255, 255)","Confirm must remain white");
+ assert.equal(docsGeometry.confirmInk,"rgb(16, 36, 59)","Confirm ink must be deep blue");
  assert.equal(docsGeometry.repoColor,"rgb(61, 68, 77)","Repository matches document outline");
  assert.equal(docsGeometry.badgeColor,"rgb(239, 195, 152)");
  assert.equal(docsGeometry.badgeBackground,"rgb(75, 51, 37)");
@@ -320,14 +325,27 @@ try{
  assert.ok(docsGeometry.confirm.x>=docsGeometry.edit.right+4,"Confirm follows Cancel");
  assert.ok(Math.abs(docsGeometry.diffOuter.right-docsGeometry.toolbar.right)<1,"Diff at far right");
  assert.ok(Math.abs(docsGeometry.diff.y-docsGeometry.confirm.y)<1,"Buttons share baseline");
- assert.ok(Math.abs(docsGeometry.document.y-docsGeometry.toolbar.bottom-4)<1,"4px document gap");
+ const buttonCenter=docsGeometry.edit.y+docsGeometry.edit.height/2;
+ const repoCenter=docsGeometry.repository.y+docsGeometry.repository.height/2;
+ const aboveGap=buttonCenter-repoCenter,belowGap=docsGeometry.document.y-buttonCenter;
+ assert.ok(aboveGap>belowGap,"Document should be slightly closer to button center than repository text");
+ assert.ok(aboveGap-belowGap>=1&&aboveGap-belowGap<=8,
+   "Vertical balance should be close (1-8px shorter below); got "+JSON.stringify({aboveGap,belowGap}));
+ assert.ok(Math.abs(docsGeometry.document.y-docsGeometry.toolbar.bottom-20)<1,"20px under-button spacing");
  assert.equal(docsGeometry.edit.width,50);
  assert.equal(docsGeometry.diffOuter.width,50);
  for(const action of ["editButton","confirm","diff"]){
   assert.equal(docsGeometry[action].width,42,action+" width");
   assert.equal(docsGeometry[action].height,42,action+" height");
  }
- console.log("Docs metadata and toolbar Chromium geometry checks passed.");
+ // Repeat spacing geometry at the mobile breakpoint, where controls shrink.
+ await command("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:false});
+ const mobileSpacing=await evaluate('(()=>{const rect=s=>document.querySelector(s).getBoundingClientRect();const edit=rect(".rm-edit-surround"),repo=rect("#rm-repository-label"),doc=rect("#rm-reading"),center=edit.y+edit.height/2,above=center-(repo.y+repo.height/2),below=doc.y-center;return {above,below,buttonWidth:edit.width}})()');
+ assert.equal(mobileSpacing.buttonWidth,46,"Mobile controls retain their 46px size");
+ assert.ok(mobileSpacing.above>mobileSpacing.below&&mobileSpacing.above-mobileSpacing.below<=8,
+   "Mobile Docs spacing should retain the same visual balance; got "+JSON.stringify(mobileSpacing));
+ await command("Emulation.clearDeviceMetricsOverride");
+ console.log("Docs subtitle, blue action palette and desktop/mobile spacing browser checks passed.");
  console.log("Docs canvas computed-color and route-scope browser tests passed.");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
