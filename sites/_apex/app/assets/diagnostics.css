@@ -34,7 +34,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-refresh-tooltip-shortcut{display:inline-flex;gap:2px;margin-left:14px;color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25}
 #diagnostics-root .dg-refresh-tooltip-shortcut kbd{display:inline-block;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit}
 #diagnostics-root .dg-status{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--dg-muted);white-space:nowrap}
-#diagnostics-root .dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none}
+#diagnostics-root .dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none;animation:dg-health-pulse 1.6s ease-in-out infinite;transform-origin:center}
+@keyframes dg-health-pulse{50%{opacity:.48;transform:scale(.78)}}
+/* shadcn's text-shimmer utility, scoped to this vanilla-DOM workspace:
+   a 2s muted-currentColor highlight, not a pulsing Skeleton block. */
+#diagnostics-root .shimmer{display:inline-block;background:linear-gradient(110deg,#858585 30%,#858585 40%,#f5f5f5 50%,#858585 60%,#858585 70%);background-size:240% 100%;background-position:100% 0;background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:dg-text-shimmer 2s linear infinite}
+@keyframes dg-text-shimmer{to{background-position:-100% 0}}
 #diagnostics-root [data-health=healthy] .dg-dot{background:var(--workspace-health-green);box-shadow:0 0 0 3px var(--workspace-health-green-halo)}
 #diagnostics-root [data-health=degraded] .dg-dot{background:var(--dg-warning);box-shadow:0 0 0 3px #ffd60020}
 #diagnostics-root [data-health=unhealthy] .dg-dot{background:var(--dg-danger);box-shadow:0 0 0 3px #ff424520}
@@ -95,6 +100,42 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-pair-detail{display:block;font-size:10px;color:var(--dg-muted);margin-top:3px}
 #diagnostics-root .dg-footnote{font-size:10px;color:var(--dg-faint);line-height:1.55;margin:13px 0 0}
 #diagnostics-root .dg-empty{padding:20px 10px;font-size:11px;color:var(--dg-faint);text-align:center}
+
+/* Site-standard shadcn Skeleton geometry. Text labels remain semantic; every
+   unknown observation is a non-interactive rounded, pulsing neutral bar. */
+#diagnostics-root .dg-skeleton-line{display:inline-block;max-width:100%;height:11px;vertical-align:middle;flex:none}
+#diagnostics-root .dg-skeleton-note{display:block;height:10px;margin-top:10px}
+#diagnostics-root .dg-skeleton-percentage{height:25px}
+#diagnostics-root .dg-skeleton-gauge{width:58px;height:58px;border-radius:50%}
+#diagnostics-root .dg-skeleton-progress{display:block;height:4px;margin-top:9px}
+#diagnostics-root .dg-skeleton-footnote{display:block;height:10px;margin-top:13px}
+#diagnostics-root .dg-skeleton-pair-value{display:block;height:16px;margin-top:7px}
+#diagnostics-root .dg-skeleton-storage{display:block;height:34px}
+#diagnostics-root .dg-skeleton-battery{height:38px;border-radius:8px}
+#diagnostics-root .dg-skeleton-track{display:block;height:8px;margin-top:22px}
+#diagnostics-root .dg-latency .dg-skeleton-pair-value{height:28px}
+#diagnostics-root .dg-storage-legend .dg-skeleton-line{height:10px}
+#diagnostics-root.dg-loading .dg-meta > span{position:relative;color:transparent}
+#diagnostics-root.dg-loading .dg-meta > span::after{
+ content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+ width:clamp(55px,70%,200px);height:10px;background:var(--site-skeleton-accent,#262626);
+ border-radius:.375rem;animation:site-skeleton-pulse 2s cubic-bezier(.4,0,.6,1) infinite;pointer-events:none
+}
+/* Refresh the real data in place. Text maintains its exact width and
+   vertical metrics, while Skeleton paint stands in for the readings. */
+#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-worker-name,.dg-table tbody td:not(:first-child),.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty){
+ position:relative;color:transparent!important
+}
+#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-worker-name,.dg-table tbody td:not(:first-child),.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty)::after{
+ content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+ width:clamp(30px,68%,140px);max-width:100%;height:10px;border-radius:.375rem;
+ background:var(--site-skeleton-accent,#262626);
+ animation:site-skeleton-pulse 2s cubic-bezier(.4,0,.6,1) infinite;pointer-events:none
+}
+#diagnostics-root.dg-refresh-loading .dg-card-percent::after{width:4ch;height:17px}
+#diagnostics-root.dg-refresh-loading .dg-storage-available::after{width:7ch;height:27px}
+#diagnostics-root.dg-refresh-loading .dg-pair-value::after{width:7ch;height:14px}
+
 /* Native Apple CoreSVG battery outline and five level geometries. Paths are
    imported from ~/Desktop/font/Icons-Real/icons/Diagnostics Components/Battery,
    not recreated as CSS rectangles or browser-drawn approximate curves. */
@@ -139,4 +180,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 @media(max-width:1100px){#diagnostics-root .dg-top{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-gateway-panel{grid-column:auto}#diagnostics-root .dg-controls-body{grid-template-columns:1fr}#diagnostics-root .dg-section-head{align-items:flex-start}}
 @media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-reading{gap:8px}#diagnostics-root .dg-card-ring{width:46px;height:46px}#diagnostics-root .dg-card-ring::before{inset:5px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{grid-template-columns:minmax(0,1fr) auto}#diagnostics-root .dg-mac-summary{gap:10px}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(prefers-reduced-motion:reduce){#diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){
+ #diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{animation:none!important;transition:none!important}
+ #diagnostics-root .shimmer{background:none;color:var(--dg-muted);-webkit-text-fill-color:var(--dg-muted)}
+}

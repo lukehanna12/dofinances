@@ -51,6 +51,74 @@ function metricCard(label,q){
 }
 function sectionOf(report,name){return report?.sections?.[name]||null;}
 function missing(name){return name==="local"?"Not included or local diagnostics unavailable.":"Not included in this query or unavailable from the source.";}
+
+/* Site-standard shadcn Skeleton: neutral animate-pulse blocks, never fake
+   metrics. Build the same card/panel/table structure used by a real report. */
+function loadingLine(width,extra=""){
+ const line=make("span","site-skeleton dg-skeleton-line"+(extra?" "+extra:""));
+ line.style.width=width;line.setAttribute("data-slot","skeleton");line.setAttribute("aria-hidden","true");
+ return line;
+}
+function skeletonPair(label,width="8ch"){
+ const pair=make("div");
+ pair.append(make("span","dg-pair-label",label),loadingLine(width,"dg-skeleton-pair-value"));
+ return pair;
+}
+function initialSkeletonReport(){
+ const top=clear("dg-top");
+ for(const [label,i] of ["Worker requests","Workers KV writes","D1 rows read","Durable Object requests"].entries()){
+  const card=make("div","dg-card"),reading=make("div","dg-card-reading");
+  reading.append(loadingLine("58px","dg-skeleton-gauge"),loadingLine((i%2?"4.2":"3.7")+"ch","dg-skeleton-percentage"));
+  card.append(make("span","dg-card-label",label),reading,loadingLine((58+i*7)+"%","dg-skeleton-note"));
+  top.append(card);
+ }
+ const quotaGroups=[
+  ["Workers","Account-wide request quota",["Invocations"]],
+  ["Workers KV","Account-wide operations and capacity",["Reads","Writes","Deletes","Lists","Storage"]],
+  ["D1","Account-wide database quotas",["Rows read","Rows written","Storage"]],
+  ["Durable Objects","Account-wide object and SQLite quotas",["Requests","GB-seconds","SQLite rows read","SQLite rows written","SQLite storage"]]
+ ];
+ const quotas=clear("dg-quotas");
+ quotaGroups.forEach(([name,caption,items],groupIndex)=>{
+  const card=panel(name,caption);
+  items.forEach((name,i)=>{
+   const entry=make("div","dg-quota"),head=make("div","dg-quota-head");
+   head.append(make("span","dg-quota-name",name),loadingLine((7+(i+groupIndex)%4*2)+"ch"));
+   entry.append(head,loadingLine("100%","dg-skeleton-progress"));card.append(entry);
+  });
+  quotas.append(card);
+ });
+ const workers=clear("dg-workers"),scroll=make("div","dg-table-scroll"),table=make("table","dg-table"),thead=make("thead"),head=make("tr"),body=make("tbody");
+ ["Service · relative volume","Requests","Errors","Subrequests","CPU p90","CPU p99"].forEach(name=>head.append(make("th","",name)));
+ thead.append(head);
+ for(let i=0;i<3;i++){
+  const tr=make("tr"),service=make("td");
+  service.append(loadingLine([ "63%","79%","52%" ][i]),loadingLine("100%","dg-skeleton-progress"));
+  tr.append(service);
+  for(let c=1;c<6;c++){const td=make("td");td.append(loadingLine((4+((i+c)%4)*2)+"ch"));tr.append(td);}
+  body.append(tr);
+ }
+ table.append(thead,body);scroll.append(table);workers.append(scroll,loadingLine("66%","dg-skeleton-footnote"));
+ const local=clear("dg-local"),mac=panel("Mac"),macSummary=make("div","dg-mac-summary"),storage=make("div","dg-mac-storage-reading");
+ mac.classList.add("dg-storage-panel");
+ storage.append(loadingLine("8ch","dg-skeleton-storage"),loadingLine("16ch","dg-skeleton-note"));
+ macSummary.append(storage,loadingLine("84px","dg-skeleton-battery"));mac.append(macSummary,loadingLine("100%","dg-skeleton-track"));
+ const legend=make("div","dg-storage-legend");
+ legend.append(loadingLine("8ch"),loadingLine("13ch"));mac.append(legend);local.append(mac);
+ const gateway=panel("Local gateway"),latency=make("div","dg-latency"),grid=make("div","dg-pairs");
+ gateway.classList.add("dg-gateway-panel");
+ gateway.querySelector(".dg-panel-head").append(loadingLine("9ch"));
+ latency.append(skeletonPair("Request p50","8ch"),skeletonPair("Request p95","7ch"));
+ gateway.append(latency);
+ [["Health","8ch"],["Diagnostic latency","7ch"],["Uptime","9ch"],
+  ["Memory (RSS)","11ch"],["Event-loop lag","7ch"],["Active / queued","6ch"],["Error rate","5ch"]]
+  .forEach(([name,width])=>grid.append(skeletonPair(name,width)));
+ gateway.append(grid);local.append(gateway);
+}
+function unavailableReport(){
+ for(const id of ["dg-top","dg-quotas","dg-workers","dg-local"])
+  placeholder(byId(id),"Measurements unavailable. Use Refresh to try again.");
+}
 function renderOverview(report){
  const top=clear("dg-top"),w=sectionOf(report,"workers"),kv=sectionOf(report,"kv"),
   d=sectionOf(report,"d1"),o=sectionOf(report,"durable_objects");
@@ -210,7 +278,19 @@ export function initColosseumDiagnostics(){
  if(!byId("diagnostics-root"))return;
  let busy=false,requested=false,previous=null,selected=optionsFromForm();
  const refresh=byId("dg-refresh"),run=byId("dg-run");
- const query=byId("dg-query"),notice=byId("dg-notice");
+ const query=byId("dg-query"),notice=byId("dg-notice"),
+  root=byId("diagnostics-root"),health=byId("dg-health"),healthText=byId("dg-health-text");
+ function reportLoading(value){
+  root.classList.toggle("dg-loading",value);
+  root.classList.toggle("dg-refresh-loading",value&&!!previous);
+  for(const id of ["dg-top","dg-quotas","dg-workers","dg-local"])
+   byId(id).setAttribute("aria-busy",String(value));
+ }
+ function checkStatus(value){
+  health.dataset.checking=String(value);
+  healthText.classList.toggle("shimmer",value);
+  if(value)healthText.textContent="Checking...";
+ }
  function showFailure(message){
   byId("dg-health").dataset.health="degraded";
   byId("diagnostics-root").dataset.health="degraded";
@@ -225,6 +305,8 @@ export function initColosseumDiagnostics(){
   if(busy)return;
   if(!args.sections.length){notice.hidden=false;notice.dataset.tone="error";notice.textContent="Select at least one diagnostics section.";return;}
   busy=true;requested=true;selected={sections:[...args.sections],check:args.check,depth:args.depth};optionsLabel(selected);
+  if(!previous)initialSkeletonReport();
+  reportLoading(true);checkStatus(true);notice.hidden=true;
   refresh.disabled=true;run.disabled=true;refresh.classList.add("is-busy");refresh.setAttribute("aria-busy","true");refresh.setAttribute("aria-label","Refreshing diagnostics");
   try{
    const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),30000);
@@ -239,8 +321,10 @@ export function initColosseumDiagnostics(){
    if(report?.name!=="system.status"||!report.sections)throw Error("The diagnostics service returned an unexpected schema.");
    previous=report;renderReport(report);query.open=false;
   }catch(error){
+   if(!previous)unavailableReport();
    showFailure(error.name==="AbortError"?"The diagnostics request exceeded 30 seconds.":String(error.message||"Diagnostics unavailable."));
   }finally{
+   reportLoading(false);checkStatus(false);
    busy=false;refresh.disabled=false;run.disabled=false;refresh.classList.remove("is-busy");refresh.setAttribute("aria-busy","false");refresh.setAttribute("aria-label","Refresh selected diagnostics");
   }
  }
