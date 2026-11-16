@@ -32,7 +32,9 @@ test("Native empty battery uses two dashes, no bolt and the precise 100%-fill ca
  assert.ok(css.includes('from{clip-path:inset(0 100% 0 0);background-color:#fff}'));
  assert.ok(css.includes('to{clip-path:inset(0 var(--dg-battery-final-right,100%) 0 0);background-color:var(--dg-battery-tint)}'));
  assert.match(css,/\.dg-battery-number\{[^}]*-webkit-text-stroke:2px var\(--dg-panel-bg\)/);
- assert.match(css,/\.dg-battery-bolt-symbol\{[^}]*left:23%;[^}]*background:#fff/);
+ assert.match(css,/\.dg-battery-bolt-symbol\{[^}]*left:-6px;[^}]*transform:translate\(-100%,-50%\);[^}]*background:#fff/);
+ assert.match(css,/\.dg-battery-graphic\{[^}]*margin-left:24px;[^}]*overflow:visible/);
+ assert.match(css,/\.dg-battery-number\{[^}]*left:44\.3%/);
  assert.ok(css.includes('animation:dg-battery-bolt-arrive var(--dg-reveal-duration) ease-out both'));
  assert.ok(css.includes('@keyframes dg-battery-bolt-arrive{0%,55%{opacity:0}100%{opacity:1}}'));
 });
@@ -64,7 +66,9 @@ test("Settings puts deletion action below its textboxes and presents branded, se
  assert.ok(source.includes('image.referrerPolicy="no-referrer"'));
  assert.ok(source.includes('image.addEventListener("error",()=>image.replaceWith(fallback)'));
  assert.ok(styles.includes('.st-identity-avatar{display:block;flex:none;width:36px;height:36px;'));
- assert.ok(styles.includes('.st-identity-add-group{display:flex;flex-direction:column'));
+ assert.ok(styles.includes('.st-identity-add-group{display:flex;flex-direction:row;align-items:center;justify-content:space-between'));
+ assert.ok(styles.includes('#add-identity-buttons{display:flex;flex-direction:column;align-items:stretch'));
+ assert.ok(styles.includes('.st-identity-capacity{flex:none;margin-left:auto;padding:0;text-align:right'));
  assert.ok(styles.includes('.st-identity-capacity{padding-left:2px;color:#777;font-size:10px;'));
  assert.doesNotMatch(source,/add.textContent="Add "/);
 });

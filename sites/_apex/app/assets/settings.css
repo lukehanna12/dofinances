@@ -114,11 +114,21 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root .st-identity-labels > span{font-size:11px;line-height:1.4;color:#999;overflow-wrap:anywhere}
 #st-root #linked-identity-list > p{margin:7px 0 0}
 #st-root #linked-identity-list button{min-height:29px}
-#st-root #add-identity-buttons{display:flex;flex-wrap:wrap;align-items:flex-start;gap:13px;margin:13px 0 0;max-width:none}
-#st-root .st-identity-add-group{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
+/* Two full-width rows: actions form a vertical left column and the subdued
+   per-provider quota sits on the far right of the Settings content area. */
+#st-root #add-identity-buttons{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;margin:13px 0 0;max-width:none}
+#st-root .st-identity-add-group{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:14px;width:100%;min-width:0}
 #st-root #add-identity-buttons .st-identity-connect{display:inline-flex;align-items:center;gap:9px;min-height:36px;padding:8px 12px;margin:0!important;text-decoration:none;white-space:normal;border-radius:9px}
 #st-root .st-identity-connect .st-provider-logo{width:18px;height:18px}
-#st-root .st-identity-capacity{padding-left:2px;color:#777;font-size:10px;line-height:1.35;letter-spacing:.01em}
+#st-root .st-identity-capacity{flex:none;margin-left:auto;padding:0;text-align:right;white-space:nowrap;color:#777;font-size:10px;line-height:1.35;letter-spacing:.01em}
+#st-root .st-profile-photo-refresh{display:inline-flex;align-self:flex-start;margin-top:2px;color:#bcbcbc;font-size:10px;line-height:1.35;text-decoration:underline;text-underline-offset:3px}
+#st-root .st-profile-photo-refresh:hover{color:#fff}
+#st-root .st-profile-photo-refresh[hidden]{display:none!important}
+@media(max-width:480px){
+ #st-root .st-identity-add-group{gap:10px}
+ #st-root #add-identity-buttons .st-identity-connect{min-width:0;padding:7px 9px;font-size:10.5px}
+ #st-root .st-identity-capacity{font-size:9.5px}
+}
 #st-root #add-identity-buttons a[aria-disabled="true"]{cursor:not-allowed}
 #st-root #add-identity-buttons a[aria-disabled="true"]:focus-visible{outline-offset:2px}
 #st-root .st-account-identity{padding-top:16px}

@@ -142,7 +142,9 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 /* Native Apple CoreSVG battery outline and five level geometries. Paths are
    imported from ~/Desktop/font/Icons-Real/icons/Diagnostics Components/Battery,
    not recreated as CSS rectangles or browser-drawn approximate curves. */
-#diagnostics-root .dg-battery-graphic{--dg-battery-tint:rgba(255,255,255,.9);position:relative;flex:0 0 84px;width:84px;min-width:0;aspect-ratio:35.9904/16.024}
+/* Reserve space to the left so an external charging bolt cannot intrude on
+   storage values at narrow widths. Keep the authentic battery SVG unchanged. */
+#diagnostics-root .dg-battery-graphic{--dg-battery-tint:rgba(255,255,255,.9);position:relative;flex:0 0 84px;width:84px;min-width:0;margin-left:24px;aspect-ratio:35.9904/16.024;overflow:visible}
 #diagnostics-root .dg-battery-graphic[data-tone=charging]{--dg-battery-tint:var(--dg-good)}
 #diagnostics-root .dg-battery-graphic[data-tone=low]{--dg-battery-tint:var(--dg-danger)}
 #diagnostics-root .dg-battery-graphic[data-tone=low-power]{--dg-battery-tint:var(--dg-warning)}
@@ -153,10 +155,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
  from{clip-path:inset(0 100% 0 0);background-color:#fff}
  to{clip-path:inset(0 var(--dg-battery-final-right,100%) 0 0);background-color:var(--dg-battery-tint)}
 }
-#diagnostics-root .dg-battery-number{position:absolute;z-index:2;left:59%;top:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:650;letter-spacing:-.045em;color:#fff;-webkit-text-stroke:2px var(--dg-panel-bg);paint-order:stroke fill;text-shadow:none;white-space:nowrap;line-height:1}
-/* The authentic Apple bolt is part of the battery indicator, layered behind
-   the white charge value; its geometry is loaded from the original SVG path. */
-#diagnostics-root .dg-battery-bolt-symbol{position:absolute;z-index:1;left:23%;top:50%;width:16px;height:26px;transform:translate(-50%,-50%);pointer-events:none;background:#fff;mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat;-webkit-mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat;animation:dg-battery-bolt-arrive var(--dg-reveal-duration) ease-out both}
+#diagnostics-root .dg-battery-number{position:absolute;z-index:2;left:44.3%;top:50%;transform:translate(-50%,-50%);font-size:20px;font-weight:650;letter-spacing:-.045em;color:#fff;-webkit-text-stroke:2px var(--dg-panel-bg);paint-order:stroke fill;text-shadow:none;white-space:nowrap;line-height:1}
+/* The authentic Apple white bolt sits entirely OUTSIDE the battery's left
+   outline, with a six-pixel gap; no overlap or overlay on battery charge. */
+#diagnostics-root .dg-battery-bolt-symbol{position:absolute;z-index:1;left:-6px;top:50%;width:16px;height:26px;transform:translate(-100%,-50%);pointer-events:none;background:#fff;mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat;-webkit-mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat;animation:dg-battery-bolt-arrive var(--dg-reveal-duration) ease-out both}
 /* Fade begins late and ends on the same frame as the charge reveal. */
 @keyframes dg-battery-bolt-arrive{0%,55%{opacity:0}100%{opacity:1}}
 #diagnostics-root .dg-storage-panel{grid-column:1/-1}
