@@ -100,3 +100,32 @@ test("Home bottom action and global navigation hiding remain scoped to the activ
   assert.ok(html.includes('href="#home">Workspace</a>'));
   assert.ok(html.includes('<h1 id="home-title">doof</h1>'));
 });
+
+test("Home title rises exactly half a responsive mosaic square without moving the grid or action",()=>{
+  const css=asset("dashboard-home.css");
+  assert.match(css,/--cta6-title-tile:calc\(\(min\(calc\(100vw - 32px\),1080px\) - 10 \* clamp\(6px,0\.75vw,13px\)\)\/11\)/);
+  assert.match(css,/translate:0 calc\(-0\.5 \* var\(--cta6-title-tile\)\)/);
+  assert.match(css,/--cta6-title-tile:calc\(\(100vw - 26px - 10 \* clamp\(3px,1\.1vw,7px\)\)\/11\)/);
+  const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
+  const calculate=(viewport,mobile)=>{
+    const width=mobile?viewport-26:Math.min(viewport-32,1080);
+    const gap=mobile?clamp(viewport*0.011,3,7):clamp(viewport*0.0075,6,13);
+    return {square:(width-10*gap)/11,offset:-(width-10*gap)/22};
+  };
+  for(const [viewport,mobile] of [[1440,false],[1024,false],[760,true],[390,true],[320,true]]){
+    const {square,offset}=calculate(viewport,mobile);
+    assert.ok(square>0);
+    assert.ok(Math.abs(offset/square+0.5)<1e-12,"Title offset must equal half a square at "+viewport+"px");
+  }
+  assert.match(css,/\.dashboard-home \.cta6-bottom-action\{[\s\S]*?transform:translateX\(-50%\)/);
+  assert.match(css,/\.dashboard-home \.cta6-mosaic\{[\s\S]*?grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/);
+});
+
+test("See Projects uses reversed dark/light fill and explicit white arrow, including on hover and visited links",()=>{
+  const css=asset("dashboard-home.css"),html=read("index.html");
+  assert.match(css,/\.dashboard-home \.cta6-action\{[\s\S]*?background:rgba\(24,28,32,\.97\);\s*color:#fff;/);
+  assert.match(css,/\.dashboard-home \.cta6-action svg\{color:#fff;stroke:#fff\}/);
+  assert.match(css,/\.dashboard-home \.cta6-action:visited\{color:#fff\}/);
+  assert.match(css,/\.dashboard-home \.cta6-action:hover\{\s*background:#30363c;/);
+  assert.match(html,/<a class="cta6-action" href="#projects">See Projects <svg[^>]*stroke="currentColor"/);
+});
