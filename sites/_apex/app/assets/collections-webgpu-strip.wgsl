@@ -19,8 +19,6 @@ struct State {
   viewport:vec4<f32>,  // strip viewport top, wallpaper overpull, DPR, strip CSS height
   material:vec4<f32>,  // public inner amount, public inner height, mip LOD, original veil
   pointer:vec4<f32>,   // CSS x, hover, pressed, spare
-  tuning:vec4<f32>,    // browser brightness gain, contrast gain, tint strength, spare
-  tint:vec4<f32>,      // full sRGB picker color, alpha unused (strength above)
 };
 @group(0) @binding(0) var photo:texture_2d<f32>;
 @group(0) @binding(1) var samplerLinear:sampler;
@@ -79,13 +77,5 @@ fn refractionEnvelope(distance:f32,amount:f32,height:f32)->f32{
   // Applying it by linear browser mixing is provisional: the executed native
   // face matrix/fill compositing and ColorSync/EDR output remain unproved.
   let color=mix(face,vec3<f32>(1.0),0.05);
-  // Temporary browser preview controls only (NOT native Clear filter inputs).
-  // Exact operation order is recorded in the on-screen copyable preset.
-  // Default brightness=1, contrast=1, strength=0 restores original output.
-  let contrasted=clamp((color-vec3<f32>(0.5))*state.tuning.y+vec3<f32>(0.5),
-    vec3<f32>(0.0),vec3<f32>(1.0));
-  let brightened=clamp(contrasted*state.tuning.x,
-    vec3<f32>(0.0),vec3<f32>(1.0));
-  let adjusted=mix(brightened,state.tint.rgb,state.tuning.z);
-  return vec4<f32>(adjusted*coverage,coverage);
+  return vec4<f32>(color*coverage,coverage);
 }
