@@ -410,7 +410,24 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   from{opacity:.83;transform:translateY(4px)}
   to{opacity:1;transform:translateY(0)}
 }
+/* Collections and Utilities have viewport-fixed management docks.
+ * A transform on their view creates a containing block for position:fixed
+ * (even after a transform(0) animation with fill-mode:both), so their
+ * fixed docks drift with page content. Animate the same four-pixel entrance
+ * using relative top instead; it moves the view's painted content without
+ * hijacking the fixed buttons' viewport coordinate system. */
+.content > .view[data-view="colosseum/collections"]:not([hidden]),
+.content > .view[data-view="colosseum/utilities"]:not([hidden]){
+  position:relative;
+  animation:workspace-fixed-dock-arrive 170ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes workspace-fixed-dock-arrive{
+  from{opacity:.83;top:4px}
+  to{opacity:1;top:0}
+}
 @media(prefers-reduced-motion:reduce){
+  .content > .view[data-view="colosseum/collections"]:not([hidden]),
+  .content > .view[data-view="colosseum/utilities"]:not([hidden]){animation:none;}
   .content > .view:not([hidden]){animation:none;}
   .shadcn-breadcrumb-link,.shadcn-breadcrumb-page,.global-menu a,.global-menu-icon{transition:none;}
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
