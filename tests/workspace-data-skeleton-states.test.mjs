@@ -66,7 +66,7 @@ test("Diagnostics uses shadcn Skeleton data placeholders across the real screen 
   assert.ok((js+css).includes(fragment)||fragment==='if(!previous)unavailableReport()');
  assert.ok(!js.includes('Generating mock telemetry'));
 });
-test("Diagnostics shimmers Checking... only during a read; dot pulses regardless of health color",()=>{
+test("Diagnostics shimmers Checking... and pulses its dot only during a health read",()=>{
  const js=asset("diagnostics.js"),css=asset("diagnostics.css");
  const block=html.slice(html.indexOf('class="dg-header"'),html.indexOf('class="dg-meta"'));
  assert.ok(block.includes('id="dg-health-text" class="shimmer">Checking...</span>'));
@@ -75,7 +75,8 @@ test("Diagnostics shimmers Checking... only during a read; dot pulses regardless
  assert.ok(js.includes('if(value)healthText.textContent="Checking..."'));
  assert.ok(js.includes('reportLoading(true);checkStatus(true)'));
  assert.ok(js.includes('reportLoading(false);checkStatus(false)'));
- assert.ok(css.includes('.dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none;animation:dg-health-pulse'));
+ assert.ok(css.includes('.dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none;animation:none;'));
+ assert.ok(css.includes('.dg-status[data-checking="true"] .dg-dot{animation:dg-health-pulse 1.6s ease-in-out infinite}'));
  assert.ok(css.includes('@keyframes dg-health-pulse{50%{opacity:.48;transform:scale(.78)}}'));
  for(const state of ['healthy','degraded','unhealthy'])
   assert.ok(css.includes('[data-health='+state+'] .dg-dot{'));
