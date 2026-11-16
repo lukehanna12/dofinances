@@ -28,12 +28,41 @@ const fixture=[
  'window.__rulesReady=true;',
  '</script></body></html>'
 ].join("\n");
+// A separate browser fixture checks the production CSS cascade for the
+// authenticated Docs route, without contacting an account or a private API.
+const canvasCSSFiles=new Map([
+ ["/canvas/dashboard.css",new URL("../sites/_apex/app/assets/dashboard.css",import.meta.url)],
+ ["/canvas/site-foundation.css",new URL("../sites/_apex/assets/site-foundation.css",import.meta.url)],
+ ["/canvas/workspace-theme.css",new URL("../sites/_apex/app/assets/workspace-theme.css",import.meta.url)],
+ ["/canvas/workspace-wallpapers.css",new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url)],
+ ["/canvas/workspace-enhancements.css",new URL("../sites/_apex/app/assets/workspace-enhancements.css",import.meta.url)],
+ ["/canvas/workspace-title.css",new URL("../sites/_apex/app/assets/workspace-title.css",import.meta.url)],
+ ["/canvas/project-readme.css",new URL("../sites/_apex/app/assets/project-readme.css",import.meta.url)]
+]);
+const canvasFixture=[
+ '<!doctype html><html><head><meta charset="utf-8">',
+ ...Array.from(canvasCSSFiles.keys(),path=>'<link rel="stylesheet" href="'+path+'">'),
+ '</head><body data-wallpaper-route="project/example/readme">',
+ '<div class="shell" id="workspace-shell"><div class="main"><div class="workspace-scroll"><main class="content">',
+ '<section class="view" data-view="projects" hidden></section>',
+ '<section class="view rm-view" data-view="project/readme"><article class="rm-reading">README fixture</article></section>',
+ '</main></div></div></div><footer class="workspace-footer">© DoFinances · 2026</footer>',
+ '</body></html>'
+].join("\n");
 const server=createServer((request,response)=>{
  const files=new Map([
   ["/assets/readme-edit-history.js",historyFile],
   ["/assets/readme-markdown-input-rules.js",moduleFile],
   ["/assets/readme-editor-interactions.js",editorFile]
  ]);
+ if(canvasCSSFiles.has(request.url)){
+  response.writeHead(200,{"Content-Type":"text/css","Cache-Control":"no-store"});
+  response.end(readFileSync(canvasCSSFiles.get(request.url)));return;
+ }
+ if(request.url==="/docs-canvas"){
+  response.writeHead(200,{"Content-Type":"text/html","Cache-Control":"no-store"});
+  response.end(canvasFixture);return;
+ }
  if(files.has(request.url)){
   response.writeHead(200,{"Content-Type":"text/javascript","Cache-Control":"no-store"});
   response.end(readFileSync(files.get(request.url)));return;
@@ -260,6 +289,21 @@ try{
  await until('document.querySelector("#readme input")?.checked===false',"checkbox undo");
  await pressShortcut("z",{shift:true});
  await until('document.querySelector("#readme input")?.checked===true',"checkbox redo");
+ // The exact real stylesheet cascade must paint Docs blue, not just declare
+ // that variable in a source file. Also check the shell's full-page backdrop.
+ await command("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/docs-canvas"});
+ await pause(300);
+ const docsCanvas=await evaluate('(()=>{const root=document.documentElement,shell=document.getElementById("workspace-shell");return {variable:getComputedStyle(root).getPropertyValue("--ui-canvas").trim(),html:getComputedStyle(root).backgroundColor,body:getComputedStyle(document.body).backgroundColor,layer:getComputedStyle(shell,"::after").backgroundColor,document:getComputedStyle(document.querySelector(".rm-reading")).backgroundColor};})()');
+ assert.deepEqual(docsCanvas,{
+  variable:"#09101a",
+  html:"rgb(9, 16, 26)",
+  body:"rgb(9, 16, 26)",
+  layer:"rgb(9, 16, 26)",
+  document:"rgb(13, 17, 23)"
+ },"Docs canvas, full-page background layer and document must have the intended computed colors");
+ const otherCanvas=await evaluate('(()=>{document.querySelector(".rm-view").hidden=true;document.querySelector(\'[data-view="projects"]\').hidden=false;return getComputedStyle(document.documentElement).getPropertyValue("--ui-canvas").trim();})()');
+ assert.equal(otherCanvas,"#0a0a0a","The Docs override must not change other workspace screens");
+ console.log("Docs canvas computed-color and route-scope browser tests passed.");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
  try{socket?.close();}catch{}

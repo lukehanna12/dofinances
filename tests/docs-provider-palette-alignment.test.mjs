@@ -27,7 +27,20 @@ test("Doc-surrounding blue is exactly 60 percent toward the selected deeper blue
  const expected=blend(doc,deep,.60);
  assert.deepEqual(expected,[9,16,26]);
  assert.equal(hex(expected),"#09101a");
- assert.ok(css.includes('html:has(body > #workspace-shell .rm-view:not([hidden])){--ui-canvas:'+hex(expected)+'}'));
+ const docsRule='html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:'+hex(expected)+'}';
+ assert.ok(css.includes(docsRule));
+ // Unlike an existence-only check, this guards the CSS specificity regression
+ // that allowed the shared non-Home near-black canvas to override Docs.
+ const sharedRule=asset("workspace-title.css").match(/html:has\([^\n]+\)\{--ui-canvas:#0a0a0a\}/)?.[0];
+ assert.ok(sharedRule,"Expected the common non-Home canvas rule");
+ const specificity=selector=>({
+   ids:(selector.match(/#[\w-]+/g)||[]).length,
+   attributesAndClasses:(selector.match(/\.[\w-]+|\[[^\]]+\]/g)||[]).length
+ });
+ const docsSpecificity=specificity(docsRule),sharedSpecificity=specificity(sharedRule);
+ assert.ok(docsSpecificity.ids>sharedSpecificity.ids||
+   docsSpecificity.ids===sharedSpecificity.ids&&docsSpecificity.attributesAndClasses>sharedSpecificity.attributesAndClasses,
+   "Docs canvas must beat the shared non-Home rule in the CSS cascade");
  assert.ok(css.includes('.rm-reading{background:#0d1117'));
  for(let i=0;i<3;i++){
   const lo=Math.min(doc[i],deep[i]),hi=Math.max(doc[i],deep[i]);

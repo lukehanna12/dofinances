@@ -4,7 +4,8 @@
    #07101c. Exact sRGB channel interpolation, 40% document + 60% dark,
    yields RGB (9,16,26) = #09101a. The darker reference is a palette
    surrogate because the original private wallpaper pixels are not in Git. */
-html:has(body > #workspace-shell .rm-view:not([hidden])){--ui-canvas:#09101a}
+/* More specific than the shared non-Home canvas rule in workspace-title.css. */
+html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:#09101a}
 
 .rm-view{--rm-border:#393939;--rm-muted:#a3a3a3;color:#f4f4f4;min-width:0}
 .rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px}
