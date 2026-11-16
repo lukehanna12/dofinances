@@ -40,9 +40,13 @@ function quota(label,q,formatter=integer){
 }
 function metricCard(label,q){
  const pct=usage(q),c=make("div","dg-card");c.dataset.level=tone(pct);
- const head=make("div","dg-card-head");
- head.append(make("span","dg-card-label",label),make("strong","dg-card-percent",pct===null?"—":quantity(pct,1)+"%"));
- c.append(head,make("div","dg-card-note",pct===null?"Measurement unavailable":integer(q.used)+" of "+integer(q.limit)+" consumed"),progress(q));
+ const reading=make("div","dg-card-reading"),ring=make("span","dg-card-ring");
+ ring.setAttribute("aria-hidden","true");
+ if(pct===null)ring.classList.add("is-unknown");
+ else ring.style.setProperty("--dg-ring-percent",String(Math.min(100,pct)));
+ reading.append(ring,make("strong","dg-card-percent",pct===null?"—":quantity(pct,1)+"%"));
+ c.append(make("span","dg-card-label",label),reading,
+  make("div","dg-card-note",pct===null?"Measurement unavailable":integer(q.used)+" of "+integer(q.limit)+" consumed"));
  return c;
 }
 function sectionOf(report,name){return report?.sections?.[name]||null;}

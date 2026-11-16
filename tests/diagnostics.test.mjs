@@ -32,6 +32,42 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
   assert.doesNotMatch(css,/font-weight:740;/,"no Diagnostics-specific override of the native page title");
   assert.match(css,/#diagnostics-root \.dg-header/);
 });
+test("Quota overview uses circular gauges beside true percentages, never treating unavailable values as zero",async()=>{
+ const js=await read("../sites/_apex/app/assets/diagnostics.js");
+ const css=await read("../sites/_apex/app/assets/diagnostics.css");
+ assert.match(css,/\.dg-card-ring\{[^\n]*conic-gradient/);
+ assert.match(css,/\.dg-card-ring\.is-unknown\{[^\n]*border:2px dashed/);
+ assert.match(css,/\.dg-card-reading\{[^\n]*display:flex/);
+ assert.match(js,/ring\.setAttribute\("aria-hidden","true"\)/);
+ assert.match(js,/ring\.style\.setProperty\("--dg-ring-percent",String\(Math\.min\(100,pct\)\)\)/);
+ const renderer=js.slice(js.indexOf("function metricCard("),js.indexOf("function sectionOf("));
+ assert.doesNotMatch(renderer,/progress\(q\)/,"Overview rings replace top-card bars, not detailed quota bars");
+ const {runInNewContext}=await import("node:vm");
+ const makeElement=tag=>({
+  tag,children:[],dataset:{},classList:{values:new Set(),add(k){this.values.add(k);}},
+  attributes:{},style:{values:{},setProperty(key,value){this.values[key]=value;}},
+  append(...children){this.children.push(...children);},
+  setAttribute(key,value){this.attributes[key]=value;}
+ });
+ const document={createElement:makeElement};
+ const source=js.replace("export function initColosseumDiagnostics","function initColosseumDiagnostics");
+ const metricCard=runInNewContext(source+"\nmetricCard",{document,Intl});
+ for(const [q,expectedLevel,expectedPct,expectedText] of [
+  [{used:25,limit:100},"normal","25","25%"],
+  [{used:91,limit:100},"critical","91","91%"],
+  [{used:120,limit:100},"critical","100","120%"],
+  [null,"unknown",undefined,"—"]
+ ]){
+  const card=metricCard("Test quota",q);
+  assert.equal(card.dataset.level,expectedLevel);
+  const reading=card.children[1],ring=reading.children[0],number=reading.children[1];
+  assert.equal(ring.attributes["aria-hidden"],"true");
+  assert.equal(ring.style.values["--dg-ring-percent"],expectedPct);
+  assert.equal(number.textContent,expectedText);
+  if(q===null)assert.ok(ring.classList.values.has("is-unknown"));
+ }
+});
+
 test("Native Apple battery assets keep their original CoreSVG geometry and semantic colors",async()=>{
  const base="../sites/_apex/app/assets/battery/";
  const originalNames=["0percent","25percent","50percent","75percent","100percent","100percent.bolt"];
