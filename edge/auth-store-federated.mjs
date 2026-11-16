@@ -2,7 +2,7 @@
 // independent of D1 and without storing OAuth access or refresh tokens.
 import {AuthStore as SecureAuthStore} from "./auth-store-secure.mjs";
 import {randomToken,randomSalt,passwordHash,sha256,normalizedEmail,PASSWORD_ITERATIONS} from "./auth-core.mjs";
-import {FEDERATION_LIMITS} from "./auth-federation.mjs";
+import {FEDERATION_LIMITS,safeFederatedAvatar} from "./auth-federation.mjs";
 const now=()=>Math.floor(Date.now()/1000);
 const permittedProvider=p=>Object.hasOwn(FEDERATION_LIMITS,p);
 const secureToken=t=>typeof t==="string"&&/^[A-Za-z0-9_-]{43}$/.test(t);
@@ -12,6 +12,11 @@ export class AuthStore extends SecureAuthStore {
     super(ctx,env);
     this.sql.exec("CREATE TABLE IF NOT EXISTS account_methods (user_id TEXT PRIMARY KEY,has_password INTEGER NOT NULL CHECK(has_password IN(0,1)))");
     this.sql.exec("CREATE TABLE IF NOT EXISTS federated_identities (id TEXT PRIMARY KEY,user_id TEXT NOT NULL,provider TEXT NOT NULL,issuer TEXT NOT NULL,client_id TEXT NOT NULL,subject TEXT NOT NULL,email TEXT,display_name TEXT,linked_at INTEGER NOT NULL,UNIQUE(provider,issuer,subject))");
+    // Existing deployed Durable Objects have no avatar column. Schema migration
+    // is idempotent and retains all account links, secrets and sessions.
+    const columns=this.sql.exec("PRAGMA table_info(federated_identities)").toArray();
+    if(!columns.some(column=>column.name==="avatar_url"))
+      this.sql.exec("ALTER TABLE federated_identities ADD COLUMN avatar_url TEXT");
     this.sql.exec("CREATE INDEX IF NOT EXISTS idx_federated_user ON federated_identities(user_id,provider)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS federation_transactions (state_hash TEXT PRIMARY KEY,provider TEXT NOT NULL,intent TEXT NOT NULL,session_hash TEXT,verifier TEXT NOT NULL,nonce TEXT NOT NULL,expires_at INTEGER NOT NULL)");
   }
@@ -55,9 +60,13 @@ export class AuthStore extends SecureAuthStore {
   async federatedAccounts(token){
     const user=await this.session(token);
     if(!user)return {status:401,error:"Not authenticated."};
-    const rows=this.sql.exec("SELECT id,provider,email,display_name,linked_at FROM federated_identities WHERE user_id=? ORDER BY linked_at,id",user.id).toArray();
+    const rows=this.sql.exec("SELECT id,provider,subject,email,display_name,avatar_url,linked_at FROM federated_identities WHERE user_id=? ORDER BY linked_at,id",user.id).toArray();
     return {status:200,hasPassword:this.hasPassword(user.id),
-      identities:rows.map(r=>({id:r.id,provider:r.provider,email:r.email,displayName:r.display_name,linkedAt:r.linked_at})),
+      identities:rows.map(r=>({id:r.id,provider:r.provider,email:r.email,displayName:r.display_name,
+        avatarUrl:safeFederatedAvatar(r.provider,r.avatar_url)||
+          (r.provider==="github"&&/^[0-9]{1,20}$/.test(r.subject)?
+            "https://avatars.githubusercontent.com/u/"+r.subject+"?v=4":null),
+        linkedAt:r.linked_at})),
       limits:FEDERATION_LIMITS};
   }
   async completeFederation({intent,identity,sessionToken}){
@@ -67,6 +76,7 @@ export class AuthStore extends SecureAuthStore {
       typeof subject!=="string"||!subject||subject.length>256)
       return {status:400,error:"Invalid verified identity."};
     const email=normalizedEmail(identity.email);
+    const avatarUrl=safeFederatedAvatar(provider,identity.avatarUrl);
     const owner=intent==="link"?await this.session(sessionToken):null;
     if(intent==="link"&&!owner)return {status:401,error:"Linking session expired."};
 
@@ -82,15 +92,23 @@ export class AuthStore extends SecureAuthStore {
       if(intent==="link"){
         if(existing&&existing.user_id!==owner.id)
           return {status:409,error:"This external account belongs to another user.",code:"identity_used"};
-        if(existing)return {status:200,linked:true,alreadyLinked:true};
+        if(existing){
+          if(avatarUrl)this.sql.exec("UPDATE federated_identities SET avatar_url=? WHERE provider=? AND issuer=? AND subject=? AND user_id=?",
+            avatarUrl,provider,issuer,subject,owner.id);
+          return {status:200,linked:true,alreadyLinked:true};
+        }
         const count=this.sql.exec("SELECT COUNT(*) AS n FROM federated_identities WHERE user_id=? AND provider=?",owner.id,provider).toArray()[0].n;
         if(count>=FEDERATION_LIMITS[provider])
           return {status:409,error:"Provider link limit reached.",code:"limit"};
-        this.sql.exec("INSERT INTO federated_identities(id,user_id,provider,issuer,client_id,subject,email,display_name,linked_at) VALUES(?,?,?,?,?,?,?,?,?)",
-          crypto.randomUUID(),owner.id,provider,issuer,clientId,subject,email,identity.displayName||null,now());
+        this.sql.exec("INSERT INTO federated_identities(id,user_id,provider,issuer,client_id,subject,email,display_name,avatar_url,linked_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+          crypto.randomUUID(),owner.id,provider,issuer,clientId,subject,email,identity.displayName||null,avatarUrl,now());
         return {status:200,linked:true};
       }
-      if(existing)return {status:200,userId:existing.user_id,existing:true};
+      if(existing){
+        if(avatarUrl)this.sql.exec("UPDATE federated_identities SET avatar_url=? WHERE provider=? AND issuer=? AND subject=?",
+          avatarUrl,provider,issuer,subject);
+        return {status:200,userId:existing.user_id,existing:true};
+      }
       if(!email)return {status:400,error:"Provider must supply an email address for account creation.",code:"email_required"};
       if(this.sql.exec("SELECT id FROM users WHERE email=?",email).toArray().length)
         return {status:409,error:"An account with this email already exists. Sign in to it first, then link this provider.",code:"link_required"};
@@ -100,8 +118,8 @@ export class AuthStore extends SecureAuthStore {
       this.sql.exec("INSERT INTO account_methods(user_id,has_password) VALUES(?,0)",id);
       this.sql.exec("INSERT INTO account_security(user_id,verified_at,legacy) VALUES(?,?,0)",
         id,identity.verified?now():0);
-      this.sql.exec("INSERT INTO federated_identities(id,user_id,provider,issuer,client_id,subject,email,display_name,linked_at) VALUES(?,?,?,?,?,?,?,?,?)",
-        crypto.randomUUID(),id,provider,issuer,clientId,subject,email,identity.displayName||null,now());
+      this.sql.exec("INSERT INTO federated_identities(id,user_id,provider,issuer,client_id,subject,email,display_name,avatar_url,linked_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        crypto.randomUUID(),id,provider,issuer,clientId,subject,email,identity.displayName||null,avatarUrl,now());
       return {status:200,userId:id,created:true};
     });
     if(result.error||intent==="link")return result;

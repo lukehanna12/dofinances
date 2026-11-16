@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {federationProvider,federationAvailability,FEDERATION_LIMITS,newOAuthTransaction,
   pkceChallenge,oauthAuthorizeUrl,oauthCookie,readOAuthCookie,expiredOAuthCookie,
-  exchangeFederatedIdentity} from "../edge/auth-federation.mjs";
+  exchangeFederatedIdentity,safeFederatedAvatar} from "../edge/auth-federation.mjs";
 
 const credentials={
   GOOGLE_OAUTH_CLIENT_ID:"google-test-client",GOOGLE_OAUTH_CLIENT_SECRET:"private-google-secret",
@@ -12,6 +12,14 @@ const credentials={
 const encoder=new TextEncoder();
 const b64u=data=>btoa(String.fromCharCode(...data)).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"");
 
+test("provider avatar URLs are HTTPS, host-restricted and never user-supplied redirects",()=>{
+ assert.equal(safeFederatedAvatar("google","https://lh3.googleusercontent.com/a/photo"),"https://lh3.googleusercontent.com/a/photo");
+ assert.equal(safeFederatedAvatar("github","https://avatars.githubusercontent.com/u/123?v=4"),"https://avatars.githubusercontent.com/u/123?v=4");
+ for(const unsafe of ["https://attacker.example/image.png","http://lh3.googleusercontent.com/a/photo",
+   "https://lh3.googleusercontent.com.evil.example/a/photo","javascript:alert(1)","https://foo:bar@lh3.googleusercontent.com/a/photo"])
+  assert.equal(safeFederatedAvatar("google",unsafe),null,unsafe);
+ assert.equal(safeFederatedAvatar("github","https://github.com/user.png"),null);
+});
 test("federation is opt-in and respects the requested provider limits",()=>{
   assert.deepEqual(FEDERATION_LIMITS,{google:5,github:3});
   const empty=federationAvailability({});
@@ -71,6 +79,12 @@ test("Google OIDC verifies RSA signature, nonce, issuer, audience and email_veri
     assert.equal(identity.subject,"user-google-0001");
     assert.equal(identity.email,"owner@example.com");
     assert.equal(identity.verified,true);
+    idToken=await sign({picture:"https://lh3.googleusercontent.com/a/user-picture"});
+    const withPicture=await exchangeFederatedIdentity(config,"code",txn);
+    assert.equal(withPicture.avatarUrl,"https://lh3.googleusercontent.com/a/user-picture");
+    idToken=await sign({picture:"https://dangerous.example/track"});
+    const noPicture=await exchangeFederatedIdentity(config,"code",txn);
+    assert.equal(noPicture.avatarUrl,null);
     for(const patch of [
       {nonce:"wrong-nonce"},{aud:"other-client"},{iss:"https://attacker.test"},
       {exp:now-300}
@@ -102,6 +116,7 @@ test("GitHub identity uses immutable numeric ID and only verified email addresse
     assert.equal(identity.subject,"12345678");
     assert.equal(identity.email,"verified@example.com");
     assert.equal(identity.verified,true);
+    assert.equal(identity.avatarUrl,"https://avatars.githubusercontent.com/u/12345678?v=4");
   }finally{globalThis.fetch=originalFetch;}
 });
 

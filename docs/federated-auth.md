@@ -40,3 +40,7 @@ After installing OAuth credentials, reload https://dofinances.com/api/auth/confi
 ## Distinction from Colosseum federated providers
 
 **These OAuth integrations are for signing in to Dofinances**, not authorizing the separate Colosseum MCP providers. Dofinances keeps the linked Google/GitHub identity and ephemeral OAuth transaction in its SQLite `AuthStore`, but does not retain their OAuth access/refresh tokens. The Colosseum Providers screen instead manages a separate upstream credential vault, local-provider contracts and MCP invocation grants through `/api/colosseum/providers`; none of those provider secrets belong in this first-party identity table. See [Colosseum owner access](colosseum-owner-auth.md) and [current architecture](architecture.md).
+
+## Linked-account profile images
+
+The signed Google OIDC `picture` claim and GitHub's immutable numeric user ID can now provide an account picture. Only allowlisted HTTPS image hosts are accepted; third-party access tokens are never saved. The authenticated accounts endpoint returns `avatarUrl` and the Settings UI does not send referrers to those image hosts. Existing GitHub links use their stored immutable IDs immediately. For older Google links that predate image persistence, the brand-image fallback remains until the owner signs in with that Google identity or links it again through OAuth. The Durable Object upgrades its SQLite schema in place using an idempotent column check.

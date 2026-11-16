@@ -9,6 +9,19 @@ export const OAUTH_COOKIE = "__Host-dofinances_oauth";
 export const OAUTH_TTL = 600;
 const CALLBACK = "https://dofinances.com/api/auth/oauth/callback/";
 const textEncoder = new TextEncoder();
+// Only signed Google OIDC picture claims and GitHub's immutable user-avatar
+// endpoint may become browser-loadable images. Never accept arbitrary URLs.
+export function safeFederatedAvatar(provider,value){
+ if(typeof value!=="string"||!value||value.length>2048)return null;
+ try{
+  const url=new URL(value);
+  if(url.protocol!=="https:"||url.username||url.password||url.port)return null;
+  if(provider==="google"&&!/^lh[1-6]\.googleusercontent\.com$/.test(url.hostname))return null;
+  if(provider==="github"&&url.hostname!=="avatars.githubusercontent.com")return null;
+  if(!["google","github"].includes(provider))return null;
+  return url.href;
+ }catch{return null;}
+}
 
 export function federationProvider(env, provider) {
   if (provider === "google") {
@@ -153,7 +166,8 @@ async function verifyIdToken(jwt,config,txn) {
   return {provider:config.provider,issuer:config.issuer,clientId:config.clientId,
     subject:payload.sub,email:normalizedEmail(payload.email),
     verified:payload.email_verified===true,displayName:typeof payload.name==="string"?
-      payload.name.slice(0,140):null};
+      payload.name.slice(0,140):null,
+    avatarUrl:safeFederatedAvatar("google",payload.picture)};
 }
 export async function exchangeFederatedIdentity(config,code,txn){
   if(typeof code!=="string"||!code||code.length>4096)throw Error("Invalid authorization code");
@@ -192,5 +206,6 @@ export async function exchangeFederatedIdentity(config,code,txn){
   return {provider:"github",issuer:config.issuer,clientId:config.clientId,
     subject:String(profile.id),email:selected?normalizedEmail(selected.email):null,
     verified:!!selected,displayName:typeof profile.login==="string"?
-      profile.login.slice(0,140):null};
+      profile.login.slice(0,140):null,
+    avatarUrl:"https://avatars.githubusercontent.com/u/"+profile.id+"?v=4"};
 }
