@@ -660,16 +660,18 @@
           <div class="pv-workbench" id="pv-root">
             <div class="pv-overview">
               <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span id="pv-summary-value">LOCAL · — REGISTERED / — AVAILABLE</span><span class="pv-summary-skeleton" aria-hidden="true"></span></span>
-              <span class="pv-refresh-control">
-                <button id="pv-refresh" class="pv-refresh" type="button" aria-label="Refresh providers" aria-keyshortcuts="Control+Shift+R" aria-describedby="pv-refresh-tooltip"><svg class="pv-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
-                <span class="pv-refresh-tooltip" id="pv-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="pv-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span>
-              </span>
+              <div class="pv-list-meta"><span id="pv-index-title">Registered Mac providers</span><span id="pv-index-total"></span></div>
             </div>
             <p id="pv-status" class="pv-status" role="status" aria-live="polite"></p>
             <div class="pv-browser" id="pv-browser">
               <div class="pv-list-column">
-                <div class="pv-search-field"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" id="pv-search" aria-label="Search providers" autocomplete="off" placeholder="Search providers" spellcheck="false"></div>
-                <div class="pv-list-meta"><span id="pv-index-title">Registered Mac providers</span><span id="pv-index-total"></span></div>
+                <div class="pv-search-row">
+                  <div class="pv-search-field"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" id="pv-search" aria-label="Search providers" autocomplete="off" placeholder="Search providers" spellcheck="false"></div>
+                  <span class="pv-refresh-control">
+                    <button id="pv-refresh" class="pv-refresh" type="button" aria-label="Refresh providers" aria-keyshortcuts="Control+Shift+R" aria-describedby="pv-refresh-tooltip"><svg class="pv-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+                    <span class="pv-refresh-tooltip" id="pv-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="pv-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span>
+                  </span>
+                </div>
                 <div id="pv-list" class="pv-provider-list" aria-label="Provider registry" aria-live="polite"></div>
               </div>
               <div class="pv-inspector" id="pv-detail" aria-label="Selected provider details">
@@ -821,7 +823,7 @@
   
     <div class="dg-header">
     
-    <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><button class="dg-btn" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9A7.5 7.5 0 0 1 19 7l1 5M4 12l1 5a7.5 7.5 0 0 0 13.4-2"/></svg><span>Refresh</span></button></div>
+    <div class="dg-actions"><span class="dg-status" id="dg-health"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text">Not checked</span></span><span class="dg-refresh-control"><button class="dg-refresh" id="dg-refresh" type="button" aria-label="Refresh selected diagnostics" aria-keyshortcuts="Control+Shift+R" aria-describedby="dg-refresh-tooltip" aria-busy="false"><svg class="dg-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button><span class="dg-refresh-tooltip" id="dg-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="dg-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span></span></div>
   </div>
   <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window · On demand</span></div>
   <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
