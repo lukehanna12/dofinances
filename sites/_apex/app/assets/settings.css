@@ -12,6 +12,7 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root{
  --st-ink:#fafafa;--st-secondary:#a3a3a3;--st-muted:#858585;--st-line:#292929;
  --st-surface:#171717;--st-raised:#202020;--st-ease:cubic-bezier(.22,1,.36,1);
+ --st-disconnect-red:#b42318;
  max-width:1030px;width:100%;min-height:70vh;margin:calc(-1 * var(--workspace-panel-overlap)) 0 65px;padding:0;
  color:var(--st-ink);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
  -webkit-font-smoothing:antialiased
@@ -71,10 +72,24 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
  background:#292929;border-color:#5a5a5a;color:#fff
 }
 #st-root :is(.secondary,.rm-save,.cf-panel button,.st-disclosure button):active:not(:disabled){transform:translateY(1px)}
-/* Reuse the exact pre-redesign Permissions "Remove" red (#b42318).
-   Use it as a solid fill so white labels remain legible on the dark canvas. */
-#st-root button.destructive{background:#b42318;border-color:#b42318;color:#fff}
+/* Disable MFA retains its solid red; account deletion and Cloudflare
+   disconnection use matching red-on-grey pill controls. */
+#st-root button.destructive{background:var(--st-disconnect-red);border-color:var(--st-disconnect-red);color:#fff}
 #st-root button.destructive:hover:not(:disabled){background:#c52c20;border-color:#c52c20;color:#fff}
+#st-root #delete-form > button.destructive,#st-root #cf-disconnect{
+ display:inline-flex;align-items:center;justify-content:center;
+ justify-self:start;flex:none;width:max-content;max-width:100%;
+ min-height:34px;padding:7px 15px;
+ border:1px solid var(--st-disconnect-red);border-radius:999px;
+ background:#262626;color:var(--st-disconnect-red);
+ font-size:12px;font-weight:700;line-height:1.35;white-space:normal;text-align:center;
+}
+#st-root #delete-form > button.destructive:hover:not(:disabled),
+#st-root #cf-disconnect:hover:not(:disabled){
+ background:#333;border-color:var(--st-disconnect-red);color:var(--st-disconnect-red)
+}
+#st-root #delete-form > button.destructive:active:not(:disabled),
+#st-root #cf-disconnect:active:not(:disabled){background:#383838}
 #st-root .clock-settings-fields{max-width:350px;min-width:210px;flex:0 1 350px;display:grid;gap:6px;margin:0;padding:0}
 #st-root .clock-settings-fields > label{font-size:10px;color:#9a9a9a}
 #st-root .clock-settings-fields #clock-settings-feedback{font-size:11px;min-height:0;margin:0;color:#b7b7b7}
@@ -113,7 +128,10 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root .manage-account{margin:0!important;border-top:1px solid var(--st-line)!important;padding:15px 0!important}
 #st-root .manage-account h3{margin:0!important}
 #st-root .danger{border-top:1px solid var(--st-line);margin:0;padding:0}
-#st-root .danger summary{padding:16px 0;color:#f1a5ae;font-size:12px;font-weight:570}
+#st-root .danger > summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;padding:16px 0;color:var(--st-disconnect-red);font-size:12px;font-weight:570;cursor:pointer}
+#st-root .danger > summary::-webkit-details-marker{display:none}
+#st-root .danger > summary .st-chevron{color:inherit;border-right-color:currentColor;border-bottom-color:currentColor}
+#st-root .danger[open] > summary .st-chevron{transform:rotate(225deg);margin-bottom:0}
 #st-root .danger p{margin:0 0 12px}
 #st-root .danger form{display:grid;gap:10px;padding:0 0 18px;max-width:430px}
 /* Connection summaries remain visible; credential forms open only on request. */

@@ -9,8 +9,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
  pointer-events:none;background:var(--ui-canvas,#0a0a0a)}
 html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hidden])) body:has(> #workspace-shell) > .workspace-footer{position:fixed;inset:auto 0 0;z-index:0}
 html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
-.content > .view[data-view="colosseum/utilities"]:not([hidden]){animation:ut-view-arrive 170ms cubic-bezier(.16,1,.3,1) both}
-@keyframes ut-view-arrive{from{opacity:.83}to{opacity:1}}
+/* Utilities inherits the same shared 170ms/4px view entrance as Settings. */
 
 /* Utilities: the Collections screen's quiet, data-first design system.
  * Scoped to #ut-root; no layout polling, timer animations or shared-page overrides. */

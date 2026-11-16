@@ -1071,12 +1071,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 }
 
 
-/* Floating Collections dock: match the native frosted material of the lower topbar.
- * No fabricated SVG glass shader; retain opacity-only view entrance. */
-.content > .view[data-view="colosseum/collections"]:not([hidden]){
- animation:cs-floating-view-arrive 170ms cubic-bezier(.16,1,.3,1) both;
-}
-@keyframes cs-floating-view-arrive{from{opacity:.83}to{opacity:1}}
+/* Floating Collections dock: inherit the shared 170ms/4px view entrance. */
 
 #cs-root .cs-control-center{
  --cs-dock-scale:1.5;
