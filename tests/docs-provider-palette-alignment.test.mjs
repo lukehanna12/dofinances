@@ -21,12 +21,19 @@ test("Docs has the exact common page title and non-duplicated README subheading"
  const shared=asset("workspace-enhancements.css");
  assert.ok(shared.includes('.content > .view:not([data-view="home"]) > .page-heading > h1'));
 });
-test("Doc-surrounding blue is exactly 60 percent toward the selected deeper blue",()=>{
+test("Docs canvas blends the screenshot-measured top wallpaper with the document at 60%",()=>{
  const css=asset("project-readme.css");
- const doc=color("#0d1117"),deep=color("#07101c");
- const expected=blend(doc,deep,.60);
- assert.deepEqual(expected,[9,16,26]);
- assert.equal(hex(expected),"#09101a");
+ const doc=color("#0d1117");
+ // User screenshot (2026-11-16), whole 536x114 top image, ICC -> sRGB.
+ // The wallpaper is textured: use its pixel mean, not one arbitrary pixel.
+ const wallpaperMean=[3.58046936,8.83084577,17.04583988];
+ const expected=blend(doc,wallpaperMean,.60);
+ assert.deepEqual(expected,[7,12,19]);
+ assert.equal(hex(expected),"#070c13");
+ // Screenshot canvas was [8,16,26] in sRGB: the blue channel exceeded
+ // both measured endpoints, which proves why the prior palette looked wrong.
+ const oldCanvas=[8,16,26];
+ assert.ok(oldCanvas[2]>Math.max(doc[2],wallpaperMean[2]));
  const docsRule='html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:'+hex(expected)+'}';
  assert.ok(css.includes(docsRule));
  // Unlike an existence-only check, this guards the CSS specificity regression
@@ -43,9 +50,9 @@ test("Doc-surrounding blue is exactly 60 percent toward the selected deeper blue
    "Docs canvas must beat the shared non-Home rule in the CSS cascade");
  assert.ok(css.includes('.rm-reading{background:#0d1117'));
  for(let i=0;i<3;i++){
-  const lo=Math.min(doc[i],deep[i]),hi=Math.max(doc[i],deep[i]);
-  assert.ok(expected[i]>=lo&&expected[i]<=hi,"The chosen blue must fall between both references");
-  assert.ok(Math.abs(expected[i]-(.4*doc[i]+.6*deep[i]))<=.5);
+  const lo=Math.min(doc[i],wallpaperMean[i]),hi=Math.max(doc[i],wallpaperMean[i]);
+  assert.ok(expected[i]>=lo&&expected[i]<=hi,"The chosen blue must fall between both measured references");
+  assert.ok(Math.abs(expected[i]-(.4*doc[i]+.6*wallpaperMean[i]))<=.5);
  }
 });
 test("Docs footer text screen-blends to a modest brighter tone without changing the wallpaper",()=>{

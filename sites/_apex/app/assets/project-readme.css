@@ -1,11 +1,13 @@
 /* Project README workspace. GitHub's Markdown typography lives in
    github-markdown.css; the surrounding controls follow Collections. */
-/* Docs canvas: source document #0d1117; chosen dark-image-blue reference
-   #07101c. Exact sRGB channel interpolation, 40% document + 60% dark,
-   yields RGB (9,16,26) = #09101a. The darker reference is a palette
-   surrogate because the original private wallpaper pixels are not in Git. */
+/* Docs canvas measured from the user-provided screenshot (November 16,
+   2026), with its embedded Apple Display ICC profile converted to sRGB:
+   top wallpaper mean RGB (3.58,8.83,17.05), README #0d1117.
+   40% README + 60% actual wallpaper gives (7,12,19) = #070c13.
+   Keep this Docs-only selector ahead of the shared non-Home canvas
+   in specificity, so the correct background paints the entire document. */
 /* More specific than the shared non-Home canvas rule in workspace-title.css. */
-html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:#09101a}
+html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:#070c13}
 
 .rm-view{--rm-border:#393939;--rm-muted:#a3a3a3;color:#f4f4f4;min-width:0}
 .rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px}

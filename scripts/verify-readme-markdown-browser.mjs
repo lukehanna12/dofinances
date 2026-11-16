@@ -295,10 +295,10 @@ try{
  await pause(300);
  const docsCanvas=await evaluate('(()=>{const root=document.documentElement,shell=document.getElementById("workspace-shell");return {variable:getComputedStyle(root).getPropertyValue("--ui-canvas").trim(),html:getComputedStyle(root).backgroundColor,body:getComputedStyle(document.body).backgroundColor,layer:getComputedStyle(shell,"::after").backgroundColor,document:getComputedStyle(document.querySelector(".rm-reading")).backgroundColor};})()');
  assert.deepEqual(docsCanvas,{
-  variable:"#09101a",
-  html:"rgb(9, 16, 26)",
-  body:"rgb(9, 16, 26)",
-  layer:"rgb(9, 16, 26)",
+  variable:"#070c13",
+  html:"rgb(7, 12, 19)",
+  body:"rgb(7, 12, 19)",
+  layer:"rgb(7, 12, 19)",
   document:"rgb(13, 17, 23)"
  },"Docs canvas, full-page background layer and document must have the intended computed colors");
  const otherCanvas=await evaluate('(()=>{document.querySelector(".rm-view").hidden=true;document.querySelector(\'[data-view="projects"]\').hidden=false;return getComputedStyle(document.documentElement).getPropertyValue("--ui-canvas").trim();})()');
