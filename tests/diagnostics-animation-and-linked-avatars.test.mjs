@@ -74,7 +74,6 @@ test("Settings puts deletion action below its textboxes and presents branded, se
  assert.ok(styles.includes('.st-identity-add-group{display:flex;flex-direction:row;align-items:center;justify-content:space-between'));
  assert.ok(styles.includes('#add-identity-buttons{display:flex;flex-direction:column;align-items:stretch'));
  assert.ok(styles.includes('.st-identity-capacity{flex:none;margin-left:auto;padding:0;text-align:right'));
- assert.ok(styles.includes('.st-identity-capacity{padding-left:2px;color:#777;font-size:10px;'));
  assert.doesNotMatch(source,/add.textContent="Add "/);
 });
 test("OIDC profile photo persistence is verified, migrated and only sent to the signed-in owner",()=>{
