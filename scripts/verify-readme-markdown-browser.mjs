@@ -39,13 +39,19 @@ const canvasCSSFiles=new Map([
  ["/canvas/workspace-title.css",new URL("../sites/_apex/app/assets/workspace-title.css",import.meta.url)],
  ["/canvas/project-readme.css",new URL("../sites/_apex/app/assets/project-readme.css",import.meta.url)]
 ]);
+const productionHtml=readFileSync(new URL("../sites/_apex/app/index.html",import.meta.url),"utf8");
+const docsStart=productionHtml.indexOf('<section class="view project-view rm-view" data-view="project/readme"');
+const docsEnd=productionHtml.indexOf('<section class="view project-view" data-view="colosseum/utilities"',docsStart);
+assert.ok(docsStart>=0&&docsEnd>docsStart,"Docs markup fixture boundaries");
+const docsFixture=productionHtml.slice(docsStart,docsEnd)
+ .replace('data-view="project/readme" hidden','data-view="project/readme"');
 const canvasFixture=[
  '<!doctype html><html><head><meta charset="utf-8">',
  ...Array.from(canvasCSSFiles.keys(),path=>'<link rel="stylesheet" href="'+path+'">'),
  '</head><body data-wallpaper-route="project/example/readme">',
  '<div class="shell" id="workspace-shell"><div class="main"><div class="workspace-scroll"><main class="content">',
  '<section class="view" data-view="projects" hidden></section>',
- '<section class="view rm-view" data-view="project/readme"><article class="rm-reading">README fixture</article></section>',
+ docsFixture,
  '</main></div></div></div><footer class="workspace-footer">© DoFinances · 2026</footer>',
  '</body></html>'
 ].join("\n");
@@ -303,6 +309,25 @@ try{
  },"Docs canvas, full-page background layer and document must have the intended computed colors");
  const otherCanvas=await evaluate('(()=>{document.querySelector(".rm-view").hidden=true;document.querySelector(\'[data-view="projects"]\').hidden=false;return getComputedStyle(document.documentElement).getPropertyValue("--ui-canvas").trim();})()');
  assert.equal(otherCanvas,"#0a0a0a","The Docs override must not change other workspace screens");
+ // Show dirty edit controls and check actual production markup/stylesheet geometry.
+ await evaluate('(()=>{document.querySelector(\'[data-view="projects"]\').hidden=true;document.querySelector(\'[data-view="project/readme"]\').hidden=false;document.getElementById("rm-confirm").hidden=false;document.getElementById("rm-diff").hidden=false;document.getElementById("rm-visibility-badge").hidden=false;document.getElementById("rm-repository-label").textContent="lukehanna12/colosseum";return true;})()');
+ const docsGeometry=await evaluate('(()=>{const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}},style=selector=>getComputedStyle(document.querySelector(selector));return {heading:rect(".rm-heading-text"),toolbar:rect(".rm-toolbar"),edit:rect(".rm-edit-surround"),editButton:rect("#rm-edit"),confirm:rect("#rm-confirm"),confirmOuter:rect("#rm-confirm").width,diff:rect("#rm-diff"),diffOuter:rect(".rm-diff-control"),document:rect("#rm-reading"),labelColor:style("#rm-project-label").color,repoColor:style("#rm-repository-label").color,badgeColor:style("#rm-visibility-badge").color,badgeBackground:style("#rm-visibility-badge").backgroundColor}})()');
+ assert.equal(docsGeometry.labelColor,"rgb(255, 255, 255)","README.md should be white");
+ assert.equal(docsGeometry.repoColor,"rgb(61, 68, 77)","Repository matches document outline");
+ assert.equal(docsGeometry.badgeColor,"rgb(239, 195, 152)");
+ assert.equal(docsGeometry.badgeBackground,"rgb(75, 51, 37)");
+ assert.ok(Math.abs(docsGeometry.edit.x-docsGeometry.heading.x)<1,"Cancel aligned with text");
+ assert.ok(docsGeometry.confirm.x>=docsGeometry.edit.right+4,"Confirm follows Cancel");
+ assert.ok(Math.abs(docsGeometry.diffOuter.right-docsGeometry.toolbar.right)<1,"Diff at far right");
+ assert.ok(Math.abs(docsGeometry.diff.y-docsGeometry.confirm.y)<1,"Buttons share baseline");
+ assert.ok(Math.abs(docsGeometry.document.y-docsGeometry.toolbar.bottom-4)<1,"4px document gap");
+ assert.equal(docsGeometry.edit.width,50);
+ assert.equal(docsGeometry.diffOuter.width,50);
+ for(const action of ["editButton","confirm","diff"]){
+  assert.equal(docsGeometry[action].width,42,action+" width");
+  assert.equal(docsGeometry[action].height,42,action+" height");
+ }
+ console.log("Docs metadata and toolbar Chromium geometry checks passed.");
  console.log("Docs canvas computed-color and route-scope browser tests passed.");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{

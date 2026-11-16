@@ -235,8 +235,9 @@ export function initProjectReadme(){
   ++state.readingRenderTicket;++state.previewRenderTicket;
   state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;state.renderReady=false;
   reading.textContent="Loading README…";say("");
-  $("rm-project-label").textContent=(state.projects.find(p=>p.slug===slug)?.name||slug).toUpperCase();
+  $("rm-project-label").textContent="README.md";
   $("rm-repository-label").textContent="Loading repository association…";
+  $("rm-visibility-badge").hidden=true;
   reading.contentEditable="false";state.dirty=false;state.savedDom=null;
   history.clear();
   diffContent.replaceChildren();paintControls();
@@ -245,9 +246,10 @@ export function initProjectReadme(){
    if(ticket!==state.loadTicket||!active())return;
    state.source=data;state.original=data.markdown||"";
    state.canEdit=!!data.canEdit;state.draft=state.original;
-   $("rm-project-label").textContent=(data.project.name||slug).toUpperCase();
-   $("rm-repository-label").textContent=data.project.repository?
-      data.project.repository+(data.private?" · Private":""):"Local README · No linked GitHub repository";
+   $("rm-project-label").textContent="README.md";
+   $("rm-repository-label").textContent=data.project.repository||
+      "Local README · No linked GitHub repository";
+   $("rm-visibility-badge").hidden=!(data.project.repository&&data.private);
    view.dataset.presentation=data.project.presentation||"github";
    if(data.source==="unavailable"||data.source==="missing"){
     say((data.error||"Repository README unavailable.")+" Showing the project's default README.",true);

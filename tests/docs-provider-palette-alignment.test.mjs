@@ -15,6 +15,7 @@ test("Docs has the exact common page title and non-duplicated README subheading"
  assert.equal((source.match(/<h1\b/g)||[]).length,1);
  assert.ok(source.includes('id="rm-project-label"'));
  assert.ok(source.includes('id="rm-repository-label"'));
+ assert.ok(source.includes('id="rm-visibility-badge"'));
  assert.ok(source.indexOf('class="page-heading"')<source.indexOf('class="rm-heading"'));
  assert.ok(css.includes('margin-top:calc(-1 * var(--workspace-panel-overlap))'));
  assert.doesNotMatch(css,/\.rm-heading h1\{/);

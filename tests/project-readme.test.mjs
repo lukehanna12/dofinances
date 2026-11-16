@@ -152,28 +152,37 @@ test("README editing offers larger Collections-style controls, live preview, dif
  assert.deepEqual(makeReadmeDiff("same","same"),[]);
 });
 
-test("Docs document starts close to the repository label and Diff sits beside Save",()=>{
- const heading=html.slice(html.indexOf('<div class="rm-heading">'),html.indexOf('<p id="rm-notice"'));
- assert.ok(heading.includes('id="rm-repository-label"'));
- assert.ok(heading.includes('class="rm-toolbar"'),"Toolbar shares heading row rather than adding vertical space");
- assert.ok(heading.indexOf('id="rm-diff"')<heading.indexOf('id="rm-confirm"'));
- assert.ok(heading.indexOf('id="rm-confirm"')<heading.indexOf('id="rm-edit"'));
- assert.ok(!heading.includes('<span>Diff</span>'),"Diff is an icon-only control");
- assert.ok(heading.includes('aria-describedby="rm-diff-tooltip"'));
- assert.ok(heading.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
- assert.ok(css.includes('row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px'));
- assert.ok(css.includes('.rm-toolbar{display:flex;flex:0 0 auto;'));
- assert.ok(heading.includes('class="rm-toolbar-upper"'),"Reserve a small icon row above the actions");
- assert.ok(css.includes('.rm-toolbar-upper{display:flex;justify-content:flex-end;align-items:center;gap:6px;width:100%;height:22px;flex:none}'));
- assert.ok(css.includes('align-self:flex-end;justify-content:flex-end;gap:4px'));
- assert.ok(css.includes('.rm-toolbar-end{display:flex;align-items:center;gap:8px}'));
+test("Docs metadata, Projects-inspired visibility badge and actions appear in the requested arrangement",()=>{
+ const docs=html.slice(html.indexOf('data-view="project/readme"'),html.indexOf('<p id="rm-notice"'));
+ const projects=source("sites/_apex/app/assets/project-showcase.css");
+ assert.ok(docs.includes('<p id="rm-project-label" class="rm-overline">README.md</p>'));
+ assert.ok(css.includes('.rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#fff;'));
+ assert.ok(docs.includes('id="rm-repository-label"'));
+ assert.ok(css.includes('.rm-repository-label{margin:0;font-size:12px;color:#3d444d'));
+ assert.ok(docs.includes('id="rm-visibility-badge" class="rm-visibility-badge" hidden>Private</span>'));
+ assert.ok(ui.includes('$("rm-visibility-badge").hidden=!(data.project.repository&&data.private)'));
+ assert.ok(!ui.includes('data.private?" · Private"'));
+ assert.ok(css.includes('.rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;'));
+ assert.ok(projects.includes('.project-showcase-badge{'));
+ for(const rule of ['font-size:9px;font-weight:500','line-height:12px;padding:1px 5px','border-radius:4px;white-space:nowrap']){
+  assert.ok(css.includes(rule),"Docs badge proportions: "+rule);
+  assert.ok(projects.includes(rule),"Projects badge reference: "+rule);
+ }
+ assert.ok(css.includes('background:#4b3325;color:#efc398'));
+ assert.ok(docs.indexOf('class="rm-heading"')<docs.indexOf('class="rm-toolbar"'));
+ assert.ok(docs.indexOf('id="rm-edit"')<docs.indexOf('id="rm-confirm"'));
+ assert.ok(docs.indexOf('id="rm-confirm"')<docs.indexOf('id="rm-diff"'));
+ assert.ok(docs.includes('aria-describedby="rm-diff-tooltip"'));
+ assert.ok(docs.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
+ assert.ok(css.includes('.rm-toolbar{display:flex;width:100%;min-height:50px;margin:14px 0 4px}'));
+ assert.ok(css.includes('.rm-toolbar-end{display:flex;align-items:center;gap:8px;width:100%}'));
+ assert.ok(css.includes('.rm-diff-control{margin-left:auto}'));
  assert.ok(css.includes('.rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}'));
- assert.ok(css.includes('.rm-diff-button{width:42px;height:42px;min-width:0;'));
- assert.ok(css.includes('border:1px solid transparent;border-radius:999px;'));
- assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]'));
+ assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
+ assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
+ assert.ok(css.includes('.rm-diff-control .rm-tooltip{right:0;left:auto;transform-origin:top right}'));
 });
-
 test("Docs tooltips match Collections and all three action buttons share one baseline",()=>{
  const collections=source("sites/_apex/app/assets/collections.css");
  const collectionTooltip=collections.slice(collections.indexOf("#cs-root .cs-create-tooltip{"),collections.indexOf("#cs-root .cs-create-tooltip-label{"));
@@ -192,10 +201,10 @@ test("Docs tooltips match Collections and all three action buttons share one bas
  assert.ok(css.includes("transition-delay:.15s,.15s,.15s"));
  assert.ok(css.includes(".rm-control-wrap > .rm-icon-button:focus-visible + .rm-tooltip{transition-delay:0s,0s,0s}"));
  assert.ok(css.includes(".rm-confirm svg{width:23px;height:23px}"));
- assert.ok(css.includes(".rm-edit-surround #rm-edit{width:42px;height:42px}"));
+ assert.ok(css.includes(".rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}"));
  assert.ok(css.includes(".rm-diff-button{width:42px;height:42px;"));
  assert.ok(css.includes(".rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}"));
- assert.ok(css.includes(".rm-toolbar{min-height:72px}"), "Keep mobile toolbar compact");
+ assert.ok(css.includes(".rm-toolbar{min-height:46px}"), "Keep mobile toolbar compact");
 });
 
 test("GitHub visual defaults, three per-project styles and unsafe HTML rebuilding",()=>{
@@ -203,7 +212,7 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(html.includes('class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
  assert.ok(html.includes('rm-control-wrap rm-edit-surround'));
  assert.doesNotMatch(html,/id="rm-markdown"|id="rm-preview"|id="rm-editor"/);
- assert.ok(css.includes('.rm-edit-surround{'));
+ assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
  assert.ok(css.includes('background:#212121'));
  assert.ok(css.includes('box-shadow:inset 0 0 1px rgba(255,255,255,.2)'));
  assert.ok(ui.includes('reading.contentEditable="true"'));
@@ -366,13 +375,13 @@ test("Editing is directly on the stable GitHub-rendered document, with no split 
 });
 
 test("The edit control is enclosed by the Collections-style circular surface",()=>{
- const surround=css.slice(css.indexOf(".rm-edit-surround{"),css.indexOf(".rm-edit-surround #rm-edit{"));
+ const surround=css.slice(css.indexOf(".rm-edit-surround,.rm-action-surround{"),css.indexOf(".rm-edit-surround #rm-edit,"));
  assert.match(surround,/padding:4px/);
  assert.match(surround,/border-radius:999px/);
  assert.match(surround,/background:#212121/);
  assert.match(surround,/box-shadow:inset 0 0 1px rgba\(255,255,255,\.2\)/);
  assert.ok(html.includes('class="rm-control-wrap rm-edit-surround"'));
- assert.ok(css.includes('.rm-edit-surround #rm-edit{width:42px;height:42px}'));
+ assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-confirm{background:#fff;color:#141414'));
  assert.ok(html.includes('id="rm-diff"'));
 });

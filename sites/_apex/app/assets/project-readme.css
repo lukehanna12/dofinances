@@ -10,22 +10,25 @@
 html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:#070c13}
 
 .rm-view{--rm-border:#393939;--rm-muted:#a3a3a3;color:#f4f4f4;min-width:0}
-.rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px}
-.rm-heading-text{min-width:0;flex:1 1 190px}
-/* Docs h1 now uses the same .page-heading rule as every other screen. */
-.rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#b4b4b4;margin:0}
-.rm-repository-label{margin:7px 0 0;font-size:12px;color:var(--rm-muted);overflow-wrap:anywhere}
-.rm-toolbar{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;align-self:flex-end;justify-content:flex-end;gap:4px;margin:0 0 0 auto;min-height:76px}
-.rm-toolbar-upper{display:flex;justify-content:flex-end;align-items:center;gap:6px;width:100%;height:22px;flex:none}
-.rm-toolbar-end{display:flex;align-items:center;gap:8px}
+.rm-heading{margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:0}
+.rm-heading-text{min-width:0}
+/* Docs h1 uses the shared .page-heading layout; README.md identifies the file. */
+.rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#fff;margin:0}
+.rm-repository-meta{display:flex;flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:4px;margin-top:7px}
+.rm-repository-label{margin:0;font-size:12px;color:#3d444d;overflow-wrap:anywhere}
+/* Match Projects' badge proportions; warm muted orange suits Docs blues. */
+.rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;white-space:nowrap;background:#4b3325;color:#efc398}
+.rm-toolbar{display:flex;width:100%;min-height:50px;margin:14px 0 4px}
+.rm-toolbar-end{display:flex;align-items:center;gap:8px;width:100%}
 .rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}
+.rm-diff-control{margin-left:auto}
 .rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}
 .rm-control-wrap{display:inline-flex;position:relative;align-items:center;justify-content:center}
-.rm-edit-surround{
+.rm-edit-surround,.rm-action-surround{
  padding:4px;border:0;border-radius:999px;background:#212121;
  background-clip:padding-box;box-shadow:inset 0 0 1px rgba(255,255,255,.2)
 }
-.rm-edit-surround #rm-edit{width:42px;height:42px}
+.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}
 .rm-view .rm-reading[contenteditable="true"]{
  outline:none;caret-color:#f0f6fc;
  /* Editing uses this exact rendered surface. No content-box, typography,
@@ -64,7 +67,7 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
  transform:translateY(-2px) scale(.94);
  transition:opacity .25s cubic-bezier(.16,1,.3,1),transform .25s cubic-bezier(.16,1,.3,1),visibility 0s linear .25s;
 }
-.rm-diff-control .rm-tooltip{left:0;right:auto;transform-origin:top left}
+.rm-diff-control .rm-tooltip{right:0;left:auto;transform-origin:top right}
 .rm-control-wrap > .rm-icon-button:hover + .rm-tooltip,
 .rm-control-wrap > .rm-icon-button:focus-visible + .rm-tooltip{
  opacity:1;visibility:visible;transform:translateY(0) scale(1);
@@ -115,7 +118,7 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-dialog form{display:flex;flex-direction:column}
 .rm-dialog input{width:100%;flex:auto}
 .rm-dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-@media(max-width:639px){.rm-icon-button{width:38px;height:38px}.rm-edit-surround #rm-edit{width:38px;height:38px}.rm-diff-button{width:38px;height:38px;min-width:0}.rm-toolbar{min-height:72px}.rm-toolbar .rm-control-wrap{flex-basis:46px;width:46px;height:46px}.rm-view .markdown-body{font-size:14px}.rm-settings-input{flex-wrap:wrap}}
+@media(max-width:639px){.rm-icon-button{width:38px;height:38px}.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:38px;height:38px}.rm-diff-button{width:38px;height:38px;min-width:0}.rm-toolbar{min-height:46px}.rm-toolbar .rm-control-wrap{flex-basis:46px;width:46px;height:46px}.rm-view .markdown-body{font-size:14px}.rm-settings-input{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.rm-view *, .rm-view *::before, .rm-view *::after{transition-duration:.01ms!important}}
 
 /* Optional per-project presentations; GitHub is the default, using the
