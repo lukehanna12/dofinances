@@ -186,7 +186,7 @@ function trustedIdentityImage(item){
  try{
   const u=new URL(item.avatarUrl);
   if(u.protocol!=="https:"||u.username||u.password||u.port)return null;
-  if(item.provider==="google"&&!/^lh[1-6]\\.googleusercontent\\.com$/.test(u.hostname))return null;
+  if(item.provider==="google"&&!/^lh[1-6]\.googleusercontent\.com$/.test(u.hostname))return null;
   if(item.provider==="github"&&u.hostname!=="avatars.githubusercontent.com")return null;
   return u.href;
  }catch{return null;}
