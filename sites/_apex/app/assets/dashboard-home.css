@@ -103,10 +103,10 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
   min-height:39px;
   padding:9px 15px 9px 18px;
   border-radius:9px;
-  background:rgba(24,28,32,.97);
+  background:#000;
   color:#fff;
-  border:1px solid rgba(255,255,255,.28);
-  box-shadow:0 2px 14px rgba(0,0,0,.10);
+  border:0;
+  box-shadow:rgba(255, 255, 255, 0.2) 0px 0px 1px inset;
   font-size:13px;
   font-weight:600;
   line-height:1.1;
@@ -118,9 +118,9 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
 .dashboard-home .cta6-action svg{color:#fff;stroke:#fff}
 .dashboard-home .cta6-action:visited{color:#fff}
 .dashboard-home .cta6-action:hover{
-  background:#30363c;
+  background:#000;
   transform:scale(1.03);
-  box-shadow:0 4px 19px rgba(0,0,0,.18);
+  box-shadow:rgba(255, 255, 255, 0.2) 0px 0px 1px inset;
 }
 .dashboard-home .cta6-action:active,
 .dashboard-home .cta6-action.dashboard-preview-tapped{transform:scale(.97)}
