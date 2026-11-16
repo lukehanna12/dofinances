@@ -32,6 +32,35 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   z-index:0;
 }
 
+/* A real WebGPU Clear strip occupies the upper 7/16 (43.75%) of the
+   measured gap between the black canvas boundary and TOTAL/UPDATED line.
+   Absolute shell coordinates, viewport-wide width and document scrolling
+   ensure that sidebar width/collapse/resize cannot change its geometry.
+   Only the GPU shader samples the ORIGINAL Collections wallpaper. */
+#workspace-shell > #cs-top-webgpu-strip.cs-top-webgpu-strip{
+  position:absolute;
+  left:0;
+  top:var(--cs-strip-top,var(--workspace-banner-height));
+  box-sizing:border-box;
+  width:100%;
+  height:0;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  z-index:2;
+  display:block;
+  background:transparent;
+  pointer-events:auto;
+  touch-action:pan-y;
+}
+#workspace-shell > #cs-top-webgpu-strip.cs-top-webgpu-strip[hidden]{
+  display:none!important;
+}
+@media(forced-colors:active),(prefers-reduced-transparency:reduce){
+  #workspace-shell > #cs-top-webgpu-strip.cs-top-webgpu-strip{display:none!important;}
+}
+
 /* Collections screen: isolated rendition of Colosseum 0001cb custom Quiet Hours
    (expanded full-size panel, enlarged contents, reversible accordion) with
    Showcase 4-style sliding pagination pills. No permissions/shared UI overrides. */

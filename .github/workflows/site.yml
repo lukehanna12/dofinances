@@ -32,6 +32,8 @@ jobs:
         run: node scripts/verify-readme-markdown-browser.mjs
       - name: Verify flat Collections controls in Chromium
         run: node scripts/verify-collections-glass-browser.mjs
+      - name: Verify Collections Clear WebGPU strip in Chromium
+        run: node scripts/verify-collections-webgpu-strip-browser.mjs
       - name: Build site
         run: npm run build
       - name: Verify distribution
