@@ -16,20 +16,78 @@ test("Collections black-to-summary gap is measured, with precisely 43.75% occupi
   assert.equal(collectionsStripGeometry(0,100,200).height,0);
   assert.throws(()=>collectionsStripGeometry(NaN,200,30),TypeError);
 });
-test("Collections strip is 20% darker by an explicit neutral, strip-only browser gain",()=>{
-  assert.equal(COLLECTIONS_STRIP_BRIGHTNESS,.80);
+test("Temporary glass tuner defaults to the original undarkened Clear output",async()=>{
+  const {DEFAULT_COLLECTIONS_GLASS_TUNING,normalizeCollectionsGlassTuning,
+    collectionsGlassTuningUniforms,collectionsGlassTuningPreset}=await import(
+    "../sites/_apex/app/assets/collections-glass-tuner.js");
+  const s=normalizeCollectionsGlassTuning(DEFAULT_COLLECTIONS_GLASS_TUNING);
+  assert.deepEqual(s,{brightness:100,contrast:100,tint:"#ffffff",tintStrength:0});
+  const uniform=collectionsGlassTuningUniforms(s);
+  assert.equal(uniform.length,8);
+  assert.deepEqual(Array.from(uniform),[1,1,0,0,1,1,1,0]);
+  const preset=JSON.parse(collectionsGlassTuningPreset(s));
+  assert.equal(preset.brightnessPercent,100);
+  assert.equal(preset.contrastPercent,100);
+  assert.equal(preset.tintStrengthPercent,0);
+  assert.equal(preset.tintHex,"#ffffff");
   const js=read("sites/_apex/app/assets/collections-webgpu-strip.js");
   const wgsl=read("sites/_apex/app/assets/collections-webgpu-strip.wgsl");
-  assert.ok(js.includes("userX,userHover,pressed,COLLECTIONS_STRIP_BRIGHTNESS"));
-  assert.ok(js.includes("browserBrightness:COLLECTIONS_STRIP_BRIGHTNESS"));
-  assert.ok(wgsl.includes("let darker=color*state.pointer.w"));
-  assert.ok(wgsl.includes("return vec4<f32>(darker*coverage,coverage)"));
-  assert.ok(wgsl.includes("NOT an observed Apple material parameter"));
-  for(const intensity of [0,0.04,0.25,0.5,1]){
-    const darkened=intensity*COLLECTIONS_STRIP_BRIGHTNESS;
-    assert.ok(darkened<=intensity);
-    assert.equal(darkened,intensity*.8);
+  assert.ok(!js.includes("COLLECTIONS_STRIP_BRIGHTNESS=.80"));
+  assert.ok(!wgsl.includes("let darker=color*state.pointer.w"));
+  assert.ok(js.includes("uniform=device.createBuffer({size:96"));
+  assert.ok(js.includes("...collectionsGlassTuningUniforms(tuner.value)"));
+  assert.ok(wgsl.includes("tuning:vec4<f32>"));
+  assert.ok(wgsl.includes("tint:vec4<f32>"));
+  assert.ok(wgsl.includes("let contrasted=clamp("));
+  assert.ok(wgsl.includes("let brightened=clamp("));
+  assert.ok(wgsl.includes("let adjusted=mix(brightened,state.tint.rgb,state.tuning.z)"));
+  assert.ok(wgsl.includes("return vec4<f32>(adjusted*coverage,coverage)"));
+});
+test("Glass tuner exports precise brightness, contrast, tint and tint strength",async()=>{
+  const {normalizeCollectionsGlassTuning,collectionsGlassTuningUniforms,
+    collectionsGlassTuningPreset}=await import(
+    "../sites/_apex/app/assets/collections-glass-tuner.js");
+  const s=normalizeCollectionsGlassTuning({
+    brightness:83.47,contrast:147.25,tint:"#39aBE4",tintStrength:27.63
+  });
+  assert.deepEqual(s,{brightness:83.47,contrast:147.25,tint:"#39abe4",tintStrength:27.63});
+  const serialized=JSON.parse(collectionsGlassTuningPreset(s));
+  assert.deepEqual(serialized.tintRGB,[57,171,228]);
+  assert.equal(serialized.brightnessPercent,83.47);
+  assert.equal(serialized.contrastPercent,147.25);
+  assert.equal(serialized.tintStrengthPercent,27.63);
+  assert.equal(serialized.order,"contrast -> brightness -> tint (browser sRGB)");
+  const floats=collectionsGlassTuningUniforms(s);
+  for(const [i,target] of [[0,.8347],[1,1.4725],[2,.2763],[4,57/255],[5,171/255],[6,228/255]])
+    assert.ok(Math.abs(floats[i]-target)<1e-6);
+  assert.deepEqual(normalizeCollectionsGlassTuning({
+    brightness:-100,contrast:500,tint:"abc",tintStrength:120
+  }),{brightness:0,contrast:300,tint:"#aabbcc",tintStrength:100});
+  assert.deepEqual(normalizeCollectionsGlassTuning({
+    brightness:"",contrast:"oops",tint:"not-a-color",tintStrength:Infinity
+  }),{brightness:100,contrast:100,tint:"#ffffff",tintStrength:0});
+});
+test("Temporary panel is route-only, color-picker capable and copyable",()=>{
+  const js=read("sites/_apex/app/assets/collections-glass-tuner.js");
+  const host=read("sites/_apex/app/assets/collections-webgpu-strip.js");
+  const css=read("sites/_apex/app/assets/collections.css");
+  assert.ok(js.includes('data-cs-picker type="color"'));
+  assert.ok(js.includes('data-cs-hex type="text"'));
+  for(const component of ["r","g","b"])
+    assert.ok(js.includes('data-cs-rgb="'+component+'"'));
+  for(const component of ["brightness","contrast","tintStrength"]){
+    assert.ok(js.includes('data-cs-range="'+component+'"'));
+    assert.ok(js.includes('data-cs-number="'+component+'"'));
+    assert.ok(js.includes('data-cs-output="'+component+'"'));
   }
+  assert.ok(js.includes("sessionStorage"));
+  assert.ok(js.includes('data-cs-copy'));
+  assert.ok(js.includes('data-cs-reset'));
+  assert.ok(js.includes("pointerdown"));
+  assert.ok(host.includes("tuner.setVisible(active())"));
+  assert.ok(host.includes("tuner.dispose()"));
+  assert.ok(css.includes("#cs-glass-tuner.cs-glass-tuner"));
+  assert.ok(css.includes("#cs-glass-tuner.cs-glass-tuner[hidden]"));
 });
 test("Underlying wallpaper cover crop uses viewport width and fixed image plane, not sidebar",()=>{
   const a=wallpaperCover(1280,298.65625,1600,900,.45);
