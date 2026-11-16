@@ -61,7 +61,7 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  assert.doesNotMatch(js,/\["Charging",m\.battery_charging/);
  assert.doesNotMatch(js,/visual\.charging\?"Charging"/);
  assert.match(css,/--dg-panel-bg:#111/);
- assert.match(css,/-webkit-text-stroke:2px var\(--dg-panel-bg\)/);
+ assert.match(css,/-webkit-text-stroke:3px var\(--dg-panel-bg\)/);
  assert.match(css,/font-size:clamp\(40px,4\.8vw,54px\)/);
  assert.match(css,/text-shadow:none/);
  assert.match(css,/\.dg-battery-bolt-symbol\{position:absolute;z-index:1/);
