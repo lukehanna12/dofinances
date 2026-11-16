@@ -1039,7 +1039,9 @@ test("Add, Edit and Select keep their identities within the fixed frosted dock",
 test("Collections anchors its top and bottom photo strips under the moving black surface only on this route",()=>{
   const shared=src("sites/_apex/app/assets/workspace-wallpapers.css");
   const start=css.indexOf("/* Collections only: pin the existing wallpaper crops");
-  const end=css.indexOf("/* Collections screen:",start);
+  // The new WebGPU strip has its own tests; this legacy invariant covers
+  // only the five original wallpaper/footer overrides.
+  const end=css.indexOf("/* A real WebGPU Clear strip",start);
   assert.ok(start>0 && end>start);
   const scoped=css.slice(start,end);
   const route='html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([hidden]))';
