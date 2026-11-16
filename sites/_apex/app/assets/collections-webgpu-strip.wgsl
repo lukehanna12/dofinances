@@ -18,7 +18,7 @@ struct State {
   crop:vec4<f32>,      // wallpaper cover left, top, drawn width, drawn height
   viewport:vec4<f32>,  // strip viewport top, wallpaper overpull, DPR, strip CSS height
   material:vec4<f32>,  // public inner amount, public inner height, mip LOD, original veil
-  pointer:vec4<f32>,   // CSS x, hover, pressed, spare
+  pointer:vec4<f32>,   // CSS x, hover, pressed, site-authored neutral brightness
 };
 @group(0) @binding(0) var photo:texture_2d<f32>;
 @group(0) @binding(1) var samplerLinear:sampler;
@@ -77,5 +77,8 @@ fn refractionEnvelope(distance:f32,amount:f32,height:f32)->f32{
   // Applying it by linear browser mixing is provisional: the executed native
   // face matrix/fill compositing and ColorSync/EDR output remain unproved.
   let color=mix(face,vec3<f32>(1.0),0.05);
-  return vec4<f32>(color*coverage,coverage);
+  // Product-requested achromatic darkening, applied after the existing Clear
+  // browser projection. This is NOT an observed Apple material parameter.
+  let darker=color*state.pointer.w;
+  return vec4<f32>(darker*coverage,coverage);
 }
