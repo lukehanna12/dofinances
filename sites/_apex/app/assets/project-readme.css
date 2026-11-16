@@ -1,9 +1,15 @@
 /* Project README workspace. GitHub's Markdown typography lives in
    github-markdown.css; the surrounding controls follow Collections. */
+/* Docs canvas: source document #0d1117; chosen dark-image-blue reference
+   #07101c. Exact sRGB channel interpolation, 40% document + 60% dark,
+   yields RGB (9,16,26) = #09101a. The darker reference is a palette
+   surrogate because the original private wallpaper pixels are not in Git. */
+html:has(body > #workspace-shell .rm-view:not([hidden])){--ui-canvas:#09101a}
+
 .rm-view{--rm-border:#393939;--rm-muted:#a3a3a3;color:#f4f4f4;min-width:0}
-.rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;padding-top:var(--workspace-summary-top);margin-bottom:12px}
+.rm-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;column-gap:14px;row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px}
 .rm-heading-text{min-width:0;flex:1 1 190px}
-.rm-heading h1{font-size:clamp(30px,3.2vw,40px);font-weight:630;letter-spacing:-.045em;margin:5px 0 0}
+/* Docs h1 now uses the same .page-heading rule as every other screen. */
 .rm-overline{font-size:11px;letter-spacing:.09em;font-weight:600;color:#b4b4b4;margin:0}
 .rm-repository-label{margin:7px 0 0;font-size:12px;color:var(--rm-muted);overflow-wrap:anywhere}
 .rm-toolbar{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;align-self:flex-end;justify-content:flex-end;gap:4px;margin:0 0 0 auto;min-height:76px}

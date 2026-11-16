@@ -162,8 +162,9 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-advanced{border-top:1px solid var(--pv-border);margin-top:26px;min-width:0}
 #pv-root .pv-advanced-summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;font-weight:550;color:#e6e6e6;cursor:pointer;min-height:45px}
 #pv-root .pv-advanced-summary::-webkit-details-marker{display:none}
-#pv-root .pv-advanced-summary::after{content:"";height:7px;width:7px;flex:none;border-right:1.6px solid #999;border-bottom:1.6px solid #999;transform:rotate(45deg);margin:0 6px 4px;transition:transform .2s var(--pv-ease)}
-#pv-root .pv-advanced[open] .pv-advanced-summary::after{transform:rotate(225deg);margin-bottom:0}
+#pv-root .pv-advanced-summary::marker{content:""}
+#pv-root .pv-advanced-summary::after{content:"";display:block;box-sizing:border-box;width:7px;height:7px;flex:none;border-right:1.6px solid #999;border-bottom:1.6px solid #999;align-self:center;transform:translateY(-2px) rotate(45deg);margin:0 7px 0 0;transition:transform .2s var(--pv-ease)}
+#pv-root .pv-advanced[open] .pv-advanced-summary::after{transform:translateY(2px) rotate(225deg)}
 #pv-root .pv-advanced-body{min-width:0;padding-bottom:22px}
 /* Live authorization controls: scoped, deliberately not simulated. */
 #pv-root .pv-provider-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:19px 0 15px}
@@ -238,6 +239,10 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-provision-protocol-item{padding:9px 0;border-bottom:1px solid #333339;min-width:0;font-size:11px}
 #pv-root .pv-provision-protocol-item strong{display:block;overflow-wrap:anywhere}
 #pv-root .pv-provision-protocol-item code{display:block;font-size:10px;overflow-wrap:anywhere;color:#b6bae7;margin-top:5px}
+/* Skill document and file paths use emerald rather than the protocol violet.
+   Preserve non-skill URIs and template paths as originally styled. */
+#pv-root[data-mode="local"] .pv-provision-mcp[data-kind="skills"] .pv-provision-protocol-item code,
+#pv-root[data-mode="local"] .pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:#34d399}
 #pv-root .pv-provision-protocol-item p{font-size:11px;color:#a8a8b1;margin:5px 0 0}
 #pv-root .pv-provision-empty{color:#9999a4;font-size:12px;margin:12px}
 @media(max-width:650px){#pv-root .pv-provision-form-grid{grid-template-columns:1fr}#pv-root .pv-provision-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#pv-root .pv-provision-tool-list{max-height:70vh}#pv-root .pv-provision-head{align-items:flex-start}#pv-root .pv-provision-toolbar{align-items:flex-start;flex-direction:column}#pv-root .pv-provision-filter{max-width:none;width:100%}}
@@ -268,6 +273,14 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
  color:#e7e7e7;border:1px solid #383838;background:#171717;border-radius:8px;font-size:11px;min-height:32px;padding:7px 9px;
 }
 #pv-root .pv-input:focus-visible,#pv-root .pv-provision-input:focus-visible{border-color:#888;outline:2px solid #777;outline-offset:1px}
+/* Credentials uses the same centered single-chevron select treatment as
+   Settings/Diagnostics: remove the platform glyph and reserve text clearance. */
+#pv-root[data-mode="credentials"] select.pv-input{
+ -webkit-appearance:none;appearance:none;
+ background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23a3a3a3'%20stroke-width='1.8'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m6%209%206%206%206-6'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 12px center;
+ background-size:14px 14px;padding-right:38px;
+}
 #pv-root .pv-provision-button{background:#1b1b1b;border:1px solid #3a3a3a;color:#e6e6e6;font-size:11px;font-weight:550;min-height:31px;padding:6px 10px}
 #pv-root .pv-provision-button:hover{background:#292929;border-color:#575757}
 #pv-root .pv-provision-button.is-secondary{background:transparent;border-color:#333;color:#bdbdbd}

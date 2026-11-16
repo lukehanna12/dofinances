@@ -193,6 +193,17 @@ body:has(> #workspace-shell) > .workspace-footer {
 }
 /* Home retains the soft side blur and centered 1100px unblurred photo,
  * leaving the copyright text crisp above the wallpaper slices. */
+/* Docs footer uses the backdrop-aware screen blend on TEXT ONLY.
+   Screen(bg, ink)=bg+ink*(1-bg/255), then 58% ink compositing;
+   local photo detail remains visible and lighter patches receive less lift. */
+body[data-wallpaper-route$="/readme"] > .workspace-footer .workspace-footer-text{
+ color:#546478;opacity:.58;mix-blend-mode:screen;text-shadow:none;
+}
+@media(prefers-contrast:more){
+ body[data-wallpaper-route$="/readme"] > .workspace-footer .workspace-footer-text{
+  color:#c0d0e0;opacity:1;mix-blend-mode:normal;text-shadow:0 1px 3px #000;
+ }
+}
 body[data-wallpaper-route="home"] > .workspace-footer {background-image:none}
 body[data-wallpaper-route="home"] > .workspace-footer::before,
 body[data-wallpaper-route="home"] > .workspace-footer::after {

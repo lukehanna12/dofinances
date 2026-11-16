@@ -33,7 +33,7 @@ test("Every project has a README-first route, with earlier sections still addres
  assert.ok(html.includes('href="#colosseum/readme"'));
  assert.ok(html.includes('href="#apple-hig-reader/readme"'));
  assert.ok(html.includes('nav-icon-asset--docs'));
- assert.ok(html.includes('<h1 id="readme-title">README</h1>'));
+ assert.ok(html.includes('<div class="page-heading"><h1 id="readme-title">Docs</h1></div>'));
  assert.ok(nav.includes('settings:"Settings",readme:"Docs"'));
  assert.ok(router.includes('"/app/colosseum/readme"'));
  assert.ok(router.includes('"/app/apple-hig-reader/readme"'));
@@ -161,7 +161,7 @@ test("Docs document starts close to the repository label and Diff sits beside Sa
  assert.ok(!heading.includes('<span>Diff</span>'),"Diff is an icon-only control");
  assert.ok(heading.includes('aria-describedby="rm-diff-tooltip"'));
  assert.ok(heading.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
- assert.ok(css.includes('row-gap:8px;padding-top:var(--workspace-summary-top);margin-bottom:12px'));
+ assert.ok(css.includes('row-gap:8px;margin-top:calc(-1 * var(--workspace-panel-overlap));margin-bottom:12px'));
  assert.ok(css.includes('.rm-toolbar{display:flex;flex:0 0 auto;'));
  assert.ok(heading.includes('class="rm-toolbar-upper"'),"Reserve a small icon row above the actions");
  assert.ok(css.includes('.rm-toolbar-upper{display:flex;justify-content:flex-end;align-items:center;gap:6px;width:100%;height:22px;flex:none}'));

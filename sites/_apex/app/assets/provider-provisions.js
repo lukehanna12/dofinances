@@ -96,6 +96,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
   for(const [title,key] of [["Resources","resources"],["Resource templates","resource_templates"],["Prompts","prompts"],["Installed skills","skills"],["Skill supporting files","skill_files"]]){
    const group=s[key]||{};
    const panel=add(region,"section","pv-provision-mcp");
+   panel.dataset.kind=key;
    add(panel,"h5","",title+" · "+(group.items?.length||0));
    if(group.error)add(panel,"p","pv-provision-muted","Upstream discovery: "+group.error);
    else if(!group.items?.length)add(panel,"p","pv-provision-muted","No "+title.toLowerCase()+" advertised.");

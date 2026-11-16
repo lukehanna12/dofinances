@@ -71,7 +71,8 @@ test("Settings, Docs and Projects use the same anchors with no local offset esti
  assert.ok(settings.includes("margin:calc(-1 * var(--workspace-panel-overlap))"));
  assert.ok(settings.includes(".st-group:first-of-type{margin-top:var(--workspace-summary-controls-gap)}"));
  assert.ok(settings.includes("min-height:var(--workspace-control-size)"));
- assert.ok(docs.includes("padding-top:var(--workspace-summary-top)"));
+ assert.ok(docs.includes("margin-top:calc(-1 * var(--workspace-panel-overlap))"));
+ assert.ok(html.includes('<div class="page-heading"><h1 id="readme-title">Docs</h1></div>'));
  assert.ok(projects.includes("#project-create{position:absolute;right:0;top:var(--workspace-controls-top)"));
  assert.ok(projects.includes("min-height:var(--workspace-control-size)"));
 });
