@@ -134,7 +134,7 @@ test("README editing offers larger Collections-style controls, live preview, dif
   "Project creation must still support repository association");
  assert.ok(html.includes('aria-keyshortcuts="Meta+Shift+E"'));
  assert.ok(css.includes(".rm-icon-button{width:42px;height:42px"));
- assert.ok(css.includes(".rm-confirm{background:#fff;color:#10243b"));
+ assert.ok(css.includes(".rm-confirm{background:#f4f7fc;color:#10243b"));
  assert.ok(ui.includes('state.source.requiresConnection'));
  assert.ok(ui.includes('window.confirm("Discard your unsaved README changes?")'));
  assert.ok(ui.indexOf('if(state.editing&&state.dirty)') < ui.indexOf('if(!slug){'),
@@ -182,7 +182,7 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
  assert.ok(css.includes('.rm-icon-button:hover:not(:disabled){background:rgba(75,107,139,.13)}'));
- assert.ok(css.includes('.rm-confirm:hover:not(:disabled){background:#eff5ff;color:#10243b}'));
+ assert.ok(css.includes('.rm-confirm:hover:not(:disabled){background:#e9eff8;color:#10243b}'));
  assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(79,113,146,.18);border-color:#34485c}'));
  assert.ok(css.includes('.rm-diff-control .rm-tooltip{right:0;left:auto;transform-origin:top right}'));
 });
@@ -198,7 +198,10 @@ test("Docs control surfaces use a screenshot-calibrated slate blue",()=>{
  }
  assert.ok(css.includes("background:#111923"));
  assert.ok(css.includes("box-shadow:inset 0 0 0 1px rgba(100,124,150,.2)"));
- assert.ok(css.includes(".rm-confirm{background:#fff;color:#10243b"));
+ const confirm=[244,247,252];
+ assert.ok(confirm.every(v=>v<255&&v>=240),"Confirm should be only slightly dimmer than white");
+ assert.ok(confirm[2]>confirm[1]&&confirm[1]>confirm[0],"Confirm should have a subtle blue tint");
+ assert.ok(css.includes(".rm-confirm{background:#f4f7fc;color:#10243b"));
 });
 
 test("Docs tooltips match Collections and all three action buttons share one baseline",()=>{
@@ -400,7 +403,7 @@ test("The edit control is enclosed by the Collections-style circular surface",()
  assert.match(surround,/box-shadow:inset 0 0 0 1px rgba\(100,124,150,\.2\)/);
  assert.ok(html.includes('class="rm-control-wrap rm-edit-surround"'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
- assert.ok(css.includes('.rm-confirm{background:#fff;color:#10243b'));
+ assert.ok(css.includes('.rm-confirm{background:#f4f7fc;color:#10243b'));
  assert.ok(html.includes('id="rm-diff"'));
 });
 
