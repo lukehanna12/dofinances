@@ -13,7 +13,7 @@
  * gamma, complete dark scheme and interactive light dynamics remain open.
  */
 import {workspaceWallpaperForRoute} from "./workspace-wallpapers.js";
-import {projectPublicClearInputs,CLEAR_OBSERVED_128_84} from "./collections-glass-public-clear.js";
+import {projectThinRectClearInputs,CLEAR_OBSERVED_128_84} from "./collections-glass-public-clear.js";
 import {airTextureMipLOD} from "./sidebar-glass-oracle.js";
 
 export const COLLECTIONS_STRIP_FRACTION=7/16; // 43.75%, exactly.
@@ -78,7 +78,9 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
   shell.insertBefore(canvas,shell.firstChild);
   const audit={status:"idle",fraction:COLLECTIONS_STRIP_FRACTION,
     underlay:"Collections wallpaper only",usesSidebarGeometry:false,
-    oracleScope:"finite-public-Clear-25F80-M2-G14G",
+    oracleScope:"finite-public-Clear-thin-rect-25F80-M2-G14G",
+    nativeGeometryScope:"16-23pt height, straight .rect, dark untinted, CAFilter-only",
+    faceFillProjection:"white input RGBA(1,1,1,0.05); browser face equation provisional",
     tint:"none",material:"recorded-public-Clear-face/inner-only",
     nativeFaceInputs:[CLEAR_OBSERVED_128_84.faceBlack,CLEAR_OBSERVED_128_84.faceWhite,
       CLEAR_OBSERVED_128_84.faceFillWhiteAlpha],
@@ -300,7 +302,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     const cssBanner=banner(),upper=overpull();
     const planeHeight=cssBanner+upper;
     const crop=wallpaperCover(width,planeHeight,imageData.w,imageData.h,.45);
-    const projected=projectPublicClearInputs(width,geometry.height);
+    const projected=projectThinRectClearInputs(width,geometry.height);
     // Native blur input path is finite; browser's texture footprint and
     // extended-sRGB/EDR output remain explicitly unproved.
     const lod=Math.max(0,airTextureMipLOD(projected.word,1)+

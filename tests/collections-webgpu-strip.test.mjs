@@ -67,7 +67,9 @@ test("The only sampled backdrop is the real Collections wallpaper; public Clear 
   assert.ok(wgsl.includes("the actual shader lanes are therefore [1,0,0,0]"));
   assert.ok(wgsl.includes("let mip=state.material.z"));
   assert.ok(wgsl.includes("let face=vec3<f32>(0.05)+(vec3<f32>(0.80)-vec3<f32>(0.05))*veiled"));
-  assert.ok(wgsl.includes("let color=mix(face,vec3<f32>(0.0),0.05)"));
+  assert.ok(wgsl.includes("let color=mix(face,vec3<f32>(1.0),0.05)"));
+  assert.ok(wgsl.includes("executed native"));
+  assert.ok(m.includes("projectThinRectClearInputs(width,geometry.height)"));
   assert.ok(wgsl.includes("textureSampleLevel(photo,samplerLinear"));
   assert.ok(wgsl.includes("vec3<f32>(19.0,20.0,21.0)/255.0"));
   assert.ok(wgsl.includes("let sampleY=state.viewport.x+y+state.viewport.y"));
@@ -105,4 +107,32 @@ test("Measured untinted public Clear material is not silently substituted with p
   assert.ok(!shader.includes("outerAmount=0.2*"));
   assert.ok(!shader.includes("thresholdMix("));
   assert.ok(!shader.includes("rim*0.28"));
+});
+
+test("Native 25F80/M2 straight Clear rectangle, not unrelated rounded geometry, drives the strip",async()=>{
+  const {projectThinRectClearInputs,projectPublicClearInputs}=await import(
+    "../sites/_apex/app/assets/collections-glass-public-clear.js");
+  // New independent native public .rect CAFilter observations: 8 derivation
+  // and 3 heldout height/width cases, two reproducible Mac processes each.
+  // On native 2x source bounds: CAFilter amount=-height, height=.36*height,
+  // blurRadius=5 at these native resolved heights, white face-fill input.
+  const observed=[
+    [700,16,-16,5.76],[700,19,-19,6.84],[700,23,-23,8.28],
+    [320,17,-17,6.12],[700,20,-20,7.2],[820,22,-22,7.92]
+  ];
+  for(const [w,h,amount,refractionHeight] of observed){
+    const projected=projectThinRectClearInputs(w,h);
+    assert.equal(projected.amount,Math.fround(amount));
+    assert.equal(projected.height,Math.fround(refractionHeight));
+    assert.equal(projected.blurRadius,5);
+    assert.equal(projected.word,2); // Browser projection, not bound GPU word
+    assert.equal(projected.source,"finite-thin-rect-SwiftUI-Clear-browser-height-projection");
+  }
+  const original=projectPublicClearInputs(700,19);
+  const straight=projectThinRectClearInputs(700,19);
+  assert.notEqual(straight.amount,original.amount);
+  assert.notEqual(straight.height,original.height);
+  assert.equal(straight.amount,-19);
+  assert.equal(straight.height,Math.fround(6.84));
+  assert.throws(()=>projectThinRectClearInputs(NaN,20),RangeError);
 });

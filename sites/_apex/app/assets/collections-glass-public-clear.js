@@ -46,6 +46,31 @@ export function projectPublicClearInputs(w,h){
   browserGaussianSigma:word/cachedScale};
 }
 /*
+ * NEW 25F80/M2 target-native SwiftUI Glass.clear .rect evidence:
+ * model/primary_evidence/scalars/live_swiftui_thin_clear_rect_finite.json
+ * (8 derivation heights at 700pt width, 3 independent heldout width/height
+ * cases, static .interactive on/off, two in-process repeats, two exact
+ * independently reproduced native runs per harness).
+ *
+ * In the recorded *native resolved* 16-23pt thin-rect domain,
+ * inner amount = -nativeHeight and inner height = 0.36*nativeHeight,
+ * blur radius = 5, backdrop-layer scale = 0.5. These differ from the
+ * previous unrelated ten-case geometry projection used for rounded glass.
+ *
+ * CSS sizes are not native 2x-snapped NSHostingView bounds: using the
+ * live strip height below is an explicit browser-domain interpolation.
+ * The native selected sampler/mip, GPU argument binding and output Q remain
+ * unresolved. Do not use this adapter for the rounded glass pill above.
+ */
+export function projectThinRectClearInputs(w,h){
+ const original=projectPublicClearInputs(w,h);
+ const d=original.d;
+ return {...original,
+  amount:f32(-Math.min(60,d)),
+  height:f32(Math.min(20,.36*d)),
+  source:"finite-thin-rect-SwiftUI-Clear-browser-height-projection"};
+}
+/*
  * The CSS panel uses border-radius:9999px (height/2): a straight strip
  * between TWO precise semicircles. This is its analytic signed-distance
  * function, not a guessed border. We cannot substitute the private AIR

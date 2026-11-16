@@ -1,9 +1,12 @@
 /* Collections-only, wallpaper-sampled Clear material.
  * Oracle (25F80/M2/G14G) finite public Clear CAFilter:
- *   innerRefractionAmount = max(-60,-.8*minDimension)
- *   innerRefractionHeight = min(20,.25*minDimension)
+ *   For directly measured straight SwiftUI .rect at native heights 16-23pt:
+ *   innerRefractionAmount = -nativeHeight
+ *   innerRefractionHeight = 0.36*nativeHeight
+ *   Browser CSS height is projected (native 2x edge snapping is not simulated).
+ *   This does NOT replace unrelated 10-case rounded-glass geometry evidence.
  *   outerRefractionAmount = 0; outerMixOpacity = 0
- *   face white=.8, black=.05, saturation=1, black fill alpha=.05
+ *   face white=.8, black=.05, saturation=1, WHITE fill alpha=.05
  *   blurOpacity[0..4] = 1; blurDistance[0..4] = 0
  * Signed-distance coverage and refraction envelope follow retained LPH AIR.
  * The CSS screen-backed strip's two flat horizontal boundaries are an
@@ -70,6 +73,9 @@ fn refractionEnvelope(distance:f32,amount:f32,height:f32)->f32{
   // Apply public Clear face INPUT endpoints as a browser-stage projection.
   // Their native executed color matrix and output/EDR chain are not closed.
   let face=vec3<f32>(0.05)+(vec3<f32>(0.80)-vec3<f32>(0.05))*veiled;
-  let color=mix(face,vec3<f32>(0.0),0.05); // observed black fill alpha
+  // The directly observed face-fill INPUT is white with 0.05 alpha.
+  // Applying it by linear browser mixing is provisional: the executed native
+  // face matrix/fill compositing and ColorSync/EDR output remain unproved.
+  let color=mix(face,vec3<f32>(1.0),0.05);
   return vec4<f32>(color*coverage,coverage);
 }
