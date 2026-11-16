@@ -59,16 +59,16 @@ test("Original preview shader data and source photograph survive byte-for-byte",
 
 test("Palette's row gains exactly one glass tile, three slots to its right",()=>{
   const mosaic=asset("dashboard-mosaic.js");
-  const iconCoordinates=Object.fromEntries([...mosaic.matchAll(/"(\\d+:\\d+)": "([A-Za-z]+)"/g)]
+  const iconCoordinates=Object.fromEntries([...mosaic.matchAll(/"(\d+:\d+)": "([A-Za-z]+)"/g)]
     .map(([,position,icon])=>[position,icon]));
   assert.equal(Object.keys(iconCoordinates).length,16,"Keep every original icon in place");
   assert.equal(iconCoordinates["3:0"],"Palette");
   assert.equal(iconCoordinates["3:3"],undefined,"The added square is icon-free");
-  const match=mosaic.match(/const centerGlass=new Set\\((\\[[^\\n]*\\])\\);/);
+  const match=mosaic.match(/const centerGlass=new Set\((\[[^\n]*\])\);/);
   assert.ok(match,"Keep explicit center-grid additions");
   assert.deepEqual(JSON.parse(match[1]).sort(),["2:4","2:6","3:3","3:5"]);
   assert.match(mosaic,/const center=row>=2&&row<=3&&col>=3&&col<=7;/);
-  assert.match(mosaic,/const filled=centerGlass\\.has\\(row\\+":"\\+col\\) \\|\\|/);
-  assert.match(mosaic,/for\\(let index=0;index<66;index\\+\\+\\)/,
+  assert.match(mosaic,/const filled=centerGlass\.has\(row\+":"\+col\) \|\|/);
+  assert.match(mosaic,/for\(let index=0;index<66;index\+\+\)/,
     "Preserve the original 11 by 6 grid");
 });
