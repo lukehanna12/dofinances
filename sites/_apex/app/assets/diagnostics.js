@@ -22,9 +22,13 @@ function usage(q){
 function progress(q){
  const pct=usage(q);
  if(pct===null)return make("span","dg-unavailable","Unavailable");
- const p=make("progress","dg-progress");
- p.max=100;p.value=Math.min(100,pct);
+ const p=make("div","dg-progress"),fill=make("span","dg-progress-fill");
+ p.setAttribute("role","progressbar");
+ p.setAttribute("aria-valuemin","0");p.setAttribute("aria-valuemax","100");
+ p.setAttribute("aria-valuenow",String(Math.min(100,pct)));
  p.setAttribute("aria-label",quantity(pct,1)+"% consumed");
+ fill.style.setProperty("--dg-bar-target",Math.min(100,pct)+"%");
+ fill.setAttribute("aria-hidden","true");p.append(fill);
  return p;
 }
 function tone(pct){return pct===null?"unknown":pct>=90?"critical":pct>=75?"warning":"normal";}
@@ -43,7 +47,10 @@ function metricCard(label,q){
  const reading=make("div","dg-card-reading"),ring=make("span","dg-card-ring");
  ring.setAttribute("aria-hidden","true");
  if(pct===null)ring.classList.add("is-unknown");
- else ring.style.setProperty("--dg-ring-percent",String(Math.min(100,pct)));
+ else {
+  ring.style.setProperty("--dg-ring-percent",String(Math.min(100,pct)));
+  ring.style.setProperty("--dg-ring-target",String(Math.min(100,pct)));
+ }
  reading.append(ring,make("strong","dg-card-percent",pct===null?"—":quantity(pct,1)+"%"));
  c.append(make("span","dg-card-label",label),reading,
   make("div","dg-card-note",pct===null?"Measurement unavailable":integer(q.used)+" of "+integer(q.limit)+" consumed"));
@@ -68,7 +75,9 @@ function initialSkeletonReport(){
  const top=clear("dg-top");
  for(const [label,i] of ["Worker requests","Workers KV writes","D1 rows read","Durable Object requests"].entries()){
   const card=make("div","dg-card"),reading=make("div","dg-card-reading");
-  reading.append(loadingLine("58px","dg-skeleton-gauge"),loadingLine((i%2?"4.2":"3.7")+"ch","dg-skeleton-percentage"));
+  const emptyRing=make("span","dg-card-ring dg-ring-loading");
+  emptyRing.setAttribute("aria-hidden","true");
+  reading.append(emptyRing,loadingLine((i%2?"4.2":"3.7")+"ch","dg-skeleton-percentage"));
   card.append(make("span","dg-card-label",label),reading,loadingLine((58+i*7)+"%","dg-skeleton-note"));
   top.append(card);
  }
@@ -84,7 +93,7 @@ function initialSkeletonReport(){
   items.forEach((name,i)=>{
    const entry=make("div","dg-quota"),head=make("div","dg-quota-head");
    head.append(make("span","dg-quota-name",name),loadingLine((7+(i+groupIndex)%4*2)+"ch"));
-   entry.append(head,loadingLine("100%","dg-skeleton-progress"));card.append(entry);
+   entry.append(head,make("div","dg-progress dg-progress-placeholder"));card.append(entry);
   });
   quotas.append(card);
  });
@@ -93,7 +102,7 @@ function initialSkeletonReport(){
  thead.append(head);
  for(let i=0;i<3;i++){
   const tr=make("tr"),service=make("td");
-  service.append(loadingLine([ "63%","79%","52%" ][i]),loadingLine("100%","dg-skeleton-progress"));
+  service.append(loadingLine([ "63%","79%","52%" ][i]),make("div","dg-worker-track"));
   tr.append(service);
   for(let c=1;c<6;c++){const td=make("td");td.append(loadingLine((4+((i+c)%4)*2)+"ch"));tr.append(td);}
   body.append(tr);
@@ -102,7 +111,8 @@ function initialSkeletonReport(){
  const local=clear("dg-local"),mac=panel("Mac"),macSummary=make("div","dg-mac-summary"),storage=make("div","dg-mac-storage-reading");
  mac.classList.add("dg-storage-panel");
  storage.append(loadingLine("8ch","dg-skeleton-storage"),loadingLine("16ch","dg-skeleton-note"));
- macSummary.append(storage,loadingLine("84px","dg-skeleton-battery"));mac.append(macSummary,loadingLine("100%","dg-skeleton-track"));
+ macSummary.append(storage,batteryGraphic(null).glyph);
+ mac.append(macSummary,make("div","dg-progress dg-progress-placeholder dg-storage-progress"));
  const legend=make("div","dg-storage-legend");
  legend.append(loadingLine("8ch"),loadingLine("13ch"));mac.append(legend);local.append(mac);
  const gateway=panel("Local gateway"),latency=make("div","dg-latency"),grid=make("div","dg-pairs");
@@ -160,7 +170,7 @@ function renderWorkers(report){
   service.append(make("span","dg-worker-name",name));
   const track=make("div","dg-worker-track"),bar=make("span","dg-worker-bar");
   track.setAttribute("aria-hidden","true");
-  bar.style.width=(100*Math.max(0,v?.requests||0)/max)+"%";
+  bar.style.setProperty("--dg-bar-target",(100*Math.max(0,v?.requests||0)/max)+"%");
   track.append(bar);service.append(track);
   row.append(service,make("td","",integer(v?.requests)),make("td","",integer(v?.errors)),
    make("td","",integer(v?.subrequests)),
@@ -190,19 +200,19 @@ function batteryGraphic(m){
  const tone=pct===null?"unknown":lowPower?"low-power":charging?"charging":pct<=20?"low":"normal";
  const glyph=make("div","dg-battery-graphic");glyph.dataset.tone=tone;
  glyph.setAttribute("role","img");
- glyph.setAttribute("aria-label",pct===null?"Battery charge unavailable":
+ glyph.setAttribute("aria-label",pct===null?"Battery charge loading":
   "Battery "+quantity(pct,0)+"%"+(charging?", charging":""));
  glyph.append(make("span","dg-battery-outline"));
  if(pct!==null){
-  const step=Math.max(0,Math.min(100,Math.round(pct/25)*25));
-  if(step>0){
-   const fill=make("span","dg-battery-fill");
-   fill.style.setProperty("--dg-battery-fill-mask",'url("/app/assets/battery/battery.fill.'+step+'percent.svg")');
-   glyph.append(fill);
-  }
+  // Exact cavity bounds of Apple's CoreSVG 100% fill path in 35.9904 units:
+  // left=2.53194, right=29.6276. The original silhouette never stretches.
+  const inset=100*(1-(2.53194+(29.6276-2.53194)*pct/100)/35.9904);
+  const fill=make("span","dg-battery-fill");
+  fill.style.setProperty("--dg-battery-final-right",inset.toFixed(4)+"%");
+  glyph.append(fill);
  }
  if(charging)glyph.append(make("span","dg-battery-bolt-symbol"));
- glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)));
+ glyph.append(make("strong","dg-battery-number",pct===null?"--":quantity(pct,0)));
  return {glyph,pct,charging};
 }
 function renderLocal(report){
@@ -305,7 +315,9 @@ export function initColosseumDiagnostics(){
   if(busy)return;
   if(!args.sections.length){notice.hidden=false;notice.dataset.tone="error";notice.textContent="Select at least one diagnostics section.";return;}
   busy=true;requested=true;selected={sections:[...args.sections],check:args.check,depth:args.depth};optionsLabel(selected);
-  if(!previous)initialSkeletonReport();
+  // Render unfilled native graphics and actual tracks on every fetch.
+  // The response paints the values with synchronized reveal animations.
+  initialSkeletonReport();
   reportLoading(true);checkStatus(true);notice.hidden=true;
   refresh.disabled=true;run.disabled=true;refresh.classList.add("is-busy");refresh.setAttribute("aria-busy","true");refresh.setAttribute("aria-label","Refreshing diagnostics");
   try{
@@ -321,7 +333,8 @@ export function initColosseumDiagnostics(){
    if(report?.name!=="system.status"||!report.sections)throw Error("The diagnostics service returned an unexpected schema.");
    previous=report;renderReport(report);query.open=false;
   }catch(error){
-   if(!previous)unavailableReport();
+   if(previous)renderReport(previous);
+   else unavailableReport();
    showFailure(error.name==="AbortError"?"The diagnostics request exceeded 30 seconds.":String(error.message||"Diagnostics unavailable."));
   }finally{
    reportLoading(false);checkStatus(false);
