@@ -3,7 +3,10 @@
 #project-navigation .pv-provider-chevron{margin-left:auto;width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:#888;transition:transform .22s cubic-bezier(.22,1,.36,1)}
 #project-navigation [data-providers-toggle][aria-expanded="true"] .pv-provider-chevron{transform:rotate(180deg)}
 #project-navigation [data-providers-toggle].is-parent-current{color:var(--ui-text)}
-#project-navigation .pv-provider-subnav{padding:2px 0 7px 22px;display:grid;gap:1px;position:relative}
+/* Desktop: subnav line at 18px, child button at 30px + 1px auto-margin.
+   The resulting 13px gap equals the sidebar's 12px padding + 1px
+   auto-margin to an ordinary expanded .nav-link. */
+#project-navigation .pv-provider-subnav{padding:2px 0 7px 30px;display:grid;gap:1px;position:relative}
 #project-navigation .pv-provider-subnav[hidden]{display:none!important}
 #project-navigation .pv-provider-subnav::before{content:"";position:absolute;top:8px;bottom:12px;left:18px;width:1px;background:rgba(255,255,255,.13);pointer-events:none}
 #project-navigation .pv-provider-child{min-height:34px;max-width:100%;padding:7px 10px 7px 19px;gap:0;font-size:12px;color:#aaa;letter-spacing:0}
@@ -13,7 +16,9 @@
  .shell.is-collapsed #project-navigation .pv-provider-chevron{display:none!important}
 }
 @media(max-width:760px){
- #project-navigation .pv-provider-subnav{padding-left:20px}
+ /* Mobile links have no extra auto-margin: line-to-child = 30 - 18 = 12px,
+     identical to the regular button's 12px sidebar inset. */
+ #project-navigation .pv-provider-subnav{padding-left:30px}
  #project-navigation [data-providers-toggle] .pv-provider-chevron{opacity:1}
 }
 @media(min-width:761px) and (max-width:1279px){
@@ -239,10 +244,11 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-provision-protocol-item{padding:9px 0;border-bottom:1px solid #333339;min-width:0;font-size:11px}
 #pv-root .pv-provision-protocol-item strong{display:block;overflow-wrap:anywhere}
 #pv-root .pv-provision-protocol-item code{display:block;font-size:10px;overflow-wrap:anywhere;color:#b6bae7;margin-top:5px}
-/* Skill document and file paths use emerald rather than the protocol violet.
-   Preserve non-skill URIs and template paths as originally styled. */
+/* Skill document and supporting-file paths use the photo-matched olive green
+   rather than protocol violet; maintain contrast while keeping them darker
+   than the vibrant health indicators. Do not recolor other URIs. */
 #pv-root[data-mode="local"] .pv-provision-mcp[data-kind="skills"] .pv-provision-protocol-item code,
-#pv-root[data-mode="local"] .pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:#34d399}
+#pv-root[data-mode="local"] .pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:var(--workspace-skill-olive)}
 #pv-root .pv-provision-protocol-item p{font-size:11px;color:#a8a8b1;margin:5px 0 0}
 #pv-root .pv-provision-empty{color:#9999a4;font-size:12px;margin:12px}
 @media(max-width:650px){#pv-root .pv-provision-form-grid{grid-template-columns:1fr}#pv-root .pv-provision-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#pv-root .pv-provision-tool-list{max-height:70vh}#pv-root .pv-provision-head{align-items:flex-start}#pv-root .pv-provision-toolbar{align-items:flex-start;flex-direction:column}#pv-root .pv-provision-filter{max-width:none;width:100%}}

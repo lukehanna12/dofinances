@@ -37,7 +37,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-refresh-tooltip-shortcut{display:inline-flex;gap:2px;margin-left:14px;color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25}
 #diagnostics-root .dg-refresh-tooltip-shortcut kbd{display:inline-block;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit}
 #diagnostics-root .dg-status{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--dg-muted);white-space:nowrap}
-#diagnostics-root .dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none;animation:dg-health-pulse 1.6s ease-in-out infinite;transform-origin:center}
+#diagnostics-root .dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none;animation:none;transform-origin:center}
+#diagnostics-root .dg-status[data-checking="true"] .dg-dot{animation:dg-health-pulse 1.6s ease-in-out infinite}
 @keyframes dg-health-pulse{50%{opacity:.48;transform:scale(.78)}}
 /* shadcn's text-shimmer utility, scoped to this vanilla-DOM workspace:
    a 2s muted-currentColor highlight, not a pulsing Skeleton block. */

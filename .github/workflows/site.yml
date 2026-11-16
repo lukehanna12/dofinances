@@ -32,6 +32,8 @@ jobs:
         run: node scripts/verify-readme-markdown-browser.mjs
       - name: Verify flat Collections controls in Chromium
         run: node scripts/verify-collections-glass-browser.mjs
+      - name: Verify Provider submenu geometry and Diagnostics loading indicator in Chromium
+        run: node scripts/verify-sidebar-olive-health-browser.mjs
       - name: Verify Collections Clear WebGPU strip in Chromium
         run: node scripts/verify-collections-webgpu-strip-browser.mjs
       - name: Build site
