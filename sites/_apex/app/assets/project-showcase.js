@@ -15,7 +15,8 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"3d-liquid-glass-27-swift-package",name:"3D Liquid Glass 27 Swift Package",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
  {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
- {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null}
+ {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
+ {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null}
 ]);
 const PHOTO_ROUTES=Object.freeze([
  "projects","colosseum/readme","colosseum/utilities","colosseum/collections",
@@ -84,7 +85,7 @@ function makeCard(project,index,slugRoute){
 }
 export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
- // Preserve account-created projects: the thirteen curated items always come first.
+ // Preserve account-created projects: the curated items always come first.
  const additional=(Array.isArray(projects)?projects:[])
   .filter(p=>p&&typeof p.slug==="string"&&typeof p.name==="string"&&!canonical.has(p.slug))
   .map(p=>({slug:p.slug,name:p.name,kind:"Project workspace",repository:p.repository||null}));

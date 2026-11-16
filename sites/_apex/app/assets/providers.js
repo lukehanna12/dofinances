@@ -3,6 +3,7 @@
  * Authority: the double-authenticated DoFinances owner route, Colosseum vault,
  * invoke grants and independently enforced local registry. */
 import {mountLocalProviderProvisions,invalidateLocalProviderProvisions} from "./provider-provisions.js";
+import {formatWorkspaceTime} from "./workspace-nav.js";
 const API="/api/colosseum/providers";
 const ROUTES=Object.freeze({local:"colosseum/providers/local",federated:"colosseum/providers/external",credentials:"colosseum/providers/credentials"});
 const FIELDS=["connection","operations","resources","effects","credentials"];
@@ -78,14 +79,16 @@ export function initColosseumProviders(){
  root.dataset.ready="true";
  const $=id=>document.getElementById(id);
  const list=$("pv-list"),detail=$("pv-detail"),status=$("pv-status"),search=$("pv-search"),
-  refresh=$("pv-refresh"),indexTitle=$("pv-index-title"),total=$("pv-index-total"),
-  summary=$("pv-summary"),summaryMode=$("pv-summary-mode"),
-  summaryRegistered=$("pv-summary-registered"),summaryConnected=$("pv-summary-connected"),
-  summaryState=$("pv-summary-state");
+  refresh=$("pv-refresh"),summary=$("pv-summary"),summaryUpdated=$("pv-summary-updated"),
+  summaryUpdatedTime=$("pv-summary-updated-time"),summaryMode=$("pv-summary-mode"),
+  summaryRegistered=$("pv-summary-registered"),summaryRegisteredLabel=$("pv-summary-registered-label"),
+  summaryConnected=$("pv-summary-connected"),summaryState=$("pv-summary-state"),
+  summaryDivider=$("pv-summary-divider"),summaryReadyGroup=$("pv-summary-ready-group");
  const state={mode:"local",selected:{federated:null,local:null,credentials:null},
   federated:[],local:[],details:new Map(),choices:FALLBACK_CHOICES,
   localRevision:null,busy:false,loadSeq:0,detailSeq:0,loaded:{federated:false,local:false},
-  pending:null,profileEditor:null,expandedLocal:new Set(),deferredLoad:false};
+  pending:null,profileEditor:null,expandedLocal:new Set(),deferredLoad:false,
+  refreshedAt:{local:null,federated:null}};
  const dataMode=()=>state.mode==="local"?"local":"federated";
  const setStatus=(text,tone)=>{status.textContent=text;status.dataset.tone=tone||"info";};
  const active=()=>state.selected[state.mode];
@@ -121,7 +124,6 @@ export function initColosseumProviders(){
   const term=search.value.trim().toLocaleLowerCase(),rows=items();
   if(!selectedId()&&rows.length)state.selected[state.mode]=key(rows[0]);
   const shown=rows.filter(x=>((x.name||x.provider_id||"")+" "+key(x)).toLocaleLowerCase().includes(term));
-  total.textContent=shown.length+" shown";
   for(const x of shown){
    const id=key(x),selected=selectedId()===id;
    const button=e("button","pv-provider-item"+(selected?" is-active":""));button.type="button";button.dataset.providerId=id;
@@ -146,12 +148,17 @@ export function initColosseumProviders(){
  function render(){
   const mode=state.mode,local=mode==="local";
   root.dataset.mode=mode;
-  indexTitle.textContent=local?"Registered Mac providers":mode==="credentials"?"Credential owners":"Hosted and external providers";
-  const rows=items(),connected=local?rows.filter(x=>x.available).length:rows.filter(x=>x.status==="connected").length;
-  summaryMode.textContent=(local?"LOCAL":mode==="credentials"?"CREDENTIALS":"EXTERNAL")+" ·";
-  summaryRegistered.textContent=String(rows.length);
-  summaryConnected.textContent=String(connected);
-  summaryState.textContent=local?"AVAILABLE":"CONNECTED";
+  const rows=items(),ready=local?rows.filter(x=>x.available).length:rows.filter(x=>x.status==="connected").length;
+  const credentials=mode==="credentials";
+  summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+" ·";
+  summaryRegistered.textContent=String(credentials?ready:rows.length);
+  summaryRegisteredLabel.textContent=credentials?"CONNECTED":"REGISTERED";
+  summaryDivider.hidden=credentials;
+  summaryReadyGroup.hidden=credentials;
+  summaryConnected.textContent=String(ready);
+  summaryState.textContent="READY";
+  const updated=state.refreshedAt[dataMode()];
+  summaryUpdatedTime.textContent=updated?formatWorkspaceTime(updated,{hour12:true}):"—";
   renderList();renderDetails();
  }
  function showSkeleton(){
@@ -170,6 +177,7 @@ export function initColosseumProviders(){
   refresh.classList.toggle("pv-refreshing",value);
   refresh.setAttribute("aria-busy",String(value));
   summary.setAttribute("aria-busy",String(value));
+  summaryUpdated.setAttribute("aria-busy",String(value));
   list.setAttribute("aria-busy",String(value));
   if(value)showSkeleton();
  }
@@ -199,6 +207,9 @@ export function initColosseumProviders(){
 
    }
    state.loaded[mode]=true;
+   // Timestamp records when the live registry was successfully refreshed.
+   // External and Credentials share this same federated registry fetch.
+   state.refreshedAt[mode]=new Date();
    if(mode==="local"){
     if(!itemsFor(mode).some(x=>x.provider_id===state.selected.local))
      state.selected.local=itemsFor(mode)[0]?.provider_id||null;

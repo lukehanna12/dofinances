@@ -48,6 +48,9 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root button:disabled{cursor:not-allowed;opacity:.43}
 #pv-root :is(button,input,select,textarea,a):focus-visible{outline:2px solid #eee;outline-offset:2px}
 #pv-root .pv-overview{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:var(--workspace-summary-row-height)}
+#pv-root .pv-overview > .pv-summary{min-width:0}
+#pv-root .pv-summary-updated{flex:none;margin-left:auto;text-align:right;letter-spacing:.16em}
+#pv-root .pv-summary-updated-value{white-space:nowrap}
 /* Same two-ring and visible slash semantics as Collections: the complete
    first and second text groups disappear without collapsing their layout.
    Each ring is centered in its actual group, for all three route labels,
@@ -59,6 +62,9 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root.pv-loading .pv-summary-group{visibility:hidden}
 #pv-root.pv-loading .pv-summary-group::after{content:"";position:absolute;top:50%;left:50%;margin:-.5em 0 0 -.5em;visibility:visible;box-sizing:border-box;width:1em;height:1em;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;background:transparent;animation:pv-spin 600ms linear infinite;pointer-events:none}
 #pv-root .pv-summary-divider{display:inline-block;white-space:pre}
+#pv-root #pv-summary-ready-group[hidden],#pv-root #pv-summary-divider[hidden]{display:none!important}
+/* Count groups and far-right UPDATED group each retain real text geometry
+   beneath the independent hollow ring while their values are loading. */
 @keyframes pv-spin{to{transform:rotate(360deg)}}
 #pv-root .pv-refresh-control{width:var(--workspace-control-size);height:var(--workspace-control-size);position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none}
 #pv-root .pv-refresh{width:var(--workspace-control-size);height:var(--workspace-control-size);min-height:var(--workspace-control-size);padding:0;border-radius:10px;border:1px solid var(--pv-border);background:var(--pv-fill);color:var(--pv-ink);display:grid;place-items:center;transition:background .2s,border-color .2s,transform .2s}
@@ -103,7 +109,6 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-search-field input[type="search"]{appearance:none;-webkit-appearance:none;flex:1;min-width:0;width:100%;height:28px;margin:0;padding:0 2px;border:0;border-radius:0;background:transparent;color:#efefef;outline:0!important;box-shadow:none!important;font:500 12px/1.3 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;caret-color:#fff}
 #pv-root .pv-search-field input[type="search"]::placeholder{color:#595959;opacity:1}
 #pv-root .pv-search-field input[type="search"]:focus,#pv-root .pv-search-field input[type="search"]:focus-visible{border:0;outline:0!important;box-shadow:none!important}
-#pv-root .pv-list-meta{display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:0;color:#888;font-size:10px;letter-spacing:.08em;text-transform:uppercase;text-align:right;min-width:0}
 #pv-root .pv-provider-list{display:flex;flex-direction:column;min-width:0;border-top:1px solid var(--pv-border);border-bottom:1px solid var(--pv-border)}
 #pv-root .pv-provider-item{width:100%;min-width:0;min-height:54px;display:flex;align-items:center;gap:12px;position:relative;text-align:left;padding:9px 11px 9px 4px;background:none;color:#e3e3e3;border:0;border-bottom:1px solid var(--pv-border);border-radius:0;transition:background .16s ease}
 #pv-root .pv-provider-item:last-child{border-bottom:0}
@@ -285,13 +290,14 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
  #pv-root .pv-inspector{min-height:240px}
  #pv-root .pv-provider-list{max-height:340px;overflow:auto;scrollbar-width:thin}
 }
-@media(max-width:800px){#pv-root .pv-list-meta{display:none}}
 @media(max-width:650px){
  #pv-root{margin-top:calc(-1 * var(--workspace-panel-overlap))}
  #pv-root .pv-browser{margin-top:var(--workspace-summary-controls-gap);gap:19px}
  #pv-root .pv-provider-list{max-height:270px}
  #pv-root .pv-provider-form{grid-template-columns:1fr}
  #pv-root .pv-summary{font-size:10px;letter-spacing:.1em;white-space:nowrap}
+ #pv-root .pv-overview{gap:8px}
+ #pv-root .pv-summary-updated{letter-spacing:.06em;font-size:9px}
  #pv-root .pv-search-control{width:27px}
  #pv-root .pv-search-focus{border-radius:8px 0 0 8px}
  #pv-root .pv-search-focus img{width:13px;height:13px}

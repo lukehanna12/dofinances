@@ -9,16 +9,20 @@ test("Utility 0001c4 Projects roster is complete and ordered",()=>{
   "Translucence Lab","GitHub README Chrome Extension","ChatGPT Chat Save Chrome Extension",
   "Colosseum","Apple HIGs Reader","Terminal Scalars","Unicode Plus",
   "Liquid Plexiglass 26","3D Liquid Glass 26 Swift Package",
-  "3D Liquid Glass 27 Swift Package","Apple Adobe FX","Protocol Monitor Pruner","App Caviar"
+  "3D Liquid Glass 27 Swift Package","Apple Adobe FX","Protocol Monitor Pruner","App Caviar",
+  "Ozoning Board"
  ]);
- assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,13);
+ assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,14);
+ assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
+  slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null
+ });
 });
 test("Only Colosseum and the two in-progress projects have GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,10);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,11);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "apple-hig-reader","protocol-monitor-pruner"
  ]);
