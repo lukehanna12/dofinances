@@ -181,11 +181,26 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
- assert.ok(css.includes('.rm-icon-button:hover:not(:disabled){background:rgba(75,125,186,.18)}'));
+ assert.ok(css.includes('.rm-icon-button:hover:not(:disabled){background:rgba(75,107,139,.13)}'));
  assert.ok(css.includes('.rm-confirm:hover:not(:disabled){background:#eff5ff;color:#10243b}'));
- assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(78,132,195,.23);border-color:#496f98}'));
+ assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(79,113,146,.18);border-color:#34485c}'));
  assert.ok(css.includes('.rm-diff-control .rm-tooltip{right:0;left:auto;transform-origin:top right}'));
 });
+test("Docs control surfaces use a screenshot-calibrated slate blue",()=>{
+ // Apple Display ICC -> sRGB screenshot: page #070c13; document #0d1117;
+ // previous blue button #192b3d. Reduce the former contrast by >50%.
+ const document=[13,17,23],previous=[25,43,61],canvas=[7,12,19];
+ const actual=document.map((n,i)=>Math.round(n*.68+previous[i]*.32));
+ assert.deepEqual(actual,[17,25,35]);
+ for(let i=0;i<3;i++){
+  assert.ok(actual[i]>document[i]&&document[i]>canvas[i]);
+  assert.ok(actual[i]-document[i]<(previous[i]-document[i])/2);
+ }
+ assert.ok(css.includes("background:#111923"));
+ assert.ok(css.includes("box-shadow:inset 0 0 0 1px rgba(100,124,150,.2)"));
+ assert.ok(css.includes(".rm-confirm{background:#fff;color:#10243b"));
+});
+
 test("Docs tooltips match Collections and all three action buttons share one baseline",()=>{
  const collections=source("sites/_apex/app/assets/collections.css");
  const collectionTooltip=collections.slice(collections.indexOf("#cs-root .cs-create-tooltip{"),collections.indexOf("#cs-root .cs-create-tooltip-label{"));
@@ -216,8 +231,8 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(html.includes('rm-control-wrap rm-edit-surround'));
  assert.doesNotMatch(html,/id="rm-markdown"|id="rm-preview"|id="rm-editor"/);
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
- assert.ok(css.includes('background:#192b3d'));
- assert.ok(css.includes('box-shadow:inset 0 0 0 1px rgba(114,157,203,.25)'));
+ assert.ok(css.includes('background:#111923'));
+ assert.ok(css.includes('box-shadow:inset 0 0 0 1px rgba(100,124,150,.2)'));
  assert.ok(ui.includes('reading.contentEditable="true"'));
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
@@ -381,8 +396,8 @@ test("The edit control is enclosed by the Collections-style circular surface",()
  const surround=css.slice(css.indexOf(".rm-edit-surround,.rm-action-surround{"),css.indexOf(".rm-edit-surround #rm-edit,"));
  assert.match(surround,/padding:4px/);
  assert.match(surround,/border-radius:999px/);
- assert.match(surround,/background:#192b3d/);
- assert.match(surround,/box-shadow:inset 0 0 0 1px rgba\(114,157,203,\.25\)/);
+ assert.match(surround,/background:#111923/);
+ assert.match(surround,/box-shadow:inset 0 0 0 1px rgba\(100,124,150,\.2\)/);
  assert.ok(html.includes('class="rm-control-wrap rm-edit-surround"'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
  assert.ok(css.includes('.rm-confirm{background:#fff;color:#10243b'));
