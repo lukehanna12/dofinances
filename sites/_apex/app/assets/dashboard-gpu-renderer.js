@@ -316,18 +316,36 @@ async function initialize(){
     size:[logoWidth,logoHeight,1],format:"rgba8unorm",
     usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.COPY_SRC
   });
-  try{
-    device.queue.copyExternalImageToTexture({source:logoImage},
-      {texture:logoTexture},[logoWidth,logoHeight]);
-    audit.logoUpload="direct-image";
-  }catch(directLogoError){
-    const bitmap=await createImageBitmap(logoImage);
-    try{
-      device.queue.copyExternalImageToTexture({source:bitmap},
-        {texture:logoTexture},[logoWidth,logoHeight]);
-      audit.logoUpload="image-bitmap";
-    }finally{bitmap.close();}
+  // Chromium/SwiftShader accepted direct WebP uploads without error while
+  // silently writing (0,0,0,0). Decode the real asset to RGBA first and use
+  // an explicit queue.writeTexture: never treat a successful API call as
+  // evidence that opaque source pixels reached the GPU.
+  const logoStaging=document.createElement("canvas");
+  logoStaging.width=logoWidth;logoStaging.height=logoHeight;
+  const logoCtx=logoStaging.getContext("2d",{willReadFrequently:true});
+  if(!logoCtx)throw Error("Unable to decode the lens logo into an RGBA transfer surface");
+  logoCtx.clearRect(0,0,logoWidth,logoHeight);
+  logoCtx.drawImage(logoImage,0,0);
+  const logoRGBA=logoCtx.getImageData(0,0,logoWidth,logoHeight).data;
+  const centerOffset=(Math.floor(logoHeight/2)*logoWidth+
+    Math.floor(logoWidth/2))*4;
+  const decodedCenter=Array.from(logoRGBA.subarray(centerOffset,centerOffset+4));
+  if(decodedCenter[3]<180)throw Error("Logo decode lost the opaque center: "+decodedCenter);
+  const logoRowBytes=logoWidth*4;
+  const logoBytesPerRow=Math.ceil(logoRowBytes/256)*256;
+  const logoPixels=logoBytesPerRow===logoRowBytes?
+    logoRGBA:new Uint8Array(logoBytesPerRow*logoHeight);
+  if(logoBytesPerRow!==logoRowBytes){
+    for(let row=0;row<logoHeight;row++)
+      logoPixels.set(logoRGBA.subarray(row*logoRowBytes,(row+1)*logoRowBytes),
+        row*logoBytesPerRow);
   }
+  device.queue.writeTexture({texture:logoTexture},logoPixels,
+    {bytesPerRow:logoBytesPerRow,rowsPerImage:logoHeight},
+    [logoWidth,logoHeight,1]);
+  audit.logoUpload="decoded-rgba8-explicit-gpu-transfer";
+  audit.logoDecodedCenterRGBA=decodedCenter;
+  logoStaging.width=0;logoStaging.height=0;
   audit.logoSource="/app/assets/dashboard-doof-lens-logo.webp";
   audit.logoDimensions=[logoWidth,logoHeight];
 
