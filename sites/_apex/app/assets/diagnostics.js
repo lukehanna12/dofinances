@@ -225,7 +225,7 @@ export function initColosseumDiagnostics(){
   if(busy)return;
   if(!args.sections.length){notice.hidden=false;notice.dataset.tone="error";notice.textContent="Select at least one diagnostics section.";return;}
   busy=true;requested=true;selected={sections:[...args.sections],check:args.check,depth:args.depth};optionsLabel(selected);
-  refresh.disabled=true;run.disabled=true;refresh.classList.add("is-busy");refresh.querySelector("span").textContent="Refreshing";
+  refresh.disabled=true;run.disabled=true;refresh.classList.add("is-busy");refresh.setAttribute("aria-busy","true");refresh.setAttribute("aria-label","Refreshing diagnostics");
   try{
    const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),30000);
    let response;
@@ -241,10 +241,15 @@ export function initColosseumDiagnostics(){
   }catch(error){
    showFailure(error.name==="AbortError"?"The diagnostics request exceeded 30 seconds.":String(error.message||"Diagnostics unavailable."));
   }finally{
-   busy=false;refresh.disabled=false;run.disabled=false;refresh.classList.remove("is-busy");refresh.querySelector("span").textContent="Refresh";
+   busy=false;refresh.disabled=false;run.disabled=false;refresh.classList.remove("is-busy");refresh.setAttribute("aria-busy","false");refresh.setAttribute("aria-label","Refresh selected diagnostics");
   }
  }
  refresh.addEventListener("click",()=>collect(selected));
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.repeat||event.isComposing||!event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey||event.code!=="KeyR")return;
+  if(document.querySelector('[data-view="colosseum/diagnostics"]')?.hidden)return;
+  event.preventDefault();void collect(selected);
+ });
  run.addEventListener("click",()=>collect(optionsFromForm()));
  document.querySelectorAll("[data-dg-section], #dg-check, #dg-depth").forEach(el=>el.addEventListener("change",()=>optionsLabel(optionsFromForm())));
  function onRoute(){

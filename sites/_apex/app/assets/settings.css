@@ -12,7 +12,7 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root{
  --st-ink:#fafafa;--st-secondary:#a3a3a3;--st-muted:#858585;--st-line:#292929;
  --st-surface:#171717;--st-raised:#202020;--st-ease:cubic-bezier(.22,1,.36,1);
- max-width:1030px;width:100%;min-height:70vh;margin:14px 0 65px;padding:0;
+ max-width:1030px;width:100%;min-height:70vh;margin:calc(-1 * var(--workspace-panel-overlap)) 0 65px;padding:0;
  color:var(--st-ink);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
  -webkit-font-smoothing:antialiased
 }
@@ -22,11 +22,12 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root button{cursor:pointer}
 #st-root button:disabled{opacity:.45;cursor:not-allowed}
 #st-root :is(button,input,select,textarea,a,summary):focus-visible{outline:2px solid #e5e5e5;outline-offset:3px}
-#st-root .st-section-index{display:flex;flex-wrap:wrap;align-items:center;column-gap:23px;row-gap:8px;padding:4px 0 20px;border-bottom:1px solid var(--st-line)}
-#st-root .st-section-index button{border:0;background:transparent;color:#a8a8a8;font-size:12px;font-weight:530;padding:5px 0;border-radius:2px;line-height:1.4;text-align:left;transition:color .16s}
+#st-root .st-section-index{display:flex;flex-wrap:wrap;align-items:center;column-gap:23px;row-gap:8px;min-height:var(--workspace-summary-row-height);padding:0;border:0}
+#st-root .st-section-index button{border:0;background:transparent;color:#a8a8a8;font-size:12px;font-weight:530;padding:0;border-radius:2px;line-height:1.4;text-align:left;transition:color .16s}
 #st-root .st-section-index button:hover{color:#fff}
 #st-root .st-group{margin-top:31px;scroll-margin-top:110px;min-width:0}
-#st-root .st-group-heading{display:flex;align-items:center;min-height:30px;margin:0 0 2px}
+#st-root .st-group:first-of-type{margin-top:var(--workspace-summary-controls-gap)}
+#st-root .st-group-heading{display:flex;align-items:center;min-height:var(--workspace-control-size);margin:0 0 2px}
 #st-root .st-group-heading h2{margin:0;color:#bcbcbc;font-size:11px;font-weight:600;letter-spacing:.13em;line-height:1.4;text-transform:uppercase}
 #st-root .panel,#st-root .settings-panel,#st-root .security-setup{
  max-width:none;width:100%;margin:0;padding:0;box-shadow:none;background:transparent;border:0;border-radius:0;color:var(--st-ink)
@@ -178,7 +179,7 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root #cf-api-output{padding:13px;max-width:100%;max-height:340px;overflow:auto;background:#141414;border:1px solid #343434;border-radius:9px;font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:720px){
  #st-root{margin:14px 0 40px}
- #st-root .st-section-index{column-gap:14px;padding-bottom:14px}
+ #st-root .st-section-index{column-gap:14px;padding-bottom:0}
  #st-root .st-section-index button{font-size:11px}
  #st-root .st-group{margin-top:25px}
  #st-root .st-setting-item--inline,#st-root .clock-settings{align-items:flex-start;flex-direction:column;gap:11px}
