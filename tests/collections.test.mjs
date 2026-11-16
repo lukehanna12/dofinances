@@ -190,7 +190,7 @@ test("Utilities use persistent Done checkmarks and confirmed trash removal",()=>
  assert.ok(js.includes('class="cs-utility-trash"'));
  assert.ok(js.includes('src="/app/assets/trash-utilities.v1.svg"'));
  assert.ok(js.includes('data-cs-action="remove"'));
- assert.ok(js.includes('data-cs-action="admit" disabled'));
+ assert.ok(js.includes('data-cs-action="admit" aria-label="Add utilities"'));
  assert.ok(js.includes('data-cs-action="edit"'));
  assert.ok(js.includes('data-cs-action="select"'));
  assert.ok(js.includes('aria-pressed="'));
@@ -200,7 +200,7 @@ test("Utilities use persistent Done checkmarks and confirmed trash removal",()=>
  assert.ok(js.includes('if(state.selecting){'));
  assert.ok(js.includes('if(action==="remove"){openEvictDialog();return;}'));
  assert.doesNotMatch(js,/data-cs-action="done"|data-cs-action="discard"|data-cs-action="cancel"/);
- assert.doesNotMatch(js,/request\("admit"/);
+ assert.match(js,/request\("admit",\{/);
 });
 test("Real writes are owner-protected, revision-bound, and preserve underlying catalog items",()=>{
  assert.match(edge,/const collections=pathname==="\/api\/colosseum\/collections"/);
@@ -1512,7 +1512,7 @@ test("Add utilities uses a button-filling square glyph, preserving exact origina
  assert.ok(add.includes('fill-rule="evenodd"'),"Transparent knockout plus is cut out of solid square");
  assert.doesNotMatch(add,/data-sf-symbol="plus\.circle\.fill"/);
  const controls=js.slice(js.indexOf('function utilityToolbarMarkup(){'),js.indexOf("function rowMarkup("));
- assert.match(controls,/data-cs-action="admit" disabled aria-label="Add utilities \(coming later\)"/);
+ assert.match(controls,/data-cs-action="admit" aria-label="Add utilities" aria-haspopup="dialog" aria-controls="cs-admit-dialog"/);
  assert.match(controls,/src="\/app\/assets\/add-utilities\.v1\.svg"/);
  assert.doesNotMatch(controls,/src="\/app\/assets\/add-collection\.v3\.svg"/);
  const collectionButton=html.match(/<button[^>]*id="cs-create"[\s\S]*?<\/button>/)?.[0]||"";
@@ -1689,4 +1689,37 @@ test("Utilities search exactly matches Collection search scale without changing 
  assert.ok(css.includes('#cs-root .cs-utility-search{margin-top:19px;flex:none}'));
  assert.ok(css.includes(' #cs-root .cs-utility-search{margin-top:15px}'));
  assert.doesNotMatch(css,/#cs-root \.cs-utility-search\{[^}]*\bwidth:/);
+});
+
+test("Collections popup searches owner catalog by name or UID and saves membership with revision guard",async()=>{
+ const {admissionSearchArgs}=await import("../sites/_apex/app/assets/collections-admit.js");
+ assert.deepEqual(admissionSearchArgs("000073"),
+  {action:"list",uid_prefix:"000073",sort:"name_asc",page_size:25});
+ assert.deepEqual(admissionSearchArgs("ASCII Box Drawing"),
+  {action:"list",query:"ASCII Box Drawing",sort:"name_asc",page_size:25});
+ assert.deepEqual(admissionSearchArgs(" aBc123 "),
+  {action:"list",uid_prefix:"abc123",sort:"name_asc",page_size:25});
+ assert.equal(admissionSearchArgs("  "),null);
+ assert.ok(html.includes('id="cs-admit-dialog"'));
+ for(const id of ["cs-admit-collection","cs-admit-search","cs-admit-results",
+   "cs-admit-status","cs-admit-more","cs-admit-error","cs-admit-cancel","cs-admit-apply"])
+   assert.ok(html.includes('id="'+id+'"'),id);
+ const modal=src("sites/_apex/app/assets/collections-admit.js");
+ assert.match(modal,/fetch\("\/api\/colosseum\/utilities"/);
+ assert.match(modal,/method:"POST",credentials:"same-origin",cache:"no-store"/);
+ assert.match(modal,/new AbortController\(\)/);
+ assert.match(modal,/session\.selected\.set\(uid,item\.name\)/);
+ assert.match(modal,/session\.selected\.delete\(uid\)/);
+ assert.match(modal,/const now=getSnapshot\(\)/);
+ assert.match(modal,/now\.revision!==s\.revision/);
+ assert.match(modal,/await admit\(\{id:s\.id,name:s\.name,revision:s\.revision\},ids\)/);
+ assert.match(modal,/result\.item_uids\?\.includes\(id\)/);
+ assert.match(modal,/await onSaved\(saved,ids\)/);
+ assert.match(js,/expected_revision:current\.revision/);
+ assert.match(js,/await loadList\(\{focusId:current\.id\}\)/);
+ assert.match(js,/uids\.every\(uid=>state\.detail\?\.item_uids\?\.includes\(uid\)\)/);
+ assert.match(js,/admission\.open\(\)/);
+ assert.match(js,/admission\.close\(\)/);
+ assert.match(css,/#cs-root \.cs-admit-row\[aria-pressed="true"\]/);
+ assert.doesNotMatch(js,/if\(action==="admit"\)return; \/\/ Intentionally dormant/);
 });

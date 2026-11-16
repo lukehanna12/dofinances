@@ -642,6 +642,23 @@
                 <button type="button" id="cs-delete-apply" class="cs-button cs-danger" disabled>Delete collection</button>
               </div>
             </dialog>
+
+            <dialog class="cs-modal cs-admit-dialog" id="cs-admit-dialog" aria-labelledby="cs-admit-title" aria-describedby="cs-admit-copy">
+              <h2 id="cs-admit-title">Add utilities</h2>
+              <p id="cs-admit-copy">Find existing utilities to add to <strong id="cs-admit-collection"></strong>.</p>
+              <div class="cs-search cs-admit-search" role="search">
+                <span class="cs-search-control" aria-hidden="true"><img src="/app/assets/magnifying-glass.v2.svg" alt=""></span>
+                <input id="cs-admit-search" type="search" aria-label="Search catalog utilities by name or UID" placeholder="Search by name or UID" autocomplete="off" spellcheck="false">
+              </div>
+              <div class="cs-admit-results" id="cs-admit-results" role="group" aria-label="Catalog search results"></div>
+              <p class="cs-admit-status" id="cs-admit-status" role="status" aria-live="polite"></p>
+              <button type="button" class="cs-button cs-admit-more" id="cs-admit-more" hidden>Load more results</button>
+              <p id="cs-admit-error" class="cs-form-error" role="alert"></p>
+              <div class="cs-modal-actions">
+                <button type="button" id="cs-admit-cancel" class="cs-button">Cancel</button>
+                <button type="button" id="cs-admit-apply" class="cs-button cs-primary" disabled>Add utilities</button>
+              </div>
+            </dialog>
             <dialog class="cs-modal" id="cs-evict-dialog" aria-labelledby="cs-evict-title" aria-describedby="cs-evict-copy">
               <h2 id="cs-evict-title">Remove utilities from collection?</h2>
               <p id="cs-evict-copy">Remove <strong id="cs-evict-count"></strong> from the <strong id="cs-evict-collection"></strong> collection?</p>
