@@ -7,6 +7,17 @@ import {join,extname} from "node:path";
 import {tmpdir} from "node:os";
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const sourceRoot=new URL("../sites/_apex/app/assets/",import.meta.url);
+// Fetch the exact wallpaper served to real Collections (no synthetic color
+// field in this regression). Use the same image bytes for headless GPU checks.
+const liveWallpaperURL="https://dofinances.com/wallpapers/"+
+  "dcb3d4f1e42bf3aebab2186768a598d17a8aad76e9620a150e268938eee01441.jpg";
+const wallpaperResponse=await fetch(liveWallpaperURL,{signal:AbortSignal.timeout(15000)});
+assert.equal(wallpaperResponse.status,200,"Collections production wallpaper must be reachable");
+assert.ok((wallpaperResponse.headers.get("content-type")||"").includes("image/"),
+  "Collections production wallpaper must return an image");
+const wallpaper=Buffer.from(await wallpaperResponse.arrayBuffer());
+assert.ok(wallpaper.length>10000,"Collections wallpaper unexpectedly small");
+console.log("Real Collections wallpaper source",wallpaper.length,"bytes");
 const html=[
  '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
  '<link rel="stylesheet" href="/app/assets/collections.css">',
@@ -24,16 +35,15 @@ const html=[
 ].join("");
 const bootstrap=[
  'import {initCollectionsWebGPUStrip} from "/app/assets/collections-webgpu-strip.js";',
- 'const image=document.createElement("canvas");image.width=144;image.height=144;',
- 'const context=image.getContext("2d");',
- 'const gradient=context.createLinearGradient(0,0,144,144);',
- 'gradient.addColorStop(0,"#eeae63");gradient.addColorStop(1,"#488aca");',
- 'context.fillStyle=gradient;context.fillRect(0,0,144,144);',
- 'window.__stripFixture=initCollectionsWebGPUStrip({wallpaperURL:image.toDataURL("image/png")});'
+ 'window.__stripFixture=initCollectionsWebGPUStrip({wallpaperURL:"/wallpaper-test.jpg"});'
 ].join("\n");
 const types={".js":"text/javascript",".wgsl":"text/plain",".css":"text/css"};
 const server=createServer((req,res)=>{
  const path=req.url?.split("?")[0]||"/";
+ if(path==="/wallpaper-test.jpg"){
+  res.writeHead(200,{"Content-Type":"image/jpeg","Cache-Control":"no-store"});
+  res.end(wallpaper);return;
+ }
  if(path==="/bootstrap.js"){
   res.writeHead(200,{"Content-Type":"text/javascript"});res.end(bootstrap);return;
  }
@@ -100,7 +110,7 @@ try{
   if(out.exceptionDetails)throw Error(JSON.stringify(out.exceptionDetails));
   return out.result.value;
  };
- const probe='(()=>{const a=window.__collectionsWebGPUStrip,c=document.getElementById("cs-top-webgpu-strip"),s=document.getElementById("cs-summary"),r=c?.getBoundingClientRect(),sr=s?.getBoundingClientRect(),sh=document.getElementById("workspace-shell")?.getBoundingClientRect();return {gpu:!!navigator.gpu,a,visible:!!c&&!c.hidden,bounds:r&&{x:r.x,y:r.y,w:r.width,h:r.height},summaryTop:sr?.top,shellTop:sh?.top}})()';
+ const probe='(()=>{const a=window.__collectionsWebGPUStrip,c=document.getElementById("cs-top-webgpu-strip"),s=document.getElementById("cs-summary"),r=c?.getBoundingClientRect(),sr=s?.getBoundingClientRect(),sh=document.getElementById("workspace-shell")?.getBoundingClientRect(),front=r&&document.elementFromPoint(r.left+r.width*.7,r.top+r.height*.5);return {gpu:!!navigator.gpu,a,visible:!!c&&!c.hidden,bounds:r&&{x:r.x,y:r.y,w:r.width,h:r.height},summaryTop:sr?.top,shellTop:sh?.top,frontTag:front?.tagName,frontId:front?.id}})()';
  await cmd("Runtime.enable");await cmd("Page.enable");
  await cmd("Page.navigate",
    {url:"http://127.0.0.1:"+server.address().port+"/?collections-glass-ci=1"});
@@ -122,8 +132,9 @@ try{
  const gap=state.summaryTop-state.bounds.y;
  assert.ok(Math.abs(state.bounds.h-gap*7/16)<.5,
    "Strip must occupy exactly 43.75% of measured summary gap");
+ console.log("Real-wallpaper strip WebGPU measurement:",JSON.stringify(state));
  assert.ok(state.a.gpuPixel.slice(0,3).some(channel=>channel>36),
-   "Rendered pixel must sample the colored wallpaper, not black");
+   "Rendered pixel must sample the real Collections wallpaper instead of black");
  assert.ok(state.a.gpuPixel[3]>=200,"WebGPU strip interior must be opaque");
  const old=state.bounds;
  await evaluate('(()=>{const sh=document.getElementById("workspace-shell");sh.classList.add("is-collapsed");document.getElementById("workspace-sidebar").style.width="74px";return 1;})()');
