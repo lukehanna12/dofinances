@@ -127,7 +127,7 @@ function rgba16Texture(device,width,height){
     format:"rgba16float",
     usage:GPUTextureUsage.TEXTURE_BINDING|
           GPUTextureUsage.RENDER_ATTACHMENT|
-          GPUTextureUsage.STORAGE_BINDING
+          GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.COPY_SRC
   });
 }
 // Canvas-local scene: cover image begins at the visible global-bar bottom.
@@ -484,7 +484,8 @@ async function initialize(){
       visibleScene=device.createTexture({
         label:"Photo-only display source: excludes the uploaded logo",
         size:[w,h,1],format:"rgba16float",
-        usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT
+        usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT|
+              GPUTextureUsage.COPY_SRC
       });
       visibleSceneView=visibleScene.createView();
       audit.mipCount=scene.mipLevelCount;
@@ -721,6 +722,33 @@ async function initialize(){
     readback.destroy();
     if(rgba[3]!==255)throw Error("GPU offscreen output alpha proof failed: "+rgba);
     audit.offscreenPixelProof=rgba;
+    // Read back one logo-covered pixel from BOTH scene sources. Older tests
+    // only checked output alpha and could pass if the logo was invisible.
+    const centerX=Math.floor(physicalWidth*.5);
+    const centerY=Math.floor(physicalHeight*.5);
+    const readPixel=async source=>{
+      const buffer=device.createBuffer({
+        size:256,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ
+      });
+      const command=device.createCommandEncoder({label:"Independent lens/logo source verification"});
+      command.copyTextureToBuffer(
+        {texture:source,origin:{x:centerX,y:centerY,z:0}},
+        {buffer,bytesPerRow:256,rowsPerImage:1},
+        {width:1,height:1,depthOrArrayLayers:1}
+      );
+      device.queue.submit([command.finish()]);
+      await buffer.mapAsync(GPUMapMode.READ);
+      const pixel=Array.from(new Uint8Array(buffer.getMappedRange()).slice(0,8));
+      buffer.unmap();buffer.destroy();
+      return pixel;
+    };
+    const cleanPixel=await readPixel(visibleScene);
+    const logoPixel=await readPixel(scene);
+    const changed=cleanPixel.some((byte,i)=>byte!==logoPixel[i]);
+    audit.logoGpuPixelProof={
+      changed,cleanPixel,logoPixel,sampledAt:[centerX,centerY]
+    };
+    if(!changed)throw Error("Lens logo missing: logo scene center is identical to visible photograph");
   }
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   audit.status="ready";
