@@ -33,6 +33,9 @@ test("Frosted dock keeps button dimensions, tooltips and fixed viewport anchorin
  assert.match(dock,/bottom:calc\(100% \+ 13px\)/);
  assert.match(dock,/right:calc\(24px \+ env\(safe-area-inset-right,0px\)\)/);
  assert.match(dock,/bottom:calc\(24px \+ env\(safe-area-inset-bottom,0px\)\)/);
- assert.match(dock,/@keyframes cs-floating-view-arrive/);
+ const entrance=read("sites/_apex/app/assets/workspace-enhancements.css");
+ assert.match(entrance,/@keyframes workspace-content-arrive/);
+ assert.match(entrance,/from\{opacity:\.83;transform:translateY\(4px\)\}/);
+ assert.doesNotMatch(dock,/@keyframes cs-floating-view-arrive/);
  for(const id of ["cs-create","cs-edit","cs-select-collections"])assert.ok(html.includes('id="'+id+'"'));
 });
