@@ -62,7 +62,8 @@ test("Settings puts deletion action below its textboxes and presents branded, se
  assert.ok(source.includes('capacity.textContent=count+"/"+max+" connected"'));
  assert.ok(source.includes('add.append(identityBrandIcon(provider))'));
  assert.ok(source.includes('group.append(add,capacity);buttons.append(group)'));
- assert.ok(source.includes('person.append(identityPicture(item))'));
+ assert.ok(source.includes('const avatar=identityPicture(item)'));
+ assert.ok(source.includes('person.append(avatar)'));
  assert.ok(source.includes('image.referrerPolicy="no-referrer"'));
  assert.ok(source.includes('image.loading="eager"'));
  assert.ok(source.includes('refreshPhoto.href="/api/auth/oauth/start?provider=google&intent=refresh&identity="+encodeURIComponent(item.id)'));
