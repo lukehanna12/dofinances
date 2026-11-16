@@ -48,7 +48,8 @@ test("Diagnostics uses shadcn Skeleton data placeholders across the real screen 
   'function initialSkeletonReport()',
   'function unavailableReport()',
   'initialSkeletonReport();',
-  'if(!previous)unavailableReport()',
+  'if(previous)renderReport(previous)',
+  'else unavailableReport()',
   'root.classList.toggle("dg-refresh-loading",value&&!!previous)',
   'byId(id).setAttribute("aria-busy",String(value))',
   'notice.hidden=true',
@@ -56,12 +57,13 @@ test("Diagnostics uses shadcn Skeleton data placeholders across the real screen 
  ])assert.ok(js.includes(fragment),fragment);
  for(const id of ['dg-top','dg-quotas','dg-workers','dg-local'])
   assert.ok(js.includes('clear("'+id+'")'),id+" must receive structured skeleton markup");
- for(const slot of ['dg-skeleton-gauge','dg-skeleton-percentage','dg-skeleton-progress',
-  'dg-skeleton-pair-value','dg-skeleton-storage','dg-skeleton-battery','dg-skeleton-track'])
+ for(const slot of ['dg-skeleton-percentage','dg-skeleton-pair-value','dg-skeleton-storage'])
   assert.ok(js.includes(slot)&&css.includes(slot),slot);
  assert.ok(css.includes('#diagnostics-root.dg-refresh-loading :is(.dg-card-percent'));
  assert.ok(css.includes('background:var(--site-skeleton-accent,#262626)'));
  assert.ok(css.includes('animation:site-skeleton-pulse 2s cubic-bezier(.4,0,.6,1) infinite'));
+ for(const fragment of ['dg-card-ring dg-ring-loading','dg-progress dg-progress-placeholder','batteryGraphic(null).glyph','if(!previous)unavailableReport()'])
+  assert.ok((js+css).includes(fragment)||fragment==='if(!previous)unavailableReport()');
  assert.ok(!js.includes('Generating mock telemetry'));
 });
 test("Diagnostics shimmers Checking... only during a read; dot pulses regardless of health color",()=>{

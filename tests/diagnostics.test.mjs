@@ -63,6 +63,7 @@ test("Quota overview uses circular gauges beside true percentages, never treatin
   const reading=card.children[1],ring=reading.children[0],number=reading.children[1];
   assert.equal(ring.attributes["aria-hidden"],"true");
   assert.equal(ring.style.values["--dg-ring-percent"],expectedPct);
+  assert.equal(ring.style.values["--dg-ring-target"],expectedPct);
   assert.equal(number.textContent,expectedText);
   if(q===null)assert.ok(ring.classList.values.has("is-unknown"));
  }
@@ -109,7 +110,7 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  assert.match(css,/battery\.bolt\.symbol\.svg/);
  assert.match(js,/battery\.fill\./);
  assert.match(js,/batteryGraphic\(m\)/);
- assert.ok(js.includes('glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)));'),
+ assert.ok(js.includes('glyph.append(make("strong","dg-battery-number",pct===null?"--":quantity(pct,0)));'),
   "Battery graphic must show digits without a percent sign");
  assert.ok(js.includes('"Battery "+quantity(pct,0)+"%"'),
   "Accessible battery label must still identify the charge as a percentage");
@@ -118,7 +119,7 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  assert.doesNotMatch(js,/\["Charging",m\.battery_charging/);
  assert.doesNotMatch(js,/visual\.charging\?"Charging"/);
  assert.match(css,/--dg-panel-bg:#111/);
- assert.match(css,/-webkit-text-stroke:3px var\(--dg-panel-bg\)/);
+ assert.match(css,/-webkit-text-stroke:2px var\(--dg-panel-bg\)/);
  assert.match(css,/font-size:20px/);
  assert.match(css,/text-shadow:none/);
  assert.match(css,/\.dg-battery-bolt-symbol\{position:absolute;z-index:1/);
