@@ -7,7 +7,9 @@
 :root{--site-skeleton-accent:var(--ui-skeleton-accent,#262626)}
 .site-skeleton,
 #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after,
-#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after,
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-uid::after,
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-class::after{
  display:block;
  box-sizing:border-box;
  background:var(--site-skeleton-accent);
@@ -91,5 +93,7 @@
 @media(prefers-reduced-motion:reduce){
  .site-skeleton,
  #cs-root .cs-accordion.cs-list-loading .cs-entry:not(.cs-open) .cs-entry-title::after,
- #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after{animation:none;opacity:.7}
+ #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-title::after,
+ #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-uid::after,
+ #ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-class::after{animation:none;opacity:.7}
 }

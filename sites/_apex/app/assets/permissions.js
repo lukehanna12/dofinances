@@ -77,7 +77,8 @@ export function initColosseumPermissions(){
   refresh.classList.add("pm-refreshing");
   refresh.setAttribute("aria-busy","true");
   summaryLoading(true);
-  show("Reading the local gateway's effective permissions…");
+  // The rule and count skeletons convey loading without redundant status prose.
+  show("");
   try{
    const reply=await request("status",{},"GET");
    if(seq!==loadSeq)return;

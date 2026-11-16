@@ -80,7 +80,11 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 #ut-root .ut-route-icon[data-route="ported"]{mask-image:url("/app/assets/external-provider-mask.v3.svg");-webkit-mask-image:url("/app/assets/external-provider-mask.v3.svg")}
 #ut-root .ut-row-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
 #ut-root .ut-row-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(14px,1.35vw,16px);font-weight:500;letter-spacing:-.025em;line-height:1.25;color:var(--ut-muted);transition:color .15s}
-#ut-root .ut-row-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#666}
+#ut-root .ut-row-sub{display:flex;align-items:center;min-width:0;overflow:hidden;white-space:nowrap;font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#666}
+#ut-root .ut-row-uid,#ut-root .ut-row-class{position:relative;display:inline-block;min-width:0}
+#ut-root .ut-row-uid,#ut-root .ut-row-separator{flex:none}
+#ut-root .ut-row-class{overflow:hidden;text-overflow:ellipsis}
+#ut-root .ut-row-separator,#ut-root .ut-skeleton-separator{white-space:pre}
 #ut-root .ut-row-side{flex:none;font-size:11px;color:#777;text-transform:capitalize;max-width:135px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ut-root .ut-chevron{width:14px;height:14px;color:#606060;flex:none;transition:transform 220ms var(--ut-ease)}
 #ut-root .ut-active .ut-chevron{transform:rotate(180deg);color:#dedede}
@@ -490,7 +494,32 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-skeleton{height:auto;display:block;border-bottom:1px solid var(--ut-line)}
 #ut-root .ut-skeleton-row{display:flex;align-items:center;gap:12px;width:100%;height:calc(var(--ut-row-height) - 1px);padding-right:24px}
 #ut-root .ut-skeleton-number{width:24px;flex:none;color:#525252;font:500 11px/1.4 var(--ui-font-sans,system-ui)}
+#ut-root .ut-skeleton-copy{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:center;gap:5px}
 #ut-root .ut-skeleton-bar{width:var(--site-skeleton-text-width,68%);min-width:0;height:12px;flex:none}
+#ut-root .ut-skeleton-sub{display:flex;align-items:center;min-width:0;font:11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#525252;white-space:nowrap}
+#ut-root .ut-skeleton-uid{display:block;width:6ch;height:9px;flex:none}
+#ut-root .ut-skeleton-class{display:block;width:var(--ut-class-skeleton-width,13ch);max-width:calc(100% - 9ch);height:9px;flex:none}
+/* A canonical UID is six monospace characters; typical categories span
+   roughly 9–17 characters. Deterministic variation never shifts on refresh. */
+#ut-root :is(.ut-row,.ut-skeleton){--ut-class-skeleton-width:13ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 1){--ut-class-skeleton-width:12ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 2){--ut-class-skeleton-width:15ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 3){--ut-class-skeleton-width:10ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 4){--ut-class-skeleton-width:14ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 5){--ut-class-skeleton-width:11ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 6){--ut-class-skeleton-width:16ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 7){--ut-class-skeleton-width:13ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 8){--ut-class-skeleton-width:9ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 9){--ut-class-skeleton-width:17ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 10){--ut-class-skeleton-width:12ch}
+#ut-root :is(.ut-row,.ut-skeleton):nth-child(11n + 11){--ut-class-skeleton-width:14ch}
+/* Preserve real-row measurements and the UID/category separator on refresh. */
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-row-uid,.ut-row-class){color:transparent;transition:none}
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) :is(.ut-row-uid,.ut-row-class)::after{
+ content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);height:9px;max-width:100%
+}
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-uid::after{width:6ch}
+#ut-root .ut-list.ut-list-loading .ut-row:not(.ut-active) .ut-row-class::after{width:var(--ut-class-skeleton-width,13ch)}
 /* Collections' two independently drawn rings centered around the slash;
    data and skeleton occupy precisely the same text line and line box. */
 #ut-root .ut-summary{display:block;position:relative}

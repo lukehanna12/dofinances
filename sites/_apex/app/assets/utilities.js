@@ -152,7 +152,10 @@ export function initColosseumUtilities(){
   elements.list.innerHTML=Array.from({length:s.pageSize},(_,i)=>
    '<article class="ut-skeleton" aria-hidden="true"><div class="ut-skeleton-row">'+
    '<span class="ut-skeleton-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
-   '<span class="ut-skeleton-bar site-skeleton" data-slot="skeleton"></span></div></article>').join("");
+   '<span class="ut-skeleton-copy"><span class="ut-skeleton-bar site-skeleton" data-slot="skeleton"></span>'+
+   '<span class="ut-skeleton-sub"><span class="ut-skeleton-uid site-skeleton" data-slot="skeleton"></span>'+
+   '<span class="ut-skeleton-separator"> · </span>'+
+   '<span class="ut-skeleton-class site-skeleton" data-slot="skeleton"></span></span></span></div></article>').join("");
  }
  function rowsMarkup(){
   if(!s.items.length)return '<p class="ut-empty">'+(s.query||Object.keys(s.include).length||Object.keys(s.exclude).length?
@@ -171,7 +174,7 @@ export function initColosseumUtilities(){
     '<span class="ut-title-measure" aria-hidden="true">'+title+'</span>'+
     '<span class="ut-title-compact" aria-hidden="true">'+title+'</span>'+
     '<span class="ut-title-expanded">'+title+'</span></span>'+
-    '<span class="ut-row-sub">'+uid+' · '+esc(plain(item.class))+'</span></span>'+
+    '<span class="ut-row-sub"><span class="ut-row-uid">'+uid+'</span><span class="ut-row-separator"> · </span><span class="ut-row-class">'+esc(plain(item.class))+'</span></span></span>'+
     '<span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
     '<button type="button" class="ut-row-pick" data-ut-pick="'+uid+'" aria-label="'+(selected?'Deselect ':'Select ')+title+'" aria-pressed="'+String(selected)+'"'+pickInactive+'><span class="ut-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
     '<span class="ut-name-field" data-ut-name-field="'+uid+'">'+
