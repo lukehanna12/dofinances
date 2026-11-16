@@ -50,8 +50,8 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-icon-button .rm-edit-glyph{position:absolute;transition:opacity .18s ease,transform .18s ease}
 .rm-view.rm-editing #rm-edit .rm-edit-glyph{opacity:0;transform:scale(.72) rotate(14deg)}
 .rm-view.rm-editing #rm-edit .rm-cancel-glyph{opacity:1;transform:scale(1) rotate(0)}
-.rm-confirm{background:#fff;color:#10243b;border-radius:999px}
-.rm-confirm:hover:not(:disabled){background:#eff5ff;color:#10243b}
+.rm-confirm{background:#f4f7fc;color:#10243b;border-radius:999px}
+.rm-confirm:hover:not(:disabled){background:#e9eff8;color:#10243b}
 .rm-confirm svg{width:23px;height:23px}
 .rm-diff-button{width:42px;height:42px;min-width:0;display:grid;place-items:center;border:1px solid transparent;border-radius:999px;padding:0;background:transparent}
 .rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(79,113,146,.18);border-color:#34485c}
