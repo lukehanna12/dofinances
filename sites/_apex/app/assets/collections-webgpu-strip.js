@@ -17,6 +17,8 @@ import {projectThinRectClearInputs,CLEAR_OBSERVED_128_84} from "./collections-gl
 import {airTextureMipLOD} from "./sidebar-glass-oracle.js";
 
 export const COLLECTIONS_STRIP_FRACTION=7/16; // 43.75%, exactly.
+// Site-authored achromatic adjustment only for this strip, not a native Clear input.
+export const COLLECTIONS_STRIP_BRIGHTNESS=.80;
 export function collectionsStripGeometry(shellTop,summaryTop,bannerHeight){
   if(![shellTop,summaryTop,bannerHeight].every(Number.isFinite)||bannerHeight<0)
     throw new TypeError("Finite shell, line-box and banner coordinates required");
@@ -82,6 +84,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     nativeGeometryScope:"16-23pt height, straight .rect, dark untinted, CAFilter-only",
     faceFillProjection:"white input RGBA(1,1,1,0.05); browser face equation provisional",
     tint:"none",material:"recorded-public-Clear-face/inner-only",
+    browserBrightness:COLLECTIONS_STRIP_BRIGHTNESS,
     nativeFaceInputs:[CLEAR_OBSERVED_128_84.faceBlack,CLEAR_OBSERVED_128_84.faceWhite,
       CLEAR_OBSERVED_128_84.faceFillWhiteAlpha],
     mipKernel:"authored-2x2-rgba16float-browser-approximation",
@@ -312,7 +315,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       crop.left,crop.top,crop.width,crop.height,
       rect.top,upper,dpr,geometry.height,
       projected.amount,projected.height,lod,.12,
-      userX,userHover,pressed,0
+      userX,userHover,pressed,COLLECTIONS_STRIP_BRIGHTNESS
     ]);
     device.queue.writeBuffer(uniform,0,data);
     const encoder=device.createCommandEncoder();
