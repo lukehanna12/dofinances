@@ -138,6 +138,19 @@ try{
  assert.ok(state.a.gpuPixel.slice(0,3).some(channel=>channel>36),
    "Rendered pixel must sample the real Collections wallpaper instead of black");
  assert.ok(state.a.gpuPixel[3]>=200,"WebGPU strip interior must be opaque");
+ assert.equal(state.a.gpuSamples?.length,3,
+   "Inspect three real wallpaper regions, not just one center pixel");
+ for(const pixel of state.a.gpuSamples)
+   assert.equal(pixel[3],255,"Clear interior must be opaque at each checked position");
+ const distinctRGB=new Set(state.a.gpuSamples.map(p=>p.slice(0,3).join(",")));
+ assert.ok(distinctRGB.size>=2,
+   "Lens field must retain the real wallpaper's horizontal image detail");
+ const beforeInteraction=state.a.frames;
+ await evaluate('(()=>{const c=document.getElementById("cs-top-webgpu-strip");c.dispatchEvent(new PointerEvent("pointermove",{clientX:600,clientY:c.getBoundingClientRect().top+9,bubbles:true}));return true;})()');
+ await pause(125);
+ state=await evaluate(probe);
+ assert.ok(state.a.frames>beforeInteraction,
+   "Pointer motion must trigger WebGPU repaint without coupling to sidebar");
  const old=state.bounds;
  await evaluate('(()=>{const sh=document.getElementById("workspace-shell");sh.classList.add("is-collapsed");document.getElementById("workspace-sidebar").style.width="74px";return 1;})()');
  await pause(150);

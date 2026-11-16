@@ -13,7 +13,7 @@
  * gamma, complete dark scheme and interactive light dynamics remain open.
  */
 import {workspaceWallpaperForRoute} from "./workspace-wallpapers.js";
-import {projectPublicClearInputs} from "./collections-glass-public-clear.js";
+import {projectPublicClearInputs,CLEAR_OBSERVED_128_84} from "./collections-glass-public-clear.js";
 import {airTextureMipLOD} from "./sidebar-glass-oracle.js";
 
 export const COLLECTIONS_STRIP_FRACTION=7/16; // 43.75%, exactly.
@@ -79,13 +79,16 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
   const audit={status:"idle",fraction:COLLECTIONS_STRIP_FRACTION,
     underlay:"Collections wallpaper only",usesSidebarGeometry:false,
     oracleScope:"finite-public-Clear-25F80-M2-G14G",
-    tint:"none",mipKernel:"authored-2x2-browser-approximation",
-    geometry:null,frames:0};
+    tint:"none",material:"recorded-public-Clear-face/inner-only",
+    nativeFaceInputs:[CLEAR_OBSERVED_128_84.faceBlack,CLEAR_OBSERVED_128_84.faceWhite,
+      CLEAR_OBSERVED_128_84.faceFillWhiteAlpha],
+    mipKernel:"authored-2x2-rgba16float-browser-approximation",
+    nativeEquivalenceProven:false,geometry:null,frames:0};
   Object.defineProperty(win,"__collectionsWebGPUStrip",{
     configurable:true,get:()=>Object.freeze({...audit,geometry:audit.geometry&&{...audit.geometry}})
   });
   const active=()=>!view.hidden&&!doc.hidden;
-  let disposed=false,device=null,context=null,pipeline=null,texture=null,group=null;
+  let disposed=false,device=null,context=null,pipeline=null,texture=null,photoTexture=null,group=null;
   let offscreen=null;
   let uniform=null,imageData=null,booting=false,frame=0,dpr=1,lastPxW=0,lastPxH=0;
   let userX=-1e6,userHover=0,hoverGoal=0,pressed=0,readbackBusy=false;
@@ -195,19 +198,46 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
                    alpha:{srcFactor:"one",dstFactor:"one-minus-src-alpha"}}}]},
         primitive:{topology:"triangle-list"}
       });
+      const copyPipeline=device.createComputePipeline({
+        label:"Collections RGB8 wallpaper into float16 mip0",
+        layout:"auto",compute:{module:mipModule,entryPoint:"copyBase"}
+      });
       const mipPipeline=device.createComputePipeline({
+        label:"Collections float16 disjoint mip level reduction",
         layout:"auto",compute:{module:mipModule,entryPoint:"downsample"}
       });
       const levels=1+Math.floor(Math.log2(Math.max(photo.w,photo.h)));
-      texture=device.createTexture({
-        label:"One original Collections wallpaper - no DOM or sidebar",
-        size:[photo.w,photo.h,1],mipLevelCount:levels,
-        format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING|
-          GPUTextureUsage.COPY_DST|GPUTextureUsage.STORAGE_BINDING
+      // The immutable authored wallpaper is transferred without a DOM
+      // screenshot or an HTML/CSS background duplicate.
+      photoTexture=device.createTexture({
+        label:"Collections wallpaper upload: original encoded RGBA8",
+        size:[photo.w,photo.h,1],format:"rgba8unorm",
+        usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST
       });
-      device.queue.writeTexture({texture},photo.pixels,
+      device.queue.writeTexture({texture:photoTexture},photo.pixels,
         {bytesPerRow:photo.stride,rowsPerImage:photo.h},[photo.w,photo.h,1]);
+      // Filter the same image through actual half-float GPU mip levels,
+      // not a gamma-domain RGBA8 pyramid.
+      texture=device.createTexture({
+        label:"Collections wallpaper: sampled RGBA16Float mip pyramid",
+        size:[photo.w,photo.h,1],mipLevelCount:levels,
+        format:"rgba16float",usage:GPUTextureUsage.TEXTURE_BINDING|
+          GPUTextureUsage.STORAGE_BINDING
+      });
       const encoder=device.createCommandEncoder();
+      {
+        const bind=device.createBindGroup({
+          layout:copyPipeline.getBindGroupLayout(0),
+          entries:[
+            {binding:0,resource:photoTexture.createView()},
+            {binding:1,resource:texture.createView({baseMipLevel:0,mipLevelCount:1})}
+          ]
+        });
+        const pass=encoder.beginComputePass({label:"RGB8 wallpaper into RGBA16F mip0"});
+        pass.setPipeline(copyPipeline);pass.setBindGroup(0,bind);
+        pass.dispatchWorkgroups(Math.ceil(photo.w/8),Math.ceil(photo.h/8));
+        pass.end();
+      }
       for(let level=1;level<levels;level++){
         const bind=device.createBindGroup({
           layout:mipPipeline.getBindGroupLayout(0),
@@ -216,7 +246,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
             {binding:1,resource:texture.createView({baseMipLevel:level,mipLevelCount:1})}
           ]
         });
-        const pass=encoder.beginComputePass();
+        const pass=encoder.beginComputePass({label:"RGBA16F mip "+level});
         pass.setPipeline(mipPipeline);pass.setBindGroup(0,bind);
         pass.dispatchWorkgroups(Math.ceil(Math.max(1,photo.w>>level)/8),
           Math.ceil(Math.max(1,photo.h>>level)/8));
@@ -254,6 +284,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       audit.status="fallback";audit.error=String(error);
       canvas.hidden=true;
       texture?.destroy();texture=null;
+      photoTexture?.destroy();photoTexture=null;
       uniform?.destroy();uniform=null;
       device?.destroy();device=null;
     }finally{
@@ -295,19 +326,25 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     let buffer=null;
     if(pixelCI&&!readbackBusy&&!audit.gpuPixel){
       readbackBusy=true;
-      buffer=device.createBuffer({size:256,
+      const ys=Math.floor(lastPxH/2);
+      const xs=[.15,.50,.85].map(f=>Math.min(lastPxW-1,Math.floor(lastPxW*f)));
+      buffer=device.createBuffer({size:768,
         usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
-      encoder.copyTextureToBuffer(
-        {texture:output,origin:{x:Math.floor(lastPxW/2),
-          y:Math.floor(lastPxH/2),z:0}},
-        {buffer,bytesPerRow:256,rowsPerImage:1},
-        {width:1,height:1,depthOrArrayLayers:1}
-      );
+      for(let index=0;index<xs.length;index++)
+        encoder.copyTextureToBuffer(
+          {texture:output,origin:{x:xs[index],y:ys,z:0}},
+          {buffer,offset:256*index,bytesPerRow:256,rowsPerImage:1},
+          {width:1,height:1,depthOrArrayLayers:1}
+        );
+      audit.gpuSampleCoords=xs.map(x=>[x,ys]);
     }
     device.queue.submit([encoder.finish()]);
     if(buffer){
       buffer.mapAsync(GPUMapMode.READ).then(()=>{
-        audit.gpuPixel=Array.from(new Uint8Array(buffer.getMappedRange()).slice(0,4));
+        const bytes=new Uint8Array(buffer.getMappedRange());
+        audit.gpuSamples=[0,1,2].map(i=>
+          Array.from(bytes.slice(256*i,256*i+4)));
+        audit.gpuPixel=audit.gpuSamples[1];
         buffer.unmap();buffer.destroy();
         readbackBusy=false;
       }).catch(error=>{
@@ -348,7 +385,8 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     win.removeEventListener("scroll",onScroll);
     win.removeEventListener("resize",onResize);
     win.removeEventListener("hashchange",onResize);
-    offscreen?.destroy();texture?.destroy();uniform?.destroy();device?.destroy();
+    offscreen?.destroy();texture?.destroy();photoTexture?.destroy();
+    uniform?.destroy();device?.destroy();
     canvas.remove();
     try{delete win.__collectionsWebGPUStrip;}catch{}
   }};
