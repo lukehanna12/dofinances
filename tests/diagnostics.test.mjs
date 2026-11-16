@@ -68,6 +68,23 @@ test("Quota overview uses circular gauges beside true percentages, never treatin
  }
 });
 
+test("Mac diagnostics combines storage and native battery into one responsive panel",async()=>{
+ const js=await read("../sites/_apex/app/assets/diagnostics.js");
+ const css=await read("../sites/_apex/app/assets/diagnostics.css");
+ const local=js.slice(js.indexOf("function renderLocal(report){"),js.indexOf(" const gateway=panel(",js.indexOf("function renderLocal(report){")));
+ assert.match(local,/const mac=panel\("Mac"\)/);
+ assert.doesNotMatch(local,/panel\("Mac · battery"|panel\("Mac · storage"/);
+ assert.match(local,/summary\.append\(storageReading,batteryGraphic\(m\)\.glyph\)/);
+ assert.match(local,/mac\.append\(summary\)/);
+ assert.match(local,/host\.append\(mac\)/);
+ assert.match(css,/\.dg-storage-panel\{grid-column:1\/-1\}/);
+ assert.match(css,/\.dg-mac-summary\{display:flex;align-items:center;justify-content:space-between/);
+ assert.match(css,/\.dg-battery-graphic\{[^\n]*flex:0 0 84px;width:84px/);
+ assert.match(css,/\.dg-battery-number\{[^\n]*font-size:20px/);
+ assert.match(css,/\.dg-battery-bolt-symbol\{[^\n]*width:16px;height:26px/);
+ assert.doesNotMatch(css,/\.dg-battery-layout/);
+});
+
 test("Native Apple battery assets keep their original CoreSVG geometry and semantic colors",async()=>{
  const base="../sites/_apex/app/assets/battery/";
  const originalNames=["0percent","25percent","50percent","75percent","100percent","100percent.bolt"];
@@ -101,8 +118,8 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  assert.doesNotMatch(js,/\["Charging",m\.battery_charging/);
  assert.doesNotMatch(js,/visual\.charging\?"Charging"/);
  assert.match(css,/--dg-panel-bg:#111/);
- assert.match(css,/-webkit-text-stroke:5px var\(--dg-panel-bg\)/);
- assert.match(css,/font-size:clamp\(40px,4\.8vw,54px\)/);
+ assert.match(css,/-webkit-text-stroke:2px var\(--dg-panel-bg\)/);
+ assert.match(css,/font-size:20px/);
  assert.match(css,/text-shadow:none/);
  assert.match(css,/\.dg-battery-bolt-symbol\{position:absolute;z-index:1/);
  assert.match(css,/\.dg-battery-number\{position:absolute;z-index:2/);

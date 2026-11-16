@@ -139,27 +139,29 @@ function batteryGraphic(m){
 }
 function renderLocal(report){
  const host=clear("dg-local"),local=sectionOf(report,"local"),m=findGatewayMetrics(local);
- const battery=panel("Mac · battery");
- battery.classList.add("dg-battery-panel");
- if(m&&typeof m.battery_percent==="number"&&Number.isFinite(m.battery_percent)){
-  const visual=batteryGraphic(m);
-  battery.append(visual.glyph);
- }else battery.append(make("p","dg-small","Battery charge unavailable from this diagnostic check."));
- host.append(battery);
- const storage=panel("Mac · storage",m?.storage_status==="reported"?"Internal drive":"Status unavailable");
- storage.classList.add("dg-storage-panel");
+ const mac=panel("Mac");
+ mac.classList.add("dg-storage-panel");
+ const summary=make("div","dg-mac-summary"),storageReading=make("div","dg-mac-storage-reading");
  const free=m?.storage_free_bytes,total=m?.storage_total_bytes;
- if(typeof free==="number"&&typeof total==="number"&&Number.isFinite(free)&&Number.isFinite(total)&&total>0){
-  const used=Math.max(0,total-free),fraction=100*used/total;
-  storage.append(make("div","dg-storage-available",bytes(free)),
+ const hasStorage=typeof free==="number"&&typeof total==="number"&&
+  Number.isFinite(free)&&Number.isFinite(total)&&total>0;
+ if(hasStorage){
+  storageReading.append(make("div","dg-storage-available",bytes(free)),
    make("div","dg-storage-subtitle","available of "+bytes(total)+" total"));
+ }else storageReading.append(make("p","dg-small","Storage capacity unavailable from this diagnostic check."));
+ // Share one panel: the original Apple CoreSVG battery is scaled to the
+ // height of the storage reading and sits at the right, even on mobile.
+ summary.append(storageReading,batteryGraphic(m).glyph);
+ mac.append(summary);
+ if(hasStorage){
+  const used=Math.max(0,total-free),fraction=100*used/total;
   const bar=progress({used,limit:total});bar.classList.add("dg-storage-progress");
-  storage.append(bar);
+  mac.append(bar);
   const legend=make("div","dg-storage-legend");
   legend.append(make("span","",quantity(fraction,1)+"% used"),make("span","",bytes(used)+" occupied"));
-  storage.append(legend);
- }else storage.append(make("p","dg-small","Storage capacity unavailable from this diagnostic check."));
- host.append(storage);
+  mac.append(legend);
+ }
+ host.append(mac);
  const gateway=panel("Local gateway",local?.check?local.check+" · "+(local.depth||"quick"):"No reading");
  gateway.classList.add("dg-gateway-panel");
  if(!local||local.status==="unavailable"){
