@@ -14,13 +14,20 @@ test("Production Home replaces only its own view with the exact CTA6 mosaic",()=
   assert.match(home,/id="cta6-mosaic"/);
   assert.match(home,/<h1 id="home-title">doof<\/h1>/);
   assert.match(home,/href="#projects"/);
-  assert.ok(home.includes('<a class="cta6-action" href="#projects">See Projects</a>'));
+  assert.ok(home.includes('<a class="cta6-action" href="#projects">See Projects <svg'),
+    "The original action label remains readable before its arrow");
+  assert.match(home,/<a class="cta6-action" href="#projects">See Projects <svg[^>]+aria-hidden="true"[^>]*><path d="M5 12h14m-6-6 6 6-6 6"\/><\/svg><\/a>/,
+    "Decorative right arrow stays inside the existing Projects link after the text");
   assert.ok(home.indexOf('class="cta6-bottom-action"')>home.indexOf('class="cta6-center"'),
     "See Projects should be separate from the centered title");
   assert.ok(!home.slice(home.indexOf('class="cta6-center"'),home.indexOf('class="cta6-bottom-action"')).includes('cta6-action'),
     "No action remains inside the centered mosaic title");
-  assert.ok(!home.slice(home.indexOf('class="cta6-bottom-action"'),home.indexOf("</section>")).includes("<svg"),
-    "No arrow remains in See Projects");
+  assert.equal((home.slice(home.indexOf('class="cta6-bottom-action"'),home.indexOf("</section>")).match(/<svg /g)||[]).length,1,
+    "Only one decorative right-arrow SVG appears inside the bottom button");
+  assert.ok(asset("dashboard-home.css").includes(".dashboard-home .cta6-action svg{width:15px;height:15px;flex:none}"),
+    "Existing desktop icon sizing is preserved");
+  assert.ok(asset("dashboard-home.css").includes(".dashboard-home .cta6-action svg{width:12px;height:12px}"),
+    "Existing mobile icon sizing is preserved");
   assert.doesNotMatch(home,/Your workspace, all in one place/);
   for(const slug of ["projects","settings","colosseum/collections","colosseum/providers/local","colosseum/providers/external","colosseum/providers/credentials","colosseum/permissions","colosseum/diagnostics"])
     assert.ok(html.includes('data-view="'+slug+'"'),"Preserve "+slug+" view");
