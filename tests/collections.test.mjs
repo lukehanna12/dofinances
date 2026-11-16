@@ -1512,7 +1512,7 @@ test("Add utilities uses a button-filling square glyph, preserving exact origina
  assert.ok(add.includes('fill-rule="evenodd"'),"Transparent knockout plus is cut out of solid square");
  assert.doesNotMatch(add,/data-sf-symbol="plus\.circle\.fill"/);
  const controls=js.slice(js.indexOf('function utilityToolbarMarkup(){'),js.indexOf("function rowMarkup("));
- assert.match(controls,/data-cs-action="admit" disabled aria-label="Add utilities \(coming later\)"/);
+ assert.match(controls,/data-cs-action="admit" aria-label="Add utilities" aria-haspopup="dialog" aria-controls="cs-admit-dialog"/);
  assert.match(controls,/src="\/app\/assets\/add-utilities\.v1\.svg"/);
  assert.doesNotMatch(controls,/src="\/app\/assets\/add-collection\.v3\.svg"/);
  const collectionButton=html.match(/<button[^>]*id="cs-create"[\s\S]*?<\/button>/)?.[0]||"";
