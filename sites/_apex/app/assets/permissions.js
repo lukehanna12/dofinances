@@ -218,6 +218,7 @@ export function initColosseumPermissions(){
   if(b)openRule(Number(b.dataset.editRule));
  });
  $("pm-filter").addEventListener("input",render);
+ $("pm-focus-search").addEventListener("click",()=>$("pm-filter").focus({preventScroll:true}));
  $("pm-add").addEventListener("click",()=>openRule(0));
  $("pm-rule-close").addEventListener("click",closeRule);
  $("pm-rule-cancel").addEventListener("click",closeRule);
@@ -327,7 +328,14 @@ export function initColosseumPermissions(){
   }catch(error){$("pm-pin-error").textContent=error.message;}
  });
  $("pm-refresh").addEventListener("click",()=>{if(!$("pm-refresh").disabled)void load();});
- // Mirror Collections' Control-Shift-R refresh behavior, scoped to Permissions.
+ // Mirror Collections' Command-Shift-F search and Control-Shift-R refresh,
+ // but only while the Permissions screen is active and no editor is focused.
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.isComposing||event.repeat||!event.metaKey||!event.shiftKey||event.ctrlKey||event.altKey||(event.code!=="KeyF"&&event.key?.toLowerCase()!=="f"))return;
+  if(!routeActive()||root.closest(".view")?.hidden||document.querySelector("dialog[open]")||
+     event.target?.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+  event.preventDefault();$("pm-filter").focus({preventScroll:true});
+ },{capture:true});
  window.addEventListener("keydown",event=>{
   if(event.defaultPrevented||event.isComposing||event.repeat||
      !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;

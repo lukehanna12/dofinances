@@ -151,6 +151,7 @@ html:has(body > #workspace-shell .settings-view:not([hidden])) body:has(> #works
 #st-root .rm-settings-form{display:grid;gap:7px;margin:10px 0}
 #st-root .rm-settings-form .rm-settings-input{display:flex;gap:8px;flex-wrap:wrap}
 #st-root .rm-settings-form input{min-width:180px;flex:1 1 240px}
+#st-root #github-readme-token{box-sizing:border-box;height:32px;min-height:32px;max-height:32px;padding:0 11px;line-height:normal;font-size:12px;vertical-align:middle}
 #st-root .rm-settings-form button{flex:none}
 #st-root .rm-settings-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 #st-root .rm-help{margin-top:9px;font-size:10px}
