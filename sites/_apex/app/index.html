@@ -659,14 +659,14 @@
           <div class="page-heading"><h1 id="project-providers-local-title">Local</h1></div>
           <div class="pv-workbench" id="pv-root">
             <div class="pv-overview">
-              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span id="pv-summary-value">LOCAL · — REGISTERED / — AVAILABLE</span><span class="pv-summary-skeleton" aria-hidden="true"></span></span>
+              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span class="pv-summary-value" id="pv-summary-value"><span id="pv-summary-mode">LOCAL ·</span> <span class="pv-summary-count"><span id="pv-summary-registered">—</span></span> REGISTERED / <span class="pv-summary-count"><span id="pv-summary-connected">—</span></span> <span id="pv-summary-state">AVAILABLE</span></span></span>
               <div class="pv-list-meta"><span id="pv-index-title">Registered Mac providers</span><span id="pv-index-total"></span></div>
             </div>
             <p id="pv-status" class="pv-status" role="status" aria-live="polite"></p>
             <div class="pv-browser" id="pv-browser">
               <div class="pv-list-column">
                 <div class="pv-search-row">
-                  <div class="pv-search-field"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input type="search" id="pv-search" aria-label="Search providers" autocomplete="off" placeholder="Search providers" spellcheck="false"></div>
+                  <div class="pv-search-field" role="search" aria-label="Search providers"><span class="pv-search-control"><button class="pv-search-focus" id="pv-search-focus" type="button" aria-label="Focus provider search" aria-keyshortcuts="Meta+Shift+F" aria-describedby="pv-search-tooltip"><img src="/app/assets/magnifying-glass.v2.svg" alt="" aria-hidden="true"></button><span class="pv-search-tooltip" id="pv-search-tooltip" role="tooltip"><span>Search providers</span><span class="pv-search-tooltip-shortcut" aria-label="Shift Command F"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>F</kbd></span></span></span><input type="search" id="pv-search" aria-label="Search providers" autocomplete="off" placeholder="Search providers" spellcheck="false"></div>
                   <span class="pv-refresh-control">
                     <button id="pv-refresh" class="pv-refresh" type="button" aria-label="Refresh providers" aria-keyshortcuts="Control+Shift+R" aria-describedby="pv-refresh-tooltip"><svg class="pv-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
                     <span class="pv-refresh-tooltip" id="pv-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="pv-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span>

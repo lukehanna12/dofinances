@@ -79,7 +79,9 @@ export function initColosseumProviders(){
  const $=id=>document.getElementById(id);
  const list=$("pv-list"),detail=$("pv-detail"),status=$("pv-status"),search=$("pv-search"),
   refresh=$("pv-refresh"),indexTitle=$("pv-index-title"),total=$("pv-index-total"),
-  summary=$("pv-summary"),summaryValue=$("pv-summary-value");
+  summary=$("pv-summary"),summaryMode=$("pv-summary-mode"),
+  summaryRegistered=$("pv-summary-registered"),summaryConnected=$("pv-summary-connected"),
+  summaryState=$("pv-summary-state");
  const state={mode:"local",selected:{federated:null,local:null,credentials:null},
   federated:[],local:[],details:new Map(),choices:FALLBACK_CHOICES,
   localRevision:null,busy:false,loadSeq:0,detailSeq:0,loaded:{federated:false,local:false},
@@ -141,28 +143,16 @@ export function initColosseumProviders(){
    (term?"No providers match your search.":"No registered providers were returned."):
    "Retrieving provider data…"));
  }
- function alignSummarySkeleton(){
-  const node=summaryValue.firstChild;
-  if(!node||node.nodeType!==3)return;
-  const text=node.textContent||"",slash=text.indexOf(" / ");
-  if(slash<0)return;
-  const range=document.createRange(),base=summary.getBoundingClientRect();
-  const center=(a,b)=>{
-   range.setStart(node,a);range.setEnd(node,b);
-   const r=range.getBoundingClientRect();
-   return r.left-base.left+r.width/2;
-  };
-  summary.style.setProperty("--pv-ring-one",center(0,slash)+"px");
-  summary.style.setProperty("--pv-ring-two",center(slash+3,text.length)+"px");
- }
  function render(){
   const mode=state.mode,local=mode==="local";
   root.dataset.mode=mode;
   indexTitle.textContent=local?"Registered Mac providers":mode==="credentials"?"Credential owners":"Hosted and external providers";
   const rows=items(),connected=local?rows.filter(x=>x.available).length:rows.filter(x=>x.status==="connected").length;
-  summaryValue.textContent=(local?"LOCAL":mode==="credentials"?"CREDENTIALS":"EXTERNAL")+" · "+rows.length+
-    " REGISTERED / "+connected+(local?" AVAILABLE":" CONNECTED");
-  alignSummarySkeleton();renderList();renderDetails();
+  summaryMode.textContent=(local?"LOCAL":mode==="credentials"?"CREDENTIALS":"EXTERNAL")+" ·";
+  summaryRegistered.textContent=String(rows.length);
+  summaryConnected.textContent=String(connected);
+  summaryState.textContent=local?"AVAILABLE":"CONNECTED";
+  renderList();renderDetails();
  }
  function showSkeleton(){
   if(state.loaded[dataMode()])return;
@@ -181,7 +171,7 @@ export function initColosseumProviders(){
   refresh.setAttribute("aria-busy",String(value));
   summary.setAttribute("aria-busy",String(value));
   list.setAttribute("aria-busy",String(value));
-  if(value){alignSummarySkeleton();showSkeleton();}
+  if(value)showSkeleton();
  }
  async function load(mode){
   if(state.busy)return;
@@ -493,6 +483,7 @@ export function initColosseumProviders(){
   });
  }
  search.addEventListener("input",renderList);
+ $("pv-search-focus").addEventListener("click",()=>search.focus({preventScroll:true}));
  refresh.addEventListener("click",()=>{if(!refresh.disabled)void load(dataMode());});
  const routeMode=()=>{
   const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
@@ -523,6 +514,11 @@ export function initColosseumProviders(){
    if(mode)activateProviderScreen(mode);
   });
  });
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.isComposing||event.repeat||!event.metaKey||!event.shiftKey||event.ctrlKey||event.altKey||(event.code!=="KeyF"&&event.key?.toLowerCase()!=="f"))return;
+  if(!routeMode()||document.querySelector("dialog[open]")||event.target?.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+  event.preventDefault();search.focus({preventScroll:true});
+ },{capture:true});
  window.addEventListener("keydown",event=>{
   if(event.defaultPrevented||event.isComposing||event.repeat||
      !event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey)return;
