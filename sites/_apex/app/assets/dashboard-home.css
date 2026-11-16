@@ -88,6 +88,11 @@ body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
   font-weight:600;
   color:#f7f9fa;
   text-shadow:0 2px 18px rgba(0,0,0,.22);
+  /* This is a native h1, not a GPU label: allow direct drag selection even
+     though its surrounding mosaic overlay ignores pointer events. */
+  pointer-events:auto;
+  -webkit-user-select:text;
+  user-select:text;
 }
 .dashboard-home .cta6-action{
   pointer-events:auto;
