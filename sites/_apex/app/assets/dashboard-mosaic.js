@@ -40,7 +40,8 @@ const positionIcons={
   "5:9": "Rocket"
 };
 // Explicit additions keep the 16 original icons and original lattice intact.
-const centerGlass=new Set(["2:4","2:6","3:5"]);
+// One new clear square in row 3, column 3: three columns right of Palette (3:0).
+const centerGlass=new Set(["2:4","2:6","3:5","3:3"]);
 // Seventh row, left to right: 1 = icon-less glass; 0 = empty slot.
 // Exact requested pattern: 11010100101 (six glass squares).
 const entryGlassColumns=new Set([0,1,3,5,8,10]);
