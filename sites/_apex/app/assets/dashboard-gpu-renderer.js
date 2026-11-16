@@ -314,7 +314,7 @@ async function initialize(){
   const logoTexture=device.createTexture({
     label:"Transparent logo only for the glass refraction source",
     size:[logoWidth,logoHeight,1],format:"rgba8unorm",
-    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST
+    usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.COPY_SRC
   });
   try{
     device.queue.copyExternalImageToTexture({source:logoImage},
@@ -726,24 +726,26 @@ async function initialize(){
     // only checked output alpha and could pass if the logo was invisible.
     const centerX=Math.floor(physicalWidth*.5);
     const centerY=Math.floor(physicalHeight*.5);
-    const readPixel=async source=>{
+    const readPixel=async (source,x=centerX,y=centerY,byteCount=8)=>{
       const buffer=device.createBuffer({
         size:256,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ
       });
       const command=device.createCommandEncoder({label:"Independent lens/logo source verification"});
       command.copyTextureToBuffer(
-        {texture:source,origin:{x:centerX,y:centerY,z:0}},
+        {texture:source,origin:{x,y,z:0}},
         {buffer,bytesPerRow:256,rowsPerImage:1},
         {width:1,height:1,depthOrArrayLayers:1}
       );
       device.queue.submit([command.finish()]);
       await buffer.mapAsync(GPUMapMode.READ);
-      const pixel=Array.from(new Uint8Array(buffer.getMappedRange()).slice(0,8));
+      const pixel=Array.from(new Uint8Array(buffer.getMappedRange()).slice(0,byteCount));
       buffer.unmap();buffer.destroy();
       return pixel;
     };
     const cleanPixel=await readPixel(visibleScene);
     const logoPixel=await readPixel(scene);
+    audit.logoSourceCenterRGBA=await readPixel(logoTexture,
+      Math.floor(logoWidth/2),Math.floor(logoHeight/2),4);
     const changed=cleanPixel.some((byte,i)=>byte!==logoPixel[i]);
     audit.logoGpuPixelProof={
       changed,cleanPixel,logoPixel,sampledAt:[centerX,centerY]
