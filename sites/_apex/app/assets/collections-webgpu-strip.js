@@ -86,6 +86,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
   });
   const active=()=>!view.hidden&&!doc.hidden;
   let disposed=false,device=null,context=null,pipeline=null,texture=null,group=null;
+  let offscreen=null;
   let uniform=null,imageData=null,booting=false,frame=0,dpr=1,lastPxW=0,lastPxH=0;
   let userX=-1e6,userHover=0,hoverGoal=0,pressed=0,readbackBusy=false;
   let geometry=null;
@@ -127,6 +128,16 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
         canvas.width=lastPxW=pxWidth;
         canvas.height=lastPxH=pxHeight;
         canvas.style.width=width+"px";
+        // Headless SwiftShader cannot reliably export GPUCanvasContext pixels.
+        // CI validates the identical shader on a direct texture attachment.
+        if(pixelCI){
+          offscreen?.destroy();
+          offscreen=device.createTexture({
+            label:"Collections strip WebGPU CI pixel target",
+            size:[pxWidth,pxHeight,1],format:"rgba8unorm",
+            usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC
+          });
+        }
       }
       canvas.hidden=false;
       request();
@@ -153,18 +164,21 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       device=await adapter.requestDevice();
       imageData={w:photo.w,h:photo.h};
       audit.photoDimensions=[photo.w,photo.h];
-      context=canvas.getContext("webgpu");
-      if(!context)throw Error("WebGPU canvas context unavailable");
-      context.configure({device,format:win.navigator.gpu.getPreferredCanvasFormat(),
-        alphaMode:"premultiplied",
-        usage:GPUTextureUsage.RENDER_ATTACHMENT|
-          (pixelCI?GPUTextureUsage.COPY_SRC:0)});
+      if(!pixelCI){
+        context=canvas.getContext("webgpu");
+        if(!context)throw Error("WebGPU canvas context unavailable");
+        context.configure({device,format:win.navigator.gpu.getPreferredCanvasFormat(),
+          alphaMode:"premultiplied"});
+      }
+      device.addEventListener?.("uncapturederror",event=>{
+        (audit.gpuErrors??=[]).push(String(event.error?.message||event.error||"unknown"));
+      });
       const renderModule=device.createShaderModule({label:"Oracle-bounded Clear strip",code:shaders[0]});
       const mipModule=device.createShaderModule({label:"Browser image mip reduction",code:shaders[1]});
       pipeline=device.createRenderPipeline({
         layout:"auto",vertex:{module:renderModule,entryPoint:"vs"},
         fragment:{module:renderModule,entryPoint:"fs",
-          targets:[{format:win.navigator.gpu.getPreferredCanvasFormat(),
+          targets:[{format:pixelCI?"rgba8unorm":win.navigator.gpu.getPreferredCanvasFormat(),
             blend:{color:{srcFactor:"one",dstFactor:"one-minus-src-alpha"},
                    alpha:{srcFactor:"one",dstFactor:"one-minus-src-alpha"}}}]},
         primitive:{topology:"triangle-list"}
@@ -212,7 +226,12 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       });
       audit.mipCount=levels;
       audit.status="ready";
-      device.lost.then(()=>{if(!disposed){audit.status="device-lost";canvas.hidden=true;}});
+      device.lost.then(info=>{if(!disposed){
+        audit.status="device-lost";
+        audit.deviceLostReason=info?.reason||"unknown";
+        audit.deviceLostMessage=info?.message||"";
+        canvas.hidden=true;
+      }});
     }catch(error){
       audit.status="fallback";audit.error=String(error);
       canvas.hidden=true;
@@ -246,7 +265,8 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     ]);
     device.queue.writeBuffer(uniform,0,data);
     const encoder=device.createCommandEncoder();
-    const output=context.getCurrentTexture();
+    const output=pixelCI?offscreen:context.getCurrentTexture();
+    if(!output)return;
     const pass=encoder.beginRenderPass({colorAttachments:[{
       view:output.createView(),
       clearValue:{r:0,g:0,b:0,a:0},loadOp:"clear",storeOp:"store"
@@ -310,7 +330,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     win.removeEventListener("scroll",onScroll);
     win.removeEventListener("resize",onResize);
     win.removeEventListener("hashchange",onResize);
-    texture?.destroy();uniform?.destroy();device?.destroy();
+    offscreen?.destroy();texture?.destroy();uniform?.destroy();device?.destroy();
     canvas.remove();
     try{delete win.__collectionsWebGPUStrip;}catch{}
   }};
