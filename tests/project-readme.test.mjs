@@ -212,9 +212,10 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(source("sites/_apex/app/assets/readme-editor-interactions.js").includes('root.addEventListener("input"'));
  assert.ok(ui.includes('converter.turndown(reading)'));
  assert.ok(!ui.includes('renderMarkup(textarea.value'));
- assert.ok(html.includes('option value="github"'));
- assert.ok(html.includes('option value="minimal"'));
- assert.ok(html.includes('option value="reader"'));
+ assert.ok(!html.includes('id="rm-presentation"'));
+ assert.ok(!html.includes('class="rm-repository-config"'));
+ assert.ok(ui.includes('view.dataset.presentation=data.project.presentation||"github"'),
+   "Keep existing project presentation styles without a Docs dropdown");
  assert.ok(css.includes('data-presentation="reader"'));
  assert.ok(css.includes('data-presentation="minimal"'));
  assert.ok(source("sites/_apex/app/assets/github-markdown.css").includes(".markdown-body"));
