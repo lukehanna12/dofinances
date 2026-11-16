@@ -53,6 +53,8 @@ export function createCollectionsGlassTuner({doc=document,win=window,onChange=()
   root.className="cs-glass-tuner";
   root.setAttribute("aria-label","Temporary Collections glass tuning");
   root.innerHTML=[
+    '<div class="cs-glass-tuner-drag" title="Drag to move the tuning panel" aria-label="Drag to reposition tuning panel">',
+    '<span aria-hidden="true">⠿</span> Drag to reposition</div>',
     '<details open><summary><span class="cs-glass-tuner-head">',
     '<strong>Glass tuning</strong><small>Temporary · Collections only</small>',
     '</span><span class="cs-glass-tuner-chevron" aria-hidden="true">⌄</span></summary>',
@@ -149,6 +151,28 @@ export function createCollectionsGlassTuner({doc=document,win=window,onChange=()
       apply({tint:"#"+values.map(v=>v.toString(16).padStart(2,"0")).join("")});
     }
   }
+  // The separate handle lets the owner move the temporary panel away from
+  // anything they want to inspect; it never intercepts the glass itself.
+  const drag=one(".cs-glass-tuner-drag");
+  let pointerStart=null;
+  drag.addEventListener("pointerdown",event=>{
+    if(event.pointerType==="mouse"&&event.button!==0)return;
+    const r=root.getBoundingClientRect();
+    pointerStart={id:event.pointerId,x:event.clientX,y:event.clientY,left:r.left,top:r.top};
+    drag.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  drag.addEventListener("pointermove",event=>{
+    if(!pointerStart||event.pointerId!==pointerStart.id)return;
+    const x=clamp(pointerStart.left+event.clientX-pointerStart.x,8,
+      Math.max(8,win.innerWidth-root.offsetWidth-8));
+    const y=clamp(pointerStart.top+event.clientY-pointerStart.y,8,
+      Math.max(8,win.innerHeight-root.offsetHeight-8));
+    root.style.left=x+"px";root.style.top=y+"px";
+    root.style.right="auto";root.style.bottom="auto";
+  });
+  for(const name of ["pointerup","pointercancel","lostpointercapture"])
+    drag.addEventListener(name,()=>{pointerStart=null;});
   root.addEventListener("input",input);
   root.addEventListener("change",input);
   root.addEventListener("focusout",event=>{
