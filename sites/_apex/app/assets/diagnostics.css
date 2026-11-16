@@ -5,15 +5,16 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
  --dg-surface:#151515;--dg-panel-bg:#111;--dg-good:#30d158;--dg-warning:#ffd600;--dg-danger:#ff4245;
  /* Apple HIG system colors: default dark Green (48,209,88), Yellow (255,214,0),
     Red (255,66,69). OS appearance and contrast may change native NSColor values. */
- min-width:0;max-width:100%;margin-top:calc(var(--workspace-summary-row-height) + var(--workspace-summary-controls-gap) - var(--workspace-panel-overlap));color:var(--dg-ink);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ min-width:0;max-width:100%;margin-top:calc(-1 * var(--workspace-panel-overlap));color:var(--dg-ink);font:13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums
 }
 #diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{box-sizing:border-box}
 #diagnostics-root [hidden]{display:none!important}
 #diagnostics-root :is(button,input,select){font:inherit}
 #diagnostics-root :is(button,input,select,summary):focus-visible{outline:2px solid #f5f5f5;outline-offset:3px}
-#diagnostics-root .dg-header{display:flex;justify-content:flex-end;align-items:center;gap:15px;min-height:var(--workspace-control-size);padding:0 0 13px;border-bottom:1px solid var(--dg-border)}
-#diagnostics-root .dg-actions{display:flex;align-items:center;justify-content:flex-end;gap:13px;flex-wrap:wrap}
+#diagnostics-root .dg-header{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:var(--workspace-summary-row-height) var(--workspace-control-size);column-gap:15px;row-gap:var(--workspace-summary-controls-gap);align-items:start;padding:0 0 13px;border-bottom:1px solid var(--dg-border)}
+#diagnostics-root .dg-header > .dg-status{grid-column:1;grid-row:1;align-self:start;justify-self:start}
+#diagnostics-root .dg-actions{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:flex-end;gap:13px}
 #diagnostics-root .dg-btn{display:inline-flex;gap:7px;justify-content:center;align-items:center;min-height:32px;border:1px solid #414141;border-radius:9px;background:#1b1b1b;color:var(--dg-ink);font-size:11px;font-weight:550;padding:6px 12px;cursor:pointer;transition:background .16s,border-color .16s}
 #diagnostics-root .dg-btn:hover:not(:disabled){background:#292929;border-color:#5b5b5b}
 #diagnostics-root .dg-btn:disabled{opacity:.5;cursor:wait}
@@ -34,7 +35,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-refresh-tooltip-shortcut kbd{display:inline-block;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit}
 #diagnostics-root .dg-status{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--dg-muted);white-space:nowrap}
 #diagnostics-root .dg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#777;box-shadow:0 0 0 3px #7772;flex:none}
-#diagnostics-root [data-health=healthy] .dg-dot{background:var(--dg-good);box-shadow:0 0 0 3px #30d15820}
+#diagnostics-root [data-health=healthy] .dg-dot{background:var(--workspace-health-green);box-shadow:0 0 0 3px var(--workspace-health-green-halo)}
 #diagnostics-root [data-health=degraded] .dg-dot{background:var(--dg-warning);box-shadow:0 0 0 3px #ffd60020}
 #diagnostics-root [data-health=unhealthy] .dg-dot{background:var(--dg-danger);box-shadow:0 0 0 3px #ff424520}
 #diagnostics-root .dg-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:13px 0 24px;color:var(--dg-faint);font-size:10.5px}
@@ -137,5 +138,5 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 @keyframes dg-spin{to{transform:rotate(360deg)}}
 @media(max-width:1100px){#diagnostics-root .dg-top{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-gateway-panel{grid-column:auto}#diagnostics-root .dg-controls-body{grid-template-columns:1fr}#diagnostics-root .dg-section-head{align-items:flex-start}}
-@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-reading{gap:8px}#diagnostics-root .dg-card-ring{width:46px;height:46px}#diagnostics-root .dg-card-ring::before{inset:5px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{justify-content:flex-end}#diagnostics-root .dg-mac-summary{gap:10px}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-reading{gap:8px}#diagnostics-root .dg-card-ring{width:46px;height:46px}#diagnostics-root .dg-card-ring::before{inset:5px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{grid-template-columns:minmax(0,1fr) auto}#diagnostics-root .dg-mac-summary{gap:10px}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){#diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{animation:none!important;transition:none!important}}
