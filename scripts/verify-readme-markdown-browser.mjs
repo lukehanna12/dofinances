@@ -311,11 +311,13 @@ try{
  assert.equal(otherCanvas,"#0a0a0a","The Docs override must not change other workspace screens");
  // Show dirty edit controls and check actual production markup/stylesheet geometry.
  await evaluate('(()=>{document.querySelector(\'[data-view="projects"]\').hidden=true;document.querySelector(\'[data-view="project/readme"]\').hidden=false;document.getElementById("rm-confirm").hidden=false;document.getElementById("rm-diff").hidden=false;document.getElementById("rm-visibility-badge").hidden=false;document.getElementById("rm-repository-label").textContent="lukehanna12/colosseum";return true;})()');
- const docsGeometry=await evaluate('(()=>{const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}},style=selector=>getComputedStyle(document.querySelector(selector));return {heading:rect(".rm-heading-text"),subtitle:rect("#rm-project-label"),repository:rect("#rm-repository-label"),toolbar:rect(".rm-toolbar"),edit:rect(".rm-edit-surround"),editButton:rect("#rm-edit"),confirm:rect("#rm-confirm"),confirmOuter:rect("#rm-confirm").width,diff:rect("#rm-diff"),diffOuter:rect(".rm-diff-control"),document:rect("#rm-reading"),labelColor:style("#rm-project-label").color,subtitleSize:style("#rm-project-label").fontSize,repoColor:style("#rm-repository-label").color,surroundBlue:style(".rm-edit-surround").backgroundColor,confirmWhite:style("#rm-confirm").backgroundColor,confirmInk:style("#rm-confirm").color,badgeColor:style("#rm-visibility-badge").color,badgeBackground:style("#rm-visibility-badge").backgroundColor}})()');
+ const docsGeometry=await evaluate('(()=>{const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height}},style=selector=>getComputedStyle(document.querySelector(selector));return {heading:rect(".rm-heading-text"),subtitle:rect("#rm-project-label"),repository:rect("#rm-repository-label"),toolbar:rect(".rm-toolbar"),edit:rect(".rm-edit-surround"),editButton:rect("#rm-edit"),confirm:rect("#rm-confirm"),confirmOuter:rect("#rm-confirm").width,diff:rect("#rm-diff"),diffOuter:rect(".rm-diff-control"),document:rect("#rm-reading"),labelColor:style("#rm-project-label").color,subtitleSize:style("#rm-project-label").fontSize,repoColor:style("#rm-repository-label").color,surroundBlue:style(".rm-edit-surround").backgroundColor,surroundBorder:style(".rm-edit-surround").boxShadow,confirmWhite:style("#rm-confirm").backgroundColor,confirmInk:style("#rm-confirm").color,badgeColor:style("#rm-visibility-badge").color,badgeBackground:style("#rm-visibility-badge").backgroundColor}})()');
  assert.equal(docsGeometry.labelColor,"rgb(255, 255, 255)","README.md should be white");
  assert.equal(docsGeometry.subtitleSize,"19px","README.md should read as a screen subtitle");
  assert.ok(docsGeometry.subtitle.height>docsGeometry.repository.height,"Subtitle line must exceed repository text in size");
- assert.equal(docsGeometry.surroundBlue,"rgb(25, 43, 61)","Circular controls must use the Docs blue palette");
+ assert.equal(docsGeometry.surroundBlue,"rgb(17, 25, 35)","Circular controls should be subdued slate blue");
+ assert.ok(docsGeometry.surroundBorder.includes("rgba(100, 124, 150, 0.2)"),
+   "Circular control outlines should be gently tinted");
  assert.equal(docsGeometry.confirmWhite,"rgb(255, 255, 255)","Confirm must remain white");
  assert.equal(docsGeometry.confirmInk,"rgb(16, 36, 59)","Confirm ink must be deep blue");
  assert.equal(docsGeometry.repoColor,"rgb(61, 68, 77)","Repository matches document outline");
@@ -345,7 +347,7 @@ try{
  assert.ok(mobileSpacing.above>mobileSpacing.below&&mobileSpacing.above-mobileSpacing.below<=8,
    "Mobile Docs spacing should retain the same visual balance; got "+JSON.stringify(mobileSpacing));
  await command("Emulation.clearDeviceMetricsOverride");
- console.log("Docs subtitle, blue action palette and desktop/mobile spacing browser checks passed.");
+ console.log("Docs subtitle, subdued blue controls and desktop/mobile spacing browser checks passed.");
  console.log("Docs canvas computed-color and route-scope browser tests passed.");
  console.log("README live Markdown typing plus undo/redo browser tests passed.");
 }finally{
