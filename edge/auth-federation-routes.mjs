@@ -6,12 +6,13 @@ import {federationProvider,newOAuthTransaction,oauthAuthorizeUrl,exchangeFederat
 const ORIGIN="https://dofinances.com";
 const MFA_COOKIE="__Host-dofinances_oauth_mfa";
 const BASE_HEADERS={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer"};
-const errorCodes=["link_required","identity_used","limit","email_required","email_unverified"];
+const errorCodes=["link_required","identity_used","limit","email_required","email_unverified","photo_account_mismatch"];
 function safeError(result){return errorCodes.includes(result?.code)?result.code:"unavailable";}
 function resultRedirect(intent,error,cookies=[]){
-  const url=new URL(intent==="link"?"/app":"/login",ORIGIN);
+  const url=new URL(intent==="signin"?"/login":"/app",ORIGIN);
   if(error)url.searchParams.set("federation_error",error);
-  const h=new Headers({...BASE_HEADERS,Location:url.pathname+url.search});
+  if(intent==="refresh")url.hash="settings";
+  const h=new Headers({...BASE_HEADERS,Location:url.pathname+url.search+url.hash});
   for(const c of cookies)h.append("Set-Cookie",c);
   return new Response(null,{status:303,headers:h});
 }
@@ -28,7 +29,8 @@ export async function handleFederation(request,env,pathname){
   const url=new URL(request.url);
   const callback=pathname.startsWith("/api/auth/oauth/callback/");
   const provider=callback?pathname.slice("/api/auth/oauth/callback/".length):url.searchParams.get("provider");
-  const intent=url.searchParams.get("intent")==="link"?"link":"signin";
+  const requestedIntent=url.searchParams.get("intent");
+  const intent=requestedIntent==="link"||requestedIntent==="refresh"?requestedIntent:"signin";
   const conf=federationProvider(env,provider);
   const sessionToken=parseCookie(request.headers.get("Cookie"));
   const stub=env.AUTH_STORE?.get(env.AUTH_STORE.idFromName("primary"));
@@ -37,7 +39,8 @@ export async function handleFederation(request,env,pathname){
     if(!conf)return resultRedirect(intent,"unavailable");
     const txn=newOAuthTransaction();
     const ipKey=await sha256(request.headers.get("CF-Connecting-IP")||"unknown");
-    const begun=await stub.beginFederation({...txn,provider,intent,sessionToken,ipKey});
+    const begun=await stub.beginFederation({...txn,provider,intent,sessionToken,ipKey,
+      identityId:url.searchParams.get("identity")});
     if(begun.status!==200)return resultRedirect(intent,safeError(begun));
     return new Response(null,{status:302,
       headers:{...BASE_HEADERS,Location:await oauthAuthorizeUrl(conf,txn),"Set-Cookie":oauthCookie(txn.state)}});
@@ -56,7 +59,8 @@ export async function handleFederation(request,env,pathname){
   try{
     const identity=await exchangeFederatedIdentity(conf,url.searchParams.get("code"),consumed);
     stage="account";
-    const done=await stub.completeFederation({intent:operation,identity,sessionToken});
+    const done=await stub.completeFederation({intent:operation,identity,sessionToken,
+      expectedSubject:consumed.expectedSubject});
     if(done.error)return resultRedirect(operation,safeError(done),[clear]);
     stage="mail";
     if(done.delivery){
@@ -69,7 +73,9 @@ export async function handleFederation(request,env,pathname){
       h.append("Set-Cookie",MFA_COOKIE+"="+done.challenge+"; Path=/; Max-Age=300; HttpOnly; Secure; SameSite=Lax");
       return new Response(null,{status:303,headers:h});
     }
-    const target=operation==="link"?"/app?federation_linked=1":
+    const target=operation==="refresh"?
+      "/app?federation_photo="+(done.avatarUpdated?"updated":"unavailable")+"#settings":
+      operation==="link"?"/app?federation_linked=1":
       done.pending?"/login?federation_pending=1":"/app";
     const h=new Headers({...BASE_HEADERS,Location:target});
     h.append("Set-Cookie",clear);

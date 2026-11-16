@@ -19,43 +19,55 @@ export class AuthStore extends SecureAuthStore {
       this.sql.exec("ALTER TABLE federated_identities ADD COLUMN avatar_url TEXT");
     this.sql.exec("CREATE INDEX IF NOT EXISTS idx_federated_user ON federated_identities(user_id,provider)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS federation_transactions (state_hash TEXT PRIMARY KEY,provider TEXT NOT NULL,intent TEXT NOT NULL,session_hash TEXT,verifier TEXT NOT NULL,nonce TEXT NOT NULL,expires_at INTEGER NOT NULL)");
+    const transactionColumns=this.sql.exec("PRAGMA table_info(federation_transactions)").toArray();
+    if(!transactionColumns.some(column=>column.name==="expected_subject"))
+      this.sql.exec("ALTER TABLE federation_transactions ADD COLUMN expected_subject TEXT");
   }
   hasPassword(userId) {
     const row=this.sql.exec("SELECT has_password FROM account_methods WHERE user_id=?",userId).toArray()[0];
     return row?row.has_password===1:true; // pre-federation accounts retain passwords
   }
-  async beginFederation({state,verifier,nonce,provider,intent,sessionToken,ipKey}){
+  async beginFederation({state,verifier,nonce,provider,intent,sessionToken,ipKey,identityId}){
     if(!secureToken(state)||!secureToken(verifier)||!secureToken(nonce)||
-       !permittedProvider(provider)||!["signin","link"].includes(intent))
+       !permittedProvider(provider)||!["signin","link","refresh"].includes(intent))
       return {status:400,error:"Invalid sign-in request."};
     const bucket="federation-start:"+String(ipKey||"unknown");
     if(this.limited(bucket,30,900))return {status:429,error:"Too many sign-in attempts."};
-    let sessionHash=null;
-    if(intent==="link"){
+    let sessionHash=null,expectedSubject=null;
+    if(intent==="link"||intent==="refresh"){
       const user=await this.session(sessionToken);
-      if(!user)return {status:401,error:"Sign in before linking an account."};
+      if(!user)return {status:401,error:"Sign in before managing a linked account."};
       sessionHash=await sha256(sessionToken);
+      if(intent==="refresh"){
+        if(typeof identityId!=="string"||!/^[-a-f0-9]{36}$/.test(identityId))
+          return {status:400,error:"Invalid linked account.",code:"photo_account_mismatch"};
+        const match=this.sql.exec("SELECT subject FROM federated_identities WHERE id=? AND user_id=? AND provider=?",
+          identityId,user.id,provider).toArray()[0];
+        if(!match)return {status:404,error:"Linked account not found.",code:"photo_account_mismatch"};
+        expectedSubject=match.subject;
+      }
     }
     this.hit(bucket,900);
     this.sql.exec("DELETE FROM federation_transactions WHERE expires_at<?",now());
-    this.sql.exec("INSERT INTO federation_transactions(state_hash,provider,intent,session_hash,verifier,nonce,expires_at) VALUES(?,?,?,?,?,?,?)",
-      await sha256(state),provider,intent,sessionHash,verifier,nonce,now()+600);
+    this.sql.exec("INSERT INTO federation_transactions(state_hash,provider,intent,session_hash,verifier,nonce,expires_at,expected_subject) VALUES(?,?,?,?,?,?,?,?)",
+      await sha256(state),provider,intent,sessionHash,verifier,nonce,now()+600,expectedSubject);
     return {status:200,ok:true};
   }
   async consumeFederation({state,provider,sessionToken}){
     if(!secureToken(state)||!permittedProvider(provider))
       return {status:400,error:"Invalid sign-in state."};
-    const rows=this.sql.exec("DELETE FROM federation_transactions WHERE state_hash=? RETURNING provider,intent,session_hash,verifier,nonce,expires_at",await sha256(state)).toArray();
+    const rows=this.sql.exec("DELETE FROM federation_transactions WHERE state_hash=? RETURNING provider,intent,session_hash,verifier,nonce,expires_at,expected_subject",await sha256(state)).toArray();
     const txn=rows[0];
     if(!txn||txn.provider!==provider||txn.expires_at<=now())
       return {status:400,error:"Expired or mismatched sign-in state."};
-    if(txn.intent==="link"){
+    if(txn.intent==="link"||txn.intent==="refresh"){
       const current=await this.session(sessionToken);
       if(!current||!secureToken(sessionToken)||
          txn.session_hash!==await sha256(sessionToken))
         return {status:401,error:"Linking session expired."};
     }
-    return {status:200,intent:txn.intent,verifier:txn.verifier,nonce:txn.nonce};
+    return {status:200,intent:txn.intent,verifier:txn.verifier,nonce:txn.nonce,
+      expectedSubject:txn.expected_subject};
   }
   async federatedAccounts(token){
     const user=await this.session(token);
@@ -69,16 +81,19 @@ export class AuthStore extends SecureAuthStore {
         linkedAt:r.linked_at})),
       limits:FEDERATION_LIMITS};
   }
-  async completeFederation({intent,identity,sessionToken}){
+  async completeFederation({intent,identity,sessionToken,expectedSubject}){
     const {provider,issuer,clientId,subject}=identity||{};
-    if(!["signin","link"].includes(intent)||!permittedProvider(provider)||
+    if(!["signin","link","refresh"].includes(intent)||!permittedProvider(provider)||
       typeof issuer!=="string"||!issuer||typeof clientId!=="string"||!clientId||
       typeof subject!=="string"||!subject||subject.length>256)
       return {status:400,error:"Invalid verified identity."};
     const email=normalizedEmail(identity.email);
     const avatarUrl=safeFederatedAvatar(provider,identity.avatarUrl);
-    const owner=intent==="link"?await this.session(sessionToken):null;
-    if(intent==="link"&&!owner)return {status:401,error:"Linking session expired."};
+    const owner=(intent==="link"||intent==="refresh")?await this.session(sessionToken):null;
+    if((intent==="link"||intent==="refresh")&&!owner)
+      return {status:401,error:"Linked-account session expired."};
+    if(intent==="refresh"&&(typeof expectedSubject!=="string"||subject!==expectedSubject))
+      return {status:409,error:"Please choose the same linked Google account.",code:"photo_account_mismatch"};
 
     // A new OAuth-only account gets a random unusable password hash; its
     // separate password-method flag is authoritative. Legacy schema stays intact.
@@ -89,6 +104,15 @@ export class AuthStore extends SecureAuthStore {
     const result=this.ctx.storage.transactionSync(()=>{
       const existing=this.sql.exec("SELECT user_id FROM federated_identities WHERE provider=? AND issuer=? AND subject=?",
         provider,issuer,subject).toArray()[0];
+      if(intent==="refresh"){
+        if(!existing||existing.user_id!==owner.id)
+          return {status:409,error:"Please choose the same linked account.",code:"photo_account_mismatch"};
+        if(avatarUrl)
+          this.sql.exec("UPDATE federated_identities SET avatar_url=? WHERE provider=? AND issuer=? AND subject=? AND user_id=?",
+            avatarUrl,provider,issuer,subject,owner.id);
+        // Photo refresh cannot link, create or switch identities.
+        return {status:200,photoRefreshed:true,avatarUpdated:!!avatarUrl};
+      }
       if(intent==="link"){
         if(existing&&existing.user_id!==owner.id)
           return {status:409,error:"This external account belongs to another user.",code:"identity_used"};
