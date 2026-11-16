@@ -153,11 +153,39 @@ test("Docs document starts close to the repository label and Diff sits beside Sa
  assert.ok(heading.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
  assert.ok(css.includes('row-gap:8px;margin-bottom:12px'));
  assert.ok(css.includes('.rm-toolbar{display:flex;flex:0 0 auto;'));
+ assert.ok(heading.includes('class="rm-toolbar-upper"'),"Reserve a small icon row above the actions");
+ assert.ok(css.includes('.rm-toolbar-upper{display:flex;justify-content:flex-end;align-items:center;gap:6px;width:100%;height:22px;flex:none}'));
+ assert.ok(css.includes('align-self:flex-end;justify-content:flex-end;gap:4px'));
  assert.ok(css.includes('.rm-toolbar-end{display:flex;align-items:center;gap:8px}'));
- assert.ok(css.includes('.rm-diff-button{width:34px;height:34px;min-width:0;'));
+ assert.ok(css.includes('.rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}'));
+ assert.ok(css.includes('.rm-diff-button{width:42px;height:42px;min-width:0;'));
  assert.ok(css.includes('border:1px solid transparent;border-radius:999px;'));
  assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]'));
  assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
+});
+
+test("Docs tooltips match Collections and all three action buttons share one baseline",()=>{
+ const collections=source("sites/_apex/app/assets/collections.css");
+ const collectionTooltip=collections.slice(collections.indexOf("#cs-root .cs-create-tooltip{"),collections.indexOf("#cs-root .cs-create-tooltip-label{"));
+ const docsTooltip=css.slice(css.indexOf(".rm-tooltip{"),css.indexOf(".rm-diff-control .rm-tooltip{"));
+ for(const property of [
+  "top:calc(100% + 5px)","z-index:80","padding:7px 10px",
+  "border:1px solid rgba(255,255,255,.08)","border-radius:10px",
+  "background:#101010;color:#f6f6f6","font-size:12px;font-weight:520;line-height:1.25",
+  "box-shadow:0 5px 17px rgba(0,0,0,.29)",
+  "transform:translateY(-2px) scale(.94)",
+  "transition:opacity .25s cubic-bezier(.16,1,.3,1)"
+ ]){
+  assert.ok(collectionTooltip.includes(property), "Collections tooltip reference changed: "+property);
+  assert.ok(docsTooltip.includes(property), "Docs tooltip differs from Collections: "+property);
+ }
+ assert.ok(css.includes("transition-delay:.15s,.15s,.15s"));
+ assert.ok(css.includes(".rm-control-wrap > .rm-icon-button:focus-visible + .rm-tooltip{transition-delay:0s,0s,0s}"));
+ assert.ok(css.includes(".rm-confirm svg{width:23px;height:23px}"));
+ assert.ok(css.includes(".rm-edit-surround #rm-edit{width:42px;height:42px}"));
+ assert.ok(css.includes(".rm-diff-button{width:42px;height:42px;"));
+ assert.ok(css.includes(".rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}"));
+ assert.ok(css.includes(".rm-toolbar{min-height:72px}"), "Keep mobile toolbar compact");
 });
 
 test("GitHub visual defaults, three per-project styles and unsafe HTML rebuilding",()=>{
