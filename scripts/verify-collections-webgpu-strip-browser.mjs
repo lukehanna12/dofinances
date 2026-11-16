@@ -145,54 +145,6 @@ try{
  const distinctRGB=new Set(state.a.gpuSamples.map(p=>p.slice(0,3).join(",")));
  assert.ok(distinctRGB.size>=2,
    "Lens field must retain the real wallpaper's horizontal image detail");
-
- // This temporary panel must work in real Chromium, not only in source tests.
- const tuningProbe='(()=>{const p=document.getElementById("cs-glass-tuner"),b=p?.querySelector("[data-cs-output=brightness]"),c=p?.querySelector("[data-cs-output=contrast]"),t=p?.querySelector("[data-cs-output=tintStrength]"),hex=p?.querySelector("[data-cs-hex]"),picker=p?.querySelector("[data-cs-picker]"),preset=p?.querySelector("[data-cs-preset]");return {present:!!p,visible:!!p&&!p.hidden,brightness:b?.textContent,contrast:c?.textContent,tintStrength:t?.textContent,hex:hex?.value,pickerType:picker?.type,preset:preset?.value}})()';
- let tune=await evaluate(tuningProbe);
- assert.equal(tune.visible,true,"Temporary glass editor must appear on Collections");
- assert.equal(tune.pickerType,"color","Browser must expose full native color picker");
- assert.equal(tune.brightness,"100.00%");
- assert.equal(tune.contrast,"100.00%");
- assert.equal(tune.tintStrength,"0.00%");
- assert.equal(tune.hex,"#ffffff");
- assert.equal(JSON.parse(tune.preset).tintStrengthPercent,0);
- const baselineRGB=state.a.gpuPixel.slice(0,3);
- async function awaitTuningPixel(expected){
-   for(let attempt=0;attempt<90;attempt++){
-     const measured=await evaluate(probe);
-     if(measured?.a?.gpuPixel&&expected(measured.a.tuning))return measured;
-     await pause(70);
-   }
-   throw Error("No submitted WebGPU pixel after tuning update");
- }
- // An exact brightness edit must darken actual GPU readback, not CSS elsewhere.
- await evaluate('(()=>{const x=document.querySelector("[data-cs-range=brightness]");x.value="60";x.dispatchEvent(new Event("input",{bubbles:true}));return true})()');
- state=await awaitTuningPixel(t=>t?.brightness===60);
- assert.ok(state.a.gpuPixel.slice(0,3).every((v,i)=>v<=baselineRGB[i]),
-   "Brightness 60% must not increase any actual GPU pixel channel");
- assert.ok(state.a.gpuPixel.slice(0,3).some((v,i)=>v<baselineRGB[i]),
-   "Brightness 60% must visibly darken the actual GPU output");
- tune=await evaluate(tuningProbe);
- assert.equal(tune.brightness,"60.00%");
- assert.equal(JSON.parse(tune.preset).brightnessPercent,60);
- // Full RGB picker + 100% tint strength must produce exact color independently
- // of the wallpaper; editing contrast demonstrates the separate control.
- await evaluate('(()=>{const panel=document.getElementById("cs-glass-tuner");const color=panel.querySelector("[data-cs-picker]");color.value="#3366cc";color.dispatchEvent(new Event("input",{bubbles:true}));const contrast=panel.querySelector("[data-cs-number=contrast]");contrast.value="142.75";contrast.dispatchEvent(new Event("input",{bubbles:true}));const strength=panel.querySelector("[data-cs-range=tintStrength]");strength.value="100";strength.dispatchEvent(new Event("input",{bubbles:true}));return true})()');
- state=await awaitTuningPixel(t=>t?.tint==="#3366cc"&&t?.contrast===142.75&&t?.tintStrength===100);
- assert.ok(state.a.gpuPixel.slice(0,3).every((v,i)=>Math.abs(v-[51,102,204][i])<=2),
-   "Tint at 100% must set actual GPU output to selected full RGB color");
- tune=await evaluate(tuningProbe);
- assert.equal(tune.contrast,"142.75%");
- assert.equal(tune.tintStrength,"100.00%");
- assert.equal(tune.hex,"#3366cc");
- assert.deepEqual(JSON.parse(tune.preset).tintRGB,[51,102,204]);
- // Reset removes the previous fixed 20% darkening AND all preview adjustments.
- await evaluate('document.querySelector("#cs-glass-tuner [data-cs-reset]").click()');
- state=await awaitTuningPixel(t=>t?.brightness===100&&t?.contrast===100&&t?.tintStrength===0);
- assert.ok(state.a.gpuPixel.slice(0,3).every((v,i)=>Math.abs(v-baselineRGB[i])<=2),
-   "Reset must reproduce original, untuned WebGPU output");
- assert.equal((await evaluate(tuningProbe)).brightness,"100.00%");
-
  const beforeInteraction=state.a.frames;
  await evaluate('(()=>{const c=document.getElementById("cs-top-webgpu-strip");c.dispatchEvent(new PointerEvent("pointermove",{clientX:600,clientY:c.getBoundingClientRect().top+9,bubbles:true}));return true;})()');
  await pause(125);
@@ -214,8 +166,6 @@ try{
  await evaluate('document.querySelector("[data-view=\\"colosseum/collections\\"]").hidden=true');
  await pause(100);state=await evaluate(probe);
  assert.equal(state.visible,false,"Other views do not expose Collections glass");
- assert.equal((await evaluate(tuningProbe)).visible,false,
-   "Temporary tuning panel must disappear outside Collections");
  console.log("Collections WebGPU pixel/7-16-height/scroll/sidebar/route proofs passed.");
 }finally{
  socket?.close();chrome.kill("SIGTERM");
