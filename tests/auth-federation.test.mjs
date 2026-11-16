@@ -66,13 +66,20 @@ test("Google OIDC verifies RSA signature, nonce, issuer, audience and email_veri
     return signed+"."+b64u(new Uint8Array(sig));
   }
   const originalFetch=globalThis.fetch;
-  let idToken=await sign();
+  let idToken=await sign(),googleAccessToken=null,profileSub="user-google-0001",
+    profilePicture="https://lh3.googleusercontent.com/a/current-photo",profileFails=false;
   try{
-    globalThis.fetch=async url=>{
+    globalThis.fetch=async (url,options)=>{
       if(String(url).includes("oauth2.googleapis.com/token"))
-        return Response.json({id_token:idToken});
+        return Response.json({id_token:idToken,...(googleAccessToken?{access_token:googleAccessToken}:{})});
       if(String(url).includes("googleapis.com/oauth2/v3/certs"))
         return Response.json({keys:[{...publicJwk,kid:"key1",use:"sig",alg:"RS256"}]});
+      if(String(url).includes("openidconnect.googleapis.com/v1/userinfo")){
+        assert.equal(options.redirect,"manual");
+        assert.equal(options.headers.Authorization,"Bearer "+googleAccessToken);
+        if(profileFails)return Response.json({error:"unavailable"},{status:503});
+        return Response.json({sub:profileSub,picture:profilePicture});
+      }
       throw Error("Unexpected endpoint");
     };
     const identity=await exchangeFederatedIdentity(config,"an-authorization-code",txn);
@@ -85,6 +92,19 @@ test("Google OIDC verifies RSA signature, nonce, issuer, audience and email_veri
     idToken=await sign({picture:"https://dangerous.example/track"});
     const noPicture=await exchangeFederatedIdentity(config,"code",txn);
     assert.equal(noPicture.avatarUrl,null);
+    // Signed ID tokens can omit "picture" even when the user consented to
+    // the profile scope. UserInfo supplies it without persisting a token.
+    idToken=await sign();
+    googleAccessToken="ephemeral-profile-token";
+    const fromUserInfo=await exchangeFederatedIdentity(config,"code",txn);
+    assert.equal(fromUserInfo.avatarUrl,"https://lh3.googleusercontent.com/a/current-photo");
+    profileSub="some-other-google-account";
+    assert.equal((await exchangeFederatedIdentity(config,"code",txn)).avatarUrl,null,
+      "A profile for a different Google subject cannot replace the verified identity");
+    profileSub="user-google-0001";profileFails=true;
+    assert.equal((await exchangeFederatedIdentity(config,"code",txn)).avatarUrl,null,
+      "Picture retrieval is optional and cannot break sign-in");
+    profileFails=false;googleAccessToken=null;
     for(const patch of [
       {nonce:"wrong-nonce"},{aud:"other-client"},{iss:"https://attacker.test"},
       {exp:now-300}
@@ -146,7 +166,7 @@ test("unknown providers stay disabled without exposing any OAuth configuration",
 test("all OAuth fetches use Cloudflare-supported manual redirect handling",async()=>{
   const source=await readFile(new URL("../edge/auth-federation.mjs",import.meta.url),"utf8");
   assert.doesNotMatch(source,/redirect:\s*["']error["']/);
-  assert.equal((source.match(/redirect:"manual"/g)||[]).length,4);
+  assert.equal((source.match(/redirect:"manual"/g)||[]).length,5);
   assert.match(source,/if\(!res\.ok\)/);
   // In Workers redirect:'error' throws before the request; a 3xx response
   // must be handled explicitly, not followed to an untrusted destination.

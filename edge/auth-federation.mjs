@@ -186,8 +186,28 @@ export async function exchangeFederatedIdentity(config,code,txn){
     signal:AbortSignal.timeout(10000)});
   const result=await jsonFromResponse(res,"token");
   if(config.provider!=="github"){
-    try{return await verifyIdToken(result.id_token,config,txn);}
+    let identity;
+    try{identity=await verifyIdToken(result.id_token,config,txn);}
     catch{throw new FederationFailure("oauth_identity_invalid");}
+    // Google does not consistently include the optional picture claim in its
+    // signed ID token. Fetch the current profile once with the ephemeral
+    // OAuth access token, then discard it as before. Never trust a profile
+    // whose immutable subject differs from the verified ID token.
+    const token=result.access_token;
+    if(typeof token==="string"&&token.length>0&&token.length<=4096){
+      try{
+        const profile=await fetch("https://openidconnect.googleapis.com/v1/userinfo",{
+          headers:{Accept:"application/json",Authorization:"Bearer "+token},
+          redirect:"manual",signal:AbortSignal.timeout(5000)
+        }).then(response=>jsonFromResponse(response,"profile"));
+        if(profile?.sub===identity.subject)
+          identity.avatarUrl=safeFederatedAvatar("google",profile.picture)||identity.avatarUrl;
+      }catch{
+        // A missing profile picture or temporary UserInfo failure must not
+        // block a valid, cryptographically verified sign-in.
+      }
+    }
+    return identity;
   }
   const token=result.access_token;
   if(typeof token!=="string"||token.length>4096||!token)throw Error("No provider access token");
