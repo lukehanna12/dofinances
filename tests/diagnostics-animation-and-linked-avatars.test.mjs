@@ -64,6 +64,10 @@ test("Settings puts deletion action below its textboxes and presents branded, se
  assert.ok(source.includes('group.append(add,capacity);buttons.append(group)'));
  assert.ok(source.includes('person.append(identityPicture(item))'));
  assert.ok(source.includes('image.referrerPolicy="no-referrer"'));
+ assert.ok(source.includes('image.loading="eager"'));
+ assert.ok(source.includes('refreshPhoto.href="/api/auth/oauth/start?provider=google&intent=refresh&identity="+encodeURIComponent(item.id)'));
+ assert.ok(source.includes('avatar.addEventListener("error",()=>{refreshPhoto.hidden=false}'));
+ assert.ok(styles.includes('.st-profile-photo-refresh{display:inline-flex;'));
  assert.ok(source.includes('image.addEventListener("error",()=>image.replaceWith(fallback)'));
  assert.ok(styles.includes('.st-identity-avatar{display:block;flex:none;width:36px;height:36px;'));
  assert.ok(styles.includes('.st-identity-add-group{display:flex;flex-direction:row;align-items:center;justify-content:space-between'));
@@ -83,5 +87,15 @@ test("OIDC profile photo persistence is verified, migrated and only sent to the 
  assert.ok(store.includes('if(!user)return {status:401,error:"Not authenticated."}'));
  assert.ok(store.includes('avatarUrl:safeFederatedAvatar(r.provider,r.avatar_url)'));
  assert.ok(store.includes("UPDATE federated_identities SET avatar_url=?"));
+ assert.ok(store.includes('intent==="refresh"'));
+ assert.ok(store.includes("PRAGMA table_info(federation_transactions)"));
+ assert.ok(store.includes("ALTER TABLE federation_transactions ADD COLUMN expected_subject TEXT"));
+ assert.ok(store.includes('subject!==expectedSubject'));
+ assert.ok(store.includes('if(!existing||existing.user_id!==owner.id)'));
+ assert.ok(store.includes('return {status:200,photoRefreshed:true,avatarUpdated:!!avatarUrl}'));
+ const routes=read("edge/auth-federation-routes.mjs");
+ assert.ok(routes.includes('identityId:url.searchParams.get("identity")'));
+ assert.ok(routes.includes('expectedSubject:consumed.expectedSubject'));
+ assert.ok(routes.includes('"/app?federation_photo="+(done.avatarUpdated?"updated":"unavailable")+"#settings"'));
  assert.ok(!auth.includes("console.log(result.access_token)"));
 });

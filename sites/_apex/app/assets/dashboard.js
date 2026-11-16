@@ -158,6 +158,7 @@ const FLOWED_ERRORS={
   oauth_response_invalid:"The provider returned an invalid authentication response.",
   oauth_jwks_unavailable:"The provider signing keys were unavailable.",
   oauth_profile_unavailable:"The provider could not return the profile.",
+  photo_account_mismatch:"Please choose the same Google account that is already connected.",
   oauth_provider_network_error:"Dofinances could not complete its secure connection to the provider.",
   oauth_account_store_failed:"The Google/GitHub identity was verified, but Dofinances could not save the account link.",
   oauth_mail_unavailable:"The account verification email could not be sent.",
@@ -198,7 +199,7 @@ function identityPicture(item){
  if(!url)return fallback;
  const image=document.createElement("img");image.className="st-identity-avatar";
  image.src=url;image.alt=(PROVIDER_NAMES[item.provider]||item.provider)+" profile picture";
- image.loading="lazy";image.decoding="async";image.referrerPolicy="no-referrer";
+ image.loading="eager";image.decoding="async";image.referrerPolicy="no-referrer";
  image.addEventListener("error",()=>image.replaceWith(fallback),{once:true});
  return image;
 }
@@ -208,6 +209,9 @@ async function loadFederatedAccounts(){
   const feedback=document.getElementById("federation-feedback");
   const params=new URLSearchParams(location.search);
   if(params.has("federation_linked"))feedback.textContent="Account linked successfully.";
+  if(params.has("federation_photo"))feedback.textContent=
+    params.get("federation_photo")==="updated"?"Google profile photo refreshed.":
+      "Google did not provide a usable photo. Your account remains connected.";
   if(params.has("federation_error"))feedback.textContent=FLOWED_ERRORS[params.get("federation_error")]||"Account linking could not be completed.";
   try{
     const [accountsResponse,configResponse]=await Promise.all([
@@ -235,12 +239,28 @@ async function loadFederatedAccounts(){
     for(const item of accounts.identities){
       const line=document.createElement("div");line.className="st-identity-row";
       const person=document.createElement("span");person.className="st-identity-person";
-      person.append(identityPicture(item));
+      const avatar=identityPicture(item);
+      person.append(avatar);
       const labels=document.createElement("span");labels.className="st-identity-labels";
       const provider=document.createElement("strong");provider.textContent=PROVIDER_NAMES[item.provider]||item.provider;
       const accountName=document.createElement("span");
       accountName.textContent=item.email||item.displayName||"Connected account";
-      labels.append(provider,accountName);person.append(labels);
+      labels.append(provider,accountName);
+      if(item.provider==="google"&&config.federation?.google?.enabled){
+        // Older linked Google identities have no stored photo. The
+        // server pins the exact linked subject before Google authorization,
+        // so this cannot add or replace the wrong account.
+        const refreshPhoto=document.createElement("a");
+        refreshPhoto.className="st-profile-photo-refresh";
+        refreshPhoto.href="/api/auth/oauth/start?provider=google&intent=refresh&identity="+encodeURIComponent(item.id);
+        refreshPhoto.textContent="Load Google profile photo";
+        refreshPhoto.setAttribute("aria-label","Reauthorize the connected Google account to load its profile photo");
+        refreshPhoto.hidden=!!trustedIdentityImage(item);
+        if(avatar.tagName==="IMG")
+          avatar.addEventListener("error",()=>{refreshPhoto.hidden=false},{once:true});
+        labels.append(refreshPhoto);
+      }
+      person.append(labels);
       const remove=document.createElement("button");
       remove.type="button";remove.className="secondary";remove.textContent="Remove";
       remove.disabled=!accounts.hasPassword&&total<=1;
