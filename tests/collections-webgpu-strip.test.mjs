@@ -1,8 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {COLLECTIONS_STRIP_FRACTION,COLLECTIONS_STRIP_BRIGHTNESS,
-  collectionsStripGeometry,wallpaperCover}
+import {COLLECTIONS_STRIP_FRACTION,collectionsStripGeometry,wallpaperCover}
  from "../sites/_apex/app/assets/collections-webgpu-strip.js";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("Collections black-to-summary gap is measured, with precisely 43.75% occupied",()=>{
