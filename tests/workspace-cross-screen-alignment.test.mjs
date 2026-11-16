@@ -37,7 +37,9 @@ test("Local, External and Credentials reuse one Provider workbench with the comm
  assert.ok(provider.indexOf('id="pv-summary"')<provider.indexOf('class="pv-search-row"'));
  assert.ok(provider.indexOf('id="pv-search"')<provider.indexOf('id="pv-refresh"'));
  assert.equal((provider.match(/id="pv-refresh"/g)||[]).length,1);
- assert.equal((provider.match(/id="pv-index-total"/g)||[]).length,1);
+ assert.equal((provider.match(/id="pv-index-total"/g)||[]).length,0);
+ assert.equal((provider.match(/id="pv-summary-updated"/g)||[]).length,1);
+ assert.ok(provider.indexOf('id="pv-summary-updated"')<provider.indexOf('class="pv-search-row"'));
  assert.ok(css.includes("margin-top:var(--workspace-summary-controls-gap)"));
  assert.ok(css.includes("margin-bottom:var(--workspace-controls-content-gap)"));
  assert.ok(css.includes("height:var(--workspace-control-size)"));
