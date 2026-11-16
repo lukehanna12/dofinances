@@ -90,7 +90,7 @@ try{
  await cmd("Runtime.enable");await cmd("Page.enable");
  await cmd("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/?webgpu-offscreen-ci=1"});
  for(let n=0;n<300;n++){
-  const status=await evalJS('({gpu:!!navigator.gpu,phase:document.querySelector("#cta6-mosaic")?.dataset.gpuPhase,status:window.__dashboardWebGPU?.status,errors:window.__dashboardWebGPU?.errors,proof:window.__dashboardWebGPU?.logoGpuPixelProof})');
+  const status=await evalJS('({gpu:!!navigator.gpu,phase:document.querySelector("#cta6-mosaic")?.dataset.gpuPhase,status:window.__dashboardWebGPU?.status,errors:window.__dashboardWebGPU?.errors,proof:window.__dashboardWebGPU?.logoGpuPixelProof,logoUpload:window.__dashboardWebGPU?.logoUpload,logoSourceCenterRGBA:window.__dashboardWebGPU?.logoSourceCenterRGBA,logoBoundsUV:window.__dashboardWebGPU?.logoBoundsUV,logoDimensions:window.__dashboardWebGPU?.logoDimensions})');
   if(n===30)console.log("WebGPU progress:",JSON.stringify(status));
   if(status?.status==="ready"){
    assert.equal(status.proof?.changed,true,"Pixel proof must find logo in lens texture but not visible background");
