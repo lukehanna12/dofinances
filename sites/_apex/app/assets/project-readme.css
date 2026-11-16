@@ -40,8 +40,8 @@
 .rm-diff-button img{width:18px;height:18px}
 .rm-tooltip{position:absolute;z-index:30;top:calc(100% + 8px);right:0;min-width:max-content;max-width:220px;background:#292929;border:1px solid #4a4a4a;color:#f0f0f0;border-radius:9px;padding:7px 11px;font-size:11px;line-height:1.2;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-4px) scale(.98);transition:opacity .12s ease,transform .12s ease,visibility .12s ease}
 .rm-diff-control .rm-tooltip{left:50%;right:auto;transform:translate(-50%,-4px) scale(.98)}
-.rm-diff-control:hover .rm-tooltip,.rm-diff-control:focus-within .rm-tooltip{transform:translateX(-50%)}
 .rm-control-wrap:hover .rm-tooltip,.rm-control-wrap:focus-within .rm-tooltip{opacity:1;visibility:visible;transform:none}
+.rm-control-wrap.rm-diff-control:hover .rm-tooltip,.rm-control-wrap.rm-diff-control:focus-within .rm-tooltip{transform:translateX(-50%)}
 .rm-notice{margin:11px 0;color:#c5c5c5;font-size:12.5px;line-height:1.5;padding:11px 13px;border:1px solid #373737;background:#202020;border-radius:11px;overflow-wrap:anywhere}
 .rm-notice.rm-error{color:#ff9999;border-color:#6c3232;background:#241819}
 .rm-notice.rm-success{color:#a7e9bf;border-color:#315341;background:#17241b}
