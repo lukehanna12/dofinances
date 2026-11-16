@@ -14,11 +14,11 @@
   --workspace-summary-controls-gap:24px;
   --workspace-control-size:32px;
   /* Same health dot and soft halo in Diagnostics and all Provider routes. */
-  /* Sample reference: median #2c4111 (86.2° yellow-olive hue).
-     Maintain that warm undertone at legible, vibrant status luminance. */
-  --workspace-health-green:#9cdd44;
-  --workspace-health-green-halo:#9cdd4420;
-  --workspace-skill-olive:#7fae3a;
+  /* Use the original cool-vibrant healthy status green for dots. Skill
+     paths are deliberately deeper and more evergreen, yet readable on dark. */
+  --workspace-health-green:#30d158;
+  --workspace-health-green-halo:#30d15820;
+  --workspace-skill-evergreen:#55a47b;
   --workspace-controls-content-gap:15px;
   --workspace-title-flow-height:clamp(43.2px,4.8vw,57.6px);
   --workspace-title-flow-gap:12px;

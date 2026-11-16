@@ -18,7 +18,7 @@ test("Diagnostics health is upper-left on the shared summary track, Refresh lowe
 });
 test("Provider list marks on all three routes have the Diagnostics healthy green dot and halo",()=>{
  const css=asset("providers.css"),diag=asset("diagnostics.css"),tokens=asset("workspace-wallpapers.css");
- for(const value of ['--workspace-health-green:#9cdd44','--workspace-health-green-halo:#9cdd4420','--workspace-skill-olive:#7fae3a'])
+ for(const value of ['--workspace-health-green:#30d158','--workspace-health-green-halo:#30d15820','--workspace-skill-evergreen:#55a47b'])
   assert.ok(tokens.includes(value));
  assert.ok(diag.includes('[data-health=healthy] .dg-dot{background:var(--workspace-health-green);box-shadow:0 0 0 3px var(--workspace-health-green-halo)}'));
  assert.ok(css.includes('.pv-provider-mark[data-state="available"]{background:var(--workspace-health-green);box-shadow:0 0 0 3px var(--workspace-health-green-halo)}'));
@@ -46,35 +46,32 @@ test("Health dot pulses only while Diagnostics is loading or refreshing",()=>{
  assert.ok(css.includes('@media(prefers-reduced-motion:reduce){'));
 });
 
-test("Photo-derived warm olive green preserves hue and separates skill text luminance",()=>{
- const css=asset("workspace-wallpapers.css");
- const pv=asset("providers.css");
- const tokens=Object.fromEntries([...css.matchAll(/--(workspace-(?:health-green|health-green-halo|skill-olive)):(#[a-f0-9]{6,8});/g)]
-   .map(([,k,v])=>[k,v]));
- assert.equal(tokens["workspace-health-green"],"#9cdd44");
- assert.equal(tokens["workspace-health-green-halo"],"#9cdd4420");
- assert.equal(tokens["workspace-skill-olive"],"#7fae3a");
+test("Original vivid health green pairs with darker, cooler evergreen paths",()=>{
+ const css=asset("workspace-wallpapers.css"),pv=asset("providers.css");
+ const tokens=Object.fromEntries([...css.matchAll(/--(workspace-(?:health-green|health-green-halo|skill-evergreen)):(#[a-f0-9]{6,8});/g)]
+  .map(([,k,v])=>[k,v]));
+ assert.equal(tokens["workspace-health-green"],"#30d158");
+ assert.equal(tokens["workspace-health-green-halo"],"#30d15820");
+ assert.equal(tokens["workspace-skill-evergreen"],"#55a47b");
  const rgb=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
  const hue=hex=>{
    const [r,g,b]=rgb(hex).map(n=>n/255);
    const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
    return d===0?0:((max===r?((g-b)/d)%6:max===g?(b-r)/d+2:(r-g)/d+4)*60+360)%360;
  };
- // Median of the supplied 170x104 photograph: RGB (44,65,17), warm yellow-green.
- const sample="#2c4111";
- for(const key of ["workspace-health-green","workspace-skill-olive"]){
-   const delta=Math.abs(hue(tokens[key])-hue(sample));
-   assert.ok(Math.min(delta,360-delta)<3,"Preserve sample's green warmth");
- }
+ const indicatorHue=hue(tokens["workspace-health-green"]);
+ const pathHue=hue(tokens["workspace-skill-evergreen"]);
+ assert.ok(indicatorHue>=130&&indicatorHue<=145);
+ assert.ok(pathHue>=145&&pathHue<=160,"Skill paths should lean evergreen, not yellow/olive");
  const luminance=hex=>rgb(hex).map(v=>{
    const c=v/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;
  }).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
- const dot=luminance(tokens["workspace-health-green"]);
- const path=luminance(tokens["workspace-skill-olive"]);
- assert.ok(dot>path*1.5,"Health dots must be markedly brighter than skill paths");
- assert.ok((path+.05)/(luminance("#101010")+.05)>6.8,
-   "Darker olive path text must remain comfortably legible on the dark panel");
- assert.ok(pv.includes('.pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:var(--workspace-skill-olive)}'));
+ const indicator=luminance(tokens["workspace-health-green"]);
+ const path=luminance(tokens["workspace-skill-evergreen"]);
+ assert.ok(indicator>path*1.45,"Dot must remain perceptibly brighter");
+ assert.ok((path+.05)/(luminance("#171717")+.05)>5.9,
+   "Evergreen path text must retain high dark-background contrast");
+ assert.ok(pv.includes('.pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:var(--workspace-skill-evergreen)}'));
  assert.ok(pv.includes('.pv-provider-mark[data-state="available"]{background:var(--workspace-health-green)'));
 });
 

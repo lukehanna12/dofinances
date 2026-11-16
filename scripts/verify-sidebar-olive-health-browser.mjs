@@ -89,14 +89,14 @@ try{
   for(const g of result.gaps)assert.ok(Math.abs(g-result.regularInset)<=.7,
    state+" left inset "+g+" vs "+result.regularInset);
   assert.equal(result.animation,"dg-health-pulse");
-  assert.equal(result.health,"rgb(156, 221, 68)");
+  assert.equal(result.health,"rgb(48, 209, 88)");
   assert.equal(result.provider,result.health);
-  assert.equal(result.skill,"rgb(127, 174, 58)");
+  assert.equal(result.skill,"rgb(85, 164, 123)");
   await evaluate('document.getElementById("dg-health").dataset.checking="false"');
   assert.equal((await evaluate(probe)).animation,"none");
   await evaluate('document.getElementById("dg-health").dataset.checking="true"');
   assert.equal((await evaluate(probe)).animation,"dg-health-pulse");
-  console.log(state+" inset, three child links, olive palette, and loading-only pulse PASS",JSON.stringify(result));
+  console.log(state+" inset, three child links, evergreen palette, and loading-only pulse PASS",JSON.stringify(result));
  }
 }finally{
  socket?.close();chrome.kill("SIGTERM");

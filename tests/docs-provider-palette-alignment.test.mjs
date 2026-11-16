@@ -73,13 +73,13 @@ test("Docs footer text screen-blends to a modest brighter tone without changing 
   assert.ok(inc.every(v=>v>=28&&v<=70),"Text is moderately brighter across modeled photo regions");
  }
 });
-test("Only Local skill and skill-file paths use warm olive green; Credentials dropdowns use centered single arrows",()=>{
+test("Only Local skill and skill-file paths use cooler evergreen green; Credentials dropdowns use centered single arrows",()=>{
  const js=asset("provider-provisions.js"),css=asset("providers.css");
  assert.ok(js.includes('panel.dataset.kind=key'));
  assert.ok(js.includes('["Installed skills","skills"]'));
  assert.ok(js.includes('["Skill supporting files","skill_files"]'));
  assert.ok(css.includes('.pv-provision-mcp[data-kind="skills"] .pv-provision-protocol-item code'));
- assert.ok(css.includes('.pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:var(--workspace-skill-olive)}'));
+ assert.ok(css.includes('.pv-provision-mcp[data-kind="skill_files"] .pv-provision-protocol-item code{color:var(--workspace-skill-evergreen)}'));
  assert.ok(css.includes('#pv-root .pv-provision-protocol-item code{display:block'));
  assert.ok(css.includes('#pv-root[data-mode="credentials"] select.pv-input{'));
  for(const property of ['-webkit-appearance:none;appearance:none','background-position:right 12px center','background-size:14px 14px;padding-right:38px'])
