@@ -151,7 +151,7 @@ test("Docs document starts close to the repository label and Diff sits beside Sa
  assert.ok(!heading.includes('<span>Diff</span>'),"Diff is an icon-only control");
  assert.ok(heading.includes('aria-describedby="rm-diff-tooltip"'));
  assert.ok(heading.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
- assert.ok(css.includes('row-gap:8px;margin-bottom:12px'));
+ assert.ok(css.includes('row-gap:8px;padding-top:var(--workspace-summary-top);margin-bottom:12px'));
  assert.ok(css.includes('.rm-toolbar{display:flex;flex:0 0 auto;'));
  assert.ok(heading.includes('class="rm-toolbar-upper"'),"Reserve a small icon row above the actions");
  assert.ok(css.includes('.rm-toolbar-upper{display:flex;justify-content:flex-end;align-items:center;gap:6px;width:100%;height:22px;flex:none}'));

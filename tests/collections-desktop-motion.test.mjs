@@ -7,7 +7,7 @@ const js=source("sites/_apex/app/assets/collections.js");
 const html=source("sites/_apex/app/index.html");
 
 test("No open collection lets the desktop list use all available width",()=>{
-  assert.ok(css.includes("#cs-root .cs-layout{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr);gap:40px"));
+  assert.ok(css.includes("#cs-root .cs-layout{margin-top:var(--workspace-summary-controls-gap);display:grid;grid-template-columns:minmax(0,1fr);gap:40px"));
   assert.ok(css.includes("@media(min-width:1024px){"));
   assert.ok(css.includes("grid-template-columns:minmax(0,1fr) minmax(0,0px);"));
   assert.ok(css.includes("#cs-root .cs-layout.cs-detail-open{"));

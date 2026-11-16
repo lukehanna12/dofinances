@@ -836,7 +836,7 @@ test("Collection search and Refresh occupy one aligned row, retaining list width
  assert.ok(markup.indexOf('id="cs-collection-search"')>0);
  assert.ok(markup.indexOf('id="cs-refresh"')>markup.indexOf('id="cs-collection-search"'));
  assert.ok(!html.includes('class="cs-top-actions"'));
- assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:var(--workspace-controls-content-gap)}"));
  assert.ok(css.includes("#cs-root .cs-collection-search{flex:1 1 0;min-width:0}"));
  assert.match(css,/#cs-root \.cs-search-focus\{[^}]*position:absolute;inset:0;display:grid;place-items:center;width:100%;height:100%/);
  assert.match(css,/#cs-root #cs-refresh\{width:32px;min-width:32px;height:32px;min-height:32px/);
@@ -1346,7 +1346,7 @@ test("Original route geometry is retained while masked icons match the former #a
 });
 
 test("Compact Collection search matches Refresh on both breakpoints without narrowing its edges",()=>{
- assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}"));
+ assert.ok(css.includes("#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:var(--workspace-controls-content-gap)}"));
  assert.ok(css.includes("#cs-root .cs-collection-search{flex:1 1 0;min-width:0}"));
  assert.ok(css.includes("#cs-root .cs-collection-search{height:32px;min-height:32px;border-radius:10px}"));
  assert.ok(css.includes("#cs-root #cs-refresh{width:32px;min-width:32px;height:32px;min-height:32px"));
@@ -1554,7 +1554,7 @@ test("Both search bars use the exact magnifying glass in the upper top bar and s
  assert.ok(local.includes(searchAsset));
  assert.ok(css.includes('#cs-root .cs-search-control:hover .cs-create-tooltip'));
  assert.ok(css.includes('#cs-root .cs-search-focus:focus-visible + .cs-create-tooltip'));
- assert.ok(css.includes('#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px'));
+ assert.ok(css.includes('#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:var(--workspace-controls-content-gap)'));
  assert.ok(css.includes('#cs-root .cs-utility-search{margin-top:19px'));
 });
 test("Collections search filters paginated collection records without modifying organization",()=>{
