@@ -7,6 +7,17 @@
   --workspace-banner-height:202.65625px; /* Non-Home: retained measured D-bubble spacing. */
   --workspace-top-overpull:96px; /* Retained image crop/composition, not scroll allowance. */
   --workspace-content-leading:26px;
+  /* Shared post-banner baseline contract, measured against the normal
+     1.2-line-height heading and its 12px trailing layout margin. */
+  --workspace-panel-overlap:44px;
+  --workspace-summary-row-height:clamp(15px,1.275vw,16.5px);
+  --workspace-summary-controls-gap:24px;
+  --workspace-control-size:32px;
+  --workspace-controls-content-gap:15px;
+  --workspace-title-flow-height:clamp(43.2px,4.8vw,57.6px);
+  --workspace-title-flow-gap:12px;
+  --workspace-summary-top:calc(var(--workspace-title-flow-height) + var(--workspace-title-flow-gap) - var(--workspace-panel-overlap));
+  --workspace-controls-top:calc(var(--workspace-summary-top) + var(--workspace-summary-row-height) + var(--workspace-summary-controls-gap));
   --workspace-footer-height:calc(var(--workspace-header-height) * .8);
 }
 /* Preserve sixfold exposed Home strip and non-Home measurements from the
@@ -215,6 +226,13 @@ body[data-wallpaper-route="home"] > .workspace-footer::after {
 @media (max-width:760px) {
   :root {--workspace-header-height:63px;--workspace-content-leading:24px}
   body:has(> #workspace-shell) > .workspace-footer {padding-inline:19px}
+}
+@media (max-width:639px) {
+  :root {
+    --workspace-summary-controls-gap:20px;
+    --workspace-control-size:30px;
+    --workspace-controls-content-gap:12px;
+  }
 }
 @media (max-width:480px) {
   :root {--workspace-content-leading:20px}

@@ -44,7 +44,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
   --cs-row-height:54px;--cs-control-swap:480ms;--cs-control-ease:cubic-bezier(.22,1,.36,1);
   --cs-detail-motion:240ms;--cs-detail-ease:cubic-bezier(.22,1,.36,1);
   --cs-detail-max-width:479.17px;
-  -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:-44px;padding:0;
+  -webkit-font-smoothing:antialiased;min-height:70vh;margin-top:calc(-1 * var(--workspace-panel-overlap));padding:0;
 }
 #cs-root *{box-sizing:border-box}
 #cs-root button,#cs-root input,#cs-root textarea{font:inherit}
@@ -188,7 +188,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
    not the list, so a short final page moves pagination without pulling the
    black canvas edge upward. Expanded content may grow beyond the minimum. */
 /* Keep the collection search closer to the TOTAL / UPDATED summary. */
-#cs-root .cs-layout{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr);gap:40px;align-items:start;min-height:calc(10 * var(--cs-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
+#cs-root .cs-layout{margin-top:var(--workspace-summary-controls-gap);display:grid;grid-template-columns:minmax(0,1fr);gap:40px;align-items:start;min-height:calc(10 * var(--cs-row-height) + 2px + 25px + 36px + 12px + 18px + 12px)}
 #cs-root .cs-collection-column{min-width:0}
 /* Only Collections should escape the workspace-wide 1110px .content cap.
    Retain the shared padding and sidebar-left geometry, so all added width
@@ -350,7 +350,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/collections"]:not([h
 @media(max-width:639px){
  #cs-root{--cs-row-height:48px}
  #cs-root .cs-head{flex-direction:row;align-items:flex-end;gap:10px}
- #cs-root .cs-layout{margin-top:20px}
+ #cs-root .cs-layout{margin-top:var(--workspace-summary-controls-gap)}
  #cs-root .cs-trigger{padding:20px 24px 20px 0}
  #cs-root .cs-trigger{gap:10px}
  #cs-root .cs-trigger .cs-num{width:22px;font-size:10px}
@@ -901,7 +901,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
 #cs-root .cs-search input[type="search"]:focus-visible{border:0;outline:0;box-shadow:none}
 #cs-root .cs-search input[type="search"]:disabled{opacity:.6;cursor:default}
 /* The list stays full width: only the search field contracts for Refresh. */
-#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:15px}
+#cs-root .cs-collection-search-row{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:4;margin-bottom:var(--workspace-controls-content-gap)}
 #cs-root .cs-collection-search{flex:1 1 0;min-width:0}
 #cs-root .cs-search-empty{padding:20px 12px}
 #cs-root .cs-utility-search{margin-top:19px;flex:none}
@@ -915,7 +915,7 @@ body.collections-title-transition.collections-title-passed #workspace-shell .sha
  #cs-root .cs-search-control{height:auto;width:34px}
  #cs-root .cs-search-focus{width:100%;height:100%}
  #cs-root .cs-search-focus img{width:16px;height:16px}
- #cs-root .cs-collection-search-row{margin-bottom:12px;gap:8px}
+ #cs-root .cs-collection-search-row{margin-bottom:var(--workspace-controls-content-gap);gap:8px}
  #cs-root .cs-refresh-control{width:30px;height:30px}
  #cs-root #cs-refresh{width:30px;min-width:30px;height:30px;min-height:30px}
  #cs-root .cs-utility-search{margin-top:15px}

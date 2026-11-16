@@ -17,7 +17,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 #ut-root{
  --ut-ink:#fafafa;--ut-muted:#a3a3a3;--ut-dim:#696969;--ut-line:#262626;
  --ut-pane:#0a0a0a;--ut-fill:#171717;--ut-motion:240ms;--ut-ease:cubic-bezier(.22,1,.36,1);
- --ut-row-height:54px;min-height:70vh;margin-top:-44px;padding:0;color:var(--ut-ink);
+ --ut-row-height:54px;min-height:70vh;margin-top:calc(-1 * var(--workspace-panel-overlap));padding:0;color:var(--ut-ink);
  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
  -webkit-font-smoothing:antialiased;
 }
@@ -36,10 +36,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
  html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hidden]))
  body:has(> #workspace-shell) .content{max-width:none;width:100%}
 }
-#ut-root .ut-layout{margin-top:24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0px);column-gap:0;align-items:start;transition:grid-template-columns var(--ut-motion) var(--ut-ease),column-gap var(--ut-motion) var(--ut-ease)}
+#ut-root .ut-layout{margin-top:var(--workspace-summary-controls-gap);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0px);column-gap:0;align-items:start;transition:grid-template-columns var(--ut-motion) var(--ut-ease),column-gap var(--ut-motion) var(--ut-ease)}
 #ut-root .ut-layout.ut-open{grid-template-columns:minmax(0,1fr) minmax(0,min(479.17px,calc((100% - 64px) * .51219512195)));column-gap:64px}
 #ut-root .ut-list-column,#ut-root .ut-inspector{min-width:0}
-#ut-root .ut-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+#ut-root .ut-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:var(--workspace-controls-content-gap)}
 #ut-root .ut-search{display:flex;align-items:center;flex:1;min-width:0;height:32px;background:var(--ut-fill);border:1px solid var(--ut-line);border-radius:10px;position:relative}
 #ut-root .ut-search:hover,#ut-root .ut-search:focus-within{border-color:#525252}
 #ut-root .ut-search-icon{display:grid;place-items:center;flex:none;width:30px;height:30px;padding:0;border:0;background:transparent;border-radius:9px 0 0 9px}
@@ -148,7 +148,7 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 }
 @media(max-width:639px){
  #ut-root{--ut-row-height:48px}
- #ut-root .ut-layout{margin-top:20px}
+ #ut-root .ut-layout{margin-top:var(--workspace-summary-controls-gap)}
  #ut-root .ut-toolbar{gap:7px;flex-wrap:wrap}
  #ut-root .ut-search{height:30px;min-width:calc(100% - 100px)}
  #ut-root .ut-search-icon,#ut-root .ut-filter-toggle{height:28px}

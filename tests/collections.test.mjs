@@ -297,8 +297,8 @@ test("Collections positions both ring centers symmetrically around the complete 
 });
 
 test("Collections content rises while maintaining a margin and the shared title position",()=>{
- assert.match(css,/#cs-root\{[^}]*margin-top:-44px/);
- assert.match(css,/#cs-root\{[^}]*min-height:70vh;margin-top:-44px;padding:0;/);
+ assert.match(css,/#cs-root\{[^}]*margin-top:calc\(-1 \* var\(--workspace-panel-overlap\)\)/);
+ assert.match(css,/#cs-root\{[^}]*min-height:70vh;margin-top:calc\(-1 \* var\(--workspace-panel-overlap\)\);padding:0;/);
  assert.doesNotMatch(css,/#cs-root\{padding-bottom:66px\}/);
  assert.doesNotMatch(css,/#cs-root\{margin-top:-28px/);
  assert.match(html,/<div class="page-heading"><h1 id="project-collections-title">Collections<\/h1><\/div>/);
@@ -391,8 +391,8 @@ test("Expanded collection cards omit redundant Colosseum membership caption on d
 });
 
 test("Collections search sits close to the summary on desktop and mobile",()=>{
- assert.match(css,/#cs-root \.cs-layout\{margin-top:24px;display:grid;/);
- assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-layout\{margin-top:20px\}/);
+ assert.match(css,/#cs-root \.cs-layout\{margin-top:var\(--workspace-summary-controls-gap\);display:grid;/);
+ assert.match(css,/@media\(max-width:639px\)\{[\s\S]*?#cs-root \.cs-layout\{margin-top:var\(--workspace-summary-controls-gap\)\}/);
  assert.ok(html.includes('id="cs-summary"'));
  assert.ok(html.includes('class="cs-search cs-collection-search"'));
 });
