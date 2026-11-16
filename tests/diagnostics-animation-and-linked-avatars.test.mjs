@@ -11,11 +11,11 @@ const makeElement=tag=>({
  append(...items){this.children.push(...items)},
  setAttribute(k,v){this.attributes[k]=v}
 });
-const ctx={document:{createElement:makeElement},Intl};
+const freshContext=()=>({document:{createElement:makeElement},Intl});
 const diagnosticSource=diagnostics.replace("export function initColosseumDiagnostics","function initColosseumDiagnostics");
 
 test("Native empty battery uses two dashes, no bolt and the precise 100%-fill cavity geometry",()=>{
- const fn=runInNewContext(diagnosticSource+"\nbatteryGraphic",ctx);
+ const fn=runInNewContext(diagnosticSource+"\nbatteryGraphic",freshContext());
  const empty=fn(null).glyph;
  assert.equal(empty.children.filter(x=>x.className==="dg-battery-bolt-symbol").length,0);
  assert.equal(empty.children.at(-1).textContent,"--");
@@ -37,7 +37,7 @@ test("Native empty battery uses two dashes, no bolt and the precise 100%-fill ca
  assert.ok(css.includes('@keyframes dg-battery-bolt-arrive{0%,55%{opacity:0}100%{opacity:1}}'));
 });
 test("All Diagnostics circular gauges and usage tracks animate from unfilled to their true values",()=>{
- const progress=runInNewContext(diagnosticSource+"\nprogress",ctx);
+ const progress=runInNewContext(diagnosticSource+"\nprogress",freshContext());
  const p=progress({used:37,limit:100});
  assert.equal(p.tag,"div");assert.equal(p.attributes.role,"progressbar");
  assert.equal(p.attributes["aria-valuenow"],"37");

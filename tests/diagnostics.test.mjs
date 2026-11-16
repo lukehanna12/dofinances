@@ -108,7 +108,7 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  for(const hex of ["#30d158","#ffd600","#ff4245"])assert.ok(css.includes(hex));
  assert.match(css,/battery\.0percent\.svg/);
  assert.match(css,/battery\.bolt\.symbol\.svg/);
- assert.match(js,/battery\.fill\./);
+ assert.match(css,/battery\.fill\.100percent\.svg/);
  assert.match(js,/batteryGraphic\(m\)/);
  assert.ok(js.includes('glyph.append(make("strong","dg-battery-number",pct===null?"--":quantity(pct,0)));'),
   "Battery graphic must show digits without a percent sign");
