@@ -318,7 +318,7 @@ try{
  assert.equal(docsGeometry.surroundBlue,"rgb(17, 25, 35)","Circular controls should be subdued slate blue");
  assert.ok(docsGeometry.surroundBorder.includes("rgba(100, 124, 150, 0.2)"),
    "Circular control outlines should be gently tinted");
- assert.equal(docsGeometry.confirmWhite,"rgb(255, 255, 255)","Confirm must remain white");
+ assert.equal(docsGeometry.confirmWhite,"rgb(244, 247, 252)","Confirm must be a nearly white, cool-tinted blue");
  assert.equal(docsGeometry.confirmInk,"rgb(16, 36, 59)","Confirm ink must be deep blue");
  assert.equal(docsGeometry.repoColor,"rgb(61, 68, 77)","Repository matches document outline");
  assert.equal(docsGeometry.badgeColor,"rgb(239, 195, 152)");
