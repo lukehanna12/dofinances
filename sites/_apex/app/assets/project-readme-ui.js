@@ -1,5 +1,7 @@
 // Account-specific project READMEs: GitHub GFM, safe live editing, preview,
-// diff, repository association, and encrypted GitHub connection in Settings.
+// diff, and encrypted GitHub connection in Settings. The Docs presentation
+// and repository association are read-only metadata here; project creation
+// and separate Settings credentials remain available.
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
 import {renderProjectShowcase} from "./project-showcase.js";
@@ -144,7 +146,7 @@ export function initProjectReadme(){
  const converter=createReadmeMarkdownConverter();
  let history;
  const diffPanel=$("rm-diff-panel"),diffContent=$("rm-diff-content");
- const form=$("project-create-form"),repoForm=$("rm-repository-form");
+ const form=$("project-create-form");
  const state={projects:[],slug:null,source:null,original:"",dirty:false,editing:false,canEdit:false,
    readingRenderTicket:0,previewRenderTicket:0,loadTicket:0,renderDelay:null,
    processing:false,loaded:false,renderReady:false,richBaseline:"",draft:"",
@@ -246,8 +248,6 @@ export function initProjectReadme(){
    $("rm-project-label").textContent=(data.project.name||slug).toUpperCase();
    $("rm-repository-label").textContent=data.project.repository?
       data.project.repository+(data.private?" · Private":""):"Local README · No linked GitHub repository";
-   $("rm-repository-input").value=data.project.repository||"";
-   $("rm-presentation").value=data.project.presentation||"github";
    view.dataset.presentation=data.project.presentation||"github";
    if(data.source==="unavailable"||data.source==="missing"){
     say((data.error||"Repository README unavailable.")+" Showing the project's default README.",true);
@@ -350,28 +350,6 @@ export function initProjectReadme(){
   if(event.shiftKey&&(event.metaKey||event.ctrlKey)&&!event.altKey&&event.code==="KeyE"){
    event.preventDefault();void startEdit();
   }
- });
- $("rm-presentation").addEventListener("change",async event=>{
-  const slug=state.slug,style=event.target.value;
-  if(!slug||!["github","minimal","reader"].includes(style))return;
-  try{
-   const res=await api("/api/projects/"+slug+"/presentation","PUT",{presentation:style});
-   view.dataset.presentation=style;
-   say("README presentation updated for "+res.project.name+".",false,true);
-  }catch(error){say("Could not update presentation: "+error.message,true);event.target.value=view.dataset.presentation||"github";}
- });
- repoForm.addEventListener("submit",async event=>{
-  event.preventDefault();const slug=state.slug;if(!slug||state.processing)return;
-  const repository=$("rm-repository-input").value.trim();
-  if(repository&&!repoValid(repository)){say("Enter a GitHub repository as owner/name.",true);return;}
-  try{
-   setBusy(true);
-   const result=await api("/api/projects/"+slug+"/repository","PUT",{repository:repository||null});
-   say("Repository association updated.",false,true);
-   await loadProjects();
-   await loadReadme();
-  }catch(error){say("Could not update repository: "+error.message,true);}
-  finally{setBusy(false);}
  });
  create?.addEventListener("click",()=>{
   $("project-create-error").hidden=true;$("project-create-name").value="";$("project-create-repository").value="";
