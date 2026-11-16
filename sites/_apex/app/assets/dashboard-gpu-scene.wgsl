@@ -11,9 +11,6 @@ struct Globals {
 @group(0) @binding(0) var image: texture_2d<f32>;
 @group(0) @binding(1) var imageSampler: sampler;
 @group(0) @binding(2) var<uniform> state: Globals;
-struct LogoRegion { bounds: vec4<f32>, }; // normalized x,y,width,height
-@group(0) @binding(3) var lensLogo: texture_2d<f32>;
-@group(0) @binding(4) var<uniform> logoRegion: LogoRegion;
 
 struct FullscreenOutput {
   @builtin(position) position: vec4<f32>,
@@ -29,29 +26,12 @@ fn vsScene(@builtin(vertex_index) vertex: u32) -> FullscreenOutput {
   return output;
 }
 
-fn visiblePhotograph(uv:vec2<f32>) -> vec4<f32> {
-  let imageUV=(uv-vec2<f32>(0.5))*state.fit.xy+vec2<f32>(0.5);
-  let native=textureSampleLevel(image,imageSampler,
-    clamp(imageUV,vec2<f32>(0.0),vec2<f32>(1.0)),0.0);
-  // The original photo and authored 12% veil are identical in both scenes.
-  let veiled=mix(native.rgb,
-    vec3<f32>(19.0/255.0,20.0/255.0,21.0/255.0),state.fit.z);
-  return vec4<f32>(veiled,1.0);
-}
 @fragment
-fn fsScene(input:FullscreenOutput) -> @location(0) vec4<f32> {
-  // This is the ONLY pipeline feeding the full-screen visible background.
-  return visiblePhotograph(input.uv);
-}
-@fragment
-fn fsLensScene(input:FullscreenOutput) -> @location(0) vec4<f32> {
-  // The lens source contains the logo, but is NEVER copied to the screen.
-  // The existing glass shader accesses it only inside warped tile coverage.
-  let photo=visiblePhotograph(input.uv);
-  let uv=(input.uv-logoRegion.bounds.xy)/logoRegion.bounds.zw;
-  if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){
-    return photo;
-  }
-  let overlay=textureSampleLevel(lensLogo,imageSampler,uv,0.0);
-  return vec4<f32>(mix(photo.rgb,overlay.rgb,overlay.a),1.0);
+fn fsScene(input: FullscreenOutput) -> @location(0) vec4<f32> {
+  let imageUV = (input.uv - vec2<f32>(0.5)) * state.fit.xy + vec2<f32>(0.5);
+  let native = textureSampleLevel(image, imageSampler, clamp(imageUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  // GAP PUBLIC-SCENE: precisely matches the preview's authored 12% gray
+  // overlay, not a recovered native Glass face-color matrix.
+  let veiled = mix(native.rgb, vec3<f32>(19.0/255.0,20.0/255.0,21.0/255.0), state.fit.z);
+  return vec4<f32>(veiled, 1.0);
 }

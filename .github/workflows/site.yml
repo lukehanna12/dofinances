@@ -32,8 +32,6 @@ jobs:
         run: node scripts/verify-readme-markdown-browser.mjs
       - name: Verify flat Collections controls in Chromium
         run: node scripts/verify-collections-glass-browser.mjs
-      - name: Verify Home glass actually refracts the uploaded logo
-        run: node scripts/verify-home-logo-webgpu-browser.mjs
       - name: Build site
         run: npm run build
       - name: Verify distribution

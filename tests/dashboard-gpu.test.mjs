@@ -11,8 +11,7 @@ globalThis.document={
   createElement:()=>({})
 };
 globalThis.window={};
-const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners,sceneViewportHeight,
-  lensLogoBounds} =
+const {makeTileFloatData,coverUVScale,selectModeForNormalizedCorners,sceneViewportHeight} =
   await import("../sites/_apex/app/assets/dashboard-gpu-renderer.js");
 const {nativePublicBlurRadius,observedBlurWord} =
   await import("../sites/_apex/app/assets/sidebar-glass-oracle.js");
@@ -183,44 +182,4 @@ test("SDF coverage follows native AIR f16 fwidth/div/saturate stages",()=>{
   assert.match(wgsl,/nativeHalf1\(fwidth\(signed\)\)/);
   assert.match(wgsl,/nativeHalf1\(-signed\/nativeWidth\)/);
   assert.match(wgsl,/nativeHalf1\(clamp\(0\.5\+signedRatio/);
-});
-
-test("uploaded logo is centered and covers 5.25 mosaic row pitches without distortion",()=>{
-  const bounds=lensLogoBounds(84,1440,856,256,235);
-  assert.ok(Math.abs(bounds[2]*1440-5.25*84)<1e-8);
-  assert.ok(Math.abs(bounds[3]*856-5.25*84*235/256)<1e-8);
-  assert.ok(Math.abs(bounds[0]+bounds[2]/2-.5)<1e-12);
-  assert.ok(Math.abs(bounds[1]+bounds[3]/2-.5)<1e-12);
-  const mobile=lensLogoBounds(32,390,800,256,235);
-  assert.ok(Math.abs(mobile[2]*390-5.25*32)<1e-8);
-  assert.ok(Math.abs(mobile[0]+mobile[2]/2-.5)<1e-12);
-  assert.throws(()=>lensLogoBounds(0,1440,856,256,235),TypeError);
-  assert.throws(()=>lensLogoBounds(84,1440,NaN,256,235),TypeError);
-});
-test("logo is mipmapped inside WebGPU lenses but never included in the displayed background",()=>{
-  const renderer=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-gpu-renderer.js",import.meta.url),"utf8");
-  const scene=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-gpu-scene.wgsl",import.meta.url),"utf8");
-  const glass=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
-  const logo=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-doof-lens-logo.webp",import.meta.url));
-  assert.equal(logo.subarray(0,4).toString("ascii"),"RIFF");
-  assert.equal(logo.subarray(8,12).toString("ascii"),"WEBP");
-  assert.equal(createHash("sha256").update(logo).digest("hex"),
-    "866b04abb7a1f5b4efb164213b9f51a4a5488b65117b7ec5b7eb158d0d9614a0");
-  assert.ok(renderer.includes('logoImage.src="/app/assets/dashboard-doof-lens-logo.webp"'));
-  assert.ok(renderer.includes('entryPoint:"fsLensScene"'));
-  assert.ok(renderer.includes('entryPoint:"fsScene"'));
-  assert.ok(renderer.includes("resource:visibleSceneView"),"Photo-only source feeds the display copy");
-  assert.ok(renderer.includes("resource:sceneView"),"Logo-bearing mip scene feeds glass");
-  assert.ok(renderer.includes("lensLogoBounds(pitchCSS,physicalWidth/dpr,"));
-  assert.ok(renderer.includes("logoWidthInGridRows:5.25,logoOnlyInRefraction:true"));
-  assert.ok(renderer.includes("visiblePass.setPipeline(backdropPipeline)"));
-  assert.ok(renderer.includes("lensPass.setPipeline(lensScenePipeline)"));
-  assert.ok(renderer.indexOf("visiblePass.draw(3)")<renderer.indexOf("lensPass.draw(3)"));
-  assert.ok(scene.includes("fn fsScene("));
-  assert.ok(scene.includes("fn fsLensScene("));
-  const displayFragment=scene.slice(scene.indexOf("fn fsScene("),scene.indexOf("fn fsLensScene("));
-  assert.doesNotMatch(displayFragment,/lensLogo|logoRegion|textureSampleLevel\(lensLogo/);
-  assert.ok(scene.includes("textureSampleLevel(lensLogo,imageSampler,uv,0.0)"));
-  assert.ok(glass.includes("mipSample(interactiveInnerUV,innerLOD)"));
-  assert.doesNotMatch(renderer,/document\.body\.append\(logo|backgroundImage.*logo/);
 });
