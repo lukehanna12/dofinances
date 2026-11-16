@@ -79,14 +79,14 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
    imported from ~/Desktop/font/Icons-Real/icons/Diagnostics Components/Battery,
    not recreated as CSS rectangles or browser-drawn approximate curves. */
 #diagnostics-root .dg-battery-layout{display:flex;align-items:center;gap:19px;min-width:0}
-#diagnostics-root .dg-battery-graphic{--dg-battery-tint:rgba(255,255,255,.9);position:relative;flex:0 1 280px;width:min(100%,280px);min-width:0;aspect-ratio:35.9904/16.024}
+#diagnostics-root .dg-battery-graphic{--dg-battery-tint:rgba(255,255,255,.9);position:relative;flex:0 1 200px;width:min(100%,200px);min-width:0;aspect-ratio:35.9904/16.024}
 #diagnostics-root .dg-battery-graphic[data-tone=charging]{--dg-battery-tint:var(--dg-good)}
 #diagnostics-root .dg-battery-graphic[data-tone=low]{--dg-battery-tint:var(--dg-danger)}
 #diagnostics-root .dg-battery-graphic[data-tone=low-power]{--dg-battery-tint:var(--dg-warning)}
 #diagnostics-root .dg-battery-outline,#diagnostics-root .dg-battery-fill{position:absolute;inset:0;pointer-events:none;mask-size:contain;mask-position:center;mask-repeat:no-repeat;-webkit-mask-size:contain;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat}
 #diagnostics-root .dg-battery-outline{background:#fff;mask-image:url("/app/assets/battery/battery.0percent.svg");-webkit-mask-image:url("/app/assets/battery/battery.0percent.svg")}
 #diagnostics-root .dg-battery-fill{background:var(--dg-battery-tint);mask-image:var(--dg-battery-fill-mask);-webkit-mask-image:var(--dg-battery-fill-mask)}
-#diagnostics-root .dg-battery-number{position:absolute;left:44.3%;top:50%;transform:translate(-50%,-50%);font-size:clamp(24px,3vw,36px);font-weight:650;letter-spacing:-.045em;color:#fff;text-shadow:0 1px 3px #000,0 0 7px #000;white-space:nowrap;line-height:1}
+#diagnostics-root .dg-battery-number{position:absolute;left:44.3%;top:50%;transform:translate(-50%,-50%);font-size:clamp(20px,2.4vw,27px);font-weight:650;letter-spacing:-.045em;color:#fff;text-shadow:0 1px 3px #000,0 0 7px #000;white-space:nowrap;line-height:1}
 #diagnostics-root .dg-battery-info{flex:1;min-width:120px}
 #diagnostics-root .dg-battery-state{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:560;margin:0 0 12px}
 #diagnostics-root .dg-battery-bolt-symbol{width:10px;height:16px;display:inline-block;flex:none;background:var(--dg-good);mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat;-webkit-mask:url("/app/assets/battery/battery.bolt.symbol.svg") center/contain no-repeat}
@@ -118,5 +118,5 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 @keyframes dg-spin{to{transform:rotate(360deg)}}
 @media(max-width:1100px){#diagnostics-root .dg-top{grid-template-columns:repeat(2,minmax(0,1fr))}#diagnostics-root .dg-battery-layout{flex-wrap:wrap}}
 @media(max-width:800px){#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-gateway-panel{grid-column:auto}#diagnostics-root .dg-controls-body{grid-template-columns:1fr}#diagnostics-root .dg-section-head{align-items:flex-start}}
-@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{justify-content:flex-start}#diagnostics-root .dg-battery-layout{flex-wrap:wrap;gap:8px}#diagnostics-root .dg-battery-graphic{width:100%;max-width:250px;flex:0 0 auto}#diagnostics-root .dg-battery-info{width:100%}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{justify-content:flex-start}#diagnostics-root .dg-battery-layout{flex-wrap:wrap;gap:8px}#diagnostics-root .dg-battery-graphic{width:100%;max-width:200px;flex:0 0 auto}#diagnostics-root .dg-battery-info{width:100%}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){#diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{animation:none!important;transition:none!important}}
