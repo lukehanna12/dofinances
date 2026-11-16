@@ -72,3 +72,22 @@ test("moving tile targeting updates without resetting existing springs",()=>{
   assert.ok(s.snapshot()[0].hover>.97);
   assert.throws(()=>s.retargetRects(new Float32Array(8)),TypeError);
 });
+
+test("corner-only hit mask leaves every perceptible tile hoverable",()=>{
+  const s=make();
+  const data=new Float32Array(2*TILE_FLOATS);
+  data.set([0,0,100,100],0);data.set([110,0,100,100],TILE_FLOATS);
+  s.move(35,35);settle(s);
+  const hoverBefore=s.snapshot()[0].hover;
+  s.retargetRects(data,new Uint8Array([1,0]));
+  assert.equal(s.focusedTile,-1,"Newly imperceptible corner must release hit");
+  assert.equal(s.snapshot()[0].hover,hoverBefore,"No spring-state reset");
+  assert.equal(s.move(35,35),-1,"No hit on fully gated corner");
+  assert.equal(s.move(150,40),1,"Other squares keep full pointer response");
+  s.retargetRects(data,new Uint8Array([0,0]));
+  assert.equal(s.move(35,35),0,"The same square reactivates when perceptible");
+  s.retargetRects(data);
+  assert.equal(s.move(150,40),1,"Legacy API remains fully interactive");
+  assert.throws(()=>s.retargetRects(data,new Uint8Array(1)),TypeError);
+  assert.throws(()=>s.retargetRects(data,new Float32Array(2)),TypeError);
+});

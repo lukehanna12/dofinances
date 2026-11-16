@@ -1,7 +1,8 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {TRACK_ROWS,TRACK_LANES,TRACK_SECONDS,TRACK_FADE_ROWS,TRACK_COLUMNS,
-  TRACK_CURVE_STRENGTH,trackCurve,phaseAtSeconds,trackPosition}
+  TRACK_CURVE_STRENGTH,TRACK_SIDE_EDGE_OPACITY,TRACK_SIDE_BULGE_ROWS,
+  trackCurve,trackSideOpacity,phaseAtSeconds,trackPosition}
   from "../sites/_apex/app/assets/dashboard-track.js";
 
 const near=(actual,expected,epsilon=1e-7)=>
@@ -141,4 +142,44 @@ test("bounded alpha, finite positions and fail-closed inputs",()=>{
   assert.throws(()=>trackPosition(-1,0),RangeError);
   assert.throws(()=>trackPosition(0,Infinity),RangeError);
   assert.throws(()=>phaseAtSeconds(-1),RangeError);
+});
+
+// The side fade remains anchored to screen slots, including when a different
+// moving row occupies that slot on the next phase of the same loop.
+test("permanent soft side gradients bow outward by 0.35 row pitches",()=>{
+  assert.equal(TRACK_SIDE_EDGE_OPACITY,.82);
+  assert.equal(TRACK_SIDE_BULGE_ROWS,.35);
+  for(const slot of [-1,-.5,0,1,2.5,4,5.5,6]){
+    for(let col=0;col<11;col++){
+      const opacity=trackSideOpacity(slot,col);
+      assert.ok(opacity>=.82&&opacity<=1);
+      near(opacity,trackSideOpacity(slot,10-col));
+      if(col===0||col===10)near(opacity,.82);
+      if(col>=3&&col<=7)near(opacity,1);
+    }
+    near(trackSideOpacity(slot,1),trackSideOpacity(5-slot,1));
+  }
+  assert.ok(trackSideOpacity(2.5,1)>trackSideOpacity(-1,1),
+    "Outward bow should keep the center sides clearer than their corners");
+  assert.ok(trackSideOpacity(2.5,9)>trackSideOpacity(6,9));
+  for(const col of [0,1,2,3,5,8,9,10]){
+    // Different moving rows sharing a visible slot have identical side fade.
+    const slot1=trackPosition(3,0,col).slot;
+    const slot2=trackPosition(4,1,col).slot;
+    near(slot1,slot2);
+    near(trackSideOpacity(slot1,col),trackSideOpacity(slot2,col));
+  }
+  assert.throws(()=>trackSideOpacity(7,0),RangeError);
+  assert.throws(()=>trackSideOpacity(0,11),RangeError);
+  assert.throws(()=>trackSideOpacity(NaN,5),RangeError);
+});
+test("old vertical fading and its invisible wrap endpoints are untouched",()=>{
+  for(let col=0;col<11;col++){
+    for(const slot of [-1,0,1,2.5,4,5,6])
+      assert.ok(Number.isFinite(trackSideOpacity(slot,col)));
+    near(trackPosition(0,1,col).opacity*trackSideOpacity(-1,col),0);
+    near(trackPosition(6,0,col).opacity*trackSideOpacity(6,col),0);
+    near(trackPosition(3,0,col).opacity,1);
+    if(col===5)near(trackSideOpacity(3,col),1);
+  }
 });

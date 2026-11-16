@@ -39,13 +39,17 @@ test("center-cover backdrop UV respects physical viewport and image aspect",()=>
 test("GPU loop uses the same DOM displacement and fade as shader geometry",()=>{
   const shader=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
   const renderer=fs.readFileSync(new URL("../sites/_apex/app/assets/dashboard-gpu-renderer.js",import.meta.url),"utf8");
-  assert.match(renderer,/interaction\.retargetRects\(tileData\)/);
+  assert.match(renderer,/interaction\.retargetRects\(tileData,cornerInert\)/);
   assert.match(renderer,/trackTiles\[i\]\.style\.transform/);
   assert.match(renderer,/trackTiles\[i\]\.style\.opacity/);
-  assert.match(renderer,/trackOpacity\[i\]=pos\.opacity/);
+  assert.match(renderer,/trackOpacity\[i\]=combinedOpacity/);
+  assert.match(renderer,/combinedOpacity=pos\.opacity\*sideOpacity/);
+  assert.match(renderer,/sideOpacity=trackSideOpacity\(pos\.slot,trackColumns\[i\]\)/);
+  assert.match(renderer,/cornerInert\[i\]=sideOpacity<0\.9999&&combinedOpacity<0\.025\?1:0/);
+  assert.match(renderer,/trackTiles\[i\]\.style\.opacity=combinedOpacity\.toFixed\(5\)/);
   assert.match(renderer,/trackColumns=all\.map\(cell=>columnIndex\.get\(cell\)\)/);
   assert.match(renderer,/trackPosition\(trackRows\[i\],phase,trackColumns\[i\]\)/);
-  assert.match(renderer,/fadeContours:"upper convex, lower concave"/);
+  assert.match(renderer,/fadeContours:"upper convex, lower concave; permanent outward-bowed left\/right"/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+18\]=trackOpacity\[i\]/);
   assert.match(renderer,/TRACK_FRAME_INTERVAL=1000\/30/);
   assert.match(shader,/coverage\*in\.introAlpha\*clamp\(tile\.motion\.z,0\.0,1\.0\)/);

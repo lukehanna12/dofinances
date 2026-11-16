@@ -21,7 +21,7 @@ import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
-import {TRACK_SECONDS,phaseAtSeconds,trackPosition} from "./dashboard-track.js";
+import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -354,7 +354,7 @@ async function initialize(){
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
   let trackTiles=[],trackRows=[],trackColumns=[],baseTileY=new Float32Array(0),
-    pitchCSS=0,trackOpacity=new Float32Array(0);
+    pitchCSS=0,trackOpacity=new Float32Array(0),cornerInert=new Uint8Array(0);
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
   function writeUniform(){
@@ -468,6 +468,7 @@ async function initialize(){
     const data=makeTileFloatData(all,dpr,sceneTop);
     baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
     trackOpacity=new Float32Array(all.length);
+    cornerInert=new Uint8Array(all.length);
     tileCount=all.length;audit.tiles=tileCount;
     interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
     interaction.writeTo(data);
@@ -535,19 +536,24 @@ async function initialize(){
       const pos=trackPosition(trackRows[i],phase,trackColumns[i]);
       const dy=pos.deltaRows*pitchCSS;
       tileData[i*TILE_FLOATS+1]=baseTileY[i]+dy*dpr;
-      trackOpacity[i]=pos.opacity;
+      const sideOpacity=trackSideOpacity(pos.slot,trackColumns[i]);
+      const combinedOpacity=pos.opacity*sideOpacity;
+      trackOpacity[i]=combinedOpacity;
+      // Only nearly imperceptible squares in the deep side corners stop
+      // receiving cursor hits. Everywhere else, hover/press stays unchanged.
+      cornerInert[i]=sideOpacity<0.9999&&combinedOpacity<0.025?1:0;
       // Actual DOM SVG icons and GPU glass share the same CPU frame.
       // Only transform/opacity change; the underlying grid does not move.
       trackTiles[i].style.transform="translate3d(0,"+dy.toFixed(3)+"px,0)";
-      trackTiles[i].style.opacity=pos.opacity.toFixed(5);
-      if(pos.opacity<.9999)fading++;
+      trackTiles[i].style.opacity=combinedOpacity.toFixed(5);
+      if(combinedOpacity<.9999)fading++;
     }
     // Hover targets follow the moving glass instead of static grid slots.
-    interaction.retargetRects(tileData);
+    interaction.retargetRects(tileData,cornerInert);
     audit.track={
       running:trackRunning,phase,elapsed:trackSeconds,
       cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
-      fadeContours:"upper convex, lower concave",
+      fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
       fadedTiles:fading
     };
   }
