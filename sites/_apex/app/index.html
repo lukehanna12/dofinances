@@ -456,14 +456,14 @@
           </div>
         </section>
         <section class="view project-view rm-view" data-view="project/readme" hidden aria-labelledby="readme-title">
-          <div class="rm-heading"><div><p id="rm-project-label" class="rm-overline">PROJECT README</p><h1 id="readme-title">README</h1><p id="rm-repository-label" class="rm-repository-label">Loading project…</p></div></div>
-          <div class="rm-toolbar" aria-label="README tools">
-            <div class="rm-toolbar-start"><span class="rm-control-wrap">
-              <button type="button" id="rm-diff" class="rm-icon-button rm-diff-button" aria-label="Show README changes" aria-pressed="false" hidden><img src="/app/assets/readme-diff-text-page.v1.svg" alt="" aria-hidden="true"><span>Diff</span></button>
-              <span class="rm-tooltip" role="tooltip">Highlight changes</span></span></div>
-            <div class="rm-toolbar-end">
-              <span class="rm-control-wrap"><button type="button" id="rm-confirm" class="rm-icon-button rm-confirm" aria-label="Save README" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg></button><span class="rm-tooltip" role="tooltip">Confirm and save changes</span></span>
-              <span class="rm-control-wrap rm-edit-surround"><button type="button" id="rm-edit" class="rm-icon-button" aria-label="Edit README" aria-keyshortcuts="Meta+Shift+E"><img class="rm-edit-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"><svg class="rm-cancel-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button><span id="rm-edit-tooltip" class="rm-tooltip" role="tooltip">Edit README · ⇧⌘E</span></span>
+          <div class="rm-heading">
+            <div class="rm-heading-text"><p id="rm-project-label" class="rm-overline">PROJECT README</p><h1 id="readme-title">README</h1><p id="rm-repository-label" class="rm-repository-label">Loading project…</p></div>
+            <div class="rm-toolbar" aria-label="README tools">
+              <div class="rm-toolbar-end">
+                <span class="rm-control-wrap rm-diff-control"><button type="button" id="rm-diff" class="rm-icon-button rm-diff-button" aria-label="Show README changes" aria-describedby="rm-diff-tooltip" aria-pressed="false" hidden><img src="/app/assets/readme-diff-text-page.v1.svg" alt="" aria-hidden="true"></button><span id="rm-diff-tooltip" class="rm-tooltip" role="tooltip">Show or hide changes</span></span>
+                <span class="rm-control-wrap"><button type="button" id="rm-confirm" class="rm-icon-button rm-confirm" aria-label="Save README" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.4 4.4L19 7.4"/></svg></button><span class="rm-tooltip" role="tooltip">Confirm and save changes</span></span>
+                <span class="rm-control-wrap rm-edit-surround"><button type="button" id="rm-edit" class="rm-icon-button" aria-label="Edit README" aria-keyshortcuts="Meta+Shift+E"><img class="rm-edit-glyph" src="/app/assets/edit-collections.v1.svg" alt="" aria-hidden="true"><svg class="rm-cancel-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button><span id="rm-edit-tooltip" class="rm-tooltip" role="tooltip">Edit README · ⇧⌘E</span></span>
+              </div>
             </div>
           </div>
           <p id="rm-notice" class="rm-notice" role="status" aria-live="polite" hidden></p>

@@ -142,6 +142,24 @@ test("README editing offers larger Collections-style controls, live preview, dif
  assert.deepEqual(makeReadmeDiff("same","same"),[]);
 });
 
+test("Docs document starts close to the repository label and Diff sits beside Save",()=>{
+ const heading=html.slice(html.indexOf('<div class="rm-heading">'),html.indexOf('<p id="rm-notice"'));
+ assert.ok(heading.includes('id="rm-repository-label"'));
+ assert.ok(heading.includes('class="rm-toolbar"'),"Toolbar shares heading row rather than adding vertical space");
+ assert.ok(heading.indexOf('id="rm-diff"')<heading.indexOf('id="rm-confirm"'));
+ assert.ok(heading.indexOf('id="rm-confirm"')<heading.indexOf('id="rm-edit"'));
+ assert.ok(!heading.includes('<span>Diff</span>'),"Diff is an icon-only control");
+ assert.ok(heading.includes('aria-describedby="rm-diff-tooltip"'));
+ assert.ok(heading.includes('id="rm-diff-tooltip" class="rm-tooltip" role="tooltip"'));
+ assert.ok(css.includes('row-gap:8px;margin-bottom:12px'));
+ assert.ok(css.includes('.rm-toolbar{display:flex;flex:0 0 auto;'));
+ assert.ok(css.includes('.rm-toolbar-end{display:flex;align-items:center;gap:8px}'));
+ assert.ok(css.includes('.rm-diff-button{width:34px;height:34px;min-width:0;'));
+ assert.ok(css.includes('border:1px solid transparent;border-radius:999px;'));
+ assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]'));
+ assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
+});
+
 test("GitHub visual defaults, three per-project styles and unsafe HTML rebuilding",()=>{
  assert.ok(html.includes('class="rm-reading markdown-body"'));
  assert.ok(html.includes('class="rm-reading markdown-body" data-theme="dark" contenteditable="false"'));
