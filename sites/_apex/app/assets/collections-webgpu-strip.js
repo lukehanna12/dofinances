@@ -172,9 +172,21 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       }
       device.addEventListener?.("uncapturederror",event=>{
         (audit.gpuErrors??=[]).push(String(event.error?.message||event.error||"unknown"));
+        audit.status="fallback";
+        canvas.hidden=true;
       });
+      device.pushErrorScope("validation");
       const renderModule=device.createShaderModule({label:"Oracle-bounded Clear strip",code:shaders[0]});
       const mipModule=device.createShaderModule({label:"Browser image mip reduction",code:shaders[1]});
+      // A successful createShaderModule call does NOT certify valid WGSL.
+      // Check the actual browser compiler before attempting any GPU render.
+      for(const module of [renderModule,mipModule]){
+        if(typeof module.getCompilationInfo!=="function")continue;
+        const info=await module.getCompilationInfo();
+        const issues=info.messages.filter(item=>item.type==="error");
+        if(issues.length)throw Error("WebGPU shader failed to compile: "+
+          issues.map(item=>item.message).join("; "));
+      }
       pipeline=device.createRenderPipeline({
         layout:"auto",vertex:{module:renderModule,entryPoint:"vs"},
         fragment:{module:renderModule,entryPoint:"fs",
@@ -211,6 +223,9 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
         pass.end();
       }
       device.queue.submit([encoder.finish()]);
+      const gpuValidation=await device.popErrorScope();
+      if(gpuValidation)throw Error("WebGPU mip generation failed: "+
+        gpuValidation.message);
       const sampler=device.createSampler({
         magFilter:"linear",minFilter:"linear",mipmapFilter:"linear",
         addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
@@ -225,6 +240,9 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
         ]
       });
       audit.mipCount=levels;
+      // Run-time source evidence, never an unconditional success claim.
+      if(audit.gpuErrors?.length)
+        throw Error("WebGPU initialization emitted validation errors: "+audit.gpuErrors.join("; "));
       audit.status="ready";
       device.lost.then(info=>{if(!disposed){
         audit.status="device-lost";

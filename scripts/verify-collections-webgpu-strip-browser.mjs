@@ -124,6 +124,8 @@ try{
   await pause(100);
  }
  assert.equal(state.gpu,true);
+ assert.deepEqual(state.a.gpuErrors||[],[],
+   "No WGSL compilation, pipeline or command-submission errors are acceptable");
  assert.equal(state.visible,true);
  assert.equal(state.bounds.x,0);
  assert.ok(Math.abs(state.bounds.w-1200)<20,"Strip spans the viewport");
