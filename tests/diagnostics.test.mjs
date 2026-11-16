@@ -56,7 +56,19 @@ test("Native Apple battery assets keep their original CoreSVG geometry and seman
  assert.match(css,/battery\.bolt\.symbol\.svg/);
  assert.match(js,/battery\.fill\./);
  assert.match(js,/batteryGraphic\(m\)/);
- assert.match(js,/Charge level, not battery health/);
+ assert.doesNotMatch(js,/Charge level, not battery health or maximum capacity/);
+ assert.doesNotMatch(js,/\["Power source",m\.battery_power_source/);
+ assert.doesNotMatch(js,/\["Charging",m\.battery_charging/);
+ assert.doesNotMatch(js,/visual\.charging\?"Charging"/);
+ assert.match(css,/--dg-panel-bg:#111/);
+ assert.match(css,/-webkit-text-stroke:2px var\(--dg-panel-bg\)/);
+ assert.match(css,/font-size:clamp\(40px,4\.8vw,54px\)/);
+ assert.match(css,/text-shadow:none/);
+ assert.match(css,/\.dg-battery-bolt-symbol\{position:absolute;z-index:1/);
+ assert.match(css,/\.dg-battery-number\{position:absolute;z-index:2/);
+ assert.match(js,/if\(charging\)glyph\.append\(make\("span","dg-battery-bolt-symbol"\)\)/);
+ assert.ok(js.indexOf('if(charging)glyph.append(make("span","dg-battery-bolt-symbol"))')<
+           js.indexOf('glyph.append(make("strong","dg-battery-number"'),"Bolt must be behind numerical charge");
 });
 
 test("Diagnostics initializes an on-demand, owner-gated system.status client",async()=>{

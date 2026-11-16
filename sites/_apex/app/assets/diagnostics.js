@@ -129,26 +129,17 @@ function batteryGraphic(m){
    glyph.append(fill);
   }
  }
+ if(charging)glyph.append(make("span","dg-battery-bolt-symbol"));
  glyph.append(make("strong","dg-battery-number",pct===null?"—":quantity(pct,0)+"%"));
  return {glyph,pct,charging};
 }
 function renderLocal(report){
  const host=clear("dg-local"),local=sectionOf(report,"local"),m=findGatewayMetrics(local);
- const battery=panel("Mac · battery",m?.battery_status==="reported"?"Charge level":"Status unavailable");
+ const battery=panel("Mac · battery");
  battery.classList.add("dg-battery-panel");
  if(m&&typeof m.battery_percent==="number"&&Number.isFinite(m.battery_percent)){
-  const visual=batteryGraphic(m),layout=make("div","dg-battery-layout");
-  layout.append(visual.glyph);
-  const details=make("div","dg-battery-info");
-  const state=make("div","dg-battery-state");
-  if(visual.charging)state.append(make("span","dg-battery-bolt-symbol"));
-  state.append(make("span","",visual.charging?"Charging":m.battery_state||"Charge available"));
-  details.append(state,pairs([
-   ["Power source",m.battery_power_source||"—"],
-   ["Charging",m.battery_charging===true?"Yes":m.battery_charging===false?"No":"—"]
-  ]));
-  layout.append(details);battery.append(layout);
-  battery.append(make("p","dg-footnote","Charge level, not battery health or maximum capacity."));
+  const visual=batteryGraphic(m);
+  battery.append(visual.glyph);
  }else battery.append(make("p","dg-small","Battery charge unavailable from this diagnostic check."));
  host.append(battery);
  const storage=panel("Mac · storage",m?.storage_status==="reported"?"Internal drive":"Status unavailable");
