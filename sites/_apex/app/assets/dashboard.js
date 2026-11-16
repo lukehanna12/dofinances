@@ -12,7 +12,6 @@ import {initCloudflareConnection} from "./cloudflare-settings.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
 import {initColosseumProviders} from "./providers.js";
 import {initColosseumCollections} from "./collections.js";
-import {initCollectionsWebGPUStrip} from "./collections-webgpu-strip.js";
 import {initColosseumUtilities} from "./utilities.js";
 import {initColosseumPermissions} from "./permissions.js";
 initWorkspaceNavigation();
@@ -21,8 +20,6 @@ initCloudflareConnection();
 initColosseumDiagnostics();
 initColosseumProviders();
 initColosseumCollections();
-// Route-scoped lazy GPU strip: photograph input never depends on the sidebar.
-initCollectionsWebGPUStrip();
 initColosseumUtilities();
 initColosseumPermissions();
 
