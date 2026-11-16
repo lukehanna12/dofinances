@@ -121,11 +121,11 @@ test("Home title rises exactly half a responsive mosaic square without moving th
   assert.match(css,/\.dashboard-home \.cta6-mosaic\{[\s\S]*?grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/);
 });
 
-test("See Projects uses reversed dark/light fill and explicit white arrow, including on hover and visited links",()=>{
+test("See Projects has a borderless black surface with exact inset shadow and a white arrow",()=>{
   const css=asset("dashboard-home.css"),html=read("index.html");
-  assert.match(css,/\.dashboard-home \.cta6-action\{[\s\S]*?background:rgba\(24,28,32,\.97\);\s*color:#fff;/);
+  assert.match(css,/\.dashboard-home \.cta6-action\{[\s\S]*?background:#000;\s*color:#fff;\s*border:0;\s*box-shadow:rgba\(255, 255, 255, 0\.2\) 0px 0px 1px inset;/);
   assert.match(css,/\.dashboard-home \.cta6-action svg\{color:#fff;stroke:#fff\}/);
   assert.match(css,/\.dashboard-home \.cta6-action:visited\{color:#fff\}/);
-  assert.match(css,/\.dashboard-home \.cta6-action:hover\{\s*background:#30363c;/);
+  assert.match(css,/\.dashboard-home \.cta6-action:hover\{\s*background:#000;\s*transform:scale\(1\.03\);\s*box-shadow:rgba\(255, 255, 255, 0\.2\) 0px 0px 1px inset;/);
   assert.match(html,/<a class="cta6-action" href="#projects">See Projects <svg[^>]*stroke="currentColor"/);
 });
