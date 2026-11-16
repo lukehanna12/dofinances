@@ -15,10 +15,9 @@
 import {workspaceWallpaperForRoute} from "./workspace-wallpapers.js";
 import {projectThinRectClearInputs,CLEAR_OBSERVED_128_84} from "./collections-glass-public-clear.js";
 import {airTextureMipLOD} from "./sidebar-glass-oracle.js";
+import {createCollectionsGlassTuner,collectionsGlassTuningUniforms} from "./collections-glass-tuner.js";
 
 export const COLLECTIONS_STRIP_FRACTION=7/16; // 43.75%, exactly.
-// Site-authored achromatic adjustment only for this strip, not a native Clear input.
-export const COLLECTIONS_STRIP_BRIGHTNESS=.80;
 export function collectionsStripGeometry(shellTop,summaryTop,bannerHeight){
   if(![shellTop,summaryTop,bannerHeight].every(Number.isFinite)||bannerHeight<0)
     throw new TypeError("Finite shell, line-box and banner coordinates required");
@@ -83,8 +82,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     oracleScope:"finite-public-Clear-thin-rect-25F80-M2-G14G",
     nativeGeometryScope:"16-23pt height, straight .rect, dark untinted, CAFilter-only",
     faceFillProjection:"white input RGBA(1,1,1,0.05); browser face equation provisional",
-    tint:"none",material:"recorded-public-Clear-face/inner-only",
-    browserBrightness:COLLECTIONS_STRIP_BRIGHTNESS,
+    tint:"user-controlled-browser-preview",material:"recorded-public-Clear-face/inner-only + temporary display controls",
     nativeFaceInputs:[CLEAR_OBSERVED_128_84.faceBlack,CLEAR_OBSERVED_128_84.faceWhite,
       CLEAR_OBSERVED_128_84.faceFillWhiteAlpha],
     mipKernel:"authored-2x2-rgba16float-browser-approximation",
@@ -98,6 +96,13 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
   let uniform=null,imageData=null,booting=false,frame=0,dpr=1,lastPxW=0,lastPxH=0;
   let userX=-1e6,userHover=0,hoverGoal=0,pressed=0,readbackBusy=false;
   let geometry=null;
+  const tuner=createCollectionsGlassTuner({doc,win,onChange:value=>{
+    audit.tuning=value;
+    // CI readback must use freshly submitted pixels after each adjustment.
+    if(pixelCI){audit.gpuPixel=null;audit.gpuSamples=null;}
+    request();
+  }});
+  audit.tuning=tuner.value;
   const viewportWidth=()=>Math.max(1,doc.documentElement.clientWidth||win.innerWidth);
   const banner=()=>parseFloat(win.getComputedStyle(shell).getPropertyValue("--workspace-banner-height"))||202.65625;
   const overpull=()=>parseFloat(win.getComputedStyle(shell).getPropertyValue("--workspace-top-overpull"))||96;
@@ -112,6 +117,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
   };
   function sync(){
     if(disposed)return;
+    tuner.setVisible(active());
     if(!active()){
       canvas.hidden=true;
       if(frame)win.cancelAnimationFrame(frame);
@@ -265,7 +271,8 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
         magFilter:"linear",minFilter:"linear",mipmapFilter:"linear",
         addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
       });
-      uniform=device.createBuffer({size:64,
+      // Six vec4<f32> uniforms: original four + tuning + user-selected tint.
+      uniform=device.createBuffer({size:96,
         usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
       group=device.createBindGroup({
         layout:pipeline.getBindGroupLayout(0),entries:[
@@ -279,14 +286,17 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       if(audit.gpuErrors?.length)
         throw Error("WebGPU initialization emitted validation errors: "+audit.gpuErrors.join("; "));
       audit.status="ready";
+      tuner.setPreviewStatus("ready");
       device.lost.then(info=>{if(!disposed){
         audit.status="device-lost";
+        tuner.setPreviewStatus("device-lost");
         audit.deviceLostReason=info?.reason||"unknown";
         audit.deviceLostMessage=info?.message||"";
         canvas.hidden=true;
       }});
     }catch(error){
       audit.status="fallback";audit.error=String(error);
+      tuner.setPreviewStatus("fallback");
       canvas.hidden=true;
       texture?.destroy();texture=null;
       photoTexture?.destroy();photoTexture=null;
@@ -315,7 +325,8 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
       crop.left,crop.top,crop.width,crop.height,
       rect.top,upper,dpr,geometry.height,
       projected.amount,projected.height,lod,.12,
-      userX,userHover,pressed,COLLECTIONS_STRIP_BRIGHTNESS
+      userX,userHover,pressed,0,
+      ...collectionsGlassTuningUniforms(tuner.value)
     ]);
     device.queue.writeBuffer(uniform,0,data);
     const encoder=device.createCommandEncoder();
@@ -393,6 +404,7 @@ export function initCollectionsWebGPUStrip({doc=document,win=window,wallpaperURL
     offscreen?.destroy();texture?.destroy();photoTexture?.destroy();
     uniform?.destroy();device?.destroy();
     canvas.remove();
+    tuner.dispose();
     try{delete win.__collectionsWebGPUStrip;}catch{}
   }};
 }
