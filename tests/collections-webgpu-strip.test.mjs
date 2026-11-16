@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {COLLECTIONS_STRIP_FRACTION,collectionsStripGeometry,wallpaperCover}
+import {COLLECTIONS_STRIP_FRACTION,COLLECTIONS_STRIP_BRIGHTNESS,
+  collectionsStripGeometry,wallpaperCover}
  from "../sites/_apex/app/assets/collections-webgpu-strip.js";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("Collections black-to-summary gap is measured, with precisely 43.75% occupied",()=>{
@@ -14,6 +15,21 @@ test("Collections black-to-summary gap is measured, with precisely 43.75% occupi
   }
   assert.equal(collectionsStripGeometry(0,100,200).height,0);
   assert.throws(()=>collectionsStripGeometry(NaN,200,30),TypeError);
+});
+test("Collections strip is 20% darker by an explicit neutral, strip-only browser gain",()=>{
+  assert.equal(COLLECTIONS_STRIP_BRIGHTNESS,.80);
+  const js=read("sites/_apex/app/assets/collections-webgpu-strip.js");
+  const wgsl=read("sites/_apex/app/assets/collections-webgpu-strip.wgsl");
+  assert.ok(js.includes("userX,userHover,pressed,COLLECTIONS_STRIP_BRIGHTNESS"));
+  assert.ok(js.includes("browserBrightness:COLLECTIONS_STRIP_BRIGHTNESS"));
+  assert.ok(wgsl.includes("let darker=color*state.pointer.w"));
+  assert.ok(wgsl.includes("return vec4<f32>(darker*coverage,coverage)"));
+  assert.ok(wgsl.includes("NOT an observed Apple material parameter"));
+  for(const intensity of [0,0.04,0.25,0.5,1]){
+    const darkened=intensity*COLLECTIONS_STRIP_BRIGHTNESS;
+    assert.ok(darkened<=intensity);
+    assert.equal(darkened,intensity*.8);
+  }
 });
 test("Underlying wallpaper cover crop uses viewport width and fixed image plane, not sidebar",()=>{
   const a=wallpaperCover(1280,298.65625,1600,900,.45);
