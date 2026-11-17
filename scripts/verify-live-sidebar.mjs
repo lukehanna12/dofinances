@@ -467,7 +467,7 @@ try{
   }
   const linkGeometry=await evaluate(String.raw`(()=>{
     const shell=document.querySelector(".sidebar").getBoundingClientRect();
-    return [...document.querySelectorAll(".sidebar-navigation .nav-link")]
+    return [...document.querySelectorAll(".sidebar-navigation .nav-link, .sidebar-bottom > .nav-link")]
       .filter(link=>link.getClientRects().length).map(link=>{
         const row=link.getBoundingClientRect();
         const icon=link.querySelector(".nav-icon").getBoundingClientRect();
