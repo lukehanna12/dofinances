@@ -49,7 +49,10 @@ test("All Diagnostics circular gauges and usage tracks animate from unfilled to 
  assert.ok(css.includes('.dg-card-ring.dg-ring-loading{animation:none;--dg-ring-percent:0}'));
  assert.ok(css.includes('@keyframes dg-bar-arrive{from{width:0}to{width:var(--dg-bar-target,0%)}}'));
  assert.ok(diagnostics.includes('ring.style.setProperty("--dg-ring-target",String(Math.min(100,pct)))'));
- assert.ok(diagnostics.includes('bar.style.setProperty("--dg-bar-target"'));
+ assert.ok(diagnostics.includes('segment.style.setProperty("--dg-worker-share"'));
+ assert.ok(diagnostics.includes('column.style.setProperty("--dg-cpu-height"'));
+ assert.ok(css.includes('@keyframes dg-worker-share-arrive'));
+ assert.ok(css.includes('@keyframes dg-worker-cpu-arrive'));
  assert.ok(diagnostics.includes('entry.append(head,make("div","dg-progress dg-progress-placeholder"))'));
  assert.ok(diagnostics.includes('initialSkeletonReport();\n  reportLoading(true)'));
  assert.ok(diagnostics.includes('if(previous)renderReport(previous)'));

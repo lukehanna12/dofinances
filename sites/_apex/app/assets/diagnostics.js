@@ -97,28 +97,43 @@ function initialSkeletonReport(){
   });
   quotas.append(card);
  });
- const workers=clear("dg-workers"),scroll=make("div","dg-table-scroll"),table=make("table","dg-table dg-worker-table"),thead=make("thead"),head=make("tr"),body=make("tbody");
- ["Service · relative volume","Requests","Subrequests","CPU · p90 / p99"].forEach(name=>head.append(make("th","",name)));
- thead.append(head);
- for(let i=0;i<3;i++){
-  const row=make("tr"),service=make("td","dg-worker-cell"),header=make("div","dg-worker-service-top");
-  header.append(loadingLine(["63%","79%","52%"][i]),loadingLine("5ch"));
-  service.append(header,make("div","dg-worker-track"),make("div","dg-worker-legend"));
-  row.append(service);
-  for(let c=0;c<2;c++){
-   const td=make("td","dg-worker-metric"),top=make("div","dg-worker-metric-top");
-   top.append(loadingLine((4+(i+c)%3*2)+"ch"));
-   td.append(top,make("div","dg-worker-track"));row.append(td);
+ const workers=clear("dg-workers"),usage=make("div","dg-activity-usage");
+ for(const [name,i] of ["Request Usage","Subrequest Usage"].entries()){
+  const group=make("section","dg-usage-row"),head=make("div","dg-usage-head");
+  head.append(make("h3","dg-usage-title",name),
+   loadingLine(i?"6ch":"7ch","dg-usage-skeleton-total"));
+  const track=make("div","dg-usage-track dg-usage-track-skeleton");
+  track.setAttribute("aria-hidden","true");
+  for(const width of (i?[27,19,13,16,25]:[34,22,15,11,18])){
+   const part=make("span","site-skeleton dg-usage-skeleton-segment");
+   part.style.width=width+"%";track.append(part);
   }
-  const cpu=make("td","dg-worker-cpu");
-  for(let k=0;k<2;k++){
-   const segment=make("div","dg-worker-cpu-row"),top=make("div","dg-worker-cpu-head");
-   top.append(make("span","dg-worker-key",k?"p99":"p90"),loadingLine(k?"6ch":"5ch"));
-   segment.append(top,make("div","dg-worker-track dg-worker-cpu-track"));cpu.append(segment);
-  }
-  row.append(cpu);body.append(row);
+  group.append(head,track);usage.append(group);
  }
- table.append(thead,body);scroll.append(table);workers.append(scroll);
+ const legend=make("div","dg-activity-legend dg-activity-legend-skeleton");
+ legend.setAttribute("aria-label","Worker color key");
+ for(let i=0;i<5;i++){
+  const key=make("div","dg-activity-key"),dot=make("span","site-skeleton dg-activity-dot");
+  dot.setAttribute("aria-hidden","true");
+  key.append(dot,loadingLine((5+(i*3)%7)+"ch"));legend.append(key);
+ }
+ const comparison=make("div","dg-cpu-comparison");
+ for(const name of ["p90","p99"]){
+  const chart=make("section","dg-cpu-chart"),head=make("div","dg-cpu-chart-head");
+  head.append(make("h3","dg-cpu-chart-title","CPU "+name),
+   loadingLine("5ch","dg-cpu-scale-placeholder"));
+  const plot=make("div","dg-cpu-plot dg-cpu-plot-skeleton");
+  plot.setAttribute("aria-hidden","true");
+  for(let i=0;i<5;i++){
+   const column=make("div","dg-cpu-column"),slot=make("div","dg-cpu-column-slot");
+   slot.append(loadingLine("3ch","dg-cpu-loading-value"));
+   const bar=make("span","site-skeleton dg-cpu-loading-bar");
+   bar.style.height=[45,92,68,110,57][(i+(name==="p99"?2:0))%5]+"px";
+   slot.append(bar);column.append(slot);plot.append(column);
+  }
+  chart.append(head,plot);comparison.append(chart);
+ }
+ workers.append(usage,legend,comparison);
  const local=clear("dg-local"),mac=panel("Mac"),macSummary=make("div","dg-mac-summary"),storage=make("div","dg-mac-storage-reading");
  mac.classList.add("dg-storage-panel");
  storage.append(loadingLine("8ch","dg-skeleton-storage"),loadingLine("16ch","dg-skeleton-note"));
@@ -166,83 +181,99 @@ function renderQuotas(report){
   host.append(p);
  }
 }
-// Worker volume and CPU percentiles have independent units/scales. A missing
-// reading is unknown, never a synthetic zero or a filled segment.
+// Every color identifies one WORKER, never a metric type. The first five
+// hues are sampled from the reference legend; alphabetical assignment keeps
+// identity stable when request volume changes between observations.
+const workerPalette=[
+ "#eb534e","#f09748","#f8d849","#68ce67","#808080",
+ "#939393","#6aaee6","#af92d9","#4ac4b6","#e38ea5",
+ "#b6a274","#779dcd","#c67bb1","#5fb49a","#a7ad5a","#cf7f64"
+];
+const workerColor=index=>workerPalette[index]||
+ "hsl("+((index-workerPalette.length)*137.508+22)%360+" 68% 64%)";
 const workerReading=n=>typeof n==="number"&&Number.isFinite(n)&&n>=0?n:null;
-function workerTrack(segments,label,extra=""){
- const track=make("div","dg-worker-track"+(extra?" "+extra:""));
- track.setAttribute("role","img");track.setAttribute("aria-label",label);
- for(const [kind,value,scale] of segments){
-  if(value===null)continue;
-  const bar=make("span","dg-worker-bar");
-  bar.dataset.kind=kind;bar.setAttribute("aria-hidden","true");
-  bar.style.setProperty("--dg-bar-target",(100*value/scale)+"%");
-  track.append(bar);
+function activityUsageRow(name,metric,workers){
+ const section=make("section","dg-usage-row"),head=make("div","dg-usage-head");
+ const readings=workers.map(w=>({worker:w,value:workerReading(w.metrics?.[metric])}));
+ const known=readings.filter(r=>r.value!==null),sum=known.reduce((total,r)=>total+r.value,0);
+ const missing=readings.length-known.length,reported=known.length>0;
+ const totalText=!reported?"—":integer(sum)+(missing?" reported":"")+" "+(metric==="requests"?"requests":"subrequests");
+ head.append(make("h3","dg-usage-title",name),make("strong","dg-usage-total",totalText));
+ const track=make("div","dg-usage-track");
+ track.setAttribute("role","img");
+ track.setAttribute("aria-label",name+": "+(reported?integer(sum)+" reported across "+
+   known.length+" workers"+(missing?"; "+missing+" unavailable":""):"unavailable"));
+ if(reported&&sum>0){
+  readings.forEach(({worker,value})=>{
+   if(value===null||value<=0)return;
+   const segment=make("span","dg-usage-segment");
+   segment.style.setProperty("--dg-worker-color",worker.color);
+   segment.style.setProperty("--dg-worker-share",(100*value/sum)+"%");
+   segment.dataset.worker=worker.name;
+   segment.setAttribute("aria-hidden","true");
+   segment.title=worker.name+" · "+integer(value)+" "+(metric==="requests"?"requests":"subrequests");
+   track.append(segment);
+  });
  }
- return track;
+ section.append(head,track);
+ return section;
 }
-function workerMetricCell(kind,value,scale){
- const cell=make("td","dg-worker-metric"),top=make("div","dg-worker-metric-top");
- top.append(make("span","dg-worker-key dg-worker-key-"+kind,kind==="requests"?"Requests":"Subrequests"),
-  make("strong","dg-worker-metric-value",integer(value)));
- const label=kind==="requests"?"Requests":"Subrequests";
- cell.append(top,workerTrack([[kind,value,scale]],
-  label+": "+integer(value)+"; relative to highest reported "+label.toLowerCase()));
- return cell;
+function activityLegend(workers){
+ const legend=make("div","dg-activity-legend");
+ legend.setAttribute("aria-label","Worker color key");
+ for(const worker of workers){
+  const key=make("span","dg-activity-key"),dot=make("span","dg-activity-dot");
+  dot.style.setProperty("--dg-worker-color",worker.color);
+  dot.setAttribute("aria-hidden","true");
+  key.append(dot,make("span","dg-activity-key-name",worker.name));
+  legend.append(key);
+ }
+ return legend;
 }
-function workerCpuRow(percentile,value,scale){
- const kind=percentile==="p90"?"requests":"subrequests";
- const row=make("div","dg-worker-cpu-row"),head=make("div","dg-worker-cpu-head");
- head.append(make("span","dg-worker-key dg-worker-key-"+kind,percentile),
-  make("strong","dg-worker-cpu-reading",value===null?"—":quantity(value,2)+" ms"));
- row.append(head,workerTrack([[kind,value,scale]],
-  "CPU "+percentile+": "+(value===null?"unavailable":quantity(value,2)+" ms")+
-  "; same millisecond scale for p90 and p99","dg-worker-cpu-track"));
- return row;
+function cpuComparisonChart(percentile,workers,maxCpu){
+ const chart=make("section","dg-cpu-chart"),head=make("div","dg-cpu-chart-head");
+ const title=make("h3","dg-cpu-chart-title","CPU "+percentile);
+ const axis=make("span","dg-cpu-chart-scale",maxCpu===null?"No CPU readings":"0–"+quantity(maxCpu,2)+" ms");
+ head.append(title,axis);
+ const scroll=make("div","dg-cpu-scroll"),plot=make("div","dg-cpu-plot");
+ plot.setAttribute("role","group");
+ plot.setAttribute("aria-label","CPU "+percentile+" by worker in milliseconds");
+ for(const worker of workers){
+  const us=workerReading(worker.metrics?.["cpu_time_"+percentile+"_us"]);
+  const ms=us===null?null:us/1000;
+  const column=make("div","dg-cpu-column"),slot=make("div","dg-cpu-column-slot");
+  const label=ms===null?"—":quantity(ms,2)+" ms";
+  const value=make("span","dg-cpu-value",label);
+  column.style.setProperty("--dg-cpu-height",(ms===null||maxCpu===null?0:100*ms/maxCpu)+"%");
+  column.style.setProperty("--dg-worker-color",worker.color);
+  column.setAttribute("role","img");
+  column.setAttribute("aria-label",worker.name+": CPU "+percentile+" "+(ms===null?"unavailable":label));
+  column.title=worker.name+" · CPU "+percentile+" · "+label;
+  const fill=make("span","dg-cpu-fill"+(ms===null?" dg-cpu-unavailable":""));
+  fill.setAttribute("aria-hidden","true");
+  slot.append(value,fill);column.append(slot);plot.append(column);
+ }
+ scroll.append(plot);chart.append(head,scroll);
+ return chart;
 }
 function renderWorkers(report){
- const host=clear("dg-workers"),workers=sectionOf(report,"workers");
- if(!workers||workers.status==="unavailable"){host.append(make("div","dg-empty",missing("workers")));return;}
- const entries=Object.entries(workers.by_worker||{})
-  .sort((a,b)=>(workerReading(b[1]?.requests)||0)-(workerReading(a[1]?.requests)||0));
+ const host=clear("dg-workers"),section=sectionOf(report,"workers");
+ if(!section||section.status==="unavailable"){host.append(make("div","dg-empty",missing("workers")));return;}
+ const entries=Object.entries(section.by_worker||{}).sort(([a],[b])=>a.localeCompare(b));
  if(!entries.length){host.append(make("div","dg-empty","No Worker activity reported in this window."));return;}
- // The segmented service strip compares two reported count categories.
- // Subrequests are not additional unique top-level requests.
- const combined=v=>(workerReading(v?.requests)||0)+(workerReading(v?.subrequests)||0);
- const maxVolume=Math.max(1,...entries.map(([,v])=>combined(v)));
- const maxRequests=Math.max(1,...entries.map(([,v])=>workerReading(v?.requests)||0));
- const maxSubrequests=Math.max(1,...entries.map(([,v])=>workerReading(v?.subrequests)||0));
- const maxCpu=Math.max(.001,...entries.flatMap(([,v])=>
-  [workerReading(v?.cpu_time_p90_us),workerReading(v?.cpu_time_p99_us)]
-   .filter(n=>n!==null).map(n=>n/1000)));
- const wrap=make("div","dg-table-scroll"),table=make("table","dg-table dg-worker-table"),
-  thead=make("thead"),header=make("tr");
- ["Service · relative volume","Requests","Subrequests","CPU · p90 / p99"]
-  .forEach(label=>header.append(make("th","",label)));
- thead.append(header);
- const body=make("tbody");
- entries.forEach(([name,v])=>{
-  const requests=workerReading(v?.requests),subrequests=workerReading(v?.subrequests);
-  const p90=workerReading(v?.cpu_time_p90_us),p99=workerReading(v?.cpu_time_p99_us);
-  const activityKnown=requests!==null||subrequests!==null;
-  const row=make("tr"),service=make("td","dg-worker-cell"),top=make("div","dg-worker-service-top");
-  top.append(make("span","dg-worker-name",name),
-   make("span","dg-worker-relative",activityKnown?quantity(100*combined(v)/maxVolume,1)+"% of peak":"—"));
-  service.append(top,workerTrack([["requests",requests,maxVolume],["subrequests",subrequests,maxVolume]],
-   name+": "+integer(requests)+" requests, "+integer(subrequests)+
-   " subrequests; separate reported count categories, not unique events"));
-  const legend=make("div","dg-worker-legend");
-  legend.append(make("span","dg-worker-key dg-worker-key-requests","Requests"),
-   make("span","dg-worker-key dg-worker-key-subrequests","Subrequests"));
-  service.append(legend);
-  const cpu=make("td","dg-worker-cpu");
-  cpu.append(workerCpuRow("p90",p90===null?null:p90/1000,maxCpu),
-   workerCpuRow("p99",p99===null?null:p99/1000,maxCpu));
-  row.append(service,workerMetricCell("requests",requests,maxRequests),
-   workerMetricCell("subrequests",subrequests,maxSubrequests),cpu);
-  body.append(row);
- });
- table.append(thead,body);wrap.append(table);host.append(wrap);
+ const workers=entries.map(([name,metrics],i)=>({name,metrics,color:workerColor(i)}));
+ const cpuReadings=workers.flatMap(w=>[
+  workerReading(w.metrics?.cpu_time_p90_us),
+  workerReading(w.metrics?.cpu_time_p99_us)
+ ]).filter(n=>n!==null);
+ const maxCpu=cpuReadings.length?Math.max(.001,...cpuReadings)/1000:null;
+ const usage=make("div","dg-activity-usage");
+ usage.append(activityUsageRow("Request Usage","requests",workers),
+  activityUsageRow("Subrequest Usage","subrequests",workers));
+ const comparison=make("div","dg-cpu-comparison");
+ comparison.append(cpuComparisonChart("p90",workers,maxCpu),
+  cpuComparisonChart("p99",workers,maxCpu));
+ host.append(usage,activityLegend(workers),comparison);
 }
 function findGatewayMetrics(local){
  const layers=Array.isArray(local?.layers)?local.layers:[];

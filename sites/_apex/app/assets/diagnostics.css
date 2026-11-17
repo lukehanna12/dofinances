@@ -88,60 +88,118 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-quota-numbers{font-size:10px;color:var(--dg-faint);white-space:nowrap}
 #diagnostics-root .dg-quota-numbers b{font-size:11px;color:var(--dg-ink);font-weight:580}
 #diagnostics-root .dg-quota .dg-progress{height:3px;margin-top:7px}
-/* macOS Storage presentation sampled directly from the supplied reference:
-   red #eb534e, orange #f09748, charcoal #292929 and remainder #464646.
-   Requests and subrequests are independent counts; the CPU comparison uses
-   the same colors but an entirely separate common millisecond axis. */
-#diagnostics-root #dg-workers{
- --dg-worker-red:#eb534e;--dg-worker-orange:#f09748;--dg-worker-remainder:#464646;
- border-color:transparent;background:#292929;border-radius:20px;padding:18px 18px 12px;
+/* The supplied macOS Storage chart informs the segmented usage geometry
+   and centered dot legend. The Worker (not the metric) owns its color.
+   This panel inherits the shared .dg-panel border/background/radius/padding. */
+#diagnostics-root #dg-workers{--dg-worker-remainder:#464646;--dg-cpu-chart-height:124px}
+#diagnostics-root .dg-activity-usage{display:grid;gap:21px;min-width:0}
+#diagnostics-root .dg-usage-row{display:block;min-width:0}
+#diagnostics-root .dg-usage-head{
+ display:flex;align-items:baseline;justify-content:space-between;
+ gap:12px;min-width:0;margin-bottom:12px;
 }
-#diagnostics-root .dg-table-scroll{overflow-x:auto;scrollbar-width:thin}
-#diagnostics-root .dg-worker-table{width:100%;min-width:800px;border-collapse:collapse;table-layout:fixed;font-size:11px}
-#diagnostics-root .dg-worker-table th{
- padding:0 11px 11px;text-align:left;font-size:10px;font-weight:540;
- color:#9f9f9f;border-bottom:1px solid #ffffff1a;white-space:nowrap;
+#diagnostics-root .dg-usage-title{margin:0;color:var(--dg-ink);font-size:14px;font-weight:570;line-height:1.35}
+#diagnostics-root .dg-usage-total{
+ color:var(--dg-muted);font-size:13px;font-weight:540;font-variant-numeric:tabular-nums;
+ white-space:nowrap;text-align:right;
 }
-#diagnostics-root .dg-worker-table th:first-child{width:34%}
-#diagnostics-root .dg-worker-table th:nth-child(2),#diagnostics-root .dg-worker-table th:nth-child(3){width:17%}
-#diagnostics-root .dg-worker-table th:last-child{width:32%}
-#diagnostics-root .dg-worker-table td{padding:15px 11px 16px;text-align:left;color:#9f9f9f;border-bottom:1px solid #ffffff19;vertical-align:middle}
-#diagnostics-root .dg-worker-table td:first-child{color:#dedede;font-weight:550}
-#diagnostics-root .dg-worker-table tr:last-child td{border-bottom:0}
-#diagnostics-root .dg-worker-service-top,#diagnostics-root .dg-worker-metric-top,#diagnostics-root .dg-worker-cpu-head{
- display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-width:0;
+#diagnostics-root .dg-usage-track{
+ display:flex;width:100%;height:34px;overflow:hidden;
+ border-radius:6px;background:var(--dg-worker-remainder);
 }
-#diagnostics-root .dg-worker-name{display:block;min-width:0;overflow-wrap:anywhere;font-size:14px;font-weight:590;line-height:1.4}
-#diagnostics-root .dg-worker-relative{flex:none;font-size:10.5px;color:#9f9f9f;font-weight:480;white-space:nowrap}
-#diagnostics-root .dg-worker-metric-value{font-size:15px;font-weight:590;line-height:1.3;color:#dedede;font-variant-numeric:tabular-nums}
-#diagnostics-root .dg-worker-track{
- display:flex;width:100%;height:12px;margin-top:10px;
- background:var(--dg-worker-remainder);border-radius:6px;overflow:hidden;
+#diagnostics-root .dg-usage-segment{
+ display:block;flex:none;height:100%;min-width:0;
+ width:var(--dg-worker-share,0%);background:var(--dg-worker-color);
+ animation:dg-worker-share-arrive var(--dg-reveal-duration) cubic-bezier(.22,1,.36,1) both;
 }
-#diagnostics-root .dg-worker-bar{
- display:block;flex:none;width:var(--dg-bar-target,0%);height:100%;min-width:0;max-width:100%;
- background:var(--dg-worker-red);
- animation:dg-bar-arrive var(--dg-reveal-duration) cubic-bezier(.22,1,.36,1) both;
+#diagnostics-root .dg-usage-segment + .dg-usage-segment{box-shadow:inset 1px 0 0 #1d1d1d}
+@keyframes dg-worker-share-arrive{from{width:0}to{width:var(--dg-worker-share,0%)}}
+#diagnostics-root .dg-activity-legend{
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ column-gap:20px;row-gap:9px;width:100%;min-width:0;margin:17px auto 24px;
 }
-#diagnostics-root .dg-worker-bar[data-kind=subrequests]{background:var(--dg-worker-orange)}
-#diagnostics-root .dg-worker-bar + .dg-worker-bar{box-shadow:inset 1px 0 0 #222121}
-#diagnostics-root .dg-worker-legend{display:flex;align-items:center;flex-wrap:wrap;gap:5px 13px;margin-top:10px}
-#diagnostics-root .dg-worker-key{
- display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
- font-size:10.5px;font-weight:530;color:#9f9f9f;line-height:1.3;
+#diagnostics-root .dg-activity-key{
+ display:inline-flex;align-items:center;gap:7px;min-width:0;
+ color:var(--dg-muted);font-size:12px;font-weight:530;line-height:1.4;
 }
-#diagnostics-root .dg-worker-key::before{
- content:"";display:block;width:8px;height:8px;flex:none;border-radius:50%;background:var(--dg-worker-red);
+#diagnostics-root .dg-activity-dot{
+ display:block;width:11px;height:11px;flex:none;border-radius:50%;
+ background:var(--dg-worker-color);
 }
-#diagnostics-root .dg-worker-key-subrequests::before{background:var(--dg-worker-orange)}
-#diagnostics-root .dg-worker-metric .dg-worker-key{font-size:10px}
-#diagnostics-root .dg-worker-metric .dg-worker-track{height:10px;margin-top:10px}
-#diagnostics-root .dg-worker-cpu{min-width:0}
-#diagnostics-root .dg-worker-cpu-row + .dg-worker-cpu-row{margin-top:11px}
-#diagnostics-root .dg-worker-cpu-reading{font-size:11px;font-weight:570;color:#dedede;font-variant-numeric:tabular-nums;white-space:nowrap}
-#diagnostics-root .dg-worker-cpu-track{height:9px;margin-top:5px}
-#diagnostics-root.dg-refresh-loading .dg-worker-track{opacity:.25}
-#diagnostics-root.dg-refresh-loading .dg-worker-key::before{opacity:.25}
+#diagnostics-root .dg-activity-key-name{overflow-wrap:anywhere}
+#diagnostics-root .dg-cpu-comparison{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;
+ padding-top:19px;border-top:1px solid var(--dg-border);min-width:0;
+}
+#diagnostics-root .dg-cpu-chart{display:flex;flex-direction:column;min-width:0;align-items:stretch}
+#diagnostics-root .dg-cpu-chart:first-child{padding-right:22px;border-right:1px solid var(--dg-border)}
+#diagnostics-root .dg-cpu-chart:last-child{padding-left:22px}
+#diagnostics-root .dg-cpu-chart-head{
+ display:flex;justify-content:space-between;align-items:baseline;
+ gap:8px;margin-bottom:15px;
+}
+#diagnostics-root .dg-cpu-chart-title{font-size:13px;font-weight:580;color:var(--dg-ink);margin:0}
+#diagnostics-root .dg-cpu-chart-scale{
+ white-space:nowrap;font-variant-numeric:tabular-nums;font-size:10px;color:var(--dg-faint);
+}
+#diagnostics-root .dg-cpu-scroll{min-width:0;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--dg-border) transparent}
+#diagnostics-root .dg-cpu-plot{
+ display:flex;justify-content:space-around;align-items:flex-end;
+ gap:10px;min-width:max-content;width:100%;
+ border-bottom:1px solid #525252;padding:0 5px 1px;
+}
+#diagnostics-root .dg-cpu-column{
+ display:flex;flex:1 0 26px;max-width:65px;
+ justify-content:center;align-items:flex-end;
+ height:calc(var(--dg-cpu-chart-height) + 30px);
+ position:relative;min-width:26px;
+}
+#diagnostics-root .dg-cpu-column-slot{
+ display:block;position:relative;width:min(100%,34px);height:var(--dg-cpu-chart-height);
+}
+#diagnostics-root .dg-cpu-fill{
+ position:absolute;bottom:0;left:0;right:0;display:block;
+ height:var(--dg-cpu-height,0%);
+ background:var(--dg-worker-color);border-radius:4px 4px 0 0;
+ transform-origin:bottom center;
+ animation:dg-worker-cpu-arrive var(--dg-reveal-duration) cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes dg-worker-cpu-arrive{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+#diagnostics-root .dg-cpu-fill.dg-cpu-unavailable{
+ height:2px;background:#727272;opacity:.6;animation:none;
+}
+#diagnostics-root .dg-cpu-value{
+ position:absolute;left:50%;bottom:calc(var(--dg-cpu-height,0%) + 6px);
+ transform:translateX(-50%);font-size:10px;font-weight:560;
+ font-variant-numeric:tabular-nums;color:var(--dg-muted);white-space:nowrap;
+}
+#diagnostics-root .dg-usage-track-skeleton{gap:2px;background:var(--site-skeleton-accent,#262626)}
+#diagnostics-root .dg-usage-skeleton-segment{display:block;flex:none;height:100%;min-width:0;border-radius:0}
+#diagnostics-root .dg-usage-skeleton-total{height:13px}
+#diagnostics-root .dg-activity-legend-skeleton .dg-activity-dot{background:var(--site-skeleton-accent,#262626)}
+#diagnostics-root .dg-cpu-plot-skeleton{overflow:hidden}
+#diagnostics-root .dg-cpu-loading-value{
+ position:absolute;bottom:calc(var(--dg-cpu-chart-height) - 4px);left:50%;
+ transform:translateX(-50%);height:10px;
+}
+#diagnostics-root .dg-cpu-loading-bar{
+ position:absolute;bottom:0;left:0;right:0;display:block;border-radius:4px 4px 0 0;
+}
+#diagnostics-root.dg-refresh-loading .dg-usage-track,
+#diagnostics-root.dg-refresh-loading .dg-activity-dot,
+#diagnostics-root.dg-refresh-loading .dg-cpu-fill{opacity:.2}
+@media(max-width:720px){
+ #diagnostics-root .dg-cpu-chart:first-child{padding-right:10px}
+ #diagnostics-root .dg-cpu-chart:last-child{padding-left:10px}
+ #diagnostics-root .dg-cpu-plot{gap:7px}
+ #diagnostics-root .dg-cpu-column{flex-basis:24px;min-width:24px}
+}
+@media(max-width:480px){
+ #diagnostics-root .dg-usage-title{font-size:12px}
+ #diagnostics-root .dg-usage-total{font-size:11px}
+ #diagnostics-root .dg-usage-track{height:27px}
+ #diagnostics-root .dg-activity-legend{column-gap:12px}
+}
 #diagnostics-root .dg-pairs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 18px}
 #diagnostics-root .dg-pair-label{display:block;color:var(--dg-faint);font-size:10px}
 #diagnostics-root .dg-pair-value{display:block;font-size:14px;font-weight:570;line-height:1.3;letter-spacing:-.02em;margin-top:3px;overflow-wrap:anywhere}
@@ -171,10 +229,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 }
 /* Refresh the real data in place. Text maintains its exact width and
    vertical metrics, while Skeleton paint stands in for the readings. */
-#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-worker-name,.dg-worker-relative,.dg-worker-metric-value,.dg-worker-cpu-reading,.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty){
+#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-usage-total,.dg-activity-key-name,.dg-cpu-value,.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty){
  position:relative;color:transparent!important
 }
-#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-worker-name,.dg-worker-relative,.dg-worker-metric-value,.dg-worker-cpu-reading,.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty)::after{
+#diagnostics-root.dg-refresh-loading :is(.dg-card-percent,.dg-card-note,.dg-quota-numbers,.dg-usage-total,.dg-activity-key-name,.dg-cpu-value,.dg-pair-value,.dg-pair-detail,.dg-storage-available,.dg-storage-subtitle,.dg-storage-legend > span,.dg-panel-head > .dg-small,.dg-footnote,.dg-empty)::after{
  content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
  width:clamp(30px,68%,140px);max-width:100%;height:10px;border-radius:.375rem;
  background:var(--site-skeleton-accent,#262626);
