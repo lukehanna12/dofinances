@@ -320,7 +320,7 @@ try{
  console.log("Desktop utility left icons: fixed 24px slot, exact 60% per-route scaling, aligned name/UID",JSON.stringify(rows));
 
  const tooltipProbe='(async()=>{const sidebar=document.getElementById("workspace-sidebar");'+
-  'const toTry=[["main-navigation",["Home","Projects","Settings"]],["project-navigation",["Docs","Utilities","Collections","Providers","Permissions","Diagnostics","Settings"]],["apple-hig-navigation",["Docs","Apple HIG Reader overview"]],["custom-project-navigation",["Docs"]]];'+
+  'const toTry=[["main-navigation",["Home","Projects"]],["project-navigation",["Docs","Utilities","Collections","Providers","Permissions","Diagnostics"]],["apple-hig-navigation",["Docs","Apple HIG Reader overview"]],["custom-project-navigation",["Docs"]],["sidebar-bottom",["Settings"]]];'+
   'const seen=[];for(const [navId,labels] of toTry){'+
   'for(const node of sidebar.querySelectorAll(".nav-stack"))node.hidden=node.id!==navId;'+
   'for(const label of labels){const nav=document.getElementById(navId);'+
@@ -332,7 +332,8 @@ try{
   'a.dispatchEvent(new PointerEvent("pointerleave",{pointerType:"mouse"}));'+
   '}}return seen})()';
  const tips=await evaluate(tooltipProbe);
- assert.equal(tips.length,13,"Every screen button across all four sidebar groups is covered");
+ assert.equal(tips.length,12,"All screen buttons and the unique footer Settings control have rail tooltips");
+  assert.equal(tips.filter(t=>t.label==="Settings").length,1,"Only the persistent footer Settings has a tooltip");
  assert.ok(tips.every(t=>t.label===t.rendered&&t.role==="tooltip"&&t.parent&&
   t.described==="workspace-rail-tooltip"&&t.visible&&t.gap>=7),
   "Each tooltip must be correctly named, un-clipped, and anchored right of its button");
