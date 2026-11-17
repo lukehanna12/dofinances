@@ -37,11 +37,17 @@ function fixture(count){
   querySelectorAll:s=>s===".content > .view[data-view]"?[view]:[],
   getElementById:id=>id==="breadcrumb"?breadcrumb:null,
   body,scrollingElement:{get scrollTop(){return y;}},
-  createElement:()=>({hidden:false,setAttribute(){}})
+  createElement:tag=>({tag,hidden:false,tabIndex:-1,attrs:{},handlers:{},
+   setAttribute(key,value){this.attrs[key]=value;},
+   addEventListener(event,fn){this.handlers[event]=fn;},
+   click(){this.handlers.click?.();},
+   blur(){this.blurred=true;}
+  })
  };
  const handlers=new Map(),win={addEventListener:(event,fn)=>handlers.set(event,fn)};
- const controller=initWorkspaceTitleTransition(doc,win);
- return {controller,header,breadcrumb,body,title,nodes,arrows,handlers,scroll(n){y=n;handlers.get("scroll")?.();},
+ let topCalls=0;
+ const controller=initWorkspaceTitleTransition(doc,win,()=>{topCalls++});
+ return {controller,topCalls:()=>topCalls,header,breadcrumb,body,title,nodes,arrows,handlers,scroll(n){y=n;handlers.get("scroll")?.();},
   changeTitle(n){label=n;}};
 }
 test("Every non-dashboard screen uses one geometry-driven title controller",()=>{
@@ -57,6 +63,10 @@ for(const count of [2,3,4]){
   const m=fixture(count);
   m.controller.setRoute(count===2?"projects":"colosseum/permissions");
   assert.equal(m.header.inline.textContent,"Permissions");
+  assert.equal(m.header.inline.tag,"button");
+  assert.equal(m.header.inline.type,"button");
+  assert.equal(m.header.inline.tabIndex,-1);
+  m.header.inline.click();assert.equal(m.topCalls(),0,"Before handoff, the button cannot scroll");
   assert.equal(m.header.inline.hidden,false);
   assert.equal(m.body.classList.contains("workspace-title-transition"),true);
   assert.equal(m.breadcrumb.inert,false);
@@ -67,9 +77,14 @@ for(const count of [2,3,4]){
   m.scroll(72);
   assert.equal(m.body.classList.contains("workspace-title-passed"),true);
   assert.equal(m.breadcrumb.inert,true);
+  assert.equal(m.header.inline.tabIndex,0);
+  assert.equal(m.header.inline.attrs["aria-hidden"],"false");
+  assert.equal(m.header.inline.attrs["aria-label"],"Scroll to top of Permissions");
+  m.header.inline.click();assert.equal(m.topCalls(),1,"The compact title scrolls the document");
   m.scroll(71.99);
   assert.equal(m.body.classList.contains("workspace-title-passed"),false);
   assert.equal(m.breadcrumb.inert,false);
+  m.header.inline.click();assert.equal(m.topCalls(),1,"Button becomes inert above the handoff");
   m.controller.setRoute("home");
   assert.equal(m.body.classList.contains("workspace-title-transition"),false);
   assert.equal(m.header.inline.hidden,true);
@@ -85,6 +100,7 @@ test("Switching screens replaces title text and clears previous scroll state",()
  m.scroll(0);
  m.controller.setRoute("colosseum/utilities");
  assert.equal(m.header.inline.textContent,"Utilities");
+ assert.equal(m.header.inline.attrs["aria-label"],"Scroll to top of Utilities");
  assert.equal(m.breadcrumb.inert,false);
  assert.equal(m.body.classList.contains("workspace-title-passed"),false);
  assert.equal(m.body.classList.contains("workspace-title-transition"),true);

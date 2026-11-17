@@ -84,7 +84,6 @@
           <div class="nav-section-label">WORKSPACE</div>
           <a class="nav-link" data-route="home" href="#home" aria-label="Home"><span class="nav-icon nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
           <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label"><span class="nav-label-text">Projects</span></span></a>
-          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
@@ -93,14 +92,15 @@
           <a class="nav-link" data-route="providers" href="#colosseum/providers" aria-label="Providers"><span class="nav-icon nav-icon-asset nav-icon-asset--providers" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Providers</span></span></a>
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions"><span class="nav-icon nav-icon-asset nav-icon-asset--permissions" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
           <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics"><span class="nav-icon nav-icon-asset nav-icon-asset--diagnostics" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
-          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="apple-hig-navigation" class="nav-stack" aria-label="Apple HIG Reader navigation" hidden>
           <div class="nav-section-label">APPLE HIG READER</div>
           <a class="nav-link" data-route="apple-hig-reader/overview" href="#apple-hig-reader/overview" aria-label="Apple HIG Reader overview"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-docs"></use></svg><span class="nav-label"><span class="nav-label-text">Overview</span></span></a>
         </nav>
       </div>
-      <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
+      <nav class="sidebar-bottom" aria-label="Settings navigation">
+        <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
+      </nav>
       <div id="sidebar-rail-expand-target" class="sidebar-rail-expand-target" role="button" tabindex="0" aria-label="Expand sidebar" hidden></div>
     </aside>
     <!-- Sibling hit target stays outside the sidebar's clipped glass surface. -->

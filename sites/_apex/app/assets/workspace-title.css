@@ -66,17 +66,17 @@ body.workspace-title-transition::after{
 body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title{
   position:absolute;
   z-index:2;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transform:none;
+  top:50%;left:50%;
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  transform:translate(-50%,-50%);
   box-sizing:border-box;
-  max-width:none;
-  padding-inline:70px;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  max-width:calc(100% - 140px);
+  padding:8px 12px;
+  border:0;border-radius:6px;background:transparent;
+  overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;
+  appearance:none;cursor:pointer;
   pointer-events:none;
   user-select:none;
   color:var(--ui-secondary);
@@ -97,7 +97,11 @@ body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-tit
 }
 body.workspace-title-transition.workspace-title-passed #workspace-shell .topbar > .workspace-inline-title{
   opacity:1;
+  pointer-events:auto;
   transition:opacity 220ms cubic-bezier(.4,0,.2,1) 230ms;
+}
+body.workspace-title-transition #workspace-shell .topbar > .workspace-inline-title:focus-visible{
+  outline:2px solid var(--ui-focus);outline-offset:2px;
 }
 body.workspace-title-transition #workspace-shell .shadcn-breadcrumb-item{
   transform:translate3d(0,0,0);

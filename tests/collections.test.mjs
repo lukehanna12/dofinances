@@ -531,8 +531,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
     ["collections","#colosseum/collections","collections"],
     ["permissions","#colosseum/permissions","permissions"],
     ["diagnostics","#colosseum/diagnostics","diagnostics"],
-    ["settings","#settings","settings"],
-    ["settings","#colosseum/settings","settings"]
+    ["settings","#settings","settings"]
   ];
   for(const markup of [html,preview]){
     const providerLink=markup===html?

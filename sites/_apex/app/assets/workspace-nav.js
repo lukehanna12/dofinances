@@ -258,11 +258,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
     mobileToggle.setAttribute("aria-label","Close navigation");
   }
   const workspaceScroll=initWorkspaceScroll(doc,win);
-  const workspaceTitleTransition=initWorkspaceTitleTransition(doc,win);
-  // The final breadcrumb is the active page, not an inert text label.
-  // Native button activation (mouse, touch, Enter, Space) reuses the same
-  // distance-aware RAF return-to-top trajectory, without changing routes.
-  currentCrumb?.addEventListener?.("click",()=>workspaceScroll.animateToTop());
+  const workspaceTitleTransition=initWorkspaceTitleTransition(doc,win,workspaceScroll.animateToTop);
+  // The final breadcrumb stays a plain current-page label; only the compact
+  // title, visible after the handoff, scrolls to the top on activation.
   const wallpaper=initWorkspaceWallpaper(doc,win);
   let lastRenderedRoute=null;
   function render(requestedRoute=null){
@@ -305,7 +303,6 @@ export function initWorkspaceNavigation(doc=document,win=window){
     }
     if(currentCrumb){
       currentCrumb.textContent=meta.label;
-      currentCrumb.setAttribute("aria-label","Scroll to top of "+meta.label);
       if(projectArrow)projectArrow.hidden=!meta.project;
       if(colosseumCrumb)colosseumCrumb.hidden=!meta.project;
       if(colosseumArrow)colosseumArrow.hidden=!meta.project;
@@ -332,6 +329,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
     for(const link of links){
       const href=link.href?.split("#")[1];
       const selected=link!==providerParent&&(href===route||
+        (route==="colosseum/settings"&&href==="settings")||
         legacyStudioProviders&&route==="colosseum/providers/local"&&href==="colosseum/providers");
       link.classList.toggle("active",selected);
       if(selected)link.setAttribute("aria-current","page");
@@ -525,14 +523,6 @@ export function initWorkspaceNavigation(doc=document,win=window){
     const route=link.href?.split("#")[1];
     const modified=event?.metaKey||event?.ctrlKey||event?.shiftKey||event?.altKey||
       (event?.button!==undefined&&event.button!==0);
-    if(route===lastRenderedRoute&&!modified){
-      // The current screen is still an ordinary, keyboard-accessible link.
-      // Only plain activation scrolls to top instead of changing the URL.
-      event.preventDefault();
-      workspaceScroll.animateToTop();
-      closeGlobal();
-      return;
-    }
     if(route&&!modified)render(route);
     closeGlobal();
   });

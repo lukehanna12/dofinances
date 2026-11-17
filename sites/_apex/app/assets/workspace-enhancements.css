@@ -17,6 +17,7 @@
   --workspace-sidebar-left-gap:16px;
   --workspace-sidebar-bottom-gap:16px;
   --sidebar-expanded-width:260px;
+  --workspace-sidebar-head-anchor-height:71px;
 }
 /* The Dashboard alone retains the upper 44px global navigation. On every
  * other active route, remove that bar AND its layout allowance. The sticky
@@ -129,15 +130,17 @@ body:has(> #workspace-shell) .content{
     padding-inline-start:52.48px; /* 4.1vw at the 1280px breakpoint */
   }
 }
-/* Non-Home headings share one viewport Y-level on desktop AND mobile.
- * At zero scroll their line-box center matches the desktop sidebar D mark.
- * Relative positioning moves only the title's painted position; it keeps
- * subtitles/cards in normal flow and the heading scrolls with the document.
- * Mobile hides the D mark in the drawer, but retains its desktop reference
- * Y coordinate rather than reverting to the old banner-height placement. */
+/* All non-Dashboard headings now end exactly where the active sidebar
+ * section label ("COLOSSEUM", or the parallel Workspace/Project label)
+ * begins. The reference includes sidebar border, padding, header and label
+ * margin; 1lh subtracts the actual responsive H1 line box. Position remains
+ * relative so only the title moves, not subtitles or screen content. */
 body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
   position:relative;
-  top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);
+  top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 1px + 17px + var(--workspace-sidebar-head-anchor-height) + 8px - var(--workspace-banner-height) - var(--workspace-content-leading) - 1lh);
+}
+@media(min-width:1280px){
+  .shell.is-collapsed{--workspace-sidebar-head-anchor-height:113px;}
 }
 #location-subtitle{display:none!important;}
 /* shadcn/ui Base Breadcrumb hierarchy, locally styled in the workspace font. */
@@ -154,11 +157,6 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
 .shadcn-breadcrumb-link{color:var(--ui-secondary);transition:color 140ms ease;}
 .shadcn-breadcrumb-link:hover,.shadcn-breadcrumb-page:hover{color:var(--ui-text);text-decoration:none;}
 .shadcn-breadcrumb-page{color:var(--ui-secondary);font-weight:inherit;transition:color 140ms ease;}
-button.shadcn-breadcrumb-page{
-  font-family:inherit;font-size:inherit;
-  appearance:none;cursor:pointer;user-select:none;-webkit-user-select:none;
-}
-button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px;border-radius:3px;}
 .shadcn-breadcrumb-separator{display:inline-flex;align-items:center;justify-content:center;flex:none;width:12px;height:12px;color:var(--ui-muted);}
 .shadcn-breadcrumb-separator svg{width:12px;height:12px;display:block;}
 .settings-panel .manage-account{
@@ -475,12 +473,13 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s;
 }
 .global-clock{
-  display:inline-flex;align-items:flex-end;gap:9px;flex:none;
+  display:inline-flex;align-items:flex-end;gap:3.825px;flex:none;
   min-width:119px;white-space:nowrap;
   color:#f4f4f6;font-size:15px;font-weight:620;line-height:1;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
 }
 .global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;font-weight:550;letter-spacing:.01em}
+.global-clock-zone{margin-left:5.175px} /* Keep the original 9px seconds-to-zone gap. */
 .global-menu-links{min-width:0;max-width:810px;margin-inline:auto;justify-content:space-between}
 .global-menu-actions{margin-left:auto;gap:9px}
 .global-menu-actions .global-menu-icon{width:29px;height:30px}
@@ -551,6 +550,25 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   .global-clock-zone{font-size:9px}
   .global-menu-actions{gap:5px}
   .clock-custom-entry{flex-direction:column}
+}
+
+/* Settings is one persistent sidebar action below the divider, sharing
+ * every normal nav row's dimensions, icon alignment and active state. */
+.shell.liquid-glass-preview .sidebar-bottom{
+  display:block;margin-top:auto;padding:13px 0 0;
+  border-top:1px solid var(--ui-border);
+}
+.shell.liquid-glass-preview .sidebar-bottom > .nav-link{
+  display:flex;align-items:center;box-sizing:border-box;
+  width:calc(100% - 2px);margin-inline:auto;
+  min-height:39px;padding:9px 11px;gap:11px;
+  position:relative;z-index:3;pointer-events:auto;
+}
+.shell.liquid-glass-preview .sidebar-bottom .nav-icon{flex:0 0 18px;align-self:center}
+@media(min-width:761px){
+  .shell.liquid-glass-preview.is-collapsed .sidebar-bottom > .nav-link{
+    justify-content:center!important;padding-inline:0!important;gap:0!important;
+  }
 }
 
 /* Apple HIG Reader: user-built Google Apps Script project showcase.

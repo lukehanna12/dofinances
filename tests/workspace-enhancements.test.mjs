@@ -74,15 +74,17 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
     }
   }
 });
-test("non-Home H1 titles share the D-bubble Y coordinate on desktop and mobile",()=>{
+test("Non-Dashboard heading bottoms align to the sidebar section-label top",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
   assert.ok(css.includes('.view:not([data-view="home"]) > .page-heading > h1'),
     "only the primary H1 on non-Home pages is moved");
-  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
-    "desktop heading remains centered on the sidebar D");
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 1px + 17px + var(--workspace-sidebar-head-anchor-height) + 8px - var(--workspace-banner-height) - var(--workspace-content-leading) - 1lh);"),
+    "title bottom aligns to the reference section label");
   assert.equal((css.match(/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/g)||[]).length,1,
     "the same title-centering rule applies on both mobile and desktop");
+  assert.match(css,/--workspace-sidebar-head-anchor-height:71px/);
+  assert.match(css,/@media\(min-width:1280px\)\{\s*\.shell\.is-collapsed\{--workspace-sidebar-head-anchor-height:113px/);
   assert.match(wallpapers,/--workspace-header-height:66px/);
   assert.match(wallpapers,/@media \(max-width:760px\) \{\s*:root \{--workspace-header-height:63px/);
   assert.doesNotMatch(css,/\.page-heading > \.lead\s*\{[^}]*top:/);
@@ -128,7 +130,7 @@ test("Only Dashboard retains the global bar; other routes reclaim 44px without s
     "The lower bar moves up as the global allowance becomes zero");
   assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));"),
     "The sidebar moves up by the same 44px");
-  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 1px + 17px + var(--workspace-sidebar-head-anchor-height) + 8px - var(--workspace-banner-height) - var(--workspace-content-leading) - 1lh);"),
     "The screen title moves up with the sidebar");
   assert.ok(css.includes("padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));"),
     "Ordinary content retains its established viewport position");
@@ -384,15 +386,15 @@ test("upper navigation stays usable while the clock moves into the lower workspa
 });
 
 
-test("active global navigation title is styled like every other title",()=>{
+test("Active global navigation keeps its styling but no longer triggers top-scroll",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const js=read("../sites/_apex/app/assets/workspace-nav.js");
   assert.match(css,/\.global-menu-links a,\.global-menu-account\{color:rgba\(230,230,235,\.8\);white-space:nowrap/);
   assert.match(css,/\.global-menu a:hover\{color:#fff;text-decoration:none;\}/);
   assert.doesNotMatch(css,/\.global-menu a\.is-current\{/,
     "The selected route cannot add whiteness or font weight");
-  assert.match(js,/if\(route===lastRenderedRoute&&!modified\)\{/);
-  assert.match(js,/event\.preventDefault\(\);\s*workspaceScroll\.animateToTop\(\)/);
+  assert.doesNotMatch(js,/if\(route===lastRenderedRoute&&!modified\)\{/);
+  assert.match(js,/initWorkspaceTitleTransition\(doc,win,workspaceScroll\.animateToTop\)/);
   assert.match(js,/if\(route&&!modified\)render\(route\)/);
   assert.match(css,/\.shadcn-breadcrumb-link,.shadcn-breadcrumb-page\{[\s\S]*?font-family:inherit;font-weight:inherit;letter-spacing:inherit;[\s\S]*?text-align:left;vertical-align:baseline/);
   assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-secondary\);font-weight:inherit/);

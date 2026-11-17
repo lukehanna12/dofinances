@@ -98,7 +98,6 @@
           <div class="nav-section-label">WORKSPACE</div>
           <a class="nav-link" data-route="home" href="#home" aria-label="Home"><span class="nav-icon nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
           <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label"><span class="nav-label-text">Projects</span></span></a>
-          <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
           <div class="nav-section-label">COLOSSEUM</div>
@@ -113,7 +112,6 @@
           </div>
           <a class="nav-link" data-route="permissions" href="#colosseum/permissions" aria-label="Permissions"><span class="nav-icon nav-icon-asset nav-icon-asset--permissions" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Permissions</span></span></a>
           <a class="nav-link" data-route="diagnostics" href="#colosseum/diagnostics" aria-label="Diagnostics"><span class="nav-icon nav-icon-asset nav-icon-asset--diagnostics" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Diagnostics</span></span></a>
-          <a class="nav-link" data-route="settings" href="#colosseum/settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
         </nav>
         <nav id="apple-hig-navigation" class="nav-stack" aria-label="Apple HIG Reader navigation" hidden>
           <div class="nav-section-label">APPLE HIG READER</div>
@@ -125,7 +123,9 @@
           <a class="nav-link" data-route="project/readme" href="#project/readme" aria-label="Docs"><span class="nav-icon nav-icon-asset nav-icon-asset--docs" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Docs</span></span></a>
         </nav>
       </div>
-      <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span><span class="sidebar-foot-label">Private workspace</span></div>
+      <nav class="sidebar-bottom" aria-label="Settings navigation">
+        <a class="nav-link" data-route="settings" href="#settings" aria-label="Settings"><span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Settings</span></span></a>
+      </nav>
       <div id="sidebar-rail-expand-target" class="sidebar-rail-expand-target" role="button" tabindex="0" aria-label="Expand sidebar" hidden></div>
     </aside>
     <!-- Sibling hit target stays outside the sidebar's clipped glass surface. -->
@@ -144,7 +144,7 @@
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
               <li class="shadcn-breadcrumb-item" id="breadcrumb-colosseum-item" hidden><a class="shadcn-breadcrumb-link" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a></li>
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
-              <li class="shadcn-breadcrumb-item"><button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page" aria-label="Scroll to top of Home">Home</button></li>
+              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Home</span></li>
             </ol>
           </nav>
           <span id="location-subtitle" hidden></span>

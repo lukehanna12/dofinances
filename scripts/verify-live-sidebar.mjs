@@ -146,6 +146,26 @@ try{
   assert.ok(compactTopbar.viewport-compactTopbar.actionsRight<50,
     "Search and Menu must anchor the right: "+JSON.stringify(compactTopbar));
 
+  // The footer Settings control uses the same row footprint and icon
+  // x-position as any regular sidebar item, even in compact-rail mode.
+  const footerGeometry=await evaluate(String.raw`(()=>{
+    const footer=document.querySelector(".sidebar-bottom > .nav-link");
+    const regular=document.querySelector('#main-navigation .nav-link[data-route="projects"]');
+    const icon=e=>e.querySelector(".nav-icon").getBoundingClientRect();
+    const a=footer.getBoundingClientRect(),b=regular.getBoundingClientRect();
+    return {count:document.querySelectorAll(".sidebar-bottom > .nav-link[data-route=settings]").length,
+      label:footer.textContent.trim(),height:a.height,regularHeight:b.height,
+      iconLeft:icon(footer).left,regularIconLeft:icon(regular).left,
+      separated:a.top>document.querySelector(".sidebar-navigation").getBoundingClientRect().top};
+  })()`);
+  assert.equal(footerGeometry.count,1);
+  assert.equal(footerGeometry.label,"Settings");
+  assert.ok(Math.abs(footerGeometry.height-footerGeometry.regularHeight)<1,
+    "Footer Settings row height must match other nav items: "+JSON.stringify(footerGeometry));
+  assert.ok(Math.abs(footerGeometry.iconLeft-footerGeometry.regularIconLeft)<1,
+    "Footer Settings icon must align with other sidebar icons: "+JSON.stringify(footerGeometry));
+  assert.ok(footerGeometry.separated,"Settings belongs below the divider");
+
   // The upper strip remains on Dashboard, but every other route drops
   // precisely its 44px allowance. The lower bar, sidebar, and heading rise,
   // while the rest of the document's geometry is unchanged.
@@ -165,13 +185,13 @@ try{
   const projectsBars=await evaluate(String.raw`(()=>{
     const rect=selector=>document.querySelector(selector).getBoundingClientRect();
     const heading=rect('.view[data-view="projects"] .page-heading > h1');
-    const mark=rect(".sidebar .mark");
+    const label=rect('.sidebar-navigation .nav-stack:not([hidden]) > .nav-section-label');
     const view=rect('.view[data-view="projects"]');
     const bodyStyle=getComputedStyle(document.body);
     return {menu:getComputedStyle(document.getElementById("global-menu")).display,
       reserved:bodyStyle.getPropertyValue("--global-menu-height").trim(),
       headerTop:rect(".topbar").top,sidebarTop:rect(".sidebar").top,
-      titleY:(heading.top+heading.bottom)/2,bubbleY:(mark.top+mark.bottom)/2,
+      titleBottom:heading.bottom,labelTop:label.top,
       contentY:view.top,expectedContentY:
         parseFloat(bodyStyle.getPropertyValue("--workspace-banner-height"))+
         parseFloat(bodyStyle.getPropertyValue("--workspace-content-leading"))};
@@ -182,8 +202,8 @@ try{
     "Lower bar must rise exactly 44px: "+JSON.stringify({dashboardBars,projectsBars}));
   assert.ok(Math.abs(projectsBars.sidebarTop-(dashboardBars.sidebarTop-44))<2,
     "Sidebar must rise exactly 44px: "+JSON.stringify({dashboardBars,projectsBars}));
-  assert.ok(Math.abs(projectsBars.titleY-projectsBars.bubbleY)<1,
-    "Screen title must rise with the sidebar: "+JSON.stringify(projectsBars));
+  assert.ok(Math.abs(projectsBars.titleBottom-projectsBars.labelTop)<1.5,
+    "Screen heading bottom must meet sidebar section label top: "+JSON.stringify(projectsBars));
   assert.ok(Math.abs(projectsBars.contentY-projectsBars.expectedContentY)<2,
     "Rest of screen content must stay in its original position: "+JSON.stringify(projectsBars));
   await evaluate('location.hash="#home";window.scrollTo(0,0);true');
@@ -579,9 +599,9 @@ try{
   await evaluate('window.scrollTo(0,0);true');
   await until('Math.abs(document.querySelector(".sidebar").getBoundingClientRect().top-'+String(beforeFooter.top)+')<2',
     "sidebar remains pinned on reverse scroll");
-  // Compare each page H1's line-box center with the actual D badge after
-  // navigation settles. Reuse the desktop reference to verify mobile Y.
-  let desktopTitleCenter=null;
+  // Match each H1 bottom edge to the active sidebar section label's top edge,
+  // retaining this absolute viewport reference across desktop/mobile layouts.
+  let desktopTitleBottom=null;
   for(const width of [900,1280]){
     await metrics(width,680);
     await until('Math.abs(document.documentElement.clientWidth-'+String(width)+')<20',
@@ -597,18 +617,18 @@ try{
       await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
         "non-Home title animation settles for "+route);
       const heading=await evaluate(String.raw`(()=>{
-        const mark=document.querySelector(".sidebar .mark").getBoundingClientRect();
+        const label=document.querySelector('.sidebar-navigation .nav-stack:not([hidden]) > .nav-section-label').getBoundingClientRect();
         const view=document.querySelector(".content > .view:not([hidden])");
         const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
         const subtitle=view.querySelector(".page-heading .lead");
         const content=document.getElementById("main-content").getBoundingClientRect();
-        return {bubbleCenter:(mark.top+mark.bottom)/2,titleCenter:(h1.top+h1.bottom)/2,
+        return {labelTop:label.top,titleBottom:h1.bottom,titleCenter:(h1.top+h1.bottom)/2,
           subtitleTop:subtitle?.getBoundingClientRect().top??null,contentTop:content.top,titleHeight:h1.height,
           scrollY:document.scrollingElement.scrollTop};
       })()`);
-      assert.ok(Math.abs(heading.titleCenter-heading.bubbleCenter)<0.75,
-        "Title isn't centered on the D bubble for "+route+" at "+width+": "+JSON.stringify(heading));
-      if(desktopTitleCenter===null)desktopTitleCenter=heading.bubbleCenter;
+      assert.ok(Math.abs(heading.titleBottom-heading.labelTop)<1.5,
+        "Title bottom must equal the sidebar section label top for "+route+" at "+width+": "+JSON.stringify(heading));
+      if(desktopTitleBottom===null)desktopTitleBottom=heading.labelTop;
       if(route.startsWith("colosseum/")&&route!=="colosseum/settings"){
         assert.equal(heading.subtitleTop,null,
           "Requested Colosseum page should not show a subtitle: "+route);
@@ -655,12 +675,15 @@ try{
       const view=document.querySelector(".content > .view:not([hidden])");
       const h1=view.querySelector(".page-heading > h1").getBoundingClientRect();
       const lead=view.querySelector(".page-heading > .lead").getBoundingClientRect();
-      return {center:(h1.top+h1.bottom)/2,subtitleTop:lead.top,
+      const label=document.querySelector('.sidebar-navigation .nav-stack:not([hidden]) > .nav-section-label').getBoundingClientRect();
+      return {center:(h1.top+h1.bottom)/2,bottom:h1.bottom,labelTop:label.top,subtitleTop:lead.top,
         scrollY:document.scrollingElement.scrollTop,
         titleFont:getComputedStyle(view.querySelector(".page-heading > h1")).fontSize};
     })()`);
-    assert.ok(Math.abs(mobileTitle.center-desktopTitleCenter)<1,
-      "Mobile Settings title reverted from the desktop D-bubble Y: "+JSON.stringify({mobileWidth,desktopTitleCenter,mobileTitle}));
+    assert.ok(Math.abs(mobileTitle.bottom-mobileTitle.labelTop)<1.5 &&
+      Math.abs(mobileTitle.labelTop-desktopTitleBottom)<1.5,
+      "Mobile Settings title bottom must meet the sidebar label: "+
+      JSON.stringify({mobileWidth,desktopTitleBottom,mobileTitle}));
     assert.ok(mobileTitle.subtitleTop>mobileTitle.center+45,
       "Mobile subtitle should remain in its original flow position: "+JSON.stringify(mobileTitle));
     assert.ok(mobileTitle.scrollY<1,"Mobile route starts at the top");
@@ -973,7 +996,7 @@ try{
   console.log("PASS: wide 1280px and 1920px collapsed rails omit the toggle, while blank-rail expansion restores it");
   console.log("PASS: mobile drawer clears both bars, retains viewport height and has no tooltips");
 
-  console.log("PASS: non-Home titles aligned to D-bubble Y; five Colosseum subtitles absent, other subtitles and Home unchanged");
+  console.log("PASS: non-Home title bottoms aligned to sidebar section labels; subtitles and Home unchanged");
 
   console.log("PASS: fixed-height sidebar overlaps bottom photo strip without moving or shrinking");
 

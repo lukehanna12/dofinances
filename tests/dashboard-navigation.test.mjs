@@ -6,30 +6,29 @@ import {MAIN_ROUTES,COLOSSEUM_ROUTES,APPLE_HIG_ROUTES,resolveWorkspaceRoute,work
 
 const read=path=>readFile(new URL(path,import.meta.url),"utf8");
 
-test("Settings sidebar links use the native SVG while the Home Settings feature keeps its gear",async()=>{
+test("Settings is a single footer row with the original native icon and active styling",async()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=await read(path);
     const start=html.indexOf('<symbol id="icon-settings"');
     const end=html.indexOf('</symbol>',start);
-    assert.ok(start>=0 && end>start,"Settings feature-card symbol must remain available");
+    assert.ok(start>=0&&end>start,"Home Settings gear remains available");
     const symbol=html.slice(start,end);
-    assert.ok(symbol.includes('M10 2h4l.7 2.6'),"Home Settings feature retains its toothed gear");
-    assert.ok(symbol.includes('<circle cx="12" cy="12" r="3"/>'),"Gear symbol retains its circular center");
-    for(const href of ["#settings","#colosseum/settings"]){
-      const link='<a class="nav-link" data-route="settings" href="'+href+'"';
-      const i=html.indexOf(link);
-      assert.ok(i>=0,"Missing Settings sidebar navigation for "+href);
-      const row=html.slice(i,html.indexOf('</a>',i));
-      assert.ok(row.includes('<span class="nav-icon nav-icon-asset nav-icon-asset--settings" aria-hidden="true"></span>'),
-        "Settings sidebar uses the new asset at "+href);
-      assert.ok(!row.includes('<use href="#icon-settings">'),"Old settings symbol still in the sidebar");
-    }
+    assert.ok(symbol.includes('M10 2h4l.7 2.6'));
+    assert.ok(symbol.includes('<circle cx="12" cy="12" r="3"/>'));
+    const footer='<nav class="sidebar-bottom" aria-label="Settings navigation">';
+    const link='<a class="nav-link" data-route="settings" href="#settings" aria-label="Settings">';
+    assert.ok(html.includes(footer));
+    assert.equal(html.split(link).length-1,1,"Exactly one Settings sidebar button");
+    assert.ok(html.indexOf(link)>html.indexOf(footer),"Settings must follow the divider");
+    const row=html.slice(html.indexOf(link),html.indexOf('</a>',html.indexOf(link)));
+    assert.ok(row.includes('class="nav-icon nav-icon-asset nav-icon-asset--settings"'));
+    assert.ok(row.includes('<span class="nav-label"><span class="nav-label-text">Settings</span>'));
+    assert.ok(!html.includes('data-route="settings" href="#colosseum/settings"'));
+    assert.ok(!html.includes("Private workspace"));
     assert.equal((html.match(/<use href="#icon-settings"><\/use>/g)||[]).length,
-      path.includes("studio/sidebar")?1:0,
-      "Studio preserves its legacy Home Settings gear; production Home is now the CTA mosaic");
+      path.includes("studio/sidebar")?1:0);
   }
 });
-
 
 test("Mobile opener reuses the original panel glyph; collapse buttons horizontally mirror it",async()=>{
   for(const path of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
@@ -341,8 +340,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="back-to-workspace"/);
   assert.match(html,/<a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects"/);
   assert.match(html,/<nav class="shadcn-breadcrumbs" id="breadcrumb"/);
-  assert.match(html,/<button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page"/,
-    "The currently selected breadcrumb must be a native clickable button, not a text-cursor span");
+  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page"/,
+    "The current breadcrumb is a passive label");
   assert.match(html,/href="#colosseum\/utilities"/);
   assert.match(html,/aria-label="Utilities"/);
   assert.match(html,/id="project-utilities-title">Utilities<\/h1>/);
@@ -399,7 +398,7 @@ function mockNavigation(){
   const elements=Object.fromEntries(ids.map(id=>[id,element()]));
   const views=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({dataset:{view:name}}));
-  const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
+  const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
   const globalLinks=["home","projects","colosseum/collections","settings"].map(name=>
     element({href:"https://dofinances.com/app#"+name,textContent:name}));
@@ -423,81 +422,55 @@ function mockNavigation(){
   return {doc,win,elements,views,links,globalLinks,scrollRoot,fire,stored,scrollCalls,
     mobile:value=>{mobile=value;},compact:value=>{compactRail=value;}};
 }
-test("upper global-menu current link scrolls to top without redirecting, unlike other links",()=>{
-  const m=mockNavigation();
-  initWorkspaceNavigation(m.doc,m.win);
+test("Global navigation links stay native; active links never scroll the page",()=>{
+  const m=mockNavigation();initWorkspaceNavigation(m.doc,m.win);
   const home=m.globalLinks.find(link=>link.href.endsWith("#home"));
   const projects=m.globalLinks.find(link=>link.href.endsWith("#projects"));
   const collections=m.globalLinks.find(link=>link.href.endsWith("#colosseum/collections"));
   assert.equal(home.getAttribute("aria-current"),"page");
-  assert.equal(home.getAttribute("role"),undefined,"Retains native link semantics");
-  const priorHash=m.win.location.hash;
-  m.scrollRoot.scrollTop=1250;
-  let prevented=0;
+  assert.equal(home.getAttribute("role"),undefined);
+  let prevented=0;m.scrollRoot.scrollTop=1250;
   home.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,1,"Active click suppresses native navigation");
-  assert.equal(m.scrollRoot.scrollTop,0,"Active click scrolls to document top");
-  assert.equal(m.win.location.hash,priorHash,"Active click preserves hash/history");
-  home.dispatch("keydown",{key:" ",code:"Space",preventDefault(){prevented++;}});
-  assert.equal(prevented,1,"Link retains native keyboard behavior");
-  m.scrollRoot.scrollTop=800;
+  assert.equal(prevented,0,"Active link remains native navigation");
+  assert.equal(m.scrollRoot.scrollTop,1250,"No top-scroll from active global link");
   projects.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,1,"Other titles still navigate normally");
   assert.equal(m.views.find(v=>v.dataset.view==="projects").hidden,false);
-  assert.equal(m.scrollRoot.scrollTop,0);
-  assert.equal(projects.getAttribute("aria-current"),"page");
-  assert.equal(home.getAttribute("aria-current"),undefined);
-  m.win.location.hash="#projects";
+  assert.equal(m.scrollRoot.scrollTop,0,"Other route navigation still resets scroll");
   m.scrollRoot.scrollTop=940;
   projects.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,2,"The new active title must also scroll to top");
-  assert.equal(m.scrollRoot.scrollTop,0);
-  assert.equal(m.win.location.hash,"#projects");
+  assert.equal(prevented,0);
+  assert.equal(m.scrollRoot.scrollTop,940);
   collections.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,2,"Unselected Collections remains a navigation link");
   assert.equal(m.views.find(v=>v.dataset.view==="colosseum/collections").hidden,false);
-  m.win.location.hash="#colosseum/collections";
+  assert.equal(m.scrollRoot.scrollTop,0);
   m.scrollRoot.scrollTop=550;
   collections.dispatch("click",{preventDefault(){prevented++;}});
-  assert.equal(prevented,3);
-  assert.equal(m.scrollRoot.scrollTop,0);
-  assert.equal(m.win.location.hash,"#colosseum/collections");
-  m.scrollRoot.scrollTop=400;
+  assert.equal(m.scrollRoot.scrollTop,550);
   collections.dispatch("click",{metaKey:true,preventDefault(){prevented++;}});
-  assert.equal(prevented,3,"Modified native link activation is preserved");
+  assert.equal(prevented,0);
 });
 
-test("current Permissions breadcrumb is a pointer button that returns to top without navigation",async()=>{
- const html=await read("../sites/_apex/app/index.html");
- const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
- assert.match(html,/<button class="shadcn-breadcrumb-page" id="breadcrumb-current" type="button" aria-current="page" aria-label="Scroll to top of Home">Home<\/button>/);
- assert.match(css,/button\.shadcn-breadcrumb-page\s*\{[^}]*cursor:pointer;user-select:none;-webkit-user-select:none/);
- assert.match(css,/button\.shadcn-breadcrumb-page:focus-visible\{outline:2px solid var\(--ui-focus\)/);
- const m=mockNavigation();
- initWorkspaceNavigation(m.doc,m.win);
- const crumb=m.elements["breadcrumb-current"];
- assert.equal(crumb.textContent,"Home");
- assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Home");
- m.win.location.hash="#colosseum/permissions";
- m.fire("hashchange");
- assert.equal(crumb.textContent,"Permissions");
- assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Permissions");
- assert.equal(m.views.find(v=>v.dataset.view==="colosseum/permissions").hidden,false);
- m.scrollRoot.scrollTop=2500;
- const priorCalls=m.scrollCalls.length;
- const priorHash=m.win.location.hash;
- crumb.dispatch("click");
- assert.equal(m.scrollRoot.scrollTop,0,
-   "Native-button click invokes top scroll; RAF-less test window uses immediate fallback");
- assert.equal(m.win.location.hash,priorHash,"Current breadcrumb does not change route or history");
- assert.equal(m.scrollCalls.length,priorCalls,"Same-page breadcrumb does not invoke route-reset logic");
- assert.equal(m.views.find(v=>v.dataset.view==="colosseum/permissions").hidden,false);
- m.win.location.hash="#colosseum/providers";m.fire("hashchange");
- assert.equal(crumb.textContent,"Local","Legacy Providers route resolves to its Local child");
- assert.equal(crumb.getAttribute("aria-label"),"Scroll to top of Local");
- m.scrollRoot.scrollTop=120;
- crumb.dispatch("click");
- assert.equal(m.scrollRoot.scrollTop,0,"Same behavior works for every current page");
+test("Current breadcrumb is a passive label; compact title gets the top-scroll button",async()=>{
+  const html=await read("../sites/_apex/app/index.html");
+  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const controller=await read("../sites/_apex/app/assets/workspace-title-transition.js");
+  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Home<\/span>/);
+  assert.doesNotMatch(css,/button\.shadcn-breadcrumb-page/);
+  assert.ok(controller.includes('doc.createElement("button")'));
+  assert.ok(controller.includes('title.addEventListener?.("click",()=>{if(active&&passed)animateToTop();})'));
+  const m=mockNavigation();initWorkspaceNavigation(m.doc,m.win);
+  const crumb=m.elements["breadcrumb-current"];
+  assert.equal(crumb.textContent,"Home");
+  assert.equal(crumb.getAttribute("aria-label"),undefined);
+  m.win.location.hash="#colosseum/permissions";m.fire("hashchange");
+  assert.equal(crumb.textContent,"Permissions");
+  assert.equal(crumb.getAttribute("aria-label"),undefined);
+  m.scrollRoot.scrollTop=2500;crumb.dispatch("click");
+  assert.equal(m.scrollRoot.scrollTop,2500);
+  m.win.location.hash="#colosseum/providers";m.fire("hashchange");
+  assert.equal(crumb.textContent,"Local");
+  m.scrollRoot.scrollTop=200;crumb.dispatch("click");
+  assert.equal(m.scrollRoot.scrollTop,200);
 });
 
 test("Studio legacy Providers view remains navigable while production uses nested children",()=>{
@@ -609,7 +582,8 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   assert.equal(m.elements["back-to-workspace"].hidden,false);
   assert.equal(m.views.find(x=>x.dataset.view==="settings").hidden,false);
   assert.equal(m.views.filter(x=>x.dataset.view==="settings").length,1);
-  assert.equal(m.links.find(x=>x.href.endsWith("#colosseum/settings")).getAttribute("aria-current"),"page");
+  assert.equal(m.links.find(x=>x.href.endsWith("#settings")).getAttribute("aria-current"),"page",
+    "Legacy project Settings uses the shared footer Settings action");
   m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),true);
   assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
