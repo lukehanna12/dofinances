@@ -11,12 +11,13 @@ const collectionCSS=read("sites/_apex/app/assets/collections.css");
 
 test("Every collapsed desktop screen route receives one clipped-sidebar-safe, accessible tooltip",()=>{
  const links=[...html.matchAll(/<a class="nav-link"[^>]*>/g)];
- assert.ok(links.length>=13,"Workspace, Colosseum, and project rail links all need titles");
+ assert.ok(links.length>=11,"All Workspace, Colosseum, project, and persistent footer links need titles");
+  assert.equal((html.match(/class="sidebar-bottom" aria-label="Settings navigation"/g)||[]).length,1,"One persistent Settings navigation group");
  for(const [markup] of links){
   assert.match(markup,/aria-label="[^"]+"/);
   assert.match(markup,/href="#[^"]+"/);
  }
- assert.match(tooltips,/sidebar\.querySelectorAll\("\.sidebar-navigation \.nav-link, \.sidebar-head \.brand"\)/);
+ assert.match(tooltips,/sidebar\.querySelectorAll\("\.sidebar-navigation \.nav-link, \.sidebar-bottom > \.nav-link, \.sidebar-head \.brand"\)/);
  assert.match(tooltips,/doc\.body\.appendChild\(tip\)/,"Never clip inside sidebar overflow");
  assert.match(tooltips,/tip\.setAttribute\("role","tooltip"\)/);
  assert.match(tooltips,/link\.setAttribute\("aria-describedby",tip\.id\)/);

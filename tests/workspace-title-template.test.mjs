@@ -51,7 +51,7 @@ function fixture(count){
   changeTitle(n){label=n;}};
 }
 test("Every non-dashboard screen uses one geometry-driven title controller",()=>{
- assert.match(nav,/initWorkspaceTitleTransition\(doc,win\)/);
+ assert.match(nav,/initWorkspaceTitleTransition\(doc,win,workspaceScroll\.animateToTop\)/);
  assert.match(nav,/workspaceTitleTransition\.setRoute\(route\)/);
  assert.doesNotMatch(nav,/initUtilitiesTitleTransition|initCollectionsTitleTransition/);
  assert.match(css,/body\.workspace-title-transition \.workspace-scroll-heading/);

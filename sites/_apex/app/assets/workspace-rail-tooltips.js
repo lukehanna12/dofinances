@@ -12,7 +12,7 @@
 export function initCollapsedRailTooltips(doc=document,win=window,shell,sidebar){
  if(!doc?.body?.appendChild||!doc?.createElement||
     !shell?.classList||!sidebar?.querySelectorAll)return null;
- const links=[...sidebar.querySelectorAll(".sidebar-navigation .nav-link, .sidebar-head .brand")];
+ const links=[...sidebar.querySelectorAll(".sidebar-navigation .nav-link, .sidebar-bottom > .nav-link, .sidebar-head .brand")];
  const tip=doc.createElement("span");
  tip.id="workspace-rail-tooltip";
  tip.className="workspace-rail-tooltip";

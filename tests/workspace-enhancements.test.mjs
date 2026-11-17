@@ -344,8 +344,10 @@ test("desktop clock seconds are smaller, muted, bottom-aligned and independently
   assert.ok(desktop.includes("margin-left:calc(-74px - clamp(18px,3.8vw,54px));"),
     "Clock and breadcrumbs both shift by the collapsed rail plus horizontal padding");
   assert.ok(desktop.includes("padding-inline-start:168px;"),"Breadcrumbs keep their spacing from the clock");
-  assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:9px;flex:none;"),
+  assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:3.825px;flex:none;"),
     "Seconds and timezone share the hours/minutes bottom edge");
+  assert.ok(css.includes(".global-clock-zone{margin-left:5.175px}"),
+    "Preserve 9px from seconds to timezone while the minute-to-seconds gap shrinks 57.5%");
   assert.ok(css.includes(".global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;"),
     "Seconds match timezone color and font size");
   assert.ok(js.includes('seconds.textContent=formatted.slice(split+1);'),
