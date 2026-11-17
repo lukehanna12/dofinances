@@ -19,7 +19,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks ·","Source: Colosseum"])
       assert.ok(!diagnostics.includes(removed),"Diagnostics must not show "+removed);
 
-    for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-zone","clock-zone-select","clock-custom-zone"])
+    for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-seconds","global-clock-zone","clock-zone-select","clock-custom-zone"])
       assert.ok(html.includes('id="'+id+'"'),path+" missing "+id);
     assert.ok(html.includes('/app/assets/diagnostics.css'));
     assert.doesNotMatch(html, /class="global-brand"|class="global-brand-mark"/,"remove only uppermost DoFinances branding");
@@ -167,7 +167,7 @@ test("Studio cannot fetch private diagnostics or perform account operations",asy
 test("Global clock uses exactly one persisted, validated timezone selection",async()=>{
   const {initWorkspaceClock}=await import("../sites/_apex/app/assets/workspace-nav.js");
   const elements={};
-  for(const name of ["global-clock","global-clock-time","global-clock-zone","clock-zone-select",
+  for(const name of ["global-clock","global-clock-time","global-clock-seconds","global-clock-zone","clock-zone-select",
     "clock-custom-row","clock-custom-zone","clock-custom-apply","clock-settings-feedback"]){
     const events={},attrs={};
     elements[name]={events,attrs,dataset:{},value:"",hidden:false,textContent:"",title:"",
@@ -182,9 +182,17 @@ test("Global clock uses exactly one persisted, validated timezone selection",asy
   initWorkspaceClock(doc,win);
   const select=elements["clock-zone-select"],clock=elements["global-clock"],
     zone=elements["global-clock-zone"],custom=elements["clock-custom-zone"];
-  assert.match(elements["global-clock-time"].textContent,/^(?:\d|1\d|2[0-3]):[0-5]\d:[0-5]\d$/);
+  assert.match(elements["global-clock-time"].textContent,/^(?:\d|1\d|2[0-3]):[0-5]\d$/);
+  assert.match(elements["global-clock-seconds"].textContent,/^[0-5]\d$/);
+  assert.ok(!elements["global-clock-time"].textContent.endsWith(":"),
+    "No colon may separate minutes from the seconds span");
+  const rendered=elements["global-clock-time"].textContent+":"+
+    elements["global-clock-seconds"].textContent;
+  assert.match(rendered,/^(?:\d|1\d|2[0-3]):[0-5]\d:[0-5]\d$/,
+    "The split display must preserve the full 24-hour clock");
   select.value="utc";select.events.change();
   assert.equal(zone.textContent,"UTC");
+  assert.match(elements["global-clock-seconds"].textContent,/^[0-5]\d$/);
   select.value="central";select.events.change();
   assert.equal(clock.attrs["aria-label"].startsWith("America/Chicago"),true);
   select.value="custom";select.events.change();

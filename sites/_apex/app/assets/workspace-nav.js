@@ -620,8 +620,9 @@ export function initWorkspaceNavigation(doc=document,win=window){
 export function initWorkspaceClock(doc=document,win=window){
   const clock=doc.getElementById?.("global-clock");
   const time=doc.getElementById?.("global-clock-time");
+  const seconds=doc.getElementById?.("global-clock-seconds");
   const suffix=doc.getElementById?.("global-clock-zone");
-  if(!clock||!time||!suffix)return;
+  if(!clock||!time||!seconds||!suffix)return;
   if(clock.dataset.clockReady==="true")return;
   clock.dataset.clockReady="true";
   const select=doc.getElementById?.("clock-zone-select");
@@ -647,10 +648,17 @@ export function initWorkspaceClock(doc=document,win=window){
   const store=()=>{try{win.localStorage?.setItem(STORAGE_KEY,JSON.stringify(preference));}catch{}};
   const zone=()=>preference.mode==="utc"?"UTC":preference.mode==="central"?"America/Chicago":
     preference.mode==="custom"?preference.custom:detected();
+  // Split the already-formatted 24-hour time; retain exactly one timer and
+  // keep the public formatter's HH:MM:SS output for other consumers.
+  const renderTime=formatted=>{
+    const split=formatted.lastIndexOf(":");
+    time.textContent=formatted.slice(0,split);
+    seconds.textContent=formatted.slice(split+1);
+  };
   const paint=()=>{
     const now=new Date(),name=zone();
     try{
-      time.textContent=formatWorkspaceTime(now,{timeZone:name,seconds:true});
+      renderTime(formatWorkspaceTime(now,{timeZone:name,seconds:true}));
       const tz=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"}).formatToParts(now)
         .find(p=>p.type==="timeZoneName")?.value||name;
       suffix.textContent=preference.mode==="utc"?"UTC":tz;
@@ -658,7 +666,7 @@ export function initWorkspaceClock(doc=document,win=window){
         weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now));
       clock.setAttribute("datetime",now.toISOString());
     }catch{
-      time.textContent=formatWorkspaceTime(now,{timeZone:"UTC",seconds:true});
+      renderTime(formatWorkspaceTime(now,{timeZone:"UTC",seconds:true}));
       suffix.textContent="UTC";
       clock.setAttribute("aria-label","UTC");
     }

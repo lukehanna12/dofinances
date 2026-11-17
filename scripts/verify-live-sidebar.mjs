@@ -105,8 +105,20 @@ try{
     const account=document.querySelector(".global-menu-actions .global-menu-account");
     const actions=document.querySelector(".global-menu-actions");
     const actionRect=actions.getBoundingClientRect();
+    const sidebar=document.querySelector(".sidebar").getBoundingClientRect();
+    const crumb=document.getElementById("breadcrumb").getBoundingClientRect();
+    const big=document.getElementById("global-clock-time");
+    const small=document.getElementById("global-clock-seconds");
+    const zone=document.getElementById("global-clock-zone");
+    const bigStyle=getComputedStyle(big),smallStyle=getComputedStyle(small),zoneStyle=getComputedStyle(zone);
     return {clockLeft:rect.left,clockY:rect.top+rect.height/2,
       lowerLeft:lower.left,lowerY:lower.top+lower.height/2,
+      sidebarLeft:sidebar.left,breadcrumbLeft:crumb.left,
+      timeBottom:big.getBoundingClientRect().bottom,
+      secondsBottom:small.getBoundingClientRect().bottom,
+      timeFont:parseFloat(bigStyle.fontSize),secondsFont:parseFloat(smallStyle.fontSize),
+      secondsColor:smallStyle.color,zoneColor:zoneStyle.color,
+      time:big.textContent,seconds:small.textContent,
       clockInLower:!!document.querySelector(".topbar-start > #global-clock"),
       clockVisibility:getComputedStyle(clock).visibility,
       links:getComputedStyle(links).display,account:getComputedStyle(account).display,
@@ -114,8 +126,19 @@ try{
   })()`);
   assert.ok(compactTopbar.clockInLower&&compactTopbar.clockVisibility==="visible",
     "Clock must be visible in the lower bar: "+JSON.stringify(compactTopbar));
-  assert.ok(compactTopbar.clockLeft>=compactTopbar.lowerLeft&&compactTopbar.clockLeft<compactTopbar.lowerLeft+70,
-    "Clock must be far left: "+JSON.stringify(compactTopbar));
+  assert.ok(Math.abs(compactTopbar.clockLeft-compactTopbar.sidebarLeft)<1,
+    "Clock must align with the sidebar's left boundary: "+JSON.stringify(compactTopbar));
+  assert.ok(Math.abs(compactTopbar.breadcrumbLeft-compactTopbar.clockLeft-168)<2,
+    "Breadcrumb must shift left with the clock without losing its 168px separation: "+
+      JSON.stringify(compactTopbar));
+  assert.ok(compactTopbar.secondsFont<compactTopbar.timeFont,
+    "Seconds must be smaller than hours and minutes");
+  assert.equal(compactTopbar.secondsColor,compactTopbar.zoneColor,
+    "Seconds must match the timezone label's grey");
+  assert.ok(Math.abs(compactTopbar.secondsBottom-compactTopbar.timeBottom)<1,
+    "Seconds must be bottom-aligned with hours and minutes");
+  assert.match(compactTopbar.time,/^(?:\d|1\d|2[0-3]):[0-5]\d$/);
+  assert.match(compactTopbar.seconds,/^[0-5]\d$/);
   assert.ok(Math.abs(compactTopbar.clockY-compactTopbar.lowerY)<3,
     "Clock must be vertically centered: "+JSON.stringify(compactTopbar));
   assert.equal(compactTopbar.links,"none","Top-level links must hide in thin mode");

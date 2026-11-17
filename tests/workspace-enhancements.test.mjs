@@ -332,6 +332,35 @@ test("blank rail expands from a dedicated pointer region without hover tooltips"
   assert.match(nav,/railExpandTarget\?\.addEventListener\?\.\("keydown"/);
 });
 
+test("desktop clock seconds are smaller, muted, bottom-aligned and independently rendered; breadcrumbs share its sidebar-edge shift",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const js=read("../sites/_apex/app/assets/workspace-nav.js");
+  const start=css.indexOf("#workspace-shell .topbar-start{");
+  const mobile=css.indexOf("/* Mobile clock override must come AFTER");
+  const desktop=css.slice(start,mobile);
+  assert.ok(desktop.includes("@media(min-width:761px){"),"Left alignment never affects mobile");
+  assert.ok(desktop.includes("margin-left:calc(-74px - clamp(18px,3.8vw,54px));"),
+    "Clock and breadcrumbs both shift by the collapsed rail plus horizontal padding");
+  assert.ok(desktop.includes("padding-inline-start:168px;"),"Breadcrumbs keep their spacing from the clock");
+  assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:9px;flex:none;"),
+    "Seconds and timezone share the hours/minutes bottom edge");
+  assert.ok(css.includes(".global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;"),
+    "Seconds match timezone color and font size");
+  assert.ok(js.includes('seconds.textContent=formatted.slice(split+1);'),
+    "The seconds span owns digits only, not the leading colon");
+  assert.ok(js.includes('time.textContent=formatted.slice(0,split);'),
+    "Minutes remain in the large clock span");
+  const mobileRules=css.slice(mobile,css.indexOf("@media(max-width:450px)",mobile));
+  assert.ok(mobileRules.includes("opacity:0;visibility:hidden;pointer-events:none;"),
+    "Clock still disappears entirely in mobile view");
+  for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(file);
+    assert.equal((html.match(/id="global-clock"/g)||[]).length,1);
+    assert.equal((html.match(/id="global-clock-seconds"/g)||[]).length,1);
+    assert.ok(html.includes('<span id="global-clock-time">--:--</span><span id="global-clock-seconds" class="global-clock-seconds">--</span>'));
+  }
+});
+
 test("upper navigation stays usable while the clock moves into the lower workspace bar",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.ok(css.includes("@media(max-width:1279px)"),"compact topbar must match the 1279px sidebar rail boundary");

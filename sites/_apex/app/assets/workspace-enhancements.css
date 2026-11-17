@@ -458,6 +458,15 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   padding-inline-start:168px;
   transition:padding-inline-start 240ms var(--ui-ease);
 }
+/* The bar itself starts at the fixed 74px collapsed rail. Move BOTH the
+ * clock and breadcrumbs left by that rail plus the bar's horizontal padding.
+ * Clock x now equals the glass sidebar's 16px left gutter at every desktop
+ * width, regardless of expanded/collapsed/resized rail state. */
+@media(min-width:761px){
+  #workspace-shell .topbar-start{
+    margin-left:calc(-74px - clamp(18px,3.8vw,54px));
+  }
+}
 #workspace-shell .topbar-start > .global-clock{
   position:absolute;left:0;top:50%;
   max-width:156px;overflow:hidden;
@@ -466,12 +475,12 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s;
 }
 .global-clock{
-  display:inline-flex;align-items:baseline;gap:9px;flex:none;
+  display:inline-flex;align-items:flex-end;gap:9px;flex:none;
   min-width:119px;white-space:nowrap;
   color:#f4f4f6;font-size:15px;font-weight:620;line-height:1;
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
 }
-.global-clock-zone{font-size:10px;color:#a0a0a7;font-weight:550;letter-spacing:.01em}
+.global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;font-weight:550;letter-spacing:.01em}
 .global-menu-links{min-width:0;max-width:810px;margin-inline:auto;justify-content:space-between}
 .global-menu-actions{margin-left:auto;gap:9px}
 .global-menu-actions .global-menu-icon{width:29px;height:30px}
