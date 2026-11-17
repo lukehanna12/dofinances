@@ -247,6 +247,14 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .con
   z-index:4;
 }
 .dashboard-home .cta6-bottom-action .cta6-action{margin-top:0}
+/* The Dashboard alone uses a slate global bar and omits its Account button.
+   Other workspace routes retain the shared global bar and Account action. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .global-menu{
+  background:#676b71;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .global-menu .global-menu-account{
+  display:none!important;
+}
 /* Only Home hides its redundant global navigation label and clock. */
 body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-clock,
 body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-menu-links > a[href="#home"]{

@@ -101,6 +101,20 @@ test("Home bottom action and global navigation hiding remain scoped to the activ
   assert.ok(html.includes('<h1 id="home-title">doof</h1>'));
 });
 
+test("Dashboard alone uses #676b71 for the upper bar and removes its Account button",()=>{
+  const css=asset("dashboard-home.css"),html=read("index.html");
+  const scope='body:has(> #workspace-shell .dashboard-home:not([hidden]))';
+  const nl=String.fromCharCode(10);
+  assert.ok(css.includes([scope+' > .global-menu{','  background:#676b71;','}'].join(nl)),
+    "Only the active Home route may recolor the global navigation bar");
+  assert.ok(css.includes([scope+' > .global-menu .global-menu-account{','  display:none!important;','}'].join(nl)),
+    "Only the active Home route may hide the upper Account action");
+  assert.ok(html.includes('<a class="global-menu-account" data-global-route href="#settings">Account</a>'),
+    "The Account link remains present for every other workspace route");
+  assert.ok(html.includes('href="#settings">Settings</a>'),
+    "Keep Settings reachable from the global navigation");
+});
+
 test("Home title rises exactly half a responsive mosaic square without moving the grid or action",()=>{
   const css=asset("dashboard-home.css");
   assert.match(css,/--cta6-title-tile:calc\(\(min\(calc\(100vw - 32px\),1080px\) - 10 \* clamp\(6px,0\.75vw,13px\)\)\/11\)/);
