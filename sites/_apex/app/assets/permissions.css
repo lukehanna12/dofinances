@@ -217,20 +217,20 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
   grid-auto-flow:column;column-gap:24px;
  }
 }
-#pm-root .pm-exec-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,99px) auto 52px;align-items:center;gap:8px;min-height:49px;border-top:1px solid #202020}
+#pm-root .pm-exec-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,99px) auto 52px;align-items:center;gap:8px;min-height:40px;border-top:1px solid #202020}
 #pm-root .pm-exec-field label{font-size:11px;color:#b7b7b7;line-height:1.35;overflow-wrap:anywhere}
-#pm-root .pm-exec-field input[type="number"]{min-width:0;width:100%;height:31px;background:var(--pm-fill);color:var(--pm-ink);border:1px solid #343434;border-radius:7px;padding:5px 7px;font-size:11px}
+#pm-root .pm-exec-field input[type="number"]{min-width:0;width:100%;height:26px;background:var(--pm-fill);color:var(--pm-ink);border:1px solid #343434;border-radius:7px;padding:3px 7px;font-size:11px}
 /* Native checkbox semantics with the same neutral surface, precise stroke,
    keyboard focus ring and restrained transitions as the other Permissions UI. */
 #pm-root .pm-exec-field input[type="checkbox"]{
  appearance:none;-webkit-appearance:none;
- width:18px;height:18px;min-width:18px;justify-self:end;
+ width:15px;height:15px;min-width:15px;justify-self:end;
  display:grid;place-items:center;margin:0;padding:0;
  border:1px solid #5b5b5b;border-radius:5px;background:#171717;
  cursor:pointer;transition:background-color .17s ease,border-color .17s ease,transform .15s var(--pm-ease);
 }
 #pm-root .pm-exec-field input[type="checkbox"]::after{
- content:"";display:block;width:5px;height:9px;
+ content:"";display:block;width:4px;height:7px;
  border-right:2px solid #171717;border-bottom:2px solid #171717;
  opacity:0;transform:translateY(-1px) rotate(45deg) scale(.6);
  transition:opacity .15s ease,transform .18s var(--pm-ease);

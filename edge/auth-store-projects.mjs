@@ -23,7 +23,7 @@ export class AuthStore extends FederatedAuthStore{
    ["bootscript","BootScript"],
    ["bootscribe","BootScribe"],
    ["translucence-lab","Lightwork"],
-   ["github-readme-chrome-extension","ReadMe GLP (GitHub Live Previewer)"],
+   ["github-readme-chrome-extension","ReadMe GLP"],
    ["chatgpt-chat-save-chrome-extension","ChatStore"]
   ]){
    this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,null,template(name),NOW());
@@ -32,7 +32,8 @@ export class AuthStore extends FederatedAuthStore{
   // Existing user-authored README content is intentionally preserved.
   for(const [slug,previous,name] of [
    ["translucence-lab","Translucence Lab","Lightwork"],
-   ["github-readme-chrome-extension","GitHub README Chrome Extension","ReadMe GLP (GitHub Live Previewer)"],
+   ["github-readme-chrome-extension","GitHub README Chrome Extension","ReadMe GLP"],
+   ["github-readme-chrome-extension","ReadMe GLP (GitHub Live Previewer)","ReadMe GLP"],
    ["chatgpt-chat-save-chrome-extension","ChatGPT Chat Save Chrome Extension","ChatStore"]
   ]){
    this.sql.exec("UPDATE project_records SET name=? WHERE user_id=? AND slug=? AND name=?",name,userId,slug,previous);

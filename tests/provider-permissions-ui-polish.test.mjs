@@ -97,3 +97,14 @@ test("Diagnostics Query options are retired in both shells without changing refr
  assert.ok(!dg.includes("dg-query"));
  assert.ok(!dgcss.includes(".dg-controls"));
 });
+
+test("Execution controls and Provider lifecycle share compact numeric fields and checkboxes",()=>{
+ assert.ok(pm.includes(".pm-exec-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,99px) auto 52px;align-items:center;gap:8px;min-height:40px;"));
+ assert.ok(pm.includes('.pm-exec-field input[type="number"]{min-width:0;width:100%;height:26px;'));
+ assert.ok(pm.includes("border-radius:7px;padding:3px 7px;font-size:11px}"));
+ assert.ok(pm.includes("width:15px;height:15px;min-width:15px;justify-self:end;"));
+ assert.ok(pm.includes('content:"";display:block;width:4px;height:7px;'));
+ assert.ok(pmjs.includes('data-exec-input type="checkbox"'));
+ assert.ok(pmjs.includes('data-exec-input type="number"'));
+ assert.ok(pmjs.includes('data-lifecycle-input type="number"'));
+});

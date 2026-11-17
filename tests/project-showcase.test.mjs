@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
 test("Projects roster applies requested names and progress states without retired entries",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.map(p=>p.name),[
-  "BootScript","BootScribe","Lightwork","ReadMe GLP (GitHub Live Previewer)","ChatStore",
+  "BootScript","BootScribe","Lightwork","ReadMe GLP","ChatStore",
   "Colosseum","Apple HIGs Reader","Terminal Scalars","Unicode Plus",
   "Liquid Plexiglass 26","3D Liquid Glass","Apple Adobe FX",
   "Protocol Monitor Pruner","App Caviar","Ozoning Board"
@@ -41,10 +41,11 @@ test("Local Docs are created in account storage without overwriting saved README
  const store=read("edge/auth-store-projects.mjs");
  const ui=read("sites/_apex/app/assets/project-readme-ui.js");
  const router=read("edge/router.mjs");
- for(const name of ["BootScript","BootScribe","Lightwork","ReadMe GLP (GitHub Live Previewer)","ChatStore"]){
+ for(const name of ["BootScript","BootScribe","Lightwork","ReadMe GLP","ChatStore"]){
   assert.ok(store.includes('"'+name+'"'),"Seed is missing "+name);
  }
  assert.match(store,/INSERT OR IGNORE INTO project_records/);
+ assert.ok(store.includes('["github-readme-chrome-extension","ReadMe GLP (GitHub Live Previewer)","ReadMe GLP"]'),"Stored project titles migrate without overwriting READMEs");
  assert.match(store,/UPDATE project_records SET name=\? WHERE user_id=\? AND slug=\? AND name=\?/);
  assert.match(store,/projectSaveLocal\(/);
  assert.match(ui,/routeSlug\(\)/);

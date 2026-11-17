@@ -6,7 +6,7 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
  {slug:"bootscribe",name:"BootScribe",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:null,status:"in-progress",docs:true},
- {slug:"github-readme-chrome-extension",name:"ReadMe GLP (GitHub Live Previewer)",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
+ {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
  {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
