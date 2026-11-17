@@ -540,6 +540,9 @@ test("Clock leaves and returns alongside the sidebar on mobile breakpoints",asyn
   assert.ok(css.includes("#workspace-shell .topbar-start{padding-inline-start:0;}"));
   assert.ok(css.includes("opacity:0;visibility:hidden;pointer-events:none;"));
   assert.ok(css.includes("transform:translate(-32px,-50%);"));
+  assert.ok(css.lastIndexOf("transform:translate(-32px,-50%);") >
+    css.indexOf("position:absolute;left:0;top:50%;"),
+    "Mobile clock override must follow its desktop declaration in CSS cascade");
   assert.ok(css.includes("#workspace-shell .topbar-start > .global-clock{transition:none!important;}"));
   const html=await read("../sites/_apex/app/index.html");
   const a=html.indexOf('<header class="topbar">'),b=html.indexOf('id="global-clock"'),

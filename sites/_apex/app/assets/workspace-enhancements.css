@@ -333,14 +333,6 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}
-  /* Clock leaves the lower bar with the rail, freeing the mobile opener.
-     The same 240ms easing reverses as the viewport returns to desktop. */
-  #workspace-shell .topbar-start{padding-inline-start:0;}
-  #workspace-shell .topbar-start > .global-clock{
-    opacity:0;visibility:hidden;pointer-events:none;
-    transform:translate(-32px,-50%);
-    transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s linear 240ms;
-  }
   /* The lower top-bar's mobile sidebar opener releases its full layout slot as
      it fades/translates left, allowing the breadcrumb navigation to glide
      left in the same 210ms gesture. Closing the drawer reverses both paths. */
@@ -521,6 +513,19 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
     margin:0;z-index:2;justify-content:flex-end;
   }
 }
+/* Mobile clock override must come AFTER its desktop base declaration:
+ * identical selector specificity makes source order decisive at <=760px. */
+@media(max-width:760px){
+  /* Clock leaves the lower bar with the rail, freeing the mobile opener.
+     The same 240ms easing reverses as the viewport returns to desktop. */
+  #workspace-shell .topbar-start{padding-inline-start:0;}
+  #workspace-shell .topbar-start > .global-clock{
+    opacity:0;visibility:hidden;pointer-events:none;
+    transform:translate(-32px,-50%);
+    transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s linear 240ms;
+  }
+}
+
 @media(max-width:450px){
   .global-clock{gap:6px;font-size:13px}
   .global-clock-zone{font-size:9px}
