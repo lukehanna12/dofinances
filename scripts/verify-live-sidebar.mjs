@@ -123,6 +123,53 @@ try{
   assert.ok(compactTopbar.viewport-compactTopbar.actionsRight<50,
     "Search and Menu must anchor the right: "+JSON.stringify(compactTopbar));
 
+  // The upper strip remains on Dashboard, but every other route drops
+  // precisely its 44px allowance. The lower bar, sidebar, and heading rise,
+  // while the rest of the document's geometry is unchanged.
+  const dashboardBars=await evaluate(String.raw`(()=>{
+    const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+    return {menu:getComputedStyle(document.getElementById("global-menu")).display,
+      reserved:getComputedStyle(document.body).getPropertyValue("--global-menu-height").trim(),
+      headerTop:rect(".topbar").top,sidebarTop:rect(".sidebar").top};
+  })()`);
+  assert.notEqual(dashboardBars.menu,"none","Dashboard must retain its upper navigation");
+  assert.equal(dashboardBars.reserved,"44px","Dashboard retains the 44px top allowance");
+  await evaluate('location.hash="#projects";window.scrollTo(0,0);true');
+  await until('document.querySelector(\'.view[data-view="projects"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display==="none"',
+    "Projects hides upper navigation");
+  await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
+    "Projects title settles after global bar removal");
+  const projectsBars=await evaluate(String.raw`(()=>{
+    const rect=selector=>document.querySelector(selector).getBoundingClientRect();
+    const heading=rect('.view[data-view="projects"] .page-heading > h1');
+    const mark=rect(".sidebar .mark");
+    const view=rect('.view[data-view="projects"]');
+    const bodyStyle=getComputedStyle(document.body);
+    return {menu:getComputedStyle(document.getElementById("global-menu")).display,
+      reserved:bodyStyle.getPropertyValue("--global-menu-height").trim(),
+      headerTop:rect(".topbar").top,sidebarTop:rect(".sidebar").top,
+      titleY:(heading.top+heading.bottom)/2,bubbleY:(mark.top+mark.bottom)/2,
+      contentY:view.top,expectedContentY:
+        parseFloat(bodyStyle.getPropertyValue("--workspace-banner-height"))+
+        parseFloat(bodyStyle.getPropertyValue("--workspace-content-leading"))};
+  })()`);
+  assert.equal(projectsBars.menu,"none","Global bar must be removed on Projects");
+  assert.equal(projectsBars.reserved,"0px","Non-Dashboard global allowance must be zero");
+  assert.ok(Math.abs(projectsBars.headerTop-(dashboardBars.headerTop-44))<2,
+    "Lower bar must rise exactly 44px: "+JSON.stringify({dashboardBars,projectsBars}));
+  assert.ok(Math.abs(projectsBars.sidebarTop-(dashboardBars.sidebarTop-44))<2,
+    "Sidebar must rise exactly 44px: "+JSON.stringify({dashboardBars,projectsBars}));
+  assert.ok(Math.abs(projectsBars.titleY-projectsBars.bubbleY)<1,
+    "Screen title must rise with the sidebar: "+JSON.stringify(projectsBars));
+  assert.ok(Math.abs(projectsBars.contentY-projectsBars.expectedContentY)<2,
+    "Rest of screen content must stay in its original position: "+JSON.stringify(projectsBars));
+  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
+  await until('document.querySelector(\'.view[data-view="home"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display!=="none"',
+    "Dashboard restores upper navigation");
+  const restored=await evaluate('({reserved:getComputedStyle(document.body).getPropertyValue("--global-menu-height").trim(),top:document.querySelector(".topbar").getBoundingClientRect().top})');
+  assert.equal(restored.reserved,"44px","Dashboard restores upper bar allowance");
+  assert.ok(Math.abs(restored.top-dashboardBars.headerTop)<2,"Lower bar returns to its Dashboard position");
+
   // Public Studio preview uses the same navigation and showcase markup as /app.
   // Check the actual route and responsive geometry, without invoking the private API.
   await evaluate('window.location.hash="#apple-hig-reader/overview";true');

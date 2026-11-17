@@ -99,7 +99,7 @@ export function workspaceRouteDetails(route){
   }
   const label=TITLE_CASE[selected];
   return {route:selected,project:false,projectKey:null,label,
-    breadcrumb:"Workspace / "+label,
+    breadcrumb:"Dashboard / "+label,
     subtitle:selected==="settings"?"Manage account & security":
       selected==="projects"?"Your projects":"Your personal workspace"};
 }

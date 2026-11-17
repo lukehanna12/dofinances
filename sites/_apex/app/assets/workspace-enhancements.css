@@ -18,6 +18,17 @@
   --workspace-sidebar-bottom-gap:16px;
   --sidebar-expanded-width:260px;
 }
+/* The Dashboard alone retains the upper 44px global navigation. On every
+ * other active route, remove that bar AND its layout allowance. The sticky
+ * lower bar and glass sidebar move up 44px via their existing dimensions.
+ * Content padding compensates, preserving all non-title content positions;
+ * the shared heading top formula moves only screen titles up with the rail. */
+body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden])){
+  --global-menu-height:0px;
+}
+body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden])) > .global-menu{
+  display:none!important;
+}
 .global-menu{
   display:block; /* Prevent broad dashboard.css nav{display:grid} from controlling the top bar. */
   position:fixed;

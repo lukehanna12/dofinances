@@ -110,6 +110,40 @@ test("two consistent header heights, viewport layers, and a stable responsive si
   assert.match(read("../sites/_apex/app/assets/workspace-wallpapers.css"),/\.topbar::before \{[\s\S]*?z-index:0;/);
   assert.match(css,/\.shell\.liquid-glass-preview \.sidebar/);
 });
+test("Only Dashboard retains the global bar; other routes reclaim 44px without shifting their content",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
+  const nav=read("../sites/_apex/app/assets/workspace-nav.js");
+  const nl=String.fromCharCode(10);
+  const scope='body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden]))';
+  assert.ok(css.includes([":root{","  --global-menu-height:44px;"].join(nl)),
+    "Dashboard retains its original 44px upper navigation");
+  assert.ok(css.includes([scope+"{","  --global-menu-height:0px;"].join(nl)),
+    "Non-Dashboard routes release the 44px navigation reservation");
+  assert.ok(css.includes([scope+" > .global-menu{","  display:none!important;"].join(nl)),
+    "Only active non-Dashboard routes hide the upper bar");
+  assert.ok(css.includes([".shell{","  padding-top:var(--global-menu-height);"].join(nl)),
+    "The shell offset must follow the route-sensitive height");
+  assert.ok(wallpapers.includes("top:var(--global-menu-height,44px);"),
+    "The lower bar moves up as the global allowance becomes zero");
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap));"),
+    "The sidebar moves up by the same 44px");
+  assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 38.328125px - var(--workspace-banner-height) - var(--workspace-content-leading) - .6em);"),
+    "The screen title moves up with the sidebar");
+  assert.ok(css.includes("padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));"),
+    "Ordinary content retains its established viewport position");
+  for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
+    const html=read(file);
+    assert.ok(html.includes('<a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#home">Dashboard</a>'),
+      "The lower-bar root breadcrumb says Dashboard");
+    assert.ok(html.includes('<a data-global-route href="#home">Workspace</a>'),
+      "Dashboard's distinct upper navigation remains unchanged");
+  }
+  assert.ok(nav.includes('breadcrumb:"Dashboard / "+label'),
+    "Route metadata and breadcrumb fallback reflect the new label");
+  assert.ok(!nav.includes('breadcrumb:"Workspace / "+label'));
+});
+
 test("mobile drawer clears both bars without adding hover tooltips",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");
