@@ -110,12 +110,12 @@ function initialSkeletonReport(){
   }
   group.append(head,track);usage.append(group);
  }
- const legend=make("div","dg-activity-legend dg-activity-legend-skeleton");
- legend.setAttribute("aria-label","Worker color key");
+ const activityKey=make("div","dg-activity-legend dg-activity-legend-skeleton");
+ activityKey.setAttribute("aria-label","Worker color key");
  for(let i=0;i<5;i++){
   const key=make("div","dg-activity-key"),dot=make("span","site-skeleton dg-activity-dot");
   dot.setAttribute("aria-hidden","true");
-  key.append(dot,loadingLine((5+(i*3)%7)+"ch"));legend.append(key);
+  key.append(dot,loadingLine((5+(i*3)%7)+"ch"));activityKey.append(key);
  }
  const comparison=make("div","dg-cpu-comparison");
  for(const name of ["p90","p99"]){
@@ -133,7 +133,7 @@ function initialSkeletonReport(){
   }
   chart.append(head,plot);comparison.append(chart);
  }
- workers.append(usage,legend,comparison);
+ workers.append(usage,activityKey,comparison);
  const local=clear("dg-local"),mac=panel("Mac"),macSummary=make("div","dg-mac-summary"),storage=make("div","dg-mac-storage-reading");
  mac.classList.add("dg-storage-panel");
  storage.append(loadingLine("8ch","dg-skeleton-storage"),loadingLine("16ch","dg-skeleton-note"));
