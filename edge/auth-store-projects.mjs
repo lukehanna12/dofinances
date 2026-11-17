@@ -17,6 +17,26 @@ export class AuthStore extends FederatedAuthStore{
   for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"],["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12/protocol-monitor-pruner"]]){
    this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,repository,template(name),NOW());
   }
+  // Curated local Docs share the existing per-account README editor. Do not
+  // overwrite an existing document, repository association or presentation.
+  for(const [slug,name] of [
+   ["bootscript","BootScript"],
+   ["bootscribe","BootScribe"],
+   ["translucence-lab","Lightwork"],
+   ["github-readme-chrome-extension","ReadMe GLP (GitHub Live Previewer)"],
+   ["chatgpt-chat-save-chrome-extension","ChatStore"]
+  ]){
+   this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,null,template(name),NOW());
+  }
+  // Migrate display names only when they still match the old curated names.
+  // Existing user-authored README content is intentionally preserved.
+  for(const [slug,previous,name] of [
+   ["translucence-lab","Translucence Lab","Lightwork"],
+   ["github-readme-chrome-extension","GitHub README Chrome Extension","ReadMe GLP (GitHub Live Previewer)"],
+   ["chatgpt-chat-save-chrome-extension","ChatGPT Chat Save Chrome Extension","ChatStore"]
+  ]){
+   this.sql.exec("UPDATE project_records SET name=? WHERE user_id=? AND slug=? AND name=?",name,userId,slug,previous);
+  }
   // Upgrade previous repository-less Apple Reader records without overriding
   // user-associated repositories or the account's saved README.
   this.sql.exec("UPDATE project_records SET name='Apple HIGs Reader',repository='lukehanna12/apple-higs-reader' WHERE user_id=? AND slug='apple-hig-reader' AND repository IS NULL",userId);

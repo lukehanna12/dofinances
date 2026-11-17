@@ -3,16 +3,17 @@
 import {WORKSPACE_WALLPAPERS} from "./workspace-wallpapers.js";
 
 export const PROJECT_SHOWCASE=Object.freeze([
- {slug:"translucence-lab",name:"Translucence Lab",kind:"Translucence experiments",repository:null},
- {slug:"github-readme-chrome-extension",name:"GitHub README Chrome Extension",kind:"Browser extension",repository:null},
- {slug:"chatgpt-chat-save-chrome-extension",name:"ChatGPT Chat Save Chrome Extension",kind:"Browser extension",repository:null},
+ {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
+ {slug:"bootscribe",name:"BootScribe",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
+ {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:null,status:"in-progress",docs:true},
+ {slug:"github-readme-chrome-extension",name:"ReadMe GLP (GitHub Live Previewer)",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
+ {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
  {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
  {slug:"terminal-scalars",name:"Terminal Scalars",kind:"Terminal utility",repository:null},
  {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:null},
  {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
- {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass 26 Swift Package",kind:"Swift package",repository:null},
- {slug:"3d-liquid-glass-27-swift-package",name:"3D Liquid Glass 27 Swift Package",kind:"Swift package",repository:null},
+ {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
  {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
@@ -38,7 +39,7 @@ function row(text){
  return box;
 }
 function makeCard(project,index,slugRoute){
- const active=!!project.repository;
+ const active=!!project.repository||project.docs===true;
  const status=project.status==="in-progress"?"In Progress":active?"Active":"Coming Soon";
  const statusClass=project.status==="in-progress"?"project-showcase-badge--progress":active?"project-showcase-badge--active":"project-showcase-badge--soon";
  const card=element(active?"a":"article","project-showcase-card "+(active?"is-active":"is-coming-soon"));
@@ -78,7 +79,8 @@ function makeCard(project,index,slugRoute){
  }
  upper.append(top,title,action);
  const bottom=element("span","project-showcase-details");
- bottom.append(row(project.kind),row(active?"GitHub · "+project.repository:"Repository not yet available"));
+ bottom.append(row(project.kind),row(project.repository?"GitHub · "+project.repository:
+  project.docs?"Local Docs · Editable":"Repository not yet available"));
  content.append(upper,bottom);
  card.append(photo,shade,content);
  return card;
@@ -87,7 +89,7 @@ export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
  // Preserve account-created projects: the curated items always come first.
  const additional=(Array.isArray(projects)?projects:[])
-  .filter(p=>p&&typeof p.slug==="string"&&typeof p.name==="string"&&!canonical.has(p.slug))
+  .filter(p=>p&&typeof p.slug==="string"&&typeof p.name==="string"&&!canonical.has(p.slug)&&p.slug!=="3d-liquid-glass-27-swift-package")
   .map(p=>({slug:p.slug,name:p.name,kind:"Project workspace",repository:p.repository||null}));
  const entries=[...PROJECT_SHOWCASE,...additional];
  const fragment=document.createDocumentFragment();

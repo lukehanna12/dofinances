@@ -4,29 +4,51 @@ import {readFileSync} from "node:fs";
 import {PROJECT_SHOWCASE,renderProjectShowcase} from "../sites/_apex/app/assets/project-showcase.js";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
-test("Utility 0001c4 Projects roster is complete and ordered",()=>{
+test("Projects roster applies requested names and progress states without retired entries",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.map(p=>p.name),[
-  "Translucence Lab","GitHub README Chrome Extension","ChatGPT Chat Save Chrome Extension",
+  "BootScript","BootScribe","Lightwork","ReadMe GLP (GitHub Live Previewer)","ChatStore",
   "Colosseum","Apple HIGs Reader","Terminal Scalars","Unicode Plus",
-  "Liquid Plexiglass 26","3D Liquid Glass 26 Swift Package",
-  "3D Liquid Glass 27 Swift Package","Apple Adobe FX","Protocol Monitor Pruner","App Caviar",
-  "Ozoning Board"
+  "Liquid Plexiglass 26","3D Liquid Glass","Apple Adobe FX",
+  "Protocol Monitor Pruner","App Caviar","Ozoning Board"
  ]);
- assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,14);
+ assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,15);
+ assert.ok(!PROJECT_SHOWCASE.some(p=>p.slug==="3d-liquid-glass-27-swift-package"));
+ assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="3d-liquid-glass-26-swift-package"),{
+  slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null
+ });
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
   slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null
  });
 });
-test("Only Colosseum and the two in-progress projects have GitHub repositories",()=>{
+test("In-progress projects have routed Docs without inventing GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,11);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,12);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
-  "apple-hig-reader","protocol-monitor-pruner"
+  "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
+  "chatgpt-chat-save-chrome-extension","apple-hig-reader","protocol-monitor-pruner"
  ]);
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs).map(p=>p.slug),[
+  "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
+  "chatgpt-chat-save-chrome-extension"
+ ]);
+ assert.ok(PROJECT_SHOWCASE.filter(p=>p.docs).every(p=>p.repository===null));
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
+});
+test("Local Docs are created in account storage without overwriting saved READMEs",()=>{
+ const store=read("edge/auth-store-projects.mjs");
+ const ui=read("sites/_apex/app/assets/project-readme-ui.js");
+ const router=read("edge/router.mjs");
+ for(const name of ["BootScript","BootScribe","Lightwork","ReadMe GLP (GitHub Live Previewer)","ChatStore"]){
+  assert.ok(store.includes('"'+name+'"'),"Seed is missing "+name);
+ }
+ assert.match(store,/INSERT OR IGNORE INTO project_records/);
+ assert.match(store,/UPDATE project_records SET name=\? WHERE user_id=\? AND slug=\? AND name=\?/);
+ assert.match(store,/projectSaveLocal\(/);
+ assert.match(ui,/routeSlug\(\)/);
+ assert.match(router,/\^\\\/app\\\/project\\\//);
 });
 test("Compact quarter-area Projects cards retain image reveal and status styling",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
@@ -51,6 +73,8 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(source,/addEventListener\("pointerenter",reveal/);
  assert.match(source,/addEventListener\("focusin",reveal/);
  assert.match(source,/if\(active\)card\.href/);
+ assert.match(source,/project\.docs===true/);
+ assert.match(source,/Local Docs · Editable/);
  assert.match(source,/else card\.tabIndex=0/);
 });
 test("Projects uses native static catalog without exposing private data in Studio",()=>{
