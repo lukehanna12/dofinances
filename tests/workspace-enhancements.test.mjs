@@ -141,7 +141,7 @@ test("Only Dashboard retains the global bar; other routes reclaim 44px without s
     assert.ok(html.includes('<a data-global-route href="#dashboard">Dashboard</a>'),
       "Dashboard's distinct upper navigation remains unchanged");
   }
-  assert.ok(nav.includes('breadcrumb:"Dashboard / "+label'),
+  assert.ok(nav.includes('breadcrumb:selected==="dashboard"?"Dashboard":"Dashboard / "+label'),
     "Route metadata and breadcrumb fallback reflect the new label");
   assert.ok(!nav.includes('breadcrumb:"Workspace / "+label'));
 });
@@ -346,8 +346,8 @@ test("desktop clock seconds are smaller, muted, bottom-aligned and independently
   assert.ok(desktop.includes("padding-inline-start:168px;"),"Breadcrumbs keep their spacing from the clock");
   assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:3.825px;flex:none;"),
     "Seconds and timezone share the hours/minutes bottom edge");
-  assert.ok(css.includes(".global-clock-zone{margin-left:5.175px}"),
-    "Preserve 9px from seconds to timezone while the minute-to-seconds gap shrinks 57.5%");
+  assert.ok(css.includes(".global-clock-zone{margin-left:1.125px}"),
+    "Seconds-to-timezone spacing is now 4.95px, reduced 45% from 9px");
   assert.ok(css.includes(".global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;"),
     "Seconds match timezone color and font size");
   assert.ok(js.includes('seconds.textContent=formatted.slice(split+1);'),

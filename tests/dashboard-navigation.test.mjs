@@ -460,13 +460,13 @@ test("Current breadcrumb is a passive label; compact title gets the top-scroll b
   const html=await read("../sites/_apex/app/index.html");
   const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
   const controller=await read("../sites/_apex/app/assets/workspace-title-transition.js");
-  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Home<\/span>/);
+  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Dashboard<\/span>/);
   assert.doesNotMatch(css,/button\.shadcn-breadcrumb-page/);
   assert.ok(controller.includes('doc.createElement("button")'));
   assert.ok(controller.includes('title.addEventListener?.("click",()=>{if(active&&passed)animateToTop();})'));
   const m=mockNavigation();initWorkspaceNavigation(m.doc,m.win);
   const crumb=m.elements["breadcrumb-current"];
-  assert.equal(crumb.textContent,"Home");
+  assert.equal(crumb.textContent,"Dashboard");
   assert.equal(crumb.getAttribute("aria-label"),undefined);
   m.win.location.hash="#colosseum/permissions";m.fire("hashchange");
   assert.equal(crumb.textContent,"Permissions");
@@ -621,8 +621,8 @@ test("sidebar changes nav scope, highlights selected view, and supports collapse
   assert.equal(m.elements["back-to-workspace"].hidden,false);
   assert.equal(m.views.find(x=>x.dataset.view==="settings").hidden,false);
   assert.equal(m.views.filter(x=>x.dataset.view==="settings").length,1);
-  assert.equal(m.links.find(x=>x.href.endsWith("#settings")).getAttribute("aria-current"),"page",
-    "Legacy project Settings uses the shared footer Settings action");
+  assert.equal(m.links.find(x=>x.href.endsWith("#colosseum/settings")).getAttribute("aria-current"),"page",
+    "Project Settings activates the single context-aware footer action");
   m.elements["sidebar-toggle"].dispatch("click");
   assert.equal(m.elements["workspace-shell"].classList.contains("is-collapsed"),true);
   assert.equal(m.stored.get("dofinances.workspace.sidebar.collapsed"),"true");
