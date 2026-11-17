@@ -163,7 +163,7 @@ test("Controller crosses exactly once, completes on zero further scroll, reverse
   m.handlers.get("scroll")();
   assert.equal(m.body.classList.contains("collections-title-passed"),true,
     "Rapid reversal must not trap the animation between states");
-  m.controller.setRoute("home");
+  m.controller.setRoute("dashboard");
   assert.equal(m.body.classList.contains("collections-title-transition"),false);
   assert.equal(m.body.classList.contains("collections-title-passed"),false);
   assert.equal(m.breadcrumb.inert,false);
@@ -283,7 +283,7 @@ test("Photo strip variables reverse and clean up on route exit",()=>{
   m.handlers.get("scroll")();
   assert.ok(Number.parseFloat(m.body.style.getPropertyValue("--collections-strip-height"))>0);
   assert.ok(Number.parseFloat(m.body.style.getPropertyValue("--collections-strip-blur"))>0);
-  m.controller.setRoute("home");
+  m.controller.setRoute("dashboard");
   for(const key of ["--collections-strip-height","--collections-strip-blur","--collections-strip-opacity"])
     assert.equal(m.body.style.getPropertyValue(key),"",key+" must not bleed into other views");
 });

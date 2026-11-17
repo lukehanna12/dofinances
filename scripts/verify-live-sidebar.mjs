@@ -206,8 +206,8 @@ try{
     "Screen heading bottom must meet sidebar section label top: "+JSON.stringify(projectsBars));
   assert.ok(Math.abs(projectsBars.contentY-projectsBars.expectedContentY)<2,
     "Rest of screen content must stay in its original position: "+JSON.stringify(projectsBars));
-  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
-  await until('document.querySelector(\'.view[data-view="home"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display!=="none"',
+  await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
+  await until('document.querySelector(\'.view[data-view="dashboard"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display!=="none"',
     "Dashboard restores upper navigation");
   const restored=await evaluate('({reserved:getComputedStyle(document.body).getPropertyValue("--global-menu-height").trim(),top:document.querySelector(".topbar").getBoundingClientRect().top})');
   assert.equal(restored.reserved,"44px","Dashboard restores upper bar allowance");
@@ -236,8 +236,8 @@ try{
     "showcase must fit the compact content area: "+JSON.stringify(higPage));
   assert.equal(higPage.colosseumNavHidden,true,"the separate project must not activate Colosseum sidebar");
   assert.equal(higPage.higNavVisible,true,"Apple HIG Reader sidebar context must activate");
-  await evaluate('window.location.hash="#home";true');
-  await until('document.querySelector(\'[data-view="home"]\')?.hidden===false',"Home route restored");
+  await evaluate('window.location.hash="#dashboard";true');
+  await until('document.querySelector(\'[data-view="dashboard"]\')?.hidden===false',"Home route restored");
 
   // Live Studio visual geometry for 0001c8-inspired Providers, no credential calls.
   await evaluate('window.location.hash="#colosseum/providers";true');
@@ -262,8 +262,28 @@ try{
     "Provider list must precede detail pane on tablet: "+JSON.stringify(pvGeometry));
   assert.ok(pvGeometry.detailRight<=pvGeometry.outerWidth+3,
     "Provider content must not clip horizontally: "+JSON.stringify(pvGeometry));
-  await evaluate('window.location.hash="#home";true');
-  await until('document.querySelector(\'[data-view="home"]\')?.hidden===false',"Home restored after Providers");
+  // The footer Settings action must stay within Colosseum instead of falling
+  // back to Workspace's Dashboard/Projects navigation group.
+  const beforeSettings=await evaluate(String.raw`(()=>{
+    const a=document.querySelector('.sidebar-bottom > .nav-link[data-route="settings"]');
+    return {href:a.getAttribute("href"),colosseum:!document.getElementById("project-navigation").hidden};
+  })()`);
+  assert.equal(beforeSettings.href,"#colosseum/settings");
+  assert.equal(beforeSettings.colosseum,true);
+  await evaluate('document.querySelector(\'.sidebar-bottom > .nav-link[data-route="settings"]\').click();true');
+  await until('location.hash==="#colosseum/settings" && document.querySelector(\'[data-view="settings"]\')?.hidden===false',
+    "Colosseum footer Settings");
+  const settingsScope=await evaluate(String.raw`(()=>({
+    mainHidden:document.getElementById("main-navigation").hidden,
+    projectVisible:!document.getElementById("project-navigation").hidden,
+    selected:document.querySelector(".sidebar-bottom > .nav-link").getAttribute("aria-current")
+  }))()`);
+  assert.equal(settingsScope.mainHidden,true);
+  assert.equal(settingsScope.projectVisible,true);
+  assert.equal(settingsScope.selected,"page");
+
+  await evaluate('window.location.hash="#dashboard";true');
+  await until('document.querySelector(\'[data-view="dashboard"]\')?.hidden===false',"Home restored after Providers");
 
 
 
@@ -488,8 +508,8 @@ try{
   await until('Math.round(document.querySelector(".sidebar").getBoundingClientRect().height)<'+String(before-100),"vertical sidebar resizing");
   // The actual browser must scroll ONE root document: art and content move,
   // while the two headers and the sidebar remain anchored to the viewport.
-  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
-  await until('!document.querySelector(\'[data-view="home"]\').hidden && document.scrollingElement.scrollHeight-document.scrollingElement.clientHeight>160',
+  await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="dashboard"]\').hidden && document.scrollingElement.scrollHeight-document.scrollingElement.clientHeight>160',
     "Home document scroll range");
   const beforeScroll=await evaluate(String.raw`(()=>{
     const rect=selector=>document.querySelector(selector).getBoundingClientRect();
@@ -563,8 +583,8 @@ try{
   assert.equal(strip.opacity,"1","Bottom photo must not fade in after reaching end");
   // Fixed desktop glass may overlap the photo footer; neither the top edge
   // nor the pane height may move as the grey document reaches its end.
-  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
-  await until('!document.querySelector(\'[data-view="home"]\').hidden',"Home before footer overlap");
+  await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="dashboard"]\').hidden',"Home before footer overlap");
   const beforeFooter=await evaluate(String.raw`(()=>{
     const pane=document.querySelector(".sidebar").getBoundingClientRect();
     const main=document.querySelector(".main").getBoundingClientRect();
@@ -640,10 +660,10 @@ try{
     }
   }
   // Home's H1 remains at its original position, below its taller banner.
-  await evaluate('location.hash="#home";window.scrollTo(0,0);true');
-  await until('!document.querySelector(\'[data-view="home"]\').hidden',"Home remains separate");
+  await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
+  await until('!document.querySelector(\'[data-view="dashboard"]\').hidden',"Home remains separate");
   const homeHeading=await evaluate(String.raw`(()=>{
-    const title=document.getElementById("home-title").getBoundingClientRect();
+    const title=document.getElementById("dashboard-title").getBoundingClientRect();
     const bubble=document.querySelector(".sidebar .mark").getBoundingClientRect();
     return {titleTop:title.top,bubbleCenter:(bubble.top+bubble.bottom)/2};
   })()`);
@@ -879,7 +899,7 @@ try{
     "Main content must follow the actual resized sidebar width: "+
     JSON.stringify({expandedAgain,afterDrag}));
   // All screens share the same content boundary, including dynamic views.
-  for(const route of ["home","projects","settings","colosseum/collections",
+  for(const route of ["dashboard","projects","settings","colosseum/collections",
     "colosseum/providers","colosseum/permissions","colosseum/diagnostics"]){
     await evaluate('location.hash="#'+route+'";window.scrollTo(0,0);true');
     await until('!document.querySelector(\'.view[data-view="'+route+'"]\')?.hidden',

@@ -24,10 +24,10 @@
  * lower bar and glass sidebar move up 44px via their existing dimensions.
  * Content padding compensates, preserving all non-title content positions;
  * the shared heading top formula moves only screen titles up with the rail. */
-body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden])){
+body:has(> #workspace-shell .content > .view[data-view]:not([data-view="dashboard"]):not([hidden])){
   --global-menu-height:0px;
 }
-body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden])) > .global-menu{
+body:has(> #workspace-shell .content > .view[data-view]:not([data-view="dashboard"]):not([hidden])) > .global-menu{
   display:none!important;
 }
 .global-menu{
@@ -135,7 +135,7 @@ body:has(> #workspace-shell) .content{
  * begins. The reference includes sidebar border, padding, header and label
  * margin; 1lh subtracts the actual responsive H1 line box. Position remains
  * relative so only the title moves, not subtitles or screen content. */
-body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-heading > h1 {
+body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .page-heading > h1 {
   position:relative;
   top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 1px + 17px + var(--workspace-sidebar-head-anchor-height) + 8px - var(--workspace-banner-height) - var(--workspace-content-leading) - 1lh);
 }
@@ -479,7 +479,7 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
   font-variant-numeric:tabular-nums;letter-spacing:-.02em;
 }
 .global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;font-weight:550;letter-spacing:.01em}
-.global-clock-zone{margin-left:5.175px} /* Keep the original 9px seconds-to-zone gap. */
+.global-clock-zone{margin-left:1.125px} /* Seconds–zone: 4.95px total (3.825px gap + 1.125px margin), 45% smaller. */
 .global-menu-links{min-width:0;max-width:810px;margin-inline:auto;justify-content:space-between}
 .global-menu-actions{margin-left:auto;gap:9px}
 .global-menu-actions .global-menu-icon{width:29px;height:30px}
@@ -574,7 +574,7 @@ body:has(> #workspace-shell) .content > .view:not([data-view="home"]) > .page-he
 /* Apple HIG Reader: user-built Google Apps Script project showcase.
  * Fully scoped; the native page title, sidebar, top navigation, and Diagnostics are unchanged. */
 .view[data-view="projects"] .project-card + .project-card{margin-top:14px}
-.view[data-view="home"] .project-row + .project-row{margin-top:12px}
+.view[data-view="dashboard"] .project-row + .project-row{margin-top:12px}
 .hig-showcase{
   --hig-ink:var(--ui-text,#f3f3f4);
   --hig-muted:var(--ui-secondary,#a7a7a7);

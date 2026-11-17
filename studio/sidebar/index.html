@@ -21,7 +21,7 @@
   <nav class="global-menu" id="global-menu" aria-label="Global navigation">
     <div class="global-menu-inner">
       <div class="global-menu-links" id="global-menu-links">
-        <a data-global-route href="#home">Workspace</a>
+        <a data-global-route href="#dashboard">Dashboard</a>
         <a data-global-route href="#projects">Projects</a>
         <a data-global-route href="#colosseum/utilities">Colosseum</a>
         <a data-global-route href="#colosseum/collections">Collections</a>
@@ -39,7 +39,7 @@
       <label for="global-search-input">Find a page</label>
       <input id="global-search-input" type="search" autocomplete="off" placeholder="Search workspace or Colosseum…" aria-label="Search pages">
       <div class="global-search-results" id="global-search-results">
-        <a data-global-route href="#home">Home</a>
+        <a data-global-route href="#dashboard">Dashboard</a>
         <a data-global-route href="#projects">Projects</a>
         <a data-global-route href="#settings">Account Settings</a>
         <a data-global-route href="#colosseum/utilities">Utilities</a>
@@ -76,13 +76,13 @@
   <div class="shell" id="workspace-shell">
     <aside class="sidebar" id="workspace-sidebar" aria-label="Workspace sidebar">
       <div class="sidebar-head">
-        <a class="brand" href="#home" aria-label="DoFinances Home"><span class="mark">D</span><span class="brand-wordmark">DoFinances<span class="brand-subtitle">Workspace</span></span></a>
+        <a class="brand" href="#dashboard" aria-label="DoFinances Dashboard"><span class="mark">D</span><span class="brand-wordmark">DoFinances<span class="brand-subtitle">Workspace</span></span></a>
         <button id="sidebar-toggle" class="sidebar-toggle icon-button" type="button" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="sidebar-navigation"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
       </div>
       <div class="sidebar-navigation" id="sidebar-navigation">
         <nav id="main-navigation" class="nav-stack" aria-label="Main workspace navigation">
           <div class="nav-section-label">WORKSPACE</div>
-          <a class="nav-link" data-route="home" href="#home" aria-label="Home"><span class="nav-icon nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Home</span></span></a>
+          <a class="nav-link" data-route="dashboard" href="#dashboard" aria-label="Dashboard"><span class="nav-icon nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span><span class="nav-label"><span class="nav-label-text">Dashboard</span></span></a>
           <a class="nav-link" data-route="projects" href="#projects" aria-label="Projects"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-projects"></use></svg><span class="nav-label"><span class="nav-label-text">Projects</span></span></a>
         </nav>
         <nav id="project-navigation" class="nav-stack" aria-label="Colosseum navigation" hidden>
@@ -113,13 +113,13 @@
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
           <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
             <ol class="shadcn-breadcrumb-list">
-              <li class="shadcn-breadcrumb-item"><a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#home">Dashboard</a></li>
+              <li class="shadcn-breadcrumb-item"><a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#dashboard">Dashboard</a></li>
               <li class="shadcn-breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
               <li class="shadcn-breadcrumb-item" id="breadcrumb-project-item" hidden><a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects" hidden>Projects</a></li>
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
               <li class="shadcn-breadcrumb-item" id="breadcrumb-colosseum-item" hidden><a class="shadcn-breadcrumb-link" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a></li>
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
-              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Home</span></li>
+              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Dashboard</span></li>
             </ol>
           </nav>
           <span id="location-subtitle" hidden></span>
@@ -128,8 +128,8 @@
       </header>
       <div class="workspace-scroll" id="workspace-scroll" tabindex="-1">
         <main class="content" id="main-content">
-        <section class="view" data-view="home" aria-labelledby="home-title">
-          <div class="page-heading"><h1 id="home-title">Your workspace, all in one place.</h1>
+        <section class="view" data-view="dashboard" aria-labelledby="dashboard-title">
+          <div class="page-heading"><h1 id="dashboard-title">Your workspace, all in one place.</h1>
           <p class="lead">A home for your projects and account. Choose a destination to get started.</p></div>
           <div class="home-highlights">
             <a href="#projects" class="feature-card" aria-label="Open Projects">

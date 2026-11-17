@@ -58,8 +58,8 @@ test("production and Studio use one document-scrolling page beneath sticky navig
   assert.match(footer,/position:relative/);
   assert.match(footer,/background-image:[\s\S]*?--workspace-wallpaper-image/);
   assert.match(footer,/background-position:center,center bottom/);
-  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::before/);
-  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-footer::after/);
+  assert.match(css,/body\[data-wallpaper-route="dashboard"\] > \.workspace-footer::before/);
+  assert.match(css,/body\[data-wallpaper-route="dashboard"\] > \.workspace-footer::after/);
 });
 test("desktop sidebar overlays the footer with fixed height and a layout spacer",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");

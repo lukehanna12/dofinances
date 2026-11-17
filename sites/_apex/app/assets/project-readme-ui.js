@@ -166,7 +166,8 @@ export function initProjectReadme(){
   const dirty=state.editing&&state.dirty;
   confirm.hidden=!dirty;diffButton.hidden=!dirty;
   edit.setAttribute("aria-label",state.editing?"Cancel README edits":"Edit README");
-  $("rm-edit-tooltip").textContent=state.editing?"Cancel editing · ⇧⌘E":"Edit README · ⇧⌘E";
+  const label=$("rm-edit-tooltip")?.querySelector?.(".rm-tooltip-label");
+   if(label)label.textContent=state.editing?"Cancel editing":"Edit README";
   if(!dirty){diffPanel.hidden=true;diffButton.setAttribute("aria-pressed","false");}
  };
  const exitEdit=(restore=true)=>{

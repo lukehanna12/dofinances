@@ -49,7 +49,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 #ut-root .ut-filter-toggle{height:30px;width:30px;padding:0;border:0;border-radius:0 9px 9px 0;background:transparent;color:#9e9e9e;display:grid;place-items:center}
 #ut-root .ut-filter-toggle svg{width:15px;height:15px;stroke-width:1.7}
 #ut-root .ut-filter-toggle:hover,#ut-root .ut-filter-toggle[aria-expanded="true"]{color:#fff;background:#2a2a2a}
-#ut-root .ut-filter-control:is(:hover,:focus-within) .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s}
+#ut-root .ut-filter-control:hover .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#ut-root .ut-filter-control:focus-within .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s,0s,0s}
 #ut-root .ut-filter-toggle[data-active="true"]::after{content:"";position:absolute;right:4px;top:3px;width:4px;height:4px;border-radius:50%;background:#f5f5f5}
 #ut-root .ut-order{min-width:0;flex:none;height:32px;max-width:150px;padding:0 9px;color:#c9c9c9;background:var(--ut-fill);border:1px solid var(--ut-line);border-radius:9px;font-size:11px}
 #ut-root .ut-refresh{height:32px;min-width:32px;display:grid;place-items:center;border:1px solid var(--ut-line);border-radius:9px;background:var(--ut-fill);color:#cecece;padding:0 9px;font-size:11px}
@@ -122,7 +123,8 @@ html:has(body > #workspace-shell .view[data-view="colosseum/utilities"]:not([hid
 
 #ut-root .ut-tooltip-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
 #ut-root .ut-tooltip{position:absolute;z-index:35;bottom:calc(100% + 12px);left:0;white-space:nowrap;padding:9px 12px;background:#101010;color:#f5f5f5;border:1px solid rgba(255,255,255,.08);border-radius:10px;font-size:12px;box-shadow:0 5px 17px rgba(0,0,0,.29);pointer-events:none;opacity:0;visibility:hidden;transform:translateY(2px) scale(.95);transition:opacity .25s var(--ut-ease),transform .25s var(--ut-ease),visibility 0s linear .25s}
-#ut-root .ut-tooltip-wrap:is(:hover,:focus-within) .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s}
+#ut-root .ut-tooltip-wrap:hover .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
+#ut-root .ut-tooltip-wrap:focus-within .ut-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:0s,0s,0s}
 #ut-root .ut-control-center{position:fixed;right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:120;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:78px;padding:7px 12px;border:1px solid rgba(245,248,252,.065);border-radius:9999px;background:rgba(14,15,17,.69);-webkit-backdrop-filter:blur(18px) saturate(120%);backdrop-filter:blur(18px) saturate(120%);box-shadow:none}
 #ut-root .ut-dock-button{display:grid;place-items:center;width:54px;height:54px;padding:0;border:0;border-radius:50%;background:transparent;color:#eee}
 #ut-root .ut-dock-button:hover:not(:disabled){background:rgba(255,255,255,.055)}
@@ -416,7 +418,7 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-dock-button{width:49px;height:49px;min-width:49px;min-height:49px}
 #ut-root .ut-dock-button img{width:29px;height:29px}
 #ut-root .ut-tooltip{
- padding:10px 13px;font-size:13px;line-height:1.25;
+ padding:7px 10px;font-size:12px;font-weight:520;line-height:1.25;
  border:1px solid rgba(255,255,255,.08);border-radius:10px;
  background:#101010;color:#f6f6f6;
  box-shadow:0 5px 17px rgba(0,0,0,.29);
@@ -607,9 +609,9 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-search-control .ut-search-focus:focus-visible + .ut-tooltip{transition-delay:0s,0s,0s}
 #ut-root .ut-search input[type="search"]{font:500 12px/1.3 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#efefef;caret-color:#fff}
 #ut-root .ut-search input[type="search"]::placeholder{color:#595959;opacity:1}
-#ut-root .ut-shortcut-tooltip{display:flex;align-items:center;justify-content:space-between;gap:17px}
-#ut-root .ut-shortcut-keys{display:inline-flex;gap:3px;align-items:center;color:#adadad;font-size:12px}
-#ut-root .ut-shortcut-keys kbd{font:inherit;white-space:nowrap}
+#ut-root .ut-shortcut-tooltip{display:inline-flex;align-items:center;justify-content:flex-start;gap:0}
+#ut-root .ut-shortcut-keys{display:inline-flex;gap:2px;align-items:center;margin-left:14px;color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25}
+#ut-root .ut-shortcut-keys kbd{display:inline-block;margin:0;padding:0;border:0;background:none;color:inherit;font:inherit;line-height:inherit}
 #ut-root .ut-refresh-control{width:32px;height:32px;display:inline-flex}
 #ut-root .ut-refresh-control .ut-tooltip{left:auto;right:0;bottom:calc(100% + 12px);transform-origin:bottom right}
 #ut-root .ut-control-center > .ut-tooltip-wrap:last-child .ut-tooltip{left:auto;right:0;transform-origin:bottom right}

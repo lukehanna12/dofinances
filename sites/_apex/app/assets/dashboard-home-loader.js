@@ -2,7 +2,7 @@
    other workspace screens. Navigation remains under workspace-nav.js. */
 let dashboardLoaded=false;
 function homeVisible(){
-  const home=document.querySelector('.view.dashboard-home[data-view="home"]');
+  const home=document.querySelector('.view.dashboard-home[data-view="dashboard"]');
   return !!home&&!home.hidden;
 }
 function activateDashboard(){

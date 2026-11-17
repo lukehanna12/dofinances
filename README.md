@@ -49,7 +49,7 @@ The public home page links to `/login`, `/login?mode=signup`, and `/app`. An una
 
 ## Private workspace navigation
 
-The authenticated `/app` dashboard has a collapsible/resizable sidebar with three main views: **Home** (default), **Projects**, and **Settings**. The **Colosseum** project navigation includes **Utilities**, **Collections**, **Providers**, **Permissions**, **Diagnostics**, and project **Settings**; **Apple HIG Reader** is a separate project. Collections, Providers, Permissions, and Diagnostics have functional, on-demand controllers; do not call them placeholders. Utilities and project Settings currently remain lightweight/unfinished surfaces. The arrow in the top bar returns to the containing project scope.
+The authenticated `/app` dashboard has a collapsible/resizable sidebar with three main views: **Dashboard** (`#dashboard`, default), **Projects**, and **Settings**. The **Colosseum** project navigation includes **Utilities**, **Collections**, **Providers**, **Permissions**, **Diagnostics**, and project **Settings**; **Apple HIG Reader** is a separate project. Collections, Providers, Permissions, and Diagnostics have functional, on-demand controllers; do not call them placeholders. Utilities and project Settings currently remain lightweight/unfinished surfaces. The arrow in the top bar returns to the containing project scope.
 
 - **Collections:** revision-checked create/edit/delete and membership operations against live Colosseum data; list paginates **10 collections per page** in the current source. Utility admission (`+`) is deliberately disabled.
 - **Providers:** federated account vault connections and local registry controls; source-derived tools, resources, prompts, installed skills and adapter discovery are inspected through the upstream Colosseum interface. Mutations use prepare/confirm receipts and server-enforced grants; the browser is not the credential or permission authority.
@@ -87,7 +87,7 @@ rather than claiming pixel-identical proprietary typography.
 
 ## Workspace visual system
 
-The authenticated app's Home, Projects, Settings, Apple HIG Reader, and Colosseum views share
+The authenticated app's Dashboard, Projects, Settings, Apple HIG Reader, and Colosseum views share
 `sites/_apex/app/assets/workspace-theme.css`, loaded after the existing
 `dashboard.css`. The presentation is adapted from a source-first reconstruction
 of the ChatGPT web interface: a pure-black main canvas and sidebar, separated by a thin charcoal divider,

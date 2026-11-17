@@ -50,10 +50,13 @@ test("Mobile opener reuses the original panel glyph; collapse buttons horizontal
 });
 
 test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
-  assert.deepEqual(MAIN_ROUTES,["home","projects","settings"]);
+  assert.deepEqual(MAIN_ROUTES,["dashboard","projects","settings"]);
   assert.deepEqual(COLOSSEUM_ROUTES,["readme","utilities","collections","providers/local","providers/external","providers/credentials","permissions","diagnostics","settings"]);
-  assert.equal(resolveWorkspaceRoute(""),"home");
-  assert.equal(resolveWorkspaceRoute("#home"),"home");
+  assert.equal(resolveWorkspaceRoute(""),"dashboard");
+  assert.equal(resolveWorkspaceRoute("#dashboard"),"dashboard");
+  assert.equal(resolveWorkspaceRoute("#home"),"dashboard","Legacy hash must resolve to canonical Dashboard");
+  assert.equal(workspaceRouteDetails("dashboard").label,"Dashboard");
+  assert.equal(workspaceRouteDetails("dashboard").project,false);
   assert.equal(resolveWorkspaceRoute("#projects"),"projects");
   assert.equal(resolveWorkspaceRoute("#settings"),"settings");
   assert.equal(resolveWorkspaceRoute("#account"),"settings");
@@ -73,9 +76,9 @@ test("workspace route contract keeps main and Colosseum Settings distinct",()=>{
   assert.equal(resolveWorkspaceRoute("#apple-hig-reader"),"apple-hig-reader/readme");
   assert.equal(resolveWorkspaceRoute("#apple-hig-reader/overview"),"apple-hig-reader/overview");
   assert.equal(workspaceRouteDetails("apple-hig-reader/overview").projectKey,"apple-hig-reader");
-  assert.equal(resolveWorkspaceRoute("#apple-hig-reader/missing"),"home");
-  assert.equal(resolveWorkspaceRoute("#colosseum/unknown"),"home");
-  assert.equal(resolveWorkspaceRoute("#javascript:evil"),"home");
+  assert.equal(resolveWorkspaceRoute("#apple-hig-reader/missing"),"dashboard");
+  assert.equal(resolveWorkspaceRoute("#colosseum/unknown"),"dashboard");
+  assert.equal(resolveWorkspaceRoute("#javascript:evil"),"dashboard");
 });
 test("Providers has three routed child screens and a disclosure parent, preserving legacy paths",async()=>{
  const html=await read("../sites/_apex/app/index.html");
@@ -115,9 +118,9 @@ test("direct nested app paths resolve the same screens as hash navigation",()=>{
   assert.equal(resolveWorkspaceRoute("","","/app/colosseum/capabilities"),"colosseum/utilities",
     "previous direct page URLs remain valid");
   assert.equal(resolveWorkspaceRoute("#settings","","/app/projects"),"settings");
-  assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/home"),"settings");
-  assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"home");
-  assert.equal(resolveWorkspaceRoute("","","/app/colosseum/unknown"),"home");
+  assert.equal(resolveWorkspaceRoute("","?federation_linked=1","/app/dashboard"),"settings");
+  assert.equal(resolveWorkspaceRoute("#unknown","","/app/projects"),"dashboard");
+  assert.equal(resolveWorkspaceRoute("","","/app/colosseum/unknown"),"dashboard");
   assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader"),"apple-hig-reader/readme");
   assert.equal(resolveWorkspaceRoute("","","/app/apple-hig-reader/overview"),"apple-hig-reader/overview");
   assert.equal(resolveWorkspaceRoute("","","/dashboard/apple-hig-reader/overview"),"apple-hig-reader/overview");
@@ -400,7 +403,7 @@ function mockNavigation(){
     element({dataset:{view:name}}));
   const links=[...MAIN_ROUTES,...COLOSSEUM_ROUTES.filter(x=>x!=="settings").map(x=>"colosseum/"+x),...APPLE_HIG_ROUTES.map(x=>"apple-hig-reader/"+x)].map(name=>
     element({href:"https://dofinances.com/app#"+name}));
-  const globalLinks=["home","projects","colosseum/collections","settings"].map(name=>
+  const globalLinks=["dashboard","projects","colosseum/collections","settings"].map(name=>
     element({href:"https://dofinances.com/app#"+name,textContent:name}));
   const scrollRoot={scrollTop:0,scrollLeft:0,scrollHeight:4500,clientHeight:800,scrollWidth:1000,clientWidth:1000};
   let mobile=false;
@@ -408,7 +411,10 @@ function mockNavigation(){
   const listeners={};
   const stored=new Map();
   const scrollCalls=[];
-  const doc={title:"",scrollingElement:scrollRoot,getElementById:id=>elements[id],querySelectorAll:selector=>
+  const doc={title:"",scrollingElement:scrollRoot,getElementById:id=>elements[id],
+     querySelector:selector=>selector==='.sidebar-bottom .nav-link[data-route="settings"]'
+       ?links.find(link=>link.href.endsWith("#settings")||link.href.endsWith("#colosseum/settings")):null,
+     querySelectorAll:selector=>
     selector===".view[data-view]"?views:selector===".nav-link[data-route]"?links:
     selector==="[data-global-route]"?globalLinks:[],
     addEventListener:(key,fn)=>{(listeners["doc:"+key]??=[]).push(fn);}};
@@ -424,7 +430,7 @@ function mockNavigation(){
 }
 test("Global navigation links stay native; active links never scroll the page",()=>{
   const m=mockNavigation();initWorkspaceNavigation(m.doc,m.win);
-  const home=m.globalLinks.find(link=>link.href.endsWith("#home"));
+  const home=m.globalLinks.find(link=>link.href.endsWith("#dashboard"));
   const projects=m.globalLinks.find(link=>link.href.endsWith("#projects"));
   const collections=m.globalLinks.find(link=>link.href.endsWith("#colosseum/collections"));
   assert.equal(home.getAttribute("aria-current"),"page");
@@ -483,12 +489,45 @@ test("Studio legacy Providers view remains navigable while production uses neste
  m.win.location.hash="#colosseum/providers";
  m.fire("hashchange");
  assert.equal(legacy.hidden,false,"Studio's existing single Providers demo must be visible");
- assert.equal(m.views.find(v=>v.dataset.view==="home").hidden,true);
+ assert.equal(m.views.find(v=>v.dataset.view==="dashboard").hidden,true);
  assert.equal(m.elements["breadcrumb-current"].textContent,"Providers");
  assert.equal(m.elements["project-navigation"].hidden,false);
  assert.equal(oldLink.getAttribute("aria-current"),"page");
  oldLink.dispatch("click");
  assert.equal(legacy.hidden,false,"Studio's original link must continue to work");
+});
+
+test("Colosseum footer Settings keeps project sidebar context and the shared Settings view",()=>{
+  const m=mockNavigation();initWorkspaceNavigation(m.doc,m.win);
+  const footer=m.links.find(link=>link.href.endsWith("#settings"));
+  assert.ok(footer,"One footer Settings link must exist");
+  m.win.location.hash="#colosseum/collections";m.fire("hashchange");
+  assert.equal(footer.href,"#colosseum/settings","Footer follows the active project");
+  footer.dispatch("click");
+  assert.equal(m.elements["project-navigation"].hidden,false,"Colosseum sidebar stays visible");
+  assert.equal(m.elements["main-navigation"].hidden,true,"Workspace sidebar stays hidden");
+  assert.equal(m.views.find(v=>v.dataset.view==="settings").hidden,false,"One shared Settings view");
+  assert.equal(footer.getAttribute("aria-current"),"page");
+  m.win.location.hash="#colosseum/settings";m.fire("hashchange");
+  m.win.location.hash="#dashboard";m.fire("hashchange");
+  assert.equal(footer.href,"#settings","Workspace restores the global Settings destination");
+  assert.equal(m.elements["main-navigation"].hidden,false);
+  assert.equal(m.elements["project-navigation"].hidden,true);
+});
+test("The retired #home hash redirects to #dashboard, including same-route navigation",()=>{
+  const m=mockNavigation();
+  m.win.location.pathname="/app";m.win.location.hash="#home";
+  let replaced=0;
+  m.win.history={state:null,replaceState(_state,_title,url){
+    replaced++;m.win.location.hash=url.slice(url.indexOf("#"));
+  }};
+  initWorkspaceNavigation(m.doc,m.win);
+  assert.equal(m.win.location.hash,"#dashboard");
+  assert.equal(replaced,1);
+  assert.equal(m.views.find(v=>v.dataset.view==="dashboard").hidden,false);
+  m.win.location.hash="#home";m.fire("hashchange");
+  assert.equal(m.win.location.hash,"#dashboard");
+  assert.equal(replaced,2);
 });
 
 test("click selects route immediately, without awaiting the browser hashchange event",()=>{
@@ -571,7 +610,7 @@ test("Mobile drawer button exits left and the lower-bar breadcrumbs reclaim its 
 test("sidebar changes nav scope, highlights selected view, and supports collapse and mobile drawer",()=>{
   const m=mockNavigation();
   initWorkspaceNavigation(m.doc,m.win);
-  assert.equal(m.views.find(x=>x.dataset.view==="home").hidden,false);
+  assert.equal(m.views.find(x=>x.dataset.view==="dashboard").hidden,false);
   assert.equal(m.views.find(x=>x.dataset.view==="settings").hidden,true);
   assert.equal(m.elements["project-navigation"].hidden,true);
   m.win.location.hash="#projects";m.fire("hashchange");

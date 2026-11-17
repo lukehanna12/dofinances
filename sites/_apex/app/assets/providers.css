@@ -90,8 +90,8 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-refresh-control:hover .pv-refresh-tooltip,
 #pv-root .pv-refresh:focus-visible + .pv-refresh-tooltip{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition-delay:.15s,.15s,.15s}
 #pv-root .pv-refresh:focus-visible + .pv-refresh-tooltip{transition-delay:0s,0s,0s}
-#pv-root .pv-refresh-tooltip-shortcut{display:inline-flex;gap:2px;margin-left:14px;font-size:11px;color:#a3a3a3}
-#pv-root .pv-refresh-tooltip-shortcut kbd{padding:0;margin:0;border:0;background:none;color:inherit;font:inherit}
+#pv-root .pv-refresh-tooltip-shortcut{display:inline-flex;align-items:center;gap:2px;margin-left:14px;color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25}
+#pv-root .pv-refresh-tooltip-shortcut kbd{display:inline-block;padding:0;margin:0;border:0;background:none;color:inherit;font:inherit;line-height:inherit}
 #pv-root .pv-status{margin:8px 0 0;min-height:0;color:var(--pv-muted);font-size:12px}
 #pv-root .pv-status:empty{display:none}
 #pv-root .pv-status[data-tone="error"]{color:#f87171}

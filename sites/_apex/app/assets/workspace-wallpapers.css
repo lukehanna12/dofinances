@@ -28,7 +28,7 @@
 }
 /* Preserve sixfold exposed Home strip and non-Home measurements from the
  * previous release. The selected view, not pending image decode, sets geometry. */
-body:has(> #workspace-shell .view[data-view="home"]:not([hidden])) {
+body:has(> #workspace-shell .view[data-view="dashboard"]:not([hidden])) {
   --workspace-banner-height:538px;
 }
 html:has(body > #workspace-shell) {
@@ -72,11 +72,11 @@ body:has(> #workspace-shell.liquid-glass-preview.glass-scene-prism)::before {
 }
 /* Home keeps the original soft side fade and its higher-resolution photograph.
  * Both backdrop and unblurred foreground now scroll with the page. */
-body[data-wallpaper-route="home"]::before {
+body[data-wallpaper-route="dashboard"]::before {
   filter:blur(10px);
   clip-path:inset(0);
 }
-body[data-wallpaper-route="home"] > .workspace-home-art {
+body[data-wallpaper-route="dashboard"] > .workspace-home-art {
   position:absolute;
   left:50%;
   width:min(100%,1100px);
@@ -91,14 +91,14 @@ body[data-wallpaper-route="home"] > .workspace-home-art {
   -webkit-mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);
   mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);
 }
-body[data-wallpaper-route="home"] > .workspace-home-art-top {
+body[data-wallpaper-route="dashboard"] > .workspace-home-art-top {
   top:calc(-1 * var(--workspace-top-overpull));
   height:calc(var(--workspace-banner-height) + var(--workspace-top-overpull));
   background-position:center,var(--workspace-wallpaper-position,center 46%);
 }
 @media (max-width:1100px) {
-  body[data-wallpaper-route="home"]::before {filter:none}
-  body[data-wallpaper-route="home"] > .workspace-home-art {
+  body[data-wallpaper-route="dashboard"]::before {filter:none}
+  body[data-wallpaper-route="dashboard"] > .workspace-home-art {
     -webkit-mask-image:none;
     mask-image:none;
   }
@@ -207,9 +207,9 @@ body[data-wallpaper-route$="/readme"] > .workspace-footer .workspace-footer-text
   color:#c0d0e0;opacity:1;mix-blend-mode:normal;text-shadow:0 1px 3px #000;
  }
 }
-body[data-wallpaper-route="home"] > .workspace-footer {background-image:none}
-body[data-wallpaper-route="home"] > .workspace-footer::before,
-body[data-wallpaper-route="home"] > .workspace-footer::after {
+body[data-wallpaper-route="dashboard"] > .workspace-footer {background-image:none}
+body[data-wallpaper-route="dashboard"] > .workspace-footer::before,
+body[data-wallpaper-route="dashboard"] > .workspace-footer::after {
   content:"";
   position:absolute;
   inset:0;
@@ -222,11 +222,11 @@ body[data-wallpaper-route="home"] > .workspace-footer::after {
   background-position:center,center bottom;
   background-repeat:no-repeat;
 }
-body[data-wallpaper-route="home"] > .workspace-footer::before {
+body[data-wallpaper-route="dashboard"] > .workspace-footer::before {
   filter:blur(10px);
   clip-path:inset(0);
 }
-body[data-wallpaper-route="home"] > .workspace-footer::after {
+body[data-wallpaper-route="dashboard"] > .workspace-footer::after {
   left:50%;
   width:min(100%,1100px);
   transform:translateX(-50%);
@@ -234,8 +234,8 @@ body[data-wallpaper-route="home"] > .workspace-footer::after {
   mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);
 }
 @media (max-width:1100px) {
-  body[data-wallpaper-route="home"] > .workspace-footer::before {filter:none}
-  body[data-wallpaper-route="home"] > .workspace-footer::after {
+  body[data-wallpaper-route="dashboard"] > .workspace-footer::before {filter:none}
+  body[data-wallpaper-route="dashboard"] > .workspace-footer::after {
     -webkit-mask-image:none;
     mask-image:none;
   }

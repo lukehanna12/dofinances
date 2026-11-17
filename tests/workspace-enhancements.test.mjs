@@ -66,22 +66,22 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
         assert.ok(html.includes('id="'+id+'"'),"Settings retains "+id);
     }
     if(path.includes("studio/sidebar")){
-      assert.match(html,/<h1 id="home-title">Your workspace, all in one place\.<\/h1>/);
+      assert.match(html,/<h1 id="dashboard-title">Your workspace, all in one place\.<\/h1>/);
     }else{
-      assert.match(html,/<section class="view dashboard-home" data-view="home"/);
+      assert.match(html,/<section class="view dashboard-home" data-view="dashboard"/);
       assert.match(html,/id="cta6-mosaic"/);
-      assert.match(html,/<h1 id="home-title">doof<\/h1>/);
+      assert.match(html,/<h1 id="dashboard-title">doof<\/h1>/);
     }
   }
 });
 test("Non-Dashboard heading bottoms align to the sidebar section-label top",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
-  assert.ok(css.includes('.view:not([data-view="home"]) > .page-heading > h1'),
+  assert.ok(css.includes('.view:not([data-view="dashboard"]) > .page-heading > h1'),
     "only the primary H1 on non-Home pages is moved");
   assert.ok(css.includes("top:calc(var(--global-menu-height) + var(--workspace-header-height) + var(--workspace-sidebar-gap) + 1px + 17px + var(--workspace-sidebar-head-anchor-height) + 8px - var(--workspace-banner-height) - var(--workspace-content-leading) - 1lh);"),
     "title bottom aligns to the reference section label");
-  assert.equal((css.match(/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/g)||[]).length,1,
+  assert.equal((css.match(/\.view:not\(\[data-view="dashboard"\]\) > \.page-heading > h1/g)||[]).length,1,
     "the same title-centering rule applies on both mobile and desktop");
   assert.match(css,/--workspace-sidebar-head-anchor-height:71px/);
   assert.match(css,/@media\(min-width:1280px\)\{\s*\.shell\.is-collapsed\{--workspace-sidebar-head-anchor-height:113px/);
@@ -93,9 +93,9 @@ test("Non-Dashboard heading bottoms align to the sidebar section-label top",()=>
     const headings=[...html.matchAll(/<section class="view[^"]*"[^>]*data-view="([^"]+)"[^>]*>[\s\S]*?<div class="page-heading"><h1 /g)];
     assert.ok(headings.length>=2,"pages retain individually targeted headings");
     if(path.includes("studio/sidebar"))
-      assert.match(html,/<section class="view" data-view="home"[^>]*>[\s\S]*?<div class="page-heading"><h1 id="home-title"/);
+      assert.match(html,/<section class="view" data-view="dashboard"[^>]*>[\s\S]*?<div class="page-heading"><h1 id="dashboard-title"/);
     else
-      assert.match(html,/<section class="view dashboard-home" data-view="home"[\s\S]*?id="cta6-mosaic"/);
+      assert.match(html,/<section class="view dashboard-home" data-view="dashboard"[\s\S]*?id="cta6-mosaic"/);
   }
 });
 test("two consistent header heights, viewport layers, and a stable responsive sidebar gap",()=>{
@@ -117,7 +117,7 @@ test("Only Dashboard retains the global bar; other routes reclaim 44px without s
   const wallpapers=read("../sites/_apex/app/assets/workspace-wallpapers.css");
   const nav=read("../sites/_apex/app/assets/workspace-nav.js");
   const nl=String.fromCharCode(10);
-  const scope='body:has(> #workspace-shell .content > .view[data-view]:not([data-view="home"]):not([hidden]))';
+  const scope='body:has(> #workspace-shell .content > .view[data-view]:not([data-view="dashboard"]):not([hidden]))';
   assert.ok(css.includes([":root{","  --global-menu-height:44px;"].join(nl)),
     "Dashboard retains its original 44px upper navigation");
   assert.ok(css.includes([scope+"{","  --global-menu-height:0px;"].join(nl)),
@@ -136,9 +136,9 @@ test("Only Dashboard retains the global bar; other routes reclaim 44px without s
     "Ordinary content retains its established viewport position");
   for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(file);
-    assert.ok(html.includes('<a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#home">Dashboard</a>'),
+    assert.ok(html.includes('<a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#dashboard">Dashboard</a>'),
       "The lower-bar root breadcrumb says Dashboard");
-    assert.ok(html.includes('<a data-global-route href="#home">Workspace</a>'),
+    assert.ok(html.includes('<a data-global-route href="#dashboard">Dashboard</a>'),
       "Dashboard's distinct upper navigation remains unchanged");
   }
   assert.ok(nav.includes('breadcrumb:"Dashboard / "+label'),

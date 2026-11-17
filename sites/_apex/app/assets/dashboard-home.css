@@ -257,7 +257,7 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) > .global-menu .globa
 }
 /* Only Home hides its redundant global navigation label and clock. */
 body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-clock,
-body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-menu-links > a[href="#home"]{
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-menu-links > a[href="#dashboard"]{
   display:none!important;
 }
 /* Strip no longer paints or takes up document height. Copyright is a

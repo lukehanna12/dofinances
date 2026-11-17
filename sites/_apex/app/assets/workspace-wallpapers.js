@@ -2,7 +2,7 @@
  * Originals: Colosseum Wallpapers 0001b9, Cloudflare library-iii.
  * Each blob is SHA-256 addressed at /objects/<sha>.bin. */
 export const WORKSPACE_WALLPAPERS = Object.freeze({
-  "home": {
+  "dashboard": {
     "sha": "656a4d103f5dd4dd4450a9da0954099c686b0e7d6d60f6fbfc35b3e14b2fe4a6",
     "ext": "jpg",
     "name": "clouds-over-rice-terraces-high-quality.jpg",
@@ -72,7 +72,7 @@ export function workspaceWallpaperForRoute(route) {
     route==="colosseum/settings"?"settings":
     route==="apple-hig-reader/readme"||/^project\/[a-z0-9-]+\/readme$/.test(route)?"colosseum/readme":
     route.startsWith("apple-hig-reader/")?"projects":route;
-  return WORKSPACE_WALLPAPERS[key]||WORKSPACE_WALLPAPERS.home;
+  return WORKSPACE_WALLPAPERS[key]||WORKSPACE_WALLPAPERS.dashboard;
 }
 export function applyWorkspaceWallpaper(doc,route) {
   const wallpaper=workspaceWallpaperForRoute(route);

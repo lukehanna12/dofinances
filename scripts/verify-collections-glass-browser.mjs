@@ -320,7 +320,7 @@ try{
  console.log("Desktop utility left icons: fixed 24px slot, exact 60% per-route scaling, aligned name/UID",JSON.stringify(rows));
 
  const tooltipProbe='(async()=>{const sidebar=document.getElementById("workspace-sidebar");'+
-  'const toTry=[["main-navigation",["Home","Projects"]],["project-navigation",["Docs","Utilities","Collections","Providers","Permissions","Diagnostics"]],["apple-hig-navigation",["Docs","Apple HIG Reader overview"]],["custom-project-navigation",["Docs"]],["sidebar-bottom",["Settings"]]];'+
+  'const toTry=[["main-navigation",["Dashboard","Projects"]],["project-navigation",["Docs","Utilities","Collections","Providers","Permissions","Diagnostics"]],["apple-hig-navigation",["Docs","Apple HIG Reader overview"]],["custom-project-navigation",["Docs"]],["sidebar-bottom",["Settings"]]];'+
   'const seen=[];for(const [navId,labels] of toTry){'+
   'for(const node of sidebar.querySelectorAll(".nav-stack"))node.hidden=node.id!==navId;'+
   'for(const label of labels){const nav=navId==="sidebar-bottom"?sidebar.querySelector(".sidebar-bottom"):document.getElementById(navId);'+

@@ -1,15 +1,16 @@
 /* Shared default for every workspace screen except Home/Dashboard.
    Covers Projects, Settings, Colosseum, Apple HIG and project README routes.
    Background belongs to the real workspace canvas, not an overlay. */
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])){--ui-canvas:#0a0a0a}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell){padding-bottom:var(--workspace-footer-height)}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell)::before{position:fixed}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell{position:relative;z-index:1}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell::after{
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])){--ui-canvas:#0a0a0a}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell){padding-bottom:var(--workspace-footer-height)}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell)::before{position:fixed}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell{position:relative;z-index:1}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell) > #workspace-shell::after{
  content:"";position:absolute;inset:var(--workspace-banner-height) 0 0;
- z-index:-1;pointer-events:none;background:var(--ui-canvas,#0a0a0a)}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) > .workspace-footer{position:fixed;inset:auto 0 0;z-index:0}
-html:has(body > #workspace-shell .view[data-view]:not([data-view="home"]):not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
+ z-index:-1;pointer-events:none;background:var(--ui-canvas,#0a0a0a);
+ box-shadow:rgba(255, 255, 255, 0.2) 0px 0px 1px inset;}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell) > .workspace-footer{position:fixed;inset:auto 0 0;z-index:0}
+html:has(body > #workspace-shell .view[data-view]:not([data-view="dashboard"]):not([hidden])) body:has(> #workspace-shell) .content{padding-bottom:32px}
 
 /* Workspace only: scroll-dependent large-title/edge treatment, followed by
    a BINARY threshold-triggered breadcrumb handoff. The document does not

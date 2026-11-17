@@ -196,7 +196,7 @@ test("Shared non-dashboard canvas and scroll-title template has one owner",async
  const nav=source("sites/_apex/app/assets/workspace-nav.js");
  const {initWorkspaceTitleTransition}=await import("../sites/_apex/app/assets/workspace-title-transition.js");
  assert.equal(typeof initWorkspaceTitleTransition,"function");
- assert.match(commonCss,/\.view\[data-view\]:not\(\[data-view="home"\]\):not\(\[hidden\]\)/);
+ assert.match(commonCss,/\.view\[data-view\]:not\(\[data-view="dashboard"\]\):not\(\[hidden\]\)/);
  assert.match(commonCss,/body\.workspace-title-transition\.workspace-title-passed \.workspace-scroll-heading\{\s*opacity:0/);
  assert.match(commonJs,/heading\.getBoundingClientRect\(\),header\.getBoundingClientRect\(\)/);
  assert.match(nav,/workspaceTitleTransition\.setRoute\(route\)/);

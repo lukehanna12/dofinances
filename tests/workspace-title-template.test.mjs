@@ -56,7 +56,7 @@ test("Every non-dashboard screen uses one geometry-driven title controller",()=>
  assert.doesNotMatch(nav,/initUtilitiesTitleTransition|initCollectionsTitleTransition/);
  assert.match(css,/body\.workspace-title-transition \.workspace-scroll-heading/);
  assert.match(css,/body\.workspace-title-transition\.workspace-title-passed/);
- assert.match(css,/\.view\[data-view\]:not\(\[data-view="home"\]\):not\(\[hidden\]\)/);
+ assert.match(css,/\.view\[data-view\]:not\(\[data-view="dashboard"\]\):not\(\[hidden\]\)/);
 });
 for(const count of [2,3,4]){
  test("Midpoint title handoff and reverse scroll work for "+count+" breadcrumb levels",()=>{
@@ -85,7 +85,7 @@ for(const count of [2,3,4]){
   assert.equal(m.body.classList.contains("workspace-title-passed"),false);
   assert.equal(m.breadcrumb.inert,false);
   m.header.inline.click();assert.equal(m.topCalls(),1,"Button becomes inert above the handoff");
-  m.controller.setRoute("home");
+  m.controller.setRoute("dashboard");
   assert.equal(m.body.classList.contains("workspace-title-transition"),false);
   assert.equal(m.header.inline.hidden,true);
   assert.equal(m.title.classList.contains("workspace-scroll-heading"),false);

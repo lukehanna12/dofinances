@@ -4,7 +4,7 @@ import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
 import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
-export const MAIN_ROUTES=Object.freeze(["home","projects","settings"]);
+export const MAIN_ROUTES=Object.freeze(["dashboard","projects","settings"]);
 export const COLOSSEUM_ROUTES=Object.freeze(["readme","utilities","collections","providers/local","providers/external","providers/credentials","permissions","diagnostics","settings"]);
 export const APPLE_HIG_ROUTES=Object.freeze(["readme","overview"]);
 const MAIN_SET=new Set(MAIN_ROUTES);
@@ -20,7 +20,7 @@ export function setWorkspaceProjectRegistry(projects){
   if(typeof window!=="undefined")window.dispatchEvent(new Event("workspace-projects-updated"));
 }
 
-const TITLE_CASE={home:"Home",projects:"Projects",settings:"Settings",readme:"Docs",
+const TITLE_CASE={dashboard:"Dashboard",projects:"Projects",settings:"Settings",readme:"Docs",
   utilities:"Utilities",collections:"Collections",providers:"Providers",
   permissions:"Permissions",diagnostics:"Diagnostics",overview:"Overview"};
 const PREFERENCE_KEY="dofinances.workspace.sidebar.collapsed";
@@ -42,6 +42,7 @@ export function formatWorkspaceTime(date,{timeZone,hour12=false,seconds=false}={
 export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   const raw=typeof hash==="string"?hash.replace(/^#/,"").toLowerCase():"";
   if(MAIN_SET.has(raw))return raw;
+  if(raw==="home")return "dashboard"; // Legacy hash, rewritten by render().
   if(raw==="account")return "settings"; // old dashboard deep-link
   if(raw==="colosseum")return "colosseum/readme";
   if(raw==="colosseum/providers")return "colosseum/providers/local"; // Legacy Providers route.
@@ -56,13 +57,14 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
     if(section==="capabilities")return "colosseum/utilities"; // legacy hash link
     if(PROJECT_SET.has(section))return "colosseum/"+section;
   }
-  if(raw)return "home"; // Invalid hashes must not silently select a different page.
+  if(raw)return "dashboard"; // Unknown hash resolves to the canonical Dashboard.
   if(/(?:^|[?&])federation_(?:linked|error)=/.test(search))return "settings";
   // The Worker serves the same authenticated document for these nested view URLs.
   const urlPath=typeof pathname==="string"?pathname.replace(/\/+$/,"").toLowerCase()
     .replace(/^\/dashboard(?=\/|$)/,"/app"):"";
   const slug=urlPath.startsWith("/app/")?urlPath.slice("/app/".length):"";
   if(MAIN_SET.has(slug))return slug;
+  if(slug==="home")return "dashboard"; // Legacy deep link.
   if(slug==="account")return "settings";
   if(slug==="colosseum")return "colosseum/readme";
   if(slug==="colosseum/providers")return "colosseum/providers/local"; // Legacy deep link.
@@ -73,7 +75,7 @@ export function resolveWorkspaceRoute(hash="",search="",pathname=""){
   if(slug==="colosseum/capabilities")return "colosseum/utilities"; // legacy deep link
   if(slug.startsWith("colosseum/")&&PROJECT_SET.has(slug.slice("colosseum/".length)))
     return slug;
-  return "home";
+  return "dashboard";
 }
 export function workspaceRouteDetails(route){
   const selected=resolveWorkspaceRoute("#"+route);
@@ -99,7 +101,7 @@ export function workspaceRouteDetails(route){
   }
   const label=TITLE_CASE[selected];
   return {route:selected,project:false,projectKey:null,label,
-    breadcrumb:"Dashboard / "+label,
+    breadcrumb:selected==="dashboard"?"Dashboard":"Dashboard / "+label,
     subtitle:selected==="settings"?"Manage account & security":
       selected==="projects"?"Your projects":"Your personal workspace"};
 }
@@ -137,6 +139,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const legacyStudioProviders=views.some(v=>v.dataset.view==="colosseum/providers")&&
     !views.some(v=>v.dataset.view==="colosseum/providers/local");
   const links=[...doc.querySelectorAll(".nav-link[data-route]")];
+  const footerSettings=doc.querySelector?.('.sidebar-bottom .nav-link[data-route="settings"]');
   const providerParent=doc.querySelector?.("[data-providers-toggle]");
   const providerSubnav=doc.getElementById?.("providers-subnavigation");
   let providersExpanded=false;
@@ -270,9 +273,19 @@ export function initWorkspaceNavigation(doc=document,win=window){
       : resolveWorkspaceRoute(win.location.hash,win.location.search,win.location.pathname);
     // hashchange/popstate can both fire for one navigation. A repeated route
     // must not trigger another wallpaper repaint, layout measurement or decode.
+    // Replace legacy #home bookmarks with the canonical #dashboard URL
+    // without reloading or losing the existing Dashboard content.
+    if(win.location?.hash?.toLowerCase()==="#home"){
+      try{win.history?.replaceState?.(win.history.state,"",
+        win.location.pathname+(win.location.search||"")+"#dashboard");}catch{}
+    }
     if(route===lastRenderedRoute)return;
     const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
+    // The one footer Settings action stays within the active Colosseum
+    // sidebar; the view remains shared with workspace-level Settings.
+    if(footerSettings)
+      footerSettings.href=meta.projectKey==="colosseum"?"#colosseum/settings":"#settings";
     if(legacyStudioProviders&&route==="colosseum/providers/local"){
       meta.label="Providers";
       meta.breadcrumb="Projects / Colosseum / Providers";
@@ -563,7 +576,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(isMobile())closeDrawer(true);
     });
     // Warm only likely next routes; avoid pre-decoding eight full-size images.
-    const anticipate=()=>wallpaper.warm(link.href?.split("#")[1]||"home");
+    const anticipate=()=>wallpaper.warm(link.href?.split("#")[1]||"dashboard");
     link.addEventListener("pointerenter",anticipate,{passive:true});
     link.addEventListener("focus",anticipate,{passive:true});
   }

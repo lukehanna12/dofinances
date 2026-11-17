@@ -114,7 +114,7 @@ export function initWorkspaceTitleTransition(doc=document,win=window,animateToTo
     // Single owner for every route: never let competing controllers
     // reset breadcrumb.inert or leave stale title geometry behind.
     reset();
-    if(route==="home")return; // The dashboard is the sole exception.
+    if(route==="dashboard")return; // The dashboard is the sole exception.
     const view=[...doc.querySelectorAll(".content > .view[data-view]")].find(node=>!node.hidden);
     heading=view?.querySelector("h1")??null;
     if(!heading?.getBoundingClientRect||!heading.style?.setProperty||!measure()){

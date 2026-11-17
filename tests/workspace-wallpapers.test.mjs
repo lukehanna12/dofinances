@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {WORKSPACE_WALLPAPERS,workspaceWallpaperForRoute,applyWorkspaceWallpaper,initWorkspaceWallpaper} from "../sites/_apex/app/assets/workspace-wallpapers.js";
 
 test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
-  const routes=["home","projects","settings","colosseum/utilities","colosseum/collections","colosseum/providers","colosseum/permissions","colosseum/diagnostics","colosseum/settings"];
+  const routes=["dashboard","projects","settings","colosseum/utilities","colosseum/collections","colosseum/providers","colosseum/permissions","colosseum/diagnostics","colosseum/settings"];
   const images=routes.map(route=>workspaceWallpaperForRoute(route));
   assert.equal(new Set(images.map(image=>image.sha)).size,8);
   assert.strictEqual(images[2],images[8]);
@@ -18,7 +18,7 @@ test("nine app routes select eight distinct SHA-addressed wallpapers",()=>{
 test("wallpaper geometry derives both the image and spacer from header height",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
   assert.match(css,/--workspace-banner-height:202\.65625px/);
-  assert.match(css,/body:has\(> #workspace-shell \.view\[data-view="home"\]:not\(\[hidden\]\)\) \{\s*--workspace-banner-height:538px/);
+  assert.match(css,/body:has\(> #workspace-shell \.view\[data-view="dashboard"\]:not\(\[hidden\]\)\) \{\s*--workspace-banner-height:538px/);
   // Both bars hide 94px; sixfold applies only to the exposed 74px.
   assert.equal(538-(44+50),6*(168-(44+50)));
   // Match the static spacing on either side of the desktop D badge.
@@ -28,7 +28,7 @@ test("wallpaper geometry derives both the image and spacer from header height",(
 });
 test("every named page has the exact owner-selected wallpaper",()=>{
   const expected={
-    home:"clouds-over-rice-terraces-high-quality.jpg",
+    dashboard:"clouds-over-rice-terraces-high-quality.jpg",
     projects:"winding-icelandic-river-mountains.webp",
     settings:"misty-tropical-forest-hillside.avif",
     "colosseum/readme":"golden-ridges-dark-sand.png",
@@ -45,7 +45,7 @@ test("every named page has the exact owner-selected wallpaper",()=>{
 });
 test("footer ink colors reflect the six page-specific contrast adjustments",()=>{
   const expected={
-    home:"#5c5c5c",
+    dashboard:"#5c5c5c",
     projects:"#454545",
     settings:"#626262",
     "colosseum/readme":"#b1a59a",
@@ -62,13 +62,13 @@ test("footer ink colors reflect the six page-specific contrast adjustments",()=>
 test("Home keeps its original pixels and a near-native desktop foreground",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
   assert.match(css,/width:min\(100%,1100px\)/);
-  assert.match(css,/data-wallpaper-route="home"/);
+  assert.match(css,/data-wallpaper-route="dashboard"/);
   assert.match(css,/filter:blur\(10px\)/);
   assert.match(css,/\.workspace-home-art-top/);
   assert.doesNotMatch(css,/\.workspace-home-art-bottom/);
-  assert.equal(WORKSPACE_WALLPAPERS.home.sha,
+  assert.equal(WORKSPACE_WALLPAPERS.dashboard.sha,
     "656a4d103f5dd4dd4450a9da0954099c686b0e7d6d60f6fbfc35b3e14b2fe4a6");
-  assert.equal(WORKSPACE_WALLPAPERS.home.path,"/app/assets/home-rice-terraces-hq.jpg");
+  assert.equal(WORKSPACE_WALLPAPERS.dashboard.path,"/app/assets/home-rice-terraces-hq.jpg");
 });
 test("route changes decode new wallpaper outside the immediate navigation turn and discard stale paints",async()=>{
   const variables=new Map(),writes=[];
@@ -87,11 +87,11 @@ test("route changes decode new wallpaper outside the immediate navigation turn a
   }
   const win={Image:TestImage,requestAnimationFrame:fn=>{frames.push(fn);return frames.length;}};
   const controller=initWorkspaceWallpaper(doc,win);
-  controller.show("home",true);
-  assert.equal(body.dataset.wallpaperRoute,"home");
+  controller.show("dashboard",true);
+  assert.equal(body.dataset.wallpaperRoute,"dashboard");
   controller.show("projects");
   controller.show("settings");
-  assert.equal(body.dataset.wallpaperRoute,"home","sidebar responds before image decode");
+  assert.equal(body.dataset.wallpaperRoute,"dashboard","sidebar responds before image decode");
   assert.equal(pending.length,2);
   pending[0].resolve();
   await new Promise(resolve=>setImmediate(resolve));
@@ -113,7 +113,7 @@ test("route changes decode new wallpaper outside the immediate navigation turn a
 test("artwork scrolls in document flow, without a fixed bottom overlay",()=>{
   const css=readFileSync(new URL("../sites/_apex/app/assets/workspace-wallpapers.css",import.meta.url),"utf8");
   assert.match(css,/position:absolute;\s*inset:calc\(-1 \* var\(--workspace-top-overpull\)\)/);
-  assert.match(css,/body\[data-wallpaper-route="home"\] > \.workspace-home-art-top/);
+  assert.match(css,/body\[data-wallpaper-route="dashboard"\] > \.workspace-home-art-top/);
   assert.match(css,/width:min\(100%,1100px\)/);
   assert.match(css,/background-position:center,var\(--workspace-wallpaper-position,center 46%\)/);
   assert.doesNotMatch(css,/workspace-home-art-bottom|workspace-at-end/);

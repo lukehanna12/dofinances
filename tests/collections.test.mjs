@@ -238,7 +238,7 @@ test("Collections title uses the shared non-Home heading contract without custom
  assert.doesNotMatch(css,/transform:translateX\(-50%\)/);
  assert.match(css,/#cs-root \.cs-wrap\{width:100%;margin:0;padding:0\}/);
  const common=src("sites/_apex/app/assets/workspace-enhancements.css");
- assert.match(common,/\.view:not\(\[data-view="home"\]\) > \.page-heading > h1/);
+ assert.match(common,/\.view:not\(\[data-view="dashboard"\]\) > \.page-heading > h1/);
 });
 
 test("Collections uses one route-scoped black canvas without an overlay",()=>{
@@ -526,7 +526,7 @@ test("Uploaded native SVGs replace only the requested sidebar icons in both shel
   const navCss=src("sites/_apex/app/assets/workspace-theme.css");
   const workflow=src(".github/workflows/site.yml");
   const routes=[
-    ["home","#home","dashboard"],
+    ["dashboard","#dashboard","dashboard"],
     ["utilities","#colosseum/utilities","utilities"],
     ["collections","#colosseum/collections","collections"],
     ["permissions","#colosseum/permissions","permissions"],

@@ -7,12 +7,12 @@ const asset=name=>read("assets/"+name);
 
 test("Production Home replaces only its own view with the exact CTA6 mosaic",()=>{
   const html=read("index.html");
-  const homeStart=html.indexOf('<section class="view dashboard-home" data-view="home"');
+  const homeStart=html.indexOf('<section class="view dashboard-home" data-view="dashboard"');
   const projectsStart=html.indexOf('<section class="view" data-view="projects"');
   assert.ok(homeStart>=0&&projectsStart>homeStart);
   const home=html.slice(homeStart,projectsStart);
   assert.match(home,/id="cta6-mosaic"/);
-  assert.match(home,/<h1 id="home-title">doof<\/h1>/);
+  assert.match(home,/<h1 id="dashboard-title">doof<\/h1>/);
   assert.match(home,/href="#projects"/);
   assert.ok(home.includes('<a class="cta6-action" href="#projects">See Projects <svg'),
     "The original action label remains readable before its arrow");
@@ -95,10 +95,10 @@ test("Home bottom action and global navigation hiding remain scoped to the activ
   assert.ok(css.includes('transform:translateX(-50%);'));
   assert.ok(css.includes('.dashboard-home .cta6-bottom-action .cta6-action{margin-top:0}'));
   assert.ok(css.includes(scope+' #global-clock,'));
-  assert.ok(css.includes(scope+' #global-menu-links > a[href="#home"]{'));
+  assert.ok(css.includes(scope+' #global-menu-links > a[href="#dashboard"]{'));
   assert.ok(html.includes('id="global-clock"'));
-  assert.ok(html.includes('href="#home">Workspace</a>'));
-  assert.ok(html.includes('<h1 id="home-title">doof</h1>'));
+  assert.ok(html.includes('href="#dashboard">Dashboard</a>'));
+  assert.ok(html.includes('<h1 id="dashboard-title">doof</h1>'));
 });
 
 test("Dashboard alone uses #676b71 for the upper bar and removes its Account button",()=>{

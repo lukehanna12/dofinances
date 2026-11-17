@@ -20,7 +20,7 @@ test("Docs has the exact common page title and non-duplicated README subheading"
  assert.ok(css.includes('margin-top:calc(-1 * var(--workspace-panel-overlap))'));
  assert.doesNotMatch(css,/\.rm-heading h1\{/);
  const shared=asset("workspace-enhancements.css");
- assert.ok(shared.includes('.content > .view:not([data-view="home"]) > .page-heading > h1'));
+ assert.ok(shared.includes('.content > .view:not([data-view="dashboard"]) > .page-heading > h1'));
 });
 test("Docs canvas blends the screenshot-measured top wallpaper with the document at 60%",()=>{
  const css=asset("project-readme.css");
@@ -35,7 +35,7 @@ test("Docs canvas blends the screenshot-measured top wallpaper with the document
  // both measured endpoints, which proves why the prior palette looked wrong.
  const oldCanvas=[8,16,26];
  assert.ok(oldCanvas[2]>Math.max(doc[2],wallpaperMean[2]));
- const docsRule='html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="home"]):not([hidden])){--ui-canvas:'+hex(expected)+'}';
+ const docsRule='html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([data-view="dashboard"]):not([hidden])){--ui-canvas:'+hex(expected)+'}';
  assert.ok(css.includes(docsRule));
  // Unlike an existence-only check, this guards the CSS specificity regression
  // that allowed the shared non-Home near-black canvas to override Docs.
@@ -61,7 +61,7 @@ test("Docs footer text screen-blends to a modest brighter tone without changing 
  assert.ok(html.includes('<span class="workspace-footer-text">© DoFinances · 2026</span>'));
  assert.ok(css.includes('body[data-wallpaper-route$="/readme"] > .workspace-footer .workspace-footer-text{'));
  assert.ok(css.includes('color:#546478;opacity:.58;mix-blend-mode:screen;text-shadow:none'));
- assert.ok(css.includes('body[data-wallpaper-route="home"] > .workspace-footer'));
+ assert.ok(css.includes('body[data-wallpaper-route="dashboard"] > .workspace-footer'));
  assert.ok(css.includes('var(--workspace-wallpaper-image,none)'));
  const ink=color("#546478");
  // Image pixel mean is not encoded in Git; test the adaptive Screen blend
