@@ -566,7 +566,8 @@ test("Mobile drawer button exits left and the lower-bar breadcrumbs reclaim its 
  assert.ok(mobile.includes("opacity:0;transform:translateX(-20px);pointer-events:none"));
  assert.ok(mobile.includes("body:has(> #workspace-shell.is-mobile-open) .topbar-start{gap:0;}"));
  assert.ok(mobile.includes("@media(max-width:760px) and (prefers-reduced-motion:reduce){"));
- assert.ok(mobile.includes("#workspace-shell #mobile-nav-toggle{transition:none!important;}"));
+ assert.ok(mobile.includes("#workspace-shell #mobile-nav-toggle,") &&
+    mobile.includes("#workspace-shell .topbar-start > .global-clock{transition:none!important;}"));
  // The same authoritative drawer class drives opacity, geometry, and the
  // existing functional close control, without a timer or extra state machine.
  const m=mockNavigation();m.mobile(true);
