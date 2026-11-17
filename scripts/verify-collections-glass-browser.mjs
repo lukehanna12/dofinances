@@ -323,7 +323,7 @@ try{
   'const toTry=[["main-navigation",["Home","Projects"]],["project-navigation",["Docs","Utilities","Collections","Providers","Permissions","Diagnostics"]],["apple-hig-navigation",["Docs","Apple HIG Reader overview"]],["custom-project-navigation",["Docs"]],["sidebar-bottom",["Settings"]]];'+
   'const seen=[];for(const [navId,labels] of toTry){'+
   'for(const node of sidebar.querySelectorAll(".nav-stack"))node.hidden=node.id!==navId;'+
-  'for(const label of labels){const nav=document.getElementById(navId);'+
+  'for(const label of labels){const nav=navId==="sidebar-bottom"?sidebar.querySelector(".sidebar-bottom"):document.getElementById(navId);'+
   'const a=[...nav.querySelectorAll(".nav-link")].find(x=>x.getAttribute("aria-label")===label);'+
   'if(!a)throw Error("Missing nav screen link "+navId+":"+label);'+
   'a.dispatchEvent(new PointerEvent("pointerenter",{pointerType:"mouse"}));'+
