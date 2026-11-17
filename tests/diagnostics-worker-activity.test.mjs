@@ -88,7 +88,11 @@ test("The ONE centered legend spans both bars and controls colors in both CPU ch
  }
  assert.equal(p90.children[0].children[0].textContent,"CPU p90");
  assert.equal(p99.children[0].children[0].textContent,"CPU p99");
- assert.ok(css.includes("align-items:center;justify-content:center;flex-wrap:wrap"));
+ assert.ok(css.includes("align-items:center;justify-content:safe center;flex-wrap:nowrap"));
+ assert.ok(css.includes("overflow-x:auto;scrollbar-width:thin"),
+   "The centered Worker legend remains a single row and scrolls only when crowded");
+ assert.ok(css.includes("gap:7px;flex:none;white-space:nowrap"),
+   "Worker labels stay intact inside the one-row key");
  assert.ok(css.includes("grid-template-columns:repeat(2,minmax(0,1fr))"));
  assert.ok(css.includes("border-right:1px solid var(--dg-border)"));
 });

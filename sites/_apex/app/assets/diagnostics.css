@@ -115,11 +115,12 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-usage-segment + .dg-usage-segment{box-shadow:inset 1px 0 0 #1d1d1d}
 @keyframes dg-worker-share-arrive{from{width:0}to{width:var(--dg-worker-share,0%)}}
 #diagnostics-root .dg-activity-legend{
- display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
- column-gap:20px;row-gap:9px;width:100%;min-width:0;margin:17px auto 24px;
+ display:flex;align-items:center;justify-content:safe center;flex-wrap:nowrap;
+ gap:20px;width:100%;min-width:0;margin:17px auto 24px;
+ overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--dg-border) transparent;
 }
 #diagnostics-root .dg-activity-key{
- display:inline-flex;align-items:center;gap:7px;min-width:0;
+ display:inline-flex;align-items:center;gap:7px;flex:none;white-space:nowrap;
  color:var(--dg-muted);font-size:12px;font-weight:530;line-height:1.4;
 }
 #diagnostics-root .dg-activity-dot{
