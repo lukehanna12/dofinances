@@ -333,6 +333,14 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}
+  /* Clock leaves the lower bar with the rail, freeing the mobile opener.
+     The same 240ms easing reverses as the viewport returns to desktop. */
+  #workspace-shell .topbar-start{padding-inline-start:0;}
+  #workspace-shell .topbar-start > .global-clock{
+    opacity:0;visibility:hidden;pointer-events:none;
+    transform:translate(-32px,-50%);
+    transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s linear 240ms;
+  }
   /* The lower top-bar's mobile sidebar opener releases its full layout slot as
      it fades/translates left, allowing the breadcrumb navigation to glide
      left in the same 210ms gesture. Closing the drawer reverses both paths. */
@@ -397,7 +405,12 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
    immediately; no staged timers or animation frames are required. */
 @media(max-width:760px) and (prefers-reduced-motion:reduce){
   body:has(> #workspace-shell) .topbar-start,
-  #workspace-shell #mobile-nav-toggle{transition:none!important;}
+  #workspace-shell #mobile-nav-toggle,
+  #workspace-shell .topbar-start > .global-clock{transition:none!important;}
+}
+@media(min-width:761px) and (prefers-reduced-motion:reduce){
+  #workspace-shell .topbar-start,
+  #workspace-shell .topbar-start > .global-clock{transition:none!important;}
 }
 @keyframes nav-label-marquee{
   0%,12%{transform:translateX(0)}
@@ -433,11 +446,22 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   .shell.liquid-glass-preview .nav-label.is-marquee .nav-label-text{animation:none;}
 }
 
-/* Global clock — replaces the former brand and its boxed D in the uppermost bar.
- * Desktop with visible navigation: far left. Smaller widths: precise center.
- * Only the search and menu controls anchor the right edge. */
+/* Single clock in the lower workspace header. The far-left slot collapses and
+ * slides left with the desktop rail when entering the mobile breakpoint. */
 .global-menu-inner{max-width:none;padding-inline:clamp(14px,2.1vw,32px);position:relative}
 .global-menu .global-mobile-toggle{display:grid}
+#workspace-shell .topbar-start{
+  position:relative;
+  padding-inline-start:168px;
+  transition:padding-inline-start 240ms var(--ui-ease);
+}
+#workspace-shell .topbar-start > .global-clock{
+  position:absolute;left:0;top:50%;
+  max-width:156px;overflow:hidden;
+  transform:translateY(-50%);
+  opacity:1;visibility:visible;
+  transition:transform 240ms var(--ui-ease),opacity 180ms ease,visibility 0s;
+}
 .global-clock{
   display:inline-flex;align-items:baseline;gap:9px;flex:none;
   min-width:119px;white-space:nowrap;
@@ -468,7 +492,6 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
 .clock-custom-entry input[aria-invalid="true"]{border-color:var(--ui-danger)}
 #clock-settings-feedback{min-height:1.1rem;margin:2px 0 0}
 @media(min-width:1280px){
-  .global-clock{margin-right:clamp(16px,3vw,48px)}
   .global-menu.is-open .global-menu-links{
     position:absolute;top:calc(var(--global-menu-height) + 8px);
     right:clamp(14px,2.1vw,32px);z-index:2;
@@ -482,22 +505,16 @@ button.shadcn-breadcrumb-page:focus-visible{outline:2px solid var(--ui-focus);ou
   .global-menu.is-open .global-menu-links a:hover{background:rgba(255,255,255,.08)}
 }
 @media(max-width:1279px){
-  .global-clock{
-    position:absolute;left:50%;top:50%;
-    transform:translate(-50%,-50%);
-    min-width:0;justify-content:center;
-    font-size:14px;pointer-events:auto;
-  }
+  .global-clock{font-size:14px}
   .global-menu-actions{margin-left:auto;z-index:1}
 }
-/* Compact-sidebar mode (761–1279px) and mobile: the clock alone is
- * centered in the top bar. All page links and Account live in the menu. */
+/* Compact-sidebar mode and mobile: only the menu/search remain in the upper
+ * header, while the sole live clock belongs to the lower workspace header. */
 @media(max-width:1279px){
   .global-menu-links{display:none}
   .global-menu.is-open .global-menu-links{display:flex}
   .global-menu-actions .global-menu-account{display:none}
   .global-menu-inner{width:100%;box-sizing:border-box;justify-content:flex-end}
-  .global-clock{left:50%;right:auto;transform:translate(-50%,-50%)}
   .global-menu-actions{
     position:absolute;top:50%;right:clamp(14px,2.1vw,32px);
     transform:translateY(-50%);

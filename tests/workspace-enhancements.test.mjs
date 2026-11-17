@@ -298,7 +298,7 @@ test("blank rail expands from a dedicated pointer region without hover tooltips"
   assert.match(nav,/railExpandTarget\?\.addEventListener\?\.\("keydown"/);
 });
 
-test("compact topbar centers only its clock and moves navigation into the right-hand menu",()=>{
+test("upper navigation stays usable while the clock moves into the lower workspace bar",()=>{
   const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
   assert.ok(css.includes("@media(max-width:1279px)"),"compact topbar must match the 1279px sidebar rail boundary");
   assert.ok(css.includes("@media(min-width:1280px)"),"full top navigation begins only in wide mode");
@@ -306,10 +306,15 @@ test("compact topbar centers only its clock and moves navigation into the right-
   assert.ok(compact.includes(".global-menu-links{display:none}"),"top-level links are hidden in thin mode");
   assert.ok(compact.includes(".global-menu.is-open .global-menu-links{display:flex}"),"menu button still opens links");
   assert.ok(compact.includes(".global-menu-actions .global-menu-account{display:none}"),"Account is not a center-row button in thin mode");
-  assert.ok(compact.includes(".global-clock{left:50%;right:auto;transform:translate(-50%,-50%)}"),"clock is centered in the viewport");
+  assert.ok(!compact.includes(".global-clock{left:50%;right:auto;transform:translate(-50%,-50%)}"),"no centered clock in upper navigation");
+  assert.ok(css.includes("#workspace-shell .topbar-start > .global-clock{"),"clock anchored to lower bar");
   for(const htmlPath of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(htmlPath);
-    assert.ok(html.includes('id="global-clock"'),"single topbar clock present");
+    assert.equal((html.match(/id="global-clock"/g)||[]).length,1,"one live clock");
+    const upper=html.slice(html.indexOf('<nav class="global-menu"'),html.indexOf('</nav>'));
+    const lower=html.slice(html.indexOf('<header class="topbar">'),html.indexOf('<div class="workspace-scroll"'));
+    assert.ok(!upper.includes('id="global-clock"'),"upper bar has no clock");
+    assert.ok(lower.includes('id="global-clock"'),"lower bar owns clock");
     assert.ok(html.includes('id="global-menu-toggle"'),"right-edge menu control present");
     assert.ok(html.includes('id="global-search-toggle"'),"right-edge search control present");
   }

@@ -533,6 +533,20 @@ test("click selects route immediately, without awaiting the browser hashchange e
   assert.equal(target.getAttribute("aria-current"),"page");
 });
 
+test("Clock leaves and returns alongside the sidebar on mobile breakpoints",async()=>{
+  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
+  assert.ok(css.includes("padding-inline-start:168px;"));
+  assert.ok(css.includes("transition:padding-inline-start 240ms var(--ui-ease);"));
+  assert.ok(css.includes("#workspace-shell .topbar-start{padding-inline-start:0;}"));
+  assert.ok(css.includes("opacity:0;visibility:hidden;pointer-events:none;"));
+  assert.ok(css.includes("transform:translate(-32px,-50%);"));
+  assert.ok(css.includes("#workspace-shell .topbar-start > .global-clock{transition:none!important;}"));
+  const html=await read("../sites/_apex/app/index.html");
+  const a=html.indexOf('<header class="topbar">'),b=html.indexOf('id="global-clock"'),
+    c=html.indexOf('id="mobile-nav-toggle"'),d=html.indexOf('id="breadcrumb"');
+  assert.ok(a>=0&&a<b&&b<c&&c<d,"clock comes first in the lower bar");
+});
+
 test("Mobile drawer button exits left and the lower-bar breadcrumbs reclaim its slot, reversing on close",async()=>{
  const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
  const base=css.indexOf("@media(max-width:760px){");

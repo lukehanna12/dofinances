@@ -97,20 +97,27 @@ try{
   await until('document.readyState==="complete" && !!document.querySelector("#workspace-shell.liquid-glass-preview")',"Studio glass initialization",25000);
   await until('document.querySelector("#workspace-shell").classList.contains("is-compact-rail")',"responsive compact rail");
 
-  // Thin mode must show one clock centered, not a row of top-level links.
+  // Thin mode: one clock in the lower bar, left-aligned and vertically centered.
   const compactTopbar=await evaluate(String.raw`(()=>{
     const clock=document.getElementById("global-clock");
-    const rect=clock.getBoundingClientRect();
+    const rect=clock.getBoundingClientRect(),lower=document.querySelector(".topbar").getBoundingClientRect();
     const links=document.getElementById("global-menu-links");
     const account=document.querySelector(".global-menu-actions .global-menu-account");
     const actions=document.querySelector(".global-menu-actions");
     const actionRect=actions.getBoundingClientRect();
-    return {clockX:rect.left+rect.width/2,viewport:document.documentElement.clientWidth,
+    return {clockLeft:rect.left,clockY:rect.top+rect.height/2,
+      lowerLeft:lower.left,lowerY:lower.top+lower.height/2,
+      clockInLower:!!document.querySelector(".topbar-start > #global-clock"),
+      clockVisibility:getComputedStyle(clock).visibility,
       links:getComputedStyle(links).display,account:getComputedStyle(account).display,
-      actionsRight:actionRect.right};
+      viewport:document.documentElement.clientWidth,actionsRight:actionRect.right};
   })()`);
-  assert.ok(Math.abs(compactTopbar.clockX-compactTopbar.viewport/2)<2,
-    "Thin-mode clock must be centered independently of navigation: "+JSON.stringify(compactTopbar));
+  assert.ok(compactTopbar.clockInLower&&compactTopbar.clockVisibility==="visible",
+    "Clock must be visible in the lower bar: "+JSON.stringify(compactTopbar));
+  assert.ok(compactTopbar.clockLeft>=compactTopbar.lowerLeft&&compactTopbar.clockLeft<compactTopbar.lowerLeft+70,
+    "Clock must be far left: "+JSON.stringify(compactTopbar));
+  assert.ok(Math.abs(compactTopbar.clockY-compactTopbar.lowerY)<3,
+    "Clock must be vertically centered: "+JSON.stringify(compactTopbar));
   assert.equal(compactTopbar.links,"none","Top-level links must hide in thin mode");
   assert.equal(compactTopbar.account,"none","Account button must hide in thin mode");
   assert.ok(compactTopbar.viewport-compactTopbar.actionsRight<50,
@@ -557,6 +564,18 @@ try{
     await metrics(mobileWidth,mobileHeight);
     await until('window.matchMedia("(max-width: 760px)").matches && document.getElementById("mobile-nav-toggle")?.getBoundingClientRect().width>0',
       "mobile breakpoint at "+mobileWidth);
+    await until('getComputedStyle(document.getElementById("global-clock")).visibility==="hidden"',
+      "clock slides off with the mobile sidebar at "+mobileWidth);
+    const mobileClock=await evaluate(String.raw`(()=>{
+      const clock=document.getElementById("global-clock");
+      const parent=clock.parentElement;
+      return {inLower:!!clock.closest(".topbar-start"),
+        leftPadding:parseFloat(getComputedStyle(parent).paddingLeft),
+        opacity:Number(getComputedStyle(clock).opacity),
+        visibility:getComputedStyle(clock).visibility};
+    })()`);
+    assert.ok(mobileClock.inLower&&mobileClock.leftPadding<1&&mobileClock.opacity<.001&&mobileClock.visibility==="hidden",
+      "Clock stays out of the mobile sidebar opener's way: "+JSON.stringify({mobileWidth,mobileClock}));
     await evaluate('location.hash="#settings";window.scrollTo(0,0);true');
     await until('document.querySelector(".view[data-view=settings]")?.hidden===false',
       "mobile Settings view at "+mobileWidth);

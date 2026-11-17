@@ -32,7 +32,6 @@
 <body>
   <nav class="global-menu" id="global-menu" aria-label="Global navigation">
     <div class="global-menu-inner">
-      <time id="global-clock" class="global-clock" aria-label="Current time"><span id="global-clock-time">--:--:--</span><span id="global-clock-zone" class="global-clock-zone">Local</span></time>
       <div class="global-menu-links" id="global-menu-links">
         <a data-global-route href="#home">Workspace</a>
         <a data-global-route href="#projects">Projects</a>
@@ -135,6 +134,7 @@
     <div class="main">
       <header class="topbar">
         <div class="topbar-start">
+          <time id="global-clock" class="global-clock" aria-label="Current time"><span id="global-clock-time">--:--:--</span><span id="global-clock-zone" class="global-clock-zone">Local</span></time>
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
           <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
             <ol class="shadcn-breadcrumb-list">
@@ -197,7 +197,7 @@
               <header class="st-group-heading"><h2 id="st-general-heading">General</h2></header>
               <section class="panel settings-panel clock-settings st-setting-item" aria-labelledby="clock-settings-heading">
           <div class="st-item-label"><h3 id="clock-settings-heading">Time zone</h3>
-          <p class="st-help">Choose the time zone shown in the global top bar.</p></div>
+          <p class="st-help">Choose the time zone shown in the lower top bar.</p></div>
           <div class="clock-settings-fields st-item-control">
             <label for="clock-zone-select">Display time zone</label>
             <select id="clock-zone-select">
