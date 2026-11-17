@@ -186,28 +186,76 @@ html:has(body > #workspace-shell .view[data-view="colosseum/permissions"]:not([h
 #pm-root .pm-permission-mark[data-allowed="true"]{color:#e3e3e3}
 #pm-root .pm-rule-row[data-enabled="false"] .pm-permission-mark{color:#555}
 #pm-root .pm-rule-status{font-size:11px;color:#a3a3a3}
+ /* Same green status badge as Projects: exact background, ink, radius and type. */
+#pm-root .pm-rule-row[data-enabled="true"] .pm-rule-status{
+ display:inline-flex;align-items:center;justify-self:start;white-space:nowrap;
+ background:#173827;color:#86efac;border-radius:4px;
+ font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;
+}
 #pm-root .pm-rule-row[data-enabled="false"] .pm-rule-status{color:#747474}
 #pm-root .pm-edit-rule{width:29px;height:29px;border:0;border-radius:8px;background:transparent;color:#777;padding:0;display:grid;place-items:center}
 #pm-root .pm-edit-rule:hover:not(:disabled){background:#252525;color:#eee}
 #pm-root .pm-edit-rule svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 #pm-root .pm-empty{padding:24px 0;color:var(--pm-muted);font-size:12px}
-#pm-root .pm-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:16px}
-#pm-root .pm-policy-grid:has(#pm-lifecycle[hidden]){grid-template-columns:1fr}
+/* Both policies stack at every viewport: the execution controls, not the
+   adjacent lifecycle section, consume the two wide-screen columns. */
+#pm-root .pm-policy-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-top:16px}
+#pm-root .pm-exec,#pm-root .pm-lifecycle{grid-column:1/-1;min-width:0}
+#pm-root .pm-exec:not([hidden]) + .pm-lifecycle:not([hidden]){margin-top:14px}
 #pm-root .pm-policy-details{border-top:1px solid var(--pm-line);border-bottom:1px solid var(--pm-line);min-width:0}
 #pm-root .pm-policy-details summary{min-height:53px;display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;color:#e5e5e5;font-size:13px;font-weight:500}
 #pm-root .pm-policy-details summary::-webkit-details-marker{display:none}
 #pm-root .pm-policy-details summary svg{width:15px;height:15px;fill:none;stroke:#858585;stroke-width:1.8;transition:transform .2s var(--pm-ease)}
 #pm-root .pm-policy-details[open] summary svg{transform:rotate(180deg)}
-#pm-root .pm-exec-grid{display:grid;grid-template-columns:1fr;gap:0;padding-bottom:8px}
+#pm-root .pm-exec-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding-bottom:8px}
+@media(min-width:901px){
+ /* Preserve reading order: first half of controls in the left column,
+    remaining half in the right; JS sets the exact number of grid rows. */
+ #pm-root #pm-execution-fields{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:repeat(var(--pm-execution-row-count,1),minmax(0,auto));
+  grid-auto-flow:column;column-gap:24px;
+ }
+}
 #pm-root .pm-exec-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,99px) auto 52px;align-items:center;gap:8px;min-height:49px;border-top:1px solid #202020}
 #pm-root .pm-exec-field label{font-size:11px;color:#b7b7b7;line-height:1.35;overflow-wrap:anywhere}
 #pm-root .pm-exec-field input[type="number"]{min-width:0;width:100%;height:31px;background:var(--pm-fill);color:var(--pm-ink);border:1px solid #343434;border-radius:7px;padding:5px 7px;font-size:11px}
-#pm-root .pm-exec-field input[type="checkbox"]{width:16px;height:16px;justify-self:end;accent-color:#e5e5e5}
+/* Native checkbox semantics with the same neutral surface, precise stroke,
+   keyboard focus ring and restrained transitions as the other Permissions UI. */
+#pm-root .pm-exec-field input[type="checkbox"]{
+ appearance:none;-webkit-appearance:none;
+ width:18px;height:18px;min-width:18px;justify-self:end;
+ display:grid;place-items:center;margin:0;padding:0;
+ border:1px solid #5b5b5b;border-radius:5px;background:#171717;
+ cursor:pointer;transition:background-color .17s ease,border-color .17s ease,transform .15s var(--pm-ease);
+}
+#pm-root .pm-exec-field input[type="checkbox"]::after{
+ content:"";display:block;width:5px;height:9px;
+ border-right:2px solid #171717;border-bottom:2px solid #171717;
+ opacity:0;transform:translateY(-1px) rotate(45deg) scale(.6);
+ transition:opacity .15s ease,transform .18s var(--pm-ease);
+}
+#pm-root .pm-exec-field input[type="checkbox"]:hover:not(:disabled):not(:checked){
+ background:#262626;border-color:#858585;
+}
+#pm-root .pm-exec-field input[type="checkbox"]:active:not(:disabled){transform:scale(.9)}
+#pm-root .pm-exec-field input[type="checkbox"]:checked{background:#f5f5f5;border-color:#f5f5f5}
+#pm-root .pm-exec-field input[type="checkbox"]:checked:hover:not(:disabled){background:#dfdfdf;border-color:#dfdfdf}
+#pm-root .pm-exec-field input[type="checkbox"]:checked::after{
+ opacity:1;transform:translateY(-1px) rotate(45deg) scale(1);
+}
+#pm-root .pm-exec-field input[type="checkbox"]:disabled{opacity:.45;cursor:not-allowed}
+@media(forced-colors:active){
+ #pm-root .pm-exec-field input[type="checkbox"]{border-color:ButtonText}
+ #pm-root .pm-exec-field input[type="checkbox"]:checked{background:Highlight;border-color:Highlight}
+ #pm-root .pm-exec-field input[type="checkbox"]:checked::after{border-color:HighlightText}
+}
 #pm-root .pm-exec-field .pm-small{font-size:10px;min-width:25px;text-align:left}
-#pm-root .pm-exec-field .pm-btn{font-size:11px;min-height:28px;padding:5px 8px}
+#pm-root .pm-exec-field .pm-btn{font-size:11px;min-height:28px;padding:5px 10px;border-radius:9999px}
 #pm-root .pm-pin-line{margin-top:24px;border-top:1px solid var(--pm-line);padding-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 #pm-root .pm-pin-line strong{display:block;font-weight:500;font-size:13px}
 #pm-root .pm-pin-line .pm-small{display:block;margin-top:4px}
+#pm-root #pm-pin-edit{border-radius:9999px;padding:7px 15px}
 #pm-root dialog{width:min(510px,calc(100vw - 28px));max-height:min(90dvh,800px);overflow:auto;margin:auto;padding:24px;background:#141414;color:#f5f5f5;border:1px solid #343434;border-radius:15px;box-shadow:0 25px 75px rgba(0,0,0,.55)}
 #pm-root dialog::backdrop{background:rgba(0,0,0,.73);backdrop-filter:blur(3px)}
 #pm-root dialog h3{font-size:19px;font-weight:600;letter-spacing:-.025em;line-height:1.3;margin:0}

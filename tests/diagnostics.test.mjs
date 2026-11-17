@@ -14,12 +14,13 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     assert.ok(html.includes('<section class="view project-view" data-view="colosseum/diagnostics" hidden aria-labelledby="project-diagnostics-title">\\n          <div class="page-heading"><h1 id="project-diagnostics-title">Diagnostics</h1></div>'.replace('\\n','\n')),
       "Diagnostics title must use the same shared heading position as other screens");
     const diagnostics=html.slice(html.indexOf('data-view="colosseum/diagnostics"'));
-    assert.ok(diagnostics.indexOf('aria-labelledby="dg-query-title"')>diagnostics.indexOf('aria-labelledby="dg-local-title"'),
-      "Infrequent query controls must follow diagnostic measurements");
+    assert.ok(diagnostics.includes('aria-labelledby="dg-local-title"'),"Local measurements remain");
+    for(const retired of ['Query options','id="dg-query"','id="dg-run"','id="dg-check"','id="dg-depth"','data-dg-section'])
+      assert.ok(!diagnostics.includes(retired),"Query options UI must be removed: "+retired);
     for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks ·","Source: Colosseum"])
       assert.ok(!diagnostics.includes(removed),"Diagnostics must not show "+removed);
 
-    for(const id of ["dg-refresh","dg-run","dg-check","dg-depth","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-seconds","global-clock-zone","clock-zone-select","clock-custom-zone"])
+    for(const id of ["dg-refresh","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-seconds","global-clock-zone","clock-zone-select","clock-custom-zone"])
       assert.ok(html.includes('id="'+id+'"'),path+" missing "+id);
     assert.ok(html.includes('/app/assets/diagnostics.css'));
     assert.doesNotMatch(html, /class="global-brand"|class="global-brand-mark"/,"remove only uppermost DoFinances branding");
@@ -137,10 +138,13 @@ test("Diagnostics initializes an on-demand, owner-gated system.status client",as
   assert.match(dashboard,/initColosseumDiagnostics\(\)/);
   assert.match(js,/\/api\/colosseum\/diagnostics/);
   assert.match(js,/credentials:"same-origin"/);
-  assert.match(js,/data-dg-section/);
+  assert.doesNotMatch(js,/data-dg-section|optionsFromForm|optionsLabel|dg-query|dg-run|dg-check|dg-depth/);
   assert.doesNotMatch(js,/renderConfig|renderIntegrity|dg-localtime|dg-utcdate/);
-  assert.match(js,/check:byId\("dg-check"\)\.value/);
-  assert.match(js,/depth:byId\("dg-depth"\)\.value/);
+  assert.match(js,/DEFAULT_DIAGNOSTICS_OPTIONS=Object.freeze/);
+  assert.match(js,/sections:\["workers","kv","d1","durable_objects","local"\]/);
+  assert.match(js,/check:"gateway",depth:"quick"/);
+  assert.match(js,/body:JSON.stringify\(DEFAULT_DIAGNOSTICS_OPTIONS\)/);
+  assert.match(js,/refresh.addEventListener\("click",\(\)=>void collect\(\)\)/);
   assert.doesNotMatch(js,/Math\.random\(|demoData|sampleData|mockData/);
 });
 const TOKEN="A".repeat(43);

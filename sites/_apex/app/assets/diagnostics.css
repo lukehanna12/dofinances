@@ -275,26 +275,10 @@ html:has(body > #workspace-shell .view[data-view="colosseum/diagnostics"]:not([h
 #diagnostics-root .dg-gateway-panel{grid-column:1/-1}
 #diagnostics-root .dg-latency{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;border-bottom:1px solid var(--dg-border);padding:2px 0 15px;margin-bottom:17px}
 #diagnostics-root .dg-latency .dg-pair-value{font-size:clamp(21px,2.7vw,31px);font-weight:610;letter-spacing:-.04em}
-/* Query options are intentionally below the measurements. The controls still
-   invoke a single explicit on-demand read, and contain no background polling. */
-#diagnostics-root .dg-controls{border-top:1px solid var(--dg-border);padding:15px 0 0;margin:0}
-#diagnostics-root .dg-controls-top{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:7px}
-#diagnostics-root .dg-controls-top h2{font-size:12px;font-weight:590;margin:0}
-#diagnostics-root .dg-controls details>summary{cursor:pointer;color:#b5b5b5;font-size:11px;padding:6px 0}
-#diagnostics-root .dg-controls details[open]>summary{margin-bottom:11px}
-#diagnostics-root .dg-controls-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,245px);gap:23px}
-#diagnostics-root .dg-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-#diagnostics-root .dg-check{display:flex;align-items:center;gap:8px;color:var(--dg-muted);font-size:11px;cursor:pointer}
-#diagnostics-root .dg-check input{width:14px;height:14px;accent-color:#a3a3a3}
-#diagnostics-root .dg-field-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-#diagnostics-root .dg-field label{display:block;font-size:10px;color:var(--dg-faint);margin-bottom:5px}
-#diagnostics-root .dg-field select{width:100%;min-height:34px;border:1px solid #414141;background:#1b1b1b;color:var(--dg-ink);border-radius:8px;padding:5px 8px;font-size:11px;cursor:pointer}
-#diagnostics-root .dg-controls-foot{display:flex;align-items:center;gap:13px;margin-top:13px}
-#diagnostics-root .dg-controls-foot .dg-small{font-size:10px}
 @keyframes dg-spin{to{transform:rotate(360deg)}}
 @media(max-width:1100px){#diagnostics-root .dg-top{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:800px){#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-gateway-panel{grid-column:auto}#diagnostics-root .dg-controls-body{grid-template-columns:1fr}#diagnostics-root .dg-section-head{align-items:flex-start}}
-@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-reading{gap:8px}#diagnostics-root .dg-card-ring{width:46px;height:46px}#diagnostics-root .dg-card-ring::before{inset:5px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{grid-template-columns:minmax(0,1fr) auto}#diagnostics-root .dg-mac-summary{gap:10px}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}#diagnostics-root .dg-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){#diagnostics-root .dg-grid{grid-template-columns:1fr}#diagnostics-root .dg-gateway-panel{grid-column:auto}#diagnostics-root .dg-section-head{align-items:flex-start}}
+@media(max-width:480px){#diagnostics-root .dg-top{gap:10px}#diagnostics-root .dg-card-reading{gap:8px}#diagnostics-root .dg-card-ring{width:46px;height:46px}#diagnostics-root .dg-card-ring::before{inset:5px}#diagnostics-root .dg-card-percent{font-size:19px}#diagnostics-root .dg-panel{padding:14px}#diagnostics-root .dg-header{grid-template-columns:minmax(0,1fr) auto}#diagnostics-root .dg-mac-summary{gap:10px}#diagnostics-root .dg-storage-legend{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){
  #diagnostics-root *,#diagnostics-root *::before,#diagnostics-root *::after{animation:none!important;transition:none!important}
  #diagnostics-root .shimmer{background:none;color:var(--dg-muted);-webkit-text-fill-color:var(--dg-muted)}

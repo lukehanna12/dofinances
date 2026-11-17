@@ -136,7 +136,12 @@ export function initColosseumPermissions(){
   $("pm-cards").innerHTML=visible.map(ruleRow).join("")||
    '<p class="pm-empty">'+(term?"No filesystem rules match this search.":"No filesystem rules configured.")+'</p>';
   if(local){
-   $("pm-execution-fields").innerHTML=(state.executionFields||[]).map(f=>{
+   const execFields=state.executionFields||[];
+    // At wide widths, grid-auto-flow:column places the first half on
+    // the left and the remainder on the right, without duplicating controls.
+    $("pm-execution-fields").style.setProperty("--pm-execution-row-count",
+      String(Math.max(1,Math.ceil(execFields.length/2))));
+    $("pm-execution-fields").innerHTML=execFields.map(f=>{
     const value=state.execution?.[f.key],bool=f.type==="boolean";
     const [scale,unit,step]=UNITS[f.key]||[1,"",1];
     const id="pm-exec-"+esc(f.key);

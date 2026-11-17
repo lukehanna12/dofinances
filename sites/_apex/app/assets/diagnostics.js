@@ -367,19 +367,16 @@ function renderReport(report){
  else {notice.hidden=false;notice.dataset.tone=report.status==="unhealthy"?"error":"info";notice.textContent=report.issues?.length?"Some measurements were unavailable or partially reported.":"Report status: "+statusText(report.status);}
  renderOverview(report);renderQuotas(report);renderWorkers(report);renderLocal(report);
 }
-function optionsFromForm(){
- const sections=[...document.querySelectorAll("[data-dg-section]:checked")].map(x=>x.value);
- return{sections,check:byId("dg-check").value,depth:byId("dg-depth").value};
-}
-function optionsLabel(o){
- const checks=byId("dg-query-summary");
- checks.textContent=(o.sections.length===5?"All 5 sections":o.sections.length+" selected")+" · "+o.check.replace(/_/g," ")+" · "+o.depth;
-}
+// Query options were removed from the screen. Preserve the exact original
+// five-section / gateway / quick defaults for all explicit refreshes.
+const DEFAULT_DIAGNOSTICS_OPTIONS=Object.freeze({
+ sections:["workers","kv","d1","durable_objects","local"],
+ check:"gateway",depth:"quick"
+});
 export function initColosseumDiagnostics(){
  if(!byId("diagnostics-root"))return;
- let busy=false,requested=false,previous=null,selected=optionsFromForm();
- const refresh=byId("dg-refresh"),run=byId("dg-run");
- const query=byId("dg-query"),notice=byId("dg-notice"),
+ let busy=false,requested=false,previous=null;
+ const refresh=byId("dg-refresh"),notice=byId("dg-notice"),
   root=byId("diagnostics-root"),health=byId("dg-health"),healthText=byId("dg-health-text");
  function reportLoading(value){
   root.classList.toggle("dg-loading",value);
@@ -402,19 +399,18 @@ export function initColosseumDiagnostics(){
   link.href="/api/colosseum/status";link.target="_blank";link.rel="noopener noreferrer";notice.append(link);
   if(previous)byId("dg-updated").textContent="Last successful snapshot · "+new Date(previous.collected_at).toLocaleString()+" · stale";
  }
- async function collect(args){
+ async function collect(){
   if(busy)return;
-  if(!args.sections.length){notice.hidden=false;notice.dataset.tone="error";notice.textContent="Select at least one diagnostics section.";return;}
-  busy=true;requested=true;selected={sections:[...args.sections],check:args.check,depth:args.depth};optionsLabel(selected);
+  busy=true;requested=true;
   // Render unfilled native graphics and actual tracks on every fetch.
   // The response paints the values with synchronized reveal animations.
   initialSkeletonReport();
   reportLoading(true);checkStatus(true);notice.hidden=true;
-  refresh.disabled=true;run.disabled=true;refresh.classList.add("is-busy");refresh.setAttribute("aria-busy","true");refresh.setAttribute("aria-label","Refreshing diagnostics");
+  refresh.disabled=true;refresh.classList.add("is-busy");refresh.setAttribute("aria-busy","true");refresh.setAttribute("aria-label","Refreshing diagnostics");
   try{
    const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),30000);
    let response;
-   try{response=await fetch("/api/colosseum/diagnostics",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify(selected),signal:controller.signal});}
+   try{response=await fetch("/api/colosseum/diagnostics",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify(DEFAULT_DIAGNOSTICS_OPTIONS),signal:controller.signal});}
    finally{window.clearTimeout(timeout);}
    const type=response.headers.get("content-type")||"";
    if(!type.includes("application/json"))throw Error("Owner verification requires attention or the diagnostics service returned an unexpected response.");
@@ -422,27 +418,25 @@ export function initColosseumDiagnostics(){
    if(!response.ok)throw Error(body?.error||"Diagnostics unavailable (HTTP "+response.status+").");
    const report=body?.name==="system.status"?body:body?.report;
    if(report?.name!=="system.status"||!report.sections)throw Error("The diagnostics service returned an unexpected schema.");
-   previous=report;renderReport(report);query.open=false;
+   previous=report;renderReport(report);
   }catch(error){
    if(previous)renderReport(previous);
    else unavailableReport();
    showFailure(error.name==="AbortError"?"The diagnostics request exceeded 30 seconds.":String(error.message||"Diagnostics unavailable."));
   }finally{
    reportLoading(false);checkStatus(false);
-   busy=false;refresh.disabled=false;run.disabled=false;refresh.classList.remove("is-busy");refresh.setAttribute("aria-busy","false");refresh.setAttribute("aria-label","Refresh selected diagnostics");
+   busy=false;refresh.disabled=false;refresh.classList.remove("is-busy");refresh.setAttribute("aria-busy","false");refresh.setAttribute("aria-label","Refresh diagnostics");
   }
  }
- refresh.addEventListener("click",()=>collect(selected));
+ refresh.addEventListener("click",()=>void collect());
  window.addEventListener("keydown",event=>{
   if(event.defaultPrevented||event.repeat||event.isComposing||!event.ctrlKey||!event.shiftKey||event.metaKey||event.altKey||event.code!=="KeyR")return;
   if(document.querySelector('[data-view="colosseum/diagnostics"]')?.hidden)return;
-  event.preventDefault();void collect(selected);
+  event.preventDefault();void collect();
  });
- run.addEventListener("click",()=>collect(optionsFromForm()));
- document.querySelectorAll("[data-dg-section], #dg-check, #dg-depth").forEach(el=>el.addEventListener("change",()=>optionsLabel(optionsFromForm())));
  function onRoute(){
   const active=!document.querySelector('[data-view="colosseum/diagnostics"]')?.hidden;
-  if(active&&!requested)void collect(optionsFromForm());
+  if(active&&!requested)void collect();
  }
  window.addEventListener("hashchange",()=>window.queueMicrotask(onRoute));
  window.queueMicrotask(onRoute);

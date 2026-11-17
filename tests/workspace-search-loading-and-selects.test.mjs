@@ -70,15 +70,17 @@ test("Permissions search uses the same real button, tooltip, and focus behavior"
  assert.ok(js.includes('$("pm-focus-search").addEventListener("click",()=>$("pm-filter").focus({preventScroll:true}))'));
  assert.ok(js.includes('event.preventDefault();$("pm-filter").focus({preventScroll:true})'));
 });
-test("Settings and Diagnostics chevrons are native-arrow-free and consistently positioned",async()=>{
+test("Settings chevron stays aligned after retiring Diagnostics query selects",async()=>{
  const [common,html]=await Promise.all([asset("workspace-theme.css"),app()]);
- for(const id of ["clock-zone-select","dg-check","dg-depth"]){
+ for(const id of ["clock-zone-select"]){
   assert.ok(html.includes('id="'+id+'"'));
   assert.ok(common.includes("#"+id),"Missing shared select control "+id);
  }
  assert.ok(common.includes("-webkit-appearance:none;appearance:none;"));
  assert.ok(common.includes("background-position:right 12px center"));
  assert.ok(common.includes("background-size:14px 14px;padding-right:38px"));
+ assert.ok(!common.includes("#diagnostics-root #dg-check"));
+ assert.ok(!common.includes("#diagnostics-root #dg-depth"));
  assert.ok(common.includes('data:image/svg+xml'));
 });
 test("Settings personal-access-token placeholder has one compact, vertically centered input line",async()=>{
