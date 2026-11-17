@@ -97,17 +97,28 @@ function initialSkeletonReport(){
   });
   quotas.append(card);
  });
- const workers=clear("dg-workers"),scroll=make("div","dg-table-scroll"),table=make("table","dg-table"),thead=make("thead"),head=make("tr"),body=make("tbody");
- ["Service · relative volume","Requests","Errors","Subrequests","CPU p90","CPU p99"].forEach(name=>head.append(make("th","",name)));
+ const workers=clear("dg-workers"),scroll=make("div","dg-table-scroll"),table=make("table","dg-table dg-worker-table"),thead=make("thead"),head=make("tr"),body=make("tbody");
+ ["Service · relative volume","Requests","Subrequests","CPU · p90 / p99"].forEach(name=>head.append(make("th","",name)));
  thead.append(head);
  for(let i=0;i<3;i++){
-  const tr=make("tr"),service=make("td");
-  service.append(loadingLine([ "63%","79%","52%" ][i]),make("div","dg-worker-track"));
-  tr.append(service);
-  for(let c=1;c<6;c++){const td=make("td");td.append(loadingLine((4+((i+c)%4)*2)+"ch"));tr.append(td);}
-  body.append(tr);
+  const row=make("tr"),service=make("td","dg-worker-cell"),header=make("div","dg-worker-service-top");
+  header.append(loadingLine(["63%","79%","52%"][i]),loadingLine("5ch"));
+  service.append(header,make("div","dg-worker-track"),make("div","dg-worker-legend"));
+  row.append(service);
+  for(let c=0;c<2;c++){
+   const td=make("td","dg-worker-metric"),top=make("div","dg-worker-metric-top");
+   top.append(loadingLine((4+(i+c)%3*2)+"ch"));
+   td.append(top,make("div","dg-worker-track"));row.append(td);
+  }
+  const cpu=make("td","dg-worker-cpu");
+  for(let k=0;k<2;k++){
+   const segment=make("div","dg-worker-cpu-row"),top=make("div","dg-worker-cpu-head");
+   top.append(make("span","dg-worker-key",k?"p99":"p90"),loadingLine(k?"6ch":"5ch"));
+   segment.append(top,make("div","dg-worker-track dg-worker-cpu-track"));cpu.append(segment);
+  }
+  row.append(cpu);body.append(row);
  }
- table.append(thead,body);scroll.append(table);workers.append(scroll,loadingLine("66%","dg-skeleton-footnote"));
+ table.append(thead,body);scroll.append(table);workers.append(scroll);
  const local=clear("dg-local"),mac=panel("Mac"),macSummary=make("div","dg-mac-summary"),storage=make("div","dg-mac-storage-reading");
  mac.classList.add("dg-storage-panel");
  storage.append(loadingLine("8ch","dg-skeleton-storage"),loadingLine("16ch","dg-skeleton-note"));
@@ -155,34 +166,83 @@ function renderQuotas(report){
   host.append(p);
  }
 }
+// Worker volume and CPU percentiles have independent units/scales. A missing
+// reading is unknown, never a synthetic zero or a filled segment.
+const workerReading=n=>typeof n==="number"&&Number.isFinite(n)&&n>=0?n:null;
+function workerTrack(segments,label,extra=""){
+ const track=make("div","dg-worker-track"+(extra?" "+extra:""));
+ track.setAttribute("role","img");track.setAttribute("aria-label",label);
+ for(const [kind,value,scale] of segments){
+  if(value===null)continue;
+  const bar=make("span","dg-worker-bar");
+  bar.dataset.kind=kind;bar.setAttribute("aria-hidden","true");
+  bar.style.setProperty("--dg-bar-target",(100*value/scale)+"%");
+  track.append(bar);
+ }
+ return track;
+}
+function workerMetricCell(kind,value,scale){
+ const cell=make("td","dg-worker-metric"),top=make("div","dg-worker-metric-top");
+ top.append(make("span","dg-worker-key dg-worker-key-"+kind,kind==="requests"?"Requests":"Subrequests"),
+  make("strong","dg-worker-metric-value",integer(value)));
+ const label=kind==="requests"?"Requests":"Subrequests";
+ cell.append(top,workerTrack([[kind,value,scale]],
+  label+": "+integer(value)+"; relative to highest reported "+label.toLowerCase()));
+ return cell;
+}
+function workerCpuRow(percentile,value,scale){
+ const kind=percentile==="p90"?"requests":"subrequests";
+ const row=make("div","dg-worker-cpu-row"),head=make("div","dg-worker-cpu-head");
+ head.append(make("span","dg-worker-key dg-worker-key-"+kind,percentile),
+  make("strong","dg-worker-cpu-reading",value===null?"—":quantity(value,2)+" ms"));
+ row.append(head,workerTrack([[kind,value,scale]],
+  "CPU "+percentile+": "+(value===null?"unavailable":quantity(value,2)+" ms")+
+  "; same millisecond scale for p90 and p99","dg-worker-cpu-track"));
+ return row;
+}
 function renderWorkers(report){
  const host=clear("dg-workers"),workers=sectionOf(report,"workers");
  if(!workers||workers.status==="unavailable"){host.append(make("div","dg-empty",missing("workers")));return;}
- const entries=Object.entries(workers.by_worker||{}).sort((a,b)=>(b[1]?.requests||0)-(a[1]?.requests||0));
+ const entries=Object.entries(workers.by_worker||{})
+  .sort((a,b)=>(workerReading(b[1]?.requests)||0)-(workerReading(a[1]?.requests)||0));
  if(!entries.length){host.append(make("div","dg-empty","No Worker activity reported in this window."));return;}
- const max=Math.max(1,...entries.map(([,v])=>v?.requests||0));
- const wrap=make("div","dg-table-scroll"),table=make("table","dg-table"),thead=make("thead"),tr=make("tr");
- ["Service · relative volume","Requests","Errors","Subrequests","CPU p90","CPU p99"].forEach(label=>tr.append(make("th","",label)));
- thead.append(tr);
+ // The segmented service strip compares two reported count categories.
+ // Subrequests are not additional unique top-level requests.
+ const combined=v=>(workerReading(v?.requests)||0)+(workerReading(v?.subrequests)||0);
+ const maxVolume=Math.max(1,...entries.map(([,v])=>combined(v)));
+ const maxRequests=Math.max(1,...entries.map(([,v])=>workerReading(v?.requests)||0));
+ const maxSubrequests=Math.max(1,...entries.map(([,v])=>workerReading(v?.subrequests)||0));
+ const maxCpu=Math.max(.001,...entries.flatMap(([,v])=>
+  [workerReading(v?.cpu_time_p90_us),workerReading(v?.cpu_time_p99_us)]
+   .filter(n=>n!==null).map(n=>n/1000)));
+ const wrap=make("div","dg-table-scroll"),table=make("table","dg-table dg-worker-table"),
+  thead=make("thead"),header=make("tr");
+ ["Service · relative volume","Requests","Subrequests","CPU · p90 / p99"]
+  .forEach(label=>header.append(make("th","",label)));
+ thead.append(header);
  const body=make("tbody");
  entries.forEach(([name,v])=>{
-  const row=make("tr"),service=make("td","dg-worker-cell");
-  service.append(make("span","dg-worker-name",name));
-  const track=make("div","dg-worker-track"),bar=make("span","dg-worker-bar");
-  track.setAttribute("aria-hidden","true");
-  bar.style.setProperty("--dg-bar-target",(100*Math.max(0,v?.requests||0)/max)+"%");
-  track.append(bar);service.append(track);
-  row.append(service,make("td","",integer(v?.requests)),make("td","",integer(v?.errors)),
-   make("td","",integer(v?.subrequests)),
-   make("td","",typeof v?.cpu_time_p90_us==="number"?quantity(v.cpu_time_p90_us/1000,2)+" ms":"—"),
-   make("td","",typeof v?.cpu_time_p99_us==="number"?quantity(v.cpu_time_p99_us/1000,2)+" ms":"—"));
+  const requests=workerReading(v?.requests),subrequests=workerReading(v?.subrequests);
+  const p90=workerReading(v?.cpu_time_p90_us),p99=workerReading(v?.cpu_time_p99_us);
+  const activityKnown=requests!==null||subrequests!==null;
+  const row=make("tr"),service=make("td","dg-worker-cell"),top=make("div","dg-worker-service-top");
+  top.append(make("span","dg-worker-name",name),
+   make("span","dg-worker-relative",activityKnown?quantity(100*combined(v)/maxVolume,1)+"% of peak":"—"));
+  service.append(top,workerTrack([["requests",requests,maxVolume],["subrequests",subrequests,maxVolume]],
+   name+": "+integer(requests)+" requests, "+integer(subrequests)+
+   " subrequests; separate reported count categories, not unique events"));
+  const legend=make("div","dg-worker-legend");
+  legend.append(make("span","dg-worker-key dg-worker-key-requests","Requests"),
+   make("span","dg-worker-key dg-worker-key-subrequests","Subrequests"));
+  service.append(legend);
+  const cpu=make("td","dg-worker-cpu");
+  cpu.append(workerCpuRow("p90",p90===null?null:p90/1000,maxCpu),
+   workerCpuRow("p99",p99===null?null:p99/1000,maxCpu));
+  row.append(service,workerMetricCell("requests",requests,maxRequests),
+   workerMetricCell("subrequests",subrequests,maxSubrequests),cpu);
   body.append(row);
  });
  table.append(thead,body);wrap.append(table);host.append(wrap);
- host.append(make("p","dg-footnote",
-  integer(workers.colosseum?.requests)+" Colosseum Worker requests · "+
-  integer(workers.worker_count)+" configured Workers · "+entries.length+
-  " Workers with reported activity. Bars are relative to the busiest Worker."));
 }
 function findGatewayMetrics(local){
  const layers=Array.isArray(local?.layers)?local.layers:[];
