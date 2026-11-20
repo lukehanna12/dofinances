@@ -45,7 +45,8 @@ test("Provider static prefixes survive loading; ring geometry follows registered
 });
 test("Only tooltips intersecting the sidebar use the native browser top layer",()=>{
   assert.ok(nav.includes('initOverlappingContentTooltips(doc,win,sidebar)'));
-  assert.ok(tooltips.includes('box.right<=glass.left||box.left>=glass.right'));
+  assert.ok(tooltips.includes('fitted.right<=glass.left||fitted.left>=glass.right'),
+    "Sidebar overlap is tested after viewport fitting");
   assert.ok(tooltips.includes('tip.setAttribute("popover","manual")'));
   assert.ok(tooltips.includes('tip.showPopover()'));
   assert.ok(tooltips.includes('tip.hidePopover()'));

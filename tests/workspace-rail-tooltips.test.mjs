@@ -71,7 +71,9 @@ test("Elevated Edit README tooltip retains its settled right-anchored position t
     "Popover and original tooltip must share the same right-aligned endpoint");
   assert.notEqual(rect.left,editTip.getBoundingClientRect().left,
     "Do not freeze the transient scaled hover geometry");
-  assert.ok(tooltips.includes('const box=untransformedTooltipRect(tip)'));
+  assert.ok(tooltips.includes('let box=untransformedTooltipRect(tip)'));
+  assert.ok(tooltips.includes('const {box,fitted}=position(tip)'),
+    "Top-layer and native tooltips must use the same measured placement");
   assert.ok(tooltips.includes('setProperty("--workspace-tooltip-left",fitted.left+"px")'));
   assert.ok(tooltips.includes('setProperty("--workspace-tooltip-shift-x"'));
   assert.ok(css.includes('translate:var(--workspace-tooltip-shift-x,0px) var(--workspace-tooltip-shift-y,0px)'),
