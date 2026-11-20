@@ -119,7 +119,16 @@ try{
  }
 }finally{
  try{socket?.close();}catch{}
- try{chrome?.kill("SIGTERM");}catch{}
+ if(chrome&&chrome.exitCode===null&&chrome.signalCode===null){
+  await new Promise(resolve=>{
+   chrome.once("exit",resolve);
+   try{chrome.kill("SIGTERM");}catch{resolve();}
+   setTimeout(resolve,3000);
+  });
+ }
  server.close();
- rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+ // Chrome may still flush profile files after exiting. Cleanup must never
+ // hide a genuine geometry assertion or fail the build by itself.
+ try{rmSync(profile,{recursive:true,force:true,maxRetries:15,retryDelay:200});}
+ catch(error){process.stderr.write("Dashboard Chrome profile cleanup: "+error.message+"\\n");}
 }
