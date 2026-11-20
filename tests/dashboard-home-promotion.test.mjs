@@ -126,7 +126,7 @@ test("Home squares and centered Doof hold the maximum-width scale when the viewp
     "The mosaic must remain 1080px wide at desktop and mobile breakpoints");
   assert.match(latticeRules[1],/position:absolute;/,
     "Keep the mosaic anchored to the fixed viewport");
-  assert.match(latticeRules[1],/left:50%;\\s*top:50%;\\s*transform:translate\\(-50%,-50%\\);/,
+  assert.match(latticeRules[1],/left:50%;\s*top:50%;\s*transform:translate\(-50%,-50%\);/,
     "Center the oversized mosaic independently of flex auto margins");
   assert.match(latticeRules[1],/margin:0;/,
     "Auto margins must not interfere with oversize centering");
