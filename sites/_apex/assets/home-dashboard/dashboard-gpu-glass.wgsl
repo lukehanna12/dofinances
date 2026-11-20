@@ -378,7 +378,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // 0.25 browser color film is NOT a native compositor coefficient.
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
   }
-  // Mirror the semantic icon's loop opacity. This is independent of
-  // Apple material coverage and never requires backdrop mip invalidation.
-  return vec4<f32>(color,coverage*in.introAlpha*clamp(tile.motion.z,0.0,1.0));
+  // Public homepage ONLY: attenuate the alpha of glass squares within
+  // 0.75 square widths of the LEFT/RIGHT window edges, from 25% -> 100%.
+  // Fragment position is in physical viewport pixels. This does not touch
+  // the opaque scene copy, background photograph, Doof or button layers.
+  // Authenticated Dashboard's separate shader is intentionally unchanged.
+  let fadeWidth=max(1.0,0.75*tile.rect.z);
+  let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);
+  let edgeOpacity=mix(0.25,1.0,clamp(edgeDistance/fadeWidth,0.0,1.0));
+  // Match semantic DOM icons' CSS viewport-centered mask and track opacity.
+  return vec4<f32>(color,coverage*in.introAlpha*
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity);
 }

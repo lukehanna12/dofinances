@@ -53,14 +53,25 @@ test("GitHub profile opens in a new tab; remaining public top-bar controls are i
   assert.match(handler,/event\.key==="Escape"/);
   assert.match(handler,/compact\.addEventListener\("change",close\)/);
 });
-test("Public-only fades remain fixed at viewport edges and behind doof, without altering glass geometry",()=>{
-  assert.match(home,/<div class="public-home-edge-fade" aria-hidden="true"><\/div>/);
-  assert.match(style,/\.public-home-edge-fade\{\s*position:fixed;\s*inset:var\(--global-menu-height\) 0 0;\s*z-index:1;\s*pointer-events:none;/);
-  assert.match(style,/linear-gradient\(to right/);
-  assert.match(style,/linear-gradient\(to bottom/);
+test("Viewport side fades alter square alpha only, while the photo and logo stay intact",()=>{
+  assert.doesNotMatch(home,/public-home-edge-fade/,"Never place a dark scrim over the scene");
+  assert.doesNotMatch(style,/\.public-home-edge-fade/);
+  assert.match(style,/\.cta6-mosaic\{\s*--public-edge-fade-width:calc\(0\.75 \* \(\(1080px - 10 \* 13px\) \/ 11\)\);/);
+  assert.match(style,/-webkit-mask-image:linear-gradient\(to right/);
+  assert.match(style,/rgba\(0,0,0,\.25\) 0,/);
+  assert.match(style,/mask-size:100vw 100%;/);
+  assert.match(style,/mask-position:center top;/);
+  assert.doesNotMatch(style,/linear-gradient\(to bottom/,"Do not darken the backdrop vertically");
+  const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
+  assert.match(shader,/let fadeWidth=max\(1\.0,0\.75\*tile\.rect\.z\);/);
+  assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
+  assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
+  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity/);
   assert.match(style,/\.cta6-center::before\{\s*content:"";\s*position:absolute;/);
-  assert.match(style,/background:radial-gradient\(ellipse at center/);
-  assert.match(style,/z-index:-1;/);
+  assert.match(style,/width:230px;\s*height:110px;/);
+  assert.match(style,/background:radial-gradient\(ellipse at center,\s*rgba\(5,8,13,\.6\) 0%/);
+  assert.match(style,/\.cta6-center h1\{\s*position:relative;\s*z-index:1;/);
+  assert.doesNotMatch(style,/rgba\(5,8,13,\.7[0-9]/,"Doof oval must never exceed 60% opacity");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{

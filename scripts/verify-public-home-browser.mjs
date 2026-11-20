@@ -99,10 +99,11 @@ try{
  'search:box(document.querySelector(".global-menu-actions>button[aria-label="Search"]")),',
  'hamburger:box(document.getElementById("public-menu-toggle")),',
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
- 'edge:box(document.querySelector(".public-home-edge-fade")),',
- 'edgePosition:getComputedStyle(document.querySelector(".public-home-edge-fade")).position,',
- 'edgeBackground:getComputedStyle(document.querySelector(".public-home-edge-fade")).backgroundImage,',
+ 'edgeMask:getComputedStyle(grid).maskImage,',
+ 'edgeMaskSize:getComputedStyle(grid).maskSize,',
+ 'edgeMaskPosition:getComputedStyle(grid).maskPosition,',
  'logoFade:getComputedStyle(document.querySelector(".cta6-center"),"::before").backgroundImage,',
+ 'logoOval:box(document.querySelector(".cta6-center")),',
  'github:box(document.querySelector(".public-github")),',
  'githubHref:document.querySelector(".public-github").href,',
  'githubTarget:document.querySelector(".public-github").target,',
@@ -133,12 +134,15 @@ try{
    near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
   }
   assert.equal(g.panelHidden,true,"Dropdown defaults closed");
-  assert.equal(g.edgePosition,"fixed","Edge fade tracks the viewport");
-  near(g.edge.left,0,"Edge fade pinned to left edge",width);
-  near(g.edge.width,width,"Edge fade pinned to viewport width",width);
-  assert.match(g.edgeBackground,/linear-gradient\(to right/);
-  assert.match(g.edgeBackground,/linear-gradient\(to bottom/);
-  assert.match(g.logoFade,/radial-gradient/,"Doof radial fade stays behind text");
+  assert.match(g.edgeMask,/linear-gradient\(to right/,"Only mosaic is masked");
+  assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.25\)/,
+    "Square mask opacity is 25% at both viewport edges");
+  assert.match(g.edgeMaskSize,/100vw 100%/,
+    "Mask width remains attached to viewport rather than 1080px lattice");
+  assert.equal(g.edgeMaskPosition,"50% 0%","Mask centers within the oversized lattice");
+  assert.match(g.logoFade,/radial-gradient/,"Filled oval stays behind Doof");
+  assert.match(g.logoFade,/rgba\(5, 8, 13, 0\.6\)/,
+    "Doof oval must peak at 60% opacity");
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));

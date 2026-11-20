@@ -163,31 +163,55 @@ body.public-home .public-menu-panel[hidden]{display:none!important;}
   from{opacity:0;transform:translateY(-5px)}
   to{opacity:1;transform:translateY(0)}
 }
-/* Both fades are viewport-anchored, rather than attached to the 1080px grid.
-   This preserves equal left/right clipping when the viewport narrows. */
-body.public-home .dashboard-home .public-home-edge-fade{
-  position:fixed;
-  inset:var(--global-menu-height) 0 0;
-  z-index:1;
-  pointer-events:none;
-  background:
-    linear-gradient(to right,rgba(5,8,13,.78) 0%,rgba(5,8,13,0) 15%,rgba(5,8,13,0) 85%,rgba(5,8,13,.78) 100%),
-    linear-gradient(to bottom,rgba(5,8,13,.48) 0%,rgba(5,8,13,0) 16%,rgba(5,8,13,0) 83%,rgba(5,8,13,.62) 100%);
+/* Edge attenuation belongs exclusively to the square lattice, not the
+   photographic backdrop, oval, header, logo, CTA, or copyright. A viewport-
+   sized mask is centered over the fixed 1080px mosaic: at window x=0/W
+   tiles retain 25% opacity, reaching 100% after 0.75 tile widths (~64.8px).
+   The GPU glass has the identical alpha-only curve in its PUBLIC WGSL
+   fragment; this CSS mask covers live DOM icons and fallback CSS glass.
+   Never apply it to the opaque GPU scene canvas (which owns the photograph). */
+body.public-home .dashboard-home .cta6-mosaic{
+  --public-edge-fade-width:calc(0.75 * ((1080px - 10 * 13px) / 11));
+  -webkit-mask-image:linear-gradient(to right,
+    rgba(0,0,0,.25) 0,
+    #000 var(--public-edge-fade-width),
+    #000 calc(100% - var(--public-edge-fade-width)),
+    rgba(0,0,0,.25) 100%);
+  mask-image:linear-gradient(to right,
+    rgba(0,0,0,.25) 0,
+    #000 var(--public-edge-fade-width),
+    #000 calc(100% - var(--public-edge-fade-width)),
+    rgba(0,0,0,.25) 100%);
+  -webkit-mask-size:100vw 100%;
+  mask-size:100vw 100%;
+  -webkit-mask-position:center top;
+  mask-position:center top;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
 }
-/* The soft patch sits behind the real logo text, not above it. Center it
-   at the logo's optical offset: half of one unchanged 86.36px grid square. */
+/* The centered oval is a translucent FILL beneath the text, not an overlay
+   on the whole scene. Centered at the title's existing half-tile offset,
+   it peaks at 60% and softly fades out toward its elliptical perimeter. */
 body.public-home .dashboard-home .cta6-center::before{
   content:"";
   position:absolute;
   left:50%;
   top:calc(50% - (950px / 11) / 2);
-  width:370px;
-  height:200px;
+  width:230px;
+  height:110px;
   transform:translate(-50%,-50%);
-  z-index:-1;
+  z-index:0;
   border-radius:50%;
   pointer-events:none;
-  background:radial-gradient(ellipse at center,rgba(5,8,13,.77) 0%,rgba(5,8,13,.4) 42%,rgba(5,8,13,0) 75%);
+  background:radial-gradient(ellipse at center,
+    rgba(5,8,13,.6) 0%,
+    rgba(5,8,13,.6) 32%,
+    rgba(5,8,13,.32) 70%,
+    rgba(5,8,13,0) 100%);
+}
+body.public-home .dashboard-home .cta6-center h1{
+  position:relative;
+  z-index:1;
 }
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */
