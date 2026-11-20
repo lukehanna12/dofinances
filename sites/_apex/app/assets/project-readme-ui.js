@@ -166,7 +166,7 @@ export function initProjectReadme(){
  const source=()=>state.source;
  const setBusy=flag=>{
   state.processing=flag;
-  reading.contentEditable=state.editing&&!flag&&markdownFile(state.source?.path)?"true":"false";
+  reading.contentEditable=state.editing&&!flag&&markdownFile(state.source?.path||"README.md")?"true":"false";
   const rawInput=reading.querySelector(".rm-raw-textarea");
   if(rawInput)rawInput.disabled=flag;
   confirm.disabled=flag;edit.disabled=flag;
@@ -198,7 +198,7 @@ export function initProjectReadme(){
  function updateDraft(){
   if(!state.editing||state.processing)return;
   try{
-   const raw=!markdownFile(state.source?.path);
+   const raw=!markdownFile(state.source?.path||"README.md");
    const rich=raw?(reading.querySelector(".rm-raw-textarea")?.value??reading.textContent):
      converter.turndown(reading).replace(/\u200b/g,"");
    state.dirty=rich!==state.richBaseline;
@@ -414,12 +414,12 @@ export function initProjectReadme(){
    return;
   }
   say("");
-  try{state.richBaseline=markdownFile(state.source?.path)?
+  try{state.richBaseline=markdownFile(state.source?.path||"README.md")?
     converter.turndown(reading).replace(/\u200b/g,""):state.original;}
   catch(error){say("Cannot edit this document safely: "+error.message,true);return;}
   state.savedDom=reading.cloneNode(true);
   state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;
-  if(!markdownFile(state.source?.path)){
+  if(!markdownFile(state.source?.path||"README.md")){
    const editor=document.createElement("textarea");
    editor.className="rm-raw-textarea";
    editor.setAttribute("aria-label","Edit "+(state.source?.path||"document"));
@@ -427,7 +427,7 @@ export function initProjectReadme(){
    reading.replaceChildren(editor);
    reading.classList.add("rm-raw-edit");
   }
-  reading.contentEditable=markdownFile(state.source?.path)?"true":"false";
+  reading.contentEditable=markdownFile(state.source?.path||"README.md")?"true":"false";
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=false;
   history.reset();
   paintControls();
@@ -461,13 +461,13 @@ export function initProjectReadme(){
  // Production and Chromium use the SAME editing engine, so history tests
  // exercise real input, caret, composition, paste and autoformat behavior.
  history=installReadmeEditorInteractions(reading,{
-  isEditing:()=>state.editing&&!state.processing&&markdownFile(state.source?.path),
+  isEditing:()=>state.editing&&!state.processing&&markdownFile(state.source?.path||"README.md"),
   onChange:scheduleRichDraftUpdate,
   onImmediateChange:updateDraft
  });
  edit.addEventListener("click",()=>void startEdit());
  reading.addEventListener("input",()=>{
-  if(state.editing&&!markdownFile(state.source?.path))scheduleRichDraftUpdate();
+  if(state.editing&&!markdownFile(state.source?.path||"README.md"))scheduleRichDraftUpdate();
  });
  function drawDiff(){
   diffContent.replaceChildren();

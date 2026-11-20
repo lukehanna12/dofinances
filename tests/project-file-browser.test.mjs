@@ -133,7 +133,9 @@ test("Project-page entry resets to README; other project screens retain their la
  assert.ok(ui.includes('reading.textContent="Opening "+path+"…"'));
  assert.ok(ui.includes('reading.querySelector(".rm-raw-textarea")?.value'));
  assert.ok(ui.includes('editor.value=state.original'));
- assert.ok(ui.includes('reading.contentEditable=markdownFile(state.source?.path)?"true":"false"'));
+ assert.ok(ui.includes('reading.contentEditable=markdownFile(state.source?.path||"README.md")?"true":"false"'));
  assert.ok(css.includes('.rm-raw-textarea{box-sizing:border-box'));
+ assert.ok(ui.includes('markdownFile(state.source?.path||"README.md")'),
+   "Repository-less README editing must retain the rich Markdown surface");
  assert.ok(read("sites/_apex/app/assets/project-file-browser.js").includes('return {path:parts.join("/"),fragment}'));
 });
