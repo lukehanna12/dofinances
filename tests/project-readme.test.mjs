@@ -164,10 +164,15 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(!ui.includes('data.private?" · Private"'));
  assert.ok(css.includes('.rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;'));
  assert.ok(projects.includes('.project-showcase-badge{'));
+ // Docs retains its established rectangular visibility badge; the Projects
+ // status badges intentionally have a larger, fully rounded capsule geometry.
  for(const rule of ['font-size:9px;font-weight:500','line-height:12px;padding:1px 5px','border-radius:4px;white-space:nowrap']){
   assert.ok(css.includes(rule),"Docs badge proportions: "+rule);
-  assert.ok(projects.includes(rule),"Projects badge reference: "+rule);
  }
+ assert.ok(projects.includes('font-size:9px;font-weight:500;line-height:12px;padding:2px 9px'),
+  "Projects status badges have comfortable horizontal and vertical padding");
+ assert.ok(projects.includes('border-radius:999px;white-space:nowrap'),
+  "Projects status badges are capsules");
  assert.ok(css.includes('background:#4b3325;color:#efc398'));
  assert.ok(docs.indexOf('class="rm-heading"')<docs.indexOf('class="rm-toolbar"'));
  assert.ok(docs.indexOf('id="rm-edit"')<docs.indexOf('id="rm-confirm"'));
