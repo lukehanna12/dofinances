@@ -546,5 +546,17 @@ export function initColosseumProviders(){
   url.searchParams.delete("providers_result");url.searchParams.delete("providers_error");
   history.replaceState(history.state,"",url.pathname+url.search+url.hash);
  }
+ // Return to Credentials after the user explicitly initiated a linked-account
+ // OAuth flow here. Neither the selection nor any OAuth credential is persisted.
+ try{
+  const requested=sessionStorage.getItem("dofinances.credentials.return.v1");
+  const query=new URLSearchParams(location.search);
+  if(requested&&(["google","github"].includes(requested))&&
+   (query.has("federation_linked")||query.has("federation_error"))){
+   sessionStorage.removeItem("dofinances.credentials.return.v1");
+   if(!location.hash||location.hash==="#settings")
+    location.hash="#colosseum/providers/credentials";
+  }
+ }catch{}
  render();window.queueMicrotask(onRoute);
 }
