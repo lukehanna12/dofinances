@@ -343,7 +343,10 @@ test("desktop clock seconds are smaller, muted, bottom-aligned and independently
   assert.ok(desktop.includes("@media(min-width:761px){"),"Left alignment never affects mobile");
   assert.ok(desktop.includes("margin-left:calc(-74px - clamp(18px,3.8vw,54px));"),
     "Clock and breadcrumbs both shift by the collapsed rail plus horizontal padding");
-  assert.ok(desktop.includes("padding-inline-start:168px;"),"Breadcrumbs keep their spacing from the clock");
+  assert.ok(desktop.includes("padding-inline-start:144px;"),"Breadcrumbs halve the clock-to-navigation gutter");
+   assert.ok(desktop.includes("#workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){"),
+     "Doof uses a separate, smaller desktop gutter without moving the wordmark");
+   assert.ok(desktop.includes("padding-inline-start:119px;"),"Doof-to-navigation gutter is halved");
   assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:3.825px;flex:none;"),
     "Seconds and timezone share the hours/minutes bottom edge");
   assert.ok(css.includes(".global-clock-zone{margin-left:1.125px}"),

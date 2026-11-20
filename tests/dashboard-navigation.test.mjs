@@ -547,7 +547,9 @@ test("click selects route immediately, without awaiting the browser hashchange e
 
 test("Clock leaves and returns alongside the sidebar on mobile breakpoints",async()=>{
   const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
-  assert.ok(css.includes("padding-inline-start:168px;"));
+  assert.ok(css.includes("padding-inline-start:144px;"));
+   assert.ok(css.includes("padding-inline-start:119px;"));
+   assert.ok(css.includes("#workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){"));
   assert.ok(css.includes("transition:padding-inline-start 240ms var(--ui-ease);"));
   assert.ok(css.includes("#workspace-shell .topbar-start{padding-inline-start:0;}"));
   assert.ok(css.includes("opacity:0;visibility:hidden;pointer-events:none;"));
