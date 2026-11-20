@@ -101,6 +101,10 @@ test("Diagnostics Query options are retired in both shells without changing refr
 test("Execution controls and Provider lifecycle share compact numeric fields and checkboxes",()=>{
  assert.ok(pm.includes(".pm-exec-field{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,99px) auto 52px;align-items:center;gap:8px;min-height:40px;"));
  assert.ok(pm.includes('.pm-exec-field input[type="number"]{min-width:0;width:100%;height:26px;'));
+ assert.ok(pm.includes('height:26px;min-height:26px;'),
+  "The global 42px input minimum must not enlarge execution or lifecycle number fields");
+ assert.ok(pm.includes('justify-self:end;min-height:15px;'),
+  "The global 42px input minimum must not enlarge execution checkboxes");
  assert.ok(pm.includes("border-radius:7px;padding:3px 7px;font-size:11px}"));
  assert.ok(pm.includes("width:15px;height:15px;min-width:15px;justify-self:end;"));
  assert.ok(pm.includes('content:"";display:block;width:4px;height:7px;'));
