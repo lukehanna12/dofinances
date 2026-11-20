@@ -11,6 +11,8 @@ export class AuthStore extends FederatedAuthStore{
   super(ctx,env);
   this.sql.exec("CREATE TABLE IF NOT EXISTS project_records(user_id TEXT NOT NULL,slug TEXT NOT NULL,name TEXT NOT NULL,repository TEXT,default_readme TEXT NOT NULL,presentation TEXT NOT NULL DEFAULT 'github',updated_at INTEGER NOT NULL,PRIMARY KEY(user_id,slug))");
   this.sql.exec("CREATE TABLE IF NOT EXISTS github_project_connections(user_id TEXT PRIMARY KEY,token_ciphertext TEXT NOT NULL,login TEXT NOT NULL,updated_at INTEGER NOT NULL)");
+  // One-time backfill markers keep a user's later explicit unlink intact.
+  this.sql.exec("CREATE TABLE IF NOT EXISTS project_repository_link_migrations(user_id TEXT NOT NULL,slug TEXT NOT NULL,PRIMARY KEY(user_id,slug))");
  }
  projectsSeed(userId){
   // Idempotent per-account initialization, also for accounts created pre-projects.
@@ -42,6 +44,18 @@ export class AuthStore extends FederatedAuthStore{
   // user-associated repositories or the account's saved README.
   this.sql.exec("UPDATE project_records SET name='Apple HIGs Reader',repository='lukehanna12/apple-higs-reader' WHERE user_id=? AND slug='apple-hig-reader' AND repository IS NULL",userId);
   this.sql.exec("UPDATE project_records SET name='Apple HIGs Reader' WHERE user_id=? AND slug='apple-hig-reader' AND name='Apple HIG Reader'",userId);
+  // Backfill repository-less curated projects without changing stored README or
+  // presentation. Preserve existing custom links and future deliberate unlinks.
+  for(const [slug,name,repository] of [
+   ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
+   ["translucence-lab","Lightwork","lukehanna12/lightwork"],
+   ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
+  ]){
+   if(this.sql.exec("SELECT 1 FROM project_repository_link_migrations WHERE user_id=? AND slug=?",userId,slug).toArray().length)continue;
+   this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,repository,template(name),NOW());
+   this.sql.exec("UPDATE project_records SET repository=?,updated_at=? WHERE user_id=? AND slug=? AND repository IS NULL",repository,NOW(),userId,slug);
+   this.sql.exec("INSERT OR IGNORE INTO project_repository_link_migrations(user_id,slug) VALUES(?,?)",userId,slug);
+  }
  }
  projectList({userId}){
   if(typeof userId!=="string"||!userId)return {status:401,error:"Sign-in required."};
@@ -109,6 +123,7 @@ export class AuthStore extends FederatedAuthStore{
   const result=await super.deleteAccount(args);
   if(result.status===204&&user){
    this.sql.exec("DELETE FROM project_records WHERE user_id=?",user.id);
+   this.sql.exec("DELETE FROM project_repository_link_migrations WHERE user_id=?",user.id);
    this.sql.exec("DELETE FROM github_project_connections WHERE user_id=?",user.id);
   }
   return result;

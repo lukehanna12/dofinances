@@ -5,13 +5,13 @@ import {WORKSPACE_WALLPAPERS} from "./workspace-wallpapers.js";
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
  {slug:"bootscribe",name:"BootScribe",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
- {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:null,status:"in-progress",docs:true},
+ {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
- {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
+ {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
  {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
  {slug:"terminal-scalars",name:"Terminal Scalars",kind:"Terminal utility",repository:null},
- {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:null},
+ {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:"lukehanna12/unicode-plus"},
  {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
  {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
@@ -87,11 +87,18 @@ function makeCard(project,index,slugRoute){
 }
 export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
+ // Account records are authoritative for the three curated repository links.
+ const linkedSlugs=new Set(["unicode-plus","translucence-lab","chatgpt-chat-save-chrome-extension"]);
+ const account=new Map((Array.isArray(projects)?projects:[])
+  .filter(p=>p&&linkedSlugs.has(p.slug)).map(p=>[p.slug,p]));
  // Preserve account-created projects: the curated items always come first.
  const additional=(Array.isArray(projects)?projects:[])
   .filter(p=>p&&typeof p.slug==="string"&&typeof p.name==="string"&&!canonical.has(p.slug)&&p.slug!=="3d-liquid-glass-27-swift-package")
   .map(p=>({slug:p.slug,name:p.name,kind:"Project workspace",repository:p.repository||null}));
- const entries=[...PROJECT_SHOWCASE,...additional];
+ const entries=[...PROJECT_SHOWCASE.map(project=>{
+  const saved=account.get(project.slug);
+  return saved?{...project,repository:saved.repository||null}:project;
+ }),...additional];
  const fragment=document.createDocumentFragment();
  entries.forEach((project,index)=>fragment.append(makeCard(project,index,slugRoute)));
  root.replaceChildren(fragment);

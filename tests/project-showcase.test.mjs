@@ -20,12 +20,15 @@ test("Projects roster applies requested names and progress states without retire
   slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null
  });
 });
-test("In-progress projects have routed Docs without inventing GitHub repositories",()=>{
+test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
+  ["translucence-lab","lukehanna12/lightwork"],
+  ["chatgpt-chat-save-chrome-extension","lukehanna12/chatstore"],
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
+  ["unicode-plus","lukehanna12/unicode-plus"],
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,12);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,9);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension","apple-hig-reader","protocol-monitor-pruner"
@@ -34,7 +37,9 @@ test("In-progress projects have routed Docs without inventing GitHub repositorie
   "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension"
  ]);
- assert.ok(PROJECT_SHOWCASE.filter(p=>p.docs).every(p=>p.repository===null));
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[
+  "bootscript","bootscribe","github-readme-chrome-extension"
+ ]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
 });
 test("Local Docs are created in account storage without overwriting saved READMEs",()=>{
@@ -91,4 +96,22 @@ test("Projects uses native static catalog without exposing private data in Studi
  assert.match(store,/Apple HIGs Reader/);
  assert.doesNotMatch(workflow,/cp sites\/_apex\/app\/assets\/project-showcase\.js dist/);
  assert.equal(typeof renderProjectShowcase,"function");
+});
+
+test("Verified repository associations backfill once and respect account overrides",()=>{
+ const store=read("edge/auth-store-projects.mjs");
+ const ui=read("sites/_apex/app/assets/project-showcase.js");
+ for(const [slug,name,repository] of [
+  ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
+  ["translucence-lab","Lightwork","lukehanna12/lightwork"],
+  ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
+ ]){
+  assert.ok(store.includes(JSON.stringify([slug,name,repository])));
+  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug===slug)?.repository,repository);
+ }
+ assert.ok(store.includes("CREATE TABLE IF NOT EXISTS project_repository_link_migrations"));
+ assert.ok(store.includes("WHERE user_id=? AND slug=? AND repository IS NULL"));
+ assert.ok(store.includes("SELECT 1 FROM project_repository_link_migrations WHERE user_id=? AND slug=?"));
+ assert.ok(store.includes("DELETE FROM project_repository_link_migrations WHERE user_id=?"));
+ assert.ok(ui.includes("repository:saved.repository||null"));
 });
