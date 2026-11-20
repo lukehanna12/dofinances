@@ -171,7 +171,9 @@ export function initProjectReadme(){
  const source=()=>state.source;
  const setBusy=flag=>{
   state.processing=flag;
-  reading.contentEditable=state.editing&&!flag?"true":"false";
+  reading.contentEditable=state.editing&&!flag&&markdownFile(state.source?.path)?"true":"false";
+  const rawInput=reading.querySelector(".rm-raw-textarea");
+  if(rawInput)rawInput.disabled=flag;
   confirm.disabled=flag;edit.disabled=flag;
   moreFiles.disabled=flag||state.editing||!state.source?.project?.repository;
  };
@@ -202,12 +204,13 @@ export function initProjectReadme(){
   if(!state.editing||state.processing)return;
   try{
    const raw=!markdownFile(state.source?.path);
-   const rich=raw?reading.textContent:converter.turndown(reading).replace(/\u200b/g,"");
+   const rich=raw?(reading.querySelector(".rm-raw-textarea")?.value??reading.textContent):
+     converter.turndown(reading).replace(/\u200b/g,"");
    state.dirty=rich!==state.richBaseline;
    state.draft=state.dirty?(raw?rich:preserveReadmeSource(state.original,state.richBaseline,rich)):state.original;
-   state.conversionError=state.draft.length>180000?"README exceeds the 180 KB limit.":null;
+   state.conversionError=state.draft.length>180000?"Document exceeds the 180 KB limit.":null;
    if(state.conversionError)say(state.conversionError,true);
-   else if(notice.classList.contains("rm-error")&&notice.textContent==="README exceeds the 180 KB limit.")say("");
+   else if(notice.classList.contains("rm-error")&&notice.textContent==="Document exceeds the 180 KB limit.")say("");
    paintControls();if(!diffPanel.hidden)drawDiff();
   }catch(error){
    state.conversionError="This rendered content could not be converted safely to Markdown: "+error.message;
@@ -422,10 +425,14 @@ export function initProjectReadme(){
   state.savedDom=reading.cloneNode(true);
   state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;
   if(!markdownFile(state.source?.path)){
-   reading.replaceChildren(document.createTextNode(state.original));
+   const editor=document.createElement("textarea");
+   editor.className="rm-raw-textarea";
+   editor.setAttribute("aria-label","Edit "+(state.source?.path||"document"));
+   editor.value=state.original;editor.spellcheck=false;
+   reading.replaceChildren(editor);
    reading.classList.add("rm-raw-edit");
   }
-  reading.contentEditable="true";
+  reading.contentEditable=markdownFile(state.source?.path)?"true":"false";
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=false;
   history.reset();
   paintControls();

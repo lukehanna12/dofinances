@@ -209,3 +209,11 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-binary-preview{display:flex;flex-direction:column;gap:12px;color:#b3c1d1;font-size:13px}
 .rm-binary-preview a{color:#b1d5ff;text-decoration:underline}
 .rm-binary-preview img{display:block;max-width:100%;max-height:460px;object-fit:contain}
+
+.rm-view .rm-reading.rm-raw-edit{padding:16px 20px}
+.rm-raw-textarea{box-sizing:border-box;display:block;width:100%;min-height:clamp(260px,62vh,620px);
+ border:0;outline:0;resize:vertical;padding:0;margin:0;
+ background:transparent;color:#d9e2ee;caret-color:#fff;
+ font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;tab-size:2;
+ white-space:pre;overflow:auto}
+.rm-raw-textarea:focus-visible{outline:1px solid #577ba5;outline-offset:8px;border-radius:3px}

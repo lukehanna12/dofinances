@@ -36,7 +36,7 @@ export async function githubRequest(path,{token,method="GET",body,accept}={},fet
  const query=path.endsWith("?recursive=1")?"?recursive=1":"";
  const clean=query?path.slice(0,-query.length):path;
  if(!/^\/(?:repos\/[A-Za-z0-9_.%-]+\/[A-Za-z0-9_.%-]+(?:\/[A-Za-z0-9._%/-]+)?|user|markdown)$/.test(clean)||
-   clean.includes("..")||clean.includes("//")||(path.includes("?")&&!query)||path.includes("#"))
+   /(?:^|\/)\.\.(?:\/|$)/.test(clean)||clean.includes("//")||(path.includes("?")&&!query)||path.includes("#"))
    throw Error("Invalid GitHub API path.");
  const response=await fetcher("https://api.github.com"+path,{
   method,redirect:"manual",headers:{"Content-Type":"application/json",...headers(token),...(accept?{Accept:accept}:{})},
