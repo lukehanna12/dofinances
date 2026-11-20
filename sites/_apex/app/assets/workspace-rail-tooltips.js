@@ -82,6 +82,23 @@ export function initCollapsedRailTooltips(doc=document,win=window,shell,sidebar)
  }};
 }
 
+// A tooltip's bounding rectangle is TRANSFORMED while its hover scale animates.
+// The popover overlay must instead use the settled, untransformed CSS box: this
+// matches the tooltip's ordinary position when the pointer leaves. Offset
+// geometry is measured before showPopover moves the element to the top layer.
+export function untransformedTooltipRect(tip){
+  const parent=tip?.offsetParent;
+  const fallback=tip.getBoundingClientRect();
+  if(!parent||!Number.isFinite(tip.offsetLeft)||!Number.isFinite(tip.offsetTop)||
+     !Number.isFinite(tip.offsetWidth)||!Number.isFinite(tip.offsetHeight))
+    return fallback;
+  const anchor=parent.getBoundingClientRect();
+  const left=anchor.left+(parent.clientLeft||0)-(parent.scrollLeft||0)+tip.offsetLeft;
+  const top=anchor.top+(parent.clientTop||0)-(parent.scrollTop||0)+tip.offsetTop;
+  const width=tip.offsetWidth,height=tip.offsetHeight;
+  return {left,top,width,height,right:left+width,bottom:top+height};
+}
+
 // Raise content tooltips above the glass rail only where the rectangles overlap.
 // Popover's browser top layer preserves the tooltip's DOM parent and accessibility
 // label while escaping the animated view's stacking context and overflow clips.
@@ -110,13 +127,13 @@ export function initOverlappingContentTooltips(doc=document,win=window,sidebar){
     if(!active)return;
     const {trigger,tip}=active;
     if(!trigger.isConnected||!tip.isConnected||typeof tip.showPopover!=="function")return;
-    const box=tip.getBoundingClientRect(),glass=sidebar.getBoundingClientRect();
+    const box=untransformedTooltipRect(tip),glass=sidebar.getBoundingClientRect();
     if(!box.width||!box.height||box.right<=glass.left||box.left>=glass.right||
        box.bottom<=glass.top||box.top>=glass.bottom)return;
-    const vw=Number(win.innerWidth)||doc.documentElement?.clientWidth||1280;
-    const vh=Number(win.innerHeight)||doc.documentElement?.clientHeight||800;
-    tip.style.setProperty("--workspace-tooltip-left",Math.max(8,Math.min(box.left,vw-box.width-8))+"px");
-    tip.style.setProperty("--workspace-tooltip-top",Math.max(8,Math.min(box.top,vh-box.height-8))+"px");
+    // Preserve the native CSS anchor, including right-aligned tooltips such as
+    // Edit README. Clamping to 8px caused a visible horizontal snap on fade-out.
+    tip.style.setProperty("--workspace-tooltip-left",box.left+"px");
+    tip.style.setProperty("--workspace-tooltip-top",box.top+"px");
     tip.style.setProperty("--workspace-tooltip-width",box.width+"px");
     tip.classList.add("workspace-tooltip-overlap");
     tip.setAttribute("popover","manual");

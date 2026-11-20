@@ -54,3 +54,33 @@ test("Collapsed screen tooltips reproduce Collections typography and movement, n
  for(const event of ["pointerenter","pointerleave","focus","blur","click"])
   assert.ok(tooltips.includes('link.addEventListener("'+event+'"'));
 });
+
+import {untransformedTooltipRect} from "../sites/_apex/app/assets/workspace-rail-tooltips.js";
+
+test("Elevated Edit README tooltip retains its settled right-anchored position through fade-out",()=>{
+  const wrapper={clientLeft:0,clientTop:0,scrollLeft:0,scrollTop:0,
+    getBoundingClientRect:()=>({left:82,top:55,width:50,height:50,right:132,bottom:105})};
+  // The hovered tip is midway through a .94 -> 1 scale animation, so the
+  // transformed getBoundingClientRect() cannot be its final popover anchor.
+  const editTip={offsetParent:wrapper,offsetLeft:-123,offsetTop:55,
+    offsetWidth:173,offsetHeight:31,
+    getBoundingClientRect:()=>({left:-33,top:109,width:163,height:29,right:130,bottom:138})};
+  const rect=untransformedTooltipRect(editTip);
+  assert.deepEqual(rect,{left:-41,top:110,width:173,height:31,right:132,bottom:141});
+  assert.equal(rect.right,wrapper.getBoundingClientRect().right,
+    "Popover and original tooltip must share the same right-aligned endpoint");
+  assert.notEqual(rect.left,editTip.getBoundingClientRect().left,
+    "Do not freeze the transient scaled hover geometry");
+  assert.ok(tooltips.includes('const box=untransformedTooltipRect(tip)'));
+  assert.ok(tooltips.includes('setProperty("--workspace-tooltip-left",box.left+"px")'));
+  assert.ok(!tooltips.includes('Math.max(8,Math.min(box.left'),
+    "Viewport clamping must not shift the overlay away from the CSS-anchored fade-out");
+});
+
+test("Tooltip layout box honors positioned ancestor border and scroll offsets",()=>{
+  const parent={clientLeft:1,clientTop:2,scrollLeft:4,scrollTop:6,
+    getBoundingClientRect:()=>({left:200,top:80})};
+  assert.deepEqual(untransformedTooltipRect({offsetParent:parent,offsetLeft:9,offsetTop:40,
+    offsetWidth:130,offsetHeight:25,getBoundingClientRect:()=>({})}),
+    {left:206,top:116,width:130,height:25,right:336,bottom:141});
+});
