@@ -363,12 +363,12 @@ export function initProjectReadme(){
   if(!slug){
    // Drop pending content responses from the previous project upon leaving.
    ++state.loadTicket;++state.readingRenderTicket;
-   state.slug=null;exitEdit();state.renderReady=false;return;
+   state.slug=null;exitEdit();closeFiles();state.renderReady=false;return;
   }
   const ticket=++state.loadTicket;
   ++state.readingRenderTicket;++state.previewRenderTicket;
   state.slug=slug;state.source=null;state.original="";state.canEdit=false;state.editing=false;state.renderReady=false;
-  reading.textContent="Loading README…";say("");
+  reading.textContent="Loading document…";say("");closeFiles();
   $("rm-project-label").textContent="README.md";
   $("rm-repository-label").textContent="Loading repository association…";
   $("rm-visibility-badge").hidden=true;
@@ -380,17 +380,18 @@ export function initProjectReadme(){
    if(ticket!==state.loadTicket||!active())return;
    state.source=data;state.original=data.markdown||"";
    state.canEdit=!!data.canEdit;state.draft=state.original;
-   $("rm-project-label").textContent="README.md";
-   $("rm-repository-label").textContent=data.project.repository||
-      "Local README · No linked GitHub repository";
-   $("rm-visibility-badge").hidden=!(data.project.repository&&data.private);
+   paintDocumentHeader();
    view.dataset.presentation=data.project.presentation||"github";
    if(data.source==="unavailable"||data.source==="missing"){
     say((data.error||"Repository README unavailable.")+" Showing the project's default README.",true);
    }
-   void renderMarkup(state.original,reading,slug);
    if(!state.canEdit)edit.setAttribute("data-readonly","true");
    else edit.removeAttribute("data-readonly");
+   paintControls();
+   const remembered=documentsBySlug.get(slug);
+   if(remembered&&remembered!==data.path&&data.project.repository)
+    void openDocument(remembered);
+   else void renderMarkup(state.original,reading,slug);
   }catch(error){if(ticket!==state.loadTicket)return;
    reading.textContent="Unable to load this project's README.";
    say(error.message,true);
@@ -399,7 +400,7 @@ export function initProjectReadme(){
  async function startEdit(){
   if(!active())return;
   if(state.editing){exitEdit();return;}
-  if(!state.source||!state.renderReady){say("The README is still rendering. Please retry.",true);return;}
+  if(!state.source||!state.renderReady){say("The document is still rendering. Please retry.",true);return;}
   if(!state.canEdit){
    say(state.source.requiresConnection?
      "Editing is unavailable: configure a GitHub token with Contents: Read and write permission in Settings first.":
@@ -407,10 +408,15 @@ export function initProjectReadme(){
    return;
   }
   say("");
-  try{state.richBaseline=converter.turndown(reading).replace(/\u200b/g,"");}
+  try{state.richBaseline=markdownFile(state.source?.path)?
+    converter.turndown(reading).replace(/\u200b/g,""):state.original;}
   catch(error){say("Cannot edit this document safely: "+error.message,true);return;}
   state.savedDom=reading.cloneNode(true);
   state.editing=true;state.dirty=false;state.draft=state.original;state.conversionError=null;
+  if(!markdownFile(state.source?.path)){
+   reading.replaceChildren(document.createTextNode(state.original));
+   reading.classList.add("rm-raw-edit");
+  }
   reading.contentEditable="true";
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=false;
   history.reset();
@@ -426,6 +432,12 @@ export function initProjectReadme(){
    if(event.target.matches?.('input[type="checkbox"]'))queueMicrotask(updateDraft);
    return;
   }
+  const docLink=event.target.closest?.("a[data-repo-path]");
+  if(docLink&&reading.contains(docLink)){
+   event.preventDefault();
+   void openDocument(docLink.dataset.repoPath,docLink.dataset.repoFragment||"");
+   return;
+  }
   const link=event.target.closest?.('a[href^="#readme-"]');
   if(!link||!reading.contains(link))return;
   const target=reading.querySelector('[id="'+link.getAttribute("href").slice(1)+'"]');
@@ -439,11 +451,14 @@ export function initProjectReadme(){
  // Production and Chromium use the SAME editing engine, so history tests
  // exercise real input, caret, composition, paste and autoformat behavior.
  history=installReadmeEditorInteractions(reading,{
-  isEditing:()=>state.editing&&!state.processing,
+  isEditing:()=>state.editing&&!state.processing&&markdownFile(state.source?.path),
   onChange:scheduleRichDraftUpdate,
   onImmediateChange:updateDraft
  });
  edit.addEventListener("click",()=>void startEdit());
+ reading.addEventListener("input",()=>{
+  if(state.editing&&!markdownFile(state.source?.path))scheduleRichDraftUpdate();
+ });
  function drawDiff(){
   diffContent.replaceChildren();
   const changes=makeReadmeDiff(state.original,state.draft);
@@ -469,23 +484,26 @@ export function initProjectReadme(){
   if(!state.dirty)return;
   if(state.conversionError){say(state.conversionError,true);return;}
   const content=state.draft,slug=state.slug;
-  setBusy(true);say("Saving README…");
+  setBusy(true);say("Saving document…");
   try{
    const res=await api("/api/projects/"+encodeURIComponent(slug)+"/readme","PUT",
      {markdown:content,sha:state.source?.sha||null,path:state.source?.path||"README.md"});
    if(routeSlug()!==slug){exitEdit();return;}
    state.original=content;state.source={...state.source,sha:res.sha||null,path:res.path||state.source?.path,markdown:content,source:res.local?"local":"github"};
+   if(state.source.path)documentsBySlug.set(slug,state.source.path);
    exitEdit(false);
    await renderMarkup(content,reading,slug);
-   say("README saved"+(res.commit?" to GitHub · "+res.commit.slice(0,8):" locally")+".",false,true);
-  }catch(error){say("README not saved: "+error.message,true);}
+   say("Document saved"+(res.commit?" to GitHub · "+res.commit.slice(0,8):" locally")+".",false,true);
+  }catch(error){say("Document not saved: "+error.message,true);}
   finally{setBusy(false);}
  });
  window.addEventListener("keydown",event=>{
   if(!active()||event.defaultPrevented||event.repeat||event.isComposing)return;
   if(event.shiftKey&&(event.metaKey||event.ctrlKey)&&!event.altKey&&event.code==="KeyE"){
    event.preventDefault();void startEdit();
-  }
+  }else if(event.shiftKey&&(event.metaKey||event.ctrlKey)&&!event.altKey&&event.code==="KeyM"){
+   if(!moreFiles.hidden&&!moreFiles.disabled){event.preventDefault();toggleFiles();}
+  }else if(event.key==="Escape"&&!filesMenu.hidden){event.preventDefault();closeFiles();moreFiles.focus();}
  });
  create?.addEventListener("click",()=>{
   $("project-create-error").hidden=true;$("project-create-name").value="";$("project-create-repository").value="";
@@ -531,7 +549,12 @@ export function initProjectReadme(){
    await refreshConnection();if(active())void loadReadme();
   }catch(error){say(error.message,true,false,$("github-readme-feedback"));}
  });
- function routeChanged(){void loadReadme();}
+ function routeChanged(){
+  const current=location.hash.replace(/^#/,"").toLowerCase()||"dashboard";
+  if(previousRoute==="projects"&&routeSlug())documentsBySlug.delete(routeSlug());
+  previousRoute=current;
+  void loadReadme();
+ }
  window.addEventListener("hashchange",routeChanged);
  window.addEventListener("popstate",routeChanged);
  populateProjectCards([]); // Render the curated cards before the account API responds.
