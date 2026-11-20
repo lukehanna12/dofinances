@@ -89,9 +89,14 @@ try{
  'const tiles=grid.querySelectorAll(":scope>.cta6-tile");',
  'const actions=[...document.querySelectorAll(".cta6-bottom-action>.cta6-action")];',
  'const nav=[...document.querySelectorAll("#global-menu-links>button")];',
- 'const box=e=>{const r=e.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height,center:r.left+r.width/2};};',
+ 'const box=e=>{const r=e.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height,center:r.left+r.width/2,centerY:r.top+r.height/2};};',
+ 'const occupied=[...grid.querySelectorAll(":scope>.cta6-tile--plain,:scope>.cta6-tile--icon")];',
+ 'const center=box(logo);const normalized=(tile,rx,ry)=>{const p=box(tile);return Math.hypot((p.center-center.center)/rx,(p.centerY-center.centerY)/ry);};',
+ 'const inOldOval=occupied.filter(tile=>normalized(tile,65,40)<1).length;',
+ 'const visiblyFaded=occupied.filter(tile=>{const r=normalized(tile,140,100);return 0.6+0.4*Math.min(1,r)**2<=.86;}).length;',
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
+ 'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e)})),',
  'nav:nav.map(e=>e.textContent.trim()),',
  'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
@@ -127,6 +132,12 @@ try{
   near(g.grid.width,1080,"Full mosaic width",width);
   near(g.grid.center,width/2,"Mosaic center",width);
   near(g.logo.center,width/2,"Doof center",width);
+  near(g.logo.centerY,g.grid.centerY-1.5*(950/11),
+    "Doof raised one tile (1.5 tiles above original lattice center)",width);
+  assert.equal(g.inOldOval,0,
+    "The former 65x40 fade fell entirely within the lattice's empty center");
+  assert.ok(g.visiblyFaded>=2,
+    "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
   assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Settings"]);
@@ -151,9 +162,9 @@ try{
   assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
   assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
-  assert.equal(g.logoOvalX,"65px","Oval fade width hugs Doof");
-  assert.equal(g.logoOvalY,"40px","Oval fade height hugs Doof");
-  assert.equal(g.logoOffset,"43.1818px","Oval tracks Doof's half-tile offset");
+  assert.equal(g.logoOvalX,"140px","Oval reaches surrounding populated squares");
+  assert.equal(g.logoOvalY,"100px","Oval reaches surrounding populated squares");
+  assert.equal(g.logoOffset,"129.54545px","Oval matches raised Doof center");
   assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
     "Square opacity reduces to 60% at the logo");

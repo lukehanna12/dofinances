@@ -67,9 +67,11 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(style,/mask-composite:intersect;/,"Both square alpha fades must combine");
   assert.match(style,/-webkit-mask-composite:source-in;/);
   assert.match(style,/radial-gradient\(ellipse var\(--public-logo-oval-x\) var\(--public-logo-oval-y\)/);
-  assert.match(style,/--public-logo-oval-x:65px;/);
-  assert.match(style,/--public-logo-oval-y:40px;/);
-  assert.match(style,/--public-logo-shift:43\.1818px;/);
+  assert.match(style,/--public-logo-oval-x:140px;/);
+  assert.match(style,/--public-logo-oval-y:100px;/);
+  assert.match(style,/--public-logo-shift:129\.54545px;/);
+  assert.match(style,/\.cta6-center h1\{\s*translate:0 calc\(-1\.5 \* var\(--cta6-title-tile\)\);/);
+  assert.match(style,/rgba\(0,0,0,\.744\) 60%/,"The opacity ramps quadratically through the oval");
   assert.match(style,/rgba\(0,0,0,\.60\) 0%/,"Squares are 60% opaque at logo center");
   assert.doesNotMatch(style,/linear-gradient\(to bottom/,"Do not darken the backdrop vertically");
   const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
@@ -77,12 +79,14 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
   assert.match(shader,/let logoCenter=vec2<f32>\(/);
-  assert.match(shader,/let ovalRadii=vec2<f32>\(65\.0,40\.0\)\*state\.viewport\.w;/);
-  assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,clamp\(ovalDistance,0\.0,1\.0\)\);/);
+  assert.match(shader,/state\.viewport\.y\*0\.5-1\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
+  assert.match(shader,/let ovalRadii=vec2<f32>\(140\.0,100\.0\)\*state\.viewport\.w;/);
+  assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
   assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity/);
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
-  assert.doesNotMatch(style,/\.cta6-center h1\s*\{/,"Never apply logo visual modifications");
+  assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
+    "The logo stays unfilled; only its vertical position changes");
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-glass.wgsl"),/logoOpacity|ovalRadii/,
     "The private Dashboard renderer must remain untouched");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
