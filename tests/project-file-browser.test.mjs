@@ -23,6 +23,7 @@ test("More files occupies Confirm's exact action slot and yields to dirty edits"
  assert.ok(css.includes('.rm-files-control{z-index:7}'));
  assert.ok(css.includes('.rm-more-files:disabled'));
  assert.ok(css.includes('.rm-files-menu[hidden]{display:none!important}'));
+ assert.ok(css.includes('.rm-more-files:disabled:not([hidden])'),"Disabled More files tooltip must not appear while Confirm replaces it");
  assert.ok(ui.includes('confirm.hidden=!dirty;diffButton.hidden=!dirty;'));
  assert.ok(ui.includes('moreFiles.hidden=dirty;moreFiles.disabled=state.processing||state.editing'));
  assert.ok(ui.includes('if(event.shiftKey&&(event.metaKey||event.ctrlKey)&&!event.altKey&&event.code==="KeyM")'));
