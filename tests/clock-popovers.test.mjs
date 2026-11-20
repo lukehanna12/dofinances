@@ -68,3 +68,13 @@ test("Public Studio keeps display-only clock controls interactive without enabli
   assert.match(preview,/button\.disabled=true/);
   assert.match(preview,/for\(const form of document\.querySelectorAll\("form"\)\)/);
 });
+
+test("Display doof centers over the 74px compact sidebar without moving the normal clock",()=>{
+  const style=css.match(/#workspace-shell \\.global-clock button\\.clock-display-trigger:has\\(\\.global-clock-doof:not\\(\\[hidden\\]\\)\\)\\{([^}]+)\\}/);
+  assert.ok(style,"Centering rule must apply only when the doof wordmark is visible");
+  assert.match(style[1],/margin-inline-start:37px/);
+  assert.match(style[1],/transform:translateX\\(-50%\\)/);
+  assert.equal(16+37,16+74/2,"Doof center matches the compact rail's center");
+  assert.match(css,/@media\\(min-width:761px\\)/);
+  assert.match(nav,/zoneTrigger\\.hidden=display\\.doof/);
+});

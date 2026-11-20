@@ -737,6 +737,16 @@ body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .pa
   font:inherit;line-height:1;color:inherit;white-space:nowrap;cursor:pointer;
 }
 .global-clock button.clock-display-trigger{font-variant-numeric:tabular-nums;}
+/* Keep the normal clock left-aligned. When it becomes 'doof', center only its
+ * trigger over the fixed 74px compact sidebar (sidebar starts at x=16px).
+ * The lower bar's inverse rail offset already keeps this anchor independent
+ * of whether the physical sidebar is expanded or collapsed. */
+@media(min-width:761px){
+  #workspace-shell .global-clock button.clock-display-trigger:has(.global-clock-doof:not([hidden])){
+    margin-inline-start:37px;
+    transform:translateX(-50%);
+  }
+}
 .global-clock button.clock-zone-trigger{font-size:inherit;}
 .global-clock button:is(.clock-display-trigger,.clock-zone-trigger):hover{color:#fff;}
 .global-clock button:is(.clock-display-trigger,.clock-zone-trigger):focus-visible{
