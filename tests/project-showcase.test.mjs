@@ -31,7 +31,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
  assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,9);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
-  "chatgpt-chat-save-chrome-extension","apple-hig-reader","protocol-monitor-pruner"
+  "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs).map(p=>p.slug),[
   "bootscript","bootscribe","translucence-lab","github-readme-chrome-extension",
@@ -41,6 +41,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
   "bootscript","bootscribe","github-readme-chrome-extension"
  ]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"in-progress");
 });
 test("Local Docs are created in account storage without overwriting saved READMEs",()=>{
  const store=read("edge/auth-store-projects.mjs");
@@ -71,7 +72,7 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(css,/border-radius:10px/);
  assert.match(css,/font-size:9px;font-weight:500;line-height:12px;padding:1px 5px/);
  assert.match(permissions,/\.pm-rule-row\{min-height:56px;border-bottom:1px solid var\(--pm-line\)/);
- assert.match(css,/project-showcase-badge--soon\{background:#3b235f;color:#e9d5ff\}/);
+ assert.match(css,/project-showcase-badge--soon\{background:#193c61;color:#bfdbfe\}/);
  assert.match(css,/project-showcase-badge--progress\{background:#382409;color:#facc15\}/);
  assert.match(permissions,/\.pm-rule-row\[data-enabled="false"\] \.pm-rule-status\{color:#747474\}/);
  assert.match(source,/const status=project\.status==="in-progress"\?"In Progress"/);

@@ -49,7 +49,7 @@
 }
 /* Permissions Dormant badge, dark-mode palette: exact #382409 / #facc15. */
 .view[data-view="projects"] .project-showcase-badge--progress{background:#382409;color:#facc15}
-.view[data-view="projects"] .project-showcase-badge--soon{background:#3b235f;color:#e9d5ff}
+.view[data-view="projects"] .project-showcase-badge--soon{background:#193c61;color:#bfdbfe}
 .view[data-view="projects"] .project-showcase-title{
  display:block;font-weight:500;font-size:clamp(12px,1.05vw,16px);
  line-height:1.16;letter-spacing:-.035em;overflow-wrap:anywhere;
