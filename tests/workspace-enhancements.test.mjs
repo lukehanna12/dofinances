@@ -136,13 +136,15 @@ test("Only Dashboard retains the global bar; other routes reclaim 44px without s
     "Ordinary content retains its established viewport position");
   for(const file of ["../sites/_apex/app/index.html","../studio/sidebar/index.html"]){
     const html=read(file);
-    assert.ok(html.includes('<a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#dashboard">Dashboard</a>'),
-      "The lower-bar root breadcrumb says Dashboard");
+    assert.ok(!html.includes('data-breadcrumb-root'),
+      "Dashboard is no longer a breadcrumb root");
+    assert.ok(html.includes('id="topbar-dashboard-home"')&&html.includes('href="#dashboard" aria-label="Go to Dashboard"'),
+      "A right-hand Home action replaces the old breadcrumb root");
     assert.ok(html.includes('<a data-global-route href="#dashboard">Dashboard</a>'),
       "Dashboard's distinct upper navigation remains unchanged");
   }
-  assert.ok(nav.includes('breadcrumb:selected==="dashboard"?"Dashboard":"Dashboard / "+label'),
-    "Route metadata and breadcrumb fallback reflect the new label");
+  assert.ok(nav.includes('breadcrumb:selected==="dashboard"?"":label'),
+    "Dashboard has no breadcrumb, and workspace breadcrumbs begin at the current route");
   assert.ok(!nav.includes('breadcrumb:"Workspace / "+label'));
 });
 

@@ -460,7 +460,7 @@ test("Current breadcrumb is a passive label; compact title gets the top-scroll b
   const html=await read("../sites/_apex/app/index.html");
   const css=await read("../sites/_apex/app/assets/workspace-enhancements.css");
   const controller=await read("../sites/_apex/app/assets/workspace-title-transition.js");
-  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Dashboard<\/span>/);
+  assert.match(html,/<span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page"><\/span>/);
   assert.doesNotMatch(css,/button\.shadcn-breadcrumb-page/);
   assert.ok(controller.includes('doc.createElement("button")'));
   assert.ok(controller.includes('title.addEventListener?.("click",()=>{if(active&&passed)animateToTop();})'));

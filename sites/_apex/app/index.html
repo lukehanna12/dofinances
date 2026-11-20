@@ -159,20 +159,18 @@
             <p id="clock-popover-feedback" class="clock-popover-feedback" role="status" aria-live="polite"></p>
           </div>
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
-          <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
+          <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb" hidden>
             <ol class="shadcn-breadcrumb-list">
-              <li class="shadcn-breadcrumb-item"><a class="shadcn-breadcrumb-link" data-breadcrumb-root href="#dashboard">Dashboard</a></li>
-              <li class="shadcn-breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
               <li class="shadcn-breadcrumb-item" id="breadcrumb-project-item" hidden><a class="shadcn-breadcrumb-link" id="back-to-workspace" href="#projects" hidden>Projects</a></li>
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-project-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
               <li class="shadcn-breadcrumb-item" id="breadcrumb-colosseum-item" hidden><a class="shadcn-breadcrumb-link" id="breadcrumb-colosseum" href="#colosseum/utilities" hidden>Colosseum</a></li>
               <li class="shadcn-breadcrumb-separator" id="breadcrumb-colosseum-separator" aria-hidden="true" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></li>
-              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page">Dashboard</span></li>
+              <li class="shadcn-breadcrumb-item"><span class="shadcn-breadcrumb-page" id="breadcrumb-current" aria-current="page"></span></li>
             </ol>
           </nav>
           <span id="location-subtitle" hidden></span>
         </div>
-        <div class="top-actions"><span id="account-email" class="email">Loading account…</span></div>
+        <div class="top-actions"><span id="account-email" class="email">Loading account…</span><a id="topbar-dashboard-home" class="topbar-dashboard-home" href="#dashboard" aria-label="Go to Dashboard"><span class="nav-icon-asset nav-icon-asset--dashboard" aria-hidden="true"></span></a></div>
       </header>
       <div class="workspace-scroll" id="workspace-scroll" tabindex="-1">
         <main class="content" id="main-content">
@@ -699,7 +697,7 @@
           <div class="page-heading"><h1 id="project-providers-local-title">Local</h1></div>
           <div class="pv-workbench pv-loading" id="pv-root">
             <div class="pv-overview">
-              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span class="pv-summary-value" id="pv-summary-value"><span class="pv-summary-group"><span id="pv-summary-mode">PROVIDERS ·</span> <span class="pv-summary-count"><span id="pv-summary-registered">—</span></span> <span id="pv-summary-registered-label">REGISTERED</span></span><span class="pv-summary-divider" id="pv-summary-divider"> / </span><span class="pv-summary-group" id="pv-summary-ready-group"><span class="pv-summary-count"><span id="pv-summary-connected">—</span></span> <span id="pv-summary-state">READY</span></span></span></span>
+              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span class="pv-summary-value" id="pv-summary-value"><span class="pv-summary-prefix" id="pv-summary-mode">PROVIDERS ·</span> <span class="pv-summary-group"><span class="pv-summary-count"><span id="pv-summary-registered">—</span></span> <span id="pv-summary-registered-label">REGISTERED</span></span><span class="pv-summary-divider" id="pv-summary-divider"> / </span><span class="pv-summary-group" id="pv-summary-ready-group"><span class="pv-summary-count"><span id="pv-summary-connected">—</span></span> <span id="pv-summary-state">READY</span></span></span></span>
               <span class="pv-summary pv-summary-updated" id="pv-summary-updated" aria-live="polite" aria-busy="true"><span class="pv-summary-group"><span class="pv-summary-updated-value">UPDATED <span id="pv-summary-updated-time">—</span></span></span></span>
             </div>
             <p id="pv-status" class="pv-status" role="status" aria-live="polite"></p>

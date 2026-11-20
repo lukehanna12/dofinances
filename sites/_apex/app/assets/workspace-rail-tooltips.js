@@ -81,3 +81,70 @@ export function initCollapsedRailTooltips(doc=document,win=window,shell,sidebar)
   disposed=true;hide();tip.remove();
  }};
 }
+
+// Raise content tooltips above the glass rail only where the rectangles overlap.
+// Popover's browser top layer preserves the tooltip's DOM parent and accessibility
+// label while escaping the animated view's stacking context and overflow clips.
+export function initOverlappingContentTooltips(doc=document,win=window,sidebar){
+  if(!doc?.addEventListener||!sidebar?.getBoundingClientRect||
+     typeof win?.setTimeout!=="function")return null;
+  let active=null,delay=null;
+  const hide=()=>{
+    if(delay!==null){win.clearTimeout(delay);delay=null;}
+    const tip=active?.tip;
+    if(tip){
+      if(tip.matches?.(":popover-open"))tip.hidePopover();
+      tip.classList.remove("workspace-tooltip-overlap");
+      tip.removeAttribute("popover");
+      for(const name of ["--workspace-tooltip-left","--workspace-tooltip-top","--workspace-tooltip-width"])
+        tip.style.removeProperty(name);
+    }
+    active=null;
+  };
+  const candidate=node=>{
+    const trigger=node?.closest?.('#workspace-shell .content :is(button,a,[tabindex="0"])');
+    const tip=trigger?.parentElement?.querySelector?.(':scope > [role="tooltip"]');
+    return trigger&&tip?{trigger,tip}:null;
+  };
+  const promote=()=>{
+    if(!active)return;
+    const {trigger,tip}=active;
+    if(!trigger.isConnected||!tip.isConnected||typeof tip.showPopover!=="function")return;
+    const box=tip.getBoundingClientRect(),glass=sidebar.getBoundingClientRect();
+    if(!box.width||!box.height||box.right<=glass.left||box.left>=glass.right||
+       box.bottom<=glass.top||box.top>=glass.bottom)return;
+    const vw=Number(win.innerWidth)||doc.documentElement?.clientWidth||1280;
+    const vh=Number(win.innerHeight)||doc.documentElement?.clientHeight||800;
+    tip.style.setProperty("--workspace-tooltip-left",Math.max(8,Math.min(box.left,vw-box.width-8))+"px");
+    tip.style.setProperty("--workspace-tooltip-top",Math.max(8,Math.min(box.top,vh-box.height-8))+"px");
+    tip.style.setProperty("--workspace-tooltip-width",box.width+"px");
+    tip.classList.add("workspace-tooltip-overlap");
+    tip.setAttribute("popover","manual");
+    try{tip.showPopover();}catch{hide();}
+  };
+  const enter=(event,keyboard)=>{
+    const next=candidate(event.target);
+    if(!next)return;
+    if(active?.trigger===next.trigger){
+      if(keyboard&&delay!==null){win.clearTimeout(delay);delay=null;promote();}
+      return;
+    }
+    hide();
+    active=next;
+    if(keyboard)promote();
+    else delay=win.setTimeout(()=>{delay=null;promote();},160);
+  };
+  const exit=event=>{
+    if(active?.trigger===event.target&&!active.trigger.contains?.(event.relatedTarget))
+      hide();
+  };
+  doc.addEventListener("pointerover",event=>{
+    if(event.pointerType!=="touch")enter(event,false);
+  },true);
+  doc.addEventListener("pointerout",exit,true);
+  doc.addEventListener("focusin",event=>enter(event,true),true);
+  doc.addEventListener("focusout",exit,true);
+  win.addEventListener?.("scroll",hide,true);
+  win.addEventListener?.("resize",hide,{passive:true});
+  return {hide};
+}

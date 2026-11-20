@@ -1,7 +1,7 @@
 import {initWorkspaceTitleTransition} from "./workspace-title-transition.js";
 import {initWorkspaceScroll} from "./workspace-scroll.js";
 import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
-import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
+import {initCollapsedRailTooltips,initOverlappingContentTooltips} from "./workspace-rail-tooltips.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["dashboard","projects","settings"]);
@@ -101,7 +101,7 @@ export function workspaceRouteDetails(route){
   }
   const label=TITLE_CASE[selected];
   return {route:selected,project:false,projectKey:null,label,
-    breadcrumb:selected==="dashboard"?"Dashboard":"Dashboard / "+label,
+    breadcrumb:selected==="dashboard"?"":label,
     subtitle:selected==="settings"?"Manage account & security":
       selected==="projects"?"Your projects":"Your personal workspace"};
 }
@@ -116,6 +116,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   const appleHigNav=doc.getElementById("apple-hig-navigation");
   const customNav=doc.getElementById("custom-project-navigation");
   const breadcrumb=doc.getElementById("breadcrumb");
+  const topbarHome=doc.getElementById("topbar-dashboard-home");
   const subtitle=doc.getElementById("location-subtitle");
   const back=doc.getElementById("back-to-workspace");
   const currentCrumb=doc.getElementById("breadcrumb-current");
@@ -156,6 +157,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
   // then an expandable full-width sidebar at 1280px and above.
   const isCompactRail=()=>!!win.matchMedia?.("(min-width: 761px) and (max-width: 1279px)").matches;
   const railTooltips=initCollapsedRailTooltips(doc,win,shell,sidebar);
+  initOverlappingContentTooltips(doc,win,sidebar);
   // A viewport breakpoint is a layout change, not an expand/collapse action.
   // Keep transitions off unless a user actually clicked a sidebar control.
   let motionTimeout=null;
@@ -280,6 +282,11 @@ export function initWorkspaceNavigation(doc=document,win=window){
         win.location.pathname+(win.location.search||"")+"#dashboard");}catch{}
     }
     if(route===lastRenderedRoute)return;
+    breadcrumb.hidden=route==="dashboard";
+    if(topbarHome){
+      if(route==="dashboard")topbarHome.setAttribute("aria-current","page");
+      else topbarHome.removeAttribute("aria-current");
+    }
     const first=lastRenderedRoute===null;
     const meta=workspaceRouteDetails(route);
     // The one footer Settings action stays within the active Colosseum
@@ -531,6 +538,12 @@ export function initWorkspaceNavigation(doc=document,win=window){
   searchInput?.addEventListener?.("input",()=>{
     const q=searchInput.value.trim().toLowerCase();
     for(const a of searchable)a.hidden=!a.textContent.toLowerCase().includes(q);
+  });
+  topbarHome?.addEventListener?.("click",event=>{
+    const modified=event?.metaKey||event?.ctrlKey||event?.shiftKey||event?.altKey||
+      (event?.button!==undefined&&event.button!==0);
+    if(!modified)render("dashboard");
+    closeGlobal();
   });
   for(const link of globalLinks)link.addEventListener("click",event=>{
     const route=link.href?.split("#")[1];

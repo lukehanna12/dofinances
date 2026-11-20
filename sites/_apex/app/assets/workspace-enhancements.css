@@ -116,7 +116,20 @@ body:has(> #workspace-shell) .topbar{
   flex-wrap:nowrap;align-items:center;
 }
 body:has(> #workspace-shell) .topbar-start{min-width:0;overflow:hidden;}
-body:has(> #workspace-shell) .top-actions{margin-left:auto;}
+body:has(> #workspace-shell) .top-actions{
+  margin-left:auto;
+  /* Match the clock/doof's viewport-left 16px gutter at the right edge. */
+  margin-right:calc(16px - clamp(18px,3.8vw,54px));
+}
+#workspace-shell .topbar-dashboard-home{
+  box-sizing:border-box;display:inline-grid;place-items:center;flex:0 0 34px;
+  width:34px;height:34px;border-radius:10px;color:var(--ui-secondary);
+  background:transparent;transition:background-color 160ms ease,color 160ms ease;
+}
+#workspace-shell .topbar-dashboard-home:hover,
+#workspace-shell .topbar-dashboard-home:focus-visible{color:var(--ui-text);background:var(--ui-hover);}
+#workspace-shell .topbar-dashboard-home:focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px;}
+#workspace-shell .shadcn-breadcrumbs[hidden]{display:none!important;}
 body:has(> #workspace-shell) .content{
   padding-top:calc(var(--workspace-banner-height) - var(--global-menu-height) - var(--workspace-header-height) + var(--workspace-content-leading));
 }
@@ -342,6 +355,8 @@ body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .pa
 }
 @media(max-width:760px){
   body:has(> #workspace-shell) .topbar{height:50px;min-height:50px;padding:5px 16px;}
+  #workspace-shell .top-actions{margin-right:0;}
+  #workspace-shell .top-actions .email{display:none;}
   /* The lower top-bar's mobile sidebar opener releases its full layout slot as
      it fades/translates left, allowing the breadcrumb navigation to glide
      left in the same 210ms gesture. Closing the drawer reverses both paths. */
@@ -845,4 +860,16 @@ body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .pa
 .clock-popover input:not([type="checkbox"]):focus-visible{outline:2px solid var(--ui-focus);outline-offset:2px;}
 @media(prefers-reduced-motion:reduce){
   .clock-toggle-visual,.clock-toggle-visual::after{transition:none;}
+}
+
+/* Elevate existing content tooltips only when they physically overlap the glass
+   sidebar. The browser top layer escapes animated view stacking contexts. */
+#workspace-shell [role="tooltip"].workspace-tooltip-overlap:popover-open{
+  position:fixed!important;inset:auto!important;
+  left:var(--workspace-tooltip-left)!important;top:var(--workspace-tooltip-top)!important;
+  width:var(--workspace-tooltip-width)!important;
+  margin:0!important;transform:none!important;
+  visibility:visible!important;opacity:1!important;
+  pointer-events:none!important;transition:none!important;
+  z-index:2147483647!important;
 }

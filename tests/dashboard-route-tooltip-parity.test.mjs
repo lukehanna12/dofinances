@@ -11,7 +11,8 @@ test("Dashboard is canonical in both shells; original content, photo, nav and We
   assert.ok(html.includes('data-route="dashboard" href="#dashboard" aria-label="Dashboard"'));
   assert.ok(html.includes('data-view="dashboard"'));
   assert.ok(html.includes('href="#dashboard">Dashboard</a>'));
-  assert.ok(html.includes('data-breadcrumb-root href="#dashboard">Dashboard</a>'));
+  assert.ok(!html.includes('data-breadcrumb-root'));
+  assert.ok(html.includes('id="topbar-dashboard-home" class="topbar-dashboard-home" href="#dashboard"'));
   assert.ok(html.includes('aria-labelledby="dashboard-title"'));
   assert.ok(!html.includes('href="#home"'));
   assert.ok(!html.includes('data-view="home"'));

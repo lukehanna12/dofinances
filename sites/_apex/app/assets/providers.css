@@ -56,12 +56,12 @@ html:has(body > #workspace-shell .pv-route-view:not([hidden])) body:has(> #works
 #pv-root .pv-overview > .pv-summary{min-width:0}
 #pv-root .pv-summary-updated{flex:none;margin-left:auto;text-align:right;letter-spacing:.16em}
 #pv-root .pv-summary-updated-value{white-space:nowrap}
-/* Same two-ring and visible slash semantics as Collections: the complete
-   first and second text groups disappear without collapsing their layout.
-   Each ring is centered in its actual group, for all three route labels,
-   without measuring text or maintaining fragile pixel offsets. */
+/* Keep PROVIDERS · / CREDENTIALS · visible during loading. Only the
+   count/label groups disappear behind their centered rings; moving the fixed
+   prefix outside each group automatically re-centers the numerical skeleton. */
 #pv-root .pv-summary{position:relative;display:inline-block;color:var(--pv-muted);font-size:clamp(10px,.85vw,11px);font-weight:500;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;min-height:var(--workspace-summary-row-height);white-space:nowrap}
 #pv-root .pv-summary-value{display:inline-block;white-space:nowrap;font-variant-numeric:tabular-nums}
+#pv-root .pv-summary-prefix{display:inline-block;white-space:nowrap}
 #pv-root .pv-summary-group{position:relative;display:inline-block;white-space:nowrap}
 #pv-root .pv-summary-count{display:inline-block;min-width:1.45em;text-align:center}
 #pv-root.pv-loading .pv-summary-group{visibility:hidden}
