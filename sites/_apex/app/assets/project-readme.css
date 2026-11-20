@@ -24,7 +24,7 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-toolbar-end{display:flex;align-items:center;gap:8px;width:100%}
 .rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}
 .rm-diff-control{margin-left:auto}
-.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}
+.rm-control-wrap:not(.rm-files-control):has(> .rm-icon-button[hidden]){display:none}
 .rm-control-wrap{display:inline-flex;position:relative;align-items:center;justify-content:center}
 /* Screenshot-matched slate-blue: 68% document #0d1117 with 32% of
    previous #192b3d produces #111923 instead of an oversaturated accent. */
@@ -141,3 +141,71 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-view[data-presentation="minimal"] .markdown-body{--bgColor-default:#191919;--fgColor-default:#eee;--borderColor-default:#404040}
 .rm-view[data-presentation="reader"] .rm-reading{max-width:850px;margin-inline:auto;background:#111114;border:1px solid #343434;border-radius:17px;padding:clamp(24px,4vw,64px)}
 .rm-view[data-presentation="reader"] .markdown-body{font-size:17px;line-height:1.75;letter-spacing:.003em}
+
+/* More files occupies the exact 50px action slot used by Confirm, never a
+   third toolbar position. Disabled in clean Edit mode; Confirm wins on dirty. */
+.rm-files-control{z-index:7}
+.rm-more-files{color:#edf2f9}
+.rm-more-files:disabled{cursor:default;opacity:.35}
+.rm-more-files:disabled:hover{background:transparent}
+.rm-folder-icon,.rm-tree-folder-icon{
+ display:inline-block;flex:none;background:currentColor;
+ -webkit-mask:url("/app/assets/folder-sfsymbol.20261112.svg") center/contain no-repeat;
+ mask:url("/app/assets/folder-sfsymbol.20261112.svg") center/contain no-repeat;
+}
+.rm-folder-icon{width:22px;height:20px}
+.rm-tree-folder-icon{width:15px;height:13px;opacity:.8}
+.rm-files-control:has(> .rm-more-files:disabled):hover > #rm-more-files-tooltip{
+ opacity:1;visibility:visible;transform:translateY(0) scale(1);
+ transition-delay:.15s,.15s,.15s;
+}
+.rm-files-control #rm-more-files[hidden],.rm-files-control #rm-confirm[hidden]{display:none!important}
+.rm-files-menu{
+ position:absolute;top:calc(100% + 12px);left:0;z-index:180;
+ width:min(385px,calc(100vw - 44px));box-sizing:border-box;
+ max-height:min(490px,calc(100dvh - 140px));min-height:110px;
+ display:flex;flex-direction:column;gap:0;overflow:hidden;
+ border:1px solid #364252;border-radius:12px;
+ background:#111820;color:#ecf0f6;
+ box-shadow:0 18px 48px rgba(0,0,0,.46),0 0 0 1px rgba(255,255,255,.025);
+ font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.rm-files-menu[hidden]{display:none!important}
+.rm-files-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+ padding:12px 12px 10px 15px;border-bottom:1px solid #303b49;
+ font-weight:600;font-size:12px;letter-spacing:.01em}
+.rm-files-head button{display:grid;place-items:center;width:24px;height:24px;padding:0;
+ color:#aeb8c5;border:0;border-radius:6px;background:transparent;cursor:pointer;font-size:20px}
+.rm-files-head button:hover,.rm-files-head button:focus-visible{background:#2a3645;color:#fff}
+.rm-files-message{margin:0;padding:11px 15px;font-size:11.5px;line-height:1.45;color:#a7b4c6}
+.rm-files-tree{padding:8px;overflow:auto;min-height:55px;overscroll-behavior:contain;
+ scrollbar-gutter:stable;scrollbar-color:#3b4d5f transparent;font-size:12px}
+.rm-file-branch{margin:0;padding:0 0 0 13px;list-style:none;border-left:1px solid #2b3642}
+.rm-file-branch.rm-file-root{padding:0;border:0}
+.rm-file-node{list-style:none;margin:0}
+.rm-file-folder > summary{cursor:pointer;list-style:none}
+.rm-file-folder > summary::-webkit-details-marker{display:none}
+.rm-file-folder > summary:before{content:"›";display:inline-block;width:12px;
+ color:#71869b;font-size:15px;transform-origin:center;transition:transform .13s ease}
+.rm-file-folder[open] > summary:before{transform:rotate(90deg)}
+.rm-file-folder > summary,.rm-file-entry{
+ display:flex;align-items:center;gap:6px;width:100%;box-sizing:border-box;
+ border:0;border-radius:6px;min-height:29px;padding:4px 6px;
+ color:#e7edf5;background:transparent;text-align:left;cursor:pointer;
+ font:inherit;overflow-wrap:anywhere;
+}
+.rm-file-entry{padding-left:19px}
+.rm-file-folder > summary:hover,.rm-file-entry:hover{background:#273446;color:#fff}
+.rm-file-folder > summary:focus-visible,.rm-file-entry:focus-visible{outline:2px solid #6898c9;outline-offset:-2px}
+.rm-file-entry[aria-current="true"]{background:#223a55;color:#fff}
+.rm-file-entry.rm-file-muted{color:#778696}
+.rm-file-entry.rm-file-muted:hover{color:#b9c7d7}
+.rm-file-entry .rm-file-name{min-width:0;overflow-wrap:anywhere}
+.rm-file-type{margin-left:auto;flex:none;font-size:9px;color:#718296}
+.rm-file-entry.rm-file-muted .rm-file-type{opacity:.65}
+.rm-file-contents{background:#0d1117;border-radius:9px;padding:16px 20px;overflow:auto}
+.rm-file-contents pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:#d9e2ee;tab-size:2}
+.rm-view .rm-reading.rm-raw-edit{white-space:pre-wrap;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;tab-size:2}
+.rm-binary-preview{display:flex;flex-direction:column;gap:12px;color:#b3c1d1;font-size:13px}
+.rm-binary-preview a{color:#b1d5ff;text-decoration:underline}
+.rm-binary-preview img{display:block;max-width:100%;max-height:460px;object-fit:contain}
