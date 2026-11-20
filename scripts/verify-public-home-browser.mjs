@@ -139,8 +139,8 @@ try{
   assert.match(g.edgeMask,/linear-gradient\(to right/,"Only mosaic is masked");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.25\)/,
     "Square mask opacity is 25% at both viewport edges");
-  assert.match(g.edgeMaskSize,/100vw 100%/,
-    "Mask width remains attached to viewport rather than 1080px lattice");
+  assert.equal(g.edgeMaskSize,width+"px 100%",
+    "Computed mask width must equal viewport width, not 1080px lattice width");
   assert.equal(g.edgeMaskPosition,"50% 0%","Mask centers within the oversized lattice");
   assert.match(g.logoFade,/radial-gradient/,"Filled oval stays behind Doof");
   assert.match(g.logoFade,/rgba\(5, 8, 13, 0\.6\)/,
