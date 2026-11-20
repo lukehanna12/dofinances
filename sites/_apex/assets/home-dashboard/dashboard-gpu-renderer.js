@@ -22,6 +22,7 @@ import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
+import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -353,7 +354,7 @@ async function initialize(){
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
-  let trackTiles=[],trackRows=[],trackColumns=[],baseTileY=new Float32Array(0),
+  let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),cornerInert=new Uint8Array(0);
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
@@ -460,6 +461,7 @@ async function initialize(){
     pitchCSS=cells[11]?.offsetTop-cells[0]?.offsetTop;
     if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
     trackTiles=all;
+    trackIcons=all.map(cell=>cell.querySelector(".cta6-icon"));
     trackRows=all.map(cell=>rowIndex.get(cell));
     trackColumns=all.map(cell=>columnIndex.get(cell));
     if(trackRows.some(row=>row===undefined||row<0||row>6)||
@@ -543,9 +545,22 @@ async function initialize(){
       // receiving cursor hits. Everywhere else, hover/press stays unchanged.
       cornerInert[i]=sideOpacity<0.9999&&combinedOpacity<0.025?1:0;
       // Actual DOM SVG icons and GPU glass share the same CPU frame.
-      // Only transform/opacity change; the underlying grid does not move.
+      // The tile parent's opacity is the very same combined track opacity
+      // the fragment shader uses. For WebGPU presentation the DOM mosaic
+      // mask is removed (it hard-clipped translating icons at the grid
+      // bounds), so the SVG additionally needs only the shader's spatial
+      // side-edge + oval alpha, evaluated at its current scene position.
       trackTiles[i].style.transform="translate3d(0,"+dy.toFixed(3)+"px,0)";
       trackTiles[i].style.opacity=combinedOpacity.toFixed(5);
+      if(trackIcons[i]){
+        const p=i*TILE_FLOATS;
+        const glyphAlpha=publicIconSpatialAlpha(
+          tileData[p]+tileData[p+2]*0.5,
+          tileData[p+1]+tileData[p+3]*0.5,
+          tileData[p+2],physicalWidth,physicalHeight,dpr);
+        trackTiles[i].style.setProperty("--public-icon-spatial-alpha",
+          glyphAlpha.toFixed(5));
+      }
       if(combinedOpacity<.9999)fading++;
     }
     // Hover targets follow the moving glass instead of static grid slots.
@@ -696,6 +711,7 @@ async function initialize(){
     activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
   });
   audit.interaction="per-tile browser-only hover/press spring, pointer/touch/pen";
+  audit.iconFade="track-alpha inherited + shader-matched per-glyph spatial alpha; no DOM mosaic clipping";
   // Continuous-GPU resize contract:
   // CSS glass and WebGPU glass use DIFFERENT face/color models. Switching
   // to CSS glass during resize caused the user-visible tint/scheme flash.

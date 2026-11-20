@@ -105,6 +105,9 @@ try{
  'hamburger:box(document.getElementById("public-menu-toggle")),',
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
  'edgeMask:getComputedStyle(grid).maskImage,',
+ 'gpuReady:document.body.dataset.gpuScene==="ready",',
+ 'firstIconFade:getComputedStyle(document.querySelector(".cta6-tile--icon .cta6-icon")).opacity,',
+ 'firstIconRaw:document.querySelector(".cta6-tile--icon").style.getPropertyValue("--public-icon-spatial-alpha"),',
  'edgeMaskSize:getComputedStyle(grid).maskSize,',
  'edgeMaskPosition:getComputedStyle(grid).maskPosition,',
  'logoFill:getComputedStyle(logo).backgroundColor,',
@@ -152,13 +155,20 @@ try{
    near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
   }
   assert.equal(g.panelHidden,true,"Dropdown defaults closed");
-  assert.match(g.edgeMask,/linear-gradient\(to right/,"Only mosaic is masked");
+  if(g.gpuReady){
+    assert.equal(g.edgeMask,"none","GPU icons must not be cropped by the DOM mosaic");
+    assert.ok(Number(g.firstIconFade)>0&&Number(g.firstIconFade)<=1,
+      "Glyph alpha must be in the shader range");
+    assert.ok(Number(g.firstIconRaw)>0&&Number(g.firstIconRaw)<=1,
+      "GPU renderer must provide the matching SVG alpha every frame");
+  }else{
+    assert.match(g.edgeMask,/linear-gradient\(to right/,"Fallback mosaic is masked");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.25\)/,
     "Square mask opacity is 25% at both viewport edges");
-  assert.equal(g.edgeMaskSize,[width+"px 100%",width+"px 100%"].join(", "),
-    "Both mask layers must match viewport width, not the 1080px lattice");
-  assert.equal(g.edgeMaskPosition,"50% 0%, 50% 0%",
-    "Both alpha masks center within the oversized lattice");
+    assert.equal(g.edgeMaskSize,[width+"px 100%",width+"px 100%"].join(", "),
+      "Both mask layers must match viewport width, not the 1080px lattice");
+    assert.equal(g.edgeMaskPosition,"50% 0%, 50% 0%",
+      "Both alpha masks center within the oversized lattice");
   assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
   assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
@@ -168,8 +178,9 @@ try{
   assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
     "Square opacity reduces to 60% at the logo");
-  assert.ok(g.maskComposite.split(",").every(mode=>mode.trim()==="intersect"),
-    "Both side and oval masks must intersect, never form a union");
+    assert.ok(g.maskComposite.split(",").every(mode=>mode.trim()==="intersect"),
+      "Both fallback masks must intersect, never form a union");
+  }
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));

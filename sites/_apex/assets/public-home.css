@@ -217,6 +217,23 @@ body.public-home .dashboard-home .cta6-mosaic{
   -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
 }
+/* When WebGPU is ready, glass squares are painted in the separate viewport-
+   sized GPU canvas. Keeping a mask on this 6-row DOM mosaic clips moving
+   icons to the original grid rectangle: they visibly "peel" away at its
+   top/bottom while the squares continue fading in the GPU canvas.
+   Remove that parent mask ONLY for GPU presentation, and instead use a
+   per-icon alpha matching the shader's side and oval fades at each icon's
+   live position. The existing parent tile opacity provides the exact same
+   vertical track fade as the glass shader; do not double it. CSS fallback
+   retains the original mosaic mask and unaffected static materials. */
+body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-mosaic{
+  -webkit-mask-image:none;
+  mask-image:none;
+}
+body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta6-icon{
+  opacity:var(--public-icon-spatial-alpha,1);
+}
+
 /* Public-only elevation: one complete 950/11px tile above the previous
    half-tile shift (now 1.5 tile heights above the mosaic's center).
    The empty-cell geometry, logo size and shared authenticated Dashboard

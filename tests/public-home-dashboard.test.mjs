@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
+import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
 const home=asset("index.html"),style=asset("assets/public-home.css");
 const original=asset("app/assets/dashboard-home.css");
@@ -91,8 +92,38 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
     "The private Dashboard renderer must remain untouched");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
+test("Icon fade uses the same shader opacity as each square without cropping moving glyphs",()=>{
+  const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
+  assert.match(renderer,/import \{publicIconSpatialAlpha\} from "\.\/dashboard-public-icon-fade\.js";/);
+  assert.match(renderer,/trackIcons=all\.map\(cell=>cell\.querySelector\("\.cta6-icon"\)\)/);
+  assert.match(renderer,/trackTiles\[i\]\.style\.opacity=combinedOpacity\.toFixed\(5\);/);
+  assert.match(renderer,/const glyphAlpha=publicIconSpatialAlpha\(/);
+  assert.match(renderer,/--public-icon-spatial-alpha/);
+  assert.match(style,/body\.public-home\[data-gpu-scene="ready"\] \.dashboard-home \.cta6-mosaic\{\s*-webkit-mask-image:none;\s*mask-image:none;/);
+  assert.match(style,/body\.public-home\[data-gpu-scene="ready"\] \.dashboard-home \.cta6-tile--webgpu \.cta6-icon\{\s*opacity:var\(--public-icon-spatial-alpha,1\);/);
+  // The fallback retains the two original masks; private Dashboard untouched.
+  assert.match(style,/mask-composite:intersect;/);
+  assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/publicIconSpatialAlpha/);
+  assert.doesNotMatch(asset("app/assets/dashboard-home.css"),/public-icon-spatial-alpha/);
+  const width=1440,height=856,dpr=2,tile=(950/11)*dpr;
+  const logoY=height*dpr*0.5-1.5*(950/11)*dpr;
+  const eps=1e-9;
+  const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<eps,
+    `expected ${expected}, got ${actual}`);
+  near(publicIconSpatialAlpha(width*dpr/2,logoY,tile,width*dpr,height*dpr,dpr),0.60);
+  near(publicIconSpatialAlpha(width*dpr/2,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),1);
+  near(publicIconSpatialAlpha(0,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),0.25);
+  near(publicIconSpatialAlpha(0.75*tile,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),1);
+  // Both independent fades multiply at a point near the left window edge.
+  const ovalAtEdge=publicIconSpatialAlpha(0,logoY,tile,width*dpr,height*dpr,dpr);
+  near(ovalAtEdge,0.25);
+  const midOval=publicIconSpatialAlpha(width*dpr/2,logoY+50*dpr,tile,width*dpr,height*dpr,dpr);
+  near(midOval,0.70);
+  assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
+});
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
   const names=["dashboard-mosaic.js","dashboard-gpu-renderer.js","dashboard-home-loader.js",
+    "dashboard-public-icon-fade.js",
     "dashboard-optics.js","dashboard-interaction.js","dashboard-track.js",
     "dashboard-tint.js","sidebar-glass-oracle.js",
     "dashboard-gpu-scene.wgsl","dashboard-gpu-mipmap.wgsl","dashboard-gpu-glass.wgsl",
