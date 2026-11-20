@@ -144,9 +144,10 @@ try{
   assert.match(g.edgeMask,/linear-gradient\(to right/,"Only mosaic is masked");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.25\)/,
     "Square mask opacity is 25% at both viewport edges");
-  assert.equal(g.edgeMaskSize,width+"px 100%",
-    "Computed mask width must equal viewport width, not 1080px lattice width");
-  assert.equal(g.edgeMaskPosition,"50% 0%","Mask centers within the oversized lattice");
+  assert.equal(g.edgeMaskSize,[width+"px 100%",width+"px 100%"].join(", "),
+    "Both mask layers must match viewport width, not the 1080px lattice");
+  assert.equal(g.edgeMaskPosition,"50% 0%, 50% 0%",
+    "Both alpha masks center within the oversized lattice");
   assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
   assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
