@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/assets/home-dashboard/dashboard-home.css">
   <link rel="stylesheet" href="/assets/public-home.css">
   <script type="module" src="/assets/home-dashboard/dashboard-home-loader.js"></script>
+  <script type="module" src="/assets/public-home-menu.js"></script>
 </head>
 <body class="public-home">
   <a class="public-skip-link" href="#dashboard-title">Skip to main content</a>
@@ -30,7 +31,16 @@
         <button class="global-menu-icon global-menu-control" type="button" aria-label="Search" title="Search">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 5 5"/></svg>
         </button>
+        <button class="global-menu-icon global-menu-control public-menu-toggle" id="public-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="public-menu-panel" aria-expanded="false" title="Navigation menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
       </div>
+    </div>
+    <div class="public-menu-panel" id="public-menu-panel" aria-label="Navigation options" hidden>
+      <button class="global-menu-control" type="button">Projects</button>
+      <button class="global-menu-control" type="button">Quick Downloads</button>
+      <button class="global-menu-control" type="button">Collections</button>
+      <button class="global-menu-control" type="button">Settings</button>
     </div>
   </nav>
   <div id="workspace-shell" class="shell">
@@ -38,6 +48,7 @@
       <div class="workspace-scroll">
         <main id="main-content" class="content">
           <section class="view dashboard-home" data-view="dashboard" aria-labelledby="dashboard-title">
+            <div class="public-home-edge-fade" aria-hidden="true"></div>
             <div class="cta6" aria-label="DoFinances">
               <div id="cta6-mosaic" class="cta6-mosaic" aria-hidden="true"></div>
               <div class="cta6-center"><h1 id="dashboard-title">doof</h1></div>

@@ -93,7 +93,17 @@ try{
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e)})),',
- 'nav:nav.map(e=>e.textContent.trim()),github:box(document.querySelector(".public-github")),',
+ 'nav:nav.map(e=>e.textContent.trim()),',
+ 'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
+ 'hamburgerDisplay:getComputedStyle(document.getElementById("public-menu-toggle")).display,',
+ 'search:box(document.querySelector(".global-menu-actions>button[aria-label="Search"]")),',
+ 'hamburger:box(document.getElementById("public-menu-toggle")),',
+ 'panelHidden:document.getElementById("public-menu-panel").hidden,',
+ 'edge:box(document.querySelector(".public-home-edge-fade")),',
+ 'edgePosition:getComputedStyle(document.querySelector(".public-home-edge-fade")).position,',
+ 'edgeBackground:getComputedStyle(document.querySelector(".public-home-edge-fade")).backgroundImage,',
+ 'logoFade:getComputedStyle(document.querySelector(".cta6-center"),"::before").backgroundImage,',
+ 'github:box(document.querySelector(".public-github")),',
  'githubHref:document.querySelector(".public-github").href,',
  'githubTarget:document.querySelector(".public-github").target,',
  'githubRel:document.querySelector(".public-github").rel,',
@@ -101,7 +111,7 @@ try{
  ].join("");
  const near=(actual,expected,label,width)=>assert.ok(Math.abs(actual-expected)<.8,
   label+" at "+width+"px: "+actual+" vs "+expected);
- for(const [width,height] of [[1440,900],[1024,740],[760,680],[500,670],[390,610],[320,560]]){
+ for(const [width,height] of [[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[500,670],[390,610],[320,560]]){
   await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
   await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
   const g=await evaluate(expression);
@@ -112,7 +122,23 @@ try{
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
   assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Settings"]);
-  assert.ok(g.github.left<g.firstLink.left,"GitHub must lead navigation");
+  if(width>1122){
+   assert.equal(g.navDisplay,"flex","Desktop navigation must remain visible");
+   assert.equal(g.hamburgerDisplay,"none","No hamburger on desktop");
+   assert.ok(g.github.left<g.firstLink.left,"GitHub must lead desktop navigation");
+  }else{
+   assert.equal(g.navDisplay,"none","Collapse desktop items below 3x action width");
+   assert.notEqual(g.hamburgerDisplay,"none","Hamburger appears beside Search");
+   assert.ok(g.search.left+g.search.width<=g.hamburger.left+1,"Hamburger follows Search");
+   near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
+  }
+  assert.equal(g.panelHidden,true,"Dropdown defaults closed");
+  assert.equal(g.edgePosition,"fixed","Edge fade tracks the viewport");
+  near(g.edge.left,0,"Edge fade pinned to left edge",width);
+  near(g.edge.width,width,"Edge fade pinned to viewport width",width);
+  assert.match(g.edgeBackground,/linear-gradient\(to right/);
+  assert.match(g.edgeBackground,/linear-gradient\(to bottom/);
+  assert.match(g.logoFade,/radial-gradient/,"Doof radial fade stays behind text");
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
@@ -133,6 +159,41 @@ try{
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }
+ // Verify disclosure open/close, inert entries, Escape and breakpoint reset.
+ await send("Emulation.setDeviceMetricsOverride",{
+  width:500,height:670,deviceScaleFactor:1,mobile:false
+ });
+ await evaluate("document.getElementById('public-menu-toggle').click()");
+ const openPanel=await evaluate(`(()=>{
+  const toggle=document.getElementById("public-menu-toggle");
+  const panel=document.getElementById("public-menu-panel");
+  const r=panel.getBoundingClientRect();
+  return {expanded:toggle.getAttribute("aria-expanded"),hidden:panel.hidden,
+   labels:[...panel.querySelectorAll("button")].map(e=>e.textContent.trim()),
+   right:r.right,top:r.top,width:r.width};
+ })()`);
+ assert.equal(openPanel.expanded,"true");
+ assert.equal(openPanel.hidden,false);
+ assert.deepEqual(openPanel.labels,["Projects","Quick Downloads","Collections","Settings"]);
+ assert.ok(openPanel.right<=501&&openPanel.width<=500,"Dropdown within viewport");
+ await evaluate('document.querySelector(".public-menu-panel button").click()');
+ assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,
+  "Inert option should dismiss the dropdown");
+ await evaluate("document.getElementById('public-menu-toggle').click()");
+ await evaluate('document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true}))');
+ assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,
+  "Escape should close the dropdown");
+ await evaluate("document.getElementById('public-menu-toggle').click()");
+ await evaluate('document.querySelector(".public-github").dispatchEvent(new PointerEvent("pointerdown",{bubbles:true}))');
+ assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,
+  "Clicking outside should dismiss the dropdown");
+ await evaluate("document.getElementById('public-menu-toggle').click()");
+ await send("Emulation.setDeviceMetricsOverride",{
+  width:1440,height:900,deviceScaleFactor:1,mobile:false
+ });
+ await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
+ assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,
+  "Resizing to desktop should close the dropdown");
  const inert=await evaluate([
   '(()=>{const before=location.href;',
   'for(const b of [...document.querySelectorAll(".global-menu button"),',

@@ -281,6 +281,7 @@ jobs:
           grep -Fq 'href="/login">Sign in' "$home"
           for path in \
             /assets/public-home.css \
+            /assets/public-home-menu.js \
             /assets/home-dashboard/dashboard-home.css \
             /assets/home-dashboard/dashboard-home-loader.js \
             /assets/home-dashboard/dashboard-gpu-renderer.js \

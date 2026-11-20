@@ -115,15 +115,79 @@ body.public-home .public-github svg{
 body.public-home .global-menu-actions{display:flex;align-items:center;flex:none;}
 body.public-home .global-menu-icon{width:32px;height:32px;padding:6px;}
 body.public-home .global-menu-icon svg{width:19px;height:19px;display:block;}
-/* Five labels remain available in a horizontal strip at narrow widths. */
-@media(max-width:680px){
-  body.public-home .global-menu-inner{gap:6px;padding-inline:8px;}
-  body.public-home .global-menu-links{
-    overflow-x:auto;scrollbar-width:none;justify-content:flex-start;
-    gap:6px;padding:0 2px;overscroll-behavior-inline:contain;
+/* The action row is 100 + 150 + 100 + 12 + 12 = 374px wide.
+   Below approximately 3 * 374 = 1122px, replace central navigation with
+   an accessible disclosure, keeping GitHub left and Search at the right. */
+body.public-home .public-menu-toggle,
+body.public-home .public-menu-panel{display:none;}
+body.public-home .public-menu-panel[hidden]{display:none!important;}
+@media(max-width:1122px){
+  body.public-home .global-menu-inner{gap:10px;padding-inline:clamp(10px,3vw,30px);}
+  body.public-home .global-menu-links{display:none;}
+  body.public-home .global-menu-actions{margin-left:auto;gap:4px;}
+  body.public-home .public-menu-toggle{display:inline-flex;}
+  body.public-home .public-menu-panel:not([hidden]){
+    position:absolute;
+    top:calc(100% + 8px);
+    right:clamp(10px,3vw,30px);
+    display:grid;
+    gap:3px;
+    box-sizing:border-box;
+    width:min(260px,calc(100vw - 20px));
+    padding:8px;
+    z-index:80;
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:13px;
+    color:#f5f6f8;
+    background:rgba(34,37,42,.95);
+    box-shadow:0 15px 45px rgba(0,0,0,.38);
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+    animation:public-menu-enter 150ms cubic-bezier(.2,.78,.2,1) both;
   }
-  body.public-home .global-menu-links::-webkit-scrollbar{display:none;}
-  body.public-home .global-menu-control{padding-inline:7px;}
+  body.public-home .public-menu-panel .global-menu-control{
+    display:flex;
+    width:100%;
+    min-height:36px;
+    text-align:left;
+    justify-content:flex-start;
+    padding-inline:13px;
+    font-size:12px;
+  }
+  body.public-home .public-menu-toggle[aria-expanded="true"]{
+    color:#fff;
+    background:rgba(255,255,255,.16);
+  }
+}
+@keyframes public-menu-enter{
+  from{opacity:0;transform:translateY(-5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+/* Both fades are viewport-anchored, rather than attached to the 1080px grid.
+   This preserves equal left/right clipping when the viewport narrows. */
+body.public-home .dashboard-home .public-home-edge-fade{
+  position:fixed;
+  inset:var(--global-menu-height) 0 0;
+  z-index:1;
+  pointer-events:none;
+  background:
+    linear-gradient(to right,rgba(5,8,13,.78) 0%,rgba(5,8,13,0) 15%,rgba(5,8,13,0) 85%,rgba(5,8,13,.78) 100%),
+    linear-gradient(to bottom,rgba(5,8,13,.48) 0%,rgba(5,8,13,0) 16%,rgba(5,8,13,0) 83%,rgba(5,8,13,.62) 100%);
+}
+/* The soft patch sits behind the real logo text, not above it. Center it
+   at the logo's optical offset: half of one unchanged 86.36px grid square. */
+body.public-home .dashboard-home .cta6-center::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:calc(50% - (950px / 11) / 2);
+  width:370px;
+  height:200px;
+  transform:translate(-50%,-50%);
+  z-index:-1;
+  border-radius:50%;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(5,8,13,.77) 0%,rgba(5,8,13,.4) 42%,rgba(5,8,13,0) 75%);
 }
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */
@@ -172,4 +236,5 @@ body.public-home .dashboard-home .cta6-action:active{
 @media(prefers-reduced-motion:reduce){
   body.public-home .global-menu-control,
   body.public-home .dashboard-home .cta6-action{transition:none;}
+  body.public-home .public-menu-panel{animation:none!important;}
 }

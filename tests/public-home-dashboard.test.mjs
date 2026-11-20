@@ -31,12 +31,37 @@ test("GitHub profile opens in a new tab; remaining public top-bar controls are i
   assert.ok(nav);
   assert.match(nav,/<a class="public-github global-menu-control" href="https:\/\/github\.com\/lukehanna12" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile \(opens in a new tab\)"/);
   assert.match(nav,/<svg viewBox="0 0 24 24"/);
-  const controls=[...nav.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)].map(m=>m[1].replace(/<[^>]*>/g,"").trim()).filter(Boolean);
-  assert.deepEqual(controls,["Projects","Quick Downloads","Collections","Settings"]);
+  const desktop=nav.match(/<div class="global-menu-links"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+  const dropdown=nav.match(/<div class="public-menu-panel"[^>]*>([\s\S]*?)<\/div>/)?.[1];
+  assert.ok(desktop&&dropdown,"Desktop navigation and mobile dropdown exist");
+  const buttons=source=>[...source.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)]
+    .map(m=>m[1].replace(/<[^>]*>/g,"").trim()).filter(Boolean);
+  assert.deepEqual(buttons(desktop),["Projects","Quick Downloads","Collections","Settings"]);
+  assert.deepEqual(buttons(dropdown),buttons(desktop));
   assert.equal((nav.match(/<a\b/g)||[]).length,1,"GitHub is the only navigation link");
   assert.doesNotMatch(nav,/Colosseum|Providers|window\.location|onclick=/);
   assert.match(style,/\.global-menu-control:hover\{/);
   assert.match(style,/\.global-menu-control:active\{/);
+  assert.match(nav,/<button class="global-menu-icon global-menu-control public-menu-toggle" id="public-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="public-menu-panel" aria-expanded="false"/);
+  assert.match(nav,/<div class="public-menu-panel" id="public-menu-panel" aria-label="Navigation options" hidden>/);
+  assert.match(home,/src="\/assets\/public-home-menu\.js"/);
+  assert.match(style,/@media\(max-width:1122px\)\{/);
+  assert.match(style,/\.global-menu-links\{display:none;\}/);
+  assert.match(style,/\.public-menu-panel:not\(\[hidden\]\)\{/);
+  const handler=asset("assets/public-home-menu.js");
+  assert.match(handler,/toggle\.addEventListener\("click"/);
+  assert.match(handler,/event\.key==="Escape"/);
+  assert.match(handler,/compact\.addEventListener\("change",close\)/);
+});
+test("Public-only fades remain fixed at viewport edges and behind doof, without altering glass geometry",()=>{
+  assert.match(home,/<div class="public-home-edge-fade" aria-hidden="true"><\/div>/);
+  assert.match(style,/\.public-home-edge-fade\{\s*position:fixed;\s*inset:var\(--global-menu-height\) 0 0;\s*z-index:1;\s*pointer-events:none;/);
+  assert.match(style,/linear-gradient\(to right/);
+  assert.match(style,/linear-gradient\(to bottom/);
+  assert.match(style,/\.cta6-center::before\{\s*content:"";\s*position:absolute;/);
+  assert.match(style,/background:radial-gradient\(ellipse at center/);
+  assert.match(style,/z-index:-1;/);
+  assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
   const names=["dashboard-mosaic.js","dashboard-gpu-renderer.js","dashboard-home-loader.js",
