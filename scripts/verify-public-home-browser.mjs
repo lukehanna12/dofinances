@@ -157,7 +157,8 @@ try{
   assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
     "Square opacity reduces to 60% at the logo");
-  assert.equal(g.maskComposite,"intersect","Side and oval masks multiply rather than union");
+  assert.ok(g.maskComposite.split(",").every(mode=>mode.trim()==="intersect"),
+    "Both side and oval masks must intersect, never form a union");
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
