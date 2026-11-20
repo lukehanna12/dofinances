@@ -165,14 +165,14 @@ a:hover {text-decoration: none;}
 /* Three uploaded Apple SVGs occupy the established 18x18 sidebar slots.
    Masking preserves each vector's native viewBox proportions and original alpha,
    while inheriting the exact hover/active/currentColor of neighboring icons. */
-:is(.nav-link,.topbar-dashboard-home) .nav-icon-asset{
+.nav-link .nav-icon-asset{
   display:block;width:18px;height:18px;flex:0 0 18px;align-self:center;
   background-color:currentColor;
   -webkit-mask-position:center;mask-position:center;
   -webkit-mask-size:contain;mask-size:contain;
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
 }
-:is(.nav-link,.topbar-dashboard-home) .nav-icon-asset--dashboard{
+.nav-link .nav-icon-asset--dashboard{
   -webkit-mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
   mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
 }
@@ -597,4 +597,18 @@ input::placeholder {color: var(--ui-muted);}
  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%23a3a3a3'%20stroke-width='1.8'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='m6%209%206%206%206-6'/%3E%3C/svg%3E");
  background-repeat:no-repeat;background-position:right 12px center;
  background-size:14px 14px;padding-right:38px;
+}
+
+/* The top-bar Home link reuses the precise Dashboard sidebar SVG mask,
+   without changing the original sidebar selectors or icon dimensions. */
+.topbar-dashboard-home .nav-icon-asset{
+  display:block;width:18px;height:18px;flex:0 0 18px;align-self:center;
+  background-color:currentColor;
+  -webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+}
+.topbar-dashboard-home .nav-icon-asset--dashboard{
+  -webkit-mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
+  mask-image:url("/app/assets/dashboard-screen-sidebar-icon.v1.svg");
 }

@@ -21,7 +21,7 @@ test("Dashboard is no longer a breadcrumb; the far-right Home action uses the si
   }
   assert.ok(css.includes('margin-right:calc(16px - clamp(18px,3.8vw,54px));'));
   assert.ok(css.includes('#workspace-shell .top-actions{margin-right:0;}'));
-  assert.ok(theme.includes(':is(.nav-link,.topbar-dashboard-home) .nav-icon-asset--dashboard'));
+  assert.ok(theme.includes('.topbar-dashboard-home .nav-icon-asset--dashboard'));
   assert.ok(theme.includes('dashboard-screen-sidebar-icon.v1.svg'));
   assert.ok(nav.includes('breadcrumb.hidden=route==="dashboard"'));
   assert.ok(nav.includes('if(!modified)render("dashboard")'));

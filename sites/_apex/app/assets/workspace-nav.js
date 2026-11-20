@@ -1,7 +1,8 @@
 import {initWorkspaceTitleTransition} from "./workspace-title-transition.js";
 import {initWorkspaceScroll} from "./workspace-scroll.js";
 import {initWorkspaceWallpaper} from "./workspace-wallpapers.js";
-import {initCollapsedRailTooltips,initOverlappingContentTooltips} from "./workspace-rail-tooltips.js";
+import {initCollapsedRailTooltips} from "./workspace-rail-tooltips.js";
+import {initOverlappingContentTooltips} from "./workspace-rail-tooltips.js";
 // The private dashboard uses hash navigation so all views stay behind
 // the same authenticated /app route and require no extra Worker routes.
 export const MAIN_ROUTES=Object.freeze(["dashboard","projects","settings"]);
