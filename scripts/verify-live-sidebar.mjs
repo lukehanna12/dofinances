@@ -241,10 +241,10 @@ try{
   assert.ok(Math.abs(doofPlacement.breadcrumbLeft-doofPlacement.titleLeft)<1.5,
     "Doof breadcrumb must align to collapsed page heading: "+JSON.stringify(doofPlacement));
   await evaluate('(()=>{const input=document.getElementById("clock-show-doof");input.checked=false;input.dispatchEvent(new Event("change",{bubbles:true}));return true;})()');
-  await until('(()=>{const clock=document.getElementById("global-clock-time");const breadcrumb=document.getElementById("breadcrumb");return !clock.hidden && Math.abs(breadcrumb.getBoundingClientRect().left-160)<1.5;})()',
+  await until('(()=>{const clock=document.getElementById("global-clock-time");const breadcrumb=document.getElementById("breadcrumb");return !clock.hidden && Math.abs(breadcrumb.getBoundingClientRect().left-160)<0.3;})()',
     "normal clock navigation restored after doof",4000);
   const returnedClock=await evaluate('({clockVisible:!document.getElementById("global-clock-time").hidden,breadcrumbLeft:document.getElementById("breadcrumb").getBoundingClientRect().left})');
-  assert.ok(returnedClock.clockVisible&&Math.abs(returnedClock.breadcrumbLeft-compactTopbar.breadcrumbLeft)<1.5,
+  assert.ok(returnedClock.clockVisible&&Math.abs(returnedClock.breadcrumbLeft-compactTopbar.clockLeft-144)<1,
     "Leaving doof must restore standard clock spacing: "+JSON.stringify(returnedClock));
   await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
   await until('document.querySelector(\'.view[data-view="dashboard"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display!=="none"',
