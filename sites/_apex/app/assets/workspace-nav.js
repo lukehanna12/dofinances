@@ -699,6 +699,8 @@ export function initWorkspaceClock(doc=document,win=window){
     seconds.hidden=display.doof||!display.showSeconds;
     if(period)period.hidden=display.doof||!display.hour12;
     if(doof)doof.hidden=!display.doof;
+    // The timezone label/control belongs only to the clock, not the doof wordmark.
+    if(zoneTrigger)zoneTrigger.hidden=display.doof;
     displayTrigger?.setAttribute("aria-label",display.doof?
       "doof · Clock display options":"Clock display options");
     zoneTrigger?.setAttribute("aria-label","Time zone: "+suffix.textContent+". Change time zone");

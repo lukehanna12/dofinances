@@ -36,6 +36,10 @@ test("Clock display is stored separately from the existing time zone preference"
   assert.match(nav,/buttonStandard\.disabled=display\.doof/);
   assert.match(nav,/seconds\.hidden=display\.doof\|\|!display\.showSeconds/);
   assert.match(nav,/time\.hidden=display\.doof/);
+  assert.match(nav,/zoneTrigger\.hidden=display\.doof/,
+    "doof hides the entire timezone button and brings it back when disabled");
+  assert.match(css,/\.global-clock \[hidden\]/,
+    "hidden timezone control must override the topbar's inline-flex button styling");
   assert.match(nav,/win\.addEventListener\?\.\("storage"/);
   assert.equal((nav.match(/win\.setInterval\(paint,1000\)/g)||[]).length,1);
 });
