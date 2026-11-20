@@ -5,6 +5,7 @@
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
 import {renderProjectShowcase} from "./project-showcase.js";
+import {renderRepositoryTree,resolveRepoLink,markdownFile} from "./project-file-browser.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
 import {installReadmeEditorInteractions} from "./readme-editor-interactions.js";
@@ -74,15 +75,23 @@ function sanitizeMarkdown(html,project){
   for(const {name,value} of node.attributes){
    if(name==="href"&&tag==="a"){
     try{
-     const u=new URL(value, "https://github.com/");
+     const u=new URL(value,"https://github.com/");
      if(/^#[a-zA-Z0-9_:-]{1,120}$/.test(value)){
-       el.setAttribute("href","#readme-"+value.slice(1));
+      el.setAttribute("href","#readme-"+value.slice(1));
+      el.setAttribute("data-readme-original-href",value);
+     }else{
+      const destination=resolveRepoLink(value,project?.path||"README.md",
+        project?.repository,project?.defaultBranch);
+      if(destination?.path){
+       el.setAttribute("href","#");
+       el.setAttribute("data-repo-path",destination.path);
+       if(destination.fragment)el.setAttribute("data-repo-fragment",destination.fragment);
        el.setAttribute("data-readme-original-href",value);
-      }
-     else if(["https:","http:"].includes(u.protocol)){
+      }else if(["https:","http:"].includes(u.protocol)){
        el.href=u.href;el.setAttribute("data-readme-original-href",value);
        el.rel="noopener noreferrer";if(u.origin!==location.origin)el.target="_blank";
       }
+     }
     }catch{}
    }else if(name==="src"&&tag==="img"){
     try{
@@ -142,6 +151,10 @@ export function initProjectReadme(){
  if(!view||!cards||view.dataset.initialized==="true")return;
  view.dataset.initialized="true";
  const edit=$("rm-edit"),confirm=$("rm-confirm"),diffButton=$("rm-diff");
+ const moreFiles=$("rm-more-files"),filesMenu=$("rm-files-menu"),filesTree=$("rm-files-tree"),
+  filesMessage=$("rm-files-message");
+ const documentsBySlug=new Map(),treesByRepository=new Map();
+ let previousRoute=location.hash.replace(/^#/,"").toLowerCase()||"dashboard";
  const reading=$("rm-reading"),notice=$("rm-notice");
  const converter=createReadmeMarkdownConverter();
  let history;
@@ -160,19 +173,23 @@ export function initProjectReadme(){
   state.processing=flag;
   reading.contentEditable=state.editing&&!flag?"true":"false";
   confirm.disabled=flag;edit.disabled=flag;
+  moreFiles.disabled=flag||state.editing||!state.source?.project?.repository;
  };
  const paintControls=()=>{
   view.classList.toggle("rm-editing",state.editing);
   const dirty=state.editing&&state.dirty;
   confirm.hidden=!dirty;diffButton.hidden=!dirty;
-  edit.setAttribute("aria-label",state.editing?"Cancel README edits":"Edit README");
+  moreFiles.hidden=dirty;moreFiles.disabled=state.processing||state.editing||!state.source?.project?.repository;
+  if(dirty){filesMenu.hidden=true;moreFiles.setAttribute("aria-expanded","false");}
+  edit.setAttribute("aria-label",state.editing?"Cancel document edits":"Edit document");
   const label=$("rm-edit-tooltip")?.querySelector?.(".rm-tooltip-label");
-   if(label)label.textContent=state.editing?"Cancel editing":"Edit README";
+   if(label)label.textContent=state.editing?"Cancel editing":"Edit document";
   if(!dirty){diffPanel.hidden=true;diffButton.setAttribute("aria-pressed","false");}
  };
  const exitEdit=(restore=true)=>{
   if(state.renderDelay!==null){clearTimeout(state.renderDelay);state.renderDelay=null;}
   reading.contentEditable="false";
+  reading.classList.remove("rm-raw-edit");
   if(restore&&state.savedDom)
    reading.replaceChildren(...Array.from(state.savedDom.childNodes,node=>node.cloneNode(true)));
   for(const box of reading.querySelectorAll('input[type="checkbox"]'))box.disabled=true;
@@ -184,9 +201,10 @@ export function initProjectReadme(){
  function updateDraft(){
   if(!state.editing||state.processing)return;
   try{
-   const rich=converter.turndown(reading).replace(/\u200b/g,"");
+   const raw=!markdownFile(state.source?.path);
+   const rich=raw?reading.textContent:converter.turndown(reading).replace(/\u200b/g,"");
    state.dirty=rich!==state.richBaseline;
-   state.draft=state.dirty?preserveReadmeSource(state.original,state.richBaseline,rich):state.original;
+   state.draft=state.dirty?(raw?rich:preserveReadmeSource(state.original,state.richBaseline,rich)):state.original;
    state.conversionError=state.draft.length>180000?"README exceeds the 180 KB limit.":null;
    if(state.conversionError)say(state.conversionError,true);
    else if(notice.classList.contains("rm-error")&&notice.textContent==="README exceeds the 180 KB limit.")say("");
@@ -197,15 +215,42 @@ export function initProjectReadme(){
   }
  }
  async function renderMarkup(markdown,target,slug){
-  // Reading and live preview must not invalidate each other's network response.
-  // Bind each render to both its target and its originating project.
   const key=target===reading?"readingRenderTicket":"previewRenderTicket";
-  const ticket=++state[key];
+  const ticket=++state[key],doc=source(),path=doc?.path||"README.md";
+  if(doc?.binary){
+   const panel=document.createElement("div");panel.className="rm-binary-preview";
+   const name=document.createElement("strong");name.textContent=path.split("/").pop();
+   const explanation=document.createElement("p");
+   explanation.textContent="This file is binary or exceeds the 180 KB text-preview limit. It is still selectable from the folder tree.";
+   panel.append(name,explanation);
+   const repository=doc.project?.repository;
+   if(repository){
+    if(/\.(?:png|jpe?g|gif|webp|avif|svg)$/i.test(path)){
+     const image=document.createElement("img");
+     const asset=safeAssetPath(path.split("/").pop(),{repository,path,slug});
+     if(asset){image.src=asset;image.alt="Preview of "+name.textContent;panel.append(image);}
+    }
+    const link=document.createElement("a");
+    link.href="https://github.com/"+repository+"/blob/"+encodeURIComponent(doc.defaultBranch||"HEAD")+
+     "/"+path.split("/").map(encodeURIComponent).join("/");
+    link.target="_blank";link.rel="noopener noreferrer";link.textContent="View this file on GitHub";
+    panel.append(link);
+   }
+   if(ticket!==state[key]||state.slug!==slug)return;
+   target.replaceChildren(panel);if(target===reading)state.renderReady=true;return;
+  }
+  if(!markdownFile(path)){
+   const wrapper=document.createElement("div");wrapper.className="rm-file-contents";
+   const pre=document.createElement("pre"),code=document.createElement("code");
+   code.textContent=markdown;pre.append(code);wrapper.append(pre);
+   if(ticket!==state[key]||state.slug!==slug)return;
+   target.replaceChildren(wrapper);if(target===reading)state.renderReady=true;return;
+  }
   let html;
   try{html=(await api("/api/projects/render","POST",{markdown,slug})).html;}
   catch(error){html=fallbackMarkdown(markdown);if(target===reading&&active())say("GitHub Markdown rendering unavailable; using a basic text preview. "+error.message,true);}
   if(ticket!==state[key]||state.slug!==slug||!view.isConnected)return;
-  target.replaceChildren(sanitizeMarkdown(html,{slug,repository:source()?.project?.repository,path:source()?.path}));
+  target.replaceChildren(sanitizeMarkdown(html,{slug,repository:doc?.project?.repository,path,defaultBranch:doc?.defaultBranch}));
   if(target===reading)state.renderReady=true;
  }
  function populateProjectCards(projects){
