@@ -346,7 +346,10 @@ test("desktop clock seconds are smaller, muted, bottom-aligned and independently
   assert.ok(desktop.includes("padding-inline-start:144px;"),"Breadcrumbs halve the clock-to-navigation gutter");
    assert.ok(desktop.includes("#workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){"),
      "Doof uses a separate, smaller desktop gutter without moving the wordmark");
-   assert.ok(desktop.includes("padding-inline-start:119px;"),"Doof-to-navigation gutter is halved");
+   assert.ok(desktop.includes("padding-inline-start:calc(74px + clamp(26px,4.1vw,58px) + max(0px,calc((100vw - 1200px)/2)));"),
+     "Doof breadcrumb uses the collapsed 74px rail plus the actual responsive content inset");
+   assert.ok(desktop.includes("padding-inline-start:126.48px;"),
+     "Doof breadcrumb aligns with page titles at wide desktop widths");
   assert.ok(css.includes("display:inline-flex;align-items:flex-end;gap:3.825px;flex:none;"),
     "Seconds and timezone share the hours/minutes bottom edge");
   assert.ok(css.includes(".global-clock-zone{margin-left:1.125px}"),
@@ -403,4 +406,31 @@ test("Active global navigation keeps its styling but no longer triggers top-scro
   assert.match(js,/if\(route&&!modified\)render\(route\)/);
   assert.match(css,/\.shadcn-breadcrumb-link,.shadcn-breadcrumb-page\{[\s\S]*?font-family:inherit;font-weight:inherit;letter-spacing:inherit;[\s\S]*?text-align:left;vertical-align:baseline/);
   assert.match(css,/\.shadcn-breadcrumb-page\{color:var\(--ui-secondary\);font-weight:inherit/);
+});
+
+test("doof breadcrumbs follow collapsed page-title left edges, never live sidebar width",()=>{
+  const css=read("../sites/_apex/app/assets/workspace-enhancements.css");
+  const begin=css.indexOf("/* In doof mode, the breadcrumb starts");
+  const finish=css.indexOf("#workspace-shell .topbar-start > .global-clock{",begin);
+  assert.ok(begin>=0&&finish>begin);
+  const rules=css.slice(begin,finish);
+  assert.match(rules,/@media\(min-width:1024px\) and \(max-width:1279px\)/);
+  assert.match(rules,/@media\(min-width:1280px\)/);
+  for(const route of ["projects","colosseum/collections","colosseum/utilities","colosseum/permissions"])
+    assert.ok(rules.includes('.view[data-view="'+route+'"]'));
+  assert.ok(rules.includes(".pv-route-view"));
+  assert.ok(!rules.includes("--workspace-rail-space-width"));
+  assert.ok(!rules.includes("--sidebar-expanded-width"));
+  assert.ok(!rules.includes(".is-collapsed"));
+  assert.ok(!rules.includes(".is-rail-expanded"));
+  // Layout identity: header is anchored at 16px; collapsed content begins at
+  // 16px + 74px. Check both capped and fluid routes at representative widths.
+  for(const [width,fluid] of [[900,false],[1024,false],[1100,true],[1250,false],[1250,true],[1279,false],[1280,false],[1600,true]]){
+    const inset=width>=1280?52.48:Math.max(26,Math.min(width*.041,58));
+    const centering=width>=1280||fluid?0:Math.max(0,(width-1200)/2);
+    const expectedTitleLeft=16+74+inset+centering;
+    const breadcrumbLeft=16+(width>=1280?126.48:74+inset+centering);
+    assert.ok(Math.abs(breadcrumbLeft-expectedTitleLeft)<1e-8,
+      "Doof breadcrumb mismatch at "+width+"px, fluid="+fluid);
+  }
 });

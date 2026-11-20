@@ -466,10 +466,30 @@ body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .pa
   #workspace-shell .topbar-start{
     margin-left:calc(-74px - clamp(18px,3.8vw,54px));
   }
-  /* The centered doof wordmark ends much earlier than the clock. Halve its
-     larger visual gap independently, without changing doof's rail centering. */
+  /* In doof mode, the breadcrumb starts at the same x as a page heading
+     with the 74px sidebar collapsed. The sidebar contributes a fixed 74px,
+     the content its normal responsive inset, and a centered 1110px content
+     column adds a margin only between 1201px and 1279px. Never derive this
+     from the currently animated/resized sidebar width. */
   #workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){
-    padding-inline-start:119px;
+    padding-inline-start:calc(74px + clamp(26px,4.1vw,58px) + max(0px,calc((100vw - 1200px)/2)));
+  }
+}
+/* These five screens remove the 1110px content cap at >=1024px. Their page
+   headings therefore have no centering margin at compact-desktop widths. */
+@media(min-width:1024px) and (max-width:1279px){
+  body:has(> #workspace-shell :is(
+    .view[data-view="projects"],.view[data-view="colosseum/collections"],
+    .view[data-view="colosseum/utilities"],.view[data-view="colosseum/permissions"],
+    .pv-route-view
+  ):not([hidden])) #workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){
+    padding-inline-start:calc(74px + clamp(26px,4.1vw,58px));
+  }
+}
+@media(min-width:1280px){
+  /* All pages use the fixed 52.48px left content padding above 1280px. */
+  #workspace-shell .topbar-start:has(.global-clock-doof:not([hidden])){
+    padding-inline-start:126.48px; /* 74px collapsed rail + 52.48px title inset */
   }
 }
 #workspace-shell .topbar-start > .global-clock{
