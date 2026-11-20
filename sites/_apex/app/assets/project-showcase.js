@@ -3,8 +3,7 @@
 import {WORKSPACE_WALLPAPERS} from "./workspace-wallpapers.js";
 
 export const PROJECT_SHOWCASE=Object.freeze([
- {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
- {slug:"bootscribe",name:"BootScribe",kind:"Developer tooling",repository:null,status:"in-progress",docs:true},
+ {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
@@ -23,6 +22,16 @@ const PHOTO_ROUTES=Object.freeze([
  "projects","colosseum/readme","colosseum/utilities","colosseum/collections",
  "colosseum/providers","colosseum/permissions","colosseum/diagnostics","settings"
 ]);
+// Preserve the curated order within each status group. A linked repository
+// does not silently promote an explicitly In Progress project to Active.
+export function projectShowcaseStatus(project){
+ if(project.status==="in-progress")return "In Progress";
+ return project.repository||project.docs===true?"Active":"Coming Soon";
+}
+const STATUS_ORDER=Object.freeze({"Active":0,"In Progress":1,"Coming Soon":2});
+export function sortProjectShowcase(projects){
+ return [...projects].sort((a,b)=>STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)]);
+}
 function imagePath(index){
  const wallpaper=WORKSPACE_WALLPAPERS[PHOTO_ROUTES[index%PHOTO_ROUTES.length]];
  return wallpaper.path||"/wallpapers/"+wallpaper.sha+"."+wallpaper.ext;
@@ -40,8 +49,8 @@ function row(text){
 }
 function makeCard(project,index,slugRoute){
  const active=!!project.repository||project.docs===true;
- const status=project.status==="in-progress"?"In Progress":active?"Active":"Coming Soon";
- const statusClass=project.status==="in-progress"?"project-showcase-badge--progress":active?"project-showcase-badge--active":"project-showcase-badge--soon";
+ const status=projectShowcaseStatus(project);
+ const statusClass=status==="In Progress"?"project-showcase-badge--progress":status==="Active"?"project-showcase-badge--active":"project-showcase-badge--soon";
  const card=element(active?"a":"article","project-showcase-card "+(active?"is-active":"is-coming-soon"));
  card.dataset.projectSlug=project.slug;
  card.style.setProperty("--project-index",String(index));
@@ -88,17 +97,17 @@ function makeCard(project,index,slugRoute){
 export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
  // Account records are authoritative for the three curated repository links.
- const linkedSlugs=new Set(["unicode-plus","translucence-lab","chatgpt-chat-save-chrome-extension"]);
+ const linkedSlugs=new Set(["bootscript","unicode-plus","translucence-lab","chatgpt-chat-save-chrome-extension"]);
  const account=new Map((Array.isArray(projects)?projects:[])
   .filter(p=>p&&linkedSlugs.has(p.slug)).map(p=>[p.slug,p]));
  // Preserve account-created projects: the curated items always come first.
  const additional=(Array.isArray(projects)?projects:[])
   .filter(p=>p&&typeof p.slug==="string"&&typeof p.name==="string"&&!canonical.has(p.slug)&&p.slug!=="3d-liquid-glass-27-swift-package")
   .map(p=>({slug:p.slug,name:p.name,kind:"Project workspace",repository:p.repository||null}));
- const entries=[...PROJECT_SHOWCASE.map(project=>{
+ const entries=sortProjectShowcase([...PROJECT_SHOWCASE.map(project=>{
   const saved=account.get(project.slug);
   return saved?{...project,repository:saved.repository||null}:project;
- }),...additional];
+ }),...additional]);
  const fragment=document.createDocumentFragment();
  entries.forEach((project,index)=>fragment.append(makeCard(project,index,slugRoute)));
  root.replaceChildren(fragment);

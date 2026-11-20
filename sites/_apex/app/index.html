@@ -186,8 +186,13 @@
   </div>
 </section>
         <section class="view" data-view="projects" aria-labelledby="projects-title" hidden>
-          <div class="page-heading"><h1 id="projects-title">Projects</h1><p class="lead">Your projects, organized in one place.</p></div>
-          <div class="section-subheading"><h2>All projects</h2><span class="count-label" id="project-count">14 projects</span><button id="project-create" type="button" class="rm-new-project">+ New project</button></div>
+          <div class="page-heading"><h1 id="projects-title">Projects</h1></div>
+          <div class="section-subheading"><h2>All projects</h2>
+            <span class="project-create-control">
+              <button id="project-create" class="project-create-icon-button" type="button" aria-label="New project" aria-haspopup="dialog" aria-controls="project-create-dialog" aria-keyshortcuts="Meta+Shift+N" aria-describedby="project-create-tooltip"><img class="project-create-plus-icon" width="32" height="32" src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true" decoding="async"></button>
+              <span id="project-create-tooltip" class="project-create-tooltip" role="tooltip"><span class="project-create-tooltip-label">New project</span><span class="project-create-tooltip-shortcut" aria-label="Shift Command N"><kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd></span></span>
+            </span>
+          </div>
           <div id="project-list" class="project-showcase-grid" aria-live="polite">
           <p class="project-showcase-loading">Loading project cards…</p>
           </div>

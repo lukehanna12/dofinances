@@ -2,7 +2,78 @@
    Roughly half-size dimensions / quarter-size area, retaining numbered markers,
    hover image crossfade, black 60% overlay, and fine divider rows. */
 .view[data-view="projects"]{position:relative}
-.view[data-view="projects"] #project-create{position:absolute;right:0;top:var(--workspace-controls-top);min-height:var(--workspace-control-size);margin:0;padding:6px 11px;font-size:11px;z-index:2}
+/* The Projects title and compact controls share the natural document flow.
+   Removing the former subtitle/count does not reserve a blank top strip. */
+.view[data-view="projects"] .page-heading{margin:0;padding:0;min-height:0}
+.view[data-view="projects"] .page-heading h1{margin-bottom:0}
+.view[data-view="projects"] .section-subheading{
+ display:flex;align-items:center;gap:9px;margin:6px 0 13px;min-height:36px
+}
+.view[data-view="projects"] .section-subheading h2{margin:0}
+.view[data-view="projects"] .project-create-control{
+ position:relative;display:inline-flex;align-items:center;justify-content:center;
+ width:36px;height:36px;flex:none
+}
+.view[data-view="projects"] #project-create{
+ display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;position:static;width:32.4px;min-width:32.4px;
+ height:32.4px;min-height:32.4px;margin:0;padding:0;gap:0;
+ border:0;border-radius:999px;background:transparent;color:#fff;
+ line-height:0;box-shadow:none;cursor:pointer;transition:transform .08s ease
+}
+.view[data-view="projects"] .project-create-plus-icon{
+ display:block;width:32.4px;height:32.4px;flex:none;object-fit:contain;
+ transition:filter .12s ease
+}
+.view[data-view="projects"] #project-create:hover:not(:disabled){
+ background:transparent;box-shadow:none
+}
+.view[data-view="projects"] #project-create:hover:not(:disabled) .project-create-plus-icon{
+ filter:brightness(1.12)
+}
+.view[data-view="projects"] #project-create:active:not(:disabled){transform:scale(.96)}
+.view[data-view="projects"] #project-create:focus-visible{
+ outline:2px solid var(--ui-focus);outline-offset:2px
+}
+/* Exactly the Collections create-control tooltip: graphite surface,
+   150ms pointer delay, immediate focus, 250ms entrance, 5px offset. */
+.view[data-view="projects"] .project-create-tooltip{
+ position:absolute;top:calc(100% + 5px);left:0;z-index:80;
+ display:inline-flex;align-items:center;gap:0;
+ width:max-content;max-width:calc(100vw - 30px);padding:7px 10px;
+ border:1px solid rgba(255,255,255,.08);border-radius:10px;
+ background:#101010;color:#f6f6f6;
+ font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ font-size:12px;font-weight:520;line-height:1.25;letter-spacing:0;
+ white-space:nowrap;pointer-events:none;
+ box-shadow:0 5px 17px rgba(0,0,0,.29);
+ opacity:0;visibility:hidden;transform-origin:top left;
+ transform:translateY(-2px) scale(.94);
+ transition:opacity .25s cubic-bezier(.16,1,.3,1),
+  transform .25s cubic-bezier(.16,1,.3,1),visibility 0s linear .25s
+}
+.view[data-view="projects"] .project-create-tooltip-label{display:inline-block;white-space:nowrap}
+.view[data-view="projects"] .project-create-tooltip-shortcut{
+ display:inline-flex;align-items:center;gap:2px;margin-left:14px;
+ color:#a3a3a3;font-size:11px;font-weight:500;line-height:1.25
+}
+.view[data-view="projects"] .project-create-tooltip-shortcut kbd{
+ display:inline-block;margin:0;padding:0;border:0;background:none;
+ color:inherit;font:inherit;line-height:inherit
+}
+.view[data-view="projects"] #project-create:hover + .project-create-tooltip,
+.view[data-view="projects"] #project-create:focus-visible + .project-create-tooltip{
+ opacity:1;visibility:visible;transform:translateY(0) scale(1);
+ transition-delay:.15s,.15s,.15s
+}
+.view[data-view="projects"] #project-create:focus-visible + .project-create-tooltip{
+ transition-delay:0s,0s,0s
+}
+@media(prefers-reduced-motion:reduce){
+ .view[data-view="projects"] #project-create,
+ .view[data-view="projects"] .project-create-plus-icon,
+ .view[data-view="projects"] .project-create-tooltip{transition:none!important;transition-delay:0s!important}
+}
 .view[data-view="projects"] .project-showcase-heading{margin-bottom:12px}
 .view[data-view="projects"] .project-showcase-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);margin:0 0 24px;align-items:stretch}
 .view[data-view="projects"] .project-showcase-card{
@@ -45,11 +116,18 @@
 /* Permissions-inspired status badges, scaled with the smaller cards. */
 .view[data-view="projects"] .project-showcase-badge{
  font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;
- border-radius:4px;white-space:nowrap;background:#173827;color:#86efac
+ border-radius:4px;white-space:nowrap;
+ background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45, 201, 100)
 }
-/* Permissions Dormant badge, dark-mode palette: exact #382409 / #facc15. */
-.view[data-view="projects"] .project-showcase-badge--progress{background:#382409;color:#facc15}
-.view[data-view="projects"] .project-showcase-badge--soon{background:#102b4d;color:#bfdbfe}
+/* Same 10%-opacity color family as the blue Coming Soon badge,
+   with stronger saturated green/yellow channels and 10% less alpha. */
+.view[data-view="projects"] .project-showcase-badge--progress{
+ background:color(srgb 0.98 0.76 0.07 / 0.09);color:rgb(230, 180, 51)
+}
+.view[data-view="projects"] .project-showcase-badge--soon{
+ background:color(srgb 0.172549 0.403922 0.772549 / 0.1);
+ color:rgb(44, 103, 197)
+}
 .view[data-view="projects"] .project-showcase-title{
  display:block;font-weight:500;font-size:clamp(12px,1.05vw,16px);
  line-height:1.16;letter-spacing:-.035em;overflow-wrap:anywhere;

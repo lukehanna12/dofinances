@@ -252,8 +252,7 @@ export function initProjectReadme(){
   if(target===reading)state.renderReady=true;
  }
  function populateProjectCards(projects){
-  const count=renderProjectShowcase(cards,projects,slugRoute);
-  $("project-count").textContent=count+" project"+(count===1?"":"s");
+  renderProjectShowcase(cards,projects,slugRoute);
   setWorkspaceProjectRegistry(projects);
  }
  async function loadProjects(){
@@ -526,9 +525,18 @@ export function initProjectReadme(){
    if(!moreFiles.hidden&&!moreFiles.disabled){event.preventDefault();toggleFiles();}
   }else if(event.key==="Escape"&&!filesMenu.hidden){event.preventDefault();closeFiles();moreFiles.focus();}
  });
- create?.addEventListener("click",()=>{
+ const projectsView=cards.closest('.view[data-view="projects"]');
+ const openCreateDialog=()=>{
+  if(!createDialog||createDialog.open)return;
   $("project-create-error").hidden=true;$("project-create-name").value="";$("project-create-repository").value="";
   createDialog.showModal();$("project-create-name").focus();
+ };
+ create?.addEventListener("click",openCreateDialog);
+ window.addEventListener("keydown",event=>{
+  if(event.defaultPrevented||event.repeat||event.isComposing||projectsView?.hidden||
+    !event.shiftKey||!event.metaKey||event.ctrlKey||event.altKey||event.code!=="KeyN")return;
+  if(document.querySelector("dialog[open]")||event.target?.closest?.('input,textarea,select,[contenteditable="true"]'))return;
+  event.preventDefault();openCreateDialog();
  });
  $("project-create-cancel")?.addEventListener("click",()=>createDialog.close());
  form?.addEventListener("submit",async event=>{

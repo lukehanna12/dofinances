@@ -13,8 +13,17 @@ export class AuthStore extends FederatedAuthStore{
   this.sql.exec("CREATE TABLE IF NOT EXISTS github_project_connections(user_id TEXT PRIMARY KEY,token_ciphertext TEXT NOT NULL,login TEXT NOT NULL,updated_at INTEGER NOT NULL)");
   // One-time backfill markers keep a user's later explicit unlink intact.
   this.sql.exec("CREATE TABLE IF NOT EXISTS project_repository_link_migrations(user_id TEXT NOT NULL,slug TEXT NOT NULL,PRIMARY KEY(user_id,slug))");
+  // Retire obsolete curated entries once per account, without permanently
+  // reserving their slug against an intentional future user-created project.
+  this.sql.exec("CREATE TABLE IF NOT EXISTS project_catalog_migrations(user_id TEXT NOT NULL,migration TEXT NOT NULL,PRIMARY KEY(user_id,migration))");
  }
  projectsSeed(userId){
+  // Remove the retired BootScribe project from existing account storage once.
+  // Do not recreate it; preserve a user's ability to reuse the slug later.
+  if(!this.sql.exec("SELECT 1 FROM project_catalog_migrations WHERE user_id=? AND migration='remove-bootscribe-v1'",userId).toArray().length){
+   this.sql.exec("DELETE FROM project_records WHERE user_id=? AND slug='bootscribe'",userId);
+   this.sql.exec("INSERT INTO project_catalog_migrations(user_id,migration) VALUES(?,'remove-bootscribe-v1')",userId);
+  }
   // Idempotent per-account initialization, also for accounts created pre-projects.
   for(const [slug,name,repository] of [["colosseum","Colosseum","lukehanna12/colosseum"],["apple-hig-reader","Apple HIGs Reader","lukehanna12/apple-higs-reader"],["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12/protocol-monitor-pruner"]]){
    this.sql.exec("INSERT OR IGNORE INTO project_records(user_id,slug,name,repository,default_readme,presentation,updated_at) VALUES(?,?,?,?,?,'github',?)",userId,slug,name,repository,template(name),NOW());
@@ -23,7 +32,6 @@ export class AuthStore extends FederatedAuthStore{
   // overwrite an existing document, repository association or presentation.
   for(const [slug,name] of [
    ["bootscript","BootScript"],
-   ["bootscribe","BootScribe"],
    ["translucence-lab","Lightwork"],
    ["github-readme-chrome-extension","ReadMe GLP"],
    ["chatgpt-chat-save-chrome-extension","ChatStore"]
@@ -47,6 +55,7 @@ export class AuthStore extends FederatedAuthStore{
   // Backfill repository-less curated projects without changing stored README or
   // presentation. Preserve existing custom links and future deliberate unlinks.
   for(const [slug,name,repository] of [
+   ["bootscript","BootScript","lukehanna12/bootscript"],
    ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
    ["translucence-lab","Lightwork","lukehanna12/lightwork"],
    ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
@@ -124,6 +133,7 @@ export class AuthStore extends FederatedAuthStore{
   if(result.status===204&&user){
    this.sql.exec("DELETE FROM project_records WHERE user_id=?",user.id);
    this.sql.exec("DELETE FROM project_repository_link_migrations WHERE user_id=?",user.id);
+   this.sql.exec("DELETE FROM project_catalog_migrations WHERE user_id=?",user.id);
    this.sql.exec("DELETE FROM github_project_connections WHERE user_id=?",user.id);
   }
   return result;
