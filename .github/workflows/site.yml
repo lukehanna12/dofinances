@@ -34,6 +34,8 @@ jobs:
         run: node scripts/verify-collections-glass-browser.mjs
       - name: Verify Dashboard mosaic and logo center in Chromium
         run: node scripts/verify-dashboard-home-centering-browser.mjs
+      - name: Verify public Dashboard-derived homepage in Chromium
+        run: node scripts/verify-public-home-browser.mjs
       - name: Verify Provider submenu geometry and Diagnostics loading indicator in Chromium
         run: node scripts/verify-sidebar-olive-health-browser.mjs
       - name: Build site
@@ -265,6 +267,30 @@ jobs:
           done
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
+
+      - name: Verify public homepage, Sign in link, and isolated rendering assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          home="$(mktemp)"
+          trap 'rm -f "$home"' EXIT
+          curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://dofinances.com/ -o "$home"
+          grep -Fq 'id="cta6-mosaic"' "$home"
+          grep -Fq 'id="dashboard-title">doof' "$home"
+          grep -Fq 'Quick Downloads' "$home"
+          grep -Fq 'href="/login">Sign in' "$home"
+          for path in \
+            /assets/public-home.css \
+            /assets/home-dashboard/dashboard-home.css \
+            /assets/home-dashboard/dashboard-home-loader.js \
+            /assets/home-dashboard/dashboard-gpu-renderer.js \
+            /assets/home-dashboard/dashboard-mosaic.js \
+            /assets/home-dashboard/dashboard-gpu-glass.wgsl \
+            /assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif; do
+            curl --retry 3 --retry-delay 2 -fsSL --max-time 20 "https://dofinances.com$path" -o /dev/null
+          done
+          test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' https://dofinances.com/app/assets/dashboard-gpu-renderer.js)" = 302
+          echo "Public mosaic assets and sign-in navigation verified; private workspace assets remain protected"
 
       - name: Verify Studio glass root, apex login, and deleted Studio login routes
         shell: bash

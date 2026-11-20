@@ -1,0 +1,618 @@
+/* Dashboard-only composition of Colosseum 0001c1 / CTA 6.
+   The original 11x6 geometry, tile density and staggered entrance are retained.
+   No text-heavy hero, synthetic metrics or extra workspace routes. */
+body:has(> #workspace-shell) .content > .view.dashboard-home:not([hidden]){
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height: min(790px, calc(100dvh - 125px));
+  padding-block:clamp(20px,3vh,42px);
+}
+body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
+  max-width:none;
+  width:100%;
+  box-sizing:border-box;
+  padding-inline:clamp(20px,4.2vw,72px);
+  padding-top:0;
+  padding-bottom:0;
+}
+.dashboard-home .cta6{
+  position:relative;
+  /* Keep the maximum-width lattice size at every viewport width. */
+  --cta6-grid-gap:13px;
+  width:1080px;
+  margin:0 auto;
+  isolation:isolate;
+}
+.dashboard-home .cta6-mosaic{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(11,minmax(0,1fr));
+  gap:var(--cta6-grid-gap);
+  width:100%;
+  align-items:stretch;
+}
+.dashboard-home .cta6-tile{
+  aspect-ratio:1;
+  min-width:0;
+  display:grid;
+  place-items:center;
+  border-radius:17px;
+  background:rgba(16,21,27,.48);
+  border:1px solid rgba(255,255,255,.10);
+  box-sizing:border-box;
+  box-shadow:0 6px 20px rgba(0,0,0,.065);
+  animation:cta6-appear .4s cubic-bezier(.2,.78,.2,1) var(--cta6-delay,0s) both;
+  pointer-events:none;
+}
+.dashboard-home .cta6-tile--plain{
+  background:rgba(18,23,29,.29);
+  border-color:rgba(255,255,255,.045);
+  box-shadow:none;
+}
+.dashboard-home .cta6-tile--icon{
+  background:rgba(21,26,32,.77);
+  border-color:rgba(247,250,252,.16);
+  box-shadow:0 4px 18px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.055);
+}
+.dashboard-home .cta6-tile--empty{
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  animation:none;
+}
+.dashboard-home .cta6-icon{
+  width:49%;
+  height:49%;
+  color:rgba(242,244,246,.82);
+  stroke-width:1.5;
+  flex:none;
+}
+.dashboard-home .cta6-center{
+  position:absolute;
+  z-index:2;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:0 2%;
+  pointer-events:none;
+  text-align:center;
+  animation:cta6-center-appear .6s cubic-bezier(.2,.78,.2,1) .3s both;
+}
+.dashboard-home .cta6-center h1{
+  /* Keep the title half a maximum-width square above the lattice center. */
+  --cta6-title-tile:calc((1080px - 10 * var(--cta6-grid-gap))/11);
+  translate:0 calc(-0.5 * var(--cta6-title-tile));
+  font-size:45px;
+  line-height:1.08;
+  margin:0;
+  letter-spacing:-.055em;
+  font-weight:600;
+  color:#f7f9fa;
+  text-shadow:0 2px 18px rgba(0,0,0,.22);
+}
+.dashboard-home .cta6-action{
+  pointer-events:auto;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top:clamp(12px,1.7vw,22px);
+  min-height:39px;
+  padding:9px 15px 9px 18px;
+  border-radius:9px;
+  background:#000;
+  color:#fff;
+  border:0;
+  box-shadow:rgba(255, 255, 255, 0.2) 0px 0px 1px inset;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.1;
+  text-decoration:none;
+  cursor:pointer;
+  transition:transform 180ms cubic-bezier(.2,.78,.2,1),background-color 180ms ease,box-shadow 180ms ease;
+}
+.dashboard-home .cta6-action svg{width:15px;height:15px;flex:none}
+.dashboard-home .cta6-action svg{color:#fff;stroke:#fff}
+.dashboard-home .cta6-action:visited{color:#fff}
+.dashboard-home .cta6-action:hover{
+  background:#000;
+  transform:scale(1.03);
+  box-shadow:rgba(255, 255, 255, 0.2) 0px 0px 1px inset;
+}
+.dashboard-home .cta6-action:active,
+.dashboard-home .cta6-action.dashboard-preview-tapped{transform:scale(.97)}
+.dashboard-home .cta6-action:focus-visible{outline:2px solid #fff;outline-offset:4px}
+@keyframes cta6-appear{
+  from{opacity:0;transform:scale(.85)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes cta6-center-appear{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:760px){
+  body:has(> #workspace-shell) .content > .view.dashboard-home:not([hidden]){
+    min-height:calc(100dvh - 140px);
+    padding-block:24px;
+  }
+  body:has(> #workspace-shell) .content:has(> .dashboard-home:not([hidden])){
+    padding-inline:16px;
+  }
+  .dashboard-home .cta6-action{
+    min-height:32px;
+    padding:7px 10px 7px 12px;
+    margin-top:12px;
+    font-size:11px;
+    gap:5px;
+    border-radius:7px;
+  }
+  .dashboard-home .cta6-action svg{width:12px;height:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-home .cta6-tile,
+  .dashboard-home .cta6-center{animation:none!important}
+  .dashboard-home .cta6-action{transition:none!important}
+}
+
+
+/* Dashboard preview layout-only refinements.
+   Keep Colosseum 0001c1 geometry, icons, stagger and CTA intact.
+   The mosaic stays centered at its maximum-width size. Narrow viewports crop
+   its sides rather than changing tile, gutter, corner, or title dimensions.
+   These selectors intentionally never touch production/shared assets. */
+html:has(body > #workspace-shell .dashboard-home:not([hidden])){
+  --ui-canvas:#0a0a0a;
+  background:#0a0a0a;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])){
+  background:#0a0a0a;
+  --dashboard-scene-top:var(--global-menu-height,44px);
+  --dashboard-scene-height:calc(100dvh - var(--dashboard-scene-top));
+}
+/* One centered, continuous photograph replaces the finite upper photo band
+   and lower photographic strip. The sidebar still samples the real backdrop. */
+body:has(> #workspace-shell .dashboard-home:not([hidden]))::before{
+  position:fixed!important;
+  inset:var(--dashboard-scene-top) 0 0!important;
+  width:100%!important;
+  height:var(--dashboard-scene-height)!important;
+  background-image:
+    linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
+    var(--workspace-wallpaper-image,none)!important;
+  background-size:cover,cover!important;
+  background-position:center center,center center!important;
+  background-repeat:no-repeat!important;
+  filter:none!important;
+  clip-path:none!important;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-home-art{
+  display:none!important;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .main,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .workspace-scroll,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .content{
+  background:transparent;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .content{
+  max-width:none;
+  width:100%;
+  min-height:var(--dashboard-scene-height);
+  box-sizing:border-box;
+  margin:0;
+  padding:0!important;
+}
+/* Fixed-position view escapes the variable-width .main content column.
+   Top-bar and sidebar layers retain their existing higher z-indices. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .content > .view.dashboard-home:not([hidden]){
+  position:fixed!important;
+  inset:var(--dashboard-scene-top) 0 0!important;
+  z-index:0;
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100vw;
+  height:var(--dashboard-scene-height);
+  overflow-x:clip;
+  min-height:0!important;
+  padding:clamp(16px,3vh,36px) 0!important;
+  margin:0!important;
+  animation:none!important;
+  transform:none!important;
+}
+.dashboard-home .cta6{
+  /* Keep the oversized mosaic centered: auto margins on overflowing flex
+     items resolve to zero and otherwise leave the left edge at 0. */
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:1080px;
+  max-width:none;
+  margin:0;
+}
+/* The action anchors to Home's fixed viewport, independent of moving glass. */
+.dashboard-home .cta6-bottom-action{
+  position:absolute;
+  bottom:calc(clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px));
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  justify-content:center;
+  z-index:4;
+}
+.dashboard-home .cta6-bottom-action .cta6-action{margin-top:0}
+/* The Dashboard alone uses a slate global bar and omits its Account button.
+   Other workspace routes retain the shared global bar and Account action. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .global-menu{
+  background:#676b71;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .global-menu .global-menu-account{
+  display:none!important;
+}
+/* Only Home hides its redundant global navigation label and clock. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-clock,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #global-menu-links > a[href="#dashboard"]{
+  display:none!important;
+}
+/* Strip no longer paints or takes up document height. Copyright is a
+   single unobscured text element, pinned to the viewport's bottom right. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
+  position:fixed!important;
+  inset:auto clamp(20px,3vw,46px) 17px auto!important;
+  z-index:30;
+  display:block;
+  box-sizing:border-box;
+  width:max-content!important;
+  max-width:calc(100vw - 40px);
+  height:auto!important;
+  margin:0!important;
+  padding:0!important;
+  background:none!important;
+  color:rgba(242,242,243,.85);
+  text-shadow:0 1px 5px rgba(0,0,0,.75);
+  pointer-events:none;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer::before,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer::after{
+  content:none!important;
+  display:none!important;
+}
+@media(max-width:760px){
+  body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .content > .view.dashboard-home:not([hidden]){
+    min-height:0!important;
+    padding:12px 0!important;
+  }
+  body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
+    right:19px!important;
+    bottom:15px!important;
+  }
+}
+
+
+/* Preview-only tile material transfer. Plain squares inherit the exact old
+   icon-square fill/border/shadow; icon squares inherit the sidebar's glass pane
+   recipe, resized for tiles rather than the 260px / 774px oracle geometry. */
+.dashboard-home .cta6-tile--plain{
+  background:rgba(21,26,32,.77);
+  border-color:rgba(247,250,252,.16);
+  box-shadow:0 4px 18px rgba(0,0,0,.11),inset 0 1px rgba(255,255,255,.055);
+}
+.dashboard-home .cta6-tile--icon{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  /* Sidebar fallback: --glass-pane, 6.4px backdrop blur and edge optics. */
+  background:rgba(22,23,25,.13);
+  border:1px solid rgba(255,255,255,.21);
+  -webkit-backdrop-filter:blur(6.4px);
+  backdrop-filter:blur(6.4px);
+  box-shadow:
+    inset -1px 0 rgba(255,255,255,.10),
+    10px 0 27px rgba(0,0,0,.19),
+    0 0 1px rgba(255,255,255,.12);
+}
+.dashboard-home .cta6-tile--icon::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(90deg,rgba(255,255,255,.028),transparent 18%,transparent 91%,rgba(255,255,255,.08));
+  box-shadow:inset -1px 0 rgba(255,255,255,.07);
+}
+.dashboard-home .cta6-tile--icon .cta6-icon{
+  position:relative;
+  z-index:1;
+  color:#000;
+  stroke:#000;
+}
+/* The now-absent sidebar cannot keep a flex rail gap, resize target,
+   mobile drawer, or phantom left offset. Never change these shared CSS files. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell::before{
+  content:none!important;
+  display:none!important;
+  flex-basis:0!important;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .main{
+  flex:1 1 auto;
+  width:100%;
+  max-width:none;
+  min-width:0;
+}
+body:has(> #workspace-shell .dashboard-home:not([hidden])){
+  --workspace-wallpaper-image:url("/app/assets/dashboard-cloud-veiled-colorful-fields.avif")!important;
+  --workspace-wallpaper-position:center center!important;
+}
+@media(prefers-reduced-transparency:reduce){
+  .dashboard-home .cta6-tile--icon{
+    background:rgba(226,230,232,.85);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
+  .dashboard-home .cta6-tile--icon{background:rgba(223,227,230,.78)}
+}
+
+
+/* =====================================================================
+ * Oracle-constrained clear Liquid Glass — isolated Dashboard experiment.
+ * Source: lukehanna12/liquid-plexiglass-oracle @ 3fd32ed3 (25F80/M2/G14G).
+ * The mathematical SDF/refraction field comes from dashboard-optics.js.
+ * SVG/CSS backdrop-filter samples LIVE composited DOM per pane. Texture maps
+ * contain ONLY normals, signed distances and blur weights; NO backdrop image.
+ *
+ * GAP LG-SR-NATIVE: AIR→G14G universal semantics remains OPEN.
+ * GAP LG-P-SCALARS: universal public-state blur selection remains OPEN.
+ * GAP LG-Q-NUMERICAL: runtime EDR/ColorSync/display color chain remains OPEN.
+ * GAP CSS-SVG-TRANSPORT: CSS/SVG sampling, precision, Gaussian texture LOD
+ * and half-float quantization are not exact replacements for the M2 GPU.
+ * GAP PUBLIC-MATERIAL: clear-style face/tint/shadow/color parameters and
+ * private four-corner writer are not closed by retained public evidence.
+ * The below surface/edge styling is an EXPLICIT browser-only aesthetic
+ * fill-in, not a claimed exact Apple shader/material coefficient.
+ * ===================================================================== */
+.dashboard-home .cta6{
+  isolation:auto; /* do not cut off the outside live backdrop root */
+}
+.dashboard-home .cta6-tile--glass{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  pointer-events:auto;
+  background:
+    linear-gradient(var(--dashboard-face-fill,rgba(255,255,255,.10)),
+      var(--dashboard-face-fill,rgba(255,255,255,.10))),
+    var(--dashboard-tint-fill,rgba(246,248,250,.065));
+  border:1px solid rgba(247,250,252,.34);
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.13),
+    0 1px 0 rgba(255,255,255,.22),
+    inset 0 1px 0 rgba(255,255,255,.44),
+    inset 0 -1px 0 rgba(18,22,25,.15);
+}
+.dashboard-home .cta6-tile--glass.oracle-filter-active{
+  -webkit-backdrop-filter:url("#liquid-plexiglass-mosaic");
+  backdrop-filter:url("#liquid-plexiglass-mosaic");
+}
+.dashboard-home .cta6-tile--glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  z-index:0;
+  pointer-events:none;
+  background:
+    linear-gradient(152deg,rgba(255,255,255,.31) 0%,rgba(255,255,255,.035) 22%,transparent 46%),
+    linear-gradient(345deg,rgba(12,17,21,.12),transparent 29%);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.23),
+    inset -1px -1px 0 rgba(12,14,18,.10);
+}
+.dashboard-home .cta6-tile--glass::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  z-index:0;
+  pointer-events:none;
+  background:radial-gradient(
+    circle 50% at var(--glass-pointer-x,50%) var(--glass-pointer-y,50%),
+    rgba(255,255,255,.35),rgba(255,255,255,.09) 42%,transparent 77%
+  );
+  opacity:var(--glass-pointer-energy,0);
+  transition:opacity 300ms cubic-bezier(.16,1,.3,1);
+}
+.dashboard-home .cta6-tile--glass .cta6-icon{
+  position:relative;
+  z-index:1;
+  color:#050505;
+  stroke:#050505;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.18));
+}
+.dashboard-home .cta6-tile--empty{
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  pointer-events:none;
+}
+@media(prefers-reduced-transparency:reduce),(forced-colors:active){
+  .dashboard-home .cta6-tile--glass,
+  .dashboard-home .cta6-tile--glass.oracle-filter-active{
+    background:rgba(226,229,233,.95);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .dashboard-home .cta6-tile--glass::after{transition:none}
+}
+
+
+/* =======================================================================
+ * WebGPU-owned clear glass: one real backdrop GPU texture and mip pyramid.
+ * DOM remains responsible only for semantic icons/controls and layout.
+ * The original photograph stays as accessible fallback until first GPU
+ * frame has been validated and submitted. Never overlay separate DOM glass
+ * or blur filters on a successful WebGPU frame.
+ *
+ * GAP PUBLIC-DOM-BACKDROP: arbitrary external DOM cannot be captured by
+ * WebGPU without moving that DOM into the GPU scene. The included image,
+ * its authored veil and glass are entirely GPU owned.
+ * ======================================================================= */
+#dashboard-webgpu-scene{
+  position:fixed;
+  inset:var(--dashboard-scene-top) 0 0;
+  z-index:0;
+  display:block;
+  width:100vw;
+  height:var(--dashboard-scene-height);
+  pointer-events:none;
+  opacity:0;
+  contain:strict;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) #dashboard-webgpu-scene{
+  opacity:1;
+}
+/* Never swap back to CSS glass during a resize. It has different tint
+   and light/dark face equations from WebGPU, causing a material-color flash.
+   Window resize synchronously updates the GPU canvas backing size and frame. */
+#dashboard-webgpu-scene{
+  transition:none!important;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden]))::before{
+  content:none!important;
+  display:none!important;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-home-art{
+  display:none!important;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell{
+  position:relative;
+  z-index:1;
+  background:transparent;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) .dashboard-home .cta6-tile--webgpu{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+  isolation:auto!important;
+  overflow:visible!important;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) .dashboard-home .cta6-tile--webgpu::before,
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) .dashboard-home .cta6-tile--webgpu::after{
+  content:none!important;
+  display:none!important;
+}
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) .dashboard-home .cta6-tile--webgpu .cta6-icon{
+  color:#050505!important;
+  stroke:#050505!important;
+  position:relative;
+  z-index:2;
+}
+
+/* Isolated optional Clear tint laboratory; does not change the 11x6 lattice. */
+.dashboard-tint-tool{position:fixed;z-index:80;bottom:19px;left:20px;
+  max-width:min(340px,calc(100vw - 40px));font:12px/1.4 system-ui,-apple-system,sans-serif;
+  color:#f5f6f9}
+.dashboard-tint-tool button,.dashboard-tint-tool select,.dashboard-tint-tool input{
+  font:inherit}
+.dashboard-tint-toggle{min-height:31px;padding:5px 12px;color:#f9fafb;
+  background:rgba(18,22,29,.82);border:1px solid rgba(255,255,255,.24);
+  border-radius:18px;cursor:pointer;backdrop-filter:blur(14px)}
+.dashboard-tint-panel{position:absolute;left:0;bottom:calc(100% + 10px);width:290px;
+  max-width:calc(100vw - 40px);box-sizing:border-box;padding:14px;
+  border-radius:14px;background:rgba(20,24,31,.94);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 16px 36px rgba(0,0,0,.35);backdrop-filter:blur(18px)}
+.dashboard-tint-panel[hidden]{display:none!important}
+.dashboard-tint-heading{font-size:13px;font-weight:650;margin-bottom:9px}
+.dashboard-tint-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+  margin-bottom:12px}
+.dashboard-tint-swatch{min-height:30px;color:#e8ecf2;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.15);border-radius:7px;cursor:pointer}
+.dashboard-tint-swatch[aria-pressed="true"]{border-color:#fff;
+  background:rgba(240,245,255,.20);font-weight:700}
+.dashboard-tint-label{display:flex;justify-content:space-between;gap:8px;margin:7px 0 4px}
+.dashboard-tint-label output{font-variant-numeric:tabular-nums}
+.dashboard-tint-panel input[type=range]{width:100%;accent-color:#d4ddef}
+.dashboard-tint-panel select{width:100%;margin-bottom:6px;min-height:30px;
+  background:#242a34;color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:6px}
+.dashboard-tint-note{font-size:10px;line-height:1.4;color:#bec5d0;margin:8px 0 0}
+.dashboard-tint-tool button:focus-visible,.dashboard-tint-tool input:focus-visible,
+.dashboard-tint-tool select:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:760px){.dashboard-tint-tool{left:12px;bottom:12px}}
+
+/* Comparative mixed tint palette: experimental browser-only color transfer. */
+.dashboard-tint-showcase{display:block;width:100%;min-height:32px;
+  margin-bottom:8px;color:#fff;background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.22);border-radius:8px;cursor:pointer}
+.dashboard-tint-showcase[aria-pressed="true"]{
+  border-color:#fff;background:rgba(220,231,248,.23);font-weight:700}
+.dashboard-tint-guide{margin:0 0 10px;color:#c9cfdb;font-size:10.5px;line-height:1.4}
+
+/* 14-preset experimental palette: named chips and accessible height on mobile. */
+.dashboard-tint-swatch{display:flex;align-items:center;justify-content:center;gap:5px}
+.dashboard-tint-swatch::before{content:"";display:block;flex:none;width:10px;height:10px;
+  border-radius:50%;border:1px solid rgba(255,255,255,.38);
+  background:var(--tint-swatch-color,transparent)}
+.dashboard-tint-swatch[data-tint="none"]::before{background:transparent;
+  box-shadow:inset 0 0 0 1px #fafafa}
+.dashboard-tint-panel{max-height:calc(100dvh - 92px);overflow-y:auto}
+
+/* The six-row glass loop is composited independently of layout; center hero,
+   CTA and full-resolution photo remain fixed. Once WebGPU is ready, disable
+   the old filled animation so it cannot override per-frame transforms. */
+body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) .dashboard-home .cta6-tile--webgpu{
+  animation:none!important;
+  transition:none!important;
+  will-change:transform,opacity;
+}
+
+/* Sixth visible row is unchanged. The extra seventh lane begins
+   exactly one grid pitch beneath it but does not change grid height,
+   hero centering, or responsive text/button layout. */
+.dashboard-home .cta6-track-entry{
+  position:absolute;
+  z-index:0;
+  top:calc(100% + var(--cta6-grid-gap));
+  left:0;
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(11,minmax(0,1fr));
+  gap:var(--cta6-grid-gap);
+  pointer-events:none;
+  /* Do not show the CSS glass before the first WebGPU frame. */
+  opacity:0!important;
+  animation:none!important;
+  transition:none!important;
+}
+.dashboard-home .cta6-track-entry>.cta6-tile{
+  min-width:0;
+  animation:none!important;
+  transition:none!important;
+}
+/* This isolated Dashboard preview's bottom-right copyright is 50% opaque. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
+  opacity:.5!important;
+}
+
+/* Production Home matches the isolated preview. Only the visible Home view
+   hides the authenticated workspace's sidebar and lower bar; every other route
+   keeps its unmodified shell, controls and normal document footer. */
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .sidebar,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .sidebar-resize-handle,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .sidebar-scrim,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .topbar,
+body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-topbar-backdrop {display:none!important;}
+body:not(:has(> #workspace-shell .dashboard-home:not([hidden]))) #dashboard-webgpu-scene,
+body:not(:has(> #workspace-shell .dashboard-home:not([hidden]))) .dashboard-tint-tool {display:none!important;}

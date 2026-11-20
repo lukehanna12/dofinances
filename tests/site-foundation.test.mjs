@@ -24,12 +24,15 @@ test("all Git-managed DoFinances page families share system typography and dark 
   assert.match(foundation,/font-family:\s*var\(--ui-font-sans\)/);
   assert.doesNotMatch(foundation,/@font-face|https?:\/\/|fonts\.googleapis\.com/i);
 
-  for(const file of ["../sites/_apex/index.html","../sites/_apex/app/index.html",
+  for(const file of ["../sites/_apex/app/index.html",
     "../sites/_apex/verify/index.html","../sites/_apex/reset/index.html"]){
     const html=await read(file);
     assert.match(html,/href="\/assets\/site-foundation\.css"/,file);
     assert.match(html,/name="theme-color" content="#171717"/,file);
   }
+  const publicHome=await read("../sites/_apex/index.html");
+  assert.match(publicHome,/href="\/assets\/site-foundation\.css"/);
+  assert.match(publicHome,/name="theme-color" content="#0a0a0a"/);
 
   const app=await read("../sites/_apex/app/assets/workspace-theme.css");
   const homepage=await read("../sites/_apex/assets/site.css");
@@ -57,10 +60,9 @@ test("homepage and recovery pages preserve their links and live form controls",a
   const home=await read("../sites/_apex/index.html");
   const verify=await read("../sites/_apex/verify/index.html");
   const reset=await read("../sites/_apex/reset/index.html");
-  assert.match(home,/class="home-actions"/);
-  for(const url of ["/login","/login?mode=signup","/app"]){
-    assert.ok(home.includes('href="'+url+'"'),url);
-  }
+  assert.match(home,/class="cta6-bottom-action"/);
+  assert.match(home,/<a class="cta6-action" href="\/login">Sign in<\/a>/);
+  assert.doesNotMatch(home,/href="\/app"|href="\/login\?mode=signup"/);
   assert.match(verify,/id="verify"/);
   assert.match(verify,/\/verify\/assets\/verification\.js/);
   assert.match(verify,/\/assets\/account-security\.css/);
