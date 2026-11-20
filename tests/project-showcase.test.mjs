@@ -72,7 +72,7 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(css,/border-radius:10px/);
  assert.match(css,/font-size:9px;font-weight:500;line-height:12px;padding:1px 5px/);
  assert.match(permissions,/\.pm-rule-row\{min-height:56px;border-bottom:1px solid var\(--pm-line\)/);
- assert.match(css,/project-showcase-badge--soon\{background:#193c61;color:#bfdbfe\}/);
+ assert.match(css,/project-showcase-badge--soon\{background:#102b4d;color:#bfdbfe\}/);
  assert.match(css,/project-showcase-badge--progress\{background:#382409;color:#facc15\}/);
  assert.match(permissions,/\.pm-rule-row\[data-enabled="false"\] \.pm-rule-status\{color:#747474\}/);
  assert.match(source,/const status=project\.status==="in-progress"\?"In Progress"/);
