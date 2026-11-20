@@ -106,14 +106,20 @@ try{
     const actions=document.querySelector(".global-menu-actions");
     const actionRect=actions.getBoundingClientRect();
     const sidebar=document.querySelector(".sidebar").getBoundingClientRect();
-    const crumb=document.getElementById("breadcrumb").getBoundingClientRect();
+    const breadcrumb=document.getElementById("breadcrumb");
+    const crumb=breadcrumb.getBoundingClientRect();
+    const home=document.getElementById("topbar-dashboard-home");
+    const homeRect=home.getBoundingClientRect();
+    const homeMask=getComputedStyle(home.querySelector(".nav-icon-asset"));
     const big=document.getElementById("global-clock-time");
     const small=document.getElementById("global-clock-seconds");
     const zone=document.getElementById("global-clock-zone");
     const bigStyle=getComputedStyle(big),smallStyle=getComputedStyle(small),zoneStyle=getComputedStyle(zone);
     return {clockLeft:rect.left,clockY:rect.top+rect.height/2,
       lowerLeft:lower.left,lowerY:lower.top+lower.height/2,
-      sidebarLeft:sidebar.left,breadcrumbLeft:crumb.left,
+      sidebarLeft:sidebar.left,breadcrumbLeft:crumb.left,breadcrumbHidden:breadcrumb.hidden,
+      homeHref:home.getAttribute("href"),homeRightGap:document.documentElement.clientWidth-homeRect.right,
+      homeY:homeRect.top+homeRect.height/2,homeMask:homeMask.webkitMaskImage||homeMask.maskImage,
       timeBottom:big.getBoundingClientRect().bottom,
       secondsBottom:small.getBoundingClientRect().bottom,
       timeFont:parseFloat(bigStyle.fontSize),secondsFont:parseFloat(smallStyle.fontSize),
@@ -128,9 +134,15 @@ try{
     "Clock must be visible in the lower bar: "+JSON.stringify(compactTopbar));
   assert.ok(Math.abs(compactTopbar.clockLeft-compactTopbar.sidebarLeft)<1,
     "Clock must align with the sidebar's left boundary: "+JSON.stringify(compactTopbar));
-  assert.ok(Math.abs(compactTopbar.breadcrumbLeft-compactTopbar.clockLeft-144)<2,
-    "Normal clock must retain its 144px clock-to-breadcrumb offset: "+
-      JSON.stringify(compactTopbar));
+  assert.equal(compactTopbar.breadcrumbHidden,true,
+    "Dashboard should no longer show a breadcrumb: "+JSON.stringify(compactTopbar));
+  assert.equal(compactTopbar.homeHref,"#dashboard");
+  assert.ok(Math.abs(compactTopbar.homeRightGap-compactTopbar.clockLeft)<1.5,
+    "Home right gutter must mirror the clock left gutter: "+JSON.stringify(compactTopbar));
+  assert.ok(Math.abs(compactTopbar.homeY-compactTopbar.lowerY)<2,
+    "Home icon must be vertically centered in the lower bar: "+JSON.stringify(compactTopbar));
+  assert.ok(compactTopbar.homeMask.includes("dashboard-screen-sidebar-icon.v1.svg"),
+    "Home must use the same SVG as the Dashboard sidebar icon");
   assert.ok(compactTopbar.secondsFont<compactTopbar.timeFont,
     "Seconds must be smaller than hours and minutes");
   assert.equal(compactTopbar.secondsColor,compactTopbar.zoneColor,
@@ -182,6 +194,8 @@ try{
     "Projects hides upper navigation");
   await until('document.querySelector(".content > .view:not([hidden])")?.getAnimations().every(a=>a.playState==="finished")',
     "Projects title settles after global bar removal");
+  await until('(()=>{const bread=document.getElementById("breadcrumb");const clock=document.getElementById("global-clock");return !bread.hidden&&Math.abs(bread.getBoundingClientRect().left-clock.getBoundingClientRect().left-144)<2;})()',
+    "Projects breadcrumb keeps the 144px clock separation",4000);
   const projectsBars=await evaluate(String.raw`(()=>{
     const rect=selector=>document.querySelector(selector).getBoundingClientRect();
     const heading=rect('.view[data-view="projects"] .page-heading > h1');
