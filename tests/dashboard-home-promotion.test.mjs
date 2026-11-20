@@ -115,24 +115,36 @@ test("Dashboard alone uses #676b71 for the upper bar and removes its Account but
     "Keep Settings reachable from the global navigation");
 });
 
-test("Home title rises exactly half a responsive mosaic square without moving the grid or action",()=>{
+test("Home squares and centered Doof hold the maximum-width scale when the viewport narrows",()=>{
   const css=asset("dashboard-home.css");
-  assert.match(css,/--cta6-title-tile:calc\(\(min\(calc\(100vw - 32px\),1080px\) - 10 \* clamp\(6px,0\.75vw,13px\)\)\/11\)/);
-  assert.match(css,/translate:0 calc\(-0\.5 \* var\(--cta6-title-tile\)\)/);
-  assert.match(css,/--cta6-title-tile:calc\(\(100vw - 26px - 10 \* clamp\(3px,1\.1vw,7px\)\)\/11\)/);
-  const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
-  const calculate=(viewport,mobile)=>{
-    const width=mobile?viewport-26:Math.min(viewport-32,1080);
-    const gap=mobile?clamp(viewport*0.011,3,7):clamp(viewport*0.0075,6,13);
-    return {square:(width-10*gap)/11,offset:-(width-10*gap)/22};
-  };
-  for(const [viewport,mobile] of [[1440,false],[1024,false],[760,true],[390,true],[320,true]]){
-    const {square,offset}=calculate(viewport,mobile);
-    assert.ok(square>0);
-    assert.ok(Math.abs(offset/square+0.5)<1e-12,"Title offset must equal half a square at "+viewport+"px");
-  }
-  assert.match(css,/\.dashboard-home \.cta6-bottom-action\{[\s\S]*?transform:translateX\(-50%\)/);
-  assert.match(css,/\.dashboard-home \.cta6-mosaic\{[\s\S]*?grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/);
+  const latticeRules=[...css.matchAll(/\.dashboard-home \.cta6\{([^}]*)\}/g)]
+    .map(([,rule])=>rule);
+  assert.equal(latticeRules.length,3,
+    "Retain the original, viewport-centered and optical composition rules");
+  const declaredWidths=latticeRules.map(rule=>rule.match(/\bwidth:\s*([^;]+);/)?.[1]).filter(Boolean);
+  assert.deepEqual(declaredWidths,["1080px","1080px"],
+    "The mosaic must remain 1080px wide at desktop and mobile breakpoints");
+  const gutterRules=[...css.matchAll(/--cta6-grid-gap:\s*([^;]+);/g)].map(([,gap])=>gap);
+  assert.deepEqual(gutterRules,["13px"],"Keep full-size gutter spacing at all widths");
+  assert.match(css,/\.dashboard-home \.cta6-tile\{[^}]*border-radius:17px;/,
+    "Tiles retain their maximum-width rounded corners");
+  assert.match(css,/\.dashboard-home \.cta6-center h1\{[^}]*--cta6-title-tile:calc\(\(1080px - 10 \* var\(--cta6-grid-gap\)\)\/11\);/);
+  assert.match(css,/\.dashboard-home \.cta6-center h1\{[^}]*font-size:45px;/,
+    "The Doof logo must not shrink with the viewport");
+  assert.match(css,/translate:0 calc\(-0\.5 \* var\(--cta6-title-tile\)\)/,
+    "Keep the title raised by exactly half a fixed-size square");
+  assert.match(css,/width:100vw;\s*height:var\(--dashboard-scene-height\);\s*overflow-x:clip;/,
+    "Crop horizontally rather than shrinking or introducing a scrollbar");
+  assert.match(css,/\.dashboard-home \.cta6-mosaic\{[^}]*grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/,
+    "Preserve the eleven-column grid");
+  assert.doesNotMatch(css,/--cta6-grid-gap:clamp\(/);
+  assert.doesNotMatch(css,/--cta6-title-tile:calc\(\(100vw/);
+  assert.doesNotMatch(css,/\.dashboard-home \.cta6-center h1\{font-size:clamp\(/);
+  assert.doesNotMatch(css,/width:calc\(100vw - 26px\)/);
+  const tileWidth=(1080 - 10*13)/11;
+  assert.equal(tileWidth,950/11,"Tile width is independent of window width and height");
+  assert.match(css,/\.dashboard-home \.cta6-bottom-action\{[\s\S]*?transform:translateX\(-50%\)/,
+    "Keep the independent See Projects button centered");
 });
 
 test("See Projects has a borderless black surface with exact inset shadow and a white arrow",()=>{
