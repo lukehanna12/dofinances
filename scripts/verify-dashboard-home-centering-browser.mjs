@@ -74,6 +74,9 @@ try{
   return r.result.value;
  };
  await send("Page.enable");await send("Runtime.enable");
+ // Prevent the intentional 0.85-to-1 entrance scale from contaminating
+ // settled tile geometry; reduced-motion uses the production CSS fallback.
+ await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
  await send("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/"});
  let ready=false;
  for(let i=0;i<120;i++){
