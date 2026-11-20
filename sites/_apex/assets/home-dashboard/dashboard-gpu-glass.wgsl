@@ -386,7 +386,18 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let fadeWidth=max(1.0,0.75*tile.rect.z);
   let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);
   let edgeOpacity=mix(0.25,1.0,clamp(edgeDistance/fadeWidth,0.0,1.0));
-  // Match semantic DOM icons' CSS viewport-centered mask and track opacity.
+  // Public-home title aperture: elliptic ALPHA dip on glass fragments only.
+  // The title is shifted up half one 950/11 CSS-pixel tile from the center
+  // of the photograph's scene viewport. Outside the 65x40 CSS-pixel oval,
+  // opacity is unchanged. The center is exactly 60% of original tile alpha.
+  // Match the DOM icons' CSS oval and multiply by the separate side fade.
+  let logoCenter=vec2<f32>(
+    state.viewport.x*0.5,
+    state.viewport.y*0.5-(950.0/22.0)*state.viewport.w);
+  let ovalRadii=vec2<f32>(65.0,40.0)*state.viewport.w;
+  let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
+  let ovalDistance=length(ovalUV);
+  let logoOpacity=mix(0.60,1.0,clamp(ovalDistance,0.0,1.0));
   return vec4<f32>(color,coverage*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity);
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity);
 }

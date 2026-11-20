@@ -115,13 +115,13 @@ body.public-home .public-github svg{
 body.public-home .global-menu-actions{display:flex;align-items:center;flex:none;}
 body.public-home .global-menu-icon{width:32px;height:32px;padding:6px;}
 body.public-home .global-menu-icon svg{width:19px;height:19px;display:block;}
-/* The action row is 100 + 150 + 100 + 12 + 12 = 374px wide.
-   Below approximately 3 * 374 = 1122px, replace central navigation with
-   an accessible disclosure, keeping GitHub left and Search at the right. */
+/* The three-button row spans 374px at desktop sizes.
+   Below approximately twice that span (2 * 374 = 748px), collapse
+   central navigation to the menu beside Search, keeping GitHub at left. */
 body.public-home .public-menu-toggle,
 body.public-home .public-menu-panel{display:none;}
 body.public-home .public-menu-panel[hidden]{display:none!important;}
-@media(max-width:1122px){
+@media(max-width:748px){
   body.public-home .global-menu-inner{gap:10px;padding-inline:clamp(10px,3vw,30px);}
   body.public-home .global-menu-links{display:none;}
   body.public-home .global-menu-actions{margin-left:auto;gap:4px;}
@@ -163,42 +163,49 @@ body.public-home .public-menu-panel[hidden]{display:none!important;}
   from{opacity:0;transform:translateY(-5px)}
   to{opacity:1;transform:translateY(0)}
 }
-/* Edge attenuation belongs exclusively to the square lattice, not the
-   photographic backdrop, oval, header, logo, CTA, or copyright. A viewport-
-   sized mask is centered over the fixed 1080px mosaic: at window x=0/W
-   tiles retain 25% opacity, reaching 100% after 0.75 tile widths (~64.8px).
-   The GPU glass has the identical alpha-only curve in its PUBLIC WGSL
-   fragment; this CSS mask covers live DOM icons and fallback CSS glass.
-   Never apply it to the opaque GPU scene canvas (which owns the photograph). */
+/* Public-home glass and glyphs ONLY. Both images are ALPHA masks.
+   Image 1: at the viewport's side edges squares retain 25% opacity;
+   they return to full opacity after 75% of a fixed-width square.
+   Image 2: an elliptical dip centered behind the displaced "doof" title;
+   squares are 60% opaque at its center, gradually returning to 100%
+   beyond an oval roughly 15px larger than the text on every side.
+   Intersect (multiply) the masks so neither fade cancels the other.
+   The 1080px lattice is centered; viewport-sized mask layers track the
+   actual window edges, not the grid's off-screen edges.
+   The photographic backdrop and the foreground title are NEVER masked. */
 body.public-home .dashboard-home .cta6-mosaic{
   --public-edge-fade-width:calc(0.75 * ((1080px - 10 * 13px) / 11));
-  -webkit-mask-image:linear-gradient(to right,
-    rgba(0,0,0,.25) 0,
-    #000 var(--public-edge-fade-width),
-    #000 calc(100% - var(--public-edge-fade-width)),
-    rgba(0,0,0,.25) 100%);
-  mask-image:linear-gradient(to right,
-    rgba(0,0,0,.25) 0,
-    #000 var(--public-edge-fade-width),
-    #000 calc(100% - var(--public-edge-fade-width)),
-    rgba(0,0,0,.25) 100%);
+  --public-logo-oval-x:65px;
+  --public-logo-oval-y:40px;
+  --public-logo-shift:43.1818px;
+  -webkit-mask-image:
+    linear-gradient(to right,
+      rgba(0,0,0,.25) 0,
+      #000 var(--public-edge-fade-width),
+      #000 calc(100% - var(--public-edge-fade-width)),
+      rgba(0,0,0,.25) 100%),
+    radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y)
+      at 50% calc(50% - var(--public-logo-shift)),
+      rgba(0,0,0,.60) 0%,
+      #000 100%);
+  mask-image:
+    linear-gradient(to right,
+      rgba(0,0,0,.25) 0,
+      #000 var(--public-edge-fade-width),
+      #000 calc(100% - var(--public-edge-fade-width)),
+      rgba(0,0,0,.25) 100%),
+    radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y)
+      at 50% calc(50% - var(--public-logo-shift)),
+      rgba(0,0,0,.60) 0%,
+      #000 100%);
+  -webkit-mask-composite:source-in;
+  mask-composite:intersect;
   -webkit-mask-size:100vw 100%;
   mask-size:100vw 100%;
   -webkit-mask-position:center top;
   mask-position:center top;
   -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
-}
-/* The filled oval hugs the actual glyphs, rather than a fixed-size halo.
-   Fifteen pixels of padding on each side is measured from the logo box.
-   Only the background is 60%-opaque: the white wordmark stays fully opaque.
-   The existing half-square vertical offset and 45px font remain unchanged. */
-body.public-home .dashboard-home .cta6-center h1{
-  position:relative;
-  z-index:1;
-  padding:15px;
-  border-radius:999px;
-  background:rgba(5,8,13,.60);
 }
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */

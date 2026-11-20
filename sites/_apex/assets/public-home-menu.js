@@ -1,7 +1,7 @@
 /* Public homepage only. No auth, workspace navigation, or hidden routes. */
 const toggle=document.getElementById("public-menu-toggle");
 const panel=document.getElementById("public-menu-panel");
-const compact=window.matchMedia("(max-width:1122px)");
+const compact=window.matchMedia("(max-width:748px)");
 if(toggle&&panel){
   const close=()=>{
     panel.hidden=true;

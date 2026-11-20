@@ -45,7 +45,9 @@ test("GitHub profile opens in a new tab; remaining public top-bar controls are i
   assert.match(nav,/<button class="global-menu-icon global-menu-control public-menu-toggle" id="public-menu-toggle" type="button" aria-label="Open navigation menu" aria-controls="public-menu-panel" aria-expanded="false"/);
   assert.match(nav,/<div class="public-menu-panel" id="public-menu-panel" aria-label="Navigation options" hidden>/);
   assert.match(home,/src="\/assets\/public-home-menu\.js"/);
-  assert.match(style,/@media\(max-width:1122px\)\{/);
+  assert.match(style,/@media\(max-width:748px\)\{/);
+  assert.doesNotMatch(style,/@media\(max-width:1122px\)/);
+  assert.match(asset("assets/public-home-menu.js"),/matchMedia\("\(max-width:748px\)"\)/);
   assert.match(style,/\.global-menu-links\{display:none;\}/);
   assert.match(style,/\.public-menu-panel:not\(\[hidden\]\)\{/);
   const handler=asset("assets/public-home-menu.js");
@@ -61,16 +63,27 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(style,/rgba\(0,0,0,\.25\) 0,/);
   assert.match(style,/mask-size:100vw 100%;/);
   assert.match(style,/mask-position:center top;/);
+  assert.match(style,/mask-composite:intersect;/,"Both square alpha fades must combine");
+  assert.match(style,/-webkit-mask-composite:source-in;/);
+  assert.match(style,/radial-gradient\(ellipse var\(--public-logo-oval-x\) var\(--public-logo-oval-y\)/);
+  assert.match(style,/--public-logo-oval-x:65px;/);
+  assert.match(style,/--public-logo-oval-y:40px;/);
+  assert.match(style,/--public-logo-shift:43\.1818px;/);
+  assert.match(style,/rgba\(0,0,0,\.60\) 0%/,"Squares are 60% opaque at logo center");
   assert.doesNotMatch(style,/linear-gradient\(to bottom/,"Do not darken the backdrop vertically");
   const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
   assert.match(shader,/let fadeWidth=max\(1\.0,0\.75\*tile\.rect\.z\);/);
   assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
-  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity/);
-  assert.doesNotMatch(style,/\.cta6-center::before/,"Do not use a loose glow around Doof");
-  assert.match(style,/\.cta6-center h1\{\s*position:relative;\s*z-index:1;\s*padding:15px;\s*border-radius:999px;\s*background:rgba\(5,8,13,\.60\);/);
-  assert.doesNotMatch(style,/radial-gradient\(ellipse at center/,
-    "The oval must be uniformly filled, not a transparent-edged halo");
+  assert.match(shader,/let logoCenter=vec2<f32>\(/);
+  assert.match(shader,/let ovalRadii=vec2<f32>\(65\.0,40\.0\)\*state\.viewport\.w;/);
+  assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,clamp\(ovalDistance,0\.0,1\.0\)\);/);
+  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity/);
+  assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
+  assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
+  assert.doesNotMatch(style,/\.cta6-center h1\s*\{/,"Never apply logo visual modifications");
+  assert.doesNotMatch(asset("app/assets/dashboard-gpu-glass.wgsl"),/logoOpacity|ovalRadii/,
+    "The private Dashboard renderer must remain untouched");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{

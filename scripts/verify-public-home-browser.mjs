@@ -103,9 +103,12 @@ try{
  'edgeMaskSize:getComputedStyle(grid).maskSize,',
  'edgeMaskPosition:getComputedStyle(grid).maskPosition,',
  'logoFill:getComputedStyle(logo).backgroundColor,',
- 'logoRadius:getComputedStyle(logo).borderRadius,',
  'logoPaddingX:getComputedStyle(logo).paddingLeft,',
  'logoPaddingY:getComputedStyle(logo).paddingTop,',
+ 'logoOvalX:getComputedStyle(grid).getPropertyValue("--public-logo-oval-x").trim(),',
+ 'logoOvalY:getComputedStyle(grid).getPropertyValue("--public-logo-oval-y").trim(),',
+ 'logoOffset:getComputedStyle(grid).getPropertyValue("--public-logo-shift").trim(),',
+ 'maskComposite:getComputedStyle(grid).maskComposite,',
  'github:box(document.querySelector(".public-github")),',
  'githubHref:document.querySelector(".public-github").href,',
  'githubTarget:document.querySelector(".public-github").target,',
@@ -116,7 +119,7 @@ try{
  new Function("return "+expression);
  const near=(actual,expected,label,width)=>assert.ok(Math.abs(actual-expected)<.8,
   label+" at "+width+"px: "+actual+" vs "+expected);
- for(const [width,height] of [[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[500,670],[390,610],[320,560]]){
+ for(const [width,height] of [[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[749,700],[748,700],[747,700],[500,670],[390,610],[320,560]]){
   await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
   await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
   const g=await evaluate(expression);
@@ -127,12 +130,12 @@ try{
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
   assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Settings"]);
-  if(width>1122){
+  if(width>748){
    assert.equal(g.navDisplay,"flex","Desktop navigation must remain visible");
    assert.equal(g.hamburgerDisplay,"none","No hamburger on desktop");
    assert.ok(g.github.left<g.firstLink.left,"GitHub must lead desktop navigation");
   }else{
-   assert.equal(g.navDisplay,"none","Collapse desktop items below 3x action width");
+   assert.equal(g.navDisplay,"none","Collapse desktop items below 2x action width");
    assert.notEqual(g.hamburgerDisplay,"none","Hamburger appears beside Search");
    assert.ok(g.search.left+g.search.width<=g.hamburger.left+1,"Hamburger follows Search");
    near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
@@ -144,11 +147,16 @@ try{
   assert.equal(g.edgeMaskSize,width+"px 100%",
     "Computed mask width must equal viewport width, not 1080px lattice width");
   assert.equal(g.edgeMaskPosition,"50% 0%","Mask centers within the oversized lattice");
-  assert.equal(g.logoFill,"rgba(5, 8, 13, 0.6)",
-    "Doof oval has a uniform 60%-opaque fill");
-  assert.equal(g.logoRadius,"999px","The fill is a fully rounded oval");
-  assert.equal(g.logoPaddingX,"15px","The oval hugs Doof with 15px side padding");
-  assert.equal(g.logoPaddingY,"15px","The oval hugs Doof with 15px vertical padding");
+  assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
+  assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
+  assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
+  assert.equal(g.logoOvalX,"65px","Oval fade width hugs Doof");
+  assert.equal(g.logoOvalY,"40px","Oval fade height hugs Doof");
+  assert.equal(g.logoOffset,"43.1818px","Oval tracks Doof's half-tile offset");
+  assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
+  assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
+    "Square opacity reduces to 60% at the logo");
+  assert.equal(g.maskComposite,"intersect","Side and oval masks multiply rather than union");
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
