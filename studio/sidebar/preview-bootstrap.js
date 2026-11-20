@@ -14,7 +14,10 @@ for(const form of document.querySelectorAll("form")){
   }
 }
 for(const button of document.querySelectorAll("button")){
-  if(button.id==="sidebar-toggle"||button.id==="mobile-nav-toggle"||button.id==="sidebar-scrim"||button.id==="global-menu-toggle"||button.id==="global-search-toggle"||button.id==="clock-custom-apply")continue;
+  // Clock dropdowns are local-only display preferences, not account controls.
+  if(["sidebar-toggle","mobile-nav-toggle","sidebar-scrim","global-menu-toggle","global-search-toggle",
+    "clock-custom-apply","clock-display-trigger","clock-zone-trigger","clock-format-24",
+    "clock-format-standard","clock-popover-custom-apply"].includes(button.id))continue;
   button.disabled=true;
   button.setAttribute("aria-description","Unavailable in this static preview");
 }

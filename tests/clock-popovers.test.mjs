@@ -54,3 +54,13 @@ test("24-hour and Standard clock formatting retain correct hour and meridiem",()
   assert.equal(formatWorkspaceTime(date,{timeZone:"America/Chicago",seconds:true}),"16:05:09");
   assert.equal(formatWorkspaceTime(date,{timeZone:"America/Chicago",seconds:true,hour12:true}),"4:05:09 PM");
 });
+
+test("Public Studio keeps display-only clock controls interactive without enabling account operations",()=>{
+  const preview=read("../studio/sidebar/preview-bootstrap.js");
+  for(const id of ["clock-display-trigger","clock-zone-trigger","clock-format-24",
+    "clock-format-standard","clock-popover-custom-apply","clock-custom-apply"]){
+    assert.ok(preview.includes('"'+id+'"'),id+" must stay interactive in Studio");
+  }
+  assert.match(preview,/button\.disabled=true/);
+  assert.match(preview,/for\(const form of document\.querySelectorAll\("form"\)\)/);
+});
