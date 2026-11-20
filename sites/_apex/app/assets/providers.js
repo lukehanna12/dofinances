@@ -4,7 +4,6 @@
  * invoke grants and independently enforced local registry. */
 import {mountLocalProviderProvisions,invalidateLocalProviderProvisions} from "./provider-provisions.js";
 import {formatWorkspaceTime} from "./workspace-nav.js";
-import {initWorkspaceCredentialHub} from "./workspace-credential-hub.js";
 const API="/api/colosseum/providers";
 const ROUTES=Object.freeze({local:"colosseum/providers/local",federated:"colosseum/providers/external",credentials:"colosseum/providers/credentials"});
 const FIELDS=["connection","operations","resources","effects","credentials"];
@@ -91,14 +90,6 @@ export function initColosseumProviders(){
   pending:null,profileEditor:null,expandedLocal:new Set(),deferredLoad:false,
   refreshedAt:{local:null,federated:null}};
  const dataMode=()=>state.mode==="local"?"local":"federated";
- const credentialHub=initWorkspaceCredentialHub(root,{
-  providers:()=>state.federated,registryLoaded:()=>state.loaded.federated,
-  onSelectProvider:uid=>{
-   state.selected.credentials=uid;state.mode="credentials";
-   renderList();renderDetails();
-   root.querySelector(".pv-browser")?.scrollIntoView?.({block:"nearest",behavior:"smooth"});
-  }
- });
  const setStatus=(text,tone)=>{status.textContent=text;status.dataset.tone=tone||"info";};
  const active=()=>state.selected[state.mode];
  const items=()=>state[dataMode()];
@@ -225,7 +216,7 @@ export function initColosseumProviders(){
    }else for(const view of ["federated","credentials"])
     if(!itemsFor(mode).some(x=>x.uid===state.selected[view]))
      state.selected[view]=itemsFor(mode)[0]?.uid||null;
-   if(dataMode()===mode){render();credentialHub.render();setStatus("");}
+   if(dataMode()===mode){render();setStatus("");}
   });
   if(seq===state.loadSeq){setLoading(false,mode);
    if(!state.loaded[mode]&&dataMode()===mode)list.replaceChildren(e("p","pv-empty-list","Unable to load providers. Refresh to retry."));}
@@ -504,7 +495,7 @@ export function initColosseumProviders(){
  }
  search.addEventListener("input",renderList);
  $("pv-search-focus").addEventListener("click",()=>search.focus({preventScroll:true}));
- refresh.addEventListener("click",()=>{if(!refresh.disabled){void load(dataMode());if(state.mode==="credentials")void credentialHub.refresh();}});
+ refresh.addEventListener("click",()=>{if(!refresh.disabled)void load(dataMode());});
  const routeMode=()=>{
   const hash=location.hash.replace(/^#/,"").replace(/\/$/,"").toLowerCase();
   const path=location.pathname.replace(/\/+$/,"").replace(/^\/(?:app|dashboard)\//,"").toLowerCase();
@@ -516,7 +507,6 @@ export function initColosseumProviders(){
   const host=mode==="local"?document.querySelector('[data-view="colosseum/providers/local"]'):
    document.getElementById(mode==="credentials"?"pv-credentials-mount":"pv-external-mount");
   if(host&&root.parentElement!==host)host.append(root);
-  if(mode==="credentials")credentialHub.activate();
   if(state.mode!==mode){
    state.mode=mode;state.pending=null;state.profileEditor=null;
    search.value="";render();
@@ -556,17 +546,5 @@ export function initColosseumProviders(){
   url.searchParams.delete("providers_result");url.searchParams.delete("providers_error");
   history.replaceState(history.state,"",url.pathname+url.search+url.hash);
  }
- // Return to Credentials after the user explicitly initiated a linked-account
- // OAuth flow here. Neither the selection nor any OAuth credential is persisted.
- try{
-  const requested=sessionStorage.getItem("dofinances.credentials.return.v1");
-  const query=new URLSearchParams(location.search);
-  if(requested&&(["google","github"].includes(requested))&&
-   (query.has("federation_linked")||query.has("federation_error"))){
-   sessionStorage.removeItem("dofinances.credentials.return.v1");
-   if(!location.hash||location.hash==="#settings")
-    location.hash="#colosseum/providers/credentials";
-  }
- }catch{}
  render();window.queueMicrotask(onRoute);
 }
