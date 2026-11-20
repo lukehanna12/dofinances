@@ -65,9 +65,15 @@ test("Relative document links resolve from their current folder and keep fragmen
  assert.deepEqual(resolveRepoLink("https://github.com/lukehanna12/repo/blob/HEAD/docs/guide.md",
   "README.md","lukehanna12/repo","main"),{path:"docs/guide.md",fragment:""});
  assert.equal(resolveRepoLink("../../../outside.md","docs/README.md","lukehanna12/repo","main"),null);
+ assert.deepEqual(resolveRepoLink("https://github.com/lukehanna12/repo/raw/main/docs/logo.png",
+  "README.md","lukehanna12/repo","main"),{path:"docs/logo.png",fragment:""});
+ assert.deepEqual(resolveRepoLink("https://raw.githubusercontent.com/lukehanna12/repo/main/docs/logo.svg",
+  "README.md","lukehanna12/repo","main"),{path:"docs/logo.svg",fragment:""});
  assert.equal(resolveRepoLink("javascript:alert(1)","README.md","lukehanna12/repo","main"),null);
  assert.equal(resolveRepoLink("https://evil.test/data.md","README.md","lukehanna12/repo","main"),null);
  assert.ok(ui.includes('data-repo-path'));
+ assert.ok(ui.includes('const target=resolveRepoLink(value,project.path||"README.md"'),
+   "Inline images resolve relative to the current document's folder");
  assert.ok(ui.includes('void openDocument(docLink.dataset.repoPath,docLink.dataset.repoFragment||"")'));
 });
 test("Safe GitHub repository listing and file reads preserve authentication and binary selection",async()=>{

@@ -41,18 +41,13 @@ function fallbackMarkdown(markdown){
 }
 function safeAssetPath(value,project){
  if(!project?.repository||typeof value!=="string")return null;
- if(/^https?:\/\//i.test(value))return null;
- let path=value.split(/[?#]/)[0];
- if(!path||path.startsWith("/")||path.includes("\\")||/%2f|%5c/i.test(path))return null;
- const base=(project.path||"README.md").split("/").slice(0,-1);
- for(const part of path.split("/")){
-  if(!part||part===".")continue;
-  if(part===".."){if(!base.length)return null;base.pop();continue;}
-  if(!/^[A-Za-z0-9._-]+$/.test(part))return null;
-  base.push(part);
- }
- if(!/\.(?:png|jpe?g|gif|webp|avif|svg)$/i.test(base.join("/")))return null;
- return "/api/projects/"+encodeURIComponent(project.slug)+"/asset?path="+encodeURIComponent(base.join("/"));
+ const target=resolveRepoLink(value,project.path||"README.md",
+   project.repository,project.defaultBranch);
+ const path=target?.path;
+ if(!path||path.length>220||!/^[A-Za-z0-9._/-]+$/.test(path)||
+    !/\.(?:png|jpe?g|gif|webp|avif|svg)$/i.test(path))return null;
+ return "/api/projects/"+encodeURIComponent(project.slug)+
+   "/asset?path="+encodeURIComponent(path);
 }
 function sanitizeMarkdown(html,project){
  // Allowlist reconstruction, not blacklist string cleanup: never attach

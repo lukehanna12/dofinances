@@ -236,7 +236,7 @@ test("GitHub visual defaults, three per-project styles and unsafe HTML rebuildin
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
  assert.ok(css.includes('background:#111923'));
  assert.ok(css.includes('box-shadow:inset 0 0 0 1px rgba(100,124,150,.2)'));
- assert.ok(ui.includes('reading.contentEditable="true"'));
+ assert.ok(ui.includes('reading.contentEditable=markdownFile(state.source?.path)?"true":"false"'),"Markdown stays rich editable; raw text uses a textarea");
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));
  assert.ok(source("sites/_apex/app/assets/readme-editor-interactions.js").includes('root.addEventListener("input"'));
@@ -380,7 +380,7 @@ test("Editing is directly on the stable GitHub-rendered document, with no split 
  assert.ok(!css.includes('.rm-editor{')&&!css.includes('.rm-preview-pane'));
  assert.ok(css.includes('rm-reading[contenteditable="true"]'));
  assert.ok(css.includes('outline:none;caret-color:#f0f6fc'));
- assert.ok(ui.includes('reading.contentEditable="true"'));
+ assert.ok(ui.includes('reading.contentEditable=markdownFile(state.source?.path)?"true":"false"'),"Markdown stays rich editable; raw text uses a textarea");
  assert.ok(ui.includes('reading.contentEditable="false"'));
  assert.ok(ui.includes('state.savedDom=reading.cloneNode(true)'));
  assert.ok(ui.includes('reading.replaceChildren(...Array.from(state.savedDom.childNodes'));

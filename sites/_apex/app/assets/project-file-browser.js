@@ -9,10 +9,14 @@ export function resolveRepoLink(value,currentPath,repository,branch){
  if(href.startsWith("#"))return {path:currentPath,fragment:decodeSafe(href.slice(1))};
  if(/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith("//")){
   let url;try{url=new URL(href);}catch{return null;}
-  if(url.protocol!=="https:"||url.hostname!=="github.com"||!repository)return null;
+  if(url.protocol!=="https:"||!repository)return null;
   const parts=url.pathname.split("/").filter(Boolean).map(decodeSafe),repo=repository.split("/");
-  if(parts[0]!==repo[0]||parts[1]!==repo[1]||parts[2]!=="blob")return null;
-  const tail=parts.slice(3),candidate=(branch||"main").split("/");
+  if(parts[0]!==repo[0]||parts[1]!==repo[1])return null;
+  let tail;
+  if(url.hostname==="github.com"&&["blob","raw"].includes(parts[2]))tail=parts.slice(3);
+  else if(url.hostname==="raw.githubusercontent.com")tail=parts.slice(2);
+  else return null;
+  const candidate=(branch||"main").split("/");
   const ref=tail.slice(0,candidate.length);
   if(ref.join("/")!==candidate.join("/")&&ref[0]!=="HEAD")return null;
   repoPath=tail.slice(ref[0]==="HEAD"?1:candidate.length).join("/");
