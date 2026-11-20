@@ -128,8 +128,8 @@ try{
     "Clock must be visible in the lower bar: "+JSON.stringify(compactTopbar));
   assert.ok(Math.abs(compactTopbar.clockLeft-compactTopbar.sidebarLeft)<1,
     "Clock must align with the sidebar's left boundary: "+JSON.stringify(compactTopbar));
-  assert.ok(Math.abs(compactTopbar.breadcrumbLeft-compactTopbar.clockLeft-168)<2,
-    "Breadcrumb must shift left with the clock without losing its 168px separation: "+
+  assert.ok(Math.abs(compactTopbar.breadcrumbLeft-compactTopbar.clockLeft-144)<2,
+    "Normal clock must retain its 144px clock-to-breadcrumb offset: "+
       JSON.stringify(compactTopbar));
   assert.ok(compactTopbar.secondsFont<compactTopbar.timeFont,
     "Seconds must be smaller than hours and minutes");
@@ -206,6 +206,29 @@ try{
     "Screen heading bottom must meet sidebar section label top: "+JSON.stringify(projectsBars));
   assert.ok(Math.abs(projectsBars.contentY-projectsBars.expectedContentY)<2,
     "Rest of screen content must stay in its original position: "+JSON.stringify(projectsBars));
+  // Doof is a mode, not a different sidebar anchor. The breadcrumb should
+  // coincide with the page-title x when the real sidebar is the 74px rail.
+  // Trigger the same controller input event as the UI, then restore the clock.
+  const doofPlacement=await evaluate(String.raw`(()=>{
+    const input=document.getElementById("clock-show-doof");
+    input.checked=true;input.dispatchEvent(new Event("change",{bubbles:true}));
+    return {breadcrumbLeft:document.getElementById("breadcrumb").getBoundingClientRect().left,
+      titleLeft:document.querySelector('.view[data-view="projects"] .page-heading > h1').getBoundingClientRect().left,
+      doofVisible:!document.getElementById("global-clock-doof").hidden,
+      timeHidden:document.getElementById("global-clock-time").hidden,
+      zoneHidden:document.getElementById("clock-zone-trigger").hidden,
+      sidebarWidth:document.querySelector(".sidebar").getBoundingClientRect().width};
+  })()`);
+  assert.ok(doofPlacement.doofVisible&&doofPlacement.timeHidden&&doofPlacement.zoneHidden,
+    "Doof must replace the clock and hide timezone: "+JSON.stringify(doofPlacement));
+  assert.ok(Math.abs(doofPlacement.sidebarWidth-74)<1.5,
+    "Doof comparison requires a compact 74px sidebar: "+JSON.stringify(doofPlacement));
+  assert.ok(Math.abs(doofPlacement.breadcrumbLeft-doofPlacement.titleLeft)<1.5,
+    "Doof breadcrumb must align to collapsed page heading: "+JSON.stringify(doofPlacement));
+  await evaluate('(()=>{const input=document.getElementById("clock-show-doof");input.checked=false;input.dispatchEvent(new Event("change",{bubbles:true}));return true;})()');
+  const returnedClock=await evaluate('({clockVisible:!document.getElementById("global-clock-time").hidden,breadcrumbLeft:document.getElementById("breadcrumb").getBoundingClientRect().left})');
+  assert.ok(returnedClock.clockVisible&&Math.abs(returnedClock.breadcrumbLeft-compactTopbar.breadcrumbLeft)<1.5,
+    "Leaving doof must restore standard clock spacing: "+JSON.stringify(returnedClock));
   await evaluate('location.hash="#dashboard";window.scrollTo(0,0);true');
   await until('document.querySelector(\'.view[data-view="dashboard"]\')?.hidden===false && getComputedStyle(document.getElementById("global-menu")).display!=="none"',
     "Dashboard restores upper navigation");
