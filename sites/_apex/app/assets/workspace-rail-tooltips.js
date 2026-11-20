@@ -99,6 +99,18 @@ export function untransformedTooltipRect(tip){
   return {left,top,width,height,right:left+width,bottom:top+height};
 }
 
+// Position the FULL (unscaled) tooltip box inside the visible window. Keep a
+// small margin on all four sides; return a separate placement rather than
+// mutating the native layout rect so the same shift works during fade-out.
+export function fitTooltipToViewport(rect,width,height,inset=8){
+  const vw=Math.max(0,Number(width)||0),vh=Math.max(0,Number(height)||0);
+  const edgeX=Math.min(inset,vw/2),edgeY=Math.min(inset,vh/2);
+  const left=Math.max(edgeX,Math.min(rect.left,vw-edgeX-rect.width));
+  const top=Math.max(edgeY,Math.min(rect.top,vh-edgeY-rect.height));
+  return {left,top,width:rect.width,height:rect.height,
+    right:left+rect.width,bottom:top+rect.height};
+}
+
 // Raise content tooltips above the glass rail only where the rectangles overlap.
 // Popover's browser top layer preserves the tooltip's DOM parent and accessibility
 // label while escaping the animated view's stacking context and overflow clips.
@@ -123,18 +135,36 @@ export function initOverlappingContentTooltips(doc=document,win=window,sidebar){
     const tip=trigger?.parentElement?.querySelector?.(':scope > [role="tooltip"]');
     return trigger&&tip?{trigger,tip}:null;
   };
+  const position=tip=>{
+    // Measure before lifting to top layer. offsetLeft/Top are unaffected by
+    // CSS translate or the entry/exit scale animation.
+    const vw=Number(win.innerWidth)||doc.documentElement?.clientWidth||1280;
+    const vh=Number(win.innerHeight)||doc.documentElement?.clientHeight||800;
+    tip.classList.add("workspace-tooltip-viewport-bound");
+    tip.classList.remove("workspace-tooltip-wrapped");
+    let box=untransformedTooltipRect(tip);
+    // A long no-wrap label can overflow its own max-width. Wrap only then.
+    if(box.width>vw-16||tip.scrollWidth>tip.clientWidth+1){
+      tip.classList.add("workspace-tooltip-wrapped");
+      box=untransformedTooltipRect(tip);
+    }
+    const fitted=fitTooltipToViewport(box,vw,vh);
+    tip.style.setProperty("--workspace-tooltip-shift-x",(fitted.left-box.left)+"px");
+    tip.style.setProperty("--workspace-tooltip-shift-y",(fitted.top-box.top)+"px");
+    return {box,fitted};
+  };
   const promote=()=>{
     if(!active)return;
     const {trigger,tip}=active;
     if(!trigger.isConnected||!tip.isConnected||typeof tip.showPopover!=="function")return;
-    const box=untransformedTooltipRect(tip),glass=sidebar.getBoundingClientRect();
-    if(!box.width||!box.height||box.right<=glass.left||box.left>=glass.right||
-       box.bottom<=glass.top||box.top>=glass.bottom)return;
-    // Preserve the native CSS anchor, including right-aligned tooltips such as
-    // Edit README. Clamping to 8px caused a visible horizontal snap on fade-out.
-    tip.style.setProperty("--workspace-tooltip-left",box.left+"px");
-    tip.style.setProperty("--workspace-tooltip-top",box.top+"px");
-    tip.style.setProperty("--workspace-tooltip-width",box.width+"px");
+    const {box,fitted}=position(tip),glass=sidebar.getBoundingClientRect();
+    if(!box.width||!box.height||fitted.right<=glass.left||fitted.left>=glass.right||
+       fitted.bottom<=glass.top||fitted.top>=glass.bottom)return;
+    // Use exactly the position already applied to the native tooltip; when
+    // the popover closes, the fade-out stays put instead of snapping.
+    tip.style.setProperty("--workspace-tooltip-left",fitted.left+"px");
+    tip.style.setProperty("--workspace-tooltip-top",fitted.top+"px");
+    tip.style.setProperty("--workspace-tooltip-width",fitted.width+"px");
     tip.classList.add("workspace-tooltip-overlap");
     tip.setAttribute("popover","manual");
     try{tip.showPopover();}catch{hide();}
@@ -148,6 +178,7 @@ export function initOverlappingContentTooltips(doc=document,win=window,sidebar){
     }
     hide();
     active=next;
+    position(next.tip); // Set a stable viewport-safe anchor before disclosure.
     if(keyboard)promote();
     else delay=win.setTimeout(()=>{delay=null;promote();},160);
   };
@@ -162,6 +193,9 @@ export function initOverlappingContentTooltips(doc=document,win=window,sidebar){
   doc.addEventListener("focusin",event=>enter(event,true),true);
   doc.addEventListener("focusout",exit,true);
   win.addEventListener?.("scroll",hide,true);
-  win.addEventListener?.("resize",hide,{passive:true});
+  win.addEventListener?.("resize",()=>{
+    if(active)position(active.tip);
+    hide();
+  },{passive:true});
   return {hide};
 }

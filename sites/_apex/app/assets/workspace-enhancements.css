@@ -873,3 +873,26 @@ body:has(> #workspace-shell) .content > .view:not([data-view="dashboard"]) > .pa
   pointer-events:none!important;transition:none!important;
   z-index:2147483647!important;
 }
+
+/* Viewport correction uses independent translate, leaving the existing
+   transform/scale animation and native anchor untouched. Keep this class
+   through fade-out so the tooltip never jumps on pointer departure. */
+#workspace-shell .content [role="tooltip"].workspace-tooltip-viewport-bound{
+  max-width:calc(100vw - 16px)!important;
+  translate:var(--workspace-tooltip-shift-x,0px) var(--workspace-tooltip-shift-y,0px);
+}
+#workspace-shell .content [role="tooltip"].workspace-tooltip-viewport-bound.workspace-tooltip-wrapped{
+  white-space:normal!important;overflow-wrap:anywhere;
+  flex-wrap:wrap;
+}
+#workspace-shell .content [role="tooltip"].workspace-tooltip-wrapped *{
+  white-space:normal!important;overflow-wrap:anywhere;
+}
+#workspace-shell [role="tooltip"].workspace-tooltip-overlap:popover-open{
+  translate:none!important;
+}
+.workspace-rail-tooltip{
+  max-width:calc(100vw - 16px);
+  white-space:normal;
+  overflow-wrap:anywhere;
+}

@@ -55,7 +55,7 @@ test("Collapsed screen tooltips reproduce Collections typography and movement, n
   assert.ok(tooltips.includes('link.addEventListener("'+event+'"'));
 });
 
-import {untransformedTooltipRect} from "../sites/_apex/app/assets/workspace-rail-tooltips.js";
+import {untransformedTooltipRect,fitTooltipToViewport} from "../sites/_apex/app/assets/workspace-rail-tooltips.js";
 
 test("Elevated Edit README tooltip retains its settled right-anchored position through fade-out",()=>{
   const wrapper={clientLeft:0,clientTop:0,scrollLeft:0,scrollTop:0,
@@ -72,9 +72,12 @@ test("Elevated Edit README tooltip retains its settled right-anchored position t
   assert.notEqual(rect.left,editTip.getBoundingClientRect().left,
     "Do not freeze the transient scaled hover geometry");
   assert.ok(tooltips.includes('const box=untransformedTooltipRect(tip)'));
-  assert.ok(tooltips.includes('setProperty("--workspace-tooltip-left",box.left+"px")'));
-  assert.ok(!tooltips.includes('Math.max(8,Math.min(box.left'),
-    "Viewport clamping must not shift the overlay away from the CSS-anchored fade-out");
+  assert.ok(tooltips.includes('setProperty("--workspace-tooltip-left",fitted.left+"px")'));
+  assert.ok(tooltips.includes('setProperty("--workspace-tooltip-shift-x"'));
+  assert.ok(css.includes('translate:var(--workspace-tooltip-shift-x,0px) var(--workspace-tooltip-shift-y,0px)'),
+    "Native hover and fade-out must share the viewport-safe offset");
+  assert.ok(css.includes('.workspace-tooltip-overlap:popover-open{\n  translate:none!important;'),
+    "The top-layer popover already uses the corrected fixed coordinates");
 });
 
 test("Tooltip layout box honors positioned ancestor border and scroll offsets",()=>{
@@ -83,4 +86,27 @@ test("Tooltip layout box honors positioned ancestor border and scroll offsets",(
   assert.deepEqual(untransformedTooltipRect({offsetParent:parent,offsetLeft:9,offsetTop:40,
     offsetWidth:130,offsetHeight:25,getBoundingClientRect:()=>({})}),
     {left:206,top:116,width:130,height:25,right:336,bottom:141});
+});
+
+test("Viewport placement clamps both edges and both vertical boundaries with an 8px inset",()=>{
+  const rect=(left,top,width=170,height=32)=>({left,top,width,height,right:left+width,bottom:top+height});
+  assert.deepEqual(fitTooltipToViewport(rect(-41,110,173,31),300,200),
+    rect(8,110,173,31),"Edit README tooltip shifts in from the left without clipping");
+  assert.deepEqual(fitTooltipToViewport(rect(310,110),400,200),
+    rect(222,110),"right-aligned tooltip keeps an 8px margin");
+  assert.deepEqual(fitTooltipToViewport(rect(45,-15),400,250),
+    rect(45,8),"top-clipped tooltip shifts below the frame");
+  assert.deepEqual(fitTooltipToViewport(rect(45,239),400,250),
+    rect(45,210),"bottom-clipped tooltip moves up");
+  assert.deepEqual(fitTooltipToViewport(rect(80,100),400,250),
+    rect(80,100),"tooltips already inside the frame never shift");
+  assert.deepEqual(fitTooltipToViewport(rect(-10,-10,30,15),60,40),
+    rect(8,8,30,15),"small windows retain their margins");
+  assert.ok(css.includes('max-width:calc(100vw - 16px)!important'));
+  assert.ok(css.includes('.workspace-tooltip-viewport-bound.workspace-tooltip-wrapped'));
+  assert.ok(tooltips.includes('tip.scrollWidth>tip.clientWidth+1'),
+    "Labels wider than the tooltip box must wrap before placement");
+  assert.ok(tooltips.includes('position(next.tip)'),"Placement happens before the hover animation");
+  assert.ok(!tooltips.includes('tip.style.removeProperty("--workspace-tooltip-shift-x")'),
+    "Viewport correction must survive the exit fade, not snap back");
 });
