@@ -792,17 +792,19 @@ try{
     })()`);
     assert.ok(Math.abs(afterScroll.top-openDrawer.top)<1.5,
       "drawer moved with page scroll: "+JSON.stringify({openDrawer,afterScroll}));
-    // After scrolling, hit-test and click the button at its CURRENT viewport
-    // position rather than reusing coordinates captured before scrolling.
+    // The lower-bar opener deliberately fades/slides away once the drawer
+    // opens. Close through the visible sidebar-head toggle, as users do.
     const closeButton=await evaluate(String.raw`(()=>{
-      const button=document.getElementById("mobile-nav-toggle");
+      const opener=document.getElementById("mobile-nav-toggle");
+      const button=document.getElementById("sidebar-toggle");
       const rect=button.getBoundingClientRect();
       const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
       const hit=document.elementFromPoint(x,y);
-      return {x,y,hit:!!hit?.closest?.("#mobile-nav-toggle"),
+      return {x,y,hit:!!hit?.closest?.("#sidebar-toggle"),
+        openerLeft:opener.getBoundingClientRect().left,
         obstructingElement:hit?.id||hit?.className||hit?.tagName||"none"};
     })()`);
-    assert.ok(closeButton.hit,"Mobile drawer close button must remain clickable after scrolling: "+JSON.stringify({mobileWidth,closeButton}));
+    assert.ok(closeButton.hit,"Mobile sidebar close toggle must stay hittable after scroll: "+JSON.stringify({mobileWidth,closeButton}));
     await down(closeButton.x,closeButton.y);await up(closeButton.x,closeButton.y);
     await until('!document.querySelector("#workspace-shell").classList.contains("is-mobile-open")',
       "drawer closes at "+mobileWidth);
