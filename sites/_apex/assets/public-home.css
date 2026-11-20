@@ -189,29 +189,16 @@ body.public-home .dashboard-home .cta6-mosaic{
   -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
 }
-/* The centered oval is a translucent FILL beneath the text, not an overlay
-   on the whole scene. Centered at the title's existing half-tile offset,
-   it peaks at 60% and softly fades out toward its elliptical perimeter. */
-body.public-home .dashboard-home .cta6-center::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:calc(50% - (950px / 11) / 2);
-  width:230px;
-  height:110px;
-  transform:translate(-50%,-50%);
-  z-index:0;
-  border-radius:50%;
-  pointer-events:none;
-  background:radial-gradient(ellipse at center,
-    rgba(5,8,13,.6) 0%,
-    rgba(5,8,13,.6) 32%,
-    rgba(5,8,13,.32) 70%,
-    rgba(5,8,13,0) 100%);
-}
+/* The filled oval hugs the actual glyphs, rather than a fixed-size halo.
+   Fifteen pixels of padding on each side is measured from the logo box.
+   Only the background is 60%-opaque: the white wordmark stays fully opaque.
+   The existing half-square vertical offset and 45px font remain unchanged. */
 body.public-home .dashboard-home .cta6-center h1{
   position:relative;
   z-index:1;
+  padding:15px;
+  border-radius:999px;
+  background:rgba(5,8,13,.60);
 }
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */

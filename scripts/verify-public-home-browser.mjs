@@ -102,8 +102,10 @@ try{
  'edgeMask:getComputedStyle(grid).maskImage,',
  'edgeMaskSize:getComputedStyle(grid).maskSize,',
  'edgeMaskPosition:getComputedStyle(grid).maskPosition,',
- 'logoFade:getComputedStyle(document.querySelector(".cta6-center"),"::before").backgroundImage,',
- 'logoOval:box(document.querySelector(".cta6-center")),',
+ 'logoFill:getComputedStyle(logo).backgroundColor,',
+ 'logoRadius:getComputedStyle(logo).borderRadius,',
+ 'logoPaddingX:getComputedStyle(logo).paddingLeft,',
+ 'logoPaddingY:getComputedStyle(logo).paddingTop,',
  'github:box(document.querySelector(".public-github")),',
  'githubHref:document.querySelector(".public-github").href,',
  'githubTarget:document.querySelector(".public-github").target,',
@@ -142,9 +144,11 @@ try{
   assert.equal(g.edgeMaskSize,width+"px 100%",
     "Computed mask width must equal viewport width, not 1080px lattice width");
   assert.equal(g.edgeMaskPosition,"50% 0%","Mask centers within the oversized lattice");
-  assert.match(g.logoFade,/radial-gradient/,"Filled oval stays behind Doof");
-  assert.match(g.logoFade,/rgba\(5, 8, 13, 0\.6\)/,
-    "Doof oval must peak at 60% opacity");
+  assert.equal(g.logoFill,"rgba(5, 8, 13, 0.6)",
+    "Doof oval has a uniform 60%-opaque fill");
+  assert.equal(g.logoRadius,"999px","The fill is a fully rounded oval");
+  assert.equal(g.logoPaddingX,"15px","The oval hugs Doof with 15px side padding");
+  assert.equal(g.logoPaddingY,"15px","The oval hugs Doof with 15px vertical padding");
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
   assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));

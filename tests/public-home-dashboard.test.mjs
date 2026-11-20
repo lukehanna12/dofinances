@@ -67,11 +67,10 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
   assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity/);
-  assert.match(style,/\.cta6-center::before\{\s*content:"";\s*position:absolute;/);
-  assert.match(style,/width:230px;\s*height:110px;/);
-  assert.match(style,/background:radial-gradient\(ellipse at center,\s*rgba\(5,8,13,\.6\) 0%/);
-  assert.match(style,/\.cta6-center h1\{\s*position:relative;\s*z-index:1;/);
-  assert.doesNotMatch(style,/rgba\(5,8,13,\.7[0-9]/,"Doof oval must never exceed 60% opacity");
+  assert.doesNotMatch(style,/\.cta6-center::before/,"Do not use a loose glow around Doof");
+  assert.match(style,/\.cta6-center h1\{\s*position:relative;\s*z-index:1;\s*padding:15px;\s*border-radius:999px;\s*background:rgba\(5,8,13,\.60\);/);
+  assert.doesNotMatch(style,/radial-gradient\(ellipse at center/,
+    "The oval must be uniformly filled, not a transparent-edged halo");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
