@@ -113,10 +113,10 @@
  display:grid;place-items:center;flex:none;width:20px;height:20px;
  border-radius:50%;font-size:10px;font-weight:700;background:#fff;color:#171717
 }
-/* Permissions-inspired status badges, scaled with the smaller cards. */
+/* Capsule badges with generous side padding so even long status labels breathe. */
 .view[data-view="projects"] .project-showcase-badge{
- font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;
- border-radius:4px;white-space:nowrap;
+ font-size:9px;font-weight:500;line-height:12px;padding:2px 9px;
+ border-radius:999px;white-space:nowrap;
  background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45, 201, 100)
 }
 /* Same 10%-opacity color family as the blue Coming Soon badge,

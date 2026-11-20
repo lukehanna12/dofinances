@@ -24,7 +24,7 @@ test("Local, External, and Credentials share rounded clickable provider rows wit
  assert.ok(pv.includes(".pv-provider-list{max-height:270px}"));
  assert.ok(!pv.includes("border-bottom:1px solid var(--pv-border);border-radius:0;transition:background .16s ease}"));
 });
-test("Permissions registry uses LOCATION and search locations with Projects-identical Enabled badges",()=>{
+test("Permissions registry retains its badges while Projects uses spacious capsules",()=>{
  assert.ok(app.includes('<span>Location</span>'));
  assert.ok(app.includes('placeholder="Search locations"'));
  assert.ok(!app.includes('<span>Path / alias</span>'));
@@ -33,9 +33,12 @@ test("Permissions registry uses LOCATION and search locations with Projects-iden
  assert.ok(pmjs.includes('(enabled?"Enabled":"Off")'));
  const projects=file("sites/_apex/app/assets/project-showcase.css");
  for(const code of ["border-radius:4px","font-size:9px;font-weight:500;line-height:12px;padding:1px 5px"]){
-  assert.ok(projects.includes(code),"Projects badge geometry "+code);
-  assert.ok(pm.includes(code),"Permissions Enabled badge geometry "+code);
+  assert.ok(pm.includes(code),"Permissions Enabled badge geometry remains unchanged: "+code);
  }
+ assert.ok(projects.includes("font-size:9px;font-weight:500;line-height:12px;padding:2px 9px"),
+  "Projects badge uses comfortable capsule padding");
+ assert.ok(projects.includes("border-radius:999px;white-space:nowrap"),
+  "Projects badge uses a fully rounded capsule without wrapping the label");
  // Permissions keeps its original color; Projects receives the new translucent
  // hue families explicitly requested for Active/In Progress/Coming Soon.
  assert.ok(pm.includes("background:#173827;color:#86efac"));

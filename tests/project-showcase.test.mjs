@@ -75,7 +75,8 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(css,/transform:scale\(1\)/);
  assert.match(css,/background:rgba\(0,0,0,\.6\)/);
  assert.match(css,/border-radius:10px/);
- assert.match(css,/font-size:9px;font-weight:500;line-height:12px;padding:1px 5px/);
+ assert.match(css,/font-size:9px;font-weight:500;line-height:12px;padding:2px 9px/);
+ assert.match(css,/border-radius:999px;white-space:nowrap/);
  assert.match(permissions,/\.pm-rule-row\{min-height:56px;border-bottom:1px solid var\(--pm-line\)/);
  assert.match(css,/background:color\(srgb 0\.172549 0\.403922 0\.772549 \/ 0\.1\)/);
  assert.match(css,/color:rgb\(44, 103, 197\)/);
