@@ -124,6 +124,12 @@ test("Home squares and centered Doof hold the maximum-width scale when the viewp
   const declaredWidths=latticeRules.map(rule=>rule.match(/\bwidth:\s*([^;]+);/)?.[1]).filter(Boolean);
   assert.deepEqual(declaredWidths,["1080px","1080px"],
     "The mosaic must remain 1080px wide at desktop and mobile breakpoints");
+  assert.match(latticeRules[1],/position:absolute;/,
+    "Keep the mosaic anchored to the fixed viewport");
+  assert.match(latticeRules[1],/left:50%;\\s*top:50%;\\s*transform:translate\\(-50%,-50%\\);/,
+    "Center the oversized mosaic independently of flex auto margins");
+  assert.match(latticeRules[1],/margin:0;/,
+    "Auto margins must not interfere with oversize centering");
   const gutterRules=[...css.matchAll(/--cta6-grid-gap:\s*([^;]+);/g)].map(([,gap])=>gap);
   assert.deepEqual(gutterRules,["13px"],"Keep full-size gutter spacing at all widths");
   assert.match(css,/\.dashboard-home \.cta6-tile\{[^}]*border-radius:17px;/,

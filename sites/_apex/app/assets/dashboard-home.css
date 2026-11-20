@@ -225,10 +225,15 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .con
   transform:none!important;
 }
 .dashboard-home .cta6{
+  /* Keep the oversized mosaic centered: auto margins on overflowing flex
+     items resolve to zero and otherwise leave the left edge at 0. */
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
   width:1080px;
   max-width:none;
-  flex:none;
-  margin-inline:auto;
+  margin:0;
 }
 /* The action anchors to Home's fixed viewport, independent of moving glass. */
 .dashboard-home .cta6-bottom-action{
