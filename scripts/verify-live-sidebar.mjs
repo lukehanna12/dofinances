@@ -808,6 +808,8 @@ try{
     await down(closeButton.x,closeButton.y);await up(closeButton.x,closeButton.y);
     await until('!document.querySelector("#workspace-shell").classList.contains("is-mobile-open")',
       "drawer closes at "+mobileWidth);
+    await until('!document.querySelector("#workspace-shell").classList.contains("is-drawer-toggling")',
+      "drawer closing animation settles at "+mobileWidth);
     await evaluate('window.scrollTo(0,0);true');
   }
   await metrics(900,820);
