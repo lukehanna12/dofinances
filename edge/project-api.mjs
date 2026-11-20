@@ -2,6 +2,7 @@
 // GitHub access is intentionally separate from identity-only OAuth and Colosseum.
 import {GITHUB_REPOSITORY,githubIdentity,githubRepository,githubReadme,githubSaveReadme,githubMarkdown,
  sealGithubToken,openGithubToken,githubRequest,githubError} from "./project-readme.mjs";
+import {githubFileTree,githubDocument,validRepositoryPath} from "./project-files.mjs";
 const NO_STORE={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin"};
 const json=(body,status=200)=>Response.json(body,{status,headers:NO_STORE});
 const secret=env=>env.MFA_ENCRYPTION_KEY||env.GITHUB_PROJECT_TOKEN_ENCRYPTION_KEY;
@@ -113,7 +114,7 @@ export async function projectApi(request,env,pathname,user,stub){
    const html=await githubMarkdown(body.markdown,project?.repository||null,token);
    return json({html});
   }
-  const match=/^\/api\/projects\/([a-z0-9-]{1,48})\/(readme|repository|presentation|asset)$/.exec(pathname);
+  const match=/^\/api\/projects\/([a-z0-9-]{1,48})\/(readme|repository|presentation|asset|files|file)$/.exec(pathname);
   if(!match||!SLUG.test(match[1]))return json({error:"Unknown project endpoint."},404);
   const slug=match[1],action=match[2];
   const project=await findProject(stub,userId,slug);
@@ -132,9 +133,29 @@ export async function projectApi(request,env,pathname,user,stub){
    const repo=await githubRepository(project.repository,token);
    if(!repo.ok)return json({error:repo.error},repo.status);
    if(!repo.canEdit)return json({error:"Validated GitHub credentials lack permission to push to this repository. Check Contents: Read and write in Settings.",code:"github_write_denied"},403);
+   if(!validRepositoryPath(body.path||""))return json({error:"Invalid document path."},400);
+   if(typeof body.sha!=="string"||!/^[a-f0-9]{40}$/.test(body.sha))
+    return json({error:"Reload this document before saving to obtain its current SHA."},409);
    const saved=await githubSaveReadme(project.repository,token,body);
    return saved.ok?json({saved:true,sha:saved.sha,path:saved.path,commit:saved.commit}):
     json({error:saved.error,code:"github_save_failed"},saved.status);
+  }
+  if(action==="files"||action==="file"){
+   if(method!=="GET")return json({error:"Method not allowed."},405);
+   if(!project.repository)return json({error:"This project has no linked GitHub repository."},404);
+   let token=await storedToken(stub,env,userId);
+   let repo=await githubRepository(project.repository,token);
+   if(!repo.ok&&token){
+    const publicRepo=await githubRepository(project.repository,null);
+    if(publicRepo.ok){token=null;repo=publicRepo;}
+   }
+   if(!repo.ok)return json({error:repo.error},repo.status);
+   const result=action==="files"?
+    await githubFileTree(project.repository,token,repo.defaultBranch):
+    await githubDocument(project.repository,token,new URL(request.url).searchParams.get("path")||"");
+   if(!result.ok)return json({error:result.error},result.status);
+   return json({...result,canEdit:repo.canEdit,defaultBranch:repo.defaultBranch,
+    repository:project.repository,private:repo.private});
   }
   if(action==="repository"){
    if(method!=="PUT")return json({error:"Method not allowed."},405);

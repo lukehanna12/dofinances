@@ -3,6 +3,7 @@
 const utf8=new TextEncoder(),decoder=new TextDecoder();
 export const GITHUB_REPOSITORY=/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/;
 const VALID_README_PATH=/^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[A-Za-z0-9._/-]{1,230}$/;
+import {validRepositoryPath} from "./project-files.mjs";
 const headers=token=>({
  "Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",
  "User-Agent":"DoFinances-Project-README/1.0",
@@ -32,8 +33,11 @@ export async function openGithubToken(envelope,secret,userId){
  return decoder.decode(plain);
 }
 export async function githubRequest(path,{token,method="GET",body,accept}={},fetcher=fetch){
- if(!/^\/(?:repos\/[A-Za-z0-9_.%-]+\/[A-Za-z0-9_.%-]+(?:\/[A-Za-z0-9._%/-]+)?|user|markdown)$/.test(path)||
-   path.includes("..")||path.includes("//"))throw Error("Invalid GitHub API path.");
+ const query=path.endsWith("?recursive=1")?"?recursive=1":"";
+ const clean=query?path.slice(0,-query.length):path;
+ if(!/^\/(?:repos\/[A-Za-z0-9_.%-]+\/[A-Za-z0-9_.%-]+(?:\/[A-Za-z0-9._%/-]+)?|user|markdown)$/.test(clean)||
+   clean.includes("..")||clean.includes("//")||(path.includes("?")&&!query)||path.includes("#"))
+   throw Error("Invalid GitHub API path.");
  const response=await fetcher("https://api.github.com"+path,{
   method,redirect:"manual",headers:{"Content-Type":"application/json",...headers(token),...(accept?{Accept:accept}:{})},
   ...(body!==undefined?{body:JSON.stringify(body)}:{})
@@ -82,12 +86,12 @@ export async function githubReadme(repository,token,fetcher=fetch){
  return {ok:true,sha:data.sha,path:data.path,markdown};
 }
 export async function githubSaveReadme(repository,token,{path="README.md",markdown,sha},fetcher=fetch){
- if(!GITHUB_REPOSITORY.test(repository||"")||!VALID_README_PATH.test(path)||!/^README(?:\.[a-zA-Z0-9_-]{1,15})?$/i.test(path.split("/").pop()))throw Error("Invalid README path.");
+ if(!GITHUB_REPOSITORY.test(repository||"")||!validRepositoryPath(path))throw Error("Invalid document path.");
  if(typeof markdown!=="string"||markdown.length>180000)throw Error("README exceeds 180 KB.");
  if(sha!==null&&sha!==undefined&&(typeof sha!=="string"||!/^[a-f0-9]{40}$/.test(sha)))throw Error("Invalid README revision.");
  const bytes=utf8.encode(markdown);
  const response=await githubRequest("/repos/"+repository+"/contents/"+encodeSegments(path),
-  {token,method:"PUT",body:{message:"docs: update README from DoFinances",content:base64url(bytes).replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(bytes.length/3)*4,"="),...(sha?{sha}:{})}},fetcher);
+  {token,method:"PUT",body:{message:"docs: update "+path+" from DoFinances",content:base64url(bytes).replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(bytes.length/3)*4,"="),...(sha?{sha}:{})}},fetcher);
  const data=await safeJson(response);
  if(!response.ok)return {ok:false,status:response.status,error:githubError(response,data,true)};
  return {ok:true,sha:data.content?.sha||null,path:data.content?.path||path,commit:data.commit?.sha||null};
