@@ -145,6 +145,16 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 /* More files occupies the exact 50px action slot used by Confirm, never a
    third toolbar position. Disabled in clean Edit mode; Confirm wins on dirty. */
 .rm-files-control{z-index:7}
+.rm-files-control > .rm-icon-button:not([hidden]){
+ flex:0 0 42px;min-width:42px;max-width:42px;
+}
+/* Explicitly keep both controls in the same centered 42px slot; hiding one
+   may not be allowed to collapse the remaining button to its 23px SVG. */
+@media(max-width:639px){
+ .rm-files-control > .rm-icon-button:not([hidden]){
+  flex-basis:38px;min-width:38px;max-width:38px;
+ }
+}
 .rm-more-files{color:#edf2f9}
 .rm-more-files:disabled{cursor:default;opacity:.35}
 .rm-more-files:disabled:hover{background:transparent}
