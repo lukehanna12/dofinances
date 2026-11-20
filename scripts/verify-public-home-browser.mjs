@@ -96,7 +96,7 @@ try{
  'nav:nav.map(e=>e.textContent.trim()),',
  'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
  'hamburgerDisplay:getComputedStyle(document.getElementById("public-menu-toggle")).display,',
- 'search:box(document.querySelector(".global-menu-actions>button[aria-label="Search"]")),',
+ 'search:box(document.querySelector(".global-menu-actions>button[aria-label=Search]")),',
  'hamburger:box(document.getElementById("public-menu-toggle")),',
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
  'edgeMask:getComputedStyle(grid).maskImage,',
@@ -110,6 +110,8 @@ try{
  'githubRel:document.querySelector(".public-github").rel,',
  'firstLink:box(nav[0]),scrollWidth:document.documentElement.scrollWidth};})()'
  ].join("");
+ // Fail early if a fixture selector breaks the generated browser expression.
+ new Function("return "+expression);
  const near=(actual,expected,label,width)=>assert.ok(Math.abs(actual-expected)<.8,
   label+" at "+width+"px: "+actual+" vs "+expected);
  for(const [width,height] of [[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[500,670],[390,610],[320,560]]){
