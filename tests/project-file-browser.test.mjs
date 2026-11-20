@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {emphasizedFile,markdownFile,resolveRepoLink,repositoryTree} from "../sites/_apex/app/assets/project-file-browser.js";
+import {emphasizedFile,markdownFile,resolveRepoLink,repositoryTree,repositoryDirectory} from "../sites/_apex/app/assets/project-file-browser.js";
 import {validRepositoryPath,githubFileTree,githubDocument} from "../edge/project-files.mjs";
 import {githubSaveReadme} from "../edge/project-readme.mjs";
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
@@ -138,4 +138,24 @@ test("Project-page entry resets to README; other project screens retain their la
  assert.ok(ui.includes('markdownFile(state.source?.path||"README.md")'),
    "Repository-less README editing must retain the rich Markdown surface");
  assert.ok(read("sites/_apex/app/assets/project-file-browser.js").includes('return {path:parts.join("/"),fragment}'));
+});
+
+test("Document location shows only the containing directory with contiguous repo and differentiated typography",()=>{
+ assert.equal(repositoryDirectory("mcp/all-roads/google-oidc.mjs"),"mcp/all-roads");
+ assert.equal(repositoryDirectory("README.md"),"");
+ assert.equal(repositoryDirectory("docs/guide.mdx"),"docs");
+ assert.equal(repositoryDirectory("one/two/three/config.json"),"one/two/three");
+ assert.equal(repositoryDirectory(""),"");
+ assert.equal(repositoryDirectory(null),"");
+ // paintDocumentHeader runs when a README loads and whenever another file
+ // opens or an edited document is saved.
+ assert.ok(ui.includes('const directory=repositoryDirectory(path)'));
+ assert.ok(ui.includes('name.textContent=repository'));
+ assert.ok(ui.includes('folder.textContent="/"+directory'));
+ assert.ok(ui.includes('location.replaceChildren(...children)'),
+  "No whitespace or filename is inserted between repository and directory");
+ assert.ok(ui.includes('location.textContent="Local README · No linked GitHub repository"'));
+ assert.ok(ui.includes('paintDocumentHeader();paintControls();'));
+ assert.ok(css.includes('.rm-repository-label .rm-repository-name{color:#697889;font-weight:600}'));
+ assert.ok(css.includes('.rm-repository-label .rm-repository-directory{color:inherit;font-weight:400}'));
 });

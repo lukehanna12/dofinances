@@ -2,6 +2,13 @@
 // for tests; all labels are textContent, never interpolated HTML.
 export const emphasizedFile=path=>/\.(?:md|mdx|json|ya?ml|txt)$/i.test(path||"");
 export const markdownFile=path=>/\.(?:md|mdx)$/i.test(path||"");
+// The Docs heading already contains the file name. Its location contains only
+// the repository and the enclosing directory (empty for root-level files).
+export const repositoryDirectory=path=>{
+ if(typeof path!=="string")return "";
+ const segments=path.split("/").filter(Boolean);
+ return segments.length>1?segments.slice(0,-1).join("/"):"";
+};
 export function resolveRepoLink(value,currentPath,repository,branch){
  if(typeof value!=="string"||!value.trim())return null;
  let href=value.trim(),repoPath=null;

@@ -5,7 +5,7 @@
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
 import {renderProjectShowcase} from "./project-showcase.js";
-import {renderRepositoryTree,resolveRepoLink,markdownFile} from "./project-file-browser.js";
+import {renderRepositoryTree,resolveRepoLink,markdownFile,repositoryDirectory} from "./project-file-browser.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
 import {installReadmeEditorInteractions} from "./readme-editor-interactions.js";
@@ -269,8 +269,19 @@ export function initProjectReadme(){
  const paintDocumentHeader=()=>{
   const data=state.source||{},path=data.path||"README.md",repository=data.project?.repository;
   $("rm-project-label").textContent=path.split("/").pop();
-  $("rm-repository-label").textContent=repository?repository+" / "+path:
-    "Local README · No linked GitHub repository";
+  const location=$("rm-repository-label");
+  if(repository){
+   const name=document.createElement("span");name.className="rm-repository-name";
+   name.textContent=repository;
+   const directory=repositoryDirectory(path);
+   const children=[name];
+   if(directory){
+    const folder=document.createElement("span");folder.className="rm-repository-directory";
+    folder.textContent="/"+directory;
+    children.push(folder);
+   }
+   location.replaceChildren(...children);
+  }else location.textContent="Local README · No linked GitHub repository";
   $("rm-visibility-badge").hidden=!(repository&&data.private);
   reading.setAttribute("aria-label",path+" document");
  };

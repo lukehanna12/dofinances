@@ -16,6 +16,10 @@ html:has(body > #workspace-shell .view.rm-view[data-view="project/readme"]:not([
 .rm-overline{font-size:19px;line-height:1.3;letter-spacing:-.02em;font-weight:600;color:#fff;margin:0}
 .rm-repository-meta{display:flex;flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:4px;margin-top:7px}
 .rm-repository-label{margin:0;font-size:12px;color:#3d444d;overflow-wrap:anywhere}
+/* Keep repository and directory contiguous: repository is subtly brighter
+   and semibold, while the enclosing folders retain the subdued text color. */
+.rm-repository-label .rm-repository-name{color:#697889;font-weight:600}
+.rm-repository-label .rm-repository-directory{color:inherit;font-weight:400}
 /* Match Projects' badge proportions; warm muted orange suits Docs blues. */
 .rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;white-space:nowrap;background:#4b3325;color:#efc398}
 /* Repo line center → control center: ~48px. Control center → README top:
