@@ -618,105 +618,216 @@ export function initWorkspaceNavigation(doc=document,win=window){
 }
 
 
-// One global clock, independent of routes and Colosseum telemetry.
-// Local preference stays on this browser; it is never sent to the server.
+// One shared clock and one 1-second timer for the authenticated app and Studio.
+// Only the two menu triggers are interactive; neither menu makes a network call.
 export function initWorkspaceClock(doc=document,win=window){
-  const clock=doc.getElementById?.("global-clock");
-  const time=doc.getElementById?.("global-clock-time");
-  const seconds=doc.getElementById?.("global-clock-seconds");
-  const suffix=doc.getElementById?.("global-clock-zone");
+  const byId=id=>doc.getElementById?.(id);
+  const clock=byId("global-clock"),time=byId("global-clock-time"),
+    seconds=byId("global-clock-seconds"),suffix=byId("global-clock-zone");
   if(!clock||!time||!seconds||!suffix)return;
   if(clock.dataset.clockReady==="true")return;
   clock.dataset.clockReady="true";
-  const select=doc.getElementById?.("clock-zone-select");
-  const customRow=doc.getElementById?.("clock-custom-row");
-  const customInput=doc.getElementById?.("clock-custom-zone");
-  const apply=doc.getElementById?.("clock-custom-apply");
-  const feedback=doc.getElementById?.("clock-settings-feedback");
-  const STORAGE_KEY="dofinances.clock.timezone.v1";
+
+  const period=byId("global-clock-period"),doof=byId("global-clock-doof");
+  const displayTrigger=byId("clock-display-trigger"),zoneTrigger=byId("clock-zone-trigger");
+  const displayMenu=byId("clock-display-menu"),zoneMenu=byId("clock-zone-menu");
+  const button24=byId("clock-format-24"),buttonStandard=byId("clock-format-standard");
+  const showSeconds=byId("clock-show-seconds"),showDoof=byId("clock-show-doof");
+  const formatRow=byId("clock-format-row"),secondsRow=byId("clock-seconds-row");
+  const settingsSelect=byId("clock-zone-select");
+  const settingsCustomRow=byId("clock-custom-row"),settingsCustom=byId("clock-custom-zone");
+  const settingsApply=byId("clock-custom-apply"),settingsFeedback=byId("clock-settings-feedback");
+  const popSelect=byId("clock-popover-zone-select");
+  const popCustomRow=byId("clock-popover-custom-row"),popCustom=byId("clock-popover-custom-zone");
+  const popApply=byId("clock-popover-custom-apply"),popFeedback=byId("clock-popover-feedback");
+
+  const ZONE_KEY="dofinances.clock.timezone.v1";
+  const DISPLAY_KEY="dofinances.clock.display.v1";
   const modes=new Set(["local","utc","central","custom"]);
-  const validZone=zone=>{
-    if(typeof zone!=="string"||!zone.trim()||zone.length>100)return false;
-    try{new Intl.DateTimeFormat("en-US",{timeZone:zone}).format(new Date());return true;}catch{return false;}
+  const validZone=value=>{
+    if(typeof value!=="string"||!value.trim()||value.length>100)return false;
+    try{new Intl.DateTimeFormat("en-US",{timeZone:value}).format(new Date());return true;}catch{return false;}
   };
   const detected=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";}catch{return "UTC";}};
   let preference={mode:"local",custom:""};
-  const load=()=>{try{
-    const saved=JSON.parse(win.localStorage?.getItem(STORAGE_KEY)||"null");
-    if(saved&&modes.has(saved.mode)){
-      if(saved.mode!=="custom"||validZone(saved.custom))
-        preference={mode:saved.mode,custom:validZone(saved.custom)?saved.custom:""};
-    }
-  }catch{}};
-  const store=()=>{try{win.localStorage?.setItem(STORAGE_KEY,JSON.stringify(preference));}catch{}};
+  let display={hour12:false,showSeconds:true,doof:false};
+  const save=(key,value)=>{try{win.localStorage?.setItem(key,JSON.stringify(value));}catch{}};
+  const loadZone=()=>{
+    try{
+      const value=JSON.parse(win.localStorage?.getItem(ZONE_KEY)||"null");
+      if(value&&modes.has(value.mode)&&(value.mode!=="custom"||validZone(value.custom)))
+        preference={mode:value.mode,custom:validZone(value.custom)?value.custom:""};
+    }catch{}
+  };
+  const loadDisplay=()=>{
+    try{
+      const value=JSON.parse(win.localStorage?.getItem(DISPLAY_KEY)||"null");
+      if(value&&typeof value.hour12==="boolean"&&typeof value.showSeconds==="boolean"&&typeof value.doof==="boolean")
+        display={hour12:value.hour12,showSeconds:value.showSeconds,doof:value.doof};
+    }catch{}
+  };
   const zone=()=>preference.mode==="utc"?"UTC":preference.mode==="central"?"America/Chicago":
     preference.mode==="custom"?preference.custom:detected();
-  // Split the already-formatted 24-hour time; retain exactly one timer and
-  // keep the public formatter's HH:MM:SS output for other consumers.
-  const renderTime=formatted=>{
-    const split=formatted.lastIndexOf(":");
-    time.textContent=formatted.slice(0,split);
-    seconds.textContent=formatted.slice(split+1);
-  };
+
   const paint=()=>{
     const now=new Date(),name=zone();
     try{
-      renderTime(formatWorkspaceTime(now,{timeZone:name,seconds:true}));
-      const tz=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"}).formatToParts(now)
-        .find(p=>p.type==="timeZoneName")?.value||name;
-      suffix.textContent=preference.mode==="utc"?"UTC":tz;
-      clock.setAttribute("aria-label",name+" · "+new Intl.DateTimeFormat("en-US",{timeZone:name,
-        weekday:"long",month:"short",day:"numeric",year:"numeric"}).format(now));
+      const parts=new Intl.DateTimeFormat(display.hour12?"en-US":"en-GB",{
+        timeZone:name,hour:"2-digit",minute:"2-digit",second:"2-digit",
+        hourCycle:display.hour12?"h12":"h23"
+      }).formatToParts(now);
+      const part=type=>parts.find(p=>p.type===type)?.value||"";
+      time.textContent=String(Number(part("hour")))+":"+part("minute");
+      seconds.textContent=part("second");
+      if(period)period.textContent=part("dayPeriod").toUpperCase();
+      const abbreviation=new Intl.DateTimeFormat("en-US",{timeZone:name,timeZoneName:"short"})
+        .formatToParts(now).find(p=>p.type==="timeZoneName")?.value||name;
+      suffix.textContent=preference.mode==="utc"?"UTC":abbreviation;
       clock.setAttribute("datetime",now.toISOString());
+      clock.setAttribute("aria-label",name+" · "+new Intl.DateTimeFormat("en-US",{
+        timeZone:name,weekday:"long",month:"short",day:"numeric",year:"numeric"
+      }).format(now));
     }catch{
-      renderTime(formatWorkspaceTime(now,{timeZone:"UTC",seconds:true}));
+      time.textContent=formatWorkspaceTime(now,{timeZone:"UTC"});
+      seconds.textContent="00";
+      if(period)period.textContent="";
       suffix.textContent="UTC";
+      clock.setAttribute("datetime",now.toISOString());
       clock.setAttribute("aria-label","UTC");
     }
+    time.hidden=display.doof;
+    seconds.hidden=display.doof||!display.showSeconds;
+    if(period)period.hidden=display.doof||!display.hour12;
+    if(doof)doof.hidden=!display.doof;
+    displayTrigger?.setAttribute("aria-label",display.doof?
+      "doof · Clock display options":"Clock display options");
+    zoneTrigger?.setAttribute("aria-label","Time zone: "+suffix.textContent+". Change time zone");
   };
-  const sync=()=>{
-    if(select)select.value=preference.mode;
-    if(customInput)customInput.value=preference.custom;
-    if(customRow)customRow.hidden=preference.mode!=="custom";
-    if(feedback)feedback.textContent="";
+  const syncDisplay=()=>{
+    button24?.setAttribute("aria-pressed",String(!display.hour12));
+    buttonStandard?.setAttribute("aria-pressed",String(display.hour12));
+    if(button24)button24.disabled=display.doof;
+    if(buttonStandard)buttonStandard.disabled=display.doof;
+    if(showSeconds){showSeconds.checked=display.showSeconds;showSeconds.disabled=display.doof;}
+    if(showDoof)showDoof.checked=display.doof;
+    formatRow?.classList.toggle("is-disabled",display.doof);
+    secondsRow?.classList.toggle("is-disabled",display.doof);
     paint();
   };
-  load();
-  sync();
-  const chooseMode=()=>{
+  const changeDisplay=change=>{
+    display={...display,...change};
+    save(DISPLAY_KEY,display);
+    syncDisplay();
+  };
+  button24?.addEventListener("click",()=>{if(!display.doof)changeDisplay({hour12:false});});
+  buttonStandard?.addEventListener("click",()=>{if(!display.doof)changeDisplay({hour12:true});});
+  showSeconds?.addEventListener("change",()=>{if(!display.doof)changeDisplay({showSeconds:showSeconds.checked});});
+  showDoof?.addEventListener("change",()=>changeDisplay({doof:showDoof.checked}));
+
+  const syncZone=()=>{
+    for(const select of [settingsSelect,popSelect])if(select)select.value=preference.mode;
+    for(const input of [settingsCustom,popCustom])if(input)input.value=preference.custom;
+    if(settingsCustomRow)settingsCustomRow.hidden=preference.mode!=="custom";
+    if(popCustomRow)popCustomRow.hidden=preference.mode!=="custom";
+    if(settingsFeedback)settingsFeedback.textContent="";
+    if(popFeedback)popFeedback.textContent="";
+    paint();
+  };
+  const selectZone=(select,row,input,feedback)=>{
     const mode=select?.value;
     if(!modes.has(mode))return;
-    if(customRow)customRow.hidden=mode!=="custom";
     if(feedback)feedback.textContent="";
     if(mode==="custom"){
-      if(customInput)customInput.value=preference.custom;
-      customInput?.focus?.();
+      if(row)row.hidden=false;
+      if(input){input.value=preference.custom;input.focus();}
       return;
     }
     preference={...preference,mode};
-    store();
-    paint();
+    save(ZONE_KEY,preference);syncZone();
     if(feedback)feedback.textContent="Top-bar clock updated.";
   };
-  select?.addEventListener?.("change",chooseMode);
-  const applyCustom=()=>{
-    const name=customInput?.value?.trim();
+  settingsSelect?.addEventListener("change",()=>selectZone(settingsSelect,settingsCustomRow,settingsCustom,settingsFeedback));
+  popSelect?.addEventListener("change",()=>selectZone(popSelect,popCustomRow,popCustom,popFeedback));
+  const applyCustom=(input,feedback)=>{
+    const name=input?.value?.trim();
     if(!validZone(name)){
-      if(feedback)feedback.textContent="Unsupported time zone. Enter a valid IANA name, such as Europe/London.";
-      customInput?.setAttribute?.("aria-invalid","true");
+      input?.setAttribute("aria-invalid","true");
+      if(feedback)feedback.textContent="Enter a valid IANA time zone, such as Europe/London.";
       return;
     }
-    customInput?.removeAttribute?.("aria-invalid");
+    input.removeAttribute("aria-invalid");
     preference={mode:"custom",custom:name};
-    store();sync();
+    save(ZONE_KEY,preference);syncZone();
     if(feedback)feedback.textContent="Top-bar clock updated to "+name+".";
   };
-  apply?.addEventListener?.("click",applyCustom);
-  customInput?.addEventListener?.("keydown",event=>{if(event.key==="Enter"){event.preventDefault();applyCustom();}});
-  customInput?.addEventListener?.("input",()=>{customInput.removeAttribute("aria-invalid");if(feedback)feedback.textContent="";});
-  win.addEventListener?.("storage",event=>{if(event.key===STORAGE_KEY){load();sync();}});
-  // Date.now is sampled each tick; no second clock, no telemetry polling.
-  paint();
+  for(const [input,button,feedback] of [
+    [settingsCustom,settingsApply,settingsFeedback],[popCustom,popApply,popFeedback]]){
+    button?.addEventListener("click",()=>applyCustom(input,feedback));
+    input?.addEventListener("keydown",event=>{
+      if(event.key==="Enter"){event.preventDefault();applyCustom(input,feedback);}
+    });
+    input?.addEventListener("input",()=>{
+      input.removeAttribute("aria-invalid");
+      if(feedback)feedback.textContent="";
+    });
+  }
+
+  // Portal the popovers outside the clipped topbar to preserve its exact layout.
+  // Both menus use the same compact workspace surface and dismiss behavior.
+  const menus={display:{trigger:displayTrigger,menu:displayMenu,focus:button24},
+    zone:{trigger:zoneTrigger,menu:zoneMenu,focus:popSelect}};
+  for(const {menu} of Object.values(menus)){
+    if(menu&&doc.body&&menu.parentNode!==doc.body)doc.body.appendChild(menu);
+  }
+  let open=null;
+  const place=()=>{
+    if(!open)return;
+    const {trigger,menu}=menus[open];
+    if(!trigger||!menu||menu.hidden)return;
+    const rect=trigger.getBoundingClientRect();
+    const viewport=win.innerWidth||doc.documentElement?.clientWidth||1024;
+    const menuWidth=menu.offsetWidth||264;
+    menu.style.left=Math.round(Math.min(Math.max(12,rect.left),Math.max(12,viewport-menuWidth-12)))+"px";
+    menu.style.top=Math.round(rect.bottom+9)+"px";
+  };
+  const close=(restoreFocus=false)=>{
+    if(!open)return;
+    const {trigger,menu}=menus[open];
+    if(menu)menu.hidden=true;
+    trigger?.setAttribute("aria-expanded","false");
+    open=null;
+    if(restoreFocus)trigger?.focus();
+  };
+  const toggle=key=>{
+    if(open===key){close();return;}
+    close();
+    const {trigger,menu,focus}=menus[key];
+    if(!trigger||!menu)return;
+    menu.hidden=false;trigger.setAttribute("aria-expanded","true");open=key;
+    place();focus?.focus();
+  };
+  displayTrigger?.addEventListener("click",()=>toggle("display"));
+  zoneTrigger?.addEventListener("click",()=>toggle("zone"));
+  doc.addEventListener?.("pointerdown",event=>{
+    if(!open)return;
+    const {trigger,menu}=menus[open];
+    if(trigger?.contains(event.target)||menu?.contains(event.target))return;
+    close();
+  });
+  doc.addEventListener?.("keydown",event=>{
+    if(event.key==="Escape"&&open){event.preventDefault();close(true);}
+  });
+  win.addEventListener?.("resize",()=>{
+    if(win.innerWidth<=760)close();else place();
+  });
+  win.addEventListener?.("scroll",place,true);
+  win.addEventListener?.("hashchange",()=>close());
+  win.addEventListener?.("storage",event=>{
+    if(event.key===ZONE_KEY){loadZone();syncZone();}
+    if(event.key===DISPLAY_KEY){loadDisplay();syncDisplay();}
+  });
+  loadZone();loadDisplay();syncZone();syncDisplay();
+  // One timer; no additional polling, animation loop, or server calls.
   if(win.setInterval){
     const timer=win.setInterval(paint,1000);
     win.addEventListener?.("pagehide",()=>win.clearInterval?.(timer),{once:true});

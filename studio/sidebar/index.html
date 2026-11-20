@@ -109,7 +109,30 @@
     <div class="main">
       <header class="topbar">
         <div class="topbar-start">
-          <time id="global-clock" class="global-clock" aria-label="Current time"><span id="global-clock-time">--:--</span><span id="global-clock-seconds" class="global-clock-seconds">--</span><span id="global-clock-zone" class="global-clock-zone">Local</span></time>
+          <time id="global-clock" class="global-clock" aria-label="Current time"><button id="clock-display-trigger" class="clock-display-trigger" type="button" aria-label="Clock display options" aria-haspopup="dialog" aria-expanded="false" aria-controls="clock-display-menu"><span id="global-clock-time">--:--</span><span id="global-clock-seconds" class="global-clock-seconds">--</span><span id="global-clock-period" class="global-clock-period" hidden></span><span id="global-clock-doof" class="global-clock-doof" hidden>doof</span></button><button id="clock-zone-trigger" class="clock-zone-trigger" type="button" aria-label="Choose time zone" aria-haspopup="dialog" aria-expanded="false" aria-controls="clock-zone-menu"><span id="global-clock-zone" class="global-clock-zone">Local</span></button></time>
+          <div id="clock-display-menu" class="clock-popover" role="dialog" aria-label="Clock display settings" hidden>
+            <div class="clock-popover-title">Clock display</div>
+            <div id="clock-format-row" class="clock-format-row"><span class="clock-popover-label">Time format</span><div class="clock-segmented" role="group" aria-label="Time format"><button id="clock-format-24" type="button" aria-pressed="true">24 hr</button><button id="clock-format-standard" type="button" aria-pressed="false">Standard</button></div></div>
+            <label id="clock-seconds-row" class="clock-toggle-row"><span>Show seconds</span><span class="clock-toggle-control"><input id="clock-show-seconds" type="checkbox" checked><span class="clock-toggle-visual" aria-hidden="true"></span></span></label>
+            <div class="clock-popover-divider"></div>
+            <label class="clock-toggle-row"><span>Display doof</span><span class="clock-toggle-control"><input id="clock-show-doof" type="checkbox"><span class="clock-toggle-visual" aria-hidden="true"></span></span></label>
+          </div>
+          <div id="clock-zone-menu" class="clock-popover clock-zone-popover" role="dialog" aria-label="Time zone settings" hidden>
+            <div class="clock-popover-title">Time zone</div>
+            <label class="clock-popover-label" for="clock-popover-zone-select">Display time zone</label>
+            <select id="clock-popover-zone-select">
+              <option value="local">Your current time zone (automatic)</option>
+              <option value="utc">UTC</option>
+              <option value="central">Central Time (CST / CDT)</option>
+              <option value="custom">Custom time zone…</option>
+            </select>
+            <div id="clock-popover-custom-row" class="clock-popover-custom-row" hidden>
+              <label class="clock-popover-label" for="clock-popover-custom-zone">IANA time zone</label>
+              <div class="clock-popover-custom-entry"><input id="clock-popover-custom-zone" type="text" autocomplete="off" spellcheck="false" maxlength="100" placeholder="e.g. Asia/Tokyo"><button id="clock-popover-custom-apply" type="button">Apply</button></div>
+              <p class="clock-popover-hint">e.g. America/New_York or Europe/London</p>
+            </div>
+            <p id="clock-popover-feedback" class="clock-popover-feedback" role="status" aria-live="polite"></p>
+          </div>
           <button id="mobile-nav-toggle" class="icon-button mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="workspace-sidebar" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-panel"></use></svg></button>
           <nav class="shadcn-breadcrumbs" id="breadcrumb" aria-label="Breadcrumb">
             <ol class="shadcn-breadcrumb-list">
