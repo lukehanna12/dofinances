@@ -264,6 +264,94 @@ export function initProjectReadme(){
    populateProjectCards(state.projects);
   }catch(error){say("Could not load project list: "+error.message,true,false,$("project-list-feedback"));}
  }
+
+ const closeFiles=()=>{
+  filesMenu.hidden=true;moreFiles.setAttribute("aria-expanded","false");
+ };
+ const paintDocumentHeader=()=>{
+  const data=state.source||{},path=data.path||"README.md",repository=data.project?.repository;
+  $("rm-project-label").textContent=path.split("/").pop();
+  $("rm-repository-label").textContent=repository?repository+" / "+path:
+    "Local README · No linked GitHub repository";
+  $("rm-visibility-badge").hidden=!(repository&&data.private);
+  reading.setAttribute("aria-label",path+" document");
+ };
+ const displayTree=()=>{
+  const repo=state.source?.project?.repository,tree=treesByRepository.get(repo);
+  filesTree.replaceChildren();
+  if(!repo){filesMessage.hidden=false;filesMessage.textContent="Link a GitHub repository to browse files.";return;}
+  if(!tree){filesMessage.hidden=false;filesMessage.textContent="Loading repository files…";return;}
+  filesMessage.hidden=!tree.truncated;
+  filesMessage.textContent=tree.truncated?
+    "GitHub truncated this large tree; only the returned files are listed.":"";
+  renderRepositoryTree(filesTree,tree.entries,state.source?.path,path=>{closeFiles();void openDocument(path);});
+ };
+ async function loadFiles(){
+  const repo=state.source?.project?.repository,slug=state.slug;
+  if(!repo)return;
+  if(treesByRepository.has(repo)){displayTree();return;}
+  filesMessage.hidden=false;filesMessage.textContent="Loading repository files…";
+  try{
+   const tree=await api("/api/projects/"+encodeURIComponent(slug)+"/files");
+   treesByRepository.set(repo,tree);
+   if(state.slug===slug&&!filesMenu.hidden)displayTree();
+  }catch(error){
+   if(state.slug!==slug)return;
+   filesMessage.hidden=false;filesMessage.textContent="Unable to list files: "+error.message;
+  }
+ }
+ const toggleFiles=()=>{
+  if(moreFiles.disabled||moreFiles.hidden||!active())return;
+  filesMenu.hidden=!filesMenu.hidden;
+  moreFiles.setAttribute("aria-expanded",String(!filesMenu.hidden));
+  if(!filesMenu.hidden){displayTree();void loadFiles();}
+ };
+ const scrollToFragment=fragment=>{
+  if(!fragment)return;
+  const clean=fragment.replace(/^#/,"");
+  const matches=["readme-"+clean,"readme-"+clean.toLowerCase(),
+    "readme-"+clean.replace(/\s+/g,"-").toLowerCase()];
+  const node=[...reading.querySelectorAll("[id]")].find(el=>matches.includes(el.id));
+  node?.scrollIntoView?.({block:"start",behavior:"smooth"});
+ };
+ async function openDocument(path,fragment=""){
+  const slug=state.slug,prior=state.source;
+  if(!slug||!prior?.project?.repository||!path)return;
+  if(path===prior.path){scrollToFragment(fragment);return;}
+  if(state.editing&&state.dirty)return;
+  if(state.editing)exitEdit();
+  const ticket=++state.loadTicket;
+  ++state.readingRenderTicket;++state.previewRenderTicket;
+  state.renderReady=false;closeFiles();say("");
+  reading.textContent="Opening "+path+"…";
+  try{
+   const data=await api("/api/projects/"+encodeURIComponent(slug)+"/file?path="+encodeURIComponent(path));
+   if(ticket!==state.loadTicket||routeSlug()!==slug)return;
+   state.source={...data,source:"github",project:prior.project,
+     markdown:data.content||"",path:data.path,defaultBranch:data.defaultBranch||prior.defaultBranch};
+   state.original=data.content||"";state.draft=state.original;
+   state.canEdit=!!data.canEdit&&!data.binary;state.editing=false;state.dirty=false;
+   state.savedDom=null;reading.contentEditable="false";reading.classList.remove("rm-raw-edit");
+   diffContent.replaceChildren();diffPanel.hidden=true;history.clear();
+   documentsBySlug.set(slug,data.path);
+   paintDocumentHeader();paintControls();
+   if(!state.canEdit)edit.setAttribute("data-readonly","true");
+   else edit.removeAttribute("data-readonly");
+   await renderMarkup(state.original,reading,slug);
+   displayTree();scrollToFragment(fragment);
+  }catch(error){
+   if(ticket!==state.loadTicket)return;
+   state.source=prior;state.original=prior.markdown||"";
+   state.renderReady=false;paintDocumentHeader();paintControls();
+   say("Could not open "+path+": "+error.message,true);
+   await renderMarkup(state.original,reading,slug);
+  }
+ }
+ moreFiles.addEventListener("click",toggleFiles);
+ $("rm-files-close")?.addEventListener("click",closeFiles);
+ document.addEventListener("pointerdown",event=>{
+  if(!filesMenu.hidden&&!event.target.closest?.(".rm-files-control"))closeFiles();
+ },true);
  async function loadReadme(){
   const slug=routeSlug();
   if(state.editing&&state.dirty){ // Never discard a draft when changing projects OR leaving a README.
