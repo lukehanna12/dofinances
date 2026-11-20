@@ -59,8 +59,9 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.doesNotMatch(home,/public-home-edge-fade/,"Never place a dark scrim over the scene");
   assert.doesNotMatch(style,/\.public-home-edge-fade/);
   assert.match(style,/\.cta6-mosaic\{\s*--public-edge-fade-width:calc\(0\.75 \* \(\(1080px - 10 \* 13px\) \/ 11\)\);/);
-  assert.match(style,/-webkit-mask-image:linear-gradient\(to right/);
+  assert.match(style,/-webkit-mask-image:\s*linear-gradient\(to right/);
   assert.match(style,/rgba\(0,0,0,\.25\) 0,/);
+  assert.match(style,/mask-image:\s*linear-gradient\(to right/);
   assert.match(style,/mask-size:100vw 100%;/);
   assert.match(style,/mask-position:center top;/);
   assert.match(style,/mask-composite:intersect;/,"Both square alpha fades must combine");
