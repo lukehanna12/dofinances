@@ -336,7 +336,8 @@ test("dashboard HTML provides every requested view and preserves existing authen
   assert.match(html,/id="project-navigation"/);
   assert.match(html,/id="apple-hig-navigation"/);
   assert.match(html,/data-view="apple-hig-reader\/overview"/);
-  assert.match(html,/<span class="count-label" id="project-count">14 projects<\/span>/);
+  assert.doesNotMatch(html,/id="project-count"/);
+  assert.match(html,/id="project-create"[^>]*aria-keyshortcuts="Meta\+Shift\+N"/);
   assert.match(html,/href="#apple-hig-reader\/readme"/);
   assert.match(html,/id="sidebar-toggle"/);
   assert.match(html,/id="mobile-nav-toggle"/);

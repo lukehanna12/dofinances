@@ -156,7 +156,7 @@ test("Projects header replaces count with the collections-style plus control and
  assert.match(css,/transition-delay:\.15s,\.15s,\.15s/);
  assert.match(css,/project-create-plus-icon\{[\s\S]*?filter/);
  assert.match(css,/section-subheading\{[\s\S]*?margin:6px 0 13px/);
- assert.match(ui,/event\.code==="KeyN"/);
+ assert.match(ui,/event\.code!=="KeyN"/);
  assert.match(ui,/openCreateDialog\(\)/);
  assert.doesNotMatch(ui,/\$\("project-count"\)/);
 });

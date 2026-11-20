@@ -56,7 +56,12 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
     if(!path.includes("studio"))for(const child of ["local","external","credentials"])
       assert.ok(html.includes('<div class="page-heading"><h1 id="project-providers-'+child+'-title">'+
         child[0].toUpperCase()+child.slice(1)+'</h1></div>'));
-    assert.match(html,/<h1 id="projects-title">Projects<\/h1><p class="lead">/);
+    if(path.includes("studio/sidebar"))
+      assert.match(html,/<h1 id="projects-title">Projects<\/h1><p class="lead">/);
+    else {
+      assert.match(html,/<div class="page-heading"><h1 id="projects-title">Projects<\/h1><\/div>/);
+      assert.doesNotMatch(html,/Your projects, organized in one place\./);
+    }
     if(path.includes("studio/sidebar"))
       assert.match(html,/<h1 id="settings-title">Settings<\/h1><p class="lead">/);
     else{

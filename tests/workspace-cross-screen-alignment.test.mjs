@@ -73,6 +73,9 @@ test("Settings, Docs and Projects use the same anchors with no local offset esti
  assert.ok(settings.includes("min-height:var(--workspace-control-size)"));
  assert.ok(docs.includes("margin-top:calc(-1 * var(--workspace-panel-overlap))"));
  assert.ok(html.includes('<div class="page-heading"><h1 id="readme-title">Docs</h1></div>'));
- assert.ok(projects.includes("#project-create{position:absolute;right:0;top:var(--workspace-controls-top)"));
- assert.ok(projects.includes("min-height:var(--workspace-control-size)"));
+ // The former absolute-position anchor is intentionally replaced by an
+ // inline circular action beside "All projects", removing the vacant top gap.
+ assert.match(projects,/\.section-subheading\{[\s\S]*?margin:6px 0 13px/);
+ assert.match(projects,/#project-create\{\s*display:inline-flex/);
+ assert.doesNotMatch(projects,/#project-create\{position:absolute/);
 });

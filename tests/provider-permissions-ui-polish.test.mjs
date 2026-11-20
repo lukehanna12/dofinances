@@ -32,10 +32,15 @@ test("Permissions registry uses LOCATION and search locations with Projects-iden
  assert.ok(pmjs.includes('<span class="pm-rule-status">'));
  assert.ok(pmjs.includes('(enabled?"Enabled":"Off")'));
  const projects=file("sites/_apex/app/assets/project-showcase.css");
- for(const code of ["background:#173827;color:#86efac","border-radius:4px","font-size:9px;font-weight:500;line-height:12px;padding:1px 5px"]){
-  assert.ok(projects.includes(code),"Projects badge original "+code);
-  assert.ok(pm.includes(code),"Permissions Enabled badge matches "+code);
+ for(const code of ["border-radius:4px","font-size:9px;font-weight:500;line-height:12px;padding:1px 5px"]){
+  assert.ok(projects.includes(code),"Projects badge geometry "+code);
+  assert.ok(pm.includes(code),"Permissions Enabled badge geometry "+code);
  }
+ // Permissions keeps its original color; Projects receives the new translucent
+ // hue families explicitly requested for Active/In Progress/Coming Soon.
+ assert.ok(pm.includes("background:#173827;color:#86efac"));
+ assert.ok(projects.includes("background:color(srgb 0.137 0.855 0.349 / 0.09)"));
+ assert.ok(projects.includes("background:color(srgb 0.172549 0.403922 0.772549 / 0.1)"));
  assert.ok(pm.includes('.pm-rule-row[data-enabled="true"] .pm-rule-status'));
 });
 test("Permissions PIN and all execution/lifecycle Save actions use capsule buttons",()=>{
