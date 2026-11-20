@@ -20,18 +20,21 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   const items=[...group[1].matchAll(/<(a|button)\b[^>]*>([^<]+)<\/\1>/g)].map(m=>[m[1],m[2].trim()]);
   assert.deepEqual(items,[["button","Projects"],["a","Sign in"],["button","Contact"]]);
   assert.match(group[1],/<a class="cta6-action" href="\/login">Sign in<\/a>/);
+  assert.match(style,/a\.cta6-action\[href="\/login"\]\{\s*min-width:150px;\s*width:150px;/);
+  assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?a\.cta6-action\[href="\/login"\]\{\s*min-width:129px;\s*width:129px;/);
   assert.match(style,/\.cta6-bottom-action\{[\s\S]*?flex-wrap:nowrap;/);
   assert.match(style,/\.cta6-action:hover\{[\s\S]*?transform:scale\(1\.03\)/);
   assert.match(style,/\.cta6-action:active\{[\s\S]*?transform:scale\(\.97\)/);
 });
-test("GitHub mark and Quick Downloads appear in inert public top bar",()=>{
+test("GitHub profile opens in a new tab; remaining public top-bar controls are inert",()=>{
   const nav=home.match(/<nav class="global-menu"[\s\S]*?<\/nav>/)?.[0];
   assert.ok(nav);
-  assert.match(nav,/<button class="public-github global-menu-control" type="button" aria-label="GitHub"/);
+  assert.match(nav,/<a class="public-github global-menu-control" href="https:\/\/github\.com\/lukehanna12" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile \(opens in a new tab\)"/);
   assert.match(nav,/<svg viewBox="0 0 24 24"/);
   const controls=[...nav.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)].map(m=>m[1].replace(/<[^>]*>/g,"").trim()).filter(Boolean);
-  assert.deepEqual(controls,["Projects","Quick Downloads","Collections","Providers","Settings"]);
-  assert.doesNotMatch(nav,/Colosseum|<a\b|window\.location|onclick=/);
+  assert.deepEqual(controls,["Projects","Quick Downloads","Collections","Settings"]);
+  assert.equal((nav.match(/<a\b/g)||[]).length,1,"GitHub is the only navigation link");
+  assert.doesNotMatch(nav,/Colosseum|Providers|window\.location|onclick=/);
   assert.match(style,/\.global-menu-control:hover\{/);
   assert.match(style,/\.global-menu-control:active\{/);
 });

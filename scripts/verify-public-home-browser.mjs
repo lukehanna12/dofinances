@@ -94,6 +94,9 @@ try{
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e)})),',
  'nav:nav.map(e=>e.textContent.trim()),github:box(document.querySelector(".public-github")),',
+ 'githubHref:document.querySelector(".public-github").href,',
+ 'githubTarget:document.querySelector(".public-github").target,',
+ 'githubRel:document.querySelector(".public-github").rel,',
  'firstLink:box(nav[0]),scrollWidth:document.documentElement.scrollWidth};})()'
  ].join("");
  const near=(actual,expected,label,width)=>assert.ok(Math.abs(actual-expected)<.8,
@@ -108,14 +111,21 @@ try{
   near(g.logo.center,width/2,"Doof center",width);
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
-  assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Providers","Settings"]);
+  assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Settings"]);
   assert.ok(g.github.left<g.firstLink.left,"GitHub must lead navigation");
+  assert.equal(g.githubHref,"https://github.com/lukehanna12");
+  assert.equal(g.githubTarget,"_blank","GitHub opens a new tab");
+  assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
+  assert.ok(g.githubRel.split(/\s+/).includes("noreferrer"));
   assert.deepEqual(g.items.map(e=>[e.tag,e.name,e.href]),[
    ["BUTTON","Projects",null],["A","Sign in","/login"],["BUTTON","Contact",null]]);
   for(let i=1;i<g.items.length;i++){
    near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
    near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
   }
+  const [projects,signIn,contact]=g.items.map(item=>item.rect);
+  near(projects.width,contact.width,"Projects/Contact matching widths",width);
+  near(signIn.width,projects.width*1.5,"Sign in 50% wider",width);
   const left=g.items[0].rect.left;
   const right=g.items[2].rect.left+g.items[2].rect.width;
   near((left+right)/2,width/2,"Bottom action group center",width);
