@@ -225,6 +225,10 @@ test("Shared workspace clock never zero-pads a 24-hour hour, including at midnig
  assert.equal(formatWorkspaceTime(at(0),{timeZone:"America/Chicago",seconds:true}),"18:05:09");
  assert.equal(formatWorkspaceTime(at(0),{timeZone:"Asia/Tokyo",seconds:true}),"9:05:09");
  const navigation=await read("../sites/_apex/app/assets/workspace-nav.js");
- assert.ok(navigation.includes('formatWorkspaceTime(now,{timeZone:name,seconds:true})'));
- assert.ok(navigation.includes('formatWorkspaceTime(now,{timeZone:"UTC",seconds:true})'));
+ assert.ok(navigation.includes('time.textContent=String(Number(part("hour")))+":"+part("minute");'),
+   "Clock paints unpadded hours and zero-padded minutes for the selected zone");
+ assert.ok(navigation.includes('hourCycle:display.hour12?"h12":"h23"'),
+   "Clock respects the selected 24-hour or Standard format");
+ assert.ok(navigation.includes('formatWorkspaceTime(now,{timeZone:"UTC"})'),
+   "Clock retains UTC fallback for invalid or unavailable time zones");
 });

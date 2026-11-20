@@ -350,10 +350,10 @@ test("desktop clock seconds are smaller, muted, bottom-aligned and independently
     "Seconds-to-timezone spacing is now 4.95px, reduced 45% from 9px");
   assert.ok(css.includes(".global-clock-seconds,.global-clock-zone{font-size:10px;color:#a0a0a7;"),
     "Seconds match timezone color and font size");
-  assert.ok(js.includes('seconds.textContent=formatted.slice(split+1);'),
-    "The seconds span owns digits only, not the leading colon");
-  assert.ok(js.includes('time.textContent=formatted.slice(0,split);'),
-    "Minutes remain in the large clock span");
+  assert.ok(js.includes('seconds.textContent=part("second");'),
+    "The seconds span owns exactly the 2-digit second part, not the leading colon");
+  assert.ok(js.includes('time.textContent=String(Number(part("hour")))+":"+part("minute");'),
+    "Minutes remain in the large clock span and single-digit hours stay unpadded");
   const mobileRules=css.slice(mobile,css.indexOf("@media(max-width:450px)",mobile));
   assert.ok(mobileRules.includes("opacity:0;visibility:hidden;pointer-events:none;"),
     "Clock still disappears entirely in mobile view");
