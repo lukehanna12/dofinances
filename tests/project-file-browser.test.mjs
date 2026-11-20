@@ -99,6 +99,8 @@ test("Safe GitHub repository listing and file reads preserve authentication and 
   assert.equal(validRepositoryPath(path),false);
  assert.equal(validRepositoryPath("docs/guide.v2.md"),true);
  assert.equal(validRepositoryPath("docs/Hello World.md"),true);
+ assert.equal(validRepositoryPath("docs/questions?.md"),true);
+ assert.equal(validRepositoryPath("docs/C# notes.md"),true);
  assert.ok(api.includes('action==="files"||action==="file"'));
  assert.ok(api.includes('await githubDocument('));
  assert.ok(api.includes('await githubFileTree('));
@@ -122,5 +124,5 @@ test("Project-page entry resets to README; other project screens retain their la
  assert.ok(ui.includes('void openDocument(remembered)'));
  assert.ok(ui.includes('paintDocumentHeader()'));
  assert.ok(ui.includes('reading.textContent="Opening "+path+"…"'));
- assert.ok(ui.includes('return {path:parts.join("/"),fragment}'));
+ assert.ok(read("sites/_apex/app/assets/project-file-browser.js").includes('return {path:parts.join("/"),fragment}'));
 });

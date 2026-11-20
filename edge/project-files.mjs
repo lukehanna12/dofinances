@@ -4,7 +4,7 @@ import {GITHUB_REPOSITORY,githubRequest,githubError} from "./project-readme.mjs"
 export function validRepositoryPath(path){
  return typeof path==="string"&&path.length>0&&path.length<=500&&!path.startsWith("/")&&
   !/[\\\u0000-\u001f\u007f]/u.test(path)&&!path.includes("//")&&
-  path.split("/").every(part=>part.length>0&&part!=="."&&part!==".."&&!/[?#]/u.test(part));
+  path.split("/").every(part=>part.length>0&&part!=="."&&part!=="..");
 }
 const segments=p=>p.split("/").map(encodeURIComponent).join("/");
 async function jsonResult(response){

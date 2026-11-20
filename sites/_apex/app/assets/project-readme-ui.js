@@ -180,7 +180,7 @@ export function initProjectReadme(){
   const dirty=state.editing&&state.dirty;
   confirm.hidden=!dirty;diffButton.hidden=!dirty;
   moreFiles.hidden=dirty;moreFiles.disabled=state.processing||state.editing||!state.source?.project?.repository;
-  if(dirty){filesMenu.hidden=true;moreFiles.setAttribute("aria-expanded","false");}
+  if(state.editing||dirty){filesMenu.hidden=true;moreFiles.setAttribute("aria-expanded","false");}
   edit.setAttribute("aria-label",state.editing?"Cancel document edits":"Edit document");
   const label=$("rm-edit-tooltip")?.querySelector?.(".rm-tooltip-label");
    if(label)label.textContent=state.editing?"Cancel editing":"Edit document";
@@ -300,17 +300,24 @@ export function initProjectReadme(){
    filesMessage.hidden=false;filesMessage.textContent="Unable to list files: "+error.message;
   }
  }
+ const positionFilesMenu=()=>{
+  filesMenu.style.left="0px";
+  const box=filesMenu.getBoundingClientRect();
+  const delta=Math.min(0,window.innerWidth-box.right-8);
+  filesMenu.style.left=delta+"px";
+ };
  const toggleFiles=()=>{
   if(moreFiles.disabled||moreFiles.hidden||!active())return;
   filesMenu.hidden=!filesMenu.hidden;
   moreFiles.setAttribute("aria-expanded",String(!filesMenu.hidden));
-  if(!filesMenu.hidden){displayTree();void loadFiles();}
+  if(!filesMenu.hidden){positionFilesMenu();displayTree();void loadFiles();}
  };
  const scrollToFragment=fragment=>{
   if(!fragment)return;
   const clean=fragment.replace(/^#/,"");
+  const slug=clean.replace(/\s+/g,"-").toLowerCase();
   const matches=["readme-"+clean,"readme-"+clean.toLowerCase(),
-    "readme-"+clean.replace(/\s+/g,"-").toLowerCase()];
+    "readme-"+slug,"readme-user-content-"+slug];
   const node=[...reading.querySelectorAll("[id]")].find(el=>matches.includes(el.id));
   node?.scrollIntoView?.({block:"start",behavior:"smooth"});
  };
@@ -348,6 +355,7 @@ export function initProjectReadme(){
   }
  }
  moreFiles.addEventListener("click",toggleFiles);
+ window.addEventListener("resize",()=>{if(!filesMenu.hidden)positionFilesMenu();},{passive:true});
  $("rm-files-close")?.addEventListener("click",closeFiles);
  document.addEventListener("pointerdown",event=>{
   if(!filesMenu.hidden&&!event.target.closest?.(".rm-files-control"))closeFiles();
