@@ -60,7 +60,7 @@ test("Every near-black workspace surface gets the requested exact inset highligh
 });
 test("Docs tooltips expose Collections-style label-only and separated shortcut-key variations",()=>{
  const docs=css("project-readme.css"),controller=css("project-readme-ui.js");
- assert.ok(app.includes('id="rm-edit-tooltip" class="rm-tooltip" role="tooltip"><span class="rm-tooltip-label">Edit README</span><span class="rm-tooltip-shortcut"'));
+ assert.ok(app.includes('id="rm-edit-tooltip" class="rm-tooltip" role="tooltip"><span class="rm-tooltip-label">Edit document</span><span class="rm-tooltip-shortcut"'));
  assert.ok(app.includes('<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>'));
  assert.ok(app.includes('aria-describedby="rm-edit-tooltip"'));
  assert.ok(app.includes('id="rm-confirm-tooltip" class="rm-tooltip" role="tooltip"><span class="rm-tooltip-label">Confirm and save changes</span></span>'));

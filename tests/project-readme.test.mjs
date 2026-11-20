@@ -160,7 +160,7 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(docs.includes('id="rm-repository-label"'));
  assert.ok(css.includes('.rm-repository-label{margin:0;font-size:12px;color:#3d444d'));
  assert.ok(docs.includes('id="rm-visibility-badge" class="rm-visibility-badge" hidden>Private</span>'));
- assert.ok(ui.includes('$("rm-visibility-badge").hidden=!(data.project.repository&&data.private)'));
+ assert.ok(ui.includes('$("rm-visibility-badge").hidden=!(repository&&data.private)'));
  assert.ok(!ui.includes('data.private?" · Private"'));
  assert.ok(css.includes('.rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;'));
  assert.ok(projects.includes('.project-showcase-badge{'));
@@ -180,7 +180,7 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(css.includes('.rm-toolbar .rm-control-wrap{box-sizing:border-box;flex:0 0 50px;width:50px;height:50px}'));
  assert.ok(css.includes('.rm-edit-surround,.rm-action-surround{'));
  assert.ok(css.includes('.rm-edit-surround #rm-edit,.rm-action-surround > .rm-icon-button{width:42px;height:42px}'));
- assert.ok(css.includes('.rm-control-wrap:has(> .rm-icon-button[hidden]){display:none}'));
+ assert.ok(css.includes('.rm-control-wrap:not(.rm-files-control):has(> .rm-icon-button[hidden]){display:none}'));
  assert.ok(css.includes('.rm-icon-button:hover:not(:disabled){background:rgba(75,107,139,.13)}'));
  assert.ok(css.includes('.rm-confirm:hover:not(:disabled){background:#e9eff8;color:#10243b}'));
  assert.ok(css.includes('.rm-diff-button:is(:hover,:focus-visible,:active),.rm-diff-button[aria-pressed="true"]{background:rgba(79,113,146,.18);border-color:#34485c}'));
