@@ -646,6 +646,36 @@ try{
   assert.equal(direct.direct,"true");
   await evaluate("document.querySelector('.auth3-back-link').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
+  // Separate experimental full-WebGPU presentation: the exact original
+  // WGSL material remains, but its canvas is viewport-anchored. No capture.
+  await send("Page.navigate",{url:origin+"/login?auth-scroll=fixed"});
+  await until("document.body.dataset.authScrollMode==='fixed'&&"+
+    "!!document.querySelector('[data-auth-glass-card]')",170);
+  assert.equal(await evaluate("document.body.dataset.authGlassMode"),"webgpu");
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    const sample=await evaluate("(()=>{"+
+      "const r=document.querySelector('#public-route-content'),"+
+      "card=document.querySelector('[data-auth-glass-card]'),"+
+      "canvas=document.querySelector('#dashboard-auth-glass-scene');"+
+      "const css=getComputedStyle(canvas),oldHeight=r.style.height,old=r.scrollTop;"+
+      "const cardBefore=card.getBoundingClientRect().top,"+
+      "canvasBefore=canvas.getBoundingClientRect().top;"+
+      "r.style.height='340px';r.scrollTop=190;"+
+      "const deltaCard=card.getBoundingClientRect().top-cardBefore,"+
+      "deltaCanvas=canvas.getBoundingClientRect().top-canvasBefore;"+
+      "r.scrollTop=old;r.style.height=oldHeight;"+
+      "return {deltaCard,deltaCanvas,mode:window.__dashboardWebGPU.authScrollPresentation,"+
+      "mips:window.__dashboardWebGPU.mipCount,"+
+      "fullShader:window.__dashboardWebGPU.authPresentation,"+
+      "canvasHeight:canvas.height,clientHeight:canvas.clientHeight,position:css.position};})()");
+    assert.equal(sample.position,"fixed");
+    assert.equal(sample.mode,"fixed-viewport-experimental");
+    assert.equal(sample.fullShader,"shared-pipeline-transparent-overlay");
+    assert.ok(sample.mips>=5,"Full original WebGPU mip chain is preserved");
+    assert.ok(Math.abs(sample.deltaCard+190)<2);
+    assert.ok(Math.abs(sample.deltaCanvas)<1,
+      "Existing WebGPU background pixels must not be dragged by native scroll");
+  }
   assert.deepEqual(misses,[],"No missing shell or lazy login assets");
   process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");
 }finally{

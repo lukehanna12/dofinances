@@ -599,3 +599,29 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
   assert.match(css,/backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\) brightness\(\.79\)/);
   assert.match(shell,/z-index:2;\s*opacity:1!important;\s*visibility:visible!important/);
 });
+
+
+test("experimental fixed-viewport WebGPU still uses original full mip-mapped material",async()=>{
+  const [router,renderer,homeCss,shader]=await Promise.all([
+    load("../sites/_apex/assets/public-home-transition.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/assets/public-home.css"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl")
+  ]);
+  assert.match(router,/body\.dataset\.authScrollMode=new URLSearchParams\(location\.search\)\.get\("auth-scroll"\)==="fixed"/);
+  assert.match(router,/"fixed":"native"/);
+  assert.match(homeCss,/body\.public-home\[data-auth-scroll-mode="fixed"\][\s\S]*?#public-route-content > #dashboard-auth-glass-scene\{\s*position:fixed;/);
+  assert.match(renderer,/const authCanvasFixed=\(\)=>document\.body\.dataset\.authScrollMode==="fixed"/);
+  assert.match(renderer,/authCanvasFixed\(\)\s*\?\s*Math\.max\(1,routeOutlet\?\.clientHeight\|\|0\)/);
+  assert.match(renderer,/authScrollPresentation:authCanvasFixed\(\)\?"fixed-viewport-experimental":"native-content"/);
+  assert.match(renderer,/const desiredTop=authCanvasFixed\(\)\?sceneTop\+"px":"0px"/);
+  assert.match(renderer,/authUniform\[11\]=offsetCSS\*dpr/);
+  assert.match(renderer,/authHover\.move\(event\.clientX\*dpr,\(event\.clientY-authOriginTop\(\)\)\*dpr\)/);
+  assert.match(renderer,/tileData\.set\(makeLayoutData\(node,dpr,authOriginTop\(\)\),p\)/);
+  assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,authGlassGroup\)/);
+  assert.match(shader,/let innerLOD=glassLOD/);
+  assert.match(shader,/let outerLOD=glassLOD/);
+  assert.match(shader,/mipSample\(interactiveInnerUV,innerLOD\)/);
+  assert.match(shader,/mipSample\(interactiveOuterUV,outerLOD\)/);
+  assert.match(shader,/let faceBlack=select\(0\.20,0\.05,darkFace\)/);
+});

@@ -34,11 +34,16 @@ if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const authCanvas=document.createElement("canvas");
 const authUsesCompositor=()=>document.body.dataset.authGlassMode==="compositor";
+const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed";
 const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
-// The route's scrollbox moves this canvas and its React card on the same
-// compositing layer, even when native rubberbanding precedes JS callbacks.
-const authOriginTop=()=>routeMount?.getBoundingClientRect().top ?? 44;
+// Native (default): the canvas scrolls with the document-sized card.
+// Fixed (experimental): the very same WebGPU surface stays fixed to the
+// wallpaper; only the live pane rectangles follow the native scroll. This
+// prevents a compositor-scrolled stale photo but might lag pane geometry.
+const authOriginTop=()=>authCanvasFixed()
+  ? (authCanvas.isConnected?authCanvas.getBoundingClientRect().top:44)
+  : (routeMount?.getBoundingClientRect().top ?? 44);
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -101,7 +106,8 @@ const audit={
   backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
   oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
-  mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[]
+  mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[],
+  authScrollPresentation:authCanvasFixed()?"fixed-viewport-experimental":"native-content"
 };
 Object.defineProperty(window,"__dashboardWebGPU",{
   configurable:true,get:()=>Object.freeze({...audit,errors:[...audit.errors]})
@@ -485,11 +491,14 @@ async function initialize(){
     // The GLASS framebuffer spans the form's full scrollable height. Its
     // immutable document coordinates cannot be clipped to the viewport when
     // the user scrolls through sign-up, recovery or short-window layouts.
-    const cssHeight=Math.max(1,routeMount?.scrollHeight||0,routeOutlet?.clientHeight||0);
+    const cssHeight=authCanvasFixed()
+      ? Math.max(1,routeOutlet?.clientHeight||0)
+      : Math.max(1,routeMount?.scrollHeight||0,routeOutlet?.clientHeight||0);
     const height=Math.max(1,Math.ceil(cssHeight*dpr));
     if(height>device.limits.maxTextureDimension2D)
       throw Error("Sign-in glass scroll height exceeds GPU limit");
-    if(authCanvas.style.top!=="0px")authCanvas.style.top="0px";
+    const desiredTop=authCanvasFixed()?sceneTop+"px":"0px";
+    if(authCanvas.style.top!==desiredTop)authCanvas.style.top=desiredTop;
     const cssWidth=window.innerWidth+"px",cssH=cssHeight+"px";
     if(authCanvas.style.width!==cssWidth)authCanvas.style.width=cssWidth;
     if(authCanvas.style.height!==cssH)authCanvas.style.height=cssH;
@@ -498,6 +507,9 @@ async function initialize(){
     }
     physicalAuthHeight=height;
     audit.authScrollCanvasHeight=cssHeight;
+    audit.authPresentationPixelArea=physicalWidth*physicalAuthHeight;
+    audit.authScrollPresentation=authCanvasFixed()
+      ?"fixed-viewport-experimental":"native-content";
   }
   function writeUniform(){
     uniform[0]=physicalWidth;
