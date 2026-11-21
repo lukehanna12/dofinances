@@ -20,6 +20,7 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
+import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
@@ -90,6 +91,8 @@ const start=performance.now();
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
 const interaction=createInteractionController();
+// Auth-only nested hover; all homepage square lanes remain owned by interaction.
+const authHover=createAuthGlassHoverController(AUTH_PANE_CAPACITY);
 const tint=createTintControls(requestRender);
 const reducedMotion=typeof window.matchMedia==="function"
   ? window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -505,11 +508,14 @@ async function initialize(){
         "card":node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
+    authHover.retargetRects(tileData,tileCount,cornerInert);
     audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",faceScheme:tint.state.scheme,
       materialReference:"first-home-square",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
-      hovered:interaction.focusedTile>=tileCount,opacity};
+      hovered:authHover.cardHovered||authHover.controlHovered,
+      cardHovered:authHover.cardHovered,controlHovered:authHover.controlHovered,
+      activeControl:authHover.activeControl,opacity};
     return Boolean(card&&opacity<.999);
   }
   function rebuild(){
@@ -753,8 +759,11 @@ async function initialize(){
     const authAnimating=paintAuthPanes();
     syncTileTints();
     const animating=interaction.advance(dt,reducedMotion.matches);
+    const authHoverAnimating=authHover.advance(dt,reducedMotion.matches);
     if(instanceCount){
       interaction.writeTo(tileData);
+      // Override only route-owned pane lanes AFTER the original squares.
+      authHover.writeTo(tileData,tileCount);
       // motion.z is the independent end-of-track transparency; the
       // interaction adapter owns only hover/press, not track opacity.
       for(let i=0;i<tileCount;i++){
@@ -793,7 +802,12 @@ async function initialize(){
     audit.focusedTile=interaction.focusedTile;
     audit.pressed=interaction.isPressed;
     audit.tint=tint.state;
-    return animating||authAnimating;
+    if(audit.authGlass){
+      audit.authGlass.cardHover=authHover.snapshot(0);
+      audit.authGlass.controlHover=authHover.activeControl>=1?
+        authHover.snapshot(authHover.activeControl):null;
+    }
+    return animating||authHoverAnimating||authAnimating;
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
@@ -861,6 +875,7 @@ async function initialize(){
     if(event.pointerType==="touch"&&activePointerId===null)return;
     pointer.x=event.clientX;pointer.y=event.clientY;pointer.enabled=1;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
     requestRender();
   };
   const downPointer=event=>{
@@ -868,19 +883,25 @@ async function initialize(){
        (activePointerId!==null&&activePointerId!==event.pointerId))return;
     activePointerId=event.pointerId;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-    interaction.setPressed(true);
+    authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    interaction.setPressed(true);authHover.setPressed(true);
     requestRender();
   };
   const upPointer=event=>{
     if(activePointerId!==event.pointerId)return;
-    activePointerId=null;interaction.setPressed(false);
-    if(event.pointerType==="touch"){pointer.enabled=0;interaction.clear();}
-    else interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    activePointerId=null;interaction.setPressed(false);authHover.setPressed(false);
+    if(event.pointerType==="touch"){
+      pointer.enabled=0;interaction.clear();authHover.clear();
+    }else{
+      interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+      authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    }
     requestRender();
   };
   const cancelPointer=event=>{
     if(activePointerId!==null&&event.pointerId!==activePointerId)return;
-    activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
+    activePointerId=null;pointer.enabled=0;
+    interaction.clear();authHover.clear();requestRender();
   };
   window.addEventListener("pointermove",movePointer,{passive:true});
   window.addEventListener("pointerdown",downPointer,{passive:true});
@@ -891,7 +912,8 @@ async function initialize(){
     cancelPointer(event);
   },{passive:true});
   window.addEventListener("blur",()=>{
-    activePointerId=null;pointer.enabled=0;interaction.clear();requestRender();
+    activePointerId=null;pointer.enabled=0;
+    interaction.clear();authHover.clear();requestRender();
   });
   audit.interaction="per-tile browser-only hover/press spring, pointer/touch/pen";
   audit.iconFade="track-alpha inherited + shader-matched per-glyph spatial alpha; no DOM mosaic clipping";

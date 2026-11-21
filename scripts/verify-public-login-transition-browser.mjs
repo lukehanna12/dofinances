@@ -254,6 +254,43 @@ try{
     assert.ok(state.focus>=state.squareCount,
       "Hover targets route glass panes within the shared tile interaction controller");
   }
+  // The card has independent hover ownership from its nested glass buttons.
+  // The squares continue using the original shared interaction controller.
+  if(darkGlass.gpu==="ready"){
+    const buttonBounds=await evaluate("(()=>{const r=document.querySelector('[data-auth-glass-submit]').getBoundingClientRect();"+
+      "return {x:r.left+r.width*.5,y:r.top+r.height*.5};})()");
+    await send("Input.dispatchMouseEvent",{
+      type:"mouseMoved",x:buttonBounds.x,y:buttonBounds.y
+    });
+    await until("window.__dashboardWebGPU?.authGlass?.cardHovered===true&&"+
+      "window.__dashboardWebGPU?.authGlass?.controlHovered===true",70,40);
+    await until("window.__dashboardWebGPU?.authGlass?.cardHover?.hover>.5&&"+
+      "window.__dashboardWebGPU?.authGlass?.controlHover?.hover>.5",70,40);
+    const onControl=await evaluate("window.__dashboardWebGPU.authGlass");
+    assert.equal(onControl.cardHover.active,true,
+      "Entering a nested button must keep the parent card hovered");
+    assert.equal(onControl.controlHover.active,true,
+      "Nested button must also have its own independent glass hover");
+
+    // Exit the entire card. Its glow fades at the last position, without
+    // racing backward to center (or pulling across the background).
+    await send("Input.dispatchMouseEvent",{
+      type:"mouseMoved",x:bounds.left+bounds.width+42,y:bounds.top+40
+    });
+    await until("window.__dashboardWebGPU?.authGlass?.cardHovered===false",70,40);
+    await sleep(115);
+    const onExit=await evaluate("window.__dashboardWebGPU.authGlass");
+    assert.equal(onExit.cardHover.active,false);
+    assert.equal(onExit.controlHovered,false);
+    assert.ok(onExit.cardHover.hover<onControl.cardHover.hover,
+      "Card hover intensity should fade after the cursor leaves");
+    assert.ok(Math.abs(onExit.cardHover.x-onControl.cardHover.x)<2&&
+      Math.abs(onExit.cardHover.y-onControl.cardHover.y)<2,
+      "Card hotspot must remain at its last pointer position while fading");
+    assert.ok(Math.abs(onExit.cardHover.vx)<.001&&
+      Math.abs(onExit.cardHover.vy)<.001,
+      "Leaving the card must stop velocity-driven opposite-direction travel");
+  }
   // Toggling the site mode only changes the existing neutral tint presets
   // and the original form text palette, never the untinted card tint name.
   await evaluate("document.getElementById('public-theme-toggle').click()");
