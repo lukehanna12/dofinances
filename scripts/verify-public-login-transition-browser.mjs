@@ -239,7 +239,7 @@ try{
   assert.equal(lightGlass.mode,"light");
   assert.notEqual(lightGlass.ink,darkGlass.ink,
     "Original light mode must restore dark field text");
-  assert.ok(Number.parseFloat(lightGlass.actionInk.match(/\\d+/)?.[0]??0)>225,
+  assert.ok(Number.parseFloat(lightGlass.actionInk.match(/[0-9]+/)?.[0]??0)>225,
     "Original light mode must restore the dark primary action / near-white text; computed "+lightGlass.actionInk);
   if(lightGlass.gpu==="ready"){
     await until("window.__dashboardWebGPU?.authGlass?.scheme==='light'",30);
