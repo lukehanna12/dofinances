@@ -438,19 +438,19 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // the model is browser-authored, NOT an extracted 26.5.1 effect.
   let uv=(in.local/tile.rect.zw-vec2<f32>(0.5))*2.0;
   let seed=f32(in.tileIndex)*0.367;
-  let field=dissolveField(uv*3.0+vec2<f32>(seed,seed*.49)+
+  let noiseField=dissolveField(uv*3.0+vec2<f32>(seed,seed*.49)+
     vec2<f32>(0.02*dismiss,-0.10*dismiss));
   let fine=dissolveNoise(uv*9.0+vec2<f32>(seed*1.7,seed*.53+0.5));
   let edgeExposure=1.0-clamp(-signed/11.0,0.0,1.0);
   let amount=clamp((dismiss-0.09+
-    (field-0.5)*0.30+(fine-0.5)*0.11+edgeExposure*0.07)/0.82,0.0,1.0);
+    (noiseField-0.5)*0.30+(fine-0.5)*0.11+edgeExposure*0.07)/0.82,0.0,1.0);
   let smoothAmount=amount*amount*(3.0-2.0*amount);
   let retained=1.0-smoothAmount;
   // Residual fringe samples the ORIGINAL glass color and vanishes early.
   let fringeWindow=smoothstep(0.12,0.28,dismiss)*
     (1.0-smoothstep(0.54,0.84,dismiss));
   let fringe=(1.0-coverage)*fringeWindow*0.09*
-    (0.45+0.55*field)*exp(-abs(signed)*0.18);
+    (0.45+0.55*noiseField)*exp(-abs(signed)*0.18);
   let alpha=(coverage*retained+fringe)*in.introAlpha*
     clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity;
   return vec4<f32>(color,clamp(alpha,0.0,1.0));

@@ -91,6 +91,14 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let diffuseScale=vec2<f32>\(1\.0\+0\.085\*bloom,1\.0\+0\.065\*bloom\);/);
   assert.match(shader,/fn dissolveNoise\(p:vec2<f32>\)/);
   assert.match(shader,/fn dissolveField\(p:vec2<f32>\)/);
+  // The fragment function also declares var field:vec3<f32> for its SDF.
+  // Re-declaring that name for dissolve noise invalidates WGSL on real GPUs.
+  assert.match(shader,/var field:vec3<f32>;/);
+  assert.match(shader,/let noiseField=dissolveField\(/);
+  assert.doesNotMatch(shader,/let field=dissolveField\(/,
+    "Dissolution noise must not redeclare the SDF variable in WGSL");
+  assert.match(shader,/\(noiseField-0\.5\)\*0\.30/);
+  assert.match(shader,/\(0\.45\+0\.55\*noiseField\)/);
   assert.match(shader,/let edgeExposure=1\.0-clamp\(-signed\/11\.0,0\.0,1\.0\);/);
   assert.match(shader,/let fringe=\(1\.0-coverage\)\*fringeWindow\*0\.09\*/);
   assert.match(shader,/if\(dismiss>=1\.0\)\{return vec4<f32>\(color,0\.0\);\}/);
