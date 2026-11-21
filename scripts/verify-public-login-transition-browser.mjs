@@ -232,7 +232,9 @@ try{
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='light'&&"+
     "!!document.querySelector('.auth3-root:not(.dark)')",50);
-  await sleep(100);
+  // The ORIGINAL Tailwind button retains transition-colors duration-200.
+  // Sample its settled neutral palette rather than the initial dark frame.
+  await sleep(290);
   const lightGlass=await evaluate(material());
   assert.equal(lightGlass.mode,"light");
   assert.notEqual(lightGlass.ink,darkGlass.ink,
