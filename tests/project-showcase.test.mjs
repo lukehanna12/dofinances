@@ -181,15 +181,15 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
  for(const [slug,name] of Object.entries(PROJECT_CARD_ICONS)){
   assert.ok(slugs.has(slug),"Icon references unknown project "+slug);
-  assert.match(read("sites/_apex/app/assets/project-icons/"+name+".svg"),/<svg[\\s\\S]*viewBox="0 0 24 24"/);
+  assert.ok(read("sites/_apex/app/assets/project-icons/"+name+".svg").includes('viewBox="0 0 24 24"'));
  }
  for(const [slug,url] of Object.entries(PROJECT_CARD_IMAGES)){
   assert.ok(slugs.has(slug),"Image references unknown project "+slug);
   assert.ok(url.startsWith("https://"),"Image must use HTTPS");
  }
  const script=read("sites/_apex/app/assets/project-showcase.js");
- assert.match(script,/PROJECT_CARD_ICONS\\[project\\.slug\\]/);
- assert.match(script,/PROJECT_CARD_IMAGES\\[project\\.slug\\]/);
- assert.match(script,/fallbackImagePath\\(index\\)/);
- assert.match(script,/photo\\.addEventListener\\("error"/);
+ assert.ok(script.includes("PROJECT_CARD_ICONS[project.slug]"));
+ assert.ok(script.includes("PROJECT_CARD_IMAGES[project.slug]"));
+ assert.ok(script.includes("fallbackImagePath(index)"));
+ assert.ok(script.includes('photo.addEventListener("error"'));
 });
