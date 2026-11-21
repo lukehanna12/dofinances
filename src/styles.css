@@ -308,6 +308,8 @@ body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card]{
     color:ButtonText!important;
     border-color:ButtonText!important;
   }
-  .auth3-root .auth3-back-arrow-underlay{stroke:ButtonFace!important}
-  .auth3-root .auth3-back-arrow-ink{stroke:ButtonText!important}
+  .auth3-root.dark [data-auth-glass-provider].auth3-back-link,
+  .auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link{
+    color:ButtonText!important;
+  }
 }
