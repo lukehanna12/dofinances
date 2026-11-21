@@ -377,8 +377,10 @@ body.public-home[data-auth-gpu-scene="ready"] #public-route-content > #dashboard
    and every original square remain WebGPU; /login?auth-glass=webgpu preserves
    the previous experimental exact shader for comparison. */
 body.public-home[data-auth-glass-mode="compositor"] #public-route-content > #dashboard-auth-glass-scene{
-  opacity:0!important;
-  visibility:hidden!important;
+  /* Not a stale image: only shader-native local SDF rim and hover light. */
+  z-index:2;
+  opacity:1!important;
+  visibility:visible!important;
 }
 
 /* Persistent public application shell: the backdrop, GPU and mark never unmount. */

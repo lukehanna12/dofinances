@@ -296,9 +296,11 @@ body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card]{
    outlines, independent nested controls and untranslated hover geometry. */
 body.public-home[data-auth-glass-mode="compositor"] .auth3-root [data-auth-glass-card]{
   --dashboard-tint-fill:transparent;
-  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
-  backdrop-filter:blur(var(--glass-fallback-blur,8px));
-  /* Original untinted card: a material face without a colored pigment. */
+  /* Reconstruct old shader's dark material face: 0.05 + 0.75*scene.
+     The photographed scene is sampled by the actual native compositor. */
+  background:rgba(255,255,255,.05)!important;
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px)) brightness(.79);
+  backdrop-filter:blur(var(--glass-fallback-blur,8px)) brightness(.79);
 }
 body.public-home[data-auth-glass-mode="compositor"] .auth3-root
   :is([data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]){
@@ -311,11 +313,8 @@ body.public-home[data-auth-glass-mode="compositor"] .auth3-root
 }
 /* Subtle, compositor-native interaction without scaling, foreign hues,
    extra spotlights, or new pointer-driven raster passes. */
-body.public-home[data-auth-glass-mode="compositor"] .auth3-root [data-auth-glass-card]:hover{
-  border-color:rgba(247,250,252,.44);
-  box-shadow:0 10px 22px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.36),
-    inset 0 -1px 0 rgba(18,22,25,.15);
-}
+/* Only the original WebGPU SDF/spring shader produces optical hover,
+   never a second artificial CSS spotlight or scale animation. */
 /* The border is GPU SDF-owned, but keyboard focus must remain perceivable.
  * No bright spring scaling, and no independent hover hotspot. */
 .auth3-root [data-auth-glass-input]:focus-visible,

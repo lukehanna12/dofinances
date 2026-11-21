@@ -165,7 +165,7 @@ function requestRender(){
       // Maintain the original 30fps square track clock, while allowing the
       // exiting sign-in glass to follow Motion between those heavy full-scene
       // submissions. This pass never draws/advances a square.
-      if(window.__dofPublicRouter?.state==="exiting"&&
+      if(["exiting","login"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"){
         try{engine.renderAuthOnly()}catch(error){void fallback(error);return;}
       }
@@ -174,12 +174,11 @@ function requestRender(){
     lastMotionSubmission=performance.now();
     let animating=false;
     try{
-      // During native scrolling, redraw only the already-placed sign-in
-      // panes against their actual composited position. Outside scrolling,
-      // preserve the homepage renderer and its original timing.
-      if(performance.now()<authScrollRefreshUntil&&
-         window.__dofPublicRouter?.state==="login"&&
-         document.body.dataset.authGpuScene==="ready"){
+      // The native backdrop remains synchronized independently of GPU
+      // scroll frames; render only the original local optical response.
+      if(window.__dofPublicRouter?.state==="login"&&
+         document.body.dataset.authGpuScene==="ready"&&
+         (authUsesCompositor()||performance.now()<authScrollRefreshUntil)){
         animating=engine.renderAuthOnly();
       }else{
         animating=engine.render();
@@ -526,6 +525,7 @@ async function initialize(){
       authUniform[7]=physicalHeight;
       authUniform[9]=(pointer.y-authOriginTop())*dpr;
       authUniform[11]=offsetCSS*dpr;
+      authUniform[18]=authUsesCompositor()?1:0;
       audit.authBackdropOffsetCSS=offsetCSS;
       audit.authBackdropCanvasTopCSS=actualCanvasTop;
       audit.authBackdropScrollTopCSS=routeOutlet?.scrollTop||0;
@@ -597,7 +597,7 @@ async function initialize(){
     interaction.retargetRects(tileData,cornerInert);
     authHover.retargetRects(tileData,tileCount,cornerInert);
     audit.authGlass={renderer:authUsesCompositor()?
-      "native-css-backdrop-compositor":"shared-webgpu-glassPipeline",count:roles.length,
+      "native-backdrop+webgpu-material-highlights":"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",backTint:"none",faceScheme:tint.state.scheme,
       materialReference:"first-home-square",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
@@ -880,7 +880,7 @@ async function initialize(){
     // Draw only the route panes above the persistent homepage DOM. This is
     // the very same glassPipeline, bind group, per-pane tint and spring data
     // as the mosaic squares, not a second approximation or CSS overlay.
-    if(authContext&&!authUsesCompositor()){
+    if(authContext){
       const authPass=encoder.beginRenderPass({
         colorAttachments:[{view:authContext.getCurrentTexture().createView(),
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
@@ -899,13 +899,13 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return animating||(!authUsesCompositor()&&(authHoverAnimating||authAnimating));
+    return animating||authHoverAnimating||authAnimating;
   }
   // Auth-only submission for the card's exit Motion and native scroll.
   // The 10 extra pane instances share the unchanged homepage WebGPU shader
   // and material. Scroll events submit this pass before their next RAF. 
   function renderAuthOnly(){
-    if(authUsesCompositor()||!authContext||!instanceCount||stopped)return false;
+    if(!authContext||!instanceCount||stopped)return false;
     const now=performance.now();
     const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastAuthFrameTime=now;
@@ -972,7 +972,8 @@ async function initialize(){
   }
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   if(authContext)document.body.dataset.authGpuScene="ready";
-  audit.authPresentation=authUsesCompositor()?"native-backdrop-compositor":
+  audit.authPresentation=authUsesCompositor()?
+    "native-backdrop+WebGPU-material-highlights":
     authContext?"shared-pipeline-transparent-overlay":"offscreen-ci";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";

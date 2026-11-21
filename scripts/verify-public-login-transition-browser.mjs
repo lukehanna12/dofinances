@@ -364,16 +364,17 @@ try{
     "mode:window.__dashboardWebGPU?.authPresentation};})()");
   assert.match(scrollComposite.cardFilter,/blur\(/,
     "The real card samples the fixed wallpaper in the native scrolling compositor");
+  assert.match(scrollComposite.cardFilter,/brightness\(0\.79\)/,
+    "Live backdrop uses the original WebGPU dark-face brightness");
   assert.match(scrollComposite.controlFilter,/blur\(/,
     "Nested controls use their own native backdrop blur");
-  if(scrollComposite.canvasOpacity!==null){
-    assert.equal(scrollComposite.canvasOpacity,"0",
-      "The old stale WebGPU card texture must be invisible");
-    assert.equal(scrollComposite.canvasVisibility,"hidden");
+  if(scrollComposite.gpuHome==="ready"){
+    assert.equal(scrollComposite.canvasOpacity,"1",
+      "Old-shader optical rim and hover should render over the native backdrop");
+    assert.equal(scrollComposite.canvasVisibility,"visible");
+    assert.equal(scrollComposite.mode,"native-backdrop+WebGPU-material-highlights",
+      "The scrolling backdrop is native while original GPU material details remain");
   }
-  if(scrollComposite.gpuHome==="ready")
-    assert.equal(scrollComposite.mode,"native-backdrop-compositor",
-      "Home stays WebGPU while sign-in glass opts into scroll-synchronous sampling");
 
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+

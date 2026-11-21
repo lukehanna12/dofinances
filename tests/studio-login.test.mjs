@@ -519,8 +519,8 @@ test("sign-in rubberbanding restores native overflow with scroll-anchored glass"
   assert.match(homeCss,/#public-route-content > #dashboard-auth-glass-scene\{\s*position:absolute;/);
   assert.match(homeCss,/body\.public-home\[data-auth-gpu-scene="ready"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:1;/,
     "Optional GPU mode retains the previous exact presentation");
-  assert.match(homeCss,/body\.public-home\[data-auth-glass-mode="compositor"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:0!important;/,
-    "Default native compositor hides stale WebGPU samples during scrolling");
+  assert.match(homeCss,/body\.public-home\[data-auth-glass-mode="compositor"\] #public-route-content > #dashboard-auth-glass-scene\{[\s\S]*?opacity:1!important;/,
+    "Hybrid WebGPU overlay contains only scroll-independent optical terms");
   assert.match(homeCss,/#public-route-content > #public-route-stage\{\s*position:relative;z-index:1/);
   assert.match(renderer,/routeOutlet\?\.insertBefore\(authCanvas,routeMount\|\|routeOutlet\.firstChild\)/);
   assert.match(renderer,/routeMount\?\.scrollHeight/);
@@ -565,9 +565,28 @@ test("Sign-in's default native backdrop stays scroll-compositor-owned without re
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\)/);
   assert.match(css,/body\.public-home\[data-auth-glass-mode="compositor"\] \.auth3-root \[data-auth-glass-card\]/);
   assert.match(css,/-webkit-backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\)/);
-  assert.match(homeCss,/visibility:hidden!important/);
-  assert.match(renderer,/if\(authContext&&!authUsesCompositor\(\)\)/);
-  assert.match(renderer,/if\(authUsesCompositor\(\)\|\|!authContext\|\|!instanceCount\|\|stopped\)return false/);
-  assert.match(renderer,/audit\.authPresentation=authUsesCompositor\(\)\?"native-backdrop-compositor"/);
+  assert.match(homeCss,/z-index:2;\s*opacity:1!important;\s*visibility:visible!important/);
+  assert.match(renderer,/if\(authContext\)\{/);
+  assert.match(renderer,/if\(!authContext\|\|!instanceCount\|\|stopped\)return false/);
+  assert.match(renderer,/audit\.authPresentation=authUsesCompositor\(\)\?/);
   assert.match(renderer,/pass\.draw\(6,tileCount\)/,"Homepage square WebGPU rendering remains unchanged");
+});
+
+
+test("hybrid compositor keeps original WebGPU SDF and hover while never sampling stale scene pixels",async()=>{
+  const [shader,renderer,css,shell]=await Promise.all([
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
+    load("../src/styles.css"),
+    load("../sites/_apex/assets/public-home.css")
+  ]);
+  assert.match(shader,/if\(authPane && state\.tintMeta\.z>0\.5\)/);
+  assert.match(shader,/let reflection=clamp\(\(edge\+pointerLight\)\*0\.75\*transmission,0\.0,0\.32\)/);
+  assert.ok(shader.indexOf("if(authPane && state.tintMeta.z>0.5)")<
+    shader.indexOf("let glass=mix(mipSample("));
+  assert.match(renderer,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/);
+  assert.match(renderer,/authHover\.advance\(dt,reducedMotion\.matches\)/);
+  assert.match(renderer,/authPresentation=authUsesCompositor\(\)\?/);
+  assert.match(css,/backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\) brightness\(\.79\)/);
+  assert.match(shell,/z-index:2;\s*opacity:1!important;\s*visibility:visible!important/);
 });

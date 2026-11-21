@@ -23,7 +23,7 @@ struct Globals {
   fit: vec4<f32>,
   pointer: vec4<f32>,  // x,y,enabled,unused
   tint: vec4<f32>,     // matrix-projected RGB and native Float32 opacity lane
-  tintMeta: vec4<f32>, // tint branch enabled, dark scheme, reserved, reserved
+  tintMeta: vec4<f32>, // tint branch enabled, dark scheme, native-backdrop optical overlay, reserved
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
@@ -393,12 +393,6 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let shiftUV=shiftPx/backdropExtent;
   let interactiveInnerUV=innerUV+shiftUV;
   let interactiveOuterUV=outerUV+shiftUV;
-  let innerLOD=glassLOD(tile.properties.z,
-    blurDistribution(nativeHalf1(signed+inner),d));
-  let outerLOD=glassLOD(tile.properties.z,
-    blurDistribution(nativeHalf1(signed+outer),d));
-  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
-                mipSample(interactiveOuterUV,outerLOD),thresholdMix(signed));
   let rim=exp(-abs(signed)*1.16);
   let edge=clamp(rim*0.28,0.0,0.28);
   // Explicitly provisional; not derived from Apple event-dependent light.
@@ -406,6 +400,29 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // pointer coordinates instead of leaking to neighboring tiles.
   let pointerLight=proximity*(hover*0.075+pressed*0.06)+
     rim*proximity*pressed*0.035;
+  // Native compositing owns the photographic pixels in this scrolling
+  // route. Only the old shader's optical SDF rim and independent hover
+  // spring remain in WebGPU, so the glass cannot carry an outdated view
+  // of the stationary wallpaper into the next compositor scroll frame.
+  // The unchanged full WebGPU refraction remains for the homepage squares
+  // and the explicit ?auth-glass=webgpu reference implementation.
+  if(authPane && state.tintMeta.z>0.5){
+    let tintStrength=select(0.25,0.60,authPane);
+    if(tile.properties.y == -4.0){tintStrength=0.82;}
+    else if(tile.properties.y == -5.0){tintStrength=0.62;}
+    else if(tile.properties.y == -6.0){tintStrength=0.40;}
+    let pigment=tintTiles[in.tileIndex];
+    let transmission=1.0-clamp(pigment.w,0.0,1.0)*tintStrength;
+    let reflection=clamp((edge+pointerLight)*0.75*transmission,0.0,0.32);
+    return vec4<f32>(vec3<f32>(1.0),
+      coverage*clamp(tile.motion.z,0.0,1.0)*reflection);
+  }
+  let innerLOD=glassLOD(tile.properties.z,
+    blurDistribution(nativeHalf1(signed+inner),d));
+  let outerLOD=glassLOD(tile.properties.z,
+    blurDistribution(nativeHalf1(signed+outer),d));
+  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
+                mipSample(interactiveOuterUV,outerLOD),thresholdMix(signed));
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve source-backed sampled optics and the restrained browser rim.
