@@ -199,7 +199,7 @@ test("theme defaults to dark and is controlled exclusively by the persistent she
   assert.match(source,/credentials:\s*"same-origin"/);
 });
 
-test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squares",async()=>{
+test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrolling composite",async()=>{
   const [jsx,css,renderer,shader,homepageCss]=await Promise.all([
     load("../src/components/Auth3.jsx"),load("../src/styles.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
@@ -240,7 +240,7 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
   assert.match(shader,/if\(authPane\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/);
   assert.match(shader,/let hover=clamp\(tile\.interaction\.x,0\.0,1\.0\)/);
   assert.match(shader,/let pressed=clamp\(tile\.interaction\.y,0\.0,1\.0\)/);
-  assert.match(css,/body\[data-auth-gpu-scene="ready"\] \.auth3-root \[data-auth-glass-card\]/);
+  assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\) \.auth3-root \[data-auth-glass-card\]/);
 });
 test("Card is untinted; existing neutral presets tint controls in dark and light modes",async()=>{
   const [jsx,css,renderer,shader]=await Promise.all([
@@ -518,7 +518,9 @@ test("sign-in rubberbanding restores native overflow with scroll-anchored glass"
   assert.match(home,/<div id="public-route-content"[^>]*hidden><div id="public-route-stage"><\/div><\/div>/);
   assert.match(homeCss,/#public-route-content > #dashboard-auth-glass-scene\{\s*position:absolute;/);
   assert.match(homeCss,/body\.public-home\[data-auth-gpu-scene="ready"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:1;/,
-    "GPU-ready glass must override the hidden fallback with equal or higher specificity");
+    "Optional GPU mode retains the previous exact presentation");
+  assert.match(homeCss,/body\.public-home\[data-auth-glass-mode="compositor"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:0!important;/,
+    "Default native compositor hides stale WebGPU samples during scrolling");
   assert.match(homeCss,/#public-route-content > #public-route-stage\{\s*position:relative;z-index:1/);
   assert.match(renderer,/routeOutlet\?\.insertBefore\(authCanvas,routeMount\|\|routeOutlet\.firstChild\)/);
   assert.match(renderer,/routeMount\?\.scrollHeight/);
@@ -549,4 +551,23 @@ test("Glass background sampling uses actual compositor position, including elast
   assert.match(renderer,/routeOutlet\?\.addEventListener\("scroll",onAuthScroll,\{passive:true\}\)/);
   assert.match(renderer,/engine\.renderAuthOnly\(\);\s*audit\.authSynchronousScrollFrames/);
   assert.match(renderer,/performance\.now\(\)<authScrollRefreshUntil/);
+});
+
+
+test("Sign-in's default native backdrop stays scroll-compositor-owned without replacing Home's WebGPU",async()=>{
+  const [router,css,homeCss,renderer]=await Promise.all([
+    load("../sites/_apex/assets/public-home-transition.js"),
+    load("../src/styles.css"),load("../sites/_apex/assets/public-home.css"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
+  ]);
+  assert.match(router,/body\.dataset\.authGlassMode=new URLSearchParams\(location\.search\)\.get\("auth-glass"\)==="webgpu"/);
+  assert.match(router,/"webgpu":"compositor"/);
+  assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\)/);
+  assert.match(css,/body\.public-home\[data-auth-glass-mode="compositor"\] \.auth3-root \[data-auth-glass-card\]/);
+  assert.match(css,/-webkit-backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\)/);
+  assert.match(homeCss,/visibility:hidden!important/);
+  assert.match(renderer,/if\(authContext&&!authUsesCompositor\(\)\)/);
+  assert.match(renderer,/if\(authUsesCompositor\(\)\|\|!authContext\|\|!instanceCount\|\|stopped\)return false/);
+  assert.match(renderer,/audit\.authPresentation=authUsesCompositor\(\)\?"native-backdrop-compositor"/);
+  assert.match(renderer,/pass\.draw\(6,tileCount\)/,"Homepage square WebGPU rendering remains unchanged");
 });

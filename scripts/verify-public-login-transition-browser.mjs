@@ -317,7 +317,7 @@ try{
   // the same 23 CSS px without changing scrollTop (the macOS elastic case).
   // The glass shader must sample the fixed background from the *measured*
   // viewport relationship and submit BEFORE a later animation frame.
-  if(shortStart.glassParent&&await evaluate("document.body.dataset.authGpuScene==='ready'")){
+  if(shortStart.glassParent&&await evaluate("document.body.dataset.authGlassMode==='webgpu'&&document.body.dataset.authGpuScene==='ready'")){
     const elastic=await evaluate("(()=>{"+
       "const route=document.querySelector('#public-route-content');"+
       "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
@@ -351,6 +351,28 @@ try{
   await until("innerHeight==="+normalMetrics.height+" && innerWidth==="+normalMetrics.width+
     " && document.querySelector('#public-route-content').scrollTop===0",60);
 
+  const compositorMode=await evaluate("document.body.dataset.authGlassMode==='compositor'");
+  assert.ok(compositorMode,"Default sign-in must use the browser's native backdrop compositor");
+  const scrollComposite=await evaluate("(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
+    "const control=document.querySelector('[data-auth-glass-input]');"+
+    "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
+    "return {cardFilter:getComputedStyle(card).backdropFilter,"+
+    "controlFilter:getComputedStyle(control).backdropFilter,"+
+    "canvasOpacity:getComputedStyle(glass).opacity,"+
+    "canvasVisibility:getComputedStyle(glass).visibility,"+
+    "gpuHome:document.body.dataset.gpuScene,"+
+    "mode:window.__dashboardWebGPU?.authPresentation};})()");
+  assert.match(scrollComposite.cardFilter,/blur\(/,
+    "The real card samples the fixed wallpaper in the native scrolling compositor");
+  assert.match(scrollComposite.controlFilter,/blur\(/,
+    "Nested controls use their own native backdrop blur");
+  assert.equal(scrollComposite.canvasOpacity,"0",
+    "The old stale WebGPU card texture must be invisible");
+  assert.equal(scrollComposite.canvasVisibility,"hidden");
+  if(scrollComposite.gpuHome==="ready")
+    assert.equal(scrollComposite.mode,"native-backdrop-compositor",
+      "Home stays WebGPU while sign-in glass opts into scroll-synchronous sampling");
+
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+
     "const input=card.querySelector('[data-auth-glass-input]');"+
@@ -374,8 +396,8 @@ try{
   assert.notEqual(darkGlass.actionInk,darkGlass.ink,
     "Original dark mode: neutral white primary action with dark text");
   assert.equal(darkGlass.cardHover,"none",
-    "No extra CSS hover spotlight; use the squares' shared GPU hover");
-  if(darkGlass.gpu==="ready"){
+    "No artificial pointer spotlight or enlarged hover effect");
+  if(darkGlass.gpu==="ready"&&!compositorMode){
     assert.equal(darkGlass.background,"rgba(0, 0, 0, 0)",
       "WebGPU glass must be visible through a transparent DOM card");
     assert.equal(darkGlass.blur,"none",
@@ -428,8 +450,8 @@ try{
   assert.equal(hoverGlass.transform,darkGlass.transform,
     "Card hover must not cause a scaled transform");
   assert.equal(hoverGlass.cardHover,"none",
-    "Card hover must use the SAME GPU spring, not a CSS glow");
-  if(darkGlass.gpu==="ready"){
+    "No newly painted CSS pointer spotlight");
+  if(darkGlass.gpu==="ready"&&!compositorMode){
     await until("window.__dashboardWebGPU?.authGlass?.hovered===true",30,40);
     const state=await evaluate("({focus:window.__dashboardWebGPU.focusedTile,"+
       "squareCount:window.__dashboardWebGPU.tiles})");
@@ -438,7 +460,7 @@ try{
   }
   // The card has independent hover ownership from its nested glass buttons.
   // The squares continue using the original shared interaction controller.
-  if(darkGlass.gpu==="ready"){
+  if(darkGlass.gpu==="ready"&&!compositorMode){
     const buttonBounds=await evaluate("(()=>{const r=document.querySelector('[data-auth-glass-submit]').getBoundingClientRect();"+
       "return {x:r.left+r.width*.5,y:r.top+r.height*.5};})()");
     await send("Input.dispatchMouseEvent",{
@@ -519,7 +541,7 @@ try{
     "Original light mode must restore dark field text");
   assert.ok(Number.parseFloat(lightGlass.actionInk.match(/[0-9]+/)?.[0]??0)>225,
     "Original light mode must restore the dark primary action / near-white text; computed "+lightGlass.actionInk);
-  if(lightGlass.gpu==="ready"){
+  if(lightGlass.gpu==="ready"&&!compositorMode){
     await until("window.__dashboardWebGPU?.authGlass?.scheme==='light'",30);
     const audit=await evaluate("window.__dashboardWebGPU.authGlass");
     assert.equal(audit.cardTint,"none");

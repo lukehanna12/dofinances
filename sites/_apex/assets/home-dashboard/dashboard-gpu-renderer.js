@@ -33,6 +33,7 @@ const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const authCanvas=document.createElement("canvas");
+const authUsesCompositor=()=>document.body.dataset.authGlassMode==="compositor";
 const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
 // The route's scrollbox moves this canvas and its React card on the same
@@ -185,7 +186,7 @@ function requestRender(){
       }
     }catch(e){void fallback(e);return;}
     if(!stopped&&(animating||trackRunning||
-      performance.now()<authScrollRefreshUntil||
+      (!authUsesCompositor()&&performance.now()<authScrollRefreshUntil)||
       (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
       (restoreStart!==null&&performance.now()-restoreStart<DISMISS_MS+90)||
       performance.now()-start<1250))
@@ -595,7 +596,8 @@ async function initialize(){
     }
     interaction.retargetRects(tileData,cornerInert);
     authHover.retargetRects(tileData,tileCount,cornerInert);
-    audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
+    audit.authGlass={renderer:authUsesCompositor()?
+      "native-css-backdrop-compositor":"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",backTint:"none",faceScheme:tint.state.scheme,
       materialReference:"first-home-square",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
@@ -878,7 +880,7 @@ async function initialize(){
     // Draw only the route panes above the persistent homepage DOM. This is
     // the very same glassPipeline, bind group, per-pane tint and spring data
     // as the mosaic squares, not a second approximation or CSS overlay.
-    if(authContext){
+    if(authContext&&!authUsesCompositor()){
       const authPass=encoder.beginRenderPass({
         colorAttachments:[{view:authContext.getCurrentTexture().createView(),
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
@@ -897,13 +899,13 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return animating||authHoverAnimating||authAnimating;
+    return animating||(!authUsesCompositor()&&(authHoverAnimating||authAnimating));
   }
   // Auth-only submission for the card's exit Motion and native scroll.
   // The 10 extra pane instances share the unchanged homepage WebGPU shader
   // and material. Scroll events submit this pass before their next RAF. 
   function renderAuthOnly(){
-    if(!authContext||!instanceCount||stopped)return false;
+    if(authUsesCompositor()||!authContext||!instanceCount||stopped)return false;
     const now=performance.now();
     const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastAuthFrameTime=now;
@@ -970,7 +972,8 @@ async function initialize(){
   }
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   if(authContext)document.body.dataset.authGpuScene="ready";
-  audit.authPresentation=authContext?"shared-pipeline-transparent-overlay":"offscreen-ci";
+  audit.authPresentation=authUsesCompositor()?"native-backdrop-compositor":
+    authContext?"shared-pipeline-transparent-overlay":"offscreen-ci";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
   root.dataset.gpuPresentation=OFFSCREEN_CI?"offscreen-ci":"visible-canvas";
@@ -1060,7 +1063,7 @@ async function initialize(){
   // the glass-only GPU pass immediately inside the real scroll event, using
   // the canvas's actual viewport rect, not a predictive scrollTop value.
   const onAuthScroll=()=>{
-    if(stopped||!engine||!homeActive())return;
+    if(authUsesCompositor()||stopped||!engine||!homeActive())return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
     if(window.__dofPublicRouter?.state==="login"&&
        document.body.dataset.authGpuScene==="ready"){
@@ -1075,7 +1078,7 @@ async function initialize(){
   // Wheel/touch can initiate native elastic motion before (or even without)
   // scrollTop changing. Keep checking the observed compositor displacement.
   const armElasticRefresh=()=>{
-    if(window.__dofPublicRouter?.state!=="login")return;
+    if(authUsesCompositor()||window.__dofPublicRouter?.state!=="login")return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
     requestRender();
   };

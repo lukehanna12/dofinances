@@ -371,6 +371,15 @@ body.public-home #public-route-content > #dashboard-auth-glass-scene{
 body.public-home[data-auth-gpu-scene="ready"] #public-route-content > #dashboard-auth-glass-scene{
   opacity:1;
 }
+/* During native scrolling, WebGPU texture updates cannot be presented in
+   lockstep with the compositor's movement of the card. Hide ONLY the auth
+   WebGPU overlay in the default mode. The full-screen homepage background
+   and every original square remain WebGPU; /login?auth-glass=webgpu preserves
+   the previous experimental exact shader for comparison. */
+body.public-home[data-auth-glass-mode="compositor"] #public-route-content > #dashboard-auth-glass-scene{
+  opacity:0!important;
+  visibility:hidden!important;
+}
 
 /* Persistent public application shell: the backdrop, GPU and mark never unmount. */
 body.public-home > #public-route-content{

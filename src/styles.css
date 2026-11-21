@@ -275,10 +275,10 @@ body.public-home > #public-route-content:has(.auth3-root){
  * bounds in the shared glassPipeline on a separate transparent canvas
  * above the homepage. Clear the fallback ONLY once that layer is ready;
  * keep real text and focus rings above the GPU, without CSS effects. */
-body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-card],
-body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-input],
-body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-submit],
-body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-provider]{
+body[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) .auth3-root [data-auth-glass-card],
+body[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) .auth3-root [data-auth-glass-input],
+body[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) .auth3-root [data-auth-glass-submit],
+body[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) .auth3-root [data-auth-glass-provider]{
   background:transparent!important;
   border-color:transparent!important;
   box-shadow:none!important;
@@ -287,6 +287,34 @@ body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-provider]{
 }
 body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card]{
   overflow:visible;
+}
+/* The original CSS fallback is now the normal login surface on browsers
+   capable of native backdrop-filter. Its background is *composited* from
+   the actual wallpaper under the card in the very same scroll frame;
+   no per-scroll WebGPU texture coordinates or expensive DOM captures.
+   Preserve the established neutral control films, dark/light color tokens,
+   outlines, independent nested controls and untranslated hover geometry. */
+body.public-home[data-auth-glass-mode="compositor"] .auth3-root [data-auth-glass-card]{
+  --dashboard-tint-fill:transparent;
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  /* Original untinted card: a material face without a colored pigment. */
+}
+body.public-home[data-auth-glass-mode="compositor"] .auth3-root
+  :is([data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]){
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
+}
+body.public-home[data-auth-glass-mode="compositor"] .auth3-root
+  :is([data-auth-glass-card],[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]){
+  transition:border-color 160ms ease,box-shadow 160ms ease;
+}
+/* Subtle, compositor-native interaction without scaling, foreign hues,
+   extra spotlights, or new pointer-driven raster passes. */
+body.public-home[data-auth-glass-mode="compositor"] .auth3-root [data-auth-glass-card]:hover{
+  border-color:rgba(247,250,252,.44);
+  box-shadow:0 10px 22px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.36),
+    inset 0 -1px 0 rgba(18,22,25,.15);
 }
 /* The border is GPU SDF-owned, but keyboard focus must remain perceivable.
  * No bright spring scaling, and no independent hover hotspot. */
