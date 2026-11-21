@@ -505,7 +505,7 @@ test("back arrow uses exact square glass without artificial light lift or icon o
   assert.doesNotMatch(privateShader,/tile.properties.y == -7.0/);
 });
 
-test("sign-in rubberbanding restores native overflow with scroll-anchored glass",async()=>{
+test("sign-in content scrolls normally without elastic overscroll; full WebGPU stays viewport-fixed",async()=>{
   const [css,jsx,home,homeCss,renderer,shader,router]=await Promise.all([
     load("../src/styles.css"),load("../src/components/Auth3.jsx"),
     load("../sites/_apex/index.html"),load("../sites/_apex/assets/public-home.css"),
@@ -513,8 +513,10 @@ test("sign-in rubberbanding restores native overflow with scroll-anchored glass"
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
     load("../sites/_apex/assets/public-home-transition.js")
   ]);
-  assert.match(css,/body\.public-home > #public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:auto;/);
-  assert.doesNotMatch(css,/overscroll-behavior-y:none|overflow-y:hidden|touch-action:none|position:fixed!important/);
+  assert.match(css,/body\.public-home > #public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:none;/);
+  assert.match(css,/html:has\(body\.public-home #public-route-content \.auth3-root\),\s*body\.public-home:has\(#public-route-content \.auth3-root\)\{\s*overscroll-behavior-y:none;/);
+  assert.doesNotMatch(css,/overflow-y:hidden|touch-action:none|position:fixed!important/,
+    "Normal scrolling and unmodified WebGPU placement remain allowed");
   assert.match(home,/<div id="public-route-content"[^>]*hidden><div id="public-route-stage"><\/div><\/div>/);
   assert.match(homeCss,/#public-route-content > #dashboard-auth-glass-scene\{\s*position:absolute;/);
   assert.match(homeCss,/body\.public-home\[data-auth-gpu-scene="ready"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:1;/,

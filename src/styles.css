@@ -109,11 +109,18 @@
 #public-route-content .auth3-root [data-auth-stage]{
   min-height:calc(100dvh - 44px);
 }
-/* The route outlet is the sole vertical scrollport for sign-in. Leave
- * native elastic overscroll enabled: its WebGPU glass layer is now a sibling
- * of the React mount *inside* that scrollport, not fixed to the viewport. */
+/* Sign-in is the only scrolling surface. Keep normal wheel/trackpad/touch
+ * scrolling and kinetic momentum, but do not let the card's DOM content
+ * elastically overshoot the top/bottom or propagate scroll to the document.
+ * The full original WebGPU glass is now viewport-fixed independently of
+ * content scrolling, so it needs no rubberband translation or JS prevention.
+ * Scope the root boundary as well to suppress viewport bounce on Safari. */
 body.public-home > #public-route-content:has(.auth3-root){
-  overscroll-behavior-y:auto;
+  overscroll-behavior-y:none;
+}
+html:has(body.public-home #public-route-content .auth3-root),
+body.public-home:has(#public-route-content .auth3-root){
+  overscroll-behavior-y:none;
 }
 
 /* A separate 0%-tint glass back button floats on the card, sharing the

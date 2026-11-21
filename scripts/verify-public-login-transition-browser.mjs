@@ -252,10 +252,10 @@ try{
     "Or text exactly matches account-linking note in dark mode");
   assert.equal(darkOrnaments.line,darkOrnaments.noteColor,
     "Both Or lines share the note's exact theme color");
-  assert.equal(darkOrnaments.routeOverscroll,"auto",
-    "Native vertical rubberbanding restored on the real login scroll container");
-  assert.equal(darkOrnaments.rootOverscroll,"auto",
-    "Viewport overscroll must not be suppressed on the login route");
+  assert.equal(darkOrnaments.routeOverscroll,"none",
+    "Sign-in content must stop elastically bouncing at native scroll boundaries");
+  assert.equal(darkOrnaments.rootOverscroll,"none",
+    "Login-scoped root must not rubberband or chain wheel/touch overscroll");
   assert.equal(darkOrnaments.routeOverflow,"auto",
     "Legitimate short-viewport form scrolling remains enabled");
   assert.ok(darkOrnaments.noteColor,"Account-linking note has a computed color");
@@ -286,6 +286,9 @@ try{
     "glassHeight:glass?.getBoundingClientRect().height,"+
     "stageHeight:stage.scrollHeight,available:route.clientHeight};})()");
   assert.equal(shortStart.overflow,"auto");
+  // The scroll container must remain scrollable in short viewports, while
+  // attempting to push beyond its actual bounds cannot translate the DOM.
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#public-route-content')).overscrollBehaviorY"),"none");
   if(shortStart.glassParent){
     assert.equal(shortStart.glassParent,"public-route-content",
       "Glass surface belongs to the very same native scrollport as the card");
@@ -343,6 +346,19 @@ try{
       "document.querySelector('#public-route-stage').style.translate='';"+
       "route.dispatchEvent(new Event('scroll'));})()");
   }
+  // Confirm top/bottom bounds without disabling the scrollport. Real native
+  // elastic overscroll is compositor-controlled and cannot be reproduced by
+  // a synthetic scrollTop assignment; CSS boundary policy is asserted above.
+  const boundaries=await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
+    "const max=r.scrollHeight-r.clientHeight;"+
+    "r.scrollTop=-1000;const top=r.scrollTop;"+
+    "r.scrollTop=max+1000;const bottom=r.scrollTop;"+
+    "return {top,bottom,max,overflow:getComputedStyle(r).overflowY,"+
+    "overscroll:getComputedStyle(r).overscrollBehaviorY};})()");
+  assert.equal(boundaries.top,0);
+  assert.ok(Math.abs(boundaries.bottom-boundaries.max)<1);
+  assert.equal(boundaries.overflow,"auto");
+  assert.equal(boundaries.overscroll,"none");
   await evaluate("document.querySelector('#public-route-content').scrollTop=0");
   // A headless Chrome --window-size includes browser chrome: innerHeight is
   // not necessarily 880. Clear emulation rather than assuming the restored
@@ -524,7 +540,8 @@ try{
     "Or label matches the account-linking note in light mode");
   assert.equal(lightOrnaments.line,lightOrnaments.noteColor,
     "Both Or lines use the note's light theme color");
-  assert.equal(lightOrnaments.routeOverscroll,"auto");
+  assert.equal(lightOrnaments.routeOverscroll,"none");
+  assert.equal(lightOrnaments.rootOverscroll,"none");
   assert.equal(lightOrnaments.routeOverflow,"auto");
   assert.ok(lightOrnaments.noteColor,"Light-mode account-linking color must exist");
   assert.equal(lightOrnaments.backTint,"transparent");
