@@ -30,6 +30,7 @@ const OFFSCREEN_CI=typeof location!=="undefined" &&
 const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
+const authCanvas=document.createElement("canvas");
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -162,6 +163,8 @@ async function fallback(reason){
     root.dataset.gpuError=String(reason).slice(0,700);
   }
   document.body.dataset.gpuScene="fallback";
+  document.body.dataset.authGpuScene="fallback";
+  authCanvas.remove();
   canvas.remove();
   try{engine?.dispose()}catch{}
   // Avoid a blank preview where WebGPU is not available (e.g. a disabled
@@ -267,12 +270,21 @@ async function initialize(){
     "f32 fallback; native LPH half conversion not matched";
   if(root)root.dataset.gpuPhase="device-ready";
   const context=OFFSCREEN_CI?null:canvas.getContext("webgpu");
+  const authContext=OFFSCREEN_CI?null:authCanvas.getContext("webgpu");
   if(!OFFSCREEN_CI&&!context)throw new Error("No GPUCanvasContext");
+  if(!OFFSCREEN_CI&&!authContext)throw new Error("No sign-in GPUCanvasContext");
   const format=navigator.gpu.getPreferredCanvasFormat();
   if(context)context.configure({device,format,alphaMode:"opaque"});
+  if(authContext)authContext.configure({device,format,alphaMode:"premultiplied"});
   canvas.id="dashboard-webgpu-scene";
   canvas.setAttribute("aria-hidden","true");
   document.body.insertBefore(canvas,document.getElementById("workspace-shell"));
+  // The same shader renders auth panes on a transparent upper surface.
+  // The opaque wallpaper canvas is BELOW #workspace-shell; without this
+  // overlay, DOM compositing can hide every otherwise valid auth GPU pane.
+  authCanvas.id="dashboard-auth-glass-scene";
+  authCanvas.setAttribute("aria-hidden","true");
+  document.body.insertBefore(authCanvas,document.getElementById("public-route-content"));
   const url="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif";
   // HTMLImageElement onload works without a CPU-side Blob/ImageBitmap
   // re-encode. The GPU still owns all downstream scene/mip operations.
@@ -510,8 +522,12 @@ async function initialize(){
     canvas.style.top=sceneTop+"px";
     canvas.style.width=window.innerWidth+"px";
     canvas.style.height=viewport.height+"px";
+    authCanvas.style.top=canvas.style.top;
+    authCanvas.style.width=canvas.style.width;
+    authCanvas.style.height=canvas.style.height;
     if(sized){
       canvas.width=w;canvas.height=h;
+      if(authContext){authCanvas.width=w;authCanvas.height=h;}
       scene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
@@ -748,11 +764,23 @@ async function initialize(){
     });
     pass.setPipeline(copyPipeline);pass.setBindGroup(0,copyGroup);
     pass.draw(3);
-    if(instanceCount){
+    if(tileCount){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
-      pass.draw(6,instanceCount);
+      pass.draw(6,tileCount);
     }
     pass.end();
+    // Draw only the route panes above the persistent homepage DOM. This is
+    // the very same glassPipeline, bind group, per-pane tint and spring data
+    // as the mosaic squares, not a second approximation or CSS overlay.
+    if(authContext){
+      const authPass=encoder.beginRenderPass({
+        colorAttachments:[{view:authContext.getCurrentTexture().createView(),
+          loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
+      });
+      authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,glassGroup);
+      authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
+      authPass.end();
+    }
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;
     audit.focusedTile=interaction.focusedTile;
@@ -797,6 +825,8 @@ async function initialize(){
     audit.offscreenPixelProof=rgba;
   }
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
+  if(authContext)document.body.dataset.authGpuScene="ready";
+  audit.authPresentation=authContext?"shared-pipeline-transparent-overlay":"offscreen-ci";
   audit.status="ready";
   root.dataset.gpuRenderer="webgpu";
   root.dataset.gpuPresentation=OFFSCREEN_CI?"offscreen-ci":"visible-canvas";

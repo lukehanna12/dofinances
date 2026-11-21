@@ -486,6 +486,23 @@ body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden]
 #dashboard-webgpu-scene{
   transition:none!important;
 }
+/* Route-owned auth panes use the SAME WebGPU pipeline as the squares, but
+   need an alpha-composited layer ABOVE #workspace-shell and BELOW the form.
+   Never add CSS tint, blur, hover scaling, or a second glass renderer here. */
+#dashboard-auth-glass-scene{
+  position:fixed;
+  inset:var(--dashboard-scene-top) 0 0;
+  z-index:5;
+  display:block;
+  width:100vw;
+  height:var(--dashboard-scene-height);
+  pointer-events:none;
+  opacity:0;
+  contain:strict;
+}
+body[data-auth-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden])) #dashboard-auth-glass-scene{
+  opacity:1;
+}
 body[data-gpu-scene="ready"]:has(> #workspace-shell .dashboard-home:not([hidden]))::before{
   content:none!important;
   display:none!important;
@@ -615,4 +632,5 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .sid
 body:has(> #workspace-shell .dashboard-home:not([hidden])) #workspace-shell .topbar,
 body:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-topbar-backdrop {display:none!important;}
 body:not(:has(> #workspace-shell .dashboard-home:not([hidden]))) #dashboard-webgpu-scene,
+body:not(:has(> #workspace-shell .dashboard-home:not([hidden]))) #dashboard-auth-glass-scene,
 body:not(:has(> #workspace-shell .dashboard-home:not([hidden]))) .dashboard-tint-tool {display:none!important;}

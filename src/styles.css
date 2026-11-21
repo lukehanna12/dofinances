@@ -202,13 +202,14 @@
 .auth3-root:not(.dark) [data-auth-glass-submit]{
   color:#fff!important;
 }
-/* The active renderer paints these very elements from their live DOM
- * bounds in the shared glassPipeline. Keep only real text and focus rings
- * above the GPU, with NO CSS refraction, film, glint, shadow or scaling. */
-body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card],
-body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-input],
-body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-submit],
-body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-provider]{
+/* The active renderer paints these exact elements from their live DOM
+ * bounds in the shared glassPipeline on a separate transparent canvas
+ * above the homepage. Clear the fallback ONLY once that layer is ready;
+ * keep real text and focus rings above the GPU, without CSS effects. */
+body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-card],
+body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-input],
+body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-submit],
+body[data-auth-gpu-scene="ready"] .auth3-root [data-auth-glass-provider]{
   background:transparent!important;
   border-color:transparent!important;
   box-shadow:none!important;

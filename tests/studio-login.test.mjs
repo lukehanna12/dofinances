@@ -183,10 +183,11 @@ test("theme defaults to dark and is controlled exclusively by the persistent she
 });
 
 test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squares",async()=>{
-  const [jsx,css,renderer,shader]=await Promise.all([
+  const [jsx,css,renderer,shader,homepageCss]=await Promise.all([
     load("../src/components/Auth3.jsx"),load("../src/styles.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
-    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl")
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-home.css")
   ]);
   assert.match(jsx,/data-auth-glass-card/);
   assert.doesNotMatch(jsx,/onPointerMove=\{moveGlassLight\}/);
@@ -199,13 +200,18 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
   assert.match(renderer,/const authAnimating=paintAuthPanes\(\)/);
   assert.match(renderer,/interaction\.retargetRects\(tileData,cornerInert\)/);
   assert.match(renderer,/interaction\.advance\(dt,reducedMotion\.matches\)/);
-  assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,instanceCount\);/);
+  assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,tileCount\);/);
+  assert.match(renderer,/authContext\.configure\(\{device,format,alphaMode:"premultiplied"\}\)/);
+  assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,glassGroup\);\s*authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
+  assert.match(renderer,/document\.body\.dataset\.authGpuScene="ready"/);
+  assert.match(homepageCss,/#dashboard-auth-glass-scene\{/);
+  assert.match(homepageCss,/z-index:5;[\s\S]*?pointer-events:none;/);
   assert.match(shader,/let authPane=tile\.properties\.y<0\.0;/);
   assert.match(shader,/let scale=select\(0\.85\+0\.15\*a,1\.0,authPane\);/);
   assert.match(shader,/if\(authPane\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/);
   assert.match(shader,/let hover=clamp\(tile\.interaction\.x,0\.0,1\.0\)/);
   assert.match(shader,/let pressed=clamp\(tile\.interaction\.y,0\.0,1\.0\)/);
-  assert.match(css,/body\[data-gpu-scene="ready"\] \.auth3-root \[data-auth-glass-card\]/);
+  assert.match(css,/body\[data-auth-gpu-scene="ready"\] \.auth3-root \[data-auth-glass-card\]/);
 });
 test("Card is untinted; existing neutral presets tint controls in dark and light modes",async()=>{
   const [jsx,css,renderer,shader]=await Promise.all([
