@@ -204,3 +204,12 @@ test("Assigned Lucide project icons display large, white, and without number cir
  assert.match(css,/filter:brightness\(0\) invert\(1\)/);
  assert.match(css,/\.project-showcase-number\{[^}]*border-radius:50%/);
 });
+
+test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
+ const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
+ const pastoral=PROJECT_CARD_IMAGES.colosseum;
+ assert.equal(mural,"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg");
+ assert.equal(pastoral,"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg");
+ assert.ok(!mural.includes("ktga-hG5fIhh"),"Do not use the gallery installation image");
+ assert.ok(!pastoral.includes("upload.wikimedia.org/wikipedia/commons/thumb"),"Use the verified Commons image thumbnail host");
+});
