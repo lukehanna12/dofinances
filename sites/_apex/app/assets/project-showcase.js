@@ -35,6 +35,7 @@ export function sortProjectShowcase(projects){
 // Stable per-project choices. Unassigned items keep their current marker and wallpaper.
 // Images are linked to their publishers, not copied into this repository.
 export const PROJECT_CARD_ICONS=Object.freeze({
+  "colosseum":"colosseum-lucide",
   "bootscript":"paint-roller",
   "translucence-lab":"lightbulb",
   "github-readme-chrome-extension":"file-pen",

@@ -1,10 +1,11 @@
 # Projects card icons and artwork
 
-- Nine Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license), plus three custom SVGs: the user-supplied treehouse for Ozoning Board, the approved Lucide-style Funnel + Code composite for Protocol Monitor Pruner, and a Lucide apple with an original curling worm for Apple HIGs Reader. Assigned icons render in white at 28 × 28 px without the original number-circle background.
+- Nine Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license), plus four custom SVGs: the user-supplied treehouse for Ozoning Board, the approved Lucide-style Funnel + Code composite for Protocol Monitor Pruner, a Lucide apple with a short worm for Apple HIGs Reader, and an original Lucide-style Colosseum icon approved by the user. Assigned icons render in white at 28 × 28 px without the original number-circle background.
 - Icon choices and image choices are keyed by permanent project slug in `../project-showcase.js`.
 - Images remain external HTTPS references; no copyrighted artwork files are copied into this repository. Images for unassigned projects and images that fail to load retain the existing workspace-wallpaper behavior.
 - External image servers may restrict hotlinking or change URLs. For guaranteed availability, obtain permission for copyrighted images and host licensed copies in Git-managed assets.
 
+- Colosseum uses `colosseum-lucide.svg`, the approved white 24 × 24, 2-unit-stroke design with a sweeping taller left façade, slanted central seam, arched courses, and a lower right wing. Its assigned *Pastoral State* hover artwork is unchanged.
 - Ozoning Board uses the latest `treehouse-ozoning.v3.svg`, preserving the user-supplied 24 × 24 viewBox and 2-unit strokes. The shared icon styling displays it as a white 28 × 28 px icon without a surrounding circle.
 
 - Earlier Ozoning drawings remain at `treehouse-ozoning.svg` and `treehouse-ozoning.v2.svg` for compatibility. `treehouse-ozoning.v3.svg` contains the new single ladder rail and two rungs specified by the user. The versioned icon path and module-import chain avoid stale cached responses.

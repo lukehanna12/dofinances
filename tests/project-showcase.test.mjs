@@ -165,6 +165,7 @@ test("Projects header replaces count with the collections-style plus control and
 
 test("Curated icon and art assignments remain bound to permanent project slugs",()=>{
  const iconNames={
+ "colosseum": "colosseum-lucide",
  "bootscript": "paint-roller",
  "translucence-lab": "lightbulb",
  "github-readme-chrome-extension": "file-pen",
@@ -257,9 +258,9 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v5"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v5"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v5"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v6"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v6"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v6"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
@@ -299,4 +300,17 @@ test("Apple worm v3 is outside the right side with no head or internal squiggle"
  assert.ok(!svg.includes("<circle"),"No separate head");
  assert.ok(!svg.includes("M12.4 17.8"),"No internal worm body");
  assert.ok(!svg.includes("M16.5 11.3"),"No old S-shaped body");
+});
+
+test("Colosseum uses the approved white Lucide-style Coliseum SVG",()=>{
+ const iconPath="sites/_apex/app/assets/project-icons/colosseum-lucide.svg";
+ const svg=read(iconPath);
+ assert.equal(PROJECT_CARD_ICONS.colosseum,"colosseum-lucide");
+ assert.ok(svg.includes('viewBox="0 0 24 24"'));
+ assert.ok(svg.includes('stroke="#ffffff" stroke-width="2"'));
+ assert.ok(svg.includes('stroke-linecap="round" stroke-linejoin="round"'));
+ assert.ok(svg.includes('M2 21V6.4C4.7 4.5 8.7 3 12 3l3.4 18H22'),"Original approved facade retained");
+ assert.ok(svg.includes('M1.5 21h21'),"Original approved foundation retained");
+ assert.ok(PROJECT_CARD_IMAGES.colosseum.includes('Cole_Thomas_The_Course_of_Empire'),"Colosseum hover artwork preserved");
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
 });
