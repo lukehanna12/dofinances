@@ -100,6 +100,15 @@
  opacity:1;transform:scale(1)
 }
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
+/* Warhol's After the Party: crop the narrow white inner frame on this card only.
+   Retain the original 10% entrance-to-rest zoom animation: 1.155 -> 1.05. */
+.view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
+ transform:scale(1.155)
+}
+.view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+ transform:scale(1.05)
+}
+
 .view[data-view="projects"] .project-showcase-content{
  position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
  min-height:100%;padding:clamp(12px,1.2vw,16px) clamp(12px,1.2vw,16px) 0
