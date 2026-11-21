@@ -495,7 +495,7 @@ test("login scroll outlet suppresses vertical rubberbanding without locking over
   const [css,jsx]=await Promise.all([
     load("../src/styles.css"),load("../src/components/Auth3.jsx")
   ]);
-  assert.match(css,/#public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:none;/,
+  assert.match(css,/body\.public-home > #public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:none;/,
     "The actual fixed route scrollport disables elastic vertical overscroll");
   assert.match(css,/html:has\(#public-route-content \.auth3-root\),\s*body:has\(#public-route-content \.auth3-root\)\{\s*overscroll-behavior-y:none;/,
     "Viewport bounce must also be suppressed only while login is present");

@@ -113,7 +113,10 @@
  * scroll container. Suppress its end-of-scroll elastic/rubber-band
  * motion while preserving overflow:auto for short or mobile screens.
  * Scope the viewport guard to this route: homepage scrolling is unchanged. */
-#public-route-content:has(.auth3-root){
+/* Override public-home.css's more-specific
+ * body.public-home > #public-route-content { overscroll-behavior:contain; }.
+ * Matching that selector's ancestry keeps the login-only override effective. */
+body.public-home > #public-route-content:has(.auth3-root){
   overscroll-behavior-y:none;
 }
 html:has(#public-route-content .auth3-root),
