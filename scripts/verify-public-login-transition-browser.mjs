@@ -114,6 +114,21 @@ try{
     await sleep(70);
   }
   assert.ok(entered,"Sign in card did not mount on /login");
+  const loginBar=await evaluate("(()=>{const nav=document.querySelector('#global-menu');"+
+    "const bounds=nav?.getBoundingClientRect();"+
+    "return {top:bounds?.top,height:bounds?.height,"+
+    "position:getComputedStyle(nav).position,"+
+    "background:getComputedStyle(nav).backgroundColor,"+
+    "labels:[...nav.querySelectorAll('.global-menu-links button')].map(e=>e.textContent.trim()),"+
+    "github:nav.querySelector('.public-github')?.getAttribute('href'),"+
+    "dropdown:!!nav.querySelector('#public-menu-toggle')};})()");
+  assert.equal(loginBar.top,0,"Login bar must be flush to the top of the viewport");
+  assert.equal(loginBar.height,homeTop,"Login bar must match Home's scene boundary");
+  assert.equal(loginBar.position,"fixed");
+  assert.deepEqual(loginBar.labels,["Projects","Quick Downloads","Collections","Contact"]);
+  assert.equal(loginBar.github,"https://github.com/lukehanna12");
+  assert.equal(loginBar.dropdown,true);
+
   const scene=await evaluate("(()=>{"+
     "const image=document.querySelector('[data-auth-scene=photo]');"+
     "const veil=document.querySelector('[data-auth-scene=veil]');"+

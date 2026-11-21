@@ -24,11 +24,11 @@
 :root[data-dof-theme="light"] .doof-theme-sun{display:none}
 /* Homepage's light mode changes UI chrome, not the recovered photo or
    per-square optics. Sign-in card has its own established light classes. */
-:root[data-dof-theme="light"] body.public-home > .global-menu{
+:root[data-dof-theme="light"] body:is(.public-home,.public-login) > .global-menu{
   background:#cfd2d6;color:#252a31;border-bottom-color:rgba(0,0,0,.1);
 }
-:root[data-dof-theme="light"] body.public-home .global-menu-control{color:#252a31}
-:root[data-dof-theme="light"] body.public-home .global-menu-control:hover{
+:root[data-dof-theme="light"] body:is(.public-home,.public-login) .global-menu-control{color:#252a31}
+:root[data-dof-theme="light"] body:is(.public-home,.public-login) .global-menu-control:hover{
   color:#111;background:rgba(0,0,0,.09);
 }
 :root[data-dof-theme="light"] body.public-home .dashboard-home .cta6-center h1{

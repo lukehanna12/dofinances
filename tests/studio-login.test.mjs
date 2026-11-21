@@ -23,6 +23,28 @@ test("public Home and Auth-3 keep a continuous photo across the document boundar
   assert.doesNotMatch(component, /sessionStorage|document\.cookie/);
 });
 
+test("login preserves the same persistent top navigation as Home across both themes", async () => {
+  const [home, login, css, theme, dropdown] = await Promise.all([
+    load("../sites/_apex/index.html"),load("../index.html"),
+    load("../sites/_apex/assets/public-home.css"),
+    load("../sites/_apex/assets/public-theme.css"),
+    load("../sites/_apex/assets/public-home-menu.js")
+  ]);
+  const nav=/<nav class="global-menu" id="global-menu" aria-label="Site navigation">[\s\S]*?<\/nav>/;
+  const source=home.match(nav)?.[0],destination=login.match(nav)?.[0];
+  assert.ok(source&&destination,"Both pages should render the navigation before hydration");
+  assert.equal(destination,source,"Navigation markup must remain identical across pages");
+  assert.match(login,/body class="public-login"/);
+  assert.match(login,/rel="stylesheet" href="\/assets\/public-home\.css"/);
+  assert.match(login,/script defer src="\/assets\/public-home-menu\.js"/);
+  assert.match(css,/body:is\(\.public-home,\.public-login\) > \.global-menu\{/);
+  assert.match(theme,/:root\[data-dof-theme="light"\] body:is\(\.public-home,\.public-login\) > \.global-menu/);
+  assert.match(dropdown,/document\.addEventListener\("keydown"/);
+  assert.match(destination,/>Contact<\/button>/);
+  assert.doesNotMatch(destination,/>Settings<\/button>/);
+  assert.match(home,/<button class="cta6-action" type="button">Settings<\/button>/);
+});
+
 test("Studio root is the only React entrypoint; the apex /login reuses its build", async () => {
   const root = await load("../index.html");
   assert.match(root, /<title>Sign in · Dofinances<\/title>/);

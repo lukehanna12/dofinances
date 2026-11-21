@@ -40,7 +40,7 @@ body.public-home:has(> #workspace-shell .dashboard-home:not([hidden])){
 }
 .public-skip-link:focus{top:54px;}
 /* Recreate the dashboard's 44px slate navigation; every button is inert. */
-body.public-home > .global-menu{
+body:is(.public-home,.public-login) > .global-menu{
   position:fixed;
   inset:0 0 auto;
   width:100%;
@@ -54,7 +54,7 @@ body.public-home > .global-menu{
   font:400 12px/1.3 var(--ui-font-sans,system-ui);
   -webkit-font-smoothing:antialiased;
 }
-body.public-home .global-menu-inner{
+body:is(.public-home,.public-login) .global-menu-inner{
   height:100%;
   box-sizing:border-box;
   display:flex;
@@ -63,7 +63,7 @@ body.public-home .global-menu-inner{
   gap:clamp(12px,2.1vw,24px);
   padding:0 clamp(12px,3vw,46px);
 }
-body.public-home .global-menu-links{
+body:is(.public-home,.public-login) .global-menu-links{
   display:flex;
   align-items:center;
   justify-content:space-evenly;
@@ -72,7 +72,7 @@ body.public-home .global-menu-links{
   max-width:810px;
   gap:clamp(8px,1.7vw,28px);
 }
-body.public-home .global-menu-control{
+body:is(.public-home,.public-login) .global-menu-control{
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -94,39 +94,39 @@ body.public-home .global-menu-control{
   cursor:pointer;
   transition:background-color 140ms ease,color 140ms ease,transform 135ms ease;
 }
-body.public-home .global-menu-control:hover{
+body:is(.public-home,.public-login) .global-menu-control:hover{
   background:rgba(255,255,255,.13);
   color:#fff;
 }
-body.public-home .global-menu-control:active{
+body:is(.public-home,.public-login) .global-menu-control:active{
   transform:scale(.94);
   background:rgba(255,255,255,.22);
 }
-body.public-home .global-menu-control:focus-visible{
+body:is(.public-home,.public-login) .global-menu-control:focus-visible{
   outline:2px solid #fff;
   outline-offset:2px;
 }
-body.public-home .public-github{
+body:is(.public-home,.public-login) .public-github{
   width:32px;height:32px;padding:5px;flex:none;
 }
-body.public-home .public-github svg{
+body:is(.public-home,.public-login) .public-github svg{
   width:21px;height:21px;display:block;flex:none;
 }
-body.public-home .global-menu-actions{display:flex;align-items:center;flex:none;}
-body.public-home .global-menu-icon{width:32px;height:32px;padding:6px;}
-body.public-home .global-menu-icon svg{width:19px;height:19px;display:block;}
+body:is(.public-home,.public-login) .global-menu-actions{display:flex;align-items:center;flex:none;}
+body:is(.public-home,.public-login) .global-menu-icon{width:32px;height:32px;padding:6px;}
+body:is(.public-home,.public-login) .global-menu-icon svg{width:19px;height:19px;display:block;}
 /* The three-button row spans 374px at desktop sizes.
    Below approximately twice that span (2 * 374 = 748px), collapse
    central navigation to the menu beside Search, keeping GitHub at left. */
-body.public-home .public-menu-toggle,
-body.public-home .public-menu-panel{display:none;}
-body.public-home .public-menu-panel[hidden]{display:none!important;}
+body:is(.public-home,.public-login) .public-menu-toggle,
+body:is(.public-home,.public-login) .public-menu-panel{display:none;}
+body:is(.public-home,.public-login) .public-menu-panel[hidden]{display:none!important;}
 @media(max-width:748px){
-  body.public-home .global-menu-inner{gap:10px;padding-inline:clamp(10px,3vw,30px);}
-  body.public-home .global-menu-links{display:none;}
-  body.public-home .global-menu-actions{margin-left:auto;gap:4px;}
-  body.public-home .public-menu-toggle{display:inline-flex;}
-  body.public-home .public-menu-panel:not([hidden]){
+  body:is(.public-home,.public-login) .global-menu-inner{gap:10px;padding-inline:clamp(10px,3vw,30px);}
+  body:is(.public-home,.public-login) .global-menu-links{display:none;}
+  body:is(.public-home,.public-login) .global-menu-actions{margin-left:auto;gap:4px;}
+  body:is(.public-home,.public-login) .public-menu-toggle{display:inline-flex;}
+  body:is(.public-home,.public-login) .public-menu-panel:not([hidden]){
     position:absolute;
     top:calc(100% + 8px);
     right:clamp(10px,3vw,30px);
@@ -145,7 +145,7 @@ body.public-home .public-menu-panel[hidden]{display:none!important;}
     backdrop-filter:blur(16px);
     animation:public-menu-enter 150ms cubic-bezier(.2,.78,.2,1) both;
   }
-  body.public-home .public-menu-panel .global-menu-control{
+  body:is(.public-home,.public-login) .public-menu-panel .global-menu-control{
     display:flex;
     width:100%;
     min-height:36px;
@@ -154,7 +154,7 @@ body.public-home .public-menu-panel[hidden]{display:none!important;}
     padding-inline:13px;
     font-size:12px;
   }
-  body.public-home .public-menu-toggle[aria-expanded="true"]{
+  body:is(.public-home,.public-login) .public-menu-toggle[aria-expanded="true"]{
     color:#fff;
     background:rgba(255,255,255,.16);
   }

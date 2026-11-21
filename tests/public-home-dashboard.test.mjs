@@ -21,7 +21,7 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   const group=home.match(/<div class="cta6-bottom-action"[^>]*>([\s\S]*?)<\/div>/);
   assert.ok(group);
   const items=[...group[1].matchAll(/<(a|button)\b[^>]*>([^<]+)<\/\1>/g)].map(m=>[m[1],m[2].trim()]);
-  assert.deepEqual(items,[["button","Projects"],["a","Sign in"],["button","Contact"]]);
+  assert.deepEqual(items,[["button","Projects"],["a","Sign in"],["button","Settings"]]);
   assert.match(group[1],/<a class="cta6-action" href="\/login">Sign in<\/a>/);
   assert.match(style,/a\.cta6-action\[href="\/login"\]\{\s*min-width:150px;\s*width:150px;/);
   assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?a\.cta6-action\[href="\/login"\]\{\s*min-width:129px;\s*width:129px;/);
@@ -39,7 +39,7 @@ test("GitHub profile opens in a new tab; remaining public top-bar controls are i
   assert.ok(desktop&&dropdown,"Desktop navigation and mobile dropdown exist");
   const buttons=source=>[...source.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)]
     .map(m=>m[1].replace(/<[^>]*>/g,"").trim()).filter(Boolean);
-  assert.deepEqual(buttons(desktop),["Projects","Quick Downloads","Collections","Settings"]);
+  assert.deepEqual(buttons(desktop),["Projects","Quick Downloads","Collections","Contact"]);
   assert.deepEqual(buttons(dropdown),buttons(desktop));
   assert.equal((nav.match(/<a\b/g)||[]).length,1,"GitHub is the only navigation link");
   assert.doesNotMatch(nav,/Colosseum|Providers|window\.location|onclick=/);
