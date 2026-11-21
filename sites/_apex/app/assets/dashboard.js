@@ -7,7 +7,7 @@ if(new URLSearchParams(location.search).get("colosseum")==="connected"){
 }
 
 import {initWorkspaceNavigation} from "./workspace-nav.js";
-import {initProjectReadme} from "./project-readme-ui.js";
+import {initProjectReadme} from "./project-readme-ui.js?ozoning-icon=v2";
 import {initCloudflareConnection} from "./cloudflare-settings.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
 import {initColosseumProviders} from "./providers.js";

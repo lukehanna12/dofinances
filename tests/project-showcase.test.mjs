@@ -175,7 +175,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "3d-liquid-glass-26-swift-package": "move-3d",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
- "ozoning-board": "treehouse-ozoning"
+ "ozoning-board": "treehouse-ozoning.v2"
 };
  const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
@@ -217,8 +217,8 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
 });
 
 test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()=>{
- const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.svg");
- assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning");
+ const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v2.svg");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v2");
  assert.match(svg,/viewBox="0 0 24 24"/);
  assert.match(svg,/stroke-width="2"/);
  assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
@@ -239,4 +239,18 @@ test("Protocol Monitor Pruner uses the approved white funnel-code icon with a ge
  assert.ok(svg.includes('m10.4 3.33-1.92 1.92 1.92 1.92m3.2-3.84 1.92 1.92-1.92 1.92'),"Code chevrons occupy the cutout");
  const css=read("sites/_apex/app/assets/project-showcase.css");
  assert.match(css,/filter:brightness\(0\) invert\(1\)/);
+});
+
+test("Ozoning treehouse release uses a new asset path and a refreshed module chain",()=>{
+ const dir="sites/_apex/app/assets/";
+ const v1=read(dir+"project-icons/treehouse-ozoning.svg");
+ const v2=read(dir+"project-icons/treehouse-ozoning.v2.svg");
+ assert.notEqual(v1,v2,"Versioned SVG must differ from the old image");
+ assert.ok(v1.includes('M13 8.5H7v14'),"Keep old image only for backward compatibility");
+ assert.ok(v2.includes('M4 9v4.5h9V9L8.5 4.5z'));
+ assert.ok(!v2.includes('M13 8.5H7v14'));
+ assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v2"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?ozoning-icon=v2"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?ozoning-icon=v2"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?ozoning-icon=v2"'));
 });
