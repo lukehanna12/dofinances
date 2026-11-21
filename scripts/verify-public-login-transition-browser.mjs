@@ -352,7 +352,7 @@ try{
     " && document.querySelector('#public-route-content').scrollTop===0",60);
 
   const compositorMode=await evaluate("document.body.dataset.authGlassMode==='compositor'");
-  assert.ok(compositorMode,"Default sign-in must use the browser's native backdrop compositor");
+  assert.equal(compositorMode,false,"Default sign-in must use the ORIGINAL full WebGPU material");
   const scrollComposite=await evaluate("(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const control=document.querySelector('[data-auth-glass-input]');"+
     "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
@@ -362,18 +362,18 @@ try{
     "canvasVisibility:glass?getComputedStyle(glass).visibility:null,"+
     "gpuHome:document.body.dataset.gpuScene,"+
     "mode:window.__dashboardWebGPU?.authPresentation};})()");
-  assert.match(scrollComposite.cardFilter,/blur\(/,
-    "The real card samples the fixed wallpaper in the native scrolling compositor");
-  assert.match(scrollComposite.cardFilter,/brightness\(0\.79\)/,
-    "Live backdrop uses the original WebGPU dark-face brightness");
-  assert.match(scrollComposite.controlFilter,/blur\(/,
-    "Nested controls use their own native backdrop blur");
   if(scrollComposite.gpuHome==="ready"){
-    assert.equal(scrollComposite.canvasOpacity,"1",
-      "Old-shader optical rim and hover should render over the native backdrop");
+    assert.equal(scrollComposite.cardFilter,"none",
+      "Original full WebGPU glass must NOT be replaced with CSS backdrop blur");
+    assert.equal(scrollComposite.controlFilter,"none",
+      "Original tinted controls must use their WebGPU materials");
+    assert.equal(scrollComposite.canvasOpacity,"1");
     assert.equal(scrollComposite.canvasVisibility,"visible");
-    assert.equal(scrollComposite.mode,"native-backdrop+WebGPU-material-highlights",
-      "The scrolling backdrop is native while original GPU material details remain");
+    assert.equal(scrollComposite.mode,"shared-pipeline-transparent-overlay",
+      "Full refractive WebGPU shader is the production default, not a partial overlay");
+  }else{
+    assert.match(scrollComposite.cardFilter,/blur\(/,
+      "Only browsers without WebGPU should use the accessible CSS fallback");
   }
 
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+

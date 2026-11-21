@@ -405,7 +405,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // spring remain in WebGPU, so the glass cannot carry an outdated view
   // of the stationary wallpaper into the next compositor scroll frame.
   // The unchanged full WebGPU refraction remains for the homepage squares
-  // and the explicit ?auth-glass=webgpu reference implementation.
+  // and the original full WebGPU sign-in default.
   if(authPane && state.tintMeta.z>0.5){
     var tintStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){tintStrength=0.82;}

@@ -554,14 +554,14 @@ test("Glass background sampling uses actual compositor position, including elast
 });
 
 
-test("Sign-in's default native backdrop stays scroll-compositor-owned without replacing Home's WebGPU",async()=>{
+test("Original full WebGPU glass is the default; the scroll-composited hybrid remains opt-in",async()=>{
   const [router,css,homeCss,renderer]=await Promise.all([
     load("../sites/_apex/assets/public-home-transition.js"),
     load("../src/styles.css"),load("../sites/_apex/assets/public-home.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
   ]);
-  assert.match(router,/body\.dataset\.authGlassMode=new URLSearchParams\(location\.search\)\.get\("auth-glass"\)==="webgpu"/);
-  assert.match(router,/"webgpu":"compositor"/);
+  assert.match(router,/body\.dataset\.authGlassMode=new URLSearchParams\(location\.search\)\.get\("auth-glass"\)==="compositor"/);
+  assert.match(router,/"compositor":"webgpu"/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\)/);
   assert.match(css,/body\.public-home\[data-auth-glass-mode="compositor"\] \.auth3-root \[data-auth-glass-card\]/);
   assert.match(css,/-webkit-backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\)/);
@@ -570,6 +570,11 @@ test("Sign-in's default native backdrop stays scroll-compositor-owned without re
   assert.match(renderer,/if\(!authContext\|\|!instanceCount\|\|stopped\)return false/);
   assert.match(renderer,/audit\.authPresentation=authUsesCompositor\(\)\?/);
   assert.match(renderer,/pass\.draw\(6,tileCount\)/,"Homepage square WebGPU rendering remains unchanged");
+  const shader=await load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
+  assert.match(shader,/let glass=mix\(mipSample\(interactiveInnerUV,innerLOD\),/,
+    "The original sign-in shader must still sample the full refractive GPU backdrop");
+  assert.match(renderer,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/,
+    "Only explicit compositor mode selects the optical-highlight-only branch");
 });
 
 

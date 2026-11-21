@@ -10,13 +10,13 @@ const outlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
 const signIn=document.querySelector('.cta6-bottom-action a[href="/login"]');
 const body=document.body,reduced=matchMedia("(prefers-reduced-motion: reduce)");
-// WebGPU paints the fixed homepage, but a WebGPU-rasterized sign-in card
-// cannot stay pixel-perfect against it during compositor-driven scrolling.
-// Default to the browser's native backdrop compositor for every auth pane.
-// Keep the exact previous GPU material available for explicit comparison at
-// /login?auth-glass=webgpu, without affecting any homepage square.
-body.dataset.authGlassMode=new URLSearchParams(location.search).get("auth-glass")==="webgpu"
-  ?"webgpu":"compositor";
+// The original full WebGPU refraction (same exact shader/material as the
+// homepage squares) is the chosen default. Do not silently substitute a
+// CSS-backdrop likeness or a partial shader when the user prefers this look.
+// The compositor-synchronized hybrid remains an explicit, reversible option
+// at /login?auth-glass=compositor while pursuing full-look scroll sync.
+body.dataset.authGlassMode=new URLSearchParams(location.search).get("auth-glass")==="compositor"
+  ?"compositor":"webgpu";
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=()=>location.pathname.replace(/\/+$/,"")||"/";
 let current=null,busy=false,fromHome=false,state="home",revision=0,pendingNavigate=false;
