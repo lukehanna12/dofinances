@@ -491,6 +491,10 @@ async function initialize(){
         continue;
       }
       tileData.set(makeLayoutData(node,dpr,sceneTop),p);
+      // Reuse the physical blur/LOD word of the already-rendered square.
+      // Card and controls differ in silhouette, not optical material; their
+      // own min-dimension must not silently change the glass family.
+      if(tileCount)tileData[p+6]=tileData[6];
       // A negative delay selects the route pane's Motion-owned geometry.
       // Face color MUST remain the squares' material, controlled by the
       // shared tint state rather than the page's unrelated UI color mode.
@@ -503,6 +507,7 @@ async function initialize(){
     interaction.retargetRects(tileData,cornerInert);
     audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",faceScheme:tint.state.scheme,
+      materialReference:"first-home-square",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
       hovered:interaction.focusedTile>=tileCount,opacity};
     return Boolean(card&&opacity<.999);

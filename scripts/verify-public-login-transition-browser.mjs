@@ -210,6 +210,8 @@ try{
     assert.equal(darkGlass.audit?.cardTint,"none");
     assert.equal(darkGlass.audit?.faceScheme,"dark",
       "The untinted card uses the same dark glass face as the squares");
+    assert.equal(darkGlass.audit?.materialReference,"first-home-square",
+      "The larger card and buttons retain the same optical material as the squares");
     assert.equal(darkGlass.audit?.scheme,"dark");
     assert.equal(darkGlass.audit?.neutralControlTints,"black / white primary");
   }

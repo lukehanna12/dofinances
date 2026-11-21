@@ -344,7 +344,12 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
   if(coverage<=0.0&&dismiss<=0.0){discard;}
-  let d=min(dimensions.x,dimensions.y);
+  // Optical/refraction and hover radii come from the SAME physical square
+  // material even when the host pane is a larger card or a shorter button.
+  // The signed-distance shape itself still uses each pane's actual bounds
+  // and corner radii. This is material reuse, not a scaled hover effect.
+  let d=select(min(dimensions.x,dimensions.y),
+    min(tiles[0].rect.z,tiles[0].rect.w),authPane);
   let innerAmount=max(-60.0,-0.8*d);
   let innerInvHeight=1.0/min(20.0,0.25*d);
   let outerAmount=0.2*d;
