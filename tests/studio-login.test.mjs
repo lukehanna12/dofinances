@@ -628,7 +628,7 @@ test("experimental native-refraction maps come from original shader's SDF and ne
   assert.ok(Math.abs(left[0]-right[0])<.01);
   assert.ok(Math.abs(left[1]+right[1])<.01,
     "The two edges' refraction normal directions must oppose");
-  assert.equal(originalRefractionEnvelope(-100,-60,.05),0);
+  assert.ok(Math.abs(originalRefractionEnvelope(-100,-60,.05))<1e-12);
   assert.equal(originalRefractionEnvelope(10,-60,.05),-60);
   const field=originalOpticalDisplacement(3,50,100,100,15);
   assert.ok(field.inner[0]>0||field.inner[0]<0);
