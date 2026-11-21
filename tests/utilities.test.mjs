@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {initColosseumUtilities,utilityFiltersFromFields,utilitySearchIndex,utilityCanManage} from "../sites/_apex/app/assets/utilities.js";
+import {validateUtilityAnnotation} from "../sites/_apex/app/assets/utility-editorial-ui.js";
 const source=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const html=source("sites/_apex/app/index.html");
 const css=source("sites/_apex/app/assets/utilities.css");
@@ -15,8 +16,8 @@ test("Utilities page exposes the Collections-style list, inspector and frosted d
   'id="ut-inspector"','id="ut-pages"','id="ut-add"','id="ut-edit"','id="ut-select"',
   'id="ut-editor"','id="ut-delete-dialog"'])
    assert.ok(view.includes(part),"Missing Utilities element: "+part);
- assert.ok(html.includes('<link rel="stylesheet" href="/app/assets/utilities.css?profile=v1">'));
- assert.ok(dashboard.includes('import {initColosseumUtilities} from "./utilities.js?profile=v1"'));
+ assert.ok(html.includes('<link rel="stylesheet" href="/app/assets/utilities.css?profile=v2">'));
+ assert.ok(dashboard.includes('import {initColosseumUtilities} from "./utilities.js?profile=v2"'));
  assert.ok(dashboard.includes("initColosseumUtilities();"));
  assert.equal(typeof initColosseumUtilities,"function");
  assert.match(css,/#ut-root \.ut-control-center\{[^}]*position:fixed;/);
@@ -295,12 +296,33 @@ test("Utility editorial fields remain separate from catalog labels and collectio
  assert.match(editor,/editorial_version/);
  assert.match(js,/Pending direct source review/);
  assert.match(editor,/action:"annotate"/);
+ assert.match(editor,/maxlength="250" required/);
+ assert.match(editor,/data-annotation-target/);
+ assert.match(editor,/description\.value/);
+ assert.match(editor,/descriptionCount/);
+ assert.match(js,/Edit description, notes &amp; rating/);
  assert.match(editor,/expected_version:version/);
  assert.match(editor,/rating!==null/);
  assert.match(editor,/length>100/);
  assert.match(editor,/Unrated/);
  assert.match(css,/#ut-root \.ut-annotation-dialog/);
  assert.match(css,/#ut-root \.ut-editorial-section/);
- assert.match(html,/utilities\.css\?profile=v1/);
- assert.match(dashboard,/utilities\.js\?profile=v1/);
+ assert.match(html,/utilities\.css\?profile=v2/);
+ assert.match(dashboard,/utilities\.js\?profile=v2/);
+});
+
+test("Edit utility description: required, 250-character limit, one-paragraph input; preserve optional annotations",()=>{
+ const valid=validateUtilityAnnotation("Reviewed and updated utility description","",null);
+ assert.deepEqual(valid,{description:"Reviewed and updated utility description",notes:"",rating:null});
+ assert.equal(validateUtilityAnnotation("x".repeat(250),"note",0.5).description.length,250);
+ assert.equal(validateUtilityAnnotation("Short", "n".repeat(100),5).rating,5);
+ for(const description of ["","  ","x".repeat(251)," leading","trailing ","line\nbreak","tab\there"])
+  assert.throws(()=>validateUtilityAnnotation(description,"",null),/Description is required/);
+ for(const other of [null,undefined,8])
+  assert.throws(()=>validateUtilityAnnotation(other,"",null),/Description is required/);
+ assert.throws(()=>validateUtilityAnnotation("Fine","n".repeat(101),null),/Notes must/);
+ assert.throws(()=>validateUtilityAnnotation("Fine","",0.75),/Rating must/);
+ assert.match(js,/createUtilityAnnotationEditor/);
+ assert.match(css,/#ut-root \.ut-annotation-form #ut-annotation-description/);
+ assert.match(css,/max-height:calc\(100dvh - 32px\)/);
 });

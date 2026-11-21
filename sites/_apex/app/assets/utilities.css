@@ -719,7 +719,8 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-editorial-rating{color:#f1f1f1;font-size:12px;font-variant-numeric:tabular-nums}
 #ut-root .ut-editorial-section [data-ut-edit-annotation]{margin-top:9px}
 #ut-root .ut-annotation-dialog{border:1px solid #363636;background:#141414;color:#f2f2f2;
- box-shadow:0 22px 88px #000a;border-radius:17px;width:min(440px,calc(100vw - 40px));padding:0}
+ box-shadow:0 22px 88px #000a;border-radius:17px;width:min(440px,calc(100vw - 40px));padding:0;
+ max-height:calc(100dvh - 32px);overflow:auto}
 #ut-root .ut-annotation-dialog::backdrop{background:rgba(0,0,0,.66);backdrop-filter:blur(8px)}
 #ut-root .ut-annotation-form{padding:25px;display:flex;flex-direction:column;gap:10px}
 #ut-root .ut-annotation-form .ut-annotation-overline{margin:0;color:#8e8e8e;font-size:10px;
@@ -741,3 +742,7 @@ body.utilities-title-transition.utilities-title-passed #workspace-shell .shadcn-
 #ut-root .ut-annotation-actions [data-annotation-save]{border-color:#f1f1f1;background:#e9e9e9;color:#131313}
 #ut-root .ut-annotation-actions button:hover:not(:disabled){filter:brightness(1.15)}
 #ut-root .ut-annotation-actions button:disabled{opacity:.45;cursor:progress}
+
+#ut-root .ut-annotation-form #ut-annotation-description{min-height:106px}
+#ut-root .ut-annotation-form .ut-annotation-count{align-self:flex-end;margin:-6px 0 0;
+ font-size:10px;font-variant-numeric:tabular-nums;color:#929292}

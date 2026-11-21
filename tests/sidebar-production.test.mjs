@@ -26,7 +26,7 @@ test("Production includes exact oracle-backed glass with no preview scenery",asy
   assert.doesNotMatch(js,/glass-scene-|topActions|location\.replace|fetch\(/);
   assert.match(js,/mountOracleBackdrop\(/);
   assert.match(html,/href="\/app\/assets\/sidebar-glass\.css"/);
-  assert.match(html,/src="\/app\/assets\/dashboard\.js\?project-art=v10" type="module"/);
+  assert.match(html,/src="\/app\/assets\/dashboard\.js\?project-art=v11" type="module"/);
   assert.match(dashboard,/initWorkspaceNavigation\(\)/);
   assert.match(dashboard,/await fetch\("\/api\/auth\/me"/);
   assert.match(dashboard,/\/api\/auth\/logout/);

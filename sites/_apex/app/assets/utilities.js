@@ -1,5 +1,5 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
-import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js";
+import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js?profile=v2";
 /* Live Colosseum Utilities — Collections-compatible layout, explicit network I/O.
  * Only the authenticated /api/colosseum/utilities owner bridge can read data.
  * No timers, polling, simulated inventory, or background update checks.
@@ -406,7 +406,7 @@ export function initColosseumUtilities(){
    '<p class="ut-editorial-note">'+esc(notes||"No notes yet.")+'</p>'+
    '<h3>Rating <span class="ut-editorial-optional">optional · 0.5–5 stars</span></h3>'+
    '<p class="ut-editorial-rating">'+esc(rating===null?"Not rated":rating.toFixed(1)+" / 5")+'</p>'+
-   '<button type="button" class="ut-small-button" data-ut-edit-annotation="'+esc(item.uid)+'">Edit notes &amp; rating</button>'+
+   '<button type="button" class="ut-small-button" data-ut-edit-annotation="'+esc(item.uid)+'">Edit description, notes &amp; rating</button>'+
    '</section>';
   const linked=Array.isArray(s.detail.collection_names)?s.detail.collection_names:[];
   const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
