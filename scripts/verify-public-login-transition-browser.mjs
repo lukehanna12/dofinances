@@ -232,9 +232,12 @@ try{
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='light'&&"+
     "!!document.querySelector('.auth3-root:not(.dark)')",50);
-  // The ORIGINAL Tailwind button retains transition-colors duration-200.
-  // Sample its settled neutral palette rather than the initial dark frame.
-  await sleep(290);
+  // Tailwind preserves 200ms color transitions. A headless browser under
+  // software rendering can defer animation frames despite elapsed wall time;
+  // wait for the ACTUAL computed neutral palette instead of assuming that
+  // sleeping 290ms guarantees visual style settlement.
+  await until("getComputedStyle(document.querySelector('[data-auth-glass-input]')).color==='rgb(23, 23, 23)'",100,60);
+  await until("getComputedStyle(document.querySelector('[data-auth-glass-submit]')).color==='rgb(255, 255, 255)'",100,60);
   const lightGlass=await evaluate(material());
   assert.equal(lightGlass.mode,"light");
   assert.notEqual(lightGlass.ink,darkGlass.ink,
