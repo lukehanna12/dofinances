@@ -67,7 +67,9 @@ jobs:
           test -s sites/_apex/assets/site-foundation.css
           test -s sites/_apex/assets/account-security.css
           grep -Fq -- '--ui-canvas: #171717' sites/_apex/assets/site-foundation.css
-          grep -R -Fq -- '--ui-font-sans' dist/assets
+          # Shared font tokens live in the persistent apex shell; login
+          # bundle owns only its scoped card styles, not the site foundation.
+          grep -R -Fq -- '.auth3-root' dist/assets
           test -s sites/_apex/app/assets/dashboard.js
           test -s sites/_apex/app/assets/workspace-scroll.js
           grep -Fq 'id="workspace-scroll"' sites/_apex/app/index.html
