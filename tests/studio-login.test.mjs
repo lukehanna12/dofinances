@@ -620,6 +620,8 @@ test("experimental native-refraction maps come from original shader's SDF and ne
   assert.doesNotMatch(module,/if\(card===lastCard\)return/,
     "Late-mounted providers and changing form modes must receive unique filters");
   assert.match(module,/const active=new Set\(nodes\)/);
+  assert.match(module,/const activeIds=new Set\(nodes\.map\(node=>node\.dataset\.refractiveFilter\)/);
+  assert.match(module,/if\(!activeIds\.has\(filter\.id\)\)filter\.remove\(\)/);
   assert.match(module,/feColorMatrix/);
   assert.match(module,/feComposite/);
   assert.match(module,/operator:"arithmetic"/,

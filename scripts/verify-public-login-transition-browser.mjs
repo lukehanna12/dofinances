@@ -666,14 +666,17 @@ try{
       "[data-auth-glass-provider]')];"+
       "return {panes:panes.length,unique:new Set(panes.map(x=>x.dataset.refractiveFilter)).size,"+
       "allNative:panes.every(x=>getComputedStyle(x).backdropFilter.includes('url(')),"+
-      "maps:document.querySelectorAll('feImage').length,"+
-      "displacements:document.querySelectorAll('feDisplacementMap').length,"+
-      "mixers:document.querySelectorAll('feComposite[operator=arithmetic]').length,"+
+      "filters:document.querySelectorAll('#dof-native-refraction-defs filter').length,"+
+      "maps:document.querySelectorAll('#dof-native-refraction-defs feImage').length,"+
+      "displacements:document.querySelectorAll('#dof-native-refraction-defs feDisplacementMap').length,"+
+      "mixers:document.querySelectorAll('#dof-native-refraction-defs feComposite[operator=arithmetic]').length,"+
       "mode:document.body.dataset.authGlassMode};})()");
     assert.equal(material.mode,"compositor");
     assert.ok(material.panes>=7&&material.unique===material.panes,
       "Every late-mounted provider must have its own SDF optical map");
     assert.ok(material.allNative,"Each pane uses live compositor backdrop displacement");
+    assert.equal(material.filters,material.panes,
+      "Replaced controls must not leave orphaned optical maps");
     assert.equal(material.maps,material.panes*3);
     assert.equal(material.displacements,material.panes*2);
     assert.equal(material.mixers,material.panes);

@@ -161,7 +161,9 @@ export function initCompositedRefraction(){
   const modeSupported=chromium&&CSS.supports("backdrop-filter",'url("#probe")');
   document.body.dataset.authRefractiveStatus=modeSupported?"initializing":"unsupported";
   if(!modeSupported)return ()=>{};
-  const host=svgElement("svg",{"aria-hidden":"true",width:0,height:0});
+  const host=svgElement("svg",{
+    id:"dof-native-refraction-defs","aria-hidden":"true",width:0,height:0
+  });
   host.style.cssText="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none";
   const defs=svgElement("defs");host.append(defs);document.body.append(host);
   let observed=new Map(),lastCard=null,dead=false,sequence=0;
@@ -211,6 +213,13 @@ export function initCompositedRefraction(){
       build(node);
       const ro=new ResizeObserver(()=>build(node));
       ro.observe(node);observers.set(node,ro);
+    }
+    // Native form controls can be replaced by React without changing
+    // card identity, or resized multiple times before MutationObserver
+    // delivery. Keep no orphaned filters from past element generations.
+    const activeIds=new Set(nodes.map(node=>node.dataset.refractiveFilter).filter(Boolean));
+    for(const filter of [...defs.children]){
+      if(!activeIds.has(filter.id))filter.remove();
     }
     document.body.dataset.authRefractivePanes=String(nodes.length);
   };
