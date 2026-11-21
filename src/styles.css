@@ -150,39 +150,50 @@
 .auth3-root [data-auth-glass-card]{
   position:relative;
   isolation:isolate;
-  background:rgba(22,23,25,.13);
-  border:1px solid rgba(255,255,255,.21);
-  -webkit-backdrop-filter:blur(8px);
-  backdrop-filter:blur(8px);
-  box-shadow:inset -1px 0 rgba(255,255,255,.10),
-    10px 0 27px rgba(0,0,0,.19),
-    0 0 1px rgba(255,255,255,.12);
-}
-.auth3-root:not(.dark) [data-auth-glass-card]{
-  background:rgba(248,249,251,.68);
-  border-color:rgba(255,255,255,.38);
+  /* Mirror the square material's CSS-only fallback (dashboard-home.css:
+     .cta6-tile--glass) rather than turning the card white in light UI.
+     GPU-ready presentation clears this fallback completely. */
+  --dashboard-face-fill:rgba(0,0,0,.05);
+  background:
+    linear-gradient(var(--dashboard-face-fill),
+      var(--dashboard-face-fill)),
+    var(--dashboard-tint-fill,rgba(246,248,250,.065));
+  border:1px solid rgba(247,250,252,.34);
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  box-shadow:
+    0 10px 22px rgba(0,0,0,.13),
+    0 1px 0 rgba(255,255,255,.22),
+    inset 0 1px 0 rgba(255,255,255,.44),
+    inset 0 -1px 0 rgba(18,22,25,.15);
 }
 .auth3-root [data-auth-glass-input],
 .auth3-root [data-auth-glass-submit],
 .auth3-root [data-auth-glass-provider]{
-  -webkit-backdrop-filter:blur(8px);
-  backdrop-filter:blur(8px);
+  /* Same CSS fallback optical base as the card/squares, with just a
+     neutral pigment film. No CSS hover hotspot or scaling is introduced. */
+  background:
+    linear-gradient(var(--dashboard-face-fill),
+      var(--dashboard-face-fill)),
+    var(--auth-control-tint,rgba(0,0,0,.60));
+  -webkit-backdrop-filter:blur(var(--glass-fallback-blur,8px));
+  backdrop-filter:blur(var(--glass-fallback-blur,8px));
   box-shadow:inset 0 1px rgba(255,255,255,.1);
 }
 .auth3-root.dark [data-auth-glass-input],
 .auth3-root.dark [data-auth-glass-provider]{
-  background:rgba(23,23,23,.82);
+  --auth-control-tint:rgba(0,0,0,.60);
 }
 .auth3-root:not(.dark) [data-auth-glass-input],
 .auth3-root:not(.dark) [data-auth-glass-provider]{
-  background:rgba(250,250,250,.84);
+  --auth-control-tint:rgba(255,255,255,.60);
 }
 .auth3-root.dark [data-auth-glass-submit]{
-  background:rgba(255,255,255,.92);
+  --auth-control-tint:rgba(255,255,255,.60);
   color:#171717;
 }
 .auth3-root:not(.dark) [data-auth-glass-submit]{
-  background:rgba(23,23,23,.92);
+  --auth-control-tint:rgba(0,0,0,.60);
   color:#fff;
 }
 /* Preserve the original Auth-3 neutral ink colors even when a browser

@@ -400,10 +400,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // browser applies a linear interpolation between recorded endpoint
   // inputs: light black/white = 0.20/0.95, dark = 0.05/0.80.
   // Both face endpoints are lower in dark; tint hue stays independent.
-  // The homepage squares retain their existing tint selection. Route
-  // panes choose the same recorded light/dark face endpoints per pane:
-  // delay -2 = dark neutral, -3 = light neutral.
-  let darkFace=select(state.tintMeta.y>0.5,tile.properties.y == -2.0,authPane);
+  // One material face for EVERY glass instance, including the card and
+  // controls. The separate site light/dark UI switch chooses the form's
+  // neutral pigment but cannot silently change the untinted face.
+  let darkFace=state.tintMeta.y>0.5;
   let faceBlack=select(0.20,0.05,darkFace);
   let faceWhite=select(0.95,0.80,darkFace);
   var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
@@ -413,11 +413,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // matrix is NOT a proved RGB→tint-hue transform. Previously
     // applying its light=-0.1/dark=+0.1 offsets to the pigment made
     // the Dark UI lighter, contrary to the observed face inputs.
-    // Preserve authored sRGB pigment; only public alpha is Float32.
-    // 0.25 browser color film is NOT a native compositor coefficient.
-    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
+    // Preserve the EXACT same untinted glass optics/face and blend only
+    // after calculating refraction, rim and hover. Home keeps its prior
+    // 0.25 film; neutral form controls use a stronger 0.60 film so white
+    // and black presets remain clearly distinct with 40% optical detail.
+    // These coefficients are browser-authored, NOT native compositor proof.
+    let filmStrength=select(0.25,0.60,authPane);
+    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
-  // Route panes share the material, tint blend, SDF and original hover
+  // Route panes share the material, SDF and original hover
   // response above. Do not apply the squares' left/right fade, title oval
   // or X-close effect to a sign-in card or its form controls.
   // DOM Motion drives the pane opacity and position, not shader scaling.

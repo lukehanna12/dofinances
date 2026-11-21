@@ -226,9 +226,19 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
   assert.match(renderer,/return tintParameters\(name,\.99,scheme\)/);
   assert.match(renderer,/scheme==="dark"\?"white":"black"/);
   assert.match(renderer,/scheme==="dark"\?"black":"white"/);
-  assert.match(shader,/let darkFace=select\(state\.tintMeta\.y>0\.5,tile\.properties\.y == -2\.0,authPane\)/);
+  assert.match(shader,/let darkFace=state\.tintMeta\.y>0\.5;/,
+    "Card and squares use one material face, not independent UI-mode tones");
+  assert.doesNotMatch(shader,/let darkFace=select\(/);
+  assert.match(renderer,/tileData\[p\+5\]=-2;/);
+  assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
-  assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*0\.25\)/);
+  assert.match(shader,/let filmStrength=select\(0\.25,0\.60,authPane\);/,
+    "The square tint remains unmodified; the controls get a stronger neutral film");
+  assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
+  assert.match(renderer,/faceScheme:tint\.state\.scheme/);
+  assert.match(css,/--auth-control-tint:rgba\(0,0,0,\.60\)/);
+  assert.match(css,/--auth-control-tint:rgba\(255,255,255,\.60\)/);
+  assert.doesNotMatch(css,/background:rgba\(248,249,251,\.68\)/);
   assert.match(css,/\.auth3-root\.dark \[data-auth-glass-submit\]\{/);
   assert.match(css,/\.auth3-root:not\(\.dark\) \[data-auth-glass-submit\]\{/);
   assert.match(css,/@media\(prefers-reduced-transparency:reduce\),\(forced-colors:active\)/);

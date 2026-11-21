@@ -188,6 +188,7 @@ try{
     "actionInk:getComputedStyle(primary).color,"+
     "cardHover:getComputedStyle(card,'::after').content,"+
     "gpu:document.body.dataset.gpuScene,"+
+    "authGpu:document.body.dataset.authGpuScene,"+
     "audit:window.__dashboardWebGPU?.authGlass??null};})()";
   const darkGlass=await evaluate(material());
   assert.equal(darkGlass.mode,"dark");
@@ -205,7 +206,10 @@ try{
     assert.equal(darkGlass.audit?.renderer,"shared-webgpu-glassPipeline");
     assert.ok(darkGlass.audit?.count>=6,
       "The same WebGPU material renders the card, inputs and buttons");
+    assert.equal(darkGlass.authGpu,"ready");
     assert.equal(darkGlass.audit?.cardTint,"none");
+    assert.equal(darkGlass.audit?.faceScheme,"dark",
+      "The untinted card uses the same dark glass face as the squares");
     assert.equal(darkGlass.audit?.scheme,"dark");
     assert.equal(darkGlass.audit?.neutralControlTints,"black / white primary");
   }
@@ -248,6 +252,8 @@ try{
     await until("window.__dashboardWebGPU?.authGlass?.scheme==='light'",30);
     const audit=await evaluate("window.__dashboardWebGPU.authGlass");
     assert.equal(audit.cardTint,"none");
+    assert.equal(audit.faceScheme,"dark",
+      "Light UI mode must not turn the unchanged square glass into a light face");
     assert.equal(audit.neutralControlTints,"white / black primary");
   }
   const focused=await evaluate("(()=>{const i=document.querySelector('[data-auth-glass-input]');"+

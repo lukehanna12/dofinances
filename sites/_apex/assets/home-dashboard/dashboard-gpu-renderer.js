@@ -491,8 +491,10 @@ async function initialize(){
         continue;
       }
       tileData.set(makeLayoutData(node,dpr,sceneTop),p);
-      // -2 dark / -3 light selects the identical shader's auth-pane path.
-      tileData[p+5]=scheme==="dark"?-2:-3;
+      // A negative delay selects the route pane's Motion-owned geometry.
+      // Face color MUST remain the squares' material, controlled by the
+      // shared tint state rather than the page's unrelated UI color mode.
+      tileData[p+5]=-2;
       tileData[p+18]=opacity;tileData[p+19]=0;
       cornerInert[slot]=opacity<.025?1:0;
       roles.push(node.hasAttribute("data-auth-glass-card")?
@@ -500,7 +502,7 @@ async function initialize(){
     }
     interaction.retargetRects(tileData,cornerInert);
     audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
-      roles,scheme,cardTint:"none",
+      roles,scheme,cardTint:"none",faceScheme:tint.state.scheme,
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
       hovered:interaction.focusedTile>=tileCount,opacity};
     return Boolean(card&&opacity<.999);
