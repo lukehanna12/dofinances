@@ -144,7 +144,7 @@ try{
     "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
-  assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Settings"]);
+  assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Contact"]);
   if(width>748){
    assert.equal(g.navDisplay,"flex","Desktop navigation must remain visible");
    assert.equal(g.hamburgerDisplay,"none","No hamburger on desktop");
@@ -189,7 +189,7 @@ try{
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
   assert.ok(g.githubRel.split(/\s+/).includes("noreferrer"));
   assert.deepEqual(g.items.map(e=>[e.tag,e.name,e.href]),[
-   ["BUTTON","Projects",null],["A","Sign in","/login"],["BUTTON","Contact",null]]);
+   ["BUTTON","Projects",null],["A","Sign in","/login"],["BUTTON","Settings",null]]);
   for(let i=1;i<g.items.length;i++){
    near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
    near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
@@ -226,7 +226,7 @@ try{
  })()`);
  assert.equal(openPanel.expanded,"true");
  assert.equal(openPanel.hidden,false);
- assert.deepEqual(openPanel.labels,["Projects","Quick Downloads","Collections","Settings"]);
+ assert.deepEqual(openPanel.labels,["Projects","Quick Downloads","Collections","Contact"]);
  assert.ok(openPanel.right<=501&&openPanel.width<=500,"Dropdown within viewport");
  await evaluate('document.querySelector(".public-menu-panel button").click()');
  assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,
