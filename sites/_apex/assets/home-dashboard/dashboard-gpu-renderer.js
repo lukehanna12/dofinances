@@ -23,7 +23,7 @@ import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.j
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
-import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissDrift} from "./dashboard-public-dismiss.js";
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift} from "./dashboard-public-dismiss.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -556,7 +556,10 @@ async function initialize(){
       const dy=pos.deltaRows*pitchCSS;
       const dissolving=elapsedDismiss<0?0:
         tileDismissProgress(elapsedDismiss,trackRows[i],trackColumns[i]);
-      const drift=tileDismissDrift(dissolving,trackRows[i],trackColumns[i]);
+      const p=i*TILE_FLOATS;
+      const drift=tileDismissDrift(dissolving,trackRows[i],trackColumns[i],
+        baseTileX[i],tileData[p+2],physicalWidth,dpr);
+      const shrink=tileDismissScale(dissolving);
       dismissProgress[i]=dissolving;
       tileData[i*TILE_FLOATS]=baseTileX[i]+drift.x*dpr;
       tileData[i*TILE_FLOATS+1]=baseTileY[i]+(dy+drift.y)*dpr;
@@ -573,11 +576,11 @@ async function initialize(){
       // bounds), so the SVG additionally needs only the shader's spatial
       // side-edge + oval alpha, evaluated at its current scene position.
       trackTiles[i].style.transform="translate3d("+drift.x.toFixed(3)+"px,"+
-        (dy+drift.y).toFixed(3)+"px,0)";
+        (dy+drift.y).toFixed(3)+"px,0) scale("+
+        shrink.x.toFixed(5)+","+shrink.y.toFixed(5)+")";
       trackTiles[i].style.opacity=(combinedOpacity*
         tileDismissIconOpacity(dissolving)).toFixed(5);
       if(trackIcons[i]){
-        const p=i*TILE_FLOATS;
         const glyphAlpha=publicIconSpatialAlpha(
           tileData[p]+tileData[p+2]*0.5,
           tileData[p+1]+tileData[p+3]*0.5,
@@ -593,6 +596,7 @@ async function initialize(){
       running:trackRunning,phase,elapsed:trackSeconds,
       cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
       fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
+      dismissal:"rightward convergent glass sheet, critically damped progress, shader alpha",
       dismissElapsed:elapsedDismiss,dismissed:elapsedDismiss>=DISMISS_MS,
       fadedTiles:fading
     };

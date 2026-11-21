@@ -290,8 +290,8 @@ body.public-home .dashboard-home .cta6-action:active{
   body.public-home .public-menu-panel{animation:none!important;}
 }
 
-/* Notification-dismissal-inspired public transition, not a recovered native
-   Spring/CA animation. Never fade or navigate the persistent theme button. */
+/* Notification-banner-inspired rightward glass exit, not a recovered
+   native spring coefficient. The theme button stays in place. */
 body.public-home .dashboard-home .cta6-center,
 body.public-home .dashboard-home .cta6-bottom-action{
   transition:opacity 280ms cubic-bezier(.24,.72,.3,1);
@@ -304,11 +304,11 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-bottom-actio
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;
-  transform:translate3d(18px,-24px,0) scale(.84)!important;
-  filter:blur(7px);
-  transition:transform 700ms cubic-bezier(.22,.7,.3,1),
-    opacity 650ms ease,filter 650ms ease;
-  transition-delay:calc(var(--cta6-delay,0s) * .28);
+  transform:translate3d(calc(100vw + 600px),0,0) scale(.42,.70)!important;
+  filter:blur(2px);
+  transition:transform 650ms cubic-bezier(.24,.86,.22,1),
+    opacity 590ms cubic-bezier(.2,.6,.3,1),filter 590ms ease;
+  transition-delay:calc(var(--cta6-delay,0s) * .08);
   animation:none!important;
 }
 @media(prefers-reduced-motion:reduce){

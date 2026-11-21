@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
-import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissDrift}
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
 import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
@@ -85,9 +85,11 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/state\.viewport\.y\*0\.5-2\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
   assert.match(shader,/let ovalRadii=vec2<f32>\(140\.0,100\.0\)\*state\.viewport\.w;/);
   assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
-  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity\*eroded/);
-  assert.match(shader,/let breakup=clamp\(tile\.motion\.w,0\.0,1\.0\)/);
-  assert.match(shader,/let noise=fract\(sin\(dot\(grain/);
+  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity\*fade/);
+  assert.match(shader,/let dismiss=clamp\(tile\.motion\.w,0\.0,1\.0\)/);
+  assert.match(shader,/let squeeze=vec2<f32>\(1\.0-0\.58\*contraction,1\.0-0\.30\*contraction\);/);
+  assert.match(shader,/let front=clamp\(\(dismiss-0\.06\+0\.1\*\(localX-0\.5\)\)\/0\.82,0\.0,1\.0\);/);
+  assert.doesNotMatch(shader,/grain|noise|fract\(sin\(/,"No invented particle noise");
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
   assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
@@ -126,7 +128,7 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
 });
 test("Notification-inspired dismissal is explicitly provisional and clears all square lanes",()=>{
-  assert.equal(DISMISS_MS,970);
+  assert.equal(DISMISS_MS,720);
   for(let row=0;row<7;row++)for(let col=0;col<11;col++){
     assert.equal(tileDismissProgress(0,row,col),0);
     assert.equal(tileDismissProgress(DISMISS_MS,row,col),1);
@@ -136,11 +138,25 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
       assert.ok(p>=previous&&p<=1,"Progress must be monotonic per square");
       previous=p;
     }
-    assert.deepEqual(tileDismissDrift(0,row,col),{x:0,y:-0});
+    const x=110+col*98,width=86,screen=1440;
+    const origin=tileDismissDrift(0,row,col,x,width,screen);
+    const middle=tileDismissDrift(.5,row,col,x,width,screen);
+    const exit=tileDismissDrift(1,row,col,x,width,screen);
+    assert.deepEqual(origin,{x:0,y:0});
+    assert.ok(middle.x>0&&exit.x>middle.x,"Rightward exit must be monotonic");
+    assert.equal(exit.y,0,"No invented vertical scatter");
+    assert.ok(Math.abs(x+width*.5+exit.x-(screen+width*.65))<1e-6,
+      "Each square converges on one right-edge exit boundary");
   }
   assert.equal(tileDismissIconOpacity(0),1);
   assert.equal(tileDismissIconOpacity(1),0);
   assert.ok(tileDismissIconOpacity(.5)<1);
+  assert.deepEqual(tileDismissScale(0),{x:1,y:1});
+  assert.deepEqual(tileDismissScale(1),{x:.42000000000000004,y:.7});
+  assert.ok(tileDismissScale(.5).x<1&&tileDismissScale(.5).y<1);
+  assert.ok(tileDismissProgress(200,3,10)>tileDismissProgress(200,3,0),
+    "Rightmost tiles lead the dismissal wave");
+  assert.throws(()=>tileDismissDrift(.5,3,4,120,0,1440),RangeError);
   const home=asset("index.html");
   const route=asset("assets/public-home-transition.js");
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
@@ -150,6 +166,10 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(route,/dofinances:home-dismiss/);
   assert.match(route,/prefers-reduced-motion: reduce/);
   assert.match(renderer,/tileDismissProgress\(elapsedDismiss,trackRows\[i\],trackColumns\[i\]\)/);
+  assert.match(renderer,/tileDismissScale\(dissolving\)/);
+  assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);
+  assert.match(renderer,/shrink\.x\.toFixed\(5\)/);
+  assert.match(renderer,/shrink\.y\.toFixed\(5\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
   assert.match(style,/data-public-route="leaving"/);
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/tileDismissProgress/);

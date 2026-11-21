@@ -79,8 +79,15 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   let progress=clamp((state.viewport.z-tile.properties.y)/0.4,0.0,1.0);
   let a=ease(progress);
   let scale=0.85+0.15*a;
+  // Browser-authored notification exit contracts each rounded glass surface
+  // around its own center. Keep *material* local coordinates unchanged so
+  // the recovered SDF/refraction logic remains the same; the SVG icon
+  // uses the identical scale in dashboard-gpu-renderer.js.
+  let dismiss=clamp(tile.motion.w,0.0,1.0);
+  let contraction=dismiss*dismiss;
+  let squeeze=vec2<f32>(1.0-0.58*contraction,1.0-0.30*contraction);
   let center=tile.rect.xy+tile.rect.zw*0.5;
-  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale;
+  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*squeeze;
   var out:GlassOut;
   out.position=vec4<f32>(2.0*p.x/state.viewport.x-1.0,
     1.0-2.0*p.y/state.viewport.y,0.0,1.0);
@@ -399,17 +406,16 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
   let ovalDistance=clamp(length(ovalUV),0.0,1.0);
   let logoOpacity=mix(0.60,1.0,ovalDistance*ovalDistance);
-  // Browser-authored Notification-like dissipation. The source-backed
-  // Glass optics above are untouched: only final material alpha erodes.
-  // motion.w is a per-square progress lane [0,1]. At zero, the Glass
-  // remains exactly unchanged; at one, it is completely dissolved.
-  // Small 4 CSS-pixel spatial fragments disperse in an upper-right wave.
-  // Notification Center's actual native erosion/timing is not recovered.
-  let breakup=clamp(tile.motion.w,0.0,1.0);
-  let grain=floor(in.local/(4.0*state.viewport.w));
-  let noise=fract(sin(dot(grain,vec2<f32>(12.9898,78.233))+
-    f32(in.tileIndex)*7.31)*43758.5453);
-  let eroded=1.0-smoothstep(noise*0.68+0.035,noise*0.68+0.25,breakup);
+  // Notification dismissal is a *coherent rightward material exit*,
+  // not a cloud of noise fragments. The live Mac exposes banner
+  // transition/offset interfaces, not a recovered pixel-erosion formula.
+  // motion.w is per-square, spring-shaped progress [0,1]. Slightly soften
+  // the trailing edge of each moved/squeezed glass surface, so the final
+  // alpha falls away like a continuous liquid sheet without speckle.
+  let dismiss=clamp(tile.motion.w,0.0,1.0);
+  let localX=clamp(in.local.x/max(1.0,tile.rect.z),0.0,1.0);
+  let front=clamp((dismiss-0.06+0.1*(localX-0.5))/0.82,0.0,1.0);
+  let fade=1.0-front*front*(3.0-2.0*front);
   return vec4<f32>(color,coverage*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity*eroded);
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity*fade);
 }
