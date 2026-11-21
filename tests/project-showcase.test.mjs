@@ -176,7 +176,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "apple-hig-reader": "apple-worm",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
- "ozoning-board": "treehouse-ozoning.v2"
+ "ozoning-board": "treehouse-ozoning.v3"
 };
  const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
