@@ -284,9 +284,15 @@ try{
     assert.equal(onExit.controlHovered,false);
     assert.ok(onExit.cardHover.hover<onControl.cardHover.hover,
       "Card hover intensity should fade after the cursor leaves");
-    assert.ok(Math.abs(onExit.cardHover.x-onControl.cardHover.x)<2&&
-      Math.abs(onExit.cardHover.y-onControl.cardHover.y)<2,
-      "Card hotspot must remain at its last pointer position while fading");
+    // Compare TWO frames after exit. The last on-card frame may still be
+    // following a fast cursor; it must stop moving once outside the card.
+    await sleep(130);
+    const laterExit=await evaluate("window.__dashboardWebGPU.authGlass");
+    assert.ok(Math.abs(laterExit.cardHover.x-onExit.cardHover.x)<.01&&
+      Math.abs(laterExit.cardHover.y-onExit.cardHover.y)<.01,
+      "Card hotspot must remain motionless while it fades outside the card");
+    assert.ok(laterExit.cardHover.hover<onExit.cardHover.hover,
+      "Frozen hotspot must continue fading, not linger indefinitely");
     assert.ok(Math.abs(onExit.cardHover.vx)<.001&&
       Math.abs(onExit.cardHover.vy)<.001,
       "Leaving the card must stop velocity-driven opposite-direction travel");
