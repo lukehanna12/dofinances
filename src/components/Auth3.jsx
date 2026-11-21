@@ -144,7 +144,7 @@ export function Auth3() {
 
   return (
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
-      <div className="min-h-screen w-full relative flex items-center justify-center p-6 auth3-stage">
+      <div data-auth-stage className="min-h-screen w-full relative flex items-center justify-center p-6">
         <div ref={markRef} className="auth3-doof-mark" aria-label="doof" role="img">doof</div>
         <div
           data-auth-scene="photo"

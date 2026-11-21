@@ -170,7 +170,7 @@ body:has(.auth3-root:not(.dark)) { background-color: #fff; }
 @media(max-width:760px){
   /* Reserve enough room for a 27px-high label between header and card on
      short mobile viewports; the card can scroll instead of overlapping it. */
-  .auth3-stage{padding-top:max(106px,env(safe-area-inset-top,0px) + 90px);}
+  .auth3-root [data-auth-stage]{padding-top:max(106px,env(safe-area-inset-top,0px) + 90px);}
 }
 @media(prefers-reduced-motion:reduce){
   .auth3-back-link{transition:none}
