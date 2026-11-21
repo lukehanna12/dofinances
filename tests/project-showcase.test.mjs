@@ -327,7 +327,7 @@ test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated ar
  assert.equal(church,"https://upload.wikimedia.org/wikipedia/commons/a/a9/El_Khasne%2C_Petra_Frederic_Edwin_Church.jpg");
  assert.ok(!warhol.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
- assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"opacity","Keep the existing Liquid Plexiglass icon");
+ assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens","Liquid Plexiglass now uses the requested Lucide lens icon");
  assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v3","Keep the existing Ozoning Board icon");
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes("PROJECT_CARD_IMAGES[project.slug]"),"Keep per-project hover assignment");
 });
