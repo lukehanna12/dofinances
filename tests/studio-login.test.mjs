@@ -45,6 +45,25 @@ test("login preserves the same persistent top navigation as Home across both the
   assert.match(home,/<button class="cta6-action" type="button">Settings<\/button>/);
 });
 
+test("wordmark moves to 60% scale halfway between the login card and top bar; card has return link",async()=>{
+  const [component,styles,homeCss,route]=await Promise.all([
+    load("../src/components/Auth3.jsx"),load("../src/styles.css"),
+    load("../sites/_apex/assets/public-home.css"),
+    load("../sites/_apex/assets/public-home-transition.js")
+  ]);
+  assert.match(component,/ref=\{cardRef\}/);
+  assert.match(component,/ref=\{markRef\} className="auth3-doof-mark"/);
+  assert.match(component,/mark\.style\.top=\(\(barBottom\+cardTop\)\/2\)\+"px"/);
+  assert.match(component,/href="\/" className="auth3-back-link" aria-label="Back to homepage"/);
+  assert.match(styles,/\.auth3-doof-mark\{[^}]*scale\(\.6\)/);
+  assert.match(styles,/view-transition-name:doof-brand;/);
+  assert.match(homeCss,/\.cta6-center h1\{[^}]*view-transition-name:doof-brand;/);
+  assert.match(homeCss,/data-public-route="leaving"\] \.dashboard-home \.cta6-center h1\{[^}]*scale\(\.6\)/);
+  assert.doesNotMatch(homeCss,/data-public-route="leaving"\] \.dashboard-home \.cta6-center,\s*body\.public-home/);
+  assert.match(route,/wordmark\.style\.setProperty\("--doof-exit-y"/);
+  assert.match(route,/dofinances:home-dismiss/);
+});
+
 test("Studio root is the only React entrypoint; the apex /login reuses its build", async () => {
   const root = await load("../index.html");
   assert.match(root, /<title>Sign in · Dofinances<\/title>/);
@@ -121,7 +140,7 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
 
 test("Google and GitHub sign-in providers preserve the Auth-3 backdrop and theme icon",async()=>{
   const source=await load("../src/components/Auth3.jsx");
-  assert.equal((source.match(/<svg\b/g)||[]).length,1);
+  assert.equal((source.match(/<svg\b/g)||[]).length,2);
   assert.match(source,/dashboard-cloud-veiled-colorful-fields\.avif/);
   assert.doesNotMatch(source,/images\.unsplash\.com/);
   assert.match(source,/key:"google"/);

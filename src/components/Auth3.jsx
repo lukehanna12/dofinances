@@ -5,10 +5,27 @@
  * Dofinances branding, dark-first mode and theme toggle are intentional
  * additions. Credentials now use a server-side Cloudflare Durable Object.
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 export function Auth3() {
+  const cardRef=useRef(null);
+  const markRef=useRef(null);
+  useLayoutEffect(()=>{
+    const card=cardRef.current,mark=markRef.current;
+    if(!card||!mark)return;
+    const place=()=>{
+      const barBottom=document.getElementById("global-menu")?.getBoundingClientRect().bottom??44;
+      const cardTop=card.getBoundingClientRect().top;
+      // Center the scaled 45px wordmark in the actual vertical gap.
+      mark.style.top=((barBottom+cardTop)/2)+"px";
+    };
+    place();
+    const observer=new ResizeObserver(place);
+    observer.observe(card);
+    window.addEventListener("resize",place);
+    return ()=>{observer.disconnect();window.removeEventListener("resize",place);};
+  },[]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -127,7 +144,8 @@ export function Auth3() {
 
   return (
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
-      <div className="min-h-screen w-full relative flex items-center justify-center p-6">
+      <div className="min-h-screen w-full relative flex items-center justify-center p-6 auth3-stage">
+        <div ref={markRef} className="auth3-doof-mark" aria-label="doof" role="img">doof</div>
         <div
           data-auth-scene="photo"
           className="absolute inset-0 bg-cover bg-center"
@@ -138,11 +156,17 @@ export function Auth3() {
 
         <div className="relative z-10 w-full max-w-[1400px] mx-auto flex items-center justify-center gap-12">
           <motion.div
+            ref={cardRef}
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
           >
+            <a href="/" className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path d="M20 12H4m0 0 6-6m-6 6 6 6" />
+              </svg>
+            </a>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
               {mode === "signup" ? "Create an account" : mode === "forgot" ? "Reset your password" : mode === "mfa" ? "Authenticator code" : mode === "verify" ? "Check your email" : mode === "forgotSent" ? "Check your inbox" : "Sign in"}
             </h1>

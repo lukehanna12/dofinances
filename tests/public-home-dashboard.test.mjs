@@ -196,6 +196,8 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(renderer,/tileDismissBlur\(dissolving\)\.toFixed\(3\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
   assert.match(style,/data-public-route="leaving"/);
+  assert.match(style,/\.cta6-center h1\{[^}]*view-transition-name:doof-brand;/);
+  assert.match(style,/data-public-route="leaving"\] \.dashboard-home \.cta6-center h1\{[^}]*scale\(\.6\)/);
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/tileDismissProgress/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{

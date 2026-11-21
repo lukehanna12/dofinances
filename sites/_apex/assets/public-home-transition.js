@@ -15,6 +15,18 @@ login?.addEventListener("click",event=>{
   if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
     window.location.assign(target);return;
   }
+  // The login mark is precisely positioned from the real card after mount.
+  // Head toward its expected mid-gap now; the named cross-document View
+  // Transition resolves any remaining pixel delta against the measured card.
+  const wordmark=document.getElementById("dashboard-title");
+  if(wordmark){
+    const bounds=wordmark.getBoundingClientRect();
+    const navBottom=document.getElementById("global-menu")?.getBoundingClientRect().bottom??44;
+    const expectedCardTop=Math.max(navBottom+60,(window.innerHeight-650)/2);
+    const centerY=(navBottom+expectedCardTop)/2;
+    wordmark.style.setProperty("--doof-exit-y",
+      (centerY-(bounds.top+bounds.height/2))+"px");
+  }
   document.body.dataset.publicRoute="leaving";
   window.dispatchEvent(new CustomEvent("dofinances:home-dismiss",{
     detail:{durationMs:DISMISS_MS}

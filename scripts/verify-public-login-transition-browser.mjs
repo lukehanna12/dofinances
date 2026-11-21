@@ -163,6 +163,27 @@ try{
   assert.equal(scene.handoff.seen,true,"Incoming page must receive pagereveal");
   assert.equal(scene.handoff.hasTransition,true,
     "Cross-document view transition must hold outgoing frame");
+  const logo=await evaluate("(()=>{"+
+    "const card=document.querySelector('.auth3-root .max-w-md');"+
+    "const mark=document.querySelector('.auth3-doof-mark');"+
+    "const back=document.querySelector('.auth3-back-link');"+
+    "const bar=document.querySelector('#global-menu');"+
+    "return {cardTop:card.getBoundingClientRect().top,"+
+    "barBottom:bar.getBoundingClientRect().bottom,"+
+    "markTop:mark.getBoundingClientRect().top,"+
+    "markBottom:mark.getBoundingClientRect().bottom,"+
+    "transform:getComputedStyle(mark).transform,"+
+    "markCenter:(mark.getBoundingClientRect().top+mark.getBoundingClientRect().bottom)/2,"+
+    "fontSize:getComputedStyle(mark).fontSize,"+
+    "backHref:back.getAttribute('href'),"+
+    "backLabel:back.getAttribute('aria-label')};})()");
+  assert.ok(Math.abs(logo.markCenter-(logo.barBottom+logo.cardTop)/2)<1,
+    "Doof must be exactly halfway between the fixed bar and the live card");
+  assert.equal(logo.fontSize,"45px");
+  assert.match(logo.transform,/matrix\\(0\\.6, 0, 0, 0\\.6,/);
+  assert.equal(logo.backHref,"/");
+  assert.equal(logo.backLabel,"Back to homepage");
+
   assert.deepEqual(misses,[],"No missing transition or login assets");
   process.stdout.write("Home -> sign-in route handoff, photo crop and view transition verified.\n");
 }finally{
