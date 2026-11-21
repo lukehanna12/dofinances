@@ -104,6 +104,8 @@ try{
  'search:box(document.querySelector(".global-menu-actions>button[aria-label=Search]")),',
  'hamburger:box(document.getElementById("public-menu-toggle")),',
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
+ 'themeButton:box(document.getElementById("public-theme-toggle")),',
+ 'themeLabel:document.getElementById("public-theme-toggle").getAttribute("aria-label"),',
  'edgeMask:getComputedStyle(grid).maskImage,',
  'gpuReady:document.body.dataset.gpuScene==="ready",',
  'firstIconFade:getComputedStyle(document.querySelector(".cta6-tile--icon .cta6-icon")).opacity,',
@@ -135,10 +137,9 @@ try{
   near(g.grid.width,1080,"Full mosaic width",width);
   near(g.grid.center,width/2,"Mosaic center",width);
   near(g.logo.center,width/2,"Doof center",width);
-  near(g.logo.centerY,g.grid.centerY-1.5*(950/11),
-    "Doof raised one tile (1.5 tiles above original lattice center)",width);
-  assert.equal(g.inOldOval,0,
-    "The former 65x40 fade fell entirely within the lattice's empty center");
+  near(g.logo.centerY,g.grid.centerY-2.5*(950/11),
+    "Doof and oval raised another 86px (2.5 tiles above lattice center)",width);
+  assert.ok(g.inOldOval>=0,"Former small-oval coverage can change after elevating the logo");
   assert.ok(g.visiblyFaded>=2,
     "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
@@ -155,6 +156,8 @@ try{
    near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
   }
   assert.equal(g.panelHidden,true,"Dropdown defaults closed");
+  assert.ok(g.themeButton.left>=0&&g.themeButton.left+g.themeButton.width<=width);
+  assert.equal(g.themeButton.width,43,"Persistent theme switch is a compact rounded square");
   if(g.gpuReady){
     assert.equal(g.edgeMask,"none","GPU icons must not be cropped by the DOM mosaic");
     assert.ok(Number(g.firstIconFade)>0&&Number(g.firstIconFade)<=1,
@@ -174,7 +177,7 @@ try{
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
   assert.equal(g.logoOvalX,"140px","Oval reaches surrounding populated squares");
   assert.equal(g.logoOvalY,"100px","Oval reaches surrounding populated squares");
-  assert.equal(g.logoOffset,"129.54545px","Oval matches raised Doof center");
+  assert.equal(g.logoOffset,"215.90909px","Oval matches raised Doof center");
   assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
   assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
     "Square opacity reduces to 60% at the logo");
@@ -201,6 +204,13 @@ try{
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }
+ // Verify shared theme preference without affecting layout or the route.
+ assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-label")'),
+  "Switch to light mode");
+ await evaluate('document.getElementById("public-theme-toggle").click()');
+ assert.equal(await evaluate('document.documentElement.dataset.dofTheme'),"light");
+ assert.equal(await evaluate('localStorage.getItem("dofinances-theme")'),"light");
+ assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-pressed")'),"false");
  // Verify disclosure open/close, inert entries, Escape and breakpoint reset.
  await send("Emulation.setDeviceMetricsOverride",{
   width:500,height:670,deviceScaleFactor:1,mobile:false

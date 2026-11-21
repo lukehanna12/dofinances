@@ -74,7 +74,8 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
 test("Google and GitHub sign-in providers preserve the Auth-3 backdrop and theme icon",async()=>{
   const source=await load("../src/components/Auth3.jsx");
   assert.equal((source.match(/<svg\b/g)||[]).length,1);
-  assert.match(source,/photo-1709562493281-03c47edcb046/);
+  assert.match(source,/dashboard-cloud-veiled-colorful-fields\.avif/);
+  assert.doesNotMatch(source,/images\.unsplash\.com/);
   assert.match(source,/key:"google"/);
   assert.doesNotMatch(source,/key:"chatgpt"/);
   assert.match(source,/key:"github"/);
@@ -99,14 +100,17 @@ test("Tailwind 4 reuses captured radius and color scale, rather than approximate
   }
 });
 
-test("theme defaults to dark and can switch without persistence", async () => {
+test("theme defaults to dark, persists across homepage and login, and remains an icon-only button", async () => {
   const source = await load("../src/components/Auth3.jsx");
-  assert.match(source, /useState\("dark"\)/);
+  assert.match(source, /window\.localStorage\.getItem\("dofinances-theme"\)/);
+  assert.match(source, /window\.localStorage\.setItem\("dofinances-theme",theme\)/);
+  assert.match(source, /document\.documentElement\.dataset\.dofTheme=theme/);
   assert.match(source, /setTheme\(isDark \? "light" : "dark"\)/);
   assert.match(source, /aria-pressed=\{isDark\}/);
-  assert.match(source, /className="auth3-theme-toggle"/);
+  assert.match(source, /className="doof-theme-toggle"/);
+  assert.doesNotMatch(source, /<span>\{isDark \? "Dark mode"/);
   assert.match(source, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
-  assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie/);
+  assert.doesNotMatch(source, /sessionStorage|document\.cookie/);
   assert.match(source, /credentials:\s*"same-origin"/);
 });
 
@@ -133,7 +137,7 @@ test("links and email form preserve original UI behavior without credential reco
   assert.doesNotMatch(source,/chatgpt/i);
   assert.match(source, /className=\{common\+" opacity-60 cursor-not-allowed"\}/);
   assert.match(source, /\/api\/auth\/oauth\/start\?provider=/);
-  assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|localStorage|sessionStorage|document\.cookie/);
+  assert.doesNotMatch(source, /console\.log|sendBeacon|XMLHttpRequest|sessionStorage|document\.cookie/);
 });
 
 test("both retired Studio /login URLs return a scoped Pages Function 404", async () => {
@@ -152,11 +156,17 @@ test("both retired Studio /login URLs return a scoped Pages Function 404", async
   }
 });
 
-test("short mobile viewports position the extra theme control outside the original card", async () => {
-  const css = await load("../src/styles.css");
-  assert.match(css, /@media \(max-width: 640px\) and \(max-height: 700px\)/);
-  assert.match(css, /\.auth3-theme-toggle\s*\{\s*position: relative;\s*align-self: flex-end;/);
-  // Original utility classes must still be enforced by the source contract.
+test("both routes use one fixed bottom-left rounded square icon toggle", async () => {
+  const css = await load("../sites/_apex/assets/public-theme.css");
+  const authCSS = await load("../src/styles.css");
+  const home = await load("../sites/_apex/index.html");
+  assert.match(css, /\.doof-theme-toggle\{/);
+  assert.match(css, /border-radius:12px/);
+  assert.match(css, /left:max\(20px,env\(safe-area-inset-left\)\)/);
+  assert.match(css, /bottom:max\(20px,env\(safe-area-inset-bottom\)\)/);
+  assert.match(authCSS, /@import "\.\.\/sites\/_apex\/assets\/public-theme\.css"/);
+  assert.match(home, /id="public-theme-toggle"/);
+  assert.match(home, /src="\/assets\/public-theme\.js"/);
 });
 
 test("original iframe dark-mode base foreground propagates to the Auth-3 root", async () => {
@@ -219,7 +229,7 @@ test("original Auth-3 text selection has exact inverted light/dark colors", asyn
   const jsx = await load("../src/components/Auth3.jsx");
   assert.match(css, /\.auth3-root::selection,\s*\.auth3-root \*::selection\s*\{\s*color: oklch\(100% 0 0\);\s*background-color: oklch\(14\.5% 0 0\);/);
   assert.match(css, /\.auth3-root\.dark::selection,\s*\.auth3-root\.dark \*::selection\s*\{\s*color: #0a0a0a;\s*background-color: oklch\(100% 0 0\);/);
-  assert.ok(jsx.includes('useState("dark")'));
+  assert.ok(jsx.includes('window.localStorage.getItem("dofinances-theme")'));
   // No global ::selection override. Keep the feature within Studio Auth-3.
   assert.doesNotMatch(css, /\n::selection\s*\{/);
 });

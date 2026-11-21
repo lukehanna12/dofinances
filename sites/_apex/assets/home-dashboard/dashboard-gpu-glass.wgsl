@@ -390,15 +390,26 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // The original 65x40px oval was effectively invisible because the
   // title sits above EMPTY lattice cells. The 140x100px oval reaches
   // adjacent populated squares without introducing a colored overlay.
-  // The logo is raised one full tile: its offset is now 1.5 tile heights.
+  // The logo moved another full tile: its offset is now 2.5 tile heights.
   // Match the public CSS mask's sampled quadratic radial stops.
   let logoCenter=vec2<f32>(
     state.viewport.x*0.5,
-    state.viewport.y*0.5-1.5*(950.0/11.0)*state.viewport.w);
+    state.viewport.y*0.5-2.5*(950.0/11.0)*state.viewport.w);
   let ovalRadii=vec2<f32>(140.0,100.0)*state.viewport.w;
   let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
   let ovalDistance=clamp(length(ovalUV),0.0,1.0);
   let logoOpacity=mix(0.60,1.0,ovalDistance*ovalDistance);
+  // Browser-authored Notification-like dissipation. The source-backed
+  // Glass optics above are untouched: only final material alpha erodes.
+  // motion.w is a per-square progress lane [0,1]. At zero, the Glass
+  // remains exactly unchanged; at one, it is completely dissolved.
+  // Small 4 CSS-pixel spatial fragments disperse in an upper-right wave.
+  // Notification Center's actual native erosion/timing is not recovered.
+  let breakup=clamp(tile.motion.w,0.0,1.0);
+  let grain=floor(in.local/(4.0*state.viewport.w));
+  let noise=fract(sin(dot(grain,vec2<f32>(12.9898,78.233))+
+    f32(in.tileIndex)*7.31)*43758.5453);
+  let eroded=1.0-smoothstep(noise*0.68+0.035,noise*0.68+0.25,breakup);
   return vec4<f32>(color,coverage*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity);
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity*eroded);
 }

@@ -23,6 +23,7 @@ import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.j
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissDrift} from "./dashboard-public-dismiss.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -72,7 +73,15 @@ const reducedMotion=typeof window.matchMedia==="function"
   : {matches:false};
 let activePointerId=null,lastFrameTime=performance.now();
 let trackSeconds=0,trackRunning=false,lastMotionSubmission=0;
+let dismissStart=null;
 const TRACK_FRAME_INTERVAL=1000/30;
+// A single event starts the transition even while first GPU initialization
+// is pending; the CSS-only fallback remains available if GPU never starts.
+window.addEventListener("dofinances:home-dismiss",()=>{
+  if(dismissStart!==null)return;
+  dismissStart=performance.now();trackRunning=false;
+  requestRender();
+});
 function requestRender(){
   if(!homeActive()||!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
@@ -83,7 +92,9 @@ function requestRender(){
     lastMotionSubmission=performance.now();
     let animating=false;
     try{animating=engine.render()}catch(e){fallback(e);}
-    if(!stopped&&(animating||trackRunning||performance.now()-start<1250))
+    if(!stopped&&(animating||trackRunning||
+      (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
+      performance.now()-start<1250))
       requestRender();
   });
 }
@@ -354,8 +365,10 @@ async function initialize(){
     tileCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
-  let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],baseTileY=new Float32Array(0),
-    pitchCSS=0,trackOpacity=new Float32Array(0),cornerInert=new Uint8Array(0);
+  let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
+    baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
+    pitchCSS=0,trackOpacity=new Float32Array(0),
+    dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
   const uniform=new Float32Array(20);
   let tileData=new Float32Array(0);
   function writeUniform(){
@@ -468,8 +481,10 @@ async function initialize(){
         trackColumns.some(column=>column===undefined||column<0||column>10))
       throw new Error("Invalid seven-row, eleven-column moving glass geometry");
     const data=makeTileFloatData(all,dpr,sceneTop);
+    baseTileX=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS]));
     baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
     trackOpacity=new Float32Array(all.length);
+    dismissProgress=new Float32Array(all.length);
     cornerInert=new Uint8Array(all.length);
     tileCount=all.length;audit.tiles=tileCount;
     interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
@@ -531,13 +546,20 @@ async function initialize(){
     audit.sceneBuilds++;
   }
   function paintTrack(deltaSeconds){
-    if(trackRunning)trackSeconds+=Math.max(0,Math.min(.05,deltaSeconds));
+    if(trackRunning&&dismissStart===null)
+      trackSeconds+=Math.max(0,Math.min(.05,deltaSeconds));
     const phase=phaseAtSeconds(trackSeconds);
+    const elapsedDismiss=dismissStart===null?-1:performance.now()-dismissStart;
     let fading=0;
     for(let i=0;i<trackTiles.length;i++){
       const pos=trackPosition(trackRows[i],phase,trackColumns[i]);
       const dy=pos.deltaRows*pitchCSS;
-      tileData[i*TILE_FLOATS+1]=baseTileY[i]+dy*dpr;
+      const dissolving=elapsedDismiss<0?0:
+        tileDismissProgress(elapsedDismiss,trackRows[i],trackColumns[i]);
+      const drift=tileDismissDrift(dissolving,trackRows[i],trackColumns[i]);
+      dismissProgress[i]=dissolving;
+      tileData[i*TILE_FLOATS]=baseTileX[i]+drift.x*dpr;
+      tileData[i*TILE_FLOATS+1]=baseTileY[i]+(dy+drift.y)*dpr;
       const sideOpacity=trackSideOpacity(pos.slot,trackColumns[i]);
       const combinedOpacity=pos.opacity*sideOpacity;
       trackOpacity[i]=combinedOpacity;
@@ -550,8 +572,10 @@ async function initialize(){
       // mask is removed (it hard-clipped translating icons at the grid
       // bounds), so the SVG additionally needs only the shader's spatial
       // side-edge + oval alpha, evaluated at its current scene position.
-      trackTiles[i].style.transform="translate3d(0,"+dy.toFixed(3)+"px,0)";
-      trackTiles[i].style.opacity=combinedOpacity.toFixed(5);
+      trackTiles[i].style.transform="translate3d("+drift.x.toFixed(3)+"px,"+
+        (dy+drift.y).toFixed(3)+"px,0)";
+      trackTiles[i].style.opacity=(combinedOpacity*
+        tileDismissIconOpacity(dissolving)).toFixed(5);
       if(trackIcons[i]){
         const p=i*TILE_FLOATS;
         const glyphAlpha=publicIconSpatialAlpha(
@@ -569,6 +593,7 @@ async function initialize(){
       running:trackRunning,phase,elapsed:trackSeconds,
       cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
       fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
+      dismissElapsed:elapsedDismiss,dismissed:elapsedDismiss>=DISMISS_MS,
       fadedTiles:fading
     };
   }
@@ -576,10 +601,11 @@ async function initialize(){
     // Also sample reduced-motion preference on every active frame. Some
     // headless/host browsers do not dispatch a MediaQueryList change event
     // when system preferences are changed while WebGPU is already active.
-    const allowTrack=homeActive()&&root?.dataset.gpuStatus==="ready"&&!reducedMotion.matches;
+    const allowTrack=homeActive()&&root?.dataset.gpuStatus==="ready"&&
+      !reducedMotion.matches&&dismissStart===null;
     if(trackRunning!==allowTrack){
       trackRunning=allowTrack;
-      if(!allowTrack)trackSeconds=0;
+      if(!allowTrack&&dismissStart===null)trackSeconds=0;
     }
     writeUniform();
     syncTileTints();
@@ -593,7 +619,10 @@ async function initialize(){
       interaction.writeTo(tileData);
       // motion.z is the independent end-of-track transparency; the
       // interaction adapter owns only hover/press, not track opacity.
-      for(let i=0;i<tileCount;i++)tileData[i*TILE_FLOATS+18]=trackOpacity[i];
+      for(let i=0;i<tileCount;i++){
+        tileData[i*TILE_FLOATS+18]=trackOpacity[i];
+        tileData[i*TILE_FLOATS+19]=dismissProgress[i];
+      }
       device.queue.writeBuffer(tileBuffer,0,tileData);
     }
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
@@ -663,12 +692,12 @@ async function initialize(){
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
-  trackRunning=!reducedMotion.matches;
+  trackRunning=!reducedMotion.matches&&dismissStart===null;
   lastFrameTime=performance.now();
   reducedMotion.addEventListener?.("change",()=>{
     if(stopped)return;
-    trackRunning=!reducedMotion.matches;
-    if(reducedMotion.matches)trackSeconds=0;
+    trackRunning=!reducedMotion.matches&&dismissStart===null;
+    if(reducedMotion.matches&&dismissStart===null)trackSeconds=0;
     requestRender();
   });
   // Browser-only interaction model. No DOM screenshot, no scene/mip rebuild,

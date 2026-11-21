@@ -179,7 +179,7 @@ body.public-home .dashboard-home .cta6-mosaic{
   --public-edge-fade-width:calc(0.75 * ((1080px - 10 * 13px) / 11));
   --public-logo-oval-x:140px;
   --public-logo-oval-y:100px;
-  --public-logo-shift:129.54545px;
+  --public-logo-shift:215.90909px;
   -webkit-mask-image:
     linear-gradient(to right,
       rgba(0,0,0,.25) 0,
@@ -234,12 +234,11 @@ body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta
   opacity:var(--public-icon-spatial-alpha,1);
 }
 
-/* Public-only elevation: one complete 950/11px tile above the previous
-   half-tile shift (now 1.5 tile heights above the mosaic's center).
-   The empty-cell geometry, logo size and shared authenticated Dashboard
-   styles are unchanged. */
+/* Public-only elevation: another exact 950/11px square above the last
+   position; the foreground logo and the glass oval must move together.
+   No authenticated Dashboard or mosaic geometry is changed. */
 body.public-home .dashboard-home .cta6-center h1{
-  translate:0 calc(-1.5 * var(--cta6-title-tile));
+  translate:0 calc(-2.5 * var(--cta6-title-tile));
 }
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */
@@ -289,4 +288,30 @@ body.public-home .dashboard-home .cta6-action:active{
   body.public-home .global-menu-control,
   body.public-home .dashboard-home .cta6-action{transition:none;}
   body.public-home .public-menu-panel{animation:none!important;}
+}
+
+/* Notification-dismissal-inspired public transition, not a recovered native
+   Spring/CA animation. Never fade or navigate the persistent theme button. */
+body.public-home .dashboard-home .cta6-center,
+body.public-home .dashboard-home .cta6-bottom-action{
+  transition:opacity 280ms cubic-bezier(.24,.72,.3,1);
+}
+body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center,
+body.public-home[data-public-route="leaving"] .dashboard-home .cta6-bottom-action{
+  opacity:0!important;
+  pointer-events:none!important;
+  animation:none!important;
+}
+body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
+  opacity:0!important;
+  transform:translate3d(18px,-24px,0) scale(.84)!important;
+  filter:blur(7px);
+  transition:transform 700ms cubic-bezier(.22,.7,.3,1),
+    opacity 650ms ease,filter 650ms ease;
+  transition-delay:calc(var(--cta6-delay,0s) * .28);
+  animation:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+  body.public-home .dashboard-home .cta6-center,
+  body.public-home .dashboard-home .cta6-bottom-action{transition:none!important;}
 }

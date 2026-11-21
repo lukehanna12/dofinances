@@ -60,8 +60,15 @@ export function Auth3() {
     {key:"github",label:"GitHub",mark:"GH"}
   ];
   const inputClasses = "w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200";
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(()=>{
+    try{return window.localStorage.getItem("dofinances-theme")==="light"?"light":"dark";}
+    catch{return "dark";}
+  });
   const isDark = theme === "dark";
+  useEffect(()=>{
+    document.documentElement.dataset.dofTheme=theme;
+    try{window.localStorage.setItem("dofinances-theme",theme);}catch{}
+  },[theme]);
 
   async function submit(endpoint,payload) {
     const response=await fetch("/api/auth/"+endpoint,{
@@ -123,10 +130,10 @@ export function Auth3() {
       <div className="min-h-screen w-full relative flex items-center justify-center p-6">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1709562493281-03c47edcb046?q=80&w=822&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}
+          style={{ backgroundImage: "url('/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif')" }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-black/20" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[rgba(19,20,21,0.12)]" aria-hidden="true" />
 
         <div className="relative z-10 w-full max-w-[1400px] mx-auto flex items-center justify-center gap-12">
           <motion.div
@@ -251,10 +258,11 @@ export function Auth3() {
 
       {/* User-requested feature: absent from the original Auth-3 source. */}
       <button
-        className="auth3-theme-toggle"
+        className="doof-theme-toggle"
         type="button"
         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         aria-pressed={isDark}
+        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
         onClick={() => setTheme(isDark ? "light" : "dark")}
       >
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -262,7 +270,6 @@ export function Auth3() {
             ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>
             : <path d="M20.4 15.2A8.6 8.6 0 0 1 8.8 3.6 8.7 8.7 0 1 0 20.4 15.2Z" />}
         </svg>
-        <span>{isDark ? "Dark mode" : "Light mode"}</span>
       </button>
     </main>
   );

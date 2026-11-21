@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissDrift}
+  from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
 import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
 const home=asset("index.html"),style=asset("assets/public-home.css");
@@ -70,8 +72,8 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(style,/radial-gradient\(ellipse var\(--public-logo-oval-x\) var\(--public-logo-oval-y\)/);
   assert.match(style,/--public-logo-oval-x:140px;/);
   assert.match(style,/--public-logo-oval-y:100px;/);
-  assert.match(style,/--public-logo-shift:129\.54545px;/);
-  assert.match(style,/\.cta6-center h1\{\s*translate:0 calc\(-1\.5 \* var\(--cta6-title-tile\)\);/);
+  assert.match(style,/--public-logo-shift:215\.90909px;/);
+  assert.match(style,/\.cta6-center h1\{\s*translate:0 calc\(-2\.5 \* var\(--cta6-title-tile\)\);/);
   assert.match(style,/rgba\(0,0,0,\.744\) 60%/,"The opacity ramps quadratically through the oval");
   assert.match(style,/rgba\(0,0,0,\.60\) 0%/,"Squares are 60% opaque at logo center");
   assert.doesNotMatch(style,/linear-gradient\(to bottom/,"Do not darken the backdrop vertically");
@@ -80,10 +82,12 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
   assert.match(shader,/let logoCenter=vec2<f32>\(/);
-  assert.match(shader,/state\.viewport\.y\*0\.5-1\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
+  assert.match(shader,/state\.viewport\.y\*0\.5-2\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
   assert.match(shader,/let ovalRadii=vec2<f32>\(140\.0,100\.0\)\*state\.viewport\.w;/);
   assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
-  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity/);
+  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity\*eroded/);
+  assert.match(shader,/let breakup=clamp\(tile\.motion\.w,0\.0,1\.0\)/);
+  assert.match(shader,/let noise=fract\(sin\(dot\(grain/);
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
   assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
@@ -121,9 +125,38 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   near(midOval,0.70);
   assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
 });
+test("Notification-inspired dismissal is explicitly provisional and clears all square lanes",()=>{
+  assert.equal(DISMISS_MS,970);
+  for(let row=0;row<7;row++)for(let col=0;col<11;col++){
+    assert.equal(tileDismissProgress(0,row,col),0);
+    assert.equal(tileDismissProgress(DISMISS_MS,row,col),1);
+    let previous=0;
+    for(const t of [40,200,400,600,800,970]){
+      const p=tileDismissProgress(t,row,col);
+      assert.ok(p>=previous&&p<=1,"Progress must be monotonic per square");
+      previous=p;
+    }
+    assert.deepEqual(tileDismissDrift(0,row,col),{x:0,y:-0});
+  }
+  assert.equal(tileDismissIconOpacity(0),1);
+  assert.equal(tileDismissIconOpacity(1),0);
+  assert.ok(tileDismissIconOpacity(.5)<1);
+  const home=asset("index.html");
+  const route=asset("assets/public-home-transition.js");
+  const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
+  assert.match(home,/href="\/login"/);
+  assert.match(home,/src="\/assets\/public-home-transition\.js"/);
+  assert.match(route,/window\.location\.assign\(target\)/);
+  assert.match(route,/dofinances:home-dismiss/);
+  assert.match(route,/prefers-reduced-motion: reduce/);
+  assert.match(renderer,/tileDismissProgress\(elapsedDismiss,trackRows\[i\],trackColumns\[i\]\)/);
+  assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
+  assert.match(style,/data-public-route="leaving"/);
+  assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/tileDismissProgress/);
+});
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
   const names=["dashboard-mosaic.js","dashboard-gpu-renderer.js","dashboard-home-loader.js",
-    "dashboard-public-icon-fade.js",
+    "dashboard-public-icon-fade.js","dashboard-public-dismiss.js",
     "dashboard-optics.js","dashboard-interaction.js","dashboard-track.js",
     "dashboard-tint.js","sidebar-glass-oracle.js",
     "dashboard-gpu-scene.wgsl","dashboard-gpu-mipmap.wgsl","dashboard-gpu-glass.wgsl",

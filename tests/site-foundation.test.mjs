@@ -51,7 +51,7 @@ test("login and Studio compile the same foundation while retaining authenticatio
   assert.match(css,/body\s*\{\s*background-color:\s*var\(--ui-canvas\)/);
   assert.match(css,/--font-sans:\s*ui-sans-serif, system-ui, sans-serif/);
   assert.match(studio,/name="theme-color" content="#171717"/);
-  assert.match(jsx,/useState\("dark"\)/);
+  assert.match(jsx,/window\.localStorage\.getItem\("dofinances-theme"\)/);
   assert.match(jsx,/setTheme\(isDark \? "light" : "dark"\)/);
   assert.match(jsx,/\/api\/auth\//);
 });

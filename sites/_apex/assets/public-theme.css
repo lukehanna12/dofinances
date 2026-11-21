@@ -1,0 +1,37 @@
+/* Single bottom-left persistent theme control on / and /login.
+   Shared across the Git-managed public HTML and the React Auth-3 bundle. */
+.doof-theme-toggle{
+  position:fixed;z-index:85;bottom:max(20px,env(safe-area-inset-bottom));
+  left:max(20px,env(safe-area-inset-left));right:auto;
+  width:43px;height:43px;min-width:43px;min-height:43px;
+  padding:0;margin:0;box-sizing:border-box;display:inline-flex;
+  align-items:center;justify-content:center;
+  color:#f5f5f5;background:rgba(26,26,26,.87);
+  border:1px solid rgba(255,255,255,.2);border-radius:12px;
+  box-shadow:0 10px 28px rgba(0,0,0,.22);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  cursor:pointer;transition:background-color .18s ease,transform .18s ease;
+}
+.doof-theme-toggle:hover{background:rgba(48,48,48,.96);transform:translateY(-1px)}
+.doof-theme-toggle:focus-visible{outline:2px solid #a3a3a3;outline-offset:3px}
+.doof-theme-toggle svg{display:block;flex:none;width:19px;height:19px}
+:root[data-dof-theme="light"] .doof-theme-toggle{
+  color:#171717;background:rgba(255,255,255,.94);border-color:#d4d4d4;
+}
+:root[data-dof-theme="light"] .doof-theme-toggle:hover{background:#fff}
+.doof-theme-moon{display:none}
+:root[data-dof-theme="light"] .doof-theme-moon{display:initial}
+:root[data-dof-theme="light"] .doof-theme-sun{display:none}
+/* Homepage's light mode changes UI chrome, not the recovered photo or
+   per-square optics. Sign-in card has its own established light classes. */
+:root[data-dof-theme="light"] body.public-home > .global-menu{
+  background:#cfd2d6;color:#252a31;border-bottom-color:rgba(0,0,0,.1);
+}
+:root[data-dof-theme="light"] body.public-home .global-menu-control{color:#252a31}
+:root[data-dof-theme="light"] body.public-home .global-menu-control:hover{
+  color:#111;background:rgba(0,0,0,.09);
+}
+:root[data-dof-theme="light"] body.public-home .dashboard-home .cta6-center h1{
+  color:#20252b;text-shadow:0 1px 18px rgba(255,255,255,.36);
+}
+@media(prefers-reduced-motion:reduce){.doof-theme-toggle{transition:none!important}}

@@ -12,9 +12,9 @@ export function publicIconSpatialAlpha(
   // Mirror dashboard-gpu-glass.wgsl: side fade 25% -> 100% over 0.75 tile.
   const edgeDistance=Math.min(centerX,sceneWidth-centerX);
   const edgeOpacity=0.25+0.75*clamp01(edgeDistance/Math.max(1,0.75*tileWidth));
-  // The public logo is 1.5 tile heights above the viewport-scene center.
+  // The public logo is 2.5 tile heights above the viewport-scene center.
   // Mirror WGSL's 140x100 CSS-pixel radial, squared falloff (60% -> 100%).
-  const logoY=sceneHeight*0.5-1.5*(950/11)*dpr;
+  const logoY=sceneHeight*0.5-2.5*(950/11)*dpr;
   const ovalDistance=clamp01(Math.hypot(
     (centerX-sceneWidth*0.5)/(140*dpr),
     (centerY-logoY)/(100*dpr)));
