@@ -580,9 +580,8 @@ async function initialize(){
         shrink.x.toFixed(5)+","+shrink.y.toFixed(5)+")";
       trackTiles[i].style.opacity=(combinedOpacity*
         tileDismissIconOpacity(dissolving)).toFixed(5);
-      // Native X-close poofs diffuse the content while smoke replaces
-      // it. SVG icons cannot be drawn by the WebGPU material pass, so
-      // let their vector contours soften in place alongside the glass.
+      // The DOM icon follows its own refracting square's brief local
+      // fade and softening. No synthetic gray smoke replaces the glass.
       if(dissolving>0&&trackIcons[i]){
         trackIcons[i].style.filter="blur("+tileDismissBlur(dissolving).toFixed(3)+"px)";
       }
@@ -602,7 +601,7 @@ async function initialize(){
       running:trackRunning,phase,elapsed:trackSeconds,
       cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
       fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
-      dismissal:"X-close localized soft poof; five smooth stages, no swipe or lateral exit",
+      dismissal:"X-close local optical decoherence, provisional; no smoke or swipe",
       dismissElapsed:elapsedDismiss,dismissed:elapsedDismiss>=DISMISS_MS,
       fadedTiles:fading
     };

@@ -88,12 +88,15 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let baseAlpha=coverage\*in\.introAlpha\*/);
   assert.match(shader,/if\(dismiss<=0\.0\)\{return vec4<f32>\(color,baseAlpha\);\}/,
     "Normal presentation must be byte-for-byte original material path");
-  assert.match(shader,/let plumeScale=vec2<f32>\(1\.0\+0\.40\*bloom,1\.0\+0\.32\*bloom\);/);
-  assert.match(shader,/fn poofNoise\(p:vec2<f32>\)/);
-  assert.match(shader,/fn poofCloud\(p:vec2<f32>\)/);
-  assert.match(shader,/let billow=1\.0-smoothstep\(0\.56,1\.25,billowEdge\);/);
-  assert.match(shader,/let smoke=cloudIn\*cloudOut\*billow\*fringe\*0\.43;/);
-  assert.match(shader,/return vec4<f32>\(poofColor,clamp\(alpha,0\.0,1\.0\)\);/);
+  assert.match(shader,/let diffuseScale=vec2<f32>\(1\.0\+0\.085\*bloom,1\.0\+0\.065\*bloom\);/);
+  assert.match(shader,/fn dissolveNoise\(p:vec2<f32>\)/);
+  assert.match(shader,/fn dissolveField\(p:vec2<f32>\)/);
+  assert.match(shader,/let edgeExposure=1\.0-clamp\(-signed\/11\.0,0\.0,1\.0\);/);
+  assert.match(shader,/let fringe=\(1\.0-coverage\)\*fringeWindow\*0\.09\*/);
+  assert.match(shader,/if\(dismiss>=1\.0\)\{return vec4<f32>\(color,0\.0\);\}/);
+  assert.match(shader,/return vec4<f32>\(color,clamp\(alpha,0\.0,1\.0\)\);/);
+  assert.doesNotMatch(shader,/smokeColor|poofColor|let smoke=|let billow=/,
+    "No unsupported gray smoke or cartoon poof");
   assert.doesNotMatch(shader,/let grain=|let front=|let squeeze=|let contraction=/,
     "No lingering pixel-glitch, swipe-front, or contraction shader expressions");
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
@@ -134,7 +137,7 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
 });
 test("Notification-inspired dismissal is explicitly provisional and clears all square lanes",()=>{
-  assert.equal(DISMISS_MS,620);
+  assert.equal(DISMISS_MS,440);
   for(let row=0;row<7;row++)for(let col=0;col<11;col++){
     assert.equal(tileDismissProgress(0,row,col),0);
     assert.equal(tileDismissProgress(DISMISS_MS,row,col),1);
@@ -149,24 +152,25 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
     const middle=tileDismissDrift(.5,row,col,x,width,screen);
     const exit=tileDismissDrift(1,row,col,x,width,screen);
     assert.deepEqual(origin,{x:0,y:0});
-    assert.ok(Math.abs(middle.x)<=3.4&&Math.abs(exit.x)<=3.4,
-      "Poof stays within a few pixels of its tile, never flies offscreen");
-    assert.ok(exit.y<0&&exit.y>=-6.001,
-      "Smoke rises gently at the original location");
-    assert.ok(Math.abs(x+exit.x-x)<4,"The notification's X-close isn't a swipe");
+    assert.ok(Math.abs(middle.x)<=0.9&&Math.abs(exit.x)<=0.9,
+      "Glassy optical breakup must not send tiles offscreen");
+    assert.ok(exit.y<0&&exit.y>=-1.151,
+      "At most one-pixel local vertical motion");
+    assert.ok(Math.abs(x+exit.x-x)<1,"An X-close is not a swipe");
   }
   assert.equal(tileDismissIconOpacity(0),1);
   assert.equal(tileDismissIconOpacity(1),0);
   assert.ok(tileDismissIconOpacity(.5)<1);
   assert.deepEqual(tileDismissScale(0),{x:1,y:1});
-  assert.deepEqual(tileDismissScale(1),{x:1.4,y:1.32});
-  assert.ok(tileDismissScale(.5).x>1&&tileDismissScale(.5).y>1,
-    "Smoke expands instead of imploding");
+  assert.ok(Math.abs(tileDismissScale(1).x-1.085)<1e-12);
+  assert.ok(Math.abs(tileDismissScale(1).y-1.065)<1e-12);
+  assert.ok(tileDismissScale(.5).x>1&&tileDismissScale(.5).x<1.085,
+    "No huge cartoon smoke expansion");
   assert.ok(tileDismissBlur(.4)>0&&tileDismissBlur(1)>tileDismissBlur(.4));
   assert.ok(tileDismissProgress(200,3,10)>=0&&tileDismissProgress(200,3,0)>=0);
   assert.ok(Math.abs(tileDismissProgress(200,3,10)-
     tileDismissProgress(200,3,0))<.06,
-    "X-close poof is nearly simultaneous across the lattice");
+    "X-close optical dissolve is nearly simultaneous across the lattice");
   assert.throws(()=>tileDismissDrift(.5,3,4,120,0,1440),RangeError);
   const home=asset("index.html");
   const route=asset("assets/public-home-transition.js");

@@ -290,8 +290,8 @@ body.public-home .dashboard-home .cta6-action:active{
   body.public-home .public-menu-panel{animation:none!important;}
 }
 
-/* X-button notification "poof", not a right-swipe or automatic timeout.
-   The backdrop and persistent theme control never animate. */
+/* X-close local optical dissolution, not the historical AppKit smoke poof.
+   Background and persistent theme control remain unchanged. */
 body.public-home .dashboard-home .cta6-center,
 body.public-home .dashboard-home .cta6-bottom-action{
   transition:opacity 280ms cubic-bezier(.24,.72,.3,1);
@@ -304,11 +304,11 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-bottom-actio
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;
-  transform:translate3d(0,-6px,0) scale(1.40,1.32)!important;
-  filter:blur(6px);
-  transition:transform 560ms cubic-bezier(.17,.58,.32,1),
-    opacity 510ms cubic-bezier(.26,.57,.31,1),filter 560ms ease;
-  transition-delay:calc(var(--cta6-delay,0s) * .035);
+  transform:translate3d(0,-1px,0) scale(1.085,1.065)!important;
+  filter:blur(1.4px);
+  transition:transform 420ms cubic-bezier(.26,.62,.36,1),
+    opacity 390ms cubic-bezier(.22,.62,.33,1),filter 420ms ease;
+  transition-delay:calc(var(--cta6-delay,0s) * .015);
   animation:none!important;
 }
 @media(prefers-reduced-motion:reduce){
