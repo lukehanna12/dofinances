@@ -1,4 +1,5 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
+import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js";
 /* Live Colosseum Utilities — Collections-compatible layout, explicit network I/O.
  * Only the authenticated /api/colosseum/utilities owner bridge can read data.
  * No timers, polling, simulated inventory, or background update checks.
@@ -50,7 +51,7 @@ export function utilityFiltersFromFields(rows){
 export function utilityCanManage(item){return !!item&&UID.test(item.uid)&&item.enabled!==0&&["direct","cloud"].includes(item.route);}
 export function utilityResultLabel(item){return item?.name||item?.uid||"Utility";}
 export function utilitySearchIndex(item){
- return [item.name,item.uid,item.label,item.class,item.author,item.platform,item.route,
+ return [item.name,item.uid,item.description,item.label,item.class,item.author,item.platform,item.route,
   item.type,...parseTags(item.languages_json),...parseTags(item.ecosystems_json),...parseTags(item.subjects_json)]
    .filter(Boolean).join(" ").normalize("NFKC").toLowerCase();
 }
@@ -106,6 +107,18 @@ export function initColosseumUtilities(){
  }
  const api=payload=>fetchJSON(API,payload);
  const mutation=(kind,payload)=>fetchJSON(CATALOG_API+kind,payload);
+ // Single owner request and in-memory cache update: never refetch the entire page.
+ createUtilityAnnotationEditor({root,api,
+  getItem:uid=>s.detail?.item?.uid===uid?s.detail.item:s.items.find(x=>x.uid===uid),
+  updated:(uid,fields)=>{
+   s.items=s.items.map(item=>item.uid===uid?{...item,...fields}:item);
+   if(s.detail?.item?.uid===uid)s.detail={...s.detail,item:{...s.detail.item,...fields}};
+   const detail=s.detailCache.get(uid);
+   if(detail?.item)s.detailCache.set(uid,{...detail,item:{...detail.item,...fields}});
+   renderList();if(s.activeUid)renderDetail();
+  },
+  report
+ });
  function busy(value){
   s.working=value;
   elements.add.disabled=value||s.editMode||s.selectionMode||s.editTransitioning||s.selectionTransitioning;
@@ -185,7 +198,7 @@ export function initColosseumUtilities(){
      '<span class="ut-name-actions" hidden><button class="ut-name-confirm" type="button" data-ut-confirm-rename="'+uid+'" aria-label="Apply name change">'+NAME_APPLY+'</button>'+
      '<button class="ut-name-cancel" type="button" data-ut-cancel-rename="'+uid+'" aria-label="Cancel name change">'+NAME_CANCEL+'</button></span></span>'+
     '<div class="ut-row-panel" id="ut-panel-'+uid+'" role="region" aria-hidden="true"><div class="ut-row-panel-inner">'+
-    '<p class="ut-row-description">'+esc(plain(item.label))+'</p>'+
+    '<p class="ut-row-description">'+esc(item.description||"Description pending source review")+'</p>'+
     '<div class="ut-mobile-detail" data-ut-mobile></div></div></div></article>';
   }).join("");
  }
@@ -383,6 +396,18 @@ export function initColosseumUtilities(){
   const files=(s.detail.files||[]).map(f=>'<div class="ut-file"><code>'+esc(f.relative_path)+'</code>'+
    '<small>'+Number(f.size_bytes||0).toLocaleString()+' bytes</small></div>').join("");
   const canEdit=utilityCanManage(item);
+  const notes=typeof item.notes==="string"?item.notes:"";
+  const rating=typeof item.rating==="number"?item.rating:null;
+  const description=typeof item.description==="string"&&item.description?item.description:null;
+  const editorialSection='<section class="ut-card-section ut-editorial-section"><h3>Description</h3>'+
+   '<p class="ut-verified-description'+(description?'':' ut-editorial-pending')+'">'+
+    esc(description||"Pending direct source review; no unverified summary has been assigned.")+'</p>'+
+   '<h3>Notes <span class="ut-editorial-optional">optional · 100 characters</span></h3>'+
+   '<p class="ut-editorial-note">'+esc(notes||"No notes yet.")+'</p>'+
+   '<h3>Rating <span class="ut-editorial-optional">optional · 0.5–5 stars</span></h3>'+
+   '<p class="ut-editorial-rating">'+esc(rating===null?"Not rated":rating.toFixed(1)+" / 5")+'</p>'+
+   '<button type="button" class="ut-small-button" data-ut-edit-annotation="'+esc(item.uid)+'">Edit notes &amp; rating</button>'+
+   '</section>';
   const linked=Array.isArray(s.detail.collection_names)?s.detail.collection_names:[];
   const collectionSection='<section class="ut-card-section"><h3>Collections</h3>'+
     (linked.length?'<div class="ut-tag-list">'+linked.map(name=>'<span class="ut-tag">'+esc(name)+'</span>').join("")+'</div>':
@@ -393,7 +418,8 @@ export function initColosseumUtilities(){
    '<h2>'+esc(item.name)+'</h2></div><span class="ut-card-badges">'+
    '<span class="ut-tag ut-author-badge">'+esc(authorLabel)+'</span>'+
    '<span class="ut-tag">#'+esc(item.uid)+'</span></span></div>'+
-   '<p>'+esc(plain(item.label))+'</p><dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
+   editorialSection+'<section class="ut-card-section"><h3>Catalog label</h3><p>'+esc(plain(item.label))+'</p></section>'+
+   '<dl class="ut-meta">'+rows.map(([k,v])=>metadata(k,v)).join("")+'</dl>'+
    tagSection("Languages",item.languages_json)+tagSection("Ecosystems",item.ecosystems_json)+
    tagSection("Vendors",item.vendors_json)+tagSection("Subjects",item.subjects_json)+collectionSection+
    '<section class="ut-card-section"><h3>Source & dependencies</h3>'+

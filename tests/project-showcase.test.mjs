@@ -264,7 +264,7 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
  assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v9"'));
  assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v9"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v9"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v10"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{

@@ -15,8 +15,8 @@ test("Utilities page exposes the Collections-style list, inspector and frosted d
   'id="ut-inspector"','id="ut-pages"','id="ut-add"','id="ut-edit"','id="ut-select"',
   'id="ut-editor"','id="ut-delete-dialog"'])
    assert.ok(view.includes(part),"Missing Utilities element: "+part);
- assert.ok(html.includes('<link rel="stylesheet" href="/app/assets/utilities.css">'));
- assert.ok(dashboard.includes('import {initColosseumUtilities} from "./utilities.js"'));
+ assert.ok(html.includes('<link rel="stylesheet" href="/app/assets/utilities.css?profile=v1">'));
+ assert.ok(dashboard.includes('import {initColosseumUtilities} from "./utilities.js?profile=v1"'));
  assert.ok(dashboard.includes("initColosseumUtilities();"));
  assert.equal(typeof initColosseumUtilities,"function");
  assert.match(css,/#ut-root \.ut-control-center\{[^}]*position:fixed;/);
@@ -285,4 +285,22 @@ test("Tooltips and shortcuts are scoped to Utilities and avoid input interceptio
  assert.match(js,/event\.target instanceof Element/);
  assert.match(js,/window\.addEventListener\("keydown",event=>/);
  assert.doesNotMatch(js,/setTimeout|setInterval|requestAnimationFrame/);
+});
+
+test("Utility editorial fields remain separate from catalog labels and collection annotations",()=>{
+ const editor=source("sites/_apex/app/assets/utility-editorial-ui.js");
+ assert.match(js,/item\.description\|\|"Description pending source review"/);
+ assert.match(js,/data-ut-edit-annotation/);
+ assert.match(js,/createUtilityAnnotationEditor/);
+ assert.match(editor,/editorial_version/);
+ assert.match(js,/Pending direct source review/);
+ assert.match(editor,/action:"annotate"/);
+ assert.match(editor,/expected_version:version/);
+ assert.match(editor,/rating!==null/);
+ assert.match(editor,/length>100/);
+ assert.match(editor,/Unrated/);
+ assert.match(css,/#ut-root \.ut-annotation-dialog/);
+ assert.match(css,/#ut-root \.ut-editorial-section/);
+ assert.match(html,/utilities\.css\?profile=v1/);
+ assert.match(dashboard,/utilities\.js\?profile=v1/);
 });
