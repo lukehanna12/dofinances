@@ -133,6 +133,12 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
     // original overlay's 20% black scrim to the Home photograph's 12% veil.
     if(expected==="absolute inset-0 bg-cover bg-center"||
        expected==="absolute inset-0 bg-black/20")continue;
+    // The user explicitly requested darker Or divider lines. The new
+    // sign-in-only class retains the original flex/1px geometry.
+    if(expected==="flex-1 h-px bg-neutral-200 dark:bg-neutral-700"){
+      assert.equal(classes.filter(x=>x==="auth3-or-rule flex-1 h-px").length,2);
+      continue;
+    }
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
