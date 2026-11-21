@@ -152,6 +152,14 @@ try{
   assert.equal(scene.underlayCover,"cover, cover");
   assert.match(scene.underlayImage,/dashboard-cloud-veiled-colorful-fields\.avif/);
   assert.equal(scene.preload,true,"Image must begin loading before React");
+  // The sign-in form can hydrate before pagereveal when the persistent
+  // header adds an additional stylesheet and deferred mobile-menu script.
+  // Observe the actual navigation lifecycle event rather than sampling
+  // immediately at React mount.
+  for(let attempt=0;attempt<80&&!scene.handoff?.seen;attempt++){
+    await sleep(60);
+    scene.handoff=await evaluate("window.__handoff");
+  }
   assert.equal(scene.handoff.seen,true,"Incoming page must receive pagereveal");
   assert.equal(scene.handoff.hasTransition,true,
     "Cross-document view transition must hold outgoing frame");
