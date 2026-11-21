@@ -4,6 +4,25 @@ import { readFile } from "node:fs/promises";
 
 const load = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
+test("public Home and Auth-3 keep a continuous photo across the document boundary", async () => {
+  const [home, login, css, component] = await Promise.all([
+    load("../sites/_apex/assets/public-home.css"),
+    load("../index.html"), load("../src/styles.css"),
+    load("../src/components/Auth3.jsx")
+  ]);
+  assert.match(home, /@view-transition\s*\{\s*navigation:\s*auto;/);
+  assert.match(login, /@view-transition\s*\{\s*navigation:\s*auto;/);
+  assert.match(home, /::view-transition-old\(root\)/);
+  assert.match(login, /::view-transition-new\(root\)\s*\{\s*animation:\s*none/);
+  assert.match(login, /rel="preload" as="image" href="\/assets\/home-dashboard\/dashboard-cloud-veiled-colorful-fields\.avif"/);
+  assert.match(login, /body::before\s*\{[^}]*inset:\s*44px 0 0;/);
+  assert.match(login, /background-size:\s*cover, cover;/);
+  assert.match(css, /\.auth3-root \[data-auth-scene\]\s*\{\s*position:\s*fixed;\s*top:\s*44px;/);
+  assert.match(component, /data-auth-scene="photo"/);
+  assert.match(component, /data-auth-scene="veil"/);
+  assert.doesNotMatch(component, /sessionStorage|document\.cookie/);
+});
+
 test("Studio root is the only React entrypoint; the apex /login reuses its build", async () => {
   const root = await load("../index.html");
   assert.match(root, /<title>Sign in · Dofinances<\/title>/);

@@ -129,11 +129,12 @@ export function Auth3() {
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
       <div className="min-h-screen w-full relative flex items-center justify-center p-6">
         <div
+          data-auth-scene="photo"
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif')" }}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-[rgba(19,20,21,0.12)]" aria-hidden="true" />
+        <div data-auth-scene="veil" className="absolute inset-0 bg-[rgba(19,20,21,0.12)]" aria-hidden="true" />
 
         <div className="relative z-10 w-full max-w-[1400px] mx-auto flex items-center justify-center gap-12">
           <motion.div

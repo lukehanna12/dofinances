@@ -111,6 +111,17 @@ body:has(.auth3-root:not(.dark)) { background-color: #fff; }
 .auth3-root.dark { color-scheme: dark; color: #fff; }
 .auth3-root:not(.dark) { color-scheme: light; color: #0a0a0a; }
 
+/* WebGPU Home renders its photograph only below the fixed 44px global bar.
+ * The Auth-3 backdrop must use that SAME containing rectangle, not the
+ * default full-viewport Tailwind inset; otherwise background-size:cover
+ * recalculates and the photo visibly jumps as the sign-in card enters.
+ * The inline HTML underlay above is rendered before React and owns the
+ * same image and overlay, so there is no blank/black frame before hydration. */
+.auth3-root [data-auth-scene] {
+  position: fixed;
+  top: 44px;
+}
+
 /* The same 43px icon-only bottom-left theme switch is loaded from
  * public-theme.css on both routes; never attach it to either page's
  * transitioning logo, bottom buttons or React authentication card. */

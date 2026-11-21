@@ -40,6 +40,8 @@ jobs:
         run: node scripts/verify-sidebar-olive-health-browser.mjs
       - name: Build site
         run: npm run build
+      - name: Verify public Home to login backdrop continuity in Chromium
+        run: node scripts/verify-public-login-transition-browser.mjs
       - name: Verify distribution
         run: |
           test -s dist/index.html

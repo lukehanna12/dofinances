@@ -315,3 +315,15 @@ body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .das
   body.public-home .dashboard-home .cta6-center,
   body.public-home .dashboard-home .cta6-bottom-action{transition:none!important;}
 }
+
+/* Keep the outgoing, already-dissolved Home scene visible until the new
+   same-origin login document has a fully painted background. Unlike a hard
+   location swap, this never exposes an empty document between the pages. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes doof-document-handoff { from { opacity: 1; } to { opacity: 0; } }
+  ::view-transition-old(root) {
+    animation: doof-document-handoff 190ms ease-out both;
+  }
+  ::view-transition-new(root) { animation: none; }
+}

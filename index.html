@@ -7,6 +7,35 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Dofinances account login and registration. Sign in to access your private dashboard.">
     <meta name="dofinances-page" content="auth3-studio-preview-v1">
+    <!-- A decode-ready, layout-stable copy of the *same* backdrop as the
+         homepage WebGPU canvas. Paint it before the React bundle loads. -->
+    <link rel="preload" as="image" href="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif" fetchpriority="high">
+    <style>
+      @view-transition { navigation: auto; }
+      html, body { min-height: 100%; background-color: #0a0a0a; }
+      body { margin: 0; position: relative; isolation: isolate; }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 44px 0 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(19,20,21,.12),rgba(19,20,21,.12)),
+          url("/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif");
+        background-size: cover, cover;
+        background-position: center center, center center;
+        background-repeat: no-repeat;
+      }
+      #root { position: relative; z-index: 1; }
+      @media (prefers-reduced-motion: no-preference) {
+        @keyframes doof-document-handoff { from { opacity: 1; } to { opacity: 0; } }
+        ::view-transition-old(root) {
+          animation: doof-document-handoff 190ms ease-out both;
+        }
+        ::view-transition-new(root) { animation: none; }
+      }
+    </style>
     <title>Sign in · Dofinances</title>
   </head>
   <body>
