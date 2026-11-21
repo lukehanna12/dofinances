@@ -358,17 +358,19 @@ try{
     "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
     "return {cardFilter:getComputedStyle(card).backdropFilter,"+
     "controlFilter:getComputedStyle(control).backdropFilter,"+
-    "canvasOpacity:getComputedStyle(glass).opacity,"+
-    "canvasVisibility:getComputedStyle(glass).visibility,"+
+    "canvasOpacity:glass?getComputedStyle(glass).opacity:null,"+
+    "canvasVisibility:glass?getComputedStyle(glass).visibility:null,"+
     "gpuHome:document.body.dataset.gpuScene,"+
     "mode:window.__dashboardWebGPU?.authPresentation};})()");
   assert.match(scrollComposite.cardFilter,/blur\(/,
     "The real card samples the fixed wallpaper in the native scrolling compositor");
   assert.match(scrollComposite.controlFilter,/blur\(/,
     "Nested controls use their own native backdrop blur");
-  assert.equal(scrollComposite.canvasOpacity,"0",
-    "The old stale WebGPU card texture must be invisible");
-  assert.equal(scrollComposite.canvasVisibility,"hidden");
+  if(scrollComposite.canvasOpacity!==null){
+    assert.equal(scrollComposite.canvasOpacity,"0",
+      "The old stale WebGPU card texture must be invisible");
+    assert.equal(scrollComposite.canvasVisibility,"hidden");
+  }
   if(scrollComposite.gpuHome==="ready")
     assert.equal(scrollComposite.mode,"native-backdrop-compositor",
       "Home stays WebGPU while sign-in glass opts into scroll-synchronous sampling");
