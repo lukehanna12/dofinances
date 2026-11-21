@@ -43,7 +43,7 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "unicode-plus":"square-radical",
   "liquid-plexiglass-26":"opacity",
   "3d-liquid-glass-26-swift-package":"move-3d",
-  "apple-hig-reader":"apple-worm",
+  "apple-hig-reader":"apple-worm.v2",
   "apple-adobe-fx":"blend",
   "protocol-monitor-pruner":"funnel-code",
   "ozoning-board":"treehouse-ozoning.v3"

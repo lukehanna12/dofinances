@@ -173,7 +173,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "unicode-plus": "square-radical",
  "liquid-plexiglass-26": "opacity",
  "3d-liquid-glass-26-swift-package": "move-3d",
- "apple-hig-reader": "apple-worm",
+ "apple-hig-reader": "apple-worm.v2",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
  "ozoning-board": "treehouse-ozoning.v3"
@@ -257,20 +257,32 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v3"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v3"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v3"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v4"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v4"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v4"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
- assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-worm");
- const svg=read("sites/_apex/app/assets/project-icons/apple-worm.svg");
+ assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-worm.v2");
+ const svg=read("sites/_apex/app/assets/project-icons/apple-worm.v2.svg");
  assert.ok(svg.includes('viewBox="0 0 24 24"'));
  assert.ok(svg.includes('stroke="#fff"') && svg.includes('stroke-width="2"'));
  assert.ok(svg.includes('M12 6.528V3a1 1 0 0 1 1-1h0'),"Lucide apple stem preserved");
  assert.ok(svg.includes('M18.237 21A15 15 0 0 0 22 11'),"Lucide apple silhouette preserved");
- assert.ok(svg.includes('M16.5 11.3c-1.8-1.1'),"Curved worm is positioned inside the apple");
- assert.ok(svg.includes('<circle cx="17.4" cy="10.8"'),"Worm head is visible");
+ assert.ok(svg.includes('M12.4 17.8c-1-1.7-.5-3.3'),"Short C-shaped hooked body replaces the S-shaped worm");
+ assert.ok(!svg.includes('M16.5 11.3c-1.8-1.1'),"Older S-shaped worm remains retired");
+ assert.ok(svg.includes('<circle cx="17.35" cy="13.65"'),"Rounded worm head is visible");
  const shared=read("sites/_apex/app/assets/project-showcase.js");
  assert.ok(shared.includes('icon.width=28;icon.height=28'));
+});
+
+test("Apple worm v2 is a short hooked curl with a separate head, not the former S",()=>{
+ const original=read("sites/_apex/app/assets/project-icons/apple-worm.svg");
+ const updated=read("sites/_apex/app/assets/project-icons/apple-worm.v2.svg");
+ assert.notEqual(original,updated,"Versioned worm must change shape");
+ assert.ok(original.includes('M16.5 11.3c-1.8-1.1'),"Original worm remains available for old references");
+ assert.ok(updated.includes('M12.4 17.8c-1-1.7-.5-3.3 1.1-4.2'),"Updated worm has one continuous curved hook");
+ assert.ok(!updated.includes('2.4 1.3 2.3 2.6'),"S-shaped middle reversal is removed");
+ assert.ok(updated.includes('<circle cx="17.35" cy="13.65" r="1"'),"Separate, rounded head is retained");
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('"apple-hig-reader":"apple-worm.v2"'));
 });
