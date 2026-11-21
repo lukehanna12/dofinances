@@ -100,7 +100,7 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
   assert.match(renderer,/import \{publicIconSpatialAlpha\} from "\.\/dashboard-public-icon-fade\.js";/);
   assert.match(renderer,/trackIcons=all\.map\(cell=>cell\.querySelector\("\.cta6-icon"\)\)/);
-  assert.match(renderer,/trackTiles\[i\]\.style\.opacity=combinedOpacity\.toFixed\(5\);/);
+  assert.match(renderer,/trackTiles\[i\]\.style\.opacity=\(combinedOpacity\*\s*tileDismissIconOpacity\(dissolving\)\)\.toFixed\(5\);/);
   assert.match(renderer,/const glyphAlpha=publicIconSpatialAlpha\(/);
   assert.match(renderer,/--public-icon-spatial-alpha/);
   assert.match(style,/body\.public-home\[data-gpu-scene="ready"\] \.dashboard-home \.cta6-mosaic\{\s*-webkit-mask-image:none;\s*mask-image:none;/);

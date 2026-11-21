@@ -63,6 +63,13 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
     .map(match => match[1]).filter(value => value !== "auth3-theme-toggle");
   // Only the 3 static, disabled social buttons were replaced with enabled-aware controls.
   for(const expected of [...contract.classes.slice(0,16),...contract.classes.slice(23)]){
+    // The route continuity requirement intentionally changes only the
+    // original overlay's 20% black scrim to the Home photograph's 12% veil.
+    if(expected==="absolute inset-0 bg-black/20"){
+      assert.ok(classes.includes("absolute inset-0 bg-[rgba(19,20,21,0.12)]"),
+        "Login must match the homepage photograph's authored 12% veil");
+      continue;
+    }
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
