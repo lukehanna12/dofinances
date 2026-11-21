@@ -211,7 +211,12 @@ try{
     "const back=document.querySelector('.auth3-back-link');"+
     "const footer=document.querySelector('.auth3-root p.text-sm.text-center');"+
     "const css=getComputedStyle(back);"+
+    "const rgbRed=c=>{const canvas=document.createElement('canvas');"+
+    "canvas.width=1;canvas.height=1;const ctx=canvas.getContext('2d',{willReadFrequently:true});"+
+    "ctx.fillStyle=c;ctx.fillRect(0,0,1,1);return ctx.getImageData(0,0,1,1).data[0];};"+
     "return {opacity:getComputedStyle(group).opacity,"+
+    "footerRed:rgbRed(getComputedStyle(footer).color),"+
+    "labelRed:rgbRed(getComputedStyle(group.querySelector('span')).color),"+
     "label:getComputedStyle(group.querySelector('span')).color,"+
     "line:getComputedStyle(group.querySelector('.auth3-or-rule')).backgroundColor,"+
     "footer:getComputedStyle(footer).color,"+
@@ -223,8 +228,7 @@ try{
   assert.equal(darkOrnaments.opacity,"0.5");
   assert.equal(darkOrnaments.label,darkOrnaments.line);
   assert.equal(darkOrnaments.label,"rgb(52, 56, 61)");
-  assert.ok(parseInt(darkOrnaments.label.match(/\d+/)[0],10)<
-    parseInt(darkOrnaments.footer.match(/\d+/)[0],10),
+  assert.ok(darkOrnaments.labelRed<darkOrnaments.footerRed,
     "Or group must be a darker gray than Can't sign in?");
   assert.equal(darkOrnaments.backTint,"transparent");
   assert.equal(darkOrnaments.backInk,"rgb(23, 32, 39)");
@@ -376,8 +380,7 @@ try{
   assert.equal(lightOrnaments.opacity,"0.5");
   assert.equal(lightOrnaments.label,lightOrnaments.line);
   assert.equal(lightOrnaments.label,"rgb(41, 45, 50)");
-  assert.ok(parseInt(lightOrnaments.label.match(/\d+/)[0],10)<
-    parseInt(lightOrnaments.footer.match(/\d+/)[0],10),
+  assert.ok(lightOrnaments.labelRed<lightOrnaments.footerRed,
     "Light-mode Or stays darker than Can't sign in?");
   assert.equal(lightOrnaments.backTint,"transparent");
   assert.equal(lightOrnaments.backInk,"rgb(23, 32, 39)");
