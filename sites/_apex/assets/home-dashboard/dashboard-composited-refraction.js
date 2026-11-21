@@ -52,13 +52,20 @@ export function originalRefractionEnvelope(distance,amount,invHeight){
   const t=clamp(-distance*invHeight);
   return amount*(1-Math.sqrt(clamp((2-t)*t)));
 }
-export function originalOpticalDisplacement(x,y,width,height,radius,materialSize=100){
-  const [signed,nx,ny]=originalMode4Field(x,y,width,height,radius);
-  const d=materialSize;
+export function originalOpticalDisplacement(x,y,width,height,radius,materialSize=100,deviceScale=1){
+  // The WGSL shader works in physical pixels, not CSS pixels. In particular,
+  // its inner-refraction cap is 60 PHYSICAL pixels on a Retina Mac. Return
+  // CSS-pixel offsets for SVG feDisplacementMap only after computing the
+  // SDF/envelopes in the matching original physical-pixel geometry.
+  const scale=Number.isFinite(deviceScale)&&deviceScale>0?deviceScale:1;
+  const [signed,nx,ny]=originalMode4Field(x*scale,y*scale,
+    width*scale,height*scale,radius*scale);
+  const d=materialSize*scale;
   const inner=originalRefractionEnvelope(signed,Math.max(-60,-.8*d),
     1/Math.min(20,.25*d));
   const outer=originalRefractionEnvelope(signed,.2*d,1/(.125*d));
-  return {inner:[nx*inner,ny*inner],outer:[nx*outer,ny*outer],
+  return {inner:[nx*inner/scale,ny*inner/scale],
+    outer:[nx*outer/scale,ny*outer/scale],
     weight:MIX_A*clamp((signed+1)*2),signed};
 }
 function svgElement(name,attrs={}){
@@ -66,7 +73,7 @@ function svgElement(name,attrs={}){
   for(const [name,value] of Object.entries(attrs))el.setAttribute(name,String(value));
   return el;
 }
-function pixelMap(width,height,radius,materialSize){
+function pixelMap(width,height,radius,materialSize,deviceScale){
   // One optical texel per 1-2 CSS px; the native compositor interpolates
   // maps during scrolling and never waits for per-frame bitmap revisions.
   const scale=Math.min(1,512/Math.max(width,height));
@@ -77,7 +84,7 @@ function pixelMap(width,height,radius,materialSize){
     alpha:new Uint8ClampedArray(w*h*4)};
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const p=originalOpticalDisplacement((x+.5)*width/w,(y+.5)*height/h,
-      width,height,radius,materialSize);
+      width,height,radius,materialSize,deviceScale);
     const i=(y*w+x)*4;
     for(const role of ["inner","outer"]){
       const d=p[role],a=result[role];
@@ -128,10 +135,13 @@ function makeFilter(id,width,height,maps){
   filter.append(svgElement("feComposite",{
     in:"innerRefracted",in2:"inverseMix",operator:"in",result:"innerWeighted"
   }));
-  const merge=svgElement("feMerge",{result:"refracted"});
-  merge.append(svgElement("feMergeNode",{in:"innerWeighted"}),
-    svgElement("feMergeNode",{in:"outerWeighted"}));
-  filter.append(merge);
+  // feMerge uses source-over and would inadvertently square the first
+  // weight. Arithmetic add gives the exact (1-w)*inner+w*outer mixing
+  // of the old shader's two sample contributions (up to SVG precision).
+  filter.append(svgElement("feComposite",{
+    in:"innerWeighted",in2:"outerWeighted",operator:"arithmetic",
+    k1:0,k2:1,k3:1,k4:0,result:"refracted"
+  }));
   // Dark-face matrix from the original WGSL: face=0.05+0.75*glass,
   // applied to the browser-composited pixels, not a captured GPU photo.
   filter.append(svgElement("feColorMatrix",{
@@ -153,16 +163,16 @@ export function initCompositedRefraction(){
   const observers=new Map();
   const build=node=>{
     if(dead||!node.isConnected)return;
-    const rect=node.getBoundingClientRect();
     const width=Math.round(node.offsetWidth),height=Math.round(node.offsetHeight);
     if(width<3||height<3)return;
     const css=getComputedStyle(node),radius=Number.parseFloat(css.borderTopLeftRadius)||0;
     const materialSize=Number.parseFloat(getComputedStyle(document.querySelector(".cta6-tile--glass")||node).width)||100;
-    const key=[width,height,radius,materialSize].join("|");
+    const deviceScale=window.devicePixelRatio||1;
+    const key=[width,height,radius,materialSize,deviceScale].join("|");
     if(observed.get(node)===key)return;
     observed.set(node,key);
     const id="dof-refractive-"+(++sequence);
-    const filter=makeFilter(id,width,height,pixelMap(width,height,radius,materialSize));
+    const filter=makeFilter(id,width,height,pixelMap(width,height,radius,materialSize,deviceScale));
     defs.append(filter);
     const old=node.dataset.refractiveFilter;
     node.dataset.refractiveFilter=id;
@@ -186,12 +196,15 @@ export function initCompositedRefraction(){
     }
     document.body.dataset.authRefractivePanes=String(nodes.length);
   };
+  const onResize=()=>{for(const node of observers.keys())build(node);};
+  window.addEventListener("resize",onResize,{passive:true});
   const root=document.getElementById("public-route-content")||document.body;
   const mutation=new MutationObserver(refresh);
   mutation.observe(root,{subtree:true,childList:true});
   refresh();
   return ()=>{
     dead=true;mutation.disconnect();
+    window.removeEventListener("resize",onResize);
     for(const observer of observers.values())observer.disconnect();
     host.remove();
     delete document.body.dataset.authRefractiveStatus;

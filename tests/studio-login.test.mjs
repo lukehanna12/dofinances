@@ -617,6 +617,10 @@ test("experimental native-refraction maps come from original shader's SDF and ne
   assert.match(module,/feDisplacementMap/);
   assert.match(module,/feColorMatrix/);
   assert.match(module,/feComposite/);
+  assert.match(module,/operator:"arithmetic"/,
+    "Native SVG refraction must add weighted samples, not source-over them");
+  assert.doesNotMatch(module,/feMergeNode/,
+    "Source-over blending would double-attenuate the inner sample");
   assert.doesNotMatch(module,/captureScreenshot|drawImage\(document|html2canvas|MediaRecorder/);
   const {originalMode4Field,originalOpticalDisplacement,
     originalRefractionEnvelope}=await import(
@@ -631,6 +635,9 @@ test("experimental native-refraction maps come from original shader's SDF and ne
   assert.ok(Math.abs(originalRefractionEnvelope(-100,-60,.05))<1e-12);
   assert.equal(originalRefractionEnvelope(10,-60,.05),-60);
   const field=originalOpticalDisplacement(3,50,100,100,15);
+  const retina=originalOpticalDisplacement(3,50,100,100,15,100,2);
+  assert.ok(Math.abs(retina.inner[0])<=Math.abs(field.inner[0])+1e-8,
+    "Retina refractive cap is expressed in physical pixels");
   assert.ok(field.inner[0]>0||field.inner[0]<0);
   assert.ok(field.weight>=0&&field.weight<=.300048828125);
 });
