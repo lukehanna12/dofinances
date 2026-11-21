@@ -20,6 +20,7 @@ assert.ok(executable,"Chromium or Chrome is required to validate computed hover 
 const profile=mkdtempSync(join(tmpdir(),"dofinances-sidebar-check-"));
 const chrome=spawn(executable,[
   "--headless=new","--no-sandbox","--disable-dev-shm-usage",
+  "--disable-gpu",
   "--no-first-run","--no-default-browser-check","--remote-debugging-port=0",
   "--window-size=1000,860","--user-data-dir="+profile,"about:blank"
 ],{stdio:"ignore"});
