@@ -266,18 +266,6 @@ export function Auth3() {
               </a>
             </p>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="hidden lg:block max-w-sm"
-          >
-            <h2 className="text-4xl font-medium tracking-tighter text-white mb-4">Dofinances</h2>
-            <p className="text-lg text-white/90 tracking-tight max-w-[25ch]">
-              A clearer view of what comes next.
-            </p>
-          </motion.div>
         </div>
       </div>
 

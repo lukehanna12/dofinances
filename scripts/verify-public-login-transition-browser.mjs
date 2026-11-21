@@ -114,6 +114,16 @@ try{
     await sleep(70);
   }
   assert.ok(entered,"Sign in card did not mount on /login");
+  const cardLayout=await evaluate("(()=>{"+
+    "const card=document.querySelector('.auth3-root .max-w-md');"+
+    "const r=card.getBoundingClientRect();"+
+    "return {centerX:(r.left+r.right)/2,viewportCenter:innerWidth/2,"+
+    "captionPresent:document.body.textContent.includes('A clearer view of what comes next.'),"+
+    "cardCount:document.querySelectorAll('.auth3-root .max-w-md').length};})()");
+  assert.equal(cardLayout.cardCount,1,"Exactly one sign-in card");
+  assert.ok(Math.abs(cardLayout.centerX-cardLayout.viewportCenter)<1,
+    "The sign-in card must be centered horizontally in the viewport");
+  assert.equal(cardLayout.captionPresent,false,"Remove the promotional caption");
   const loginBar=await evaluate("(()=>{const nav=document.querySelector('#global-menu');"+
     "const bounds=nav?.getBoundingClientRect();"+
     "return {top:bounds?.top,height:bounds?.height,"+

@@ -121,8 +121,10 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
   assert.equal(contract.classes.length, 28);
   const classes = [...source.matchAll(/className="([^"]+)"/g)]
     .map(match => match[1]).filter(value => value !== "auth3-theme-toggle");
-  // Only the 3 static, disabled social buttons were replaced with enabled-aware controls.
-  for(const expected of [...contract.classes.slice(0,16),...contract.classes.slice(23)]){
+  // The three static social buttons are provider-aware; the right-hand
+  // promotional caption (original source classes 25-27) is intentionally
+  // removed so the form is the sole horizontally centered card.
+  for(const expected of [...contract.classes.slice(0,16),...contract.classes.slice(23,25)]){
     // The route continuity requirement intentionally changes only the
     // original overlay's 20% black scrim to the Home photograph's 12% veil.
     if(expected==="absolute inset-0 bg-black/20"){
@@ -181,13 +183,15 @@ test("theme defaults to dark, persists across homepage and login, and remains an
   assert.match(source, /credentials:\s*"same-origin"/);
 });
 
-test("Motion's parameters and responsive caption classes match the source", async () => {
+test("the sign-in card remains the sole centered Motion panel", async () => {
   const source = await load("../src/components/Auth3.jsx");
+  assert.match(source, /className="relative z-10 w-full max-w-\[1400px\] mx-auto flex items-center justify-center gap-12"/);
+  assert.match(source, /className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"/);
   assert.match(source, /initial=\{\{ opacity: 0, x: -50 \}\}/);
-  assert.match(source, /initial=\{\{ opacity: 0, x: 50 \}\}/);
-  assert.match(source, /transition=\{\{ duration: 0\.6, delay: 0\.2 \}\}/);
-  assert.equal((source.match(/<motion\.div/g) || []).length, 2);
-  assert.match(source, /className="hidden lg:block max-w-sm"/);
+  assert.match(source, /transition=\{\{ duration: 0\.6 \}\}/);
+  assert.equal((source.match(/<motion\.div/g) || []).length, 1);
+  assert.doesNotMatch(source, /A clearer view of what comes next\.|className="hidden lg:block max-w-sm"/);
+  assert.doesNotMatch(source, /initial=\{\{ opacity: 0, x: 50 \}\}/);
 });
 
 test("links and email form preserve original UI behavior without credential recording", async () => {
