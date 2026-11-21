@@ -371,11 +371,10 @@ body.public-home #public-route-content > #dashboard-auth-glass-scene{
 body.public-home[data-auth-gpu-scene="ready"] #public-route-content > #dashboard-auth-glass-scene{
   opacity:1;
 }
-/* During native scrolling, WebGPU texture updates cannot be presented in
-   lockstep with the compositor's movement of the card. Hide ONLY the auth
-   WebGPU overlay in the default mode. The full-screen homepage background
-   and every original square remain WebGPU; /login?auth-glass=webgpu preserves
-   the previous experimental exact shader for comparison. */
+/* Native scroll/rubberband directly samples the fixed wallpaper, while
+   the separate GPU layer emits ONLY the original SDF rim/hover response,
+   never stale photograph pixels. Every homepage square remains full WebGPU;
+   /login?auth-glass=webgpu keeps the former full-refraction experiment. */
 body.public-home[data-auth-glass-mode="compositor"] #public-route-content > #dashboard-auth-glass-scene{
   /* Not a stale image: only shader-native local SDF rim and hover light. */
   z-index:2;
