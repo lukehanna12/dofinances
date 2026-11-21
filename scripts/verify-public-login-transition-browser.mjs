@@ -161,15 +161,30 @@ try{
   assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
   // Clicking the card-owned back arrow reverses the card's 600ms Motion
   // entry first. The route remains active until that exit finishes.
+  await evaluate("window.__trackResumeEvents=0;"+
+    "addEventListener('dofinances:home-track-resume',()=>{"+
+    "window.__trackResumeEvents++;window.__trackResumeAt=performance.now()})");
   await evaluate("document.querySelector('.auth3-back-link').click()");
   await sleep(130);
   const exit=await evaluate("({route:location.pathname,"+
     "state:window.__dofPublicRouter.state,card:!!document.querySelector('.auth3-root form'),"+
-    "shell:document.body.dataset.publicRoute})");
+    "shell:document.body.dataset.publicRoute,resume:window.__trackResumeEvents,"+
+    "gpuReady:document.body.dataset.gpuScene==='ready',"+
+    "track:window.__dashboardWebGPU?.track||null})");
   assert.equal(exit.route,"/login");
   assert.equal(exit.state,"exiting");
   assert.equal(exit.card,true);
   assert.equal(exit.shell,"leaving");
+  assert.equal(exit.resume,1,"Back arrow immediately signals the shared renderer");
+  if(exit.gpuReady){
+    assert.equal(exit.track?.running,true,
+      "WebGPU track animation must be running during card exit without pointer movement");
+    const first=exit.track?.elapsed;
+    await sleep(150);
+    const next=await evaluate("window.__dashboardWebGPU?.track?.elapsed");
+    assert.ok(next>first+0.02,
+      "Track phase must advance continuously while the card exits, without pointer events");
+  }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
   await sleep(570);
   const returned=await evaluate("(()=>{const r=window.__persistedShell;"+
@@ -185,6 +200,15 @@ try{
   assert.equal(returned.topbar,true);
   assert.equal(returned.card,false);
   assert.equal(returned.shell,"home");
+  if(await evaluate("document.body.dataset.gpuScene==='ready'")){
+    const before=await evaluate("window.__dashboardWebGPU?.track?.elapsed");
+    await sleep(140);
+    const after=await evaluate("window.__dashboardWebGPU?.track");
+    assert.equal(after?.running,true,
+      "Track RAF must remain active after square restoration finishes");
+    assert.ok(after?.elapsed>before+0.02,
+      "Track lanes must keep moving after returning home without pointer input");
+  }
   assert.ok(Math.abs(returned.logoY-home.homeY)<1,
     "Reversing the route restores the original full-size doof position");
   // Browser Forward also uses the persistent route registry.

@@ -21,7 +21,7 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   const group=home.match(/<div class="cta6-bottom-action"[^>]*>([\s\S]*?)<\/div>/);
   assert.ok(group);
   const items=[...group[1].matchAll(/<(a|button)\b[^>]*>([^<]+)<\/\1>/g)].map(m=>[m[1],m[2].trim()]);
-  assert.deepEqual(items,[["button","Projects"],["a","Sign in"],["button","Settings"]]);
+  assert.deepEqual(items,[["button","About"],["a","Sign in"],["button","Projects"]]);
   assert.match(group[1],/<a class="cta6-action" href="\/login">Sign in<\/a>/);
   assert.match(style,/a\.cta6-action\[href="\/login"\]\{\s*min-width:150px;\s*width:150px;/);
   assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?a\.cta6-action\[href="\/login"\]\{\s*min-width:129px;\s*width:129px;/);
@@ -39,7 +39,7 @@ test("GitHub profile opens in a new tab; remaining public top-bar controls are i
   assert.ok(desktop&&dropdown,"Desktop navigation and mobile dropdown exist");
   const buttons=source=>[...source.matchAll(/<button\b[^>]*>([\s\S]*?)<\/button>/g)]
     .map(m=>m[1].replace(/<[^>]*>/g,"").trim()).filter(Boolean);
-  assert.deepEqual(buttons(desktop),["Projects","Quick Downloads","Collections","Contact"]);
+  assert.deepEqual(buttons(desktop),["Quick Downloads","Projects","FAQs","Settings"]);
   assert.deepEqual(buttons(dropdown),buttons(desktop));
   assert.equal((nav.match(/<a\b/g)||[]).length,1,"GitHub is the only navigation link");
   assert.doesNotMatch(nav,/Colosseum|Providers|window\.location|onclick=/);
@@ -190,7 +190,14 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(route,/dofinances:home-dismiss/);
   assert.match(route,/prefers-reduced-motion: reduce/);
   assert.match(route,/dofinances:home-restore/);
+  assert.match(route,/dispatchEvent\(new CustomEvent\("dofinances:home-track-resume"\)\);\s*current\.exit\(\)/);
   assert.match(renderer,/let restoreStart=null;/);
+  assert.match(renderer,/let trackResumeRequested=false;/);
+  assert.match(renderer,/addEventListener\("dofinances:home-track-resume"/);
+  assert.match(renderer,/trackRunning=!reducedMotion\.matches;\s*lastFrameTime=performance\.now\(\);\s*lastMotionSubmission=0;\s*requestRender\(\)/);
+  assert.match(renderer,/if\(trackRunning\)\s*trackSeconds\+=/);
+  assert.match(renderer,/!reducedMotion\.matches&&\(trackResumeRequested\|\|/);
+
   assert.match(renderer,/tileDismissProgress\(elapsedDismiss,trackRows\[i\],trackColumns\[i\]\)/);
   assert.match(renderer,/tileDismissScale\(dissolving\)/);
   assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);
@@ -218,4 +225,10 @@ test("Public rendering uses explicitly copied shader and AVIF assets, not privat
   for(const name of ["dashboard-mosaic.js","dashboard-optics.js","dashboard-home-loader.js",
     "dashboard-interaction.js","dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
     assert.equal(asset("assets/home-dashboard/"+name),asset("app/assets/"+name),name+" stays in parity");
+});
+
+test("Public footer centers at bottom and is exactly seven-percent opaque",()=>{
+  assert.match(home,/<footer class="workspace-footer" aria-label="Copyright">/);
+  assert.match(style,/body\.public-home:has\(> #workspace-shell \.dashboard-home:not\(\[hidden\]\)\) > \.workspace-footer\{[^}]*left:50%!important;[^}]*transform:translateX\(-50%\)!important;[^}]*opacity:\.07!important;/);
+  assert.match(style,/@media\(max-width:760px\)\{[\s\S]*\.workspace-footer\{[^}]*left:50%!important;/);
 });

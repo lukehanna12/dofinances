@@ -118,6 +118,8 @@ try{
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
  'themeButton:box(document.getElementById("public-theme-toggle")),',
  'themeLabel:document.getElementById("public-theme-toggle").getAttribute("aria-label"),',
+ 'footer:box(document.querySelector("body>.workspace-footer")),',
+ 'footerOpacity:getComputedStyle(document.querySelector("body>.workspace-footer")).opacity,',
  'edgeMask:getComputedStyle(grid).maskImage,',
  'gpuReady:document.body.dataset.gpuScene==="ready",',
  'firstIconFade:getComputedStyle(document.querySelector(".cta6-tile--icon .cta6-icon")).opacity,',
@@ -156,7 +158,7 @@ try{
     "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
-  assert.deepEqual(g.nav,["Projects","Quick Downloads","Collections","Contact"]);
+  assert.deepEqual(g.nav,["Quick Downloads","Projects","FAQs","Settings"]);
   if(width>748){
    assert.equal(g.navDisplay,"flex","Desktop navigation must remain visible");
    assert.equal(g.hamburgerDisplay,"none","No hamburger on desktop");
@@ -170,6 +172,11 @@ try{
   assert.equal(g.panelHidden,true,"Dropdown defaults closed");
   assert.ok(g.themeButton.left>=0&&g.themeButton.left+g.themeButton.width<=width);
   assert.equal(g.themeButton.width,43,"Persistent theme switch is a compact rounded square");
+  near(g.footer.center,width/2,"Copyright horizontal center",width);
+  assert.equal(g.footerOpacity,"0.07","Public copyright must be 7% opaque");
+  assert.ok(g.footer.top+g.footer.height<=height-12 &&
+    g.footer.top+g.footer.height>=height-42,
+    "Copyright must stay near viewport bottom");
   if(g.gpuReady){
     assert.equal(g.edgeMask,"none","GPU icons must not be cropped by the DOM mosaic");
     assert.ok(Number(g.firstIconFade)>0&&Number(g.firstIconFade)<=1,
@@ -201,14 +208,14 @@ try{
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
   assert.ok(g.githubRel.split(/\s+/).includes("noreferrer"));
   assert.deepEqual(g.items.map(e=>[e.tag,e.name,e.href]),[
-   ["BUTTON","Projects",null],["A","Sign in","/login"],["BUTTON","Settings",null]]);
+   ["BUTTON","About",null],["A","Sign in","/login"],["BUTTON","Projects",null]]);
   for(let i=1;i<g.items.length;i++){
    near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
    near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
   }
-  const [projects,signIn,contact]=g.items.map(item=>item.rect);
-  near(projects.width,contact.width,"Projects/Contact matching widths",width);
-  near(signIn.width,projects.width*1.5,"Sign in 50% wider",width);
+  const [about,signIn,projects]=g.items.map(item=>item.rect);
+  near(about.width,projects.width,"About/Projects matching widths",width);
+  near(signIn.width,about.width*1.5,"Sign in 50% wider",width);
   const left=g.items[0].rect.left;
   const right=g.items[2].rect.left+g.items[2].rect.width;
   near((left+right)/2,width/2,"Bottom action group center",width);
@@ -238,7 +245,7 @@ try{
  })()`);
  assert.equal(openPanel.expanded,"true");
  assert.equal(openPanel.hidden,false);
- assert.deepEqual(openPanel.labels,["Projects","Quick Downloads","Collections","Contact"]);
+ assert.deepEqual(openPanel.labels,["Quick Downloads","Projects","FAQs","Settings"]);
  assert.ok(openPanel.right<=501&&openPanel.width<=500,"Dropdown within viewport");
  await evaluate('document.querySelector(".public-menu-panel button").click()');
  assert.equal(await evaluate('document.getElementById("public-menu-panel").hidden'),true,

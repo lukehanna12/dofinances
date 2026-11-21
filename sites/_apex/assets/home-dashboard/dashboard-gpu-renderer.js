@@ -76,17 +76,35 @@ let trackSeconds=0,trackRunning=false,lastMotionSubmission=0;
 let dismissStart=document.body.dataset.publicRoute==="leaving"
   ? performance.now()-DISMISS_MS : null;
 let restoreStart=null;
+// Independent of tile visibility: resume the track clock immediately when
+// the route-owned sign-in card begins its reversed exit.
+let trackResumeRequested=false;
 const TRACK_FRAME_INTERVAL=1000/30;
 // A single event starts the transition even while first GPU initialization
 // is pending; the CSS-only fallback remains available if GPU never starts.
 window.addEventListener("dofinances:home-dismiss",event=>{
   if(dismissStart!==null&&restoreStart===null)return;
-  dismissStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);restoreStart=null;trackRunning=false;
+  dismissStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);
+  restoreStart=null;trackResumeRequested=false;trackRunning=false;
+  requestRender();
+});
+window.addEventListener("dofinances:home-track-resume",()=>{
+  // Sent by the shared router before /login starts its 600ms exit Motion.
+  // A pointer event must never be necessary to restart the RAF scheduler.
+  trackResumeRequested=true;
+  trackRunning=!reducedMotion.matches;
+  lastFrameTime=performance.now();
+  lastMotionSubmission=0;
   requestRender();
 });
 window.addEventListener("dofinances:home-restore",event=>{
   if(dismissStart===null&&restoreStart===null)return;
-  dismissStart=null;restoreStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);trackRunning=false;
+  dismissStart=null;
+  restoreStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);
+  trackResumeRequested=true;
+  trackRunning=!reducedMotion.matches;
+  lastFrameTime=performance.now();
+  lastMotionSubmission=0;
   requestRender();
 });
 function requestRender(){
@@ -554,13 +572,16 @@ async function initialize(){
     audit.sceneBuilds++;
   }
   function paintTrack(deltaSeconds){
-    if(trackRunning&&dismissStart===null&&restoreStart===null)
+    if(trackRunning)
       trackSeconds+=Math.max(0,Math.min(.05,deltaSeconds));
     const phase=phaseAtSeconds(trackSeconds);
     const elapsedDismiss=restoreStart!==null
       ? Math.max(0,DISMISS_MS-(performance.now()-restoreStart))
       : dismissStart===null?-1:performance.now()-dismissStart;
-    if(restoreStart!==null&&elapsedDismiss<=0)restoreStart=null;
+    if(restoreStart!==null&&elapsedDismiss<=0){
+      restoreStart=null;
+      trackResumeRequested=false;
+    }
     let fading=0;
     for(let i=0;i<trackTiles.length;i++){
       const pos=trackPosition(trackRows[i],phase,trackColumns[i]);
@@ -623,7 +644,8 @@ async function initialize(){
     // headless/host browsers do not dispatch a MediaQueryList change event
     // when system preferences are changed while WebGPU is already active.
     const allowTrack=homeActive()&&root?.dataset.gpuStatus==="ready"&&
-      !reducedMotion.matches&&dismissStart===null&&restoreStart===null;
+      !reducedMotion.matches&&(trackResumeRequested||
+        (dismissStart===null&&restoreStart===null));
     if(trackRunning!==allowTrack){
       trackRunning=allowTrack;
       if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
@@ -713,11 +735,13 @@ async function initialize(){
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
-  trackRunning=!reducedMotion.matches&&dismissStart===null&&restoreStart===null;
+  trackRunning=!reducedMotion.matches&&(trackResumeRequested||
+    (dismissStart===null&&restoreStart===null));
   lastFrameTime=performance.now();
   reducedMotion.addEventListener?.("change",()=>{
     if(stopped)return;
-    trackRunning=!reducedMotion.matches&&dismissStart===null&&restoreStart===null;
+    trackRunning=!reducedMotion.matches&&(trackResumeRequested||
+      (dismissStart===null&&restoreStart===null));
     if(reducedMotion.matches&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     requestRender();
   });

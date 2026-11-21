@@ -349,3 +349,21 @@ body.public-home .public-route-error{
   border-radius:12px;background:rgba(24,25,27,.93);
   color:#fff;text-align:center;
 }
+
+/* Public copyright stays shell-owned, including on /login.
+   Override the mirrored Dashboard footer without changing private styles. */
+body.public-home:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
+  inset:auto auto calc(17px + env(safe-area-inset-bottom,0px)) 50%!important;
+  right:auto!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  text-align:center!important;
+  opacity:.07!important;
+}
+@media(max-width:760px){
+  body.public-home:has(> #workspace-shell .dashboard-home:not([hidden])) > .workspace-footer{
+    right:auto!important;
+    left:50%!important;
+    bottom:calc(15px + env(safe-area-inset-bottom,0px))!important;
+  }
+}

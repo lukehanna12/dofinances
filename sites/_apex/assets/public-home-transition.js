@@ -120,6 +120,9 @@ function closeLogin({navigate=false}={}){
   if(!current||state==="exiting")return;
   pendingNavigate=navigate;
   state="exiting";
+  // Resume the shell's track clock on this same arrow-click turn. The tiles
+  // remain dissolved until the route-owned 600ms card exit completes.
+  dispatchEvent(new CustomEvent("dofinances:home-track-resume"));
   current.exit(); // /login owns the exact reverse slide-and-fade.
 }
 function finishClose(){
