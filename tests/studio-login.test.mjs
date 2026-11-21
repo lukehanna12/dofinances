@@ -481,7 +481,7 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(jsx.includes('willChange: exiting ? "transform, opacity" : "auto"'));
   assert.ok(renderer.includes("engine.renderAuthOnly()"));
   assert.ok(renderer.includes("function renderAuthOnly()"));
-  assert.ok(renderer.includes('label:"Sign-in-only transition frame"'));
+  assert.ok(renderer.includes('label:"Sign-in-only interactive frame"'));
   assert.ok(renderer.includes("audit.authOnlyFrames="));
   assert.doesNotMatch(privateRenderer,/renderAuthOnly|Sign-in-only transition frame/);
   assert.doesNotMatch(privateShader,/tile.properties.y == -4.0/);
