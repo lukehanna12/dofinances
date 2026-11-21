@@ -230,9 +230,9 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
               </button>}
             </form>
 
-            <div data-auth-or-separator className="flex items-center gap-4 mb-6">
+            <div data-auth-or-separator className="flex items-center gap-4 mb-6 text-neutral-500 dark:text-neutral-400">
               <div className="auth3-or-rule flex-1 h-px" />
-              <span className="text-sm text-neutral-500 dark:text-neutral-500">Or</span>
+              <span className="text-sm">Or</span>
               <div className="auth3-or-rule flex-1 h-px" />
             </div>
 

@@ -204,34 +204,36 @@ try{
     "githubGradient:!!document.querySelector('#auth3-github-mono-gradient')};})()";
   const darkAccent=await evaluate(accents());
   assert.equal(darkAccent.ruleCount,2);
-  assert.equal(darkAccent.rule,"rgb(26, 28, 31)");
+  assert.ok(darkAccent.rule,"Divider line must have a computed color");
   assert.equal(darkAccent.iconCount,2);
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
   assert.deepEqual(darkAccent.googleColors,Array(4).fill("#FFFFFF"));
-  assert.deepEqual(darkAccent.googleAlpha,[".36",".43",".84",".55"]);
+  assert.deepEqual(darkAccent.googleAlpha,[".456",".5155",".864",".6175"]);
   assert.equal(darkAccent.githubColor,"url(#auth3-github-mono-gradient)");
   assert.equal(darkAccent.githubGradient,true);
   assert.deepEqual(darkAccent.githubStops,[
-    {color:"#FFFFFF",opacity:".66"},
-    {color:"#FFFFFF",opacity:".39"}
+    {color:"#FFFFFF",opacity:".711"},
+    {color:"#FFFFFF",opacity:".4815"}
   ]);
   assert.ok([...darkAccent.googleAlpha,...darkAccent.githubStops.map(s=>s.opacity)]
     .every(v=>Number(v)>.3&&Number(v)<.9),
     "Monochrome logo alphas remain strictly intermediate");
-  assert.ok(Number(darkAccent.googleAlpha[2])-Number(darkAccent.googleAlpha[0])>=.45,
-    "Google yellow and red segments have expanded luminance contrast");
-  assert.ok(Number(darkAccent.githubStops[0].opacity)-Number(darkAccent.githubStops[1].opacity)>=.25,
+  assert.ok(Number(darkAccent.googleAlpha[2])-Number(darkAccent.googleAlpha[0])>.40,
+    "Google yellow and red segments retain luminance contrast");
+  assert.ok(Number(darkAccent.githubStops[0].opacity)-Number(darkAccent.githubStops[1].opacity)>.22,
     "GitHub keeps an expanded white-only luminance gradient");
   const ornaments=()=> "(()=>{"+
     "const group=document.querySelector('[data-auth-or-separator]');"+
     "const back=document.querySelector('.auth3-back-link');"+
     "const footer=document.querySelector('.auth3-root p.text-sm.text-center');"+
+    "const note=document.querySelector('.auth3-root p.text-xs.text-neutral-500');"+
     "const css=getComputedStyle(back);"+
     "const rgbRed=c=>{const canvas=document.createElement('canvas');"+
     "canvas.width=1;canvas.height=1;const ctx=canvas.getContext('2d',{willReadFrequently:true});"+
     "ctx.fillStyle=c;ctx.fillRect(0,0,1,1);return ctx.getImageData(0,0,1,1).data[0];};"+
     "const route=document.querySelector('#public-route-content');"+
     "return {opacity:getComputedStyle(group).opacity,"+
+    "noteColor:getComputedStyle(note).color,"+
     "routeOverscroll:getComputedStyle(route).overscrollBehaviorY,"+
     "routeOverflow:getComputedStyle(route).overflowY,"+
     "rootOverscroll:getComputedStyle(document.documentElement).overscrollBehaviorY,"+
@@ -245,17 +247,18 @@ try{
     "backStroke:[...back.querySelectorAll('svg path')].map(p=>getComputedStyle(p).stroke),"+
     "backSize:[back.getBoundingClientRect().width,back.getBoundingClientRect().height]};})()";
   const darkOrnaments=await evaluate(ornaments());
-  assert.equal(darkOrnaments.opacity,"0.95");
-  assert.equal(darkOrnaments.label,darkOrnaments.line);
-  assert.equal(darkOrnaments.label,"rgb(26, 28, 31)");
+  assert.equal(darkOrnaments.opacity,"1");
+  assert.equal(darkOrnaments.label,darkOrnaments.noteColor,
+    "Or text exactly matches account-linking note in dark mode");
+  assert.equal(darkOrnaments.line,darkOrnaments.noteColor,
+    "Both Or lines share the note's exact theme color");
   assert.equal(darkOrnaments.routeOverscroll,"none",
     "Vertical rubberbanding disabled on real login scroll container");
   assert.equal(darkOrnaments.rootOverscroll,"none",
     "Viewport overscroll also suppressed only in login route");
   assert.equal(darkOrnaments.routeOverflow,"auto",
     "Legitimate short-viewport form scrolling remains enabled");
-  assert.ok(darkOrnaments.labelRed<darkOrnaments.footerRed,
-    "Or group must be a darker gray than Can't sign in?");
+  assert.ok(darkOrnaments.noteColor,"Account-linking note has a computed color");
   assert.equal(darkOrnaments.backTint,"transparent");
   assert.equal(darkOrnaments.backInk,"rgb(255, 255, 255)");
   assert.equal(darkOrnaments.backTransform,"none");
@@ -402,16 +405,17 @@ try{
   await until("getComputedStyle(document.querySelector('[data-auth-glass-input]')).color==='rgb(23, 23, 23)'",100,60);
   await until("getComputedStyle(document.querySelector('[data-auth-glass-submit]')).color==='rgb(255, 255, 255)'",100,60);
   const lightAccent=await evaluate(accents());
-  assert.equal(lightAccent.rule,"rgb(21, 23, 25)");
+  assert.ok(lightAccent.rule,"Divider line must remain visible");
   assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
   const lightOrnaments=await evaluate(ornaments());
-  assert.equal(lightOrnaments.opacity,"0.95");
-  assert.equal(lightOrnaments.label,lightOrnaments.line);
-  assert.equal(lightOrnaments.label,"rgb(21, 23, 25)");
+  assert.equal(lightOrnaments.opacity,"1");
+  assert.equal(lightOrnaments.label,lightOrnaments.noteColor,
+    "Or label matches the account-linking note in light mode");
+  assert.equal(lightOrnaments.line,lightOrnaments.noteColor,
+    "Both Or lines use the note's light theme color");
   assert.equal(lightOrnaments.routeOverscroll,"none");
   assert.equal(lightOrnaments.routeOverflow,"auto");
-  assert.ok(lightOrnaments.labelRed<lightOrnaments.footerRed,
-    "Light-mode Or stays darker than Can't sign in?");
+  assert.ok(lightOrnaments.noteColor,"Light-mode account-linking color must exist");
   assert.equal(lightOrnaments.backTint,"transparent");
   assert.equal(lightOrnaments.backInk,"rgb(23, 23, 23)");
   assert.deepEqual(lightOrnaments.backStroke,["rgb(23, 23, 23)"]);

@@ -260,14 +260,10 @@ body:has(#public-route-content .auth3-root){
 .auth3-root:not(.dark) [data-auth-glass-submit]{
   color:#fff!important;
 }
-/* Darken the "Or" and both matched 1px lines halfway toward black,
- * keeping their original 95% group opacity and alignment.
- * Light #292d32 -> #151719; dark #34383d -> #1a1c1f. */
-.auth3-root [data-auth-or-separator]{
-  color:#151719;
-  opacity:.95;
-}
-.auth3-root.dark [data-auth-or-separator]{color:#1a1c1f}
+/* Inherit exactly the same Tailwind neutral text colors as the existing
+ * account-linking note: text-neutral-500 / dark:text-neutral-400. The
+ * label and two 1px rules all share that live color at 100% opacity. */
+.auth3-root [data-auth-or-separator]{opacity:1}
 .auth3-root .auth3-or-rule{background-color:currentColor}
 .auth3-root [data-auth-or-separator] span{color:inherit}
 /* White-only brand paths have deliberately intermediate translucencies;

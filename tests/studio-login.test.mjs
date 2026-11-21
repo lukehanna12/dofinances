@@ -397,13 +397,12 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
     load("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl")
   ]);
   assert.equal((jsx.match(/className="auth3-or-rule flex-1 h-px"/g)||[]).length,2);
-  assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6"'));
-  assert.ok(css.includes(".auth3-root [data-auth-or-separator]{"));
-  assert.ok(css.includes("opacity:.95"));
-  assert.ok(css.includes("color:#151719"),
-    "Light Or text/rules darken halfway toward black");
-  assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#1a1c1f}"),
-    "Dark Or text/rules darken halfway toward black");
+  assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6 text-neutral-500 dark:text-neutral-400"'));
+  assert.ok(jsx.includes('className="text-xs text-neutral-500 dark:text-neutral-400 mb-6"'),
+    "Or group and account-linking note use the same theme-owned utility colors");
+  assert.ok(css.includes(".auth3-root [data-auth-or-separator]{opacity:1}"));
+  assert.doesNotMatch(css,/\[data-auth-or-separator\]\{color:#/,
+    "No hardcoded gray may override the linking note's text color");
   assert.ok(css.includes(".auth3-root .auth3-or-rule{background-color:currentColor}"));
   assert.ok(css.includes(".auth3-root [data-auth-or-separator] span{color:inherit}"));
   assert.ok(jsx.includes('import { AuthProviderIcon } from "./AuthProviderIcon.jsx";'));
@@ -413,14 +412,17 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.equal((marks.match(/fill="#FFFFFF"/g)||[]).length,4,
     "Google segments remain white-only with individual luminance alphas");
   assert.deepEqual([...marks.matchAll(/<path fill="#FFFFFF" opacity="(\.[0-9]+)"/g)]
-    .map(m=>Number(m[1])),[.36,.43,.84,.55]);
-  assert.ok(.36<.43&&.43<.55&&.55<.84,
+    .map(m=>Number(m[1])),[.456,.5155,.864,.6175]);
+  assert.ok(.456<.5155&&.5155<.6175&&.6175<.864,
     "Google monochrome brightness preserves red < blue < green < yellow");
   assert.ok(marks.includes('id="auth3-github-mono-gradient"'));
   assert.ok(marks.includes('fill="url(#auth3-github-mono-gradient)"'));
-  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".66"'));
-  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".39"'));
-  assert.ok(.66-.39>=.25&&.84-.36>=.45,"Both brands have expanded contrast");
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".711"'));
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".4815"'));
+  assert.ok(.711-.4815>.22&&.864-.456>.4,"Both brands retain useful contrast");
+  for(const [before,after] of [[.36,.456],[.43,.5155],[.84,.864],[.55,.6175],[.66,.711],[.39,.4815]])
+    assert.ok(Math.abs(after-(before+.15*(1-before)))<1e-8,
+      "Each monochrome stop moves exactly 15% of remaining distance toward white");
   assert.doesNotMatch(marks,/#(?:EA4335|4285F4|FBBC05|34A853|7A8DDD|A56BCF)|stopColor="(?!#FFFFFF)|stopOpacity="(?:0|1)"/,
     "No colored or fully opaque/invisible gradient stops");
   assert.ok(marks.includes('aria-hidden="true" focusable="false"'));
