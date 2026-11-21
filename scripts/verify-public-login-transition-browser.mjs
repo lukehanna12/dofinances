@@ -268,6 +268,7 @@ try{
 
   // The scrolling form and its WebGPU face must occupy the SAME scroll tree.
   // Test a genuinely short viewport without screenshots or native recordings.
+  const normalMetrics=await evaluate("({width:innerWidth,height:innerHeight})");
   await send("Emulation.setDeviceMetricsOverride",
     {width:900,height:315,deviceScaleFactor:1,mobile:false});
   await until("document.querySelector('#public-route-content').scrollHeight > "+
@@ -313,9 +314,12 @@ try{
       "GPU glass travels by precisely the same scroll delta as the form");
   }
   await evaluate("document.querySelector('#public-route-content').scrollTop=0");
-  await send("Emulation.setDeviceMetricsOverride",
-    {width:1400,height:880,deviceScaleFactor:1,mobile:false});
-  await until("innerHeight===880 && document.querySelector('#public-route-content').scrollTop===0",60);
+  // A headless Chrome --window-size includes browser chrome: innerHeight is
+  // not necessarily 880. Clear emulation rather than assuming the restored
+  // viewport matches the CLI outer-window dimensions.
+  await send("Emulation.clearDeviceMetricsOverride");
+  await until("innerHeight==="+normalMetrics.height+" && innerWidth==="+normalMetrics.width+
+    " && document.querySelector('#public-route-content').scrollTop===0",60);
 
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+
