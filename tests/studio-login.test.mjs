@@ -528,3 +528,25 @@ test("sign-in rubberbanding restores native overflow with scroll-anchored glass"
   assert.match(router,/current=mountLogin\(routeMount,/);
   assert.match(jsx,/data-auth-stage className="min-h-screen/);
 });
+
+
+test("Glass background sampling uses actual compositor position, including elastic movement",async()=>{
+  const {authBackdropOffsetCSS}=await import("../sites/_apex/assets/home-dashboard/dashboard-scroll-optics.js");
+  const sceneTop=44,contentY=620;
+  for(const [scroll,elastic] of [[0,0],[190,0],[190,23],[0,-34],[-21,0],[600,-12]]){
+    const canvasTop=sceneTop-scroll+elastic;
+    const offset=authBackdropOffsetCSS(sceneTop,canvasTop);
+    const sampledBackgroundY=contentY-offset;
+    const actualViewportBackgroundY=canvasTop+contentY-sceneTop;
+    assert.equal(sampledBackgroundY,actualViewportBackgroundY);
+    assert.equal(offset,scroll-elastic);
+  }
+  assert.throws(()=>authBackdropOffsetCSS(44,NaN),TypeError);
+  const renderer=await load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js");
+  assert.match(renderer,/authBackdropOffsetCSS\(sceneTop,actualCanvasTop\)/);
+  assert.match(renderer,/authUniform\[11\]=offsetCSS\*dpr/);
+  assert.doesNotMatch(renderer,/authUniform\[11\]=\(routeOutlet\?\.scrollTop\|\|0\)\*dpr/);
+  assert.match(renderer,/routeOutlet\?\.addEventListener\("scroll",onAuthScroll,\{passive:true\}\)/);
+  assert.match(renderer,/engine\.renderAuthOnly\(\);\s*audit\.authSynchronousScrollFrames/);
+  assert.match(renderer,/performance\.now\(\)<authScrollRefreshUntil/);
+});

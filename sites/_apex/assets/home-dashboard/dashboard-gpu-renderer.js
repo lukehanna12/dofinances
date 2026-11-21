@@ -21,6 +21,7 @@ import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
+import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
@@ -123,6 +124,10 @@ let restoreStart=null;
 // the route-owned sign-in card begins its reversed exit.
 let trackResumeRequested=false;
 const TRACK_FRAME_INTERVAL=1000/30;
+// Elastic overscroll can continue after the last scrollTop event. Keep
+// sampling the actual on-screen glass position through its decay.
+let authScrollRefreshUntil=0;
+const AUTH_ELASTIC_SETTLE_MS=900;
 // A single event starts the transition even while first GPU initialization
 // is pending; the CSS-only fallback remains available if GPU never starts.
 window.addEventListener("dofinances:home-dismiss",event=>{
@@ -154,7 +159,8 @@ function requestRender(){
   if(!homeActive()||!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
-    if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL){
+    if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL&&
+       performance.now()>=authScrollRefreshUntil){
       // Maintain the original 30fps square track clock, while allowing the
       // exiting sign-in glass to follow Motion between those heavy full-scene
       // submissions. This pass never draws/advances a square.
@@ -166,8 +172,20 @@ function requestRender(){
     }
     lastMotionSubmission=performance.now();
     let animating=false;
-    try{animating=engine.render()}catch(e){fallback(e);}
+    try{
+      // During native scrolling, redraw only the already-placed sign-in
+      // panes against their actual composited position. Outside scrolling,
+      // preserve the homepage renderer and its original timing.
+      if(performance.now()<authScrollRefreshUntil&&
+         window.__dofPublicRouter?.state==="login"&&
+         document.body.dataset.authGpuScene==="ready"){
+        animating=engine.renderAuthOnly();
+      }else{
+        animating=engine.render();
+      }
+    }catch(e){void fallback(e);return;}
     if(!stopped&&(animating||trackRunning||
+      performance.now()<authScrollRefreshUntil||
       (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
       (restoreStart!==null&&performance.now()-restoreStart<DISMISS_MS+90)||
       performance.now()-start<1250))
@@ -498,11 +516,19 @@ async function initialize(){
     if(authContext){
       authUniform.set(uniform);
       authUniform[1]=physicalAuthHeight;
-      // Shader reuses the exact square refraction but samples the real
-      // viewport backdrop at content position minus native scrollTop.
+      // The canvas and wallpaper are in different compositor layers.
+      // A scrollTop subtraction can be WRONG during elastic rubberbanding:
+      // the compositor can translate the canvas without changing scrollTop.
+      // Always project using the actual on-screen canvas bounds.
+      const actualCanvasTop=authCanvas.getBoundingClientRect().top;
+      const offsetCSS=authBackdropOffsetCSS(sceneTop,actualCanvasTop);
       authUniform[7]=physicalHeight;
       authUniform[9]=(pointer.y-authOriginTop())*dpr;
-      authUniform[11]=(routeOutlet?.scrollTop||0)*dpr;
+      authUniform[11]=offsetCSS*dpr;
+      audit.authBackdropOffsetCSS=offsetCSS;
+      audit.authBackdropCanvasTopCSS=actualCanvasTop;
+      audit.authBackdropScrollTopCSS=routeOutlet?.scrollTop||0;
+      audit.authBackdropDisplacementCSS=offsetCSS-audit.authBackdropScrollTopCSS;
       device.queue.writeBuffer(authGlobalsBuffer,0,authUniform);
     }
   }
@@ -873,11 +899,9 @@ async function initialize(){
     }
     return animating||authHoverAnimating||authAnimating;
   }
-  // An auth-only presentation pass for the card's exit Motion. It leaves
-  // the homepage canvas, square buffers and 30fps square track clock intact.
-  // Only seven auth pane instances are updated, so the card needn't wait for
-  // a full wallpaper copy and 53 square glass draws on every intermediate
-  // Motion frame.
+  // Auth-only submission for the card's exit Motion and native scroll.
+  // The 10 extra pane instances share the unchanged homepage WebGPU shader
+  // and material. Scroll events submit this pass before their next RAF. 
   function renderAuthOnly(){
     if(!authContext||!instanceCount||stopped)return false;
     const now=performance.now();
@@ -1032,9 +1056,32 @@ async function initialize(){
     childList:true,subtree:true,attributes:true,
     attributeFilter:["style","class","disabled"]
   });
-  // Scroll is native/compositor-owned. GPU sampling still refreshes when the
-  // scrolled card crosses the fixed wallpaper; geometry never chases it.
-  routeOutlet?.addEventListener("scroll",requestRender,{passive:true});
+  // Native scroll can be composited ahead of requestAnimationFrame. Submit
+  // the glass-only GPU pass immediately inside the real scroll event, using
+  // the canvas's actual viewport rect, not a predictive scrollTop value.
+  const onAuthScroll=()=>{
+    if(stopped||!engine||!homeActive())return;
+    authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
+    if(window.__dofPublicRouter?.state==="login"&&
+       document.body.dataset.authGpuScene==="ready"){
+      try{
+        engine.renderAuthOnly();
+        audit.authSynchronousScrollFrames=(audit.authSynchronousScrollFrames||0)+1;
+        audit.authSynchronousScrollAt=performance.now();
+      }catch(error){void fallback(error);return;}
+    }
+    requestRender();
+  };
+  // Wheel/touch can initiate native elastic motion before (or even without)
+  // scrollTop changing. Keep checking the observed compositor displacement.
+  const armElasticRefresh=()=>{
+    if(window.__dofPublicRouter?.state!=="login")return;
+    authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
+    requestRender();
+  };
+  routeOutlet?.addEventListener("scroll",onAuthScroll,{passive:true});
+  routeOutlet?.addEventListener("wheel",armElasticRefresh,{passive:true});
+  routeOutlet?.addEventListener("touchmove",armElasticRefresh,{passive:true});
   const authSizeObserver=routeMount?new ResizeObserver(()=>requestRender()):null;
   if(routeMount)authSizeObserver.observe(routeMount);
   let resizeGeneration=0;

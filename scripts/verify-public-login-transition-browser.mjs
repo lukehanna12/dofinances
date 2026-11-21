@@ -313,6 +313,36 @@ try{
     assert.ok(Math.abs((shortEnd.glassTop-shortStart.glassTop)+scrolled)<2,
       "GPU glass travels by precisely the same scroll delta as the form");
   }
+  // Synthetic compositor displacement: move the entire card AND canvas by
+  // the same 23 CSS px without changing scrollTop (the macOS elastic case).
+  // The glass shader must sample the fixed background from the *measured*
+  // viewport relationship and submit BEFORE a later animation frame.
+  if(shortStart.glassParent&&await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    const elastic=await evaluate("(()=>{"+
+      "const route=document.querySelector('#public-route-content');"+
+      "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
+      "const stage=document.querySelector('#public-route-stage');"+
+      "const before=window.__dashboardWebGPU;"+
+      "const sync0=before.authSynchronousScrollFrames||0;"+
+      "const frames0=before.authOnlyFrames||0;"+
+      "glass.style.translate='0 23px';stage.style.translate='0 23px';"+
+      "route.dispatchEvent(new Event('scroll'));"+
+      "const a=window.__dashboardWebGPU;"+
+      "return {scrollTop:route.scrollTop,offset:a.authBackdropOffsetCSS,"+
+      "actualTop:glass.getBoundingClientRect().top,sceneTop:a.sceneTopCSS,"+
+      "sync:(a.authSynchronousScrollFrames||0)-sync0,"+
+      "frames:(a.authOnlyFrames||0)-frames0};})()");
+    assert.ok(elastic.sync>=1&&elastic.frames>=1,
+      "Scroll submits a glass WebGPU frame immediately, not one RAF later");
+    assert.ok(Math.abs(elastic.offset-(elastic.sceneTop-elastic.actualTop))<0.5,
+      "Glass uses the actual composited canvas/scene coordinate delta");
+    assert.ok(Math.abs(elastic.offset-(elastic.scrollTop-23))<1,
+      "Elastic translation corrects the background while scrollTop stays unchanged");
+    await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+      "document.querySelector('#dashboard-auth-glass-scene').style.translate='';"+
+      "document.querySelector('#public-route-stage').style.translate='';"+
+      "route.dispatchEvent(new Event('scroll'));})()");
+  }
   await evaluate("document.querySelector('#public-route-content').scrollTop=0");
   // A headless Chrome --window-size includes browser chrome: innerHeight is
   // not necessarily 880. Clear emulation rather than assuming the restored
