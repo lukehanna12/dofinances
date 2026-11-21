@@ -87,6 +87,13 @@ try{
   };
   await send("Page.enable");
   await send("Runtime.enable");
+  await send("Page.addScriptToEvaluateOnNewDocument",{source:
+    "window.__routeErrors=[];"+
+    "const oldError=console.error.bind(console);"+
+    "console.error=(...args)=>{window.__routeErrors.push(args.map(String).join(' '));oldError(...args);};"+
+    "addEventListener('error',e=>window.__routeErrors.push('error: '+e.message));"+
+    "addEventListener('unhandledrejection',e=>window.__routeErrors.push('rejection: '+String(e.reason)));"
+  });
   await send("Emulation.setEmulatedMedia",
     {features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
   const origin="http://127.0.0.1:"+server.address().port;
@@ -113,7 +120,18 @@ try{
   await sleep(80);
   assert.equal(await evaluate("location.pathname"),"/",
     "The shell dismisses its squares before changing history");
-  await until("location.pathname==='/login'&&!!document.querySelector('.auth3-root form')",170);
+  try{
+    await until("location.pathname==='/login'&&!!document.querySelector('.auth3-root form')",170);
+  }catch(error){
+    const context=await evaluate("(()=>({"+
+      "pathname:location.pathname,route:window.__dofPublicRouter,"+
+      "outlet:document.querySelector('#public-route-content')?.innerText,"+
+      "errors:window.__routeErrors,"+
+      "links:[...document.querySelectorAll('link[data-public-route-css]')].map(e=>e.href),"+
+      "scripts:performance.getEntriesByType('resource').filter(e=>e.name.includes('login')||e.name.includes('styles-')).map(e=>({name:e.name,status:e.responseStatus}))"+
+      "}))()");
+    throw Error(error.message+"; diagnostics="+JSON.stringify(context)+"; missing="+JSON.stringify(misses));
+  }
   await sleep(800);
   const active=await evaluate("(()=>{"+
     "const r=window.__persistedShell,l=document.querySelector('.auth3-root .max-w-md');"+
