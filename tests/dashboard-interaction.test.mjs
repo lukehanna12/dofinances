@@ -51,6 +51,16 @@ test("layout changes preserve state yet update tile targeting",()=>{
   s.move(350,250);settle(s);
   assert.ok(s.snapshot()[1].hover>.98);
 });
+test("interaction never erases the renderer-owned glass opacity or dismissal lanes",()=>{
+  const s=make(),data=new Float32Array(2*TILE_FLOATS);
+  data[18]=1;data[19]=.75;data[38]=.63;data[39]=.35;
+  s.move(35,35);s.advance(1/60);s.writeTo(data);
+  assert.equal(data[18],1,"Sign-in card must not lose its alpha after hover writes");
+  assert.equal(data[19],.75,"Independent glass dismissal must be preserved");
+  assert.ok(Math.abs(data[38]-.63)<1e-6,"Second pane alpha must survive");
+  assert.ok(Math.abs(data[39]-.35)<1e-6,"Second pane dismissal must survive");
+  assert.ok(data[12]>0,"Interaction state still flows to the shared shader");
+});
 test("reject malformed buffers and invalid geometry",()=>{
   const s=make();
   assert.throws(()=>s.writeTo(new Float32Array(12)),TypeError);

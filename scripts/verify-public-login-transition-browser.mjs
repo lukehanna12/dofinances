@@ -207,6 +207,27 @@ try{
     assert.ok(darkGlass.audit?.count>=6,
       "The same WebGPU material renders the card, inputs and buttons");
     assert.equal(darkGlass.authGpu,"ready");
+    // A renderer-ready flag alone was not sufficient: interaction.writeTo()
+    // previously reset each route pane's motion.z after paintAuthPanes(),
+    // leaving the composited auth canvas ENTIRELY transparent. Prove actual
+    // pixel alpha from the canvas without taking a DOM screenshot.
+    await until("window.__dashboardWebGPU?.authGlass?.opacity>=0.99",70);
+    const authPixels=await evaluate("(async()=>{"+
+      "const canvas=document.querySelector('#dashboard-auth-glass-scene');"+
+      "const img=new Image();img.src=canvas.toDataURL('image/png');await img.decode();"+
+      "const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;"+
+      "const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0);"+
+      "const origin=canvas.getBoundingClientRect();"+
+      "const sample=sel=>{const r=document.querySelector(sel).getBoundingClientRect();"+
+      "const x=Math.floor((r.left+r.width*.5-origin.left)*canvas.width/origin.width);"+
+      "const y=Math.floor((r.top+Math.min(35,r.height*.5)-origin.top)*canvas.height/origin.height);"+
+      "return Array.from(cx.getImageData(x,y,1,1).data);};"+
+      "return {card:sample('[data-auth-glass-card]'),"+
+      "input:sample('[data-auth-glass-input]'),"+
+      "submit:sample('[data-auth-glass-submit]')};})()");
+    for(const [role,pixel] of Object.entries(authPixels))
+      assert.ok(pixel[3]>=200,
+        "The "+role+" glass MUST have real nontransparent WebGPU fill, got "+pixel);
     assert.equal(darkGlass.audit?.cardTint,"none");
     assert.equal(darkGlass.audit?.faceScheme,"dark",
       "The untinted card uses the same dark glass face as the squares");

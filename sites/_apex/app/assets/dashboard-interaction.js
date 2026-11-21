@@ -111,7 +111,10 @@ export function createInteractionController(){
       const s=state[i],p=i*TILE_FLOATS+12;
       data[p]=clamp(s.hover,0,1);data[p+1]=clamp(s.press,0,1);
       data[p+2]=s.x;data[p+3]=s.y;
-      data[p+4]=s.vx;data[p+5]=s.vy;data[p+6]=0;data[p+7]=0;
+      data[p+4]=s.vx;data[p+5]=s.vy;
+      // motion.z (compositor opacity) and motion.w (dismissal progress)
+      // belong to the renderer. Resetting them here made the route glass
+      // pass fully transparent even though the GPU device was "ready".
     }
   }
   return {

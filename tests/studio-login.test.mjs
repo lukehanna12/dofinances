@@ -200,6 +200,9 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
   assert.match(renderer,/const authAnimating=paintAuthPanes\(\)/);
   assert.match(renderer,/interaction\.retargetRects\(tileData,cornerInert\)/);
   assert.match(renderer,/interaction\.advance\(dt,reducedMotion\.matches\)/);
+  const interaction=await load("../sites/_apex/assets/home-dashboard/dashboard-interaction.js");
+  assert.doesNotMatch(interaction,/data\[p\+6\]=0|data\[p\+7\]=0/,
+    "Hover spring must never erase the GPU sign-in material opacity or dismissal");
   assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,tileCount\);/);
   assert.match(renderer,/authContext\.configure\(\{device,format,alphaMode:"premultiplied"\}\)/);
   assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,glassGroup\);\s*authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
