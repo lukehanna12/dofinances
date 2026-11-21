@@ -36,7 +36,7 @@ const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
 // The route's scrollbox moves this canvas and its React card on the same
 // compositing layer, even when native rubberbanding precedes JS callbacks.
-const authOriginTop=()=>routeMount?.getBoundingClientRect().top ?? sceneTop;
+const authOriginTop=()=>routeMount?.getBoundingClientRect().top ?? 44;
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -471,8 +471,10 @@ async function initialize(){
     const height=Math.max(1,Math.ceil(cssHeight*dpr));
     if(height>device.limits.maxTextureDimension2D)
       throw Error("Sign-in glass scroll height exceeds GPU limit");
-    authCanvas.style.top="0px";authCanvas.style.width=window.innerWidth+"px";
-    authCanvas.style.height=cssHeight+"px";
+    if(authCanvas.style.top!=="0px")authCanvas.style.top="0px";
+    const cssWidth=window.innerWidth+"px",cssH=cssHeight+"px";
+    if(authCanvas.style.width!==cssWidth)authCanvas.style.width=cssWidth;
+    if(authCanvas.style.height!==cssH)authCanvas.style.height=cssH;
     if(authCanvas.width!==physicalWidth||authCanvas.height!==height){
       authCanvas.width=physicalWidth;authCanvas.height=height;
     }

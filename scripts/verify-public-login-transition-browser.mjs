@@ -265,6 +265,58 @@ try{
   assert.deepEqual(darkOrnaments.backStroke,["rgb(255, 255, 255)"],
     "The back arrow has one neutral stroke, not a lighter outline");
   assert.deepEqual(darkOrnaments.backSize,[34,34]);
+
+  // The scrolling form and its WebGPU face must occupy the SAME scroll tree.
+  // Test a genuinely short viewport without screenshots or native recordings.
+  await send("Emulation.setDeviceMetricsOverride",
+    {width:900,height:315,deviceScaleFactor:1,mobile:false});
+  await until("document.querySelector('#public-route-content').scrollHeight > "+
+    "document.querySelector('#public-route-content').clientHeight + 150",70);
+  await sleep(140);
+  const shortStart=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+    "const stage=document.querySelector('#public-route-stage');"+
+    "const card=document.querySelector('[data-auth-glass-card]');"+
+    "const input=card.querySelector('input');"+
+    "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
+    "const bounds=n=>n?.getBoundingClientRect().top;"+
+    "return {overflow:getComputedStyle(route).overflowY,scrollTop:route.scrollTop,"+
+    "cardTop:bounds(card),inputTop:bounds(input),stageTop:bounds(stage),"+
+    "glassTop:bounds(glass),glassParent:glass?.parentElement?.id,"+
+    "glassHeight:glass?.getBoundingClientRect().height,"+
+    "stageHeight:stage.scrollHeight,available:route.clientHeight};})()");
+  assert.equal(shortStart.overflow,"auto");
+  if(shortStart.glassParent){
+    assert.equal(shortStart.glassParent,"public-route-content",
+      "Glass surface belongs to the very same native scrollport as the card");
+    assert.ok(shortStart.glassHeight>=shortStart.stageHeight-2,
+      "Glass covers the entire form, not just the short viewport");
+  }
+  await evaluate("document.querySelector('#public-route-content').scrollTop=190");
+  await until("document.querySelector('#public-route-content').scrollTop >= 100",50);
+  await sleep(100);
+  const shortEnd=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+    "const card=document.querySelector('[data-auth-glass-card]');"+
+    "const stage=document.querySelector('#public-route-stage');"+
+    "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
+    "return {scrollTop:route.scrollTop,cardTop:card.getBoundingClientRect().top,"+
+    "inputTop:card.querySelector('input').getBoundingClientRect().top,"+
+    "stageTop:stage.getBoundingClientRect().top,"+
+    "glassTop:glass?.getBoundingClientRect().top};})()");
+  const scrolled=shortEnd.scrollTop-shortStart.scrollTop;
+  assert.ok(scrolled>90,"Short viewport must actually scroll");
+  assert.ok(Math.abs((shortEnd.cardTop-shortStart.cardTop)+scrolled)<2,
+    "Card travels with the scroll rather than getting pinned to viewport");
+  assert.ok(Math.abs((shortEnd.inputTop-shortStart.inputTop)+scrolled)<2,
+    "Form contents travel by precisely the same scroll delta as the card");
+  if(shortStart.glassParent){
+    assert.ok(Math.abs((shortEnd.glassTop-shortStart.glassTop)+scrolled)<2,
+      "GPU glass travels by precisely the same scroll delta as the form");
+  }
+  await evaluate("document.querySelector('#public-route-content').scrollTop=0");
+  await send("Emulation.setDeviceMetricsOverride",
+    {width:1400,height:880,deviceScaleFactor:1,mobile:false});
+  await until("innerHeight===880 && document.querySelector('#public-route-content').scrollTop===0",60);
+
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+
     "const input=card.querySelector('[data-auth-glass-input]');"+

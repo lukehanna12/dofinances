@@ -231,10 +231,10 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
     "Hover spring must never erase the GPU sign-in material opacity or dismissal");
   assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,tileCount\);/);
   assert.match(renderer,/authContext\.configure\(\{device,format,alphaMode:"premultiplied"\}\)/);
-  assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,glassGroup\);\s*authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
+  assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,authGlassGroup\);\s*authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
   assert.match(renderer,/document\.body\.dataset\.authGpuScene="ready"/);
-  assert.match(homepageCss,/#dashboard-auth-glass-scene\{/);
-  assert.match(homepageCss,/z-index:5;[\s\S]*?pointer-events:none;/);
+  assert.match(homepageCss,/#public-route-content > #dashboard-auth-glass-scene\{/);
+  assert.match(homepageCss,/z-index:0;[\s\S]*?pointer-events:none;/);
   assert.match(shader,/let authPane=tile\.properties\.y<0\.0;/);
   assert.match(shader,/let scale=select\(0\.85\+0\.15\*a,1\.0,authPane\);/);
   assert.match(shader,/if\(authPane\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/);
