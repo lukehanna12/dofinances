@@ -40,7 +40,9 @@ jobs:
         run: node scripts/verify-sidebar-olive-health-browser.mjs
       - name: Build site
         run: npm run build
-      - name: Verify public Home to login backdrop continuity in Chromium
+      - name: Package lazy-loaded login module manifest
+        run: node scripts/package-public-login-route.mjs
+      - name: Verify persistent shell and reversible login route in Chromium
         run: node scripts/verify-public-login-transition-browser.mjs
       - name: Verify distribution
         run: |
@@ -62,6 +64,7 @@ jobs:
           ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs
           grep -Fq 'Sign in · Dofinances' dist/index.html
           test -d dist/assets
+          test -s dist/assets/public-login-manifest.json
       - name: Save built site for deployment
         uses: actions/upload-artifact@v4
         with:
@@ -223,15 +226,17 @@ jobs:
         with:
           name: dofinances-dist
           path: dist
-      - name: Package the Studio preview at the apex /login path
+      - name: Package the persistent public shell at the apex /login path
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p sites/_apex/login sites/_apex/assets
-          cp dist/index.html sites/_apex/login/index.html
+          sed 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' sites/_apex/index.html > sites/_apex/login/index.html
           cp -R dist/assets/. sites/_apex/assets/
           test -s sites/_apex/login/index.html
-          grep -Fq 'auth3-studio-preview-v1' sites/_apex/login/index.html
+          test -s sites/_apex/assets/public-login-manifest.json
+          grep -Fq 'dofinances-app-shell' sites/_apex/login/index.html
+          ! grep -Fq 'auth3-studio-preview-v1' sites/_apex/login/index.html
       - name: Publish Git-managed Worker (routes managed separately)
         uses: cloudflare/wrangler-action@v4
         with:
@@ -344,8 +349,10 @@ jobs:
             code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
             echo "$url -> HTTP $code ($(wc -c < "$body") bytes)"
             test "$code" = 200
-            grep -Fq 'Sign in · Dofinances' "$body"
-            grep -Fq 'auth3-studio-preview-v1' "$body"
+            grep -Fq 'dofinances-app-shell' "$body"
+            grep -Fq 'id="cta6-mosaic"' "$body"
+            grep -Fq 'id="public-route-content"' "$body"
+            ! grep -Fq 'auth3-studio-preview-v1' "$body"
             rm "$body"
           done
           for url in https://stu.dofinances.com/login https://stu.dofinances.com/login/; do

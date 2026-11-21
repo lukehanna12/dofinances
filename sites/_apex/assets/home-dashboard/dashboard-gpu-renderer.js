@@ -73,13 +73,20 @@ const reducedMotion=typeof window.matchMedia==="function"
   : {matches:false};
 let activePointerId=null,lastFrameTime=performance.now();
 let trackSeconds=0,trackRunning=false,lastMotionSubmission=0;
-let dismissStart=null;
+let dismissStart=document.body.dataset.publicRoute==="leaving"
+  ? performance.now()-DISMISS_MS : null;
+let restoreStart=null;
 const TRACK_FRAME_INTERVAL=1000/30;
 // A single event starts the transition even while first GPU initialization
 // is pending; the CSS-only fallback remains available if GPU never starts.
-window.addEventListener("dofinances:home-dismiss",()=>{
-  if(dismissStart!==null)return;
-  dismissStart=performance.now();trackRunning=false;
+window.addEventListener("dofinances:home-dismiss",event=>{
+  if(dismissStart!==null&&restoreStart===null)return;
+  dismissStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);restoreStart=null;trackRunning=false;
+  requestRender();
+});
+window.addEventListener("dofinances:home-restore",event=>{
+  if(dismissStart===null&&restoreStart===null)return;
+  dismissStart=null;restoreStart=performance.now()-(event.detail?.durationMs===0?DISMISS_MS:0);trackRunning=false;
   requestRender();
 });
 function requestRender(){
@@ -94,6 +101,7 @@ function requestRender(){
     try{animating=engine.render()}catch(e){fallback(e);}
     if(!stopped&&(animating||trackRunning||
       (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
+      (restoreStart!==null&&performance.now()-restoreStart<DISMISS_MS+90)||
       performance.now()-start<1250))
       requestRender();
   });
@@ -546,10 +554,13 @@ async function initialize(){
     audit.sceneBuilds++;
   }
   function paintTrack(deltaSeconds){
-    if(trackRunning&&dismissStart===null)
+    if(trackRunning&&dismissStart===null&&restoreStart===null)
       trackSeconds+=Math.max(0,Math.min(.05,deltaSeconds));
     const phase=phaseAtSeconds(trackSeconds);
-    const elapsedDismiss=dismissStart===null?-1:performance.now()-dismissStart;
+    const elapsedDismiss=restoreStart!==null
+      ? Math.max(0,DISMISS_MS-(performance.now()-restoreStart))
+      : dismissStart===null?-1:performance.now()-dismissStart;
+    if(restoreStart!==null&&elapsedDismiss<=0)restoreStart=null;
     let fading=0;
     for(let i=0;i<trackTiles.length;i++){
       const pos=trackPosition(trackRows[i],phase,trackColumns[i]);
@@ -585,6 +596,7 @@ async function initialize(){
       if(dissolving>0&&trackIcons[i]){
         trackIcons[i].style.filter="blur("+tileDismissBlur(dissolving).toFixed(3)+"px)";
       }
+      else if(trackIcons[i])trackIcons[i].style.filter="";
       if(trackIcons[i]){
         const glyphAlpha=publicIconSpatialAlpha(
           tileData[p]+tileData[p+2]*0.5,
@@ -611,10 +623,10 @@ async function initialize(){
     // headless/host browsers do not dispatch a MediaQueryList change event
     // when system preferences are changed while WebGPU is already active.
     const allowTrack=homeActive()&&root?.dataset.gpuStatus==="ready"&&
-      !reducedMotion.matches&&dismissStart===null;
+      !reducedMotion.matches&&dismissStart===null&&restoreStart===null;
     if(trackRunning!==allowTrack){
       trackRunning=allowTrack;
-      if(!allowTrack&&dismissStart===null)trackSeconds=0;
+      if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     }
     writeUniform();
     syncTileTints();
@@ -701,12 +713,12 @@ async function initialize(){
   root.dataset.gpuTileCount=String(audit.tiles);
   document.querySelectorAll(".cta6-tile--plain,.cta6-tile--icon")
     .forEach(tile=>tile.classList.add("cta6-tile--webgpu"));
-  trackRunning=!reducedMotion.matches&&dismissStart===null;
+  trackRunning=!reducedMotion.matches&&dismissStart===null&&restoreStart===null;
   lastFrameTime=performance.now();
   reducedMotion.addEventListener?.("change",()=>{
     if(stopped)return;
-    trackRunning=!reducedMotion.matches&&dismissStart===null;
-    if(reducedMotion.matches&&dismissStart===null)trackSeconds=0;
+    trackRunning=!reducedMotion.matches&&dismissStart===null&&restoreStart===null;
+    if(reducedMotion.matches&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     requestRender();
   });
   // Browser-only interaction model. No DOM screenshot, no scene/mip rebuild,

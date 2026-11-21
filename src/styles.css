@@ -9,8 +9,6 @@
  * original block reside in Auth3.jsx, not in handcrafted approximations here.
  */
 @import "tailwindcss";
-@import "../sites/_apex/assets/site-foundation.css";
-@import "../sites/_apex/assets/public-theme.css";
 
 /* The original Tailwind 4.1.17 CSS uses :is(.dark *), not :where(...).
  * :where lowers specificity, allowing hover:bg-neutral-50 to override a dark
@@ -23,10 +21,6 @@
   --radius-2xl: 1rem;
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-}
-
-html, body, #root {
-  min-height: 100%;
 }
 
 /* Original iframe's source-specific base theme (from fcd00b...css).
@@ -100,55 +94,16 @@ html, body, #root {
 }
 
 
-/* In the original, the Auth-3 outer wrapper is transparent and the page
- * background comes from body. Preserve that computed relationship. */
-body { background-color: var(--ui-canvas); }
-body:has(.auth3-root:not(.dark)) { background-color: #fff; }
+/* This module is hosted inside the public shell. Never override body,
+ * its wallpaper or its WebGPU canvas; the parent shell stays mounted. */
 .auth3-root {
-  min-height: 100vh;
+  min-height: calc(100dvh - 44px);
+  width: 100%;
   background-color: transparent;
 }
 .auth3-root.dark { color-scheme: dark; color: #fff; }
 .auth3-root:not(.dark) { color-scheme: light; color: #0a0a0a; }
 
-/* WebGPU Home renders its photograph only below the fixed 44px global bar.
- * The Auth-3 backdrop must use that SAME containing rectangle, not the
- * default full-viewport Tailwind inset; otherwise background-size:cover
- * recalculates and the photo visibly jumps as the sign-in card enters.
- * The inline HTML underlay above is rendered before React and owns the
- * same image and overlay, so there is no blank/black frame before hydration. */
-.auth3-root [data-auth-scene] {
-  position: fixed;
-  top: 44px;
-}
-
-/* The same 43px icon-only bottom-left theme switch is loaded from
- * public-theme.css on both routes; never attach it to either page's
- * transitioning logo, bottom buttons or React authentication card. */
-.auth3-root .doof-theme-toggle{font-family:inherit;}
-
-/* The surviving wordmark is the homepage's 45px glyphs at exactly 60%
-   optical size, with its center measured halfway between the actual card
-   top and the fixed 44px header. It is not part of card entrance motion. */
-.auth3-doof-mark{
-  position:fixed;
-  left:50%;
-  top:88px;
-  transform:translate(-50%,-50%) scale(.6);
-  transform-origin:center;
-  z-index:11;
-  font:600 45px/1.08 var(--ui-font-sans,system-ui,sans-serif);
-  letter-spacing:-.055em;
-  white-space:nowrap;
-  color:#f7f9fa;
-  text-shadow:0 2px 18px rgba(0,0,0,.22);
-  pointer-events:none;
-  view-transition-name:doof-brand;
-}
-:root[data-dof-theme="light"] .auth3-doof-mark{
-  color:#20252b;
-  text-shadow:0 1px 18px rgba(255,255,255,.36);
-}
 /* A true return link sits at the upper-left *inside* the card and keeps
    the original Auth-3 headings, fields and motion utility strings intact. */
 .auth3-back-link{
@@ -174,10 +129,4 @@ body:has(.auth3-root:not(.dark)) { background-color: #fff; }
 }
 @media(prefers-reduced-motion:reduce){
   .auth3-back-link{transition:none}
-}
-@media(prefers-reduced-motion:no-preference){
-  ::view-transition-group(doof-brand){
-    animation-duration:320ms;
-    animation-timing-function:cubic-bezier(.22,.72,.24,1);
-  }
 }

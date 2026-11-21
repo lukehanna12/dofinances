@@ -11,10 +11,12 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     sourcemap: false,
+    manifest: true,
     rollupOptions: {
-      // Studio has one entrypoint. CI also packages this build at apex /login.
+      // The public shell lazy-loads the login module from this extra entry.
       input: {
         home: resolve(root, "index.html"),
+        loginRoute: resolve(root, "src/routes/login-entry.jsx"),
       },
     },
   },

@@ -16,9 +16,21 @@ const mime={".html":"text/html; charset=utf-8",".css":"text/css",
 const misses=new Set();
 const server=createServer((req,res)=>{
  const pathname=new URL(req.url||"/","http://127.0.0.1").pathname;
- if(pathname==="/login"){
+ // The prebuild Home probe uses a tiny on-demand route stub. The
+ // production-built React card is verified separately after Vite runs.
+ if(pathname==="/assets/public-login-manifest.json"){
+  res.writeHead(200,{"Content-Type":"application/json"});
+  res.end(JSON.stringify({js:"/assets/public-login-test-card.js",css:[]}));return;
+ }
+ if(pathname==="/assets/public-login-test-card.js"){
+  res.writeHead(200,{"Content-Type":"text/javascript"});
+  res.end('export function mountLogin(host,{onExitComplete}){const card=document.createElement("h2");card.textContent="Sign in";host.append(card);return {exit(){onExitComplete()},unmount(){card.remove()}}}');return;
+ }
+ if(pathname==="/login"||pathname==="/login/"){
   res.writeHead(200,{"Content-Type":"text/html"});
-  res.end("<!doctype html><title>Sign in route</title><h1>Login test target</h1>");return;
+  res.end(readFileSync(resolve(root,"index.html"),"utf8").replace(
+    '<body class="public-home">',
+    '<body class="public-home" data-public-route="leaving" data-direct-login="true">'));return;
  }
  if(pathname==="/favicon.ico"){res.writeHead(204);res.end();return;}
  const filename=resolve(root,"."+(pathname==="/"?"/index.html":pathname));
@@ -274,7 +286,7 @@ try{
    "Tiles must not use the old right-swipe transform");
  let loginReached=false;
  for(let i=0;i<50;i++){
-  if(await evaluate('location.pathname==="/login" && !!document.querySelector("h1")')){loginReached=true;break;}
+  if(await evaluate('location.pathname==="/login" && window.__dofPublicRouter?.state==="login" && !!document.querySelector("#public-route-content h2")')){loginReached=true;break;}
   await sleep(60);
  }
  assert.ok(loginReached,"Sign in must reach /login");

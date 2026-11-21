@@ -5,27 +5,10 @@
  * Dofinances branding, dark-first mode and theme toggle are intentional
  * additions. Credentials now use a server-side Cloudflare Durable Object.
  */
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 
-export function Auth3() {
-  const cardRef=useRef(null);
-  const markRef=useRef(null);
-  useLayoutEffect(()=>{
-    const card=cardRef.current,mark=markRef.current;
-    if(!card||!mark)return;
-    const place=()=>{
-      const barBottom=document.getElementById("global-menu")?.getBoundingClientRect().bottom??44;
-      const cardTop=card.getBoundingClientRect().top;
-      // Center the scaled 45px wordmark in the actual vertical gap.
-      mark.style.top=((barBottom+cardTop)/2)+"px";
-    };
-    place();
-    const observer=new ResizeObserver(place);
-    observer.observe(card);
-    window.addEventListener("resize",place);
-    return ()=>{observer.disconnect();window.removeEventListener("resize",place);};
-  },[]);
+export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -83,9 +66,15 @@ export function Auth3() {
   });
   const isDark = theme === "dark";
   useEffect(()=>{
-    document.documentElement.dataset.dofTheme=theme;
-    try{window.localStorage.setItem("dofinances-theme",theme);}catch{}
-  },[theme]);
+    // The persistent public shell owns theme persistence and the toggle.
+    // This route merely observes the shell so the Tailwind dark variant
+    // updates without duplicating a global control or touching the backdrop.
+    const update=()=>setTheme(document.documentElement.dataset.dofTheme==="light"?"light":"dark");
+    const observer=new MutationObserver(update);
+    observer.observe(document.documentElement,{attributes:true,attributeFilter:["data-dof-theme"]});
+    update();
+    return ()=>observer.disconnect();
+  },[]);
 
   async function submit(endpoint,payload) {
     const response=await fetch("/api/auth/"+endpoint,{
@@ -145,24 +134,21 @@ export function Auth3() {
   return (
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
       <div data-auth-stage className="min-h-screen w-full relative flex items-center justify-center p-6">
-        <div ref={markRef} className="auth3-doof-mark" aria-label="doof" role="img">doof</div>
-        <div
-          data-auth-scene="photo"
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif')" }}
-          aria-hidden="true"
-        />
-        <div data-auth-scene="veil" className="absolute inset-0 bg-[rgba(19,20,21,0.12)]" aria-hidden="true" />
-
         <div className="relative z-10 w-full max-w-[1400px] mx-auto flex items-center justify-center gap-12">
           <motion.div
-            ref={cardRef}
             initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            animate={exiting ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
+            onAnimationComplete={() => { if(exiting) onExitComplete(); }}
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
           >
-            <a href="/" className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage">
+            <a href="/" className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage"
+              onClick={event=>{
+                if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||
+                  event.shiftKey||event.altKey)return;
+                event.preventDefault();
+                onBack();
+              }}>
               <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d="M20 12H4m0 0 6-6m-6 6 6 6" />
               </svg>
@@ -269,21 +255,7 @@ export function Auth3() {
         </div>
       </div>
 
-      {/* User-requested feature: absent from the original Auth-3 source. */}
-      <button
-        className="doof-theme-toggle"
-        type="button"
-        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        aria-pressed={isDark}
-        title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        onClick={() => setTheme(isDark ? "light" : "dark")}
-      >
-        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-          {isDark
-            ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>
-            : <path d="M20.4 15.2A8.6 8.6 0 0 1 8.8 3.6 8.7 8.7 0 1 0 20.4 15.2Z" />}
-        </svg>
-      </button>
+
     </main>
   );
 }

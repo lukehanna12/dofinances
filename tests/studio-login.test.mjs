@@ -4,76 +4,80 @@ import { readFile } from "node:fs/promises";
 
 const load = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("public Home and Auth-3 keep a continuous photo across the document boundary", async () => {
-  const [home, login, css, component] = await Promise.all([
+test("the public shell persists across / and /login; no login document recreates chrome",async()=>{
+  const [home,route,styles,source,vite,workflow,packageScript]=await Promise.all([
+    load("../sites/_apex/index.html"),
+    load("../sites/_apex/assets/public-home-transition.js"),
     load("../sites/_apex/assets/public-home.css"),
-    load("../index.html"), load("../src/styles.css"),
-    load("../src/components/Auth3.jsx")
+    load("../src/components/Auth3.jsx"),load("../vite.config.mjs"),
+    load("../.github/workflows/site.yml"),
+    load("../scripts/package-public-login-route.mjs")
   ]);
-  assert.match(home, /@view-transition\s*\{\s*navigation:\s*auto;/);
-  assert.match(login, /@view-transition\s*\{\s*navigation:\s*auto;/);
-  assert.match(home, /::view-transition-old\(root\)/);
-  assert.match(login, /::view-transition-new\(root\)\s*\{\s*animation:\s*none/);
-  assert.match(login, /rel="preload" as="image" href="\/assets\/home-dashboard\/dashboard-cloud-veiled-colorful-fields\.avif"/);
-  assert.match(login, /body::before\s*\{[^}]*inset:\s*44px 0 0;/);
-  assert.match(login, /background-size:\s*cover, cover;/);
-  assert.match(css, /\.auth3-root \[data-auth-scene\]\s*\{\s*position:\s*fixed;\s*top:\s*44px;/);
-  assert.match(component, /data-auth-scene="photo"/);
-  assert.match(component, /data-auth-scene="veil"/);
-  assert.doesNotMatch(component, /sessionStorage|document\.cookie/);
+  assert.match(home, /name="dofinances-app-shell"/);
+  assert.match(home, /id="public-route-content"[^>]*hidden/);
+  assert.match(home, /id="dashboard-title">doof<\/h1>/);
+  assert.match(home, /id="global-menu"/);
+  assert.match(route, /history\.pushState/);
+  assert.match(route, /history\.back\(\)/);
+  assert.match(route, /addEventListener\("popstate"/);
+  assert.match(route, /registry=new Map/);
+  assert.match(route, /loadModule\("\/login"\)/);
+  assert.match(route, /dofinances:home-dismiss/);
+  assert.match(route, /dofinances:home-restore/);
+  assert.match(route, /state="exiting"/);
+  assert.doesNotMatch(route, /window\.location\.assign|location\.assign\(target\)/);
+  assert.match(styles, /body\.public-home > #public-route-content\{/);
+  assert.match(vite,/loginRoute: resolve\(root, "src\/routes\/login-entry\.jsx"\)/);
+  assert.match(packageScript,/public-login-manifest\.json/);
+  assert.match(workflow,/sed 's\/<body class="public-home">/);
+  assert.match(workflow,/cp -R dist\/assets\/\. sites\/_apex\/assets\//);
+  assert.doesNotMatch(source,/data-auth-scene|data-auth-scene="photo"|auth3-doof-mark/);
+  assert.doesNotMatch(source,/className="doof-theme-toggle"/);
 });
-
-test("login preserves the same persistent top navigation as Home across both themes", async () => {
-  const [home, login, css, theme, dropdown] = await Promise.all([
-    load("../sites/_apex/index.html"),load("../index.html"),
-    load("../sites/_apex/assets/public-home.css"),
-    load("../sites/_apex/assets/public-theme.css"),
-    load("../sites/_apex/assets/public-home-menu.js")
+test("the sign-in route owns the card entrance and reversed exit, not homepage animations",async()=>{
+  const [source,entry,shell,gpu]=await Promise.all([
+    load("../src/components/Auth3.jsx"),
+    load("../src/routes/login-entry.jsx"),
+    load("../sites/_apex/assets/public-home-transition.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
   ]);
-  const nav=/<nav class="global-menu" id="global-menu" aria-label="Site navigation">[\s\S]*?<\/nav>/;
-  const source=home.match(nav)?.[0],destination=login.match(nav)?.[0];
-  assert.ok(source&&destination,"Both pages should render the navigation before hydration");
-  assert.equal(destination,source,"Navigation markup must remain identical across pages");
-  assert.match(login,/body class="public-login"/);
-  assert.match(login,/rel="stylesheet" href="\/assets\/public-home\.css"/);
-  assert.match(login,/script defer src="\/assets\/public-home-menu\.js"/);
-  assert.match(css,/body:is\(\.public-home,\.public-login\) > \.global-menu\{/);
-  assert.match(theme,/:root\[data-dof-theme="light"\] body:is\(\.public-home,\.public-login\) > \.global-menu/);
-  assert.match(dropdown,/document\.addEventListener\("keydown"/);
-  assert.match(destination,/>Contact<\/button>/);
-  assert.doesNotMatch(destination,/>Settings<\/button>/);
-  assert.match(home,/<button class="cta6-action" type="button">Settings<\/button>/);
+  assert.match(source,/initial=\{\{ opacity: 0, x: -50 \}\}/);
+  assert.match(source,/animate=\{exiting \? \{ opacity: 0, x: -50 \} : \{ opacity: 1, x: 0 \}\}/);
+  assert.match(source,/onAnimationComplete=\{\(\) => \{ if\(exiting\) onExitComplete\(\); \}\}/);
+  assert.match(source,/className="auth3-back-link" aria-label="Back to homepage"/);
+  assert.match(source,/onBack\(\);/);
+  assert.match(entry,/export function mountLogin/);
+  assert.match(entry,/exit\(\)\{if\(leaving\|\|closed\)return;leaving=true;render\(\);\}/);
+  assert.match(shell,/current\.exit\(\)/);
+  assert.match(shell,/function finishClose\(\)/);
+  assert.match(gpu,/dofinances:home-restore/);
+  assert.match(gpu,/DISMISS_MS-\(performance\.now\(\)-restoreStart\)/);
+  assert.match(shell,/positionCompactLogo/);
 });
-
-test("wordmark moves to 60% scale halfway between the login card and top bar; card has return link",async()=>{
-  const [component,styles,homeCss,route]=await Promise.all([
-    load("../src/components/Auth3.jsx"),load("../src/styles.css"),
-    load("../sites/_apex/assets/public-home.css"),
-    load("../sites/_apex/assets/public-home-transition.js")
+test("the live shell owns the top bar, theme toggle and compact doof mark",async()=>{
+  const [home,auth,theme,renderer]=await Promise.all([
+    load("../sites/_apex/index.html"),
+    load("../src/components/Auth3.jsx"),
+    load("../sites/_apex/assets/public-theme.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
   ]);
-  assert.match(component,/ref=\{cardRef\}/);
-  assert.match(component,/ref=\{markRef\} className="auth3-doof-mark"/);
-  assert.match(component,/mark\.style\.top=\(\(barBottom\+cardTop\)\/2\)\+"px"/);
-  assert.match(component,/href="\/" className="auth3-back-link" aria-label="Back to homepage"/);
-  assert.match(styles,/\.auth3-doof-mark\{[^}]*scale\(\.6\)/);
-  assert.match(styles,/view-transition-name:doof-brand;/);
-  assert.match(homeCss,/\.cta6-center h1\{[^}]*view-transition-name:doof-brand;/);
-  assert.match(homeCss,/data-public-route="leaving"\] \.dashboard-home \.cta6-center h1\{[^}]*scale\(\.6\)/);
-  assert.doesNotMatch(homeCss,/data-public-route="leaving"\] \.dashboard-home \.cta6-center,\s*body\.public-home/);
-  assert.match(route,/wordmark\.style\.setProperty\("--doof-exit-y"/);
-  assert.match(route,/dofinances:home-dismiss/);
+  assert.match(home,/<nav class="global-menu" id="global-menu"/);
+  assert.match(home,/id="public-theme-toggle"/);
+  assert.match(home,/id="dashboard-title">doof<\/h1>/);
+  assert.doesNotMatch(auth,/id="global-menu"|doof-theme-toggle|data-auth-scene/);
+  assert.match(theme,/dofinances-theme/);
+  assert.match(auth,/new MutationObserver\(update\)/);
+  assert.match(renderer,/let restoreStart=null;/);
 });
-
-test("Studio root is the only React entrypoint; the apex /login reuses its build", async () => {
-  const root = await load("../index.html");
-  assert.match(root, /<title>Sign in · Dofinances<\/title>/);
-  assert.match(root, /auth3-studio-preview-v1/);
-  const vite = await load("../vite.config.mjs");
-  assert.match(vite, /home: resolve\(root, "index\.html"\)/);
-  assert.doesNotMatch(vite, /login: resolve/);
-  const workflow = await load("../.github/workflows/site.yml");
-  assert.match(workflow, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
-  assert.match(workflow, /cp -R dist\/assets\/\. sites\/_apex\/assets\//);
+test("Studio's independent Vite root is retained for development, but not deployed as apex /login",async()=>{
+  const [root,workflow,vite]=await Promise.all([
+    load("../index.html"),load("../.github/workflows/site.yml"),load("../vite.config.mjs")
+  ]);
+  assert.match(root,/<title>Sign in · Dofinances<\/title>/);
+  assert.match(vite,/home: resolve\(root, "index\.html"\)/);
+  assert.match(vite,/loginRoute: resolve/);
+  assert.match(workflow,/sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
+  assert.doesNotMatch(workflow,/cp dist\/index\.html sites\/_apex\/login\/index\.html/);
 });
 
 test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /login keeps Auth-3", async () => {
@@ -109,7 +113,7 @@ test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /logi
   assert.match(pages, /cp studio\/sidebar\/sidebar-glass\.css dist\/app\/assets\/sidebar-glass\.css/);
   assert.match(pages, /cp studio\/sidebar\/preview-bootstrap\.js dist\/app\/assets\/preview-bootstrap\.js/);
   assert.match(pages, /test ! -e dist\/app\/assets\/dashboard\.js/);
-  assert.match(hostRouter, /cp dist\/index\.html sites\/_apex\/login\/index\.html/);
+  assert.match(hostRouter, /sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
   assert.doesNotMatch(hostRouter, /studio\/sidebar|studio\/blank/);
   assert.match(workflow, /grep -Fq 'id="background-switcher"' "\$studio_body"/);
   assert.match(workflow, /grep -Fq 'Sign in · Dofinances' "\$body"/);
@@ -127,11 +131,8 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
   for(const expected of [...contract.classes.slice(0,16),...contract.classes.slice(23,25)]){
     // The route continuity requirement intentionally changes only the
     // original overlay's 20% black scrim to the Home photograph's 12% veil.
-    if(expected==="absolute inset-0 bg-black/20"){
-      assert.ok(classes.includes("absolute inset-0 bg-[rgba(19,20,21,0.12)]"),
-        "Login must match the homepage photograph's authored 12% veil");
-      continue;
-    }
+    if(expected==="absolute inset-0 bg-cover bg-center"||
+       expected==="absolute inset-0 bg-black/20")continue;
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
@@ -142,8 +143,8 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
 
 test("Google and GitHub sign-in providers preserve the Auth-3 backdrop and theme icon",async()=>{
   const source=await load("../src/components/Auth3.jsx");
-  assert.equal((source.match(/<svg\b/g)||[]).length,2);
-  assert.match(source,/dashboard-cloud-veiled-colorful-fields\.avif/);
+  assert.equal((source.match(/<svg\b/g)||[]).length,1);
+  assert.doesNotMatch(source,/dashboard-cloud-veiled-colorful-fields\.avif/);
   assert.doesNotMatch(source,/images\.unsplash\.com/);
   assert.match(source,/key:"google"/);
   assert.doesNotMatch(source,/key:"chatgpt"/);
@@ -169,18 +170,16 @@ test("Tailwind 4 reuses captured radius and color scale, rather than approximate
   }
 });
 
-test("theme defaults to dark, persists across homepage and login, and remains an icon-only button", async () => {
-  const source = await load("../src/components/Auth3.jsx");
-  assert.match(source, /window\.localStorage\.getItem\("dofinances-theme"\)/);
-  assert.match(source, /window\.localStorage\.setItem\("dofinances-theme",theme\)/);
-  assert.match(source, /document\.documentElement\.dataset\.dofTheme=theme/);
-  assert.match(source, /setTheme\(isDark \? "light" : "dark"\)/);
-  assert.match(source, /aria-pressed=\{isDark\}/);
-  assert.match(source, /className="doof-theme-toggle"/);
-  assert.doesNotMatch(source, /<span>\{isDark \? "Dark mode"/);
-  assert.match(source, /aria-label=\{isDark \? "Switch to light mode" : "Switch to dark mode"\}/);
-  assert.doesNotMatch(source, /sessionStorage|document\.cookie/);
-  assert.match(source, /credentials:\s*"same-origin"/);
+test("theme defaults to dark and is controlled exclusively by the persistent shell",async()=>{
+  const source=await load("../src/components/Auth3.jsx");
+  const shellTheme=await load("../sites/_apex/assets/public-theme.js");
+  assert.match(source,/window\.localStorage\.getItem\("dofinances-theme"\)/);
+  assert.match(source,/new MutationObserver\(update\)/);
+  assert.match(shellTheme,/window\.localStorage\.setItem\(KEY,next\)/);
+  assert.match(shellTheme,/button\?\.addEventListener\("click"/);
+  assert.doesNotMatch(source,/setTheme\(isDark \? "light"/);
+  assert.doesNotMatch(source,/sessionStorage|document\.cookie/);
+  assert.match(source,/credentials:\s*"same-origin"/);
 });
 
 test("the sign-in card remains the sole centered Motion panel", async () => {
@@ -235,7 +234,7 @@ test("both routes use one fixed bottom-left rounded square icon toggle", async (
   assert.match(css, /border-radius:12px/);
   assert.match(css, /left:max\(20px,env\(safe-area-inset-left\)\)/);
   assert.match(css, /bottom:max\(20px,env\(safe-area-inset-bottom\)\)/);
-  assert.match(authCSS, /@import "\.\.\/sites\/_apex\/assets\/public-theme\.css"/);
+  assert.doesNotMatch(authCSS,/doof-theme-toggle/);
   assert.match(home, /id="public-theme-toggle"/);
   assert.match(home, /src="\/assets\/public-theme\.js"/);
 });
@@ -290,7 +289,7 @@ test("resting base border and focus-ring tokens mirror original compiled CSS", a
   assert.match(css, /--ring: oklch\(70\.8% 0 0\);/);
   assert.match(css, /border-color: var\(--border\)/);
   assert.match(css, /outline-color: color-mix\(in oklab, var\(--ring\) 50%, transparent\)/);
-  assert.match(css, /body:has\(\.auth3-root:not\(\.dark\)\) \{ background-color: #fff; \}/);
+  assert.doesNotMatch(css,/body:has\(\.auth3-root:not\(\.dark\)\)/);
   assert.match(css, /background-color: transparent;/);
 });
 

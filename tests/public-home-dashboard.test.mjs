@@ -185,9 +185,12 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
   assert.match(home,/href="\/login"/);
   assert.match(home,/src="\/assets\/public-home-transition\.js"/);
-  assert.match(route,/window\.location\.assign\(target\)/);
+  assert.match(route,/history\.pushState/);
+  assert.doesNotMatch(route,/location\.assign/);
   assert.match(route,/dofinances:home-dismiss/);
   assert.match(route,/prefers-reduced-motion: reduce/);
+  assert.match(route,/dofinances:home-restore/);
+  assert.match(renderer,/let restoreStart=null;/);
   assert.match(renderer,/tileDismissProgress\(elapsedDismiss,trackRows\[i\],trackColumns\[i\]\)/);
   assert.match(renderer,/tileDismissScale\(dissolving\)/);
   assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);

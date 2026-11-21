@@ -1,8 +1,5 @@
-/*
- * DOM-only cross-document handoff probe. No screenshot/recording.
- * Runs on the production Vite output after npm run build. Checks that the
- * browser keeps the departing page painted during navigation and that the
- * incoming image, overlay and viewport crop align with WebGPU Home.
+/* DOM-only headless Chromium test of one persistent document and a
+ * reversible lazy-loaded /login card. No screenshots or screen recording.
  */
 import assert from "node:assert/strict";
 import {createServer} from "node:http";
@@ -15,26 +12,27 @@ import {fileURLToPath} from "node:url";
 const repo=resolve(fileURLToPath(new URL("../",import.meta.url)));
 const apex=join(repo,"sites/_apex");
 const dist=join(repo,"dist");
-assert.ok(existsSync(join(dist,"index.html")),"Build the Vite login first");
-const mime={".html":"text/html; charset=utf-8",".css":"text/css",
+assert.ok(existsSync(join(dist,"assets","public-login-manifest.json")),"Build and package the login route first");
+const mime={".html":"text/html; charset=utf-8",".json":"application/json",".css":"text/css",
   ".js":"text/javascript",".avif":"image/avif",".svg":"image/svg+xml",
   ".wgsl":"text/plain"};
 const misses=[];
 const server=createServer((req,res)=>{
   const pathname=new URL(req.url||"/","http://localhost").pathname;
   let target;
-  if(pathname==="/login"||pathname==="/login/")target=join(dist,"index.html");
-  else if(pathname==="/")target=join(apex,"index.html");
-  else if(pathname.startsWith("/assets/home-dashboard/")||
-      pathname==="/assets/site-foundation.css"||
-      pathname.startsWith("/assets/public-"))target=resolve(apex,"."+pathname);
-  else if(pathname.startsWith("/assets/"))target=resolve(dist,"."+pathname);
-  else target=resolve(apex,"."+pathname);
+  if(pathname==="/login"||pathname==="/login/"||pathname==="/"){
+    target=join(apex,"index.html");
+  }else{
+    const apexCandidate=resolve(apex,"."+pathname);
+    const builtCandidate=resolve(dist,"."+pathname);
+    target=existsSync(apexCandidate)?apexCandidate:builtCandidate;
+  }
   if(!target.startsWith(apex+"/")&&!target.startsWith(dist+"/")){
     res.writeHead(403);res.end();return;
   }
   try{
-    const body=readFileSync(target);
+    let body=readFileSync(target);
+    if(pathname==="/login"||pathname==="/login/")body=Buffer.from(body.toString("utf8").replace('<body class="public-home">','<body class="public-home" data-public-route="leaving" data-direct-login="true">'));
     res.writeHead(200,{"Content-Type":mime[extname(target)]||"application/octet-stream",
       "Cache-Control":"no-store"});
     res.end(body);
@@ -89,116 +87,107 @@ try{
   };
   await send("Page.enable");
   await send("Runtime.enable");
-  await send("Page.addScriptToEvaluateOnNewDocument",{source:
-    "window.__handoff={seen:false,hasTransition:false};"+
-    "addEventListener('pagereveal',e=>{window.__handoff.seen=true;"+
-    "window.__handoff.hasTransition=!!e.viewTransition;});"});
   await send("Emulation.setEmulatedMedia",
     {features:[{name:"prefers-reduced-motion",value:"no-preference"}]});
   const origin="http://127.0.0.1:"+server.address().port;
   await send("Page.navigate",{url:origin+"/"});
-  let ready=false;
-  for(let i=0;i<150;i++){
-    ready=await evaluate("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
-    if(ready)break;
-    await sleep(60);
-  }
-  assert.ok(ready,"Homepage squares did not mount");
-  const homeTop=await evaluate("document.querySelector('#global-menu').getBoundingClientRect().bottom");
-  assert.equal(homeTop,44,"Public WebGPU scene begins below the 44px bar");
+  const until=async(expression,limit=120,interval=70)=>{
+    let value;
+    for(let i=0;i<limit;i++){
+      value=await evaluate(expression);
+      if(value)return value;
+      await sleep(interval);
+    }
+    throw Error("Timed out: "+expression);
+  };
+  await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
+  const home=await evaluate("(()=>{window.__persistedShell={"+
+    "mosaic:document.querySelector('#cta6-mosaic'),"+
+    "logo:document.querySelector('#dashboard-title'),"+
+    "bar:document.querySelector('#global-menu'),"+
+    "theme:document.querySelector('#public-theme-toggle')};"+
+    "const r=window.__persistedShell.logo.getBoundingClientRect();"+
+    "return {homeY:(r.top+r.bottom)/2,barBottom:window.__persistedShell.bar.getBoundingClientRect().bottom};})()");
+  assert.equal(home.barBottom,44);
   await evaluate("document.querySelector('.cta6-bottom-action a[href=\"/login\"]').click()");
-  let entered=false;
-  for(let i=0;i<160;i++){
-    entered=await evaluate("location.pathname==='/login' && !!document.querySelector('.auth3-root form')");
-    if(entered)break;
-    await sleep(70);
-  }
-  assert.ok(entered,"Sign in card did not mount on /login");
-  // Motion starts the card 50px to the left and settles after 600ms.
-  // Measure final layout after entrance, not the animated first frame.
-  await sleep(850);
-  const cardLayout=await evaluate("(()=>{"+
-    "const card=document.querySelector('.auth3-root .max-w-md');"+
-    "const r=card.getBoundingClientRect();"+
-    "return {centerX:(r.left+r.right)/2,viewportCenter:innerWidth/2,"+
-    "captionPresent:document.body.textContent.includes('A clearer view of what comes next.'),"+
-    "cardCount:document.querySelectorAll('.auth3-root .max-w-md').length};})()");
-  assert.equal(cardLayout.cardCount,1,"Exactly one sign-in card");
-  assert.ok(Math.abs(cardLayout.centerX-cardLayout.viewportCenter)<1,
-    "The sign-in card must be centered horizontally in the viewport");
-  assert.equal(cardLayout.captionPresent,false,"Remove the promotional caption");
-  const loginBar=await evaluate("(()=>{const nav=document.querySelector('#global-menu');"+
-    "const bounds=nav?.getBoundingClientRect();"+
-    "return {top:bounds?.top,height:bounds?.height,"+
-    "position:getComputedStyle(nav).position,"+
-    "background:getComputedStyle(nav).backgroundColor,"+
-    "labels:[...nav.querySelectorAll('.global-menu-links button')].map(e=>e.textContent.trim()),"+
-    "github:nav.querySelector('.public-github')?.getAttribute('href'),"+
-    "dropdown:!!nav.querySelector('#public-menu-toggle')};})()");
-  assert.equal(loginBar.top,0,"Login bar must be flush to the top of the viewport");
-  assert.equal(loginBar.height,homeTop,"Login bar must match Home's scene boundary");
-  assert.equal(loginBar.position,"fixed");
-  assert.deepEqual(loginBar.labels,["Projects","Quick Downloads","Collections","Contact"]);
-  assert.equal(loginBar.github,"https://github.com/lukehanna12");
-  assert.equal(loginBar.dropdown,true);
-
-  const scene=await evaluate("(()=>{"+
-    "const image=document.querySelector('[data-auth-scene=photo]');"+
-    "const veil=document.querySelector('[data-auth-scene=veil]');"+
-    "const rect=image.getBoundingClientRect();"+
-    "const underlay=getComputedStyle(document.body,'::before');"+
-    "const imageStyle=getComputedStyle(image);"+
-    "return {viewportHeight:innerHeight,rect:{top:rect.top,bottom:rect.bottom,width:rect.width},"+
-    "veilTop:veil.getBoundingClientRect().top,"+
-    "veilBackground:getComputedStyle(veil).backgroundColor,"+
-    "image: imageStyle.backgroundImage,cover:imageStyle.backgroundSize,"+
-    "underlayTop:underlay.top,underlayImage:underlay.backgroundImage,"+
-    "underlayCover:underlay.backgroundSize,"+
-    "preload:!!document.querySelector('link[rel=preload][as=image]'),"+
-    "handoff:window.__handoff};})()");
-  assert.equal(scene.rect.top,homeTop,"Photo must not reframe on sign-in");
-  assert.equal(scene.rect.bottom,scene.viewportHeight,"Photo must extend to viewport bottom");
-  assert.equal(scene.veilTop,homeTop,"12% overlay must share the same crop");
-  assert.match(scene.image,/dashboard-cloud-veiled-colorful-fields\.avif/);
-  assert.equal(scene.cover,"cover");
-  assert.equal(scene.underlayTop,"44px");
-  assert.equal(scene.underlayCover,"cover, cover");
-  assert.match(scene.underlayImage,/dashboard-cloud-veiled-colorful-fields\.avif/);
-  assert.equal(scene.preload,true,"Image must begin loading before React");
-  // The sign-in form can hydrate before pagereveal when the persistent
-  // header adds an additional stylesheet and deferred mobile-menu script.
-  // Observe the actual navigation lifecycle event rather than sampling
-  // immediately at React mount.
-  for(let attempt=0;attempt<80&&!scene.handoff?.seen;attempt++){
-    await sleep(60);
-    scene.handoff=await evaluate("window.__handoff");
-  }
-  assert.equal(scene.handoff.seen,true,"Incoming page must receive pagereveal");
-  assert.equal(scene.handoff.hasTransition,true,
-    "Cross-document view transition must hold outgoing frame");
-  const logo=await evaluate("(()=>{"+
-    "const card=document.querySelector('.auth3-root .max-w-md');"+
-    "const mark=document.querySelector('.auth3-doof-mark');"+
-    "const back=document.querySelector('.auth3-back-link');"+
-    "const bar=document.querySelector('#global-menu');"+
-    "return {cardTop:card.getBoundingClientRect().top,"+
-    "barBottom:bar.getBoundingClientRect().bottom,"+
-    "markTop:mark.getBoundingClientRect().top,"+
-    "markBottom:mark.getBoundingClientRect().bottom,"+
-    "transform:getComputedStyle(mark).transform,"+
-    "markCenter:(mark.getBoundingClientRect().top+mark.getBoundingClientRect().bottom)/2,"+
-    "fontSize:getComputedStyle(mark).fontSize,"+
-    "backHref:back.getAttribute('href'),"+
-    "backLabel:back.getAttribute('aria-label')};})()");
-  assert.ok(Math.abs(logo.markCenter-(logo.barBottom+logo.cardTop)/2)<1,
-    "Doof must be exactly halfway between the fixed bar and the live card");
-  assert.equal(logo.fontSize,"45px");
-  assert.match(logo.transform,/matrix\(0\.6, 0, 0, 0\.6,/);
-  assert.equal(logo.backHref,"/");
-  assert.equal(logo.backLabel,"Back to homepage");
-
-  assert.deepEqual(misses,[],"No missing transition or login assets");
-  process.stdout.write("Home -> sign-in route handoff, photo crop and view transition verified.\n");
+  await sleep(80);
+  assert.equal(await evaluate("location.pathname"),"/",
+    "The shell dismisses its squares before changing history");
+  await until("location.pathname==='/login'&&!!document.querySelector('.auth3-root form')",170);
+  await sleep(800);
+  const active=await evaluate("(()=>{"+
+    "const r=window.__persistedShell,l=document.querySelector('.auth3-root .max-w-md');"+
+    "const c=l.getBoundingClientRect(),brand=r.logo.getBoundingClientRect();"+
+    "return {sameMosaic:document.querySelector('#cta6-mosaic')===r.mosaic,"+
+    "sameBrand:document.querySelector('#dashboard-title')===r.logo,"+
+    "sameBar:document.querySelector('#global-menu')===r.bar,"+
+    "sameTheme:document.querySelector('#public-theme-toggle')===r.theme,"+
+    "center:(c.left+c.right)/2,viewport:innerWidth/2,"+
+    "logoY:(brand.top+brand.bottom)/2,scale:getComputedStyle(r.logo).transform,"+
+    "caption:document.body.textContent.includes('A clearer view of what comes next.'),"+
+    "back:document.querySelector('.auth3-back-link')?.getAttribute('href'),"+
+    "state:window.__dofPublicRouter.state,route:location.pathname};})()");
+  for(const field of ["sameMosaic","sameBrand","sameBar","sameTheme"])
+    assert.equal(active[field],true,"Persistent shell lost: "+field);
+  assert.equal(active.state,"login");
+  assert.equal(active.route,"/login");
+  assert.equal(active.back,"/");
+  assert.equal(active.caption,false);
+  assert.ok(Math.abs(active.center-active.viewport)<1,"Sign-in card must be horizontally centered");
+  assert.ok(Math.abs(active.logoY-(home.barBottom+46))<1,
+    "The same doof logo moves to the shell-owned compact position");
+  assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
+  // Clicking the card-owned back arrow reverses the card's 600ms Motion
+  // entry first. The route remains active until that exit finishes.
+  await evaluate("document.querySelector('.auth3-back-link').click()");
+  await sleep(130);
+  const exit=await evaluate("({route:location.pathname,"+
+    "state:window.__dofPublicRouter.state,card:!!document.querySelector('.auth3-root form'),"+
+    "shell:document.body.dataset.publicRoute})");
+  assert.equal(exit.route,"/login");
+  assert.equal(exit.state,"exiting");
+  assert.equal(exit.card,true);
+  assert.equal(exit.shell,"leaving");
+  await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
+  await sleep(570);
+  const returned=await evaluate("(()=>{const r=window.__persistedShell;"+
+    "const b=r.logo.getBoundingClientRect();return {"+
+    "mosaic:document.querySelector('#cta6-mosaic')===r.mosaic,"+
+    "logo:document.querySelector('#dashboard-title')===r.logo,"+
+    "topbar:document.querySelector('#global-menu')===r.bar,"+
+    "card:!!document.querySelector('.auth3-root'),"+
+    "shell:document.body.dataset.publicRoute||'home',"+
+    "logoY:(b.top+b.bottom)/2};})()");
+  assert.equal(returned.mosaic,true);
+  assert.equal(returned.logo,true);
+  assert.equal(returned.topbar,true);
+  assert.equal(returned.card,false);
+  assert.equal(returned.shell,"home");
+  assert.ok(Math.abs(returned.logoY-home.homeY)<1,
+    "Reversing the route restores the original full-size doof position");
+  // Browser Forward also uses the persistent route registry.
+  await evaluate("history.forward()");
+  await until("location.pathname==='/login'&&window.__dofPublicRouter.state==='login'",170);
+  assert.equal(await evaluate("document.querySelector('#cta6-mosaic')===window.__persistedShell.mosaic"),true);
+  // A cold direct visit serves the same shell, initially in compact state.
+  await send("Page.navigate",{url:origin+"/login"});
+  await until("location.pathname==='/login'&&!!document.querySelector('.auth3-root form')",170);
+  await sleep(740);
+  const direct=await evaluate("({"+
+    "shell:!!document.querySelector('#workspace-shell #cta6-mosaic'),"+
+    "topbar:!!document.querySelector('#global-menu'),"+
+    "logoCount:document.querySelectorAll('#dashboard-title').length,"+
+    "routeState:window.__dofPublicRouter.state,"+
+    "direct:document.body.dataset.directLogin})");
+  assert.equal(direct.shell,true);
+  assert.equal(direct.topbar,true);
+  assert.equal(direct.logoCount,1);
+  assert.equal(direct.routeState,"login");
+  assert.equal(direct.direct,"true");
+  await evaluate("document.querySelector('.auth3-back-link').click()");
+  await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
+  assert.deepEqual(misses,[],"No missing shell or lazy login assets");
+  process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");
 }finally{
   try{socket?.close();}catch{}
   try{chrome?.kill("SIGKILL");}catch{}
