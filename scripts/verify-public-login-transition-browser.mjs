@@ -289,7 +289,10 @@ try{
       "Track phase must advance continuously while the card exits, without pointer events");
   }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
-  await sleep(570);
+  // CSS transition completion depends on presented animation frames, not
+  // just elapsed time. Assert the fully restored state after it actually
+  // settles; a late frame must not turn 99.8% opacity into a false failure.
+  await until("!document.body.dataset.publicRoute&&getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity==='1'",100,60);
   const returned=await evaluate("(()=>{const r=window.__persistedShell;"+
     "const b=r.logo.getBoundingClientRect();return {"+
     "mosaic:document.querySelector('#cta6-mosaic')===r.mosaic,"+
