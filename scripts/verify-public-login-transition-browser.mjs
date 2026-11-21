@@ -200,20 +200,28 @@ try{
     "googleColors:[...document.querySelectorAll('svg.auth3-provider-icon[viewBox=\\\"0 0 48 48\\\"] path')].map(p=>p.getAttribute('fill')),"+
     "googleAlpha:[...document.querySelectorAll('svg.auth3-provider-icon[viewBox=\\\"0 0 48 48\\\"] path')].map(p=>p.getAttribute('opacity')),"+
     "githubColor:document.querySelector('svg.auth3-provider-icon[viewBox=\\\"0 0 24 24\\\"] path')?.getAttribute('fill'),"+
-    "githubAlpha:document.querySelector('svg.auth3-provider-icon[viewBox=\\\"0 0 24 24\\\"] path')?.getAttribute('opacity'),"+
-    "githubGradient:!!document.querySelector('#auth3-github-mark-gradient')};})()";
+    "githubStops:[...document.querySelectorAll('#auth3-github-mono-gradient stop')].map(s=>({color:s.getAttribute('stop-color')||s.getAttribute('stopColor'),opacity:s.getAttribute('stop-opacity')||s.getAttribute('stopOpacity')})),"+
+    "githubGradient:!!document.querySelector('#auth3-github-mono-gradient')};})()";
   const darkAccent=await evaluate(accents());
   assert.equal(darkAccent.ruleCount,2);
   assert.equal(darkAccent.rule,"rgb(52, 56, 61)");
   assert.equal(darkAccent.iconCount,2);
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
   assert.deepEqual(darkAccent.googleColors,Array(4).fill("#FFFFFF"));
-  assert.deepEqual(darkAccent.googleAlpha,[".48",".64",".76",".57"]);
-  assert.equal(darkAccent.githubColor,"#FFFFFF");
-  assert.equal(darkAccent.githubAlpha,".68");
-  assert.equal(darkAccent.githubGradient,false);
-  assert.ok([...darkAccent.googleAlpha,darkAccent.githubAlpha].every(v=>Number(v)>.30&&Number(v)<.85),
-    "White-only provider logos have no nearly invisible or opaque path");
+  assert.deepEqual(darkAccent.googleAlpha,[".36",".43",".84",".55"]);
+  assert.equal(darkAccent.githubColor,"url(#auth3-github-mono-gradient)");
+  assert.equal(darkAccent.githubGradient,true);
+  assert.deepEqual(darkAccent.githubStops,[
+    {color:"#FFFFFF",opacity:".66"},
+    {color:"#FFFFFF",opacity:".39"}
+  ]);
+  assert.ok([...darkAccent.googleAlpha,...darkAccent.githubStops.map(s=>s.opacity)]
+    .every(v=>Number(v)>.3&&Number(v)<.9),
+    "Monochrome logo alphas remain strictly intermediate");
+  assert.ok(Number(darkAccent.googleAlpha[2])-Number(darkAccent.googleAlpha[0])>=.45,
+    "Google yellow and red segments have expanded luminance contrast");
+  assert.ok(Number(darkAccent.githubStops[0].opacity)-Number(darkAccent.githubStops[1].opacity)>=.25,
+    "GitHub keeps an expanded white-only luminance gradient");
   const ornaments=()=> "(()=>{"+
     "const group=document.querySelector('[data-auth-or-separator]');"+
     "const back=document.querySelector('.auth3-back-link');"+
@@ -233,7 +241,7 @@ try{
     "backStroke:[...back.querySelectorAll('svg path')].map(p=>getComputedStyle(p).stroke),"+
     "backSize:[back.getBoundingClientRect().width,back.getBoundingClientRect().height]};})()";
   const darkOrnaments=await evaluate(ornaments());
-  assert.equal(darkOrnaments.opacity,"0.8");
+  assert.equal(darkOrnaments.opacity,"0.95");
   assert.equal(darkOrnaments.label,darkOrnaments.line);
   assert.equal(darkOrnaments.label,"rgb(52, 56, 61)");
   assert.ok(darkOrnaments.labelRed<darkOrnaments.footerRed,
@@ -387,7 +395,7 @@ try{
   assert.equal(lightAccent.rule,"rgb(41, 45, 50)");
   assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
   const lightOrnaments=await evaluate(ornaments());
-  assert.equal(lightOrnaments.opacity,"0.8");
+  assert.equal(lightOrnaments.opacity,"0.95");
   assert.equal(lightOrnaments.label,lightOrnaments.line);
   assert.equal(lightOrnaments.label,"rgb(41, 45, 50)");
   assert.ok(lightOrnaments.labelRed<lightOrnaments.footerRed,

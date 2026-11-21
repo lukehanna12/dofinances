@@ -247,10 +247,10 @@
   color:#fff!important;
 }
 /* The "Or" and both 1px rules share a darker-than-footer neutral gray.
- * Apply one 80% group opacity to all three, preserving their alignment. */
+ * Apply one 95% group opacity to all three, preserving their alignment. */
 .auth3-root [data-auth-or-separator]{
   color:#292d32;
-  opacity:.8;
+  opacity:.95;
 }
 .auth3-root.dark [data-auth-or-separator]{color:#34383d}
 .auth3-root .auth3-or-rule{background-color:currentColor}

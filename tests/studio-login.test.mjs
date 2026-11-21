@@ -399,7 +399,7 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.equal((jsx.match(/className="auth3-or-rule flex-1 h-px"/g)||[]).length,2);
   assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6"'));
   assert.ok(css.includes(".auth3-root [data-auth-or-separator]{"));
-  assert.ok(css.includes("opacity:.8"));
+  assert.ok(css.includes("opacity:.95"));
   assert.ok(css.includes("color:#292d32"));
   assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#34383d}"));
   assert.ok(css.includes(".auth3-root .auth3-or-rule{background-color:currentColor}"));
@@ -408,13 +408,19 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(jsx.includes("<AuthProviderIcon provider={provider.key}/>"));
   assert.doesNotMatch(jsx,/mark:"G"|mark:"GH"|provider\.mark/);
   assert.equal((marks.match(/<svg\b/g)||[]).length,2);
-  assert.equal((marks.match(/fill="#FFFFFF"/g)||[]).length,5,
-    "All Google and GitHub paths use only white, varied by alpha");
-  assert.equal((marks.match(/opacity="\.[0-9]+"/g)||[]).length,5);
-  for(const alpha of [".48",".64",".76",".57",".68"])
-    assert.ok(marks.includes('opacity="'+alpha+'"'),"Logo path alpha "+alpha);
-  assert.doesNotMatch(marks,/#(?:EA4335|4285F4|FBBC05|34A853|7A8DDD|A56BCF)|linearGradient|stopColor|url\(#/,
-    "No colored or fully opaque logo shapes");
+  assert.equal((marks.match(/fill="#FFFFFF"/g)||[]).length,4,
+    "Google segments remain white-only with individual luminance alphas");
+  assert.deepEqual([...marks.matchAll(/<path fill="#FFFFFF" opacity="(\.[0-9]+)"/g)]
+    .map(m=>Number(m[1])),[.36,.43,.84,.55]);
+  assert.ok(.36<.43&&.43<.55&&.55<.84,
+    "Google monochrome brightness preserves red < blue < green < yellow");
+  assert.ok(marks.includes('id="auth3-github-mono-gradient"'));
+  assert.ok(marks.includes('fill="url(#auth3-github-mono-gradient)"'));
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".66"'));
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".39"'));
+  assert.ok(.66-.39>=.25&&.84-.36>=.45,"Both brands have expanded contrast");
+  assert.doesNotMatch(marks,/#(?:EA4335|4285F4|FBBC05|34A853|7A8DDD|A56BCF)|stopColor="(?!#FFFFFF)|stopOpacity="(?:0|1)"/,
+    "No colored or fully opaque/invisible gradient stops");
   assert.ok(marks.includes('aria-hidden="true" focusable="false"'));
   assert.ok(css.includes("opacity:.82"));
   assert.ok(css.includes("opacity:.86"));
