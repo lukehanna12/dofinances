@@ -29,7 +29,19 @@ jobs:
       - name: Run tests
         run: npm run check
       - name: Verify README Markdown typing in Chromium
-        run: node scripts/verify-readme-markdown-browser.mjs
+        # GitHub's shared runners intermittently leave Chrome alive without
+        # publishing DevToolsActivePort. Retry isolated fixture startup; a
+        # persistent assertion failure still fails the build.
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if node scripts/verify-readme-markdown-browser.mjs; then
+              exit 0
+            fi
+            echo "README Chrome fixture failed on attempt $attempt" >&2
+            sleep 2
+          done
+          exit 1
       - name: Verify flat Collections controls in Chromium
         run: node scripts/verify-collections-glass-browser.mjs
       - name: Verify Dashboard mosaic and logo center in Chromium
