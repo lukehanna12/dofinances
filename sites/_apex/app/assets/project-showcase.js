@@ -103,12 +103,12 @@ function makeCard(project,index,slugRoute){
  const upper=element("span","project-showcase-upper");
  const top=element("span","project-showcase-top");
  const iconName=PROJECT_CARD_ICONS[project.slug];
- const number=element("span","project-showcase-number",iconName?undefined:String(index+1));
+ const number=element("span","project-showcase-number"+(iconName?" project-showcase-number--icon":""),iconName?undefined:String(index+1));
  number.setAttribute("aria-hidden","true");
  if(iconName){
   const icon=element("img","project-showcase-lucide");
   icon.src="/app/assets/project-icons/"+iconName+".svg";
-  icon.width=16;icon.height=16;icon.alt="";icon.decoding="async";
+  icon.width=28;icon.height=28;icon.alt="";icon.decoding="async";
   number.append(icon);
  }
  const badge=element("span","project-showcase-badge "+statusClass,status);

@@ -193,3 +193,14 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  assert.ok(script.includes("fallbackImagePath(index)"));
  assert.ok(script.includes('photo.addEventListener("error"'));
 });
+
+test("Assigned Lucide project icons display large, white, and without number circles",()=>{
+ const js=read("sites/_apex/app/assets/project-showcase.js");
+ const css=read("sites/_apex/app/assets/project-showcase.css");
+ assert.match(js,/project-showcase-number--icon/);
+ assert.match(js,/icon\.width=28;icon\.height=28/);
+ assert.match(css,/\.project-showcase-number--icon\{[^}]*width:28px;height:28px;border-radius:0;background:transparent;color:#fff/);
+ assert.match(css,/\.project-showcase-lucide\{[^}]*width:28px;height:28px/);
+ assert.match(css,/filter:brightness\(0\) invert\(1\)/);
+ assert.match(css,/\.project-showcase-number\{[^}]*border-radius:50%/);
+});

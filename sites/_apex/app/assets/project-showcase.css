@@ -113,9 +113,13 @@
  display:grid;place-items:center;flex:none;width:20px;height:20px;
  border-radius:50%;font-size:10px;font-weight:700;background:#fff;color:#171717
 }
-/* Exact Lucide vectors replace numbers only on projects with an icon assignment. */
+/* SVG markers are larger, white and borderless; unassigned number circles stay unchanged. */
+.view[data-view="projects"] .project-showcase-number--icon{
+ width:28px;height:28px;border-radius:0;background:transparent;color:#fff
+}
 .view[data-view="projects"] .project-showcase-lucide{
- display:block;flex:none;width:16px;height:16px;pointer-events:none
+ display:block;flex:none;width:28px;height:28px;pointer-events:none;
+ filter:brightness(0) invert(1)
 }
 /* Capsule badges with generous side padding so even long status labels breathe. */
 .view[data-view="projects"] .project-showcase-badge{
