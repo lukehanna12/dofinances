@@ -247,7 +247,6 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
     "The same square-size optical envelope drives all panes and hover radii");
   assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
-    "The square tint remains unmodified; the controls get a stronger neutral film");
   assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
   assert.match(renderer,/faceScheme:tint\.state\.scheme/);
   assert.match(css,/--auth-control-tint:rgba\(0,0,0,\.60\)/);
