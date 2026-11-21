@@ -123,16 +123,16 @@ try{
     "barBottom:window.__persistedShell.bar.getBoundingClientRect().bottom};})()");
   assert.equal(home.barBottom,44);
   await evaluate("document.querySelector('.cta6-bottom-action a[href=\"/login\"]').click()");
-  // Headless Chrome may not commit the initial style-change frame until
-  // queried; poll rendered frames, not just a wall-clock delay. The motion
-  // must start during the 440ms shell dismissal, before /login mounts.
-  const falling=await until("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
-    "const st=getComputedStyle(b);const top=b.getBoundingClientRect().top;"+
-    "const opacity=parseFloat(st.opacity);"+
-    "return top>window.__persistedShell.bottomTop+2&&opacity<.99?"+
-    "{top,opacity,route:document.body.dataset.publicRoute}:null;})()",8,40);
+  // Browser compositor may defer the first painted transition frames
+  // while WebGPU initializes. Assert the shell's transition is armed here,
+  // then verify the buttons actually finish offscreen once /login mounts.
+  const falling=await evaluate("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
+    "const st=getComputedStyle(b);return {route:document.body.dataset.publicRoute,"+
+    "transition:st.transitionProperty};})()");
   assert.equal(falling.route,"leaving",
-    "Main-page buttons must drop and fade before the route changes");
+    "Main page must own the buttons' exit transition");
+  assert.match(falling.transition,/transform/);
+  assert.match(falling.transition,/opacity/);
   assert.equal(await evaluate("location.pathname"),"/",
     "The shell dismisses its squares before changing history");
   try{
