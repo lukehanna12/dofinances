@@ -76,12 +76,17 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   );
   let tile=tiles[instance];
   let uv=corners[vertex];
+  // A negative delay identifies a route-owned DOM glass pane (card or form
+  // control). It shares EXACTLY this mosaic shader/pipeline, but not the
+  // squares' own intro or dismissal geometry. The DOM Motion transform is
+  // already reflected in its live rect from the renderer.
+  let authPane=tile.properties.y<0.0;
   let progress=clamp((state.viewport.z-tile.properties.y)/0.4,0.0,1.0);
-  let a=ease(progress);
-  let scale=0.85+0.15*a;
+  let a=select(ease(progress),1.0,authPane);
+  let scale=select(0.85+0.15*a,1.0,authPane);
   // Only a slight local expansion; underlying Oracle material coordinates
   // remain unchanged, and no invented large smoke cloud is emitted.
-  let dismiss=clamp(tile.motion.w,0.0,1.0);
+  let dismiss=select(clamp(tile.motion.w,0.0,1.0),0.0,authPane);
   let bloom=dismiss*dismiss*(3.0-2.0*dismiss);
   let diffuseScale=vec2<f32>(1.0+0.085*bloom,1.0+0.065*bloom);
   let center=tile.rect.xy+tile.rect.zw*0.5;
@@ -314,6 +319,7 @@ fn dissolveField(p:vec2<f32>)->f32{
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
+  let authPane=tile.properties.y<0.0;
   let dimensions=tile.rect.zw;
   // Exact CPU predicate: mode4 iff four NORMALIZED private lanes compare
   // equal using AArch64 FCMP/FCCMP; any inequality/NaN selects mode5.
@@ -394,8 +400,12 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // browser applies a linear interpolation between recorded endpoint
   // inputs: light black/white = 0.20/0.95, dark = 0.05/0.80.
   // Both face endpoints are lower in dark; tint hue stays independent.
-  let faceBlack=select(0.20,0.05,state.tintMeta.y>0.5);
-  let faceWhite=select(0.95,0.80,state.tintMeta.y>0.5);
+  // The homepage squares retain their existing tint selection. Route
+  // panes choose the same recorded light/dark face endpoints per pane:
+  // delay -2 = dark neutral, -3 = light neutral.
+  let darkFace=select(state.tintMeta.y>0.5,tile.properties.y == -2.0,authPane);
+  let faceBlack=select(0.20,0.05,darkFace);
+  let faceWhite=select(0.95,0.80,darkFace);
   var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
@@ -406,6 +416,13 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // Preserve authored sRGB pigment; only public alpha is Float32.
     // 0.25 browser color film is NOT a native compositor coefficient.
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*0.25);
+  }
+  // Route panes share the material, tint blend, SDF and original hover
+  // response above. Do not apply the squares' left/right fade, title oval
+  // or X-close effect to a sign-in card or its form controls.
+  // DOM Motion drives the pane opacity and position, not shader scaling.
+  if(authPane){
+    return vec4<f32>(color,coverage*clamp(tile.motion.z,0.0,1.0));
   }
   // Public homepage ONLY: attenuate the alpha of glass squares within
   // 0.75 square widths of the LEFT/RIGHT window edges, from 25% -> 100%.

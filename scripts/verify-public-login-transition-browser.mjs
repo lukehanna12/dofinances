@@ -177,71 +177,80 @@ try{
     "Same doof logo compact Y: "+active.logoY+" expected "+(home.barBottom+46)+
     "; home Y "+home.homeY+"; computed transform "+active.scale);
   assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
-  const material=()=>{
-    return "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
-      "const input=card.querySelector('[data-auth-glass-input]');"+
-      "const primary=card.querySelector('[data-auth-glass-submit]');"+
-      "const provider=card.querySelector('[data-auth-glass-provider]');"+
-      "const face=getComputedStyle(card);"+
-      "return {mode:card.closest('.auth3-root').classList.contains('dark')?'dark':'light',"+
-      "face:face.backgroundImage,blur:face.backdropFilter,border:face.borderTopColor,"+
-      "input:getComputedStyle(input).backgroundColor,inputInk:getComputedStyle(input).color,"+
-      "primary:getComputedStyle(primary).backgroundColor,"+
-      "provider:getComputedStyle(provider).backgroundColor,"+
-      "placeholder:getComputedStyle(input,'::placeholder').color};})()";
-  };
+  const material=()=> "(()=>{"+
+    "const card=document.querySelector('[data-auth-glass-card]');"+
+    "const input=card.querySelector('[data-auth-glass-input]');"+
+    "const primary=card.querySelector('[data-auth-glass-submit]');"+
+    "const face=getComputedStyle(card);"+
+    "return {mode:card.closest('.auth3-root').classList.contains('dark')?'dark':'light',"+
+    "background:face.backgroundColor,blur:face.backdropFilter,"+
+    "transform:face.transform,ink:getComputedStyle(input).color,"+
+    "actionInk:getComputedStyle(primary).color,"+
+    "cardHover:getComputedStyle(card,'::after').content,"+
+    "gpu:document.body.dataset.gpuScene,"+
+    "audit:window.__dashboardWebGPU?.authGlass??null};})()";
   const darkGlass=await evaluate(material());
   assert.equal(darkGlass.mode,"dark");
-  assert.equal(darkGlass.blur,"blur(8px)",
-    "Clear card must sample the actual live backdrop, like the square fallback");
-  assert.match(darkGlass.face,/linear-gradient/,
-    "Card surface must be a neutral translucent face, not an opaque box");
-  assert.ok(darkGlass.input!==darkGlass.primary &&
-    darkGlass.input!==darkGlass.provider,
-    "Tinted glass inputs and actions must have distinct readable roles");
-  // Verify the native browser pointer actually moves the route-owned glint;
-  // no image capture and no GPU wallpaper re-creation.
+  assert.equal(darkGlass.ink,"rgb(255, 255, 255)",
+    "Original dark mode: neutral dark inputs and white text");
+  assert.notEqual(darkGlass.actionInk,darkGlass.ink,
+    "Original dark mode: neutral white primary action with dark text");
+  assert.equal(darkGlass.cardHover,"none",
+    "No extra CSS hover spotlight; use the squares' shared GPU hover");
+  if(darkGlass.gpu==="ready"){
+    assert.equal(darkGlass.background,"rgba(0, 0, 0, 0)",
+      "WebGPU glass must be visible through a transparent DOM card");
+    assert.equal(darkGlass.blur,"none",
+      "No second CSS backdrop filter over the exact square shader");
+    assert.equal(darkGlass.audit?.renderer,"shared-webgpu-glassPipeline");
+    assert.ok(darkGlass.audit?.count>=6,
+      "The same WebGPU material renders the card, inputs and buttons");
+    assert.equal(darkGlass.audit?.cardTint,"none");
+    assert.equal(darkGlass.audit?.scheme,"dark");
+    assert.equal(darkGlass.audit?.neutralControlTints,"black / white primary");
+  }
   const bounds=await evaluate("(()=>{const r=document.querySelector('[data-auth-glass-card]').getBoundingClientRect();"+
     "return {left:r.left,top:r.top,width:r.width,height:r.height};})()");
   await send("Input.dispatchMouseEvent",{
-    type:"mouseMoved",x:bounds.left+bounds.width*.20,y:bounds.top+32
+    type:"mouseMoved",x:bounds.left+bounds.width*.50,y:bounds.top+20
   });
-  await sleep(160);
-  const firstGlint=await evaluate("(()=>{const c=document.querySelector('[data-auth-glass-card]');"+
-    "return {x:c.style.getPropertyValue('--auth-glass-pointer-x'),"+
-    "opacity:Number(getComputedStyle(c,'::after').opacity)};})()");
-  assert.ok(firstGlint.x.endsWith("%"),
-    "The card's pointer-responsive glass highlight must receive real pointer coordinates");
-  assert.ok(firstGlint.opacity>.1,
-    "Hover must activate the card's specular light");
-  await send("Input.dispatchMouseEvent",{
-    type:"mouseMoved",x:bounds.left+bounds.width*.80,y:bounds.top+40
-  });
-  const secondGlint=await evaluate("document.querySelector('[data-auth-glass-card]')"+
-    ".style.getPropertyValue('--auth-glass-pointer-x')");
-  assert.ok(Number.parseFloat(secondGlint)>Number.parseFloat(firstGlint.x)+40,
-    "Specular hotspot must follow pointer travel, as on the glass tiles");
-  // Dark/light changes control tint and ink, NOT the clear outer face.
+  await sleep(210);
+  const hoverGlass=await evaluate(material());
+  assert.equal(hoverGlass.transform,darkGlass.transform,
+    "Card hover must not cause a scaled transform");
+  assert.equal(hoverGlass.cardHover,"none",
+    "Card hover must use the SAME GPU spring, not a CSS glow");
+  if(darkGlass.gpu==="ready"){
+    await until("window.__dashboardWebGPU?.authGlass?.hovered===true",30,40);
+    const state=await evaluate("({focus:window.__dashboardWebGPU.focusedTile,"+
+      "squareCount:window.__dashboardWebGPU.tiles})");
+    assert.ok(state.focus>=state.squareCount,
+      "Hover targets route glass panes within the shared tile interaction controller");
+  }
+  // Toggling the site mode only changes the existing neutral tint presets
+  // and the original form text palette, never the untinted card tint name.
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='light'&&"+
     "!!document.querySelector('.auth3-root:not(.dark)')",50);
-  // Glass control tints crossfade for 180ms. Compare their fully settled
-  // appearance instead of the first style flush after React updates mode.
-  await sleep(260);
+  await sleep(100);
   const lightGlass=await evaluate(material());
-  assert.equal(lightGlass.face,darkGlass.face,
-    "Dark and light modes must have the identical untinted card face");
-  assert.equal(lightGlass.blur,darkGlass.blur);
-  for(const field of ["input","primary","provider","inputInk","placeholder"]){
-    assert.notEqual(lightGlass[field],darkGlass[field],
-      "Mode toggle must change the tinted control "+field);
+  assert.equal(lightGlass.mode,"light");
+  assert.notEqual(lightGlass.ink,darkGlass.ink,
+    "Original light mode must restore dark field text");
+  assert.equal(lightGlass.actionInk,"rgb(255, 255, 255)",
+    "Original light mode must restore the dark primary action / white text");
+  if(lightGlass.gpu==="ready"){
+    await until("window.__dashboardWebGPU?.authGlass?.scheme==='light'",30);
+    const audit=await evaluate("window.__dashboardWebGPU.authGlass");
+    assert.equal(audit.cardTint,"none");
+    assert.equal(audit.neutralControlTints,"white / black primary");
   }
   const focused=await evaluate("(()=>{const i=document.querySelector('[data-auth-glass-input]');"+
     "i.focus();return {focused:document.activeElement===i,"+
-    "outline:getComputedStyle(i).outlineWidth,bg:getComputedStyle(i).backgroundColor};})()");
+    "outline:getComputedStyle(i).outlineWidth};})()");
   assert.equal(focused.focused,true);
   assert.ok(Number.parseFloat(focused.outline)>=2,
-    "Focused tinted inputs retain an accessible ring");
+    "Focused neutral-glass inputs retain an accessible ring");
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='dark'&&"+
     "!!document.querySelector('.auth3-root.dark')",50);

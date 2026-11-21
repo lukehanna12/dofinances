@@ -131,18 +131,6 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
     setError("");setNotice("");setPassword("");setConfirmPassword("");setChallenge("");setCode("");
   }
 
-  // The card follows the same pointer-highlight concept as the squares.
-  // Never alter its Motion transform: the shell owns the background,
-  // and this route owns only the card and its entry/exit animation.
-  function moveGlassLight(event){
-    const card=event.currentTarget,rect=card.getBoundingClientRect();
-    if(!rect.width||!rect.height)return;
-    const x=Math.max(0,Math.min(100,(event.clientX-rect.left)*100/rect.width));
-    const y=Math.max(0,Math.min(100,(event.clientY-rect.top)*100/rect.height));
-    card.style.setProperty("--auth-glass-pointer-x",x.toFixed(2)+"%");
-    card.style.setProperty("--auth-glass-pointer-y",y.toFixed(2)+"%");
-  }
-
   return (
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
       <div data-auth-stage className="min-h-screen w-full relative flex items-center justify-center p-6">
@@ -152,11 +140,10 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
             animate={exiting ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             onAnimationComplete={() => { if(exiting) onExitComplete(); }}
-            onPointerMove={moveGlassLight}
             data-auth-glass-card
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
           >
-            <a href="/" className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage"
+            <a href="/" data-auth-glass-provider className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage"
               onClick={event=>{
                 if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||
                   event.shiftKey||event.altKey)return;

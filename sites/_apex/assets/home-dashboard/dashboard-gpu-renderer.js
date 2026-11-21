@@ -20,7 +20,7 @@
 import "./dashboard-mosaic.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
-import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
+import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
@@ -51,6 +51,28 @@ async function waitForVisibleHome(){
 
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
+// Route-owned sign-in panes are drawn as extra instances of this SAME
+// Oracle-derived shader, tint film and hover/press spring pipeline.
+const AUTH_PANE_CAPACITY=10;
+function authPaneElements(){
+  const card=document.querySelector(".auth3-root [data-auth-glass-card]");
+  if(!card)return [];
+  return [card,...card.querySelectorAll(
+    '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
+  )].slice(0,AUTH_PANE_CAPACITY);
+}
+const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
+  "light":"dark";
+function authPaneTint(node,scheme){
+  if(node.hasAttribute("data-auth-glass-card"))
+    return tintParameters("none",undefined,scheme);
+  // Original neutral form palette, never added blue/saturated hues:
+  // white primary + dark controls in dark; black primary + light in light.
+  const primary=node.hasAttribute("data-auth-glass-submit");
+  const name=primary?(scheme==="dark"?"white":"black"):
+    (scheme==="dark"?"black":"white");
+  return tintParameters(name,.99,scheme);
+}
 const audit={
   path:"webgpu",status:"initializing",oracleTarget:"25F80/M2/G14G",
   scene:"GPU-owned centered photograph + 12% authored veil",
@@ -388,7 +410,7 @@ async function initialize(){
   });
   let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,backgroundGroup=null,offscreenFrame=null,
-    tileCount=0,physicalWidth=0,physicalHeight=0,
+    tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
@@ -413,8 +435,11 @@ async function initialize(){
     device.queue.writeBuffer(globalsBuffer,0,uniform);
   }
   function syncTileTints(force=false){
-    const value=tint.state;
-    const key=value.name+"|"+value.opacity+"|"+value.scheme+"|"+tileCount;
+    const value=tint.state,panes=authPaneElements(),scheme=authGlassScheme();
+    const roles=panes.map(node=>node.hasAttribute("data-auth-glass-card")?
+      "card":node.hasAttribute("data-auth-glass-submit")?"submit":"neutral");
+    const key=value.name+"|"+value.opacity+"|"+value.scheme+"|"+tileCount+
+      "|"+scheme+"|"+roles.join(",");
     if(!force&&key===lastTintKey)return;
     lastTintKey=key;
     const counts={};
@@ -424,10 +449,49 @@ async function initialize(){
       tintData[at+2]=m.rgb[2];tintData[at+3]=m.active?m.opacity:0;
       counts[m.name]=(counts[m.name]||0)+1;
     }
+    for(let i=0;i<AUTH_PANE_CAPACITY;i++){
+      const pane=panes[i],at=4*(tileCount+i);
+      const m=pane?authPaneTint(pane,scheme):tintParameters("none",0,scheme);
+      tintData[at]=m.rgb[0];tintData[at+1]=m.rgb[1];
+      tintData[at+2]=m.rgb[2];tintData[at+3]=m.active?m.opacity:0;
+    }
     if(tintData.length)device.queue.writeBuffer(tintTileBuffer,0,tintData);
     audit.tintCounts=counts;
     audit.tintShowcase=value.name==="showcase"?
       {hues:[...SHOWCASE_TINTS],opacityTiers:[...SHOWCASE_OPACITIES]}:null;
+  }
+  function paintAuthPanes(){
+    const panes=authPaneElements(),scheme=authGlassScheme();
+    const card=panes[0];
+    const opacity=card?Math.max(0,Math.min(1,
+      Number.parseFloat(getComputedStyle(card).opacity)||0)):0;
+    const roles=[];
+    // Read the live Framer Motion rect, not an image capture. The shader
+    // handles geometry optics, tint and interaction for all instances.
+    for(let i=0;i<AUTH_PANE_CAPACITY;i++){
+      const slot=tileCount+i,p=slot*TILE_FLOATS,node=panes[i];
+      if(!node){
+        tileData.fill(0,p,p+TILE_FLOATS);
+        tileData[p]=-100000;tileData[p+1]=-100000;
+        tileData[p+2]=1;tileData[p+3]=1;
+        tileData[p+5]=-2;tileData[p+7]=4;
+        cornerInert[slot]=1;
+        continue;
+      }
+      tileData.set(makeLayoutData(node,dpr,sceneTop),p);
+      // -2 dark / -3 light selects the identical shader's auth-pane path.
+      tileData[p+5]=scheme==="dark"?-2:-3;
+      tileData[p+18]=opacity;tileData[p+19]=0;
+      cornerInert[slot]=opacity<.025?1:0;
+      roles.push(node.hasAttribute("data-auth-glass-card")?
+        "card":node.hasAttribute("data-auth-glass-submit")?"submit":"control");
+    }
+    interaction.retargetRects(tileData,cornerInert);
+    audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
+      roles,scheme,cardTint:"none",
+      neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
+      hovered:interaction.focusedTile>=tileCount,opacity};
+    return Boolean(card&&opacity<.999);
   }
   function rebuild(){
     if(stopped)return;
@@ -506,17 +570,24 @@ async function initialize(){
     if(trackRows.some(row=>row===undefined||row<0||row>6)||
         trackColumns.some(column=>column===undefined||column<0||column>10))
       throw new Error("Invalid seven-row, eleven-column moving glass geometry");
-    const data=makeTileFloatData(all,dpr,sceneTop);
+    const source=makeTileFloatData(all,dpr,sceneTop);
+    instanceCount=all.length+AUTH_PANE_CAPACITY;
+    const data=new Float32Array(instanceCount*TILE_FLOATS);
+    data.set(source);
     baseTileX=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS]));
     baseTileY=new Float32Array(all.map((_,i)=>data[i*TILE_FLOATS+1]));
     trackOpacity=new Float32Array(all.length);
     dismissProgress=new Float32Array(all.length);
-    cornerInert=new Uint8Array(all.length);
+    cornerInert=new Uint8Array(instanceCount);
+    cornerInert.fill(1,all.length);
     tileCount=all.length;audit.tiles=tileCount;
-    interaction.configure(all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))));
+    interaction.configure([
+      ...all.map((_,i)=>Array.from(data.subarray(i*TILE_FLOATS,i*TILE_FLOATS+4))),
+      ...Array.from({length:AUTH_PANE_CAPACITY},()=>[-100000,-100000,1,1])
+    ]);
     interaction.writeTo(data);
     tileData=data;
-    tintData=new Float32Array(tileCount*4);
+    tintData=new Float32Array(instanceCount*4);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -651,14 +722,15 @@ async function initialize(){
       if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     }
     writeUniform();
-    syncTileTints();
     if(scenePending)buildScene();
     const now=performance.now();
     const dt=Math.max(0,(now-lastFrameTime)/1000);
     lastFrameTime=now;
     if(tileCount)paintTrack(dt);
+    const authAnimating=paintAuthPanes();
+    syncTileTints();
     const animating=interaction.advance(dt,reducedMotion.matches);
-    if(tileCount){
+    if(instanceCount){
       interaction.writeTo(tileData);
       // motion.z is the independent end-of-track transparency; the
       // interaction adapter owns only hover/press, not track opacity.
@@ -676,9 +748,9 @@ async function initialize(){
     });
     pass.setPipeline(copyPipeline);pass.setBindGroup(0,copyGroup);
     pass.draw(3);
-    if(tileCount){
+    if(instanceCount){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
-      pass.draw(6,tileCount);
+      pass.draw(6,instanceCount);
     }
     pass.end();
     device.queue.submit([encoder.finish()]);
@@ -686,7 +758,7 @@ async function initialize(){
     audit.focusedTile=interaction.focusedTile;
     audit.pressed=interaction.isPressed;
     audit.tint=tint.state;
-    return animating;
+    return animating||authAnimating;
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
@@ -795,6 +867,14 @@ async function initialize(){
   // then submits a matching GPU frame before returning to the browser.
   // An older GPU canvas is never laid out at the new CSS size for a paint.
   // GPU completion is recorded for telemetry, never used as a color swap.
+  // React mounts/unmounts and animates route panes independently.
+  // Wake this same GPU frame loop without ever capturing DOM pixels.
+  const routeOutlet=document.getElementById("public-route-content");
+  const authObserver=routeOutlet?new MutationObserver(()=>requestRender()):null;
+  if(routeOutlet)authObserver.observe(routeOutlet,{
+    childList:true,subtree:true,attributes:true,
+    attributeFilter:["style","class","disabled"]
+  });
   let resizeGeneration=0;
   const layoutKey=()=>{
     const viewport=actualSceneViewport(),b=root.getBoundingClientRect();
@@ -837,6 +917,7 @@ async function initialize(){
   const resizeObserver=new ResizeObserver(onSize);
   resizeObserver.observe(root);
   device.lost.then(reason=>{
+    authObserver?.disconnect();
     resizeObserver.disconnect();
     fallback("GPU device lost: "+reason.message);
   });

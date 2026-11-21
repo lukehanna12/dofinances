@@ -137,231 +137,91 @@
   .auth3-back-link{transition:none}
 }
 
-/* The /login card is an independent, untinted CLEAR liquid-glass surface,
- * following the occupied mosaic tiles' fallback face, edge and 8px optical
- * blur. The squares' moving WebGPU shader cannot sample a DOM form; this is
- * a live backdrop-filter material, never a frozen image or a second photo.
+/* Auth panes use the SAME WebGPU draw pipeline, AIR SDF/refraction
+ * calculations, per-pane neutral tint parameters, and hover/press springs
+ * as the homepage mosaic. Never synthesize a separate enlarged hover glow.
+ * The CSS below exists only as a fallback when WebGPU is unavailable, or
+ * as chrome for accessible focus and native controls.
  *
- * Only descendant controls are mode-tinted. The card's actual material is
- * intentionally identical across dark/light mode; on a dark-glass face the
- * text stays light for contrast. Route Motion still controls the card matrix.
+ * Dark: original neutral-900 form fields / white primary action.
+ * Light: original neutral-50 fields / dark primary action.
+ * Neither mode adds a hue to the card itself.
  */
 .auth3-root [data-auth-glass-card]{
-  --auth-glass-pointer-x:50%;
-  --auth-glass-pointer-y:50%;
-  --auth-glass-ink:#f7f9fd;
-  --auth-glass-muted:rgba(245,249,255,.82);
-  --auth-glass-subtle:rgba(244,248,255,.68);
-  --auth-control-background:rgba(29,42,56,.74);
-  --auth-control-hover:rgba(45,62,79,.83);
-  --auth-control-border:rgba(210,228,242,.31);
-  --auth-control-ink:#f8fbff;
-  --auth-control-placeholder:rgba(238,244,252,.72);
-  --auth-control-focus:#b0ddff;
-  --auth-action-background:rgba(77,116,155,.89);
-  --auth-action-hover:rgba(99,145,190,.94);
-  --auth-action-ink:#fff;
-  --auth-provider-background:rgba(37,52,68,.76);
-  --auth-provider-hover:rgba(55,73,91,.88);
-  --auth-provider-ink:#f8fbff;
-
   position:relative;
   isolation:isolate;
-  overflow:hidden;
-  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.055));
-  border:1px solid rgba(247,250,252,.34);
+  background:rgba(22,23,25,.13);
+  border:1px solid rgba(255,255,255,.21);
   -webkit-backdrop-filter:blur(8px);
   backdrop-filter:blur(8px);
-  box-shadow:0 10px 22px rgba(0,0,0,.13),
-    0 1px 0 rgba(255,255,255,.22),
-    inset 0 1px 0 rgba(255,255,255,.44),
-    inset 0 -1px 0 rgba(18,22,25,.15);
-  color:var(--auth-glass-ink);
-  transition:border-color 280ms cubic-bezier(.16,1,.3,1),
-    box-shadow 280ms cubic-bezier(.16,1,.3,1);
+  box-shadow:inset -1px 0 rgba(255,255,255,.10),
+    10px 0 27px rgba(0,0,0,.19),
+    0 0 1px rgba(255,255,255,.12);
 }
-.auth3-root [data-auth-glass-card]::before,
-.auth3-root [data-auth-glass-card]::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  border-radius:inherit;
-  pointer-events:none;
-}
-.auth3-root [data-auth-glass-card]::before{
-  background:
-    linear-gradient(152deg,rgba(255,255,255,.31) 0%,rgba(255,255,255,.035) 22%,transparent 46%),
-    linear-gradient(345deg,rgba(12,17,21,.12),transparent 29%);
-  box-shadow:inset 1px 1px 0 rgba(255,255,255,.23),
-    inset -1px -1px 0 rgba(12,14,18,.10);
-}
-.auth3-root [data-auth-glass-card]::after{
-  background:radial-gradient(circle 225px at var(--auth-glass-pointer-x) var(--auth-glass-pointer-y),
-    rgba(255,255,255,.31),rgba(255,255,255,.08) 42%,transparent 77%);
-  opacity:0;
-  transition:opacity 300ms cubic-bezier(.16,1,.3,1);
-}
-.auth3-root [data-auth-glass-card] > *{
-  position:relative;
-  z-index:1;
-}
-.auth3-root [data-auth-glass-card]:hover,
-.auth3-root [data-auth-glass-card]:focus-within{
-  border-color:rgba(247,250,252,.53);
-  box-shadow:0 14px 35px rgba(0,0,0,.22),
-    0 1px 0 rgba(255,255,255,.24),
-    inset 0 1px 0 rgba(255,255,255,.57),
-    inset 0 -1px 0 rgba(18,22,25,.15);
-}
-.auth3-root [data-auth-glass-card]:hover::after,
-.auth3-root [data-auth-glass-card]:focus-within::after{
-  opacity:1;
-}
-/* This face is always dark-style clear glass. Do not tint it for light mode. */
 .auth3-root:not(.dark) [data-auth-glass-card]{
-  --auth-control-background:rgba(229,240,250,.85);
-  --auth-control-hover:rgba(246,250,255,.96);
-  --auth-control-border:rgba(245,249,255,.64);
-  --auth-control-ink:#1a2a39;
-  --auth-control-placeholder:rgba(38,60,79,.71);
-  --auth-control-focus:#d7efff;
-  --auth-action-background:rgba(190,224,248,.94);
-  --auth-action-hover:rgba(218,237,253,.98);
-  --auth-action-ink:#132c42;
-  --auth-provider-background:rgba(218,233,246,.84);
-  --auth-provider-hover:rgba(241,247,254,.97);
-  --auth-provider-ink:#243d51;
+  background:rgba(248,249,251,.68);
+  border-color:rgba(255,255,255,.38);
 }
-/* Keep captions, text links and all form variants readable on a transparent
- * dark-glass face in both modes. Mode controls the *tint*, not the surface. */
-.auth3-root [data-auth-glass-card] > h1{color:var(--auth-glass-ink)}
-.auth3-root [data-auth-glass-card] p{color:var(--auth-glass-muted)}
-.auth3-root [data-auth-glass-card] p.text-xs,
-.auth3-root [data-auth-glass-card] .flex.items-center.gap-4 span{
-  color:var(--auth-glass-subtle);
-}
-.auth3-root [data-auth-glass-card] p a{
-  color:var(--auth-glass-ink);
-  text-decoration:none;
-  text-shadow:0 1px 5px rgba(0,0,0,.2);
-}
-.auth3-root [data-auth-glass-card] p a:hover{color:#fff}
-.auth3-root [data-auth-glass-card] [role="alert"]{color:#ffd1d1}
-.auth3-root [data-auth-glass-card] [role="status"]{color:#c2f6da}
-.auth3-root [data-auth-glass-card] .h-px{
-  background:rgba(246,250,254,.25);
-}
-
-/* Tinted glass controls, independent from the clear untinted outer face.
- * All controls share the same hue family, with distinct light/dark weights. */
 .auth3-root [data-auth-glass-input],
 .auth3-root [data-auth-glass-submit],
-.auth3-root [data-auth-glass-provider],
-.auth3-root [data-auth-glass-card] .auth3-back-link{
-  -webkit-backdrop-filter:blur(9px);
-  backdrop-filter:blur(9px);
-  border:1px solid var(--auth-control-border);
-  transition:background-color 180ms ease,border-color 180ms ease,
-    box-shadow 220ms cubic-bezier(.16,1,.3,1),color 180ms ease;
-}
-.auth3-root [data-auth-glass-input]{
-  background:var(--auth-control-background);
-  color:var(--auth-control-ink);
-  caret-color:var(--auth-control-ink);
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.12),
-    0 2px 8px rgba(0,0,0,.07);
-}
-.auth3-root [data-auth-glass-input]::placeholder{
-  color:var(--auth-control-placeholder);
-  opacity:1;
-}
-.auth3-root [data-auth-glass-input]:hover{
-  background:var(--auth-control-hover);
-  border-color:var(--auth-control-focus);
-}
-.auth3-root [data-auth-glass-input]:focus{
-  background:var(--auth-control-hover);
-  border-color:var(--auth-control-focus);
-  outline:2px solid var(--auth-control-focus);
-  outline-offset:1px;
-  box-shadow:0 0 0 4px rgba(153,205,243,.19),
-    inset 0 1px rgba(255,255,255,.17);
-}
-.auth3-root [data-auth-glass-input]:autofill{
-  -webkit-text-fill-color:var(--auth-control-ink);
-  box-shadow:inset 0 0 0 80px var(--auth-control-background);
-}
-.auth3-root [data-auth-glass-submit]{
-  background:var(--auth-action-background);
-  color:var(--auth-action-ink);
-  border-color:var(--auth-control-border);
-  box-shadow:inset 0 1px rgba(255,255,255,.20),0 3px 12px rgba(0,0,0,.13);
-}
-.auth3-root [data-auth-glass-submit]:hover:not(:disabled){
-  background:var(--auth-action-hover);
-  box-shadow:inset 0 1px rgba(255,255,255,.34),0 5px 16px rgba(0,0,0,.16);
-}
-.auth3-root [data-auth-glass-submit]:active:not(:disabled){
-  box-shadow:inset 0 2px 7px rgba(0,0,0,.21);
-}
-.auth3-root [data-auth-glass-submit]:disabled{opacity:.58;cursor:wait}
 .auth3-root [data-auth-glass-provider]{
-  background:var(--auth-provider-background);
-  color:var(--auth-provider-ink);
-  border-color:var(--auth-control-border);
-  box-shadow:inset 0 1px rgba(255,255,255,.12);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+  box-shadow:inset 0 1px rgba(255,255,255,.1);
 }
-.auth3-root [data-auth-glass-provider]:hover:not(:disabled){
-  background:var(--auth-provider-hover);
-  color:var(--auth-provider-ink);
-  box-shadow:inset 0 1px rgba(255,255,255,.28),0 3px 12px rgba(0,0,0,.1);
+.auth3-root.dark [data-auth-glass-input],
+.auth3-root.dark [data-auth-glass-provider]{
+  background:rgba(23,23,23,.82);
 }
-.auth3-root [data-auth-glass-provider]:disabled{
-  opacity:.63;
-  cursor:not-allowed;
+.auth3-root:not(.dark) [data-auth-glass-input],
+.auth3-root:not(.dark) [data-auth-glass-provider]{
+  background:rgba(250,250,250,.84);
 }
-.auth3-root [data-auth-glass-card] .auth3-back-link{
-  background:var(--auth-provider-background);
-  color:var(--auth-provider-ink);
+.auth3-root.dark [data-auth-glass-submit]{
+  background:rgba(255,255,255,.92);
+  color:#171717;
 }
-.auth3-root [data-auth-glass-card] .auth3-back-link:hover{
-  background:var(--auth-provider-hover);
-  color:var(--auth-provider-ink);
+.auth3-root:not(.dark) [data-auth-glass-submit]{
+  background:rgba(23,23,23,.92);
+  color:#fff;
 }
-.auth3-root [data-auth-glass-card] :is([data-auth-glass-submit],[data-auth-glass-provider],.auth3-back-link):focus-visible{
-  outline:2px solid var(--auth-control-focus);
-  outline-offset:3px;
+/* The active renderer paints these very elements from their live DOM
+ * bounds in the shared glassPipeline. Keep only real text and focus rings
+ * above the GPU, with NO CSS refraction, film, glint, shadow or scaling. */
+body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card],
+body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-input],
+body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-submit],
+body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-provider]{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
 }
-@media(prefers-reduced-transparency:reduce){
+body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card]{
+  overflow:visible;
+}
+/* The border is GPU SDF-owned, but keyboard focus must remain perceivable.
+ * No bright spring scaling, and no independent hover hotspot. */
+.auth3-root [data-auth-glass-input]:focus-visible,
+.auth3-root [data-auth-glass-submit]:focus-visible,
+.auth3-root [data-auth-glass-provider]:focus-visible{
+  outline:2px solid currentColor;
+  outline-offset:2px;
+}
+@media(prefers-reduced-transparency:reduce),(forced-colors:active){
   .auth3-root [data-auth-glass-card]{
-    background:rgba(31,35,41,.97);
-    -webkit-backdrop-filter:none;backdrop-filter:none;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    background:Canvas!important;
+    color:CanvasText!important;
+    border-color:CanvasText!important;
   }
-  .auth3-root [data-auth-glass-input],
-  .auth3-root [data-auth-glass-submit],
-  .auth3-root [data-auth-glass-provider]{
-    -webkit-backdrop-filter:none;backdrop-filter:none;
+  .auth3-root :is([data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]){
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    background:ButtonFace!important;
+    color:ButtonText!important;
+    border-color:ButtonText!important;
   }
-}
-@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){
-  .auth3-root [data-auth-glass-card]{background:rgba(28,34,41,.88)}
-}
-@media(forced-colors:active){
-  .auth3-root [data-auth-glass-card]{
-    background:Canvas;color:CanvasText;border:1px solid CanvasText;
-    -webkit-backdrop-filter:none;backdrop-filter:none;
-  }
-  .auth3-root [data-auth-glass-card]::before,
-  .auth3-root [data-auth-glass-card]::after{display:none}
-  .auth3-root [data-auth-glass-card] :is(input,button,a){
-    color:ButtonText;background:ButtonFace;border-color:ButtonText;
-  }
-}
-@media(prefers-reduced-motion:reduce){
-  .auth3-root [data-auth-glass-card],
-  .auth3-root [data-auth-glass-card]::after,
-  .auth3-root [data-auth-glass-input],
-  .auth3-root [data-auth-glass-submit],
-  .auth3-root [data-auth-glass-provider]{transition:none!important}
 }
