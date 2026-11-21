@@ -189,11 +189,11 @@
   --auth-control-tint:rgba(255,255,255,.60);
 }
 .auth3-root.dark [data-auth-glass-submit]{
-  --auth-control-tint:rgba(255,255,255,.60);
+  --auth-control-tint:rgba(255,255,255,.82);
   color:#171717;
 }
 .auth3-root:not(.dark) [data-auth-glass-submit]{
-  --auth-control-tint:rgba(0,0,0,.60);
+  --auth-control-tint:rgba(0,0,0,.82);
   color:#fff;
 }
 /* Preserve the original Auth-3 neutral ink colors even when a browser
@@ -212,6 +212,27 @@
 }
 .auth3-root:not(.dark) [data-auth-glass-submit]{
   color:#fff!important;
+}
+/* Darker, one-pixel dividers around "Or"; only the form divider is
+ * changed, not the dashboard mosaic or the rest of the page chrome. */
+.auth3-root.dark .auth3-or-rule{
+  background-color:rgba(15,18,22,.78);
+}
+.auth3-root:not(.dark) .auth3-or-rule{
+  background-color:rgba(27,31,34,.48);
+}
+/* The brand SVG paths retain their hues and share the translucent glass
+ * treatment. The provider names stay as accessible text on each button. */
+.auth3-root .auth3-provider-icon{
+  display:block;
+  width:20px;
+  height:20px;
+  flex:0 0 20px;
+  opacity:.82;
+  pointer-events:none;
+}
+.auth3-root:not(.dark) .auth3-provider-icon{
+  opacity:.86;
 }
 /* The active renderer paints these exact elements from their live DOM
  * bounds in the shared glassPipeline on a separate transparent canvas

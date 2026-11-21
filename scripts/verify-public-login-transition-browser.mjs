@@ -190,6 +190,22 @@ try{
     "gpu:document.body.dataset.gpuScene,"+
     "authGpu:document.body.dataset.authGpuScene,"+
     "audit:window.__dashboardWebGPU?.authGlass??null};})()";
+  // Provider icons and divider are real route-owned DOM presentation, not
+  // replacements for glass GPU pixels or the original dark/light palettes.
+  const accents=()=> "(()=>{"+
+    "const rules=[...document.querySelectorAll('.auth3-or-rule')];"+
+    "const logos=[...document.querySelectorAll('.auth3-provider-icon')];"+
+    "return {ruleCount:rules.length,rule:rules[0]?getComputedStyle(rules[0]).backgroundColor:null,"+
+    "iconCount:logos.length,logoOpacity:logos.map(e=>getComputedStyle(e).opacity),"+
+    "googleColors:[...document.querySelectorAll('svg.auth3-provider-icon[viewBox=\\\"0 0 48 48\\\"] path')].map(p=>p.getAttribute('fill')),"+
+    "githubGradient:!!document.querySelector('#auth3-github-mark-gradient')};})()";
+  const darkAccent=await evaluate(accents());
+  assert.equal(darkAccent.ruleCount,2);
+  assert.equal(darkAccent.rule,"rgba(15, 18, 22, 0.78)");
+  assert.equal(darkAccent.iconCount,2);
+  assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
+  assert.deepEqual(darkAccent.googleColors,["#EA4335","#4285F4","#FBBC05","#34A853"]);
+  assert.equal(darkAccent.githubGradient,true);
   const darkGlass=await evaluate(material());
   assert.equal(darkGlass.mode,"dark");
   assert.equal(darkGlass.ink,"rgb(255, 255, 255)",
@@ -308,6 +324,9 @@ try{
   // sleeping 290ms guarantees visual style settlement.
   await until("getComputedStyle(document.querySelector('[data-auth-glass-input]')).color==='rgb(23, 23, 23)'",100,60);
   await until("getComputedStyle(document.querySelector('[data-auth-glass-submit]')).color==='rgb(255, 255, 255)'",100,60);
+  const lightAccent=await evaluate(accents());
+  assert.equal(lightAccent.rule,"rgba(27, 31, 34, 0.48)");
+  assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
   const lightGlass=await evaluate(material());
   assert.equal(lightGlass.mode,"light");
   assert.notEqual(lightGlass.ink,darkGlass.ink,
@@ -331,7 +350,7 @@ try{
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='dark'&&"+
     "!!document.querySelector('.auth3-root.dark')",50);
-  // Clicking the card-owned back arrow reverses the card's 600ms Motion
+  // Clicking the card-owned back arrow uses a 420ms compositor-friendly exit.
   // entry first. The route remains active until that exit finishes.
   await evaluate("window.__trackResumeEvents=0;"+
     "addEventListener('dofinances:home-track-resume',()=>{"+

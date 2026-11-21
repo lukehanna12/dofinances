@@ -7,6 +7,7 @@
  */
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { AuthProviderIcon } from "./AuthProviderIcon.jsx";
 
 export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
   const [email, setEmail] = useState("");
@@ -56,8 +57,8 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
       .then(data=>{if(data?.federation)setFederation(data.federation);}).catch(()=>{});
   },[]);
   const signInProviders=[
-    {key:"google",label:"Google",mark:"G"},
-    {key:"github",label:"GitHub",mark:"GH"}
+    {key:"google",label:"Google"},
+    {key:"github",label:"GitHub"}
   ];
   const inputClasses = "w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200";
   const [theme, setTheme] = useState(()=>{
@@ -138,7 +139,12 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={exiting ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            // Keep the original 600ms entrance; make the reverse transition
+            // more responsive without altering the homepage tile motion.
+            transition={exiting
+              ? { duration: 0.42, ease: [0.2, 0, 0.2, 1] }
+              : { duration: 0.6 }}
+            style={{ willChange: exiting ? "transform, opacity" : "auto" }}
             onAnimationComplete={() => { if(exiting) onExitComplete(); }}
             data-auth-glass-card
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
@@ -225,16 +231,16 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
             </form>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700" />
+              <div className="auth3-or-rule flex-1 h-px" />
               <span className="text-sm text-neutral-500 dark:text-neutral-500">Or</span>
-              <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700" />
+              <div className="auth3-or-rule flex-1 h-px" />
             </div>
 
             <div className="space-y-3 mb-4">
               {signInProviders.map(provider=>{
                 const available=!!federation[provider.key]?.enabled;
                 const common="w-full tracking-tight px-6 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium transition-colors duration-200 flex items-center justify-center gap-3 text-sm";
-                const contents=<><span aria-hidden="true" className="w-5 font-semibold text-center">{provider.mark}</span>{available?"Continue with "+provider.label:provider.label+" (setup required)"}</>;
+                const contents=<><AuthProviderIcon provider={provider.key}/>{available?"Continue with "+provider.label:provider.label+" (setup required)"}</>;
                 return available
                   ? <a key={provider.key} href={"/api/auth/oauth/start?provider="+provider.key+"&intent=signin"}
                        data-auth-glass-provider

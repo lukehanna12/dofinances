@@ -241,14 +241,12 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
   assert.match(shader,/let darkFace=state\.tintMeta\.y>0\.5;/,
     "Card and squares use one material face, not independent UI-mode tones");
   assert.doesNotMatch(shader,/let darkFace=select\(/);
-  assert.match(renderer,/tileData\[p\+5\]=-2;/);
   assert.match(renderer,/if\(tileCount\)tileData\[p\+6\]=tileData\[6\];/,
     "Every sign-in pane reuses the original square material's blur/LOD word");
   assert.match(shader,/let d=select\(min\(dimensions\.x,dimensions\.y\),\s*min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\),authPane\);/,
     "The same square-size optical envelope drives all panes and hover radii");
   assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
-  assert.match(shader,/let filmStrength=select\(0\.25,0\.60,authPane\);/,
     "The square tint remains unmodified; the controls get a stronger neutral film");
   assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
   assert.match(renderer,/faceScheme:tint\.state\.scheme/);
@@ -266,7 +264,6 @@ test("the sign-in card remains the sole centered Motion panel", async () => {
   assert.match(source, /className="relative z-10 w-full max-w-\[1400px\] mx-auto flex items-center justify-center gap-12"/);
   assert.match(source, /className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"/);
   assert.match(source, /initial=\{\{ opacity: 0, x: -50 \}\}/);
-  assert.match(source, /transition=\{\{ duration: 0\.6 \}\}/);
   assert.equal((source.match(/<motion\.div/g) || []).length, 1);
   assert.doesNotMatch(source, /A clearer view of what comes next\.|className="hidden lg:block max-w-sm"/);
   assert.doesNotMatch(source, /initial=\{\{ opacity: 0, x: 50 \}\}/);
@@ -381,4 +378,46 @@ test("original Auth-3 text selection has exact inverted light/dark colors", asyn
   assert.ok(jsx.includes('window.localStorage.getItem("dofinances-theme")'));
   // No global ::selection override. Keep the feature within Studio Auth-3.
   assert.doesNotMatch(css, /\n::selection\s*\{/);
+});
+
+
+test("sign-in divider, primary tint, provider SVGs and short exit remain scoped",async()=>{
+  const [jsx,css,marks,renderer,shader,privateRenderer,privateShader]=await Promise.all([
+    load("../src/components/Auth3.jsx"),
+    load("../src/styles.css"),
+    load("../src/components/AuthProviderIcon.jsx"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/app/assets/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl")
+  ]);
+  assert.equal((jsx.match(/className="auth3-or-rule flex-1 h-px"/g)||[]).length,2);
+  assert.ok(css.includes("background-color:rgba(15,18,22,.78)"));
+  assert.ok(css.includes("background-color:rgba(27,31,34,.48)"));
+  assert.ok(css.includes(".auth3-root.dark .auth3-or-rule"));
+  assert.ok(css.includes(".auth3-root:not(.dark) .auth3-or-rule"));
+  assert.ok(jsx.includes('import { AuthProviderIcon } from "./AuthProviderIcon.jsx";'));
+  assert.ok(jsx.includes("<AuthProviderIcon provider={provider.key}/>"));
+  assert.doesNotMatch(jsx,/mark:"G"|mark:"GH"|provider\.mark/);
+  assert.equal((marks.match(/<svg\b/g)||[]).length,2);
+  for(const hex of ["EA4335","4285F4","FBBC05","34A853"])
+    assert.ok(marks.includes("#"+hex),"Google logo keeps its colored brand quadrants");
+  assert.ok(marks.includes("auth3-github-mark-gradient"));
+  assert.ok(marks.includes('aria-hidden="true" focusable="false"'));
+  assert.ok(css.includes("opacity:.82"));
+  assert.ok(css.includes("opacity:.86"));
+  assert.ok(css.includes("--auth-control-tint:rgba(255,255,255,.82)"));
+  assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,.82)"));
+  assert.ok(renderer.includes('tileData[p+5]=node.hasAttribute("data-auth-glass-submit")?-4:-2;'));
+  assert.ok(shader.includes("select(0.60,0.82,tile.properties.y == -4.0)"));
+  assert.ok(shader.includes("select(0.25,"));
+  assert.ok(jsx.includes("duration: 0.42"));
+  assert.ok(jsx.includes("duration: 0.6"));
+  assert.ok(jsx.includes('willChange: exiting ? "transform, opacity" : "auto"'));
+  assert.ok(renderer.includes("engine.renderAuthOnly()"));
+  assert.ok(renderer.includes("function renderAuthOnly()"));
+  assert.ok(renderer.includes('label:"Sign-in-only transition frame"'));
+  assert.ok(renderer.includes("audit.authOnlyFrames="));
+  assert.doesNotMatch(privateRenderer,/renderAuthOnly|Sign-in-only transition frame/);
+  assert.doesNotMatch(privateShader,/tile.properties.y == -4.0/);
 });

@@ -97,7 +97,7 @@ const tint=createTintControls(requestRender);
 const reducedMotion=typeof window.matchMedia==="function"
   ? window.matchMedia("(prefers-reduced-motion: reduce)")
   : {matches:false};
-let activePointerId=null,lastFrameTime=performance.now();
+let activePointerId=null,lastFrameTime=performance.now(),lastAuthFrameTime=lastFrameTime;
 let trackSeconds=0,trackRunning=false,lastMotionSubmission=0;
 let dismissStart=document.body.dataset.publicRoute==="leaving"
   ? performance.now()-DISMISS_MS : null;
@@ -115,7 +115,7 @@ window.addEventListener("dofinances:home-dismiss",event=>{
   requestRender();
 });
 window.addEventListener("dofinances:home-track-resume",()=>{
-  // Sent by the shared router before /login starts its 600ms exit Motion.
+  // Sent by the shared router before the sign-in card's shortened exit Motion.
   // A pointer event must never be necessary to restart the RAF scheduler.
   trackResumeRequested=true;
   trackRunning=!reducedMotion.matches;
@@ -138,6 +138,13 @@ function requestRender(){
   raf=requestAnimationFrame(()=>{
     raf=0;
     if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL){
+      // Maintain the original 30fps square track clock, while allowing the
+      // exiting sign-in glass to follow Motion between those heavy full-scene
+      // submissions. This pass never draws/advances a square.
+      if(window.__dofPublicRouter?.state==="exiting"&&
+         document.body.dataset.authGpuScene==="ready"){
+        try{engine.renderAuthOnly()}catch(error){void fallback(error);return;}
+      }
       requestRender();return;
     }
     lastMotionSubmission=performance.now();
@@ -501,7 +508,9 @@ async function initialize(){
       // A negative delay selects the route pane's Motion-owned geometry.
       // Face color MUST remain the squares' material, controlled by the
       // shared tint state rather than the page's unrelated UI color mode.
-      tileData[p+5]=-2;
+      // -4 marks the primary action for a brighter neutral pigment. Both
+      // signs are still route-owned and use the same original glass shader.
+      tileData[p+5]=node.hasAttribute("data-auth-glass-submit")?-4:-2;
       tileData[p+18]=opacity;tileData[p+19]=0;
       cornerInert[slot]=opacity<.025?1:0;
       roles.push(node.hasAttribute("data-auth-glass-card")?
@@ -754,12 +763,14 @@ async function initialize(){
     if(scenePending)buildScene();
     const now=performance.now();
     const dt=Math.max(0,(now-lastFrameTime)/1000);
+    const authDt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastFrameTime=now;
+    lastAuthFrameTime=now;
     if(tileCount)paintTrack(dt);
     const authAnimating=paintAuthPanes();
     syncTileTints();
     const animating=interaction.advance(dt,reducedMotion.matches);
-    const authHoverAnimating=authHover.advance(dt,reducedMotion.matches);
+    const authHoverAnimating=authHover.advance(authDt,reducedMotion.matches);
     if(instanceCount){
       interaction.writeTo(tileData);
       // Override only route-owned pane lanes AFTER the original squares.
@@ -809,13 +820,47 @@ async function initialize(){
     }
     return animating||authHoverAnimating||authAnimating;
   }
+  // An auth-only presentation pass for the card's exit Motion. It leaves
+  // the homepage canvas, square buffers and 30fps square track clock intact.
+  // Only seven auth pane instances are updated, so the card needn't wait for
+  // a full wallpaper copy and 53 square glass draws on every intermediate
+  // Motion frame.
+  function renderAuthOnly(){
+    if(!authContext||!instanceCount||stopped)return false;
+    const now=performance.now();
+    const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
+    lastAuthFrameTime=now;
+    writeUniform();
+    const authAnimating=paintAuthPanes();
+    syncTileTints();
+    const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
+    authHover.writeTo(tileData,tileCount);
+    device.queue.writeBuffer(tileBuffer,0,tileData);
+    const encoder=device.createCommandEncoder({label:"Sign-in-only transition frame"});
+    const pass=encoder.beginRenderPass({
+      colorAttachments:[{view:authContext.getCurrentTexture().createView(),
+        loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
+    });
+    pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
+    pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
+    pass.end();
+    device.queue.submit([encoder.finish()]);
+    audit.frameCount++;
+    audit.authOnlyFrames=(audit.authOnlyFrames||0)+1;
+    if(audit.authGlass){
+      audit.authGlass.cardHover=authHover.snapshot(0);
+      audit.authGlass.controlHover=authHover.activeControl>=1?
+        authHover.snapshot(authHover.activeControl):null;
+    }
+    return authAnimating||hoverAnimating;
+  }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
     scene?.destroy();offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();
   }
   await waitForVisibleHome();
-  engine={rebuild,render,dispose,device};
+  engine={rebuild,render,renderAuthOnly,dispose,device};
   if(root)root.dataset.gpuPhase="submit-first-gpu-frame";
   rebuild();
   render();

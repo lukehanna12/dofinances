@@ -423,7 +423,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // 0.25 film; neutral form controls use a stronger 0.60 film so white
     // and black presets remain clearly distinct with 40% optical detail.
     // These coefficients are browser-authored, NOT native compositor proof.
-    let filmStrength=select(0.25,0.60,authPane);
+    // A primary form action uses a stronger neutral film, while retaining
+    // the same sampled optics. The homepage and other controls are unchanged.
+    let filmStrength=select(0.25,
+      select(0.60,0.82,tile.properties.y == -4.0),authPane);
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
   // Route panes share the material, SDF and original hover
