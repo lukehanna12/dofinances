@@ -13,6 +13,10 @@ export default defineConfig({
     sourcemap: false,
     manifest: true,
     rollupOptions: {
+      // The route is imported directly by the persistent shell. Rollup must
+      // preserve its named mountLogin export instead of treating it as a
+      // side-effect-only HTML companion entry.
+      preserveEntrySignatures: "strict",
       // The public shell lazy-loads the login module from this extra entry.
       input: {
         home: resolve(root, "index.html"),
