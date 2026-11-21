@@ -412,12 +412,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let faceBlack=select(0.20,0.05,darkFace);
   let faceWhite=select(0.95,0.80,darkFace);
   var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
-  // A raised, untinted glass pane above the card: only the back button
-  // has this gentle optical light lift. This never changes the homepage
-  // squares, the surrounding card, or the form controls' material.
-  if(tile.properties.y == -7.0){
-    color=clamp(color+vec3<f32>(0.10),vec3<f32>(0.0),vec3<f32>(1.0));
-  }
+  // Back button, card and homepage squares all use this exact untinted
+  // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
     // GAP TINT-RGB-PRODUCER / TINT-C: the separate CAFilter vibrancy
@@ -429,12 +425,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // 0.25 film; neutral route controls use independent role-owned films.
     // These coefficients are browser-authored, NOT native compositor proof.
     // The squares retain exactly 0.25. Primary action remains 0.82.
-    // Social providers return to 0.60; text fields use 0.40.
-    // Back arrow (route -7) is untinted with optical lift; the card,
-    // square optics and hover responses remain unchanged.
+    // Social providers use 0.62; text fields remain at 0.40.
+    // Back arrow (-7), card (-2), and the square optical face are unchanged.
     var filmStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){filmStrength=0.82;}
-    else if(tile.properties.y == -5.0){filmStrength=0.60;}
+    else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }

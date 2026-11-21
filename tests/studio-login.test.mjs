@@ -399,7 +399,7 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.equal((jsx.match(/className="auth3-or-rule flex-1 h-px"/g)||[]).length,2);
   assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6"'));
   assert.ok(css.includes(".auth3-root [data-auth-or-separator]{"));
-  assert.ok(css.includes("opacity:.5"));
+  assert.ok(css.includes("opacity:.8"));
   assert.ok(css.includes("color:#292d32"));
   assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#34383d}"));
   assert.ok(css.includes(".auth3-root .auth3-or-rule{background-color:currentColor}"));
@@ -408,9 +408,13 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(jsx.includes("<AuthProviderIcon provider={provider.key}/>"));
   assert.doesNotMatch(jsx,/mark:"G"|mark:"GH"|provider\.mark/);
   assert.equal((marks.match(/<svg\b/g)||[]).length,2);
-  for(const hex of ["EA4335","4285F4","FBBC05","34A853"])
-    assert.ok(marks.includes("#"+hex),"Google logo keeps its colored brand quadrants");
-  assert.ok(marks.includes("auth3-github-mark-gradient"));
+  assert.equal((marks.match(/fill="#FFFFFF"/g)||[]).length,5,
+    "All Google and GitHub paths use only white, varied by alpha");
+  assert.equal((marks.match(/opacity="\.[0-9]+"/g)||[]).length,5);
+  for(const alpha of [".48",".64",".76",".57",".68"])
+    assert.ok(marks.includes('opacity="'+alpha+'"'),"Logo path alpha "+alpha);
+  assert.doesNotMatch(marks,/#(?:EA4335|4285F4|FBBC05|34A853|7A8DDD|A56BCF)|linearGradient|stopColor|url\(#/,
+    "No colored or fully opaque logo shapes");
   assert.ok(marks.includes('aria-hidden="true" focusable="false"'));
   assert.ok(css.includes("opacity:.82"));
   assert.ok(css.includes("opacity:.86"));
@@ -423,15 +427,15 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(renderer.includes('!node.classList.contains("auth3-back-link")'));
   assert.ok(shader.includes("var filmStrength=select(0.25,0.60,authPane);"));
   assert.ok(shader.includes("tile.properties.y == -4.0){filmStrength=0.82;"));
-  assert.ok(shader.includes("tile.properties.y == -5.0){filmStrength=0.60;"),
-    "Google/GitHub return to 0.60 in the shared GPU film");
+  assert.ok(shader.includes("tile.properties.y == -5.0){filmStrength=0.62;"),
+    "Google/GitHub use 0.62 in the shared GPU film");
   assert.ok(shader.includes("tile.properties.y == -6.0){filmStrength=0.40;"),
     "Email/Password use 0.40 in the shared GPU film");
   assert.doesNotMatch(shader,/filmStrength=0\.(?:64|56);/,
     "Old provider/input tint strengths must not persist");
-  for(const amount of [".40",".60"])assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,"+amount+")")&&
+  for(const amount of [".40",".62"])assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,"+amount+")")&&
     css.includes("--auth-control-tint:rgba(255,255,255,"+amount+")"),
-    "Dark and light fallback use the matching tint for "+amount);
+    "Dark and light fallback use matching control tint for "+amount);
   assert.ok(css.includes(".auth3-root.dark [data-auth-glass-input]{\n  --auth-control-tint:rgba(0,0,0,.40);"), "Exact dark text-input tint");
   assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-input]{\n  --auth-control-tint:rgba(255,255,255,.40);"), "Exact light text-input tint");
   assert.ok(css.includes('[data-auth-glass-provider]:not(.auth3-back-link)'));
@@ -447,7 +451,7 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.doesNotMatch(privateShader,/tile.properties.y == -4.0/);
 });
 
-test("back arrow is a separate 0%-tint glass pane with layered dark-over-light icon",async()=>{
+test("back arrow uses exact square glass without artificial light lift or icon outline",async()=>{
   const [jsx,css,renderer,shader,privateRenderer,privateShader]=await Promise.all([
     load("../src/components/Auth3.jsx"),load("../src/styles.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
@@ -456,11 +460,11 @@ test("back arrow is a separate 0%-tint glass pane with layered dark-over-light i
     load("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl")
   ]);
   assert.ok(jsx.includes('href="/" data-auth-glass-provider className="auth3-back-link"'));
-  assert.ok(jsx.includes('className="auth3-back-arrow-underlay"'));
-  assert.ok(jsx.includes('className="auth3-back-arrow-ink"'));
-  assert.ok(jsx.includes('strokeWidth="3.6"')&&jsx.includes('strokeWidth="1.8"'));
-  assert.ok(css.includes(".auth3-back-arrow-underlay{stroke:rgba(241,246,250,.82)}"));
-  assert.ok(css.includes(".auth3-back-arrow-ink{stroke:rgba(20,27,33,.97)}"));
+  assert.ok(jsx.includes('stroke="currentColor" strokeWidth="1.8"'));
+  assert.doesNotMatch(jsx,/auth3-back-arrow-underlay|auth3-back-arrow-ink|strokeWidth="3.6"/);
+  assert.equal((jsx.match(/d="M20 12H4m0 0 6-6m-6 6 6 6"/g)||[]).length,1);
+  assert.doesNotMatch(css,/auth3-back-arrow-underlay|auth3-back-arrow-ink/);
+  assert.ok(css.includes("--dashboard-face-fill:rgba(0,0,0,.05);"));
   assert.ok(css.includes("--auth-control-tint:transparent;"));
   assert.ok(css.includes(".auth3-root.dark [data-auth-glass-provider].auth3-back-link,"));
   assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link"));
@@ -469,8 +473,11 @@ test("back arrow is a separate 0%-tint glass pane with layered dark-over-light i
   assert.ok(renderer.includes('if(node.classList.contains("auth3-back-link"))return -7;'));
   assert.ok(renderer.includes('node.classList.contains("auth3-back-link"))\n    return tintParameters("none",undefined,scheme);'));
   assert.ok(renderer.includes('roles,scheme,cardTint:"none",backTint:"none"'));
-  assert.ok(shader.includes('if(tile.properties.y == -7.0){'));
-  assert.ok(shader.includes('color=clamp(color+vec3<f32>(0.10),vec3<f32>(0.0),vec3<f32>(1.0));'));
+
+  assert.doesNotMatch(shader,/if\(tile\.properties\.y == -7\.0\)\{|color\+vec3<f32>\(0\.10\)/,
+    "Back button follows exact untinted square material, no injected brightness");
+  assert.ok(css.includes('.auth3-root.dark [data-auth-glass-provider].auth3-back-link{\n  color:#fff!important;'));
+  assert.ok(css.includes('.auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link{\n  color:#171717!important;'));
   // All homepage square and private app material data stays unchanged.
   assert.doesNotMatch(privateRenderer,/backTint:"none"|return -7;/);
   assert.doesNotMatch(privateShader,/tile.properties.y == -7.0/);

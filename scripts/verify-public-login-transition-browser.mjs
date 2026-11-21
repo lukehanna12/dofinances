@@ -198,14 +198,22 @@ try{
     "return {ruleCount:rules.length,rule:rules[0]?getComputedStyle(rules[0]).backgroundColor:null,"+
     "iconCount:logos.length,logoOpacity:logos.map(e=>getComputedStyle(e).opacity),"+
     "googleColors:[...document.querySelectorAll('svg.auth3-provider-icon[viewBox=\\\"0 0 48 48\\\"] path')].map(p=>p.getAttribute('fill')),"+
+    "googleAlpha:[...document.querySelectorAll('svg.auth3-provider-icon[viewBox=\\\"0 0 48 48\\\"] path')].map(p=>p.getAttribute('opacity')),"+
+    "githubColor:document.querySelector('svg.auth3-provider-icon[viewBox=\\\"0 0 24 24\\\"] path')?.getAttribute('fill'),"+
+    "githubAlpha:document.querySelector('svg.auth3-provider-icon[viewBox=\\\"0 0 24 24\\\"] path')?.getAttribute('opacity'),"+
     "githubGradient:!!document.querySelector('#auth3-github-mark-gradient')};})()";
   const darkAccent=await evaluate(accents());
   assert.equal(darkAccent.ruleCount,2);
   assert.equal(darkAccent.rule,"rgb(52, 56, 61)");
   assert.equal(darkAccent.iconCount,2);
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
-  assert.deepEqual(darkAccent.googleColors,["#EA4335","#4285F4","#FBBC05","#34A853"]);
-  assert.equal(darkAccent.githubGradient,true);
+  assert.deepEqual(darkAccent.googleColors,Array(4).fill("#FFFFFF"));
+  assert.deepEqual(darkAccent.googleAlpha,[".48",".64",".76",".57"]);
+  assert.equal(darkAccent.githubColor,"#FFFFFF");
+  assert.equal(darkAccent.githubAlpha,".68");
+  assert.equal(darkAccent.githubGradient,false);
+  assert.ok([...darkAccent.googleAlpha,darkAccent.githubAlpha].every(v=>Number(v)>.30&&Number(v)<.85),
+    "White-only provider logos have no nearly invisible or opaque path");
   const ornaments=()=> "(()=>{"+
     "const group=document.querySelector('[data-auth-or-separator]');"+
     "const back=document.querySelector('.auth3-back-link');"+
@@ -225,17 +233,16 @@ try{
     "backStroke:[...back.querySelectorAll('svg path')].map(p=>getComputedStyle(p).stroke),"+
     "backSize:[back.getBoundingClientRect().width,back.getBoundingClientRect().height]};})()";
   const darkOrnaments=await evaluate(ornaments());
-  assert.equal(darkOrnaments.opacity,"0.5");
+  assert.equal(darkOrnaments.opacity,"0.8");
   assert.equal(darkOrnaments.label,darkOrnaments.line);
   assert.equal(darkOrnaments.label,"rgb(52, 56, 61)");
   assert.ok(darkOrnaments.labelRed<darkOrnaments.footerRed,
     "Or group must be a darker gray than Can't sign in?");
   assert.equal(darkOrnaments.backTint,"transparent");
-  assert.equal(darkOrnaments.backInk,"rgb(23, 32, 39)");
+  assert.equal(darkOrnaments.backInk,"rgb(255, 255, 255)");
   assert.equal(darkOrnaments.backTransform,"none");
-  assert.equal(darkOrnaments.backStroke.length,2);
-  assert.match(darkOrnaments.backStroke[0],/241, 246, 250/);
-  assert.match(darkOrnaments.backStroke[1],/20, 27, 33/);
+  assert.deepEqual(darkOrnaments.backStroke,["rgb(255, 255, 255)"],
+    "The back arrow has one neutral stroke, not a lighter outline");
   assert.deepEqual(darkOrnaments.backSize,[34,34]);
   const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
     "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+
@@ -244,8 +251,11 @@ try{
     "return {input:value(input),providers:providers.map(value),"+
     "primary:value(card.querySelector('[data-auth-glass-submit]'))};})()";
   const darkNeutral=await evaluate(neutralTints());
-  assert.deepEqual(darkNeutral.providers,["#0009","#0009"],
-    "Google and GitHub retain their original 0.60 dark film");
+  const tintAlpha=value=>value.length===5?parseInt(value.slice(-1),16)/15:
+    value.length===9?parseInt(value.slice(-2),16)/255:
+    Number(value.match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([^)]+)\)/)?.[1]??NaN);
+  assert.ok(darkNeutral.providers.length===2&&darkNeutral.providers.every(v=>Math.abs(tintAlpha(v)-.62)<.01),
+    "Google and GitHub use 0.62 dark neutral tint");
   assert.equal(darkNeutral.input,"#0006",
     "Email and password share the 0.40 dark tint");
   assert.equal(darkNeutral.primary,"#ffffffd1",
@@ -377,17 +387,18 @@ try{
   assert.equal(lightAccent.rule,"rgb(41, 45, 50)");
   assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
   const lightOrnaments=await evaluate(ornaments());
-  assert.equal(lightOrnaments.opacity,"0.5");
+  assert.equal(lightOrnaments.opacity,"0.8");
   assert.equal(lightOrnaments.label,lightOrnaments.line);
   assert.equal(lightOrnaments.label,"rgb(41, 45, 50)");
   assert.ok(lightOrnaments.labelRed<lightOrnaments.footerRed,
     "Light-mode Or stays darker than Can't sign in?");
   assert.equal(lightOrnaments.backTint,"transparent");
-  assert.equal(lightOrnaments.backInk,"rgb(23, 32, 39)");
+  assert.equal(lightOrnaments.backInk,"rgb(23, 23, 23)");
+  assert.deepEqual(lightOrnaments.backStroke,["rgb(23, 23, 23)"]);
   assert.equal(lightOrnaments.backTransform,"none");
   const lightNeutral=await evaluate(neutralTints());
-  assert.deepEqual(lightNeutral.providers,["#fff9","#fff9"],
-    "Google and GitHub keep 0.60 in light UI mode");
+  assert.ok(lightNeutral.providers.length===2&&lightNeutral.providers.every(v=>Math.abs(tintAlpha(v)-.62)<.01),
+    "Google and GitHub use 0.62 in light UI mode");
   assert.equal(lightNeutral.input,"#fff6",
     "Email and password use 0.40 in light UI mode");
   assert.equal(lightNeutral.primary,"#000000d1",
