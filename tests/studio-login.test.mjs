@@ -242,6 +242,20 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
   assert.match(shader,/let pressed=clamp\(tile\.interaction\.y,0\.0,1\.0\)/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\] \.auth3-root \[data-auth-glass-card\]/);
 });
+test("interactive sign-in scroll bypasses the full homepage GPU pass",async()=>{
+  const renderer=await load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js");
+  assert.match(renderer,/const loginActive=authReady&&state==="login"/);
+  assert.match(renderer,/if\(loginActive\)\{\s*animating=engine\.renderAuthOnly\(\);/);
+  assert.match(renderer,/const AUTH_SCROLL_SETTLE_MS=420/);
+  assert.match(renderer,/\["scroll","wheel","touchmove"\]/);
+  assert.match(renderer,/routeOutlet\?\.addEventListener\(type,requestAuthScrollFrame,\{passive:true\}\)/);
+  assert.match(renderer,/device\.queue\.writeBuffer\(tileBuffer,paneOffset\*4,\s*tileData\.subarray\(paneOffset\)\)/,
+    "Auth-only presentation updates just the card/control GPU records");
+  assert.match(renderer,/pass\.setScissorRect\(0,top,physicalWidth,end-top\)/,
+    "Long forms shade the visible viewport with overscan");
+  assert.match(renderer,/audit\.lastAuthScrollTop=routeOutlet\?\.scrollTop\|\|0/);
+});
+
 test("Card is untinted; existing neutral presets tint controls in dark and light modes",async()=>{
   const [jsx,css,renderer,shader]=await Promise.all([
     load("../src/components/Auth3.jsx"),load("../src/styles.css"),
