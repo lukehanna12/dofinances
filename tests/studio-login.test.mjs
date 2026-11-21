@@ -144,6 +144,12 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
         "The original Or row layout retains exact geometry plus the note's theme colors");
       continue;
     }
+    if(expected==="text-sm text-neutral-500 dark:text-neutral-500"){
+      assert.ok(classes.includes("text-sm"),"The Or label retains its original text size");
+      assert.ok(classes.includes("flex items-center gap-4 mb-6 text-neutral-500 dark:text-neutral-400"),
+        "Or label inherits the same theme-aware neutral ink as the linking note");
+      continue;
+    }
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
