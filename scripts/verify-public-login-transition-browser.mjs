@@ -154,7 +154,8 @@ try{
   assert.ok(Math.abs(active.center-active.viewport)<1,
     "Sign-in card must be horizontally centered; actual "+active.center+" versus "+active.viewport);
   assert.ok(Math.abs(active.logoY-(home.barBottom+46))<1,
-    "The same doof logo moves to the shell-owned compact position");
+    "Same doof logo compact Y: "+active.logoY+" expected "+(home.barBottom+46)+
+    "; home Y "+home.homeY+"; computed transform "+active.scale);
   assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
   // Clicking the card-owned back arrow reverses the card's 600ms Motion
   // entry first. The route remains active until that exit finishes.
