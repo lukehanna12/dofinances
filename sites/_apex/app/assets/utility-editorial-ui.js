@@ -3,12 +3,15 @@
 // polling, local persistence, profile replicas or collection annotations.
 const UID=/^[0-9a-f]{6}$/;
 
-export function validateUtilityAnnotation(notes,rating) {
+export function validateUtilityAnnotation(description,notes,rating) {
+ if(typeof description!=="string"||description.length<1||description.length>250||
+    description!==description.trim()||/[\u0000-\u001f\u007f]/.test(description))
+  throw Error("Description is required, must be 250 characters or fewer, and must be a single paragraph without leading or trailing spaces.");
  if(typeof notes!=="string"||[...notes].length>100||/[\u0000-\u001f\u007f]/.test(notes))
   throw Error("Notes must be 100 characters or fewer, without line breaks.");
  if(rating!==null&&(!Number.isInteger(rating*2)||rating<0.5||rating>5))
   throw Error("Rating must be 0.5–5 in half-star increments.");
- return {notes,rating};
+ return {description,notes,rating};
 }
 
 export function createUtilityAnnotationEditor({root,api,getItem,updated,report}) {
@@ -20,8 +23,11 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
  dialog.innerHTML=
   '<form class="ut-annotation-form">'+
   '<p class="ut-annotation-overline">UTILITY PROFILE</p>'+
-  '<h2 id="ut-annotation-title">Notes &amp; rating</h2>'+
+  '<h2 id="ut-annotation-title">Description, notes &amp; rating</h2>'+
   '<p class="ut-annotation-target" data-annotation-target></p>'+
+  '<label for="ut-annotation-description">Description <small>Required · 250 characters</small></label>'+
+  '<textarea id="ut-annotation-description" rows="4" maxlength="250" required spellcheck="true" aria-describedby="ut-annotation-description-count"></textarea>'+
+  '<p id="ut-annotation-description-count" class="ut-annotation-count" aria-live="polite">0 / 250</p>'+
   '<label for="ut-annotation-notes">Notes <small>Optional · 100 characters</small></label>'+
   '<textarea id="ut-annotation-notes" rows="3" maxlength="100" spellcheck="true" placeholder="Add a note about this utility"></textarea>'+
   '<label for="ut-annotation-rating">Rating <small>Optional · half-star steps</small></label>'+
@@ -33,6 +39,10 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
   '<button type="submit" data-annotation-save>Save changes</button></div></form>';
  root.append(dialog);
  const form=dialog.querySelector("form");
+ const description=dialog.querySelector("#ut-annotation-description");
+ const descriptionCount=dialog.querySelector("#ut-annotation-description-count");
+ const updateDescriptionCount=()=>{descriptionCount.textContent=description.value.length+" / 250";};
+ description.addEventListener("input",updateDescriptionCount);
  const note=dialog.querySelector("#ut-annotation-notes");
  const rating=dialog.querySelector("#ut-annotation-rating");
  const error=dialog.querySelector("[data-annotation-error]");
@@ -43,12 +53,14 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
   const item=getItem(target);
   if(!item)return;
   uid=target;version=Number.isSafeInteger(item.editorial_version)?item.editorial_version:0;
+  description.value=typeof item.description==="string"?item.description:"";
+  updateDescriptionCount();
   note.value=typeof item.notes==="string"?item.notes:"";
   rating.value=item.rating==null?"":String(item.rating);
   dialog.querySelector("[data-annotation-target]").textContent=item.name+" · "+uid;
   error.textContent="";
   dialog.showModal();
-  note.focus();
+  description.focus();
  }
  function close(){
   if(working)return;
@@ -67,7 +79,7 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
   event.preventDefault();
   if(working||!uid)return;
   let values;
-  try{values=validateUtilityAnnotation(note.value,rating.value===""?null:Number(rating.value));}
+  try{values=validateUtilityAnnotation(description.value,note.value,rating.value===""?null:Number(rating.value));}
   catch(e){error.textContent=e.message;return;}
   working=true;save.disabled=true;error.textContent="";
   try{
@@ -76,11 +88,11 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
     throw Error("Colosseum did not confirm the profile update.");
    updated(uid,{description:result.description??null,notes:result.notes,
     rating:result.rating??null,editorial_version:result.editorial_version});
-   report?.("Notes and rating saved for "+uid+".");
+   report?.("Description, notes and rating saved for "+uid+".");
    working=false;dialog.close();uid=null;
   }catch(e){
    error.textContent=/annotation_conflict/i.test(e.message||"")?
-    "Someone changed this profile. Refresh its details before saving.":e.message||"Could not save utility notes or rating.";
+    "This utility profile has changed. Refresh the details before saving, to avoid overwriting someone else's description.":e.message||"Could not save the utility profile.";
   }finally{working=false;save.disabled=false;}
  });
  return {open,dialog};

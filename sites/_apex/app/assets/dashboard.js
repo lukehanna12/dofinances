@@ -12,7 +12,7 @@ import {initCloudflareConnection} from "./cloudflare-settings.js";
 import {initColosseumDiagnostics} from "./diagnostics.js";
 import {initColosseumProviders} from "./providers.js";
 import {initColosseumCollections} from "./collections.js";
-import {initColosseumUtilities} from "./utilities.js?profile=v1";
+import {initColosseumUtilities} from "./utilities.js?profile=v2";
 import {initColosseumPermissions} from "./permissions.js";
 initWorkspaceNavigation();
 initProjectReadme();

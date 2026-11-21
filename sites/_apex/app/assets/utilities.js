@@ -1,5 +1,5 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
-import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js";
+import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js?profile=v2";
 /* Live Colosseum Utilities — Collections-compatible layout, explicit network I/O.
  * Only the authenticated /api/colosseum/utilities owner bridge can read data.
  * No timers, polling, simulated inventory, or background update checks.
