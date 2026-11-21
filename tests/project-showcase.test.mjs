@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {PROJECT_SHOWCASE,renderProjectShowcase,projectShowcaseStatus,sortProjectShowcase} from "../sites/_apex/app/assets/project-showcase.js";
+import {PROJECT_SHOWCASE,renderProjectShowcase,projectShowcaseStatus,sortProjectShowcase,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES} from "../sites/_apex/app/assets/project-showcase.js";
 const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
 test("Projects roster applies requested names and progress states without retired entries",()=>{
@@ -160,4 +160,36 @@ test("Projects header replaces count with the collections-style plus control and
  assert.match(ui,/event\.code!=="KeyN"/);
  assert.match(ui,/openCreateDialog\(\)/);
  assert.doesNotMatch(ui,/\$\("project-count"\)/);
+});
+
+
+test("Curated icon and art assignments remain bound to permanent project slugs",()=>{
+ const iconNames={
+ "bootscript": "paint-roller",
+ "translucence-lab": "lightbulb",
+ "github-readme-chrome-extension": "file-pen",
+ "chatgpt-chat-save-chrome-extension": "folder-bookmark",
+ "terminal-scalars": "square-terminal",
+ "unicode-plus": "square-radical",
+ "liquid-plexiglass-26": "opacity",
+ "3d-liquid-glass-26-swift-package": "move-3d",
+ "apple-adobe-fx": "blend"
+};
+ const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
+ assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
+ assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
+ const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
+ for(const [slug,name] of Object.entries(PROJECT_CARD_ICONS)){
+  assert.ok(slugs.has(slug),"Icon references unknown project "+slug);
+  assert.match(read("sites/_apex/app/assets/project-icons/"+name+".svg"),/<svg[\\s\\S]*viewBox="0 0 24 24"/);
+ }
+ for(const [slug,url] of Object.entries(PROJECT_CARD_IMAGES)){
+  assert.ok(slugs.has(slug),"Image references unknown project "+slug);
+  assert.ok(url.startsWith("https://"),"Image must use HTTPS");
+ }
+ const script=read("sites/_apex/app/assets/project-showcase.js");
+ assert.match(script,/PROJECT_CARD_ICONS\\[project\\.slug\\]/);
+ assert.match(script,/PROJECT_CARD_IMAGES\\[project\\.slug\\]/);
+ assert.match(script,/fallbackImagePath\\(index\\)/);
+ assert.match(script,/photo\\.addEventListener\\("error"/);
 });

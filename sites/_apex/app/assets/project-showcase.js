@@ -32,9 +32,33 @@ const STATUS_ORDER=Object.freeze({"Active":0,"In Progress":1,"Coming Soon":2});
 export function sortProjectShowcase(projects){
  return [...projects].sort((a,b)=>STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)]);
 }
-function imagePath(index){
+// Stable per-project choices. Unassigned items keep their current marker and wallpaper.
+// Images are linked to their publishers, not copied into this repository.
+export const PROJECT_CARD_ICONS=Object.freeze({
+  "bootscript":"paint-roller",
+  "translucence-lab":"lightbulb",
+  "github-readme-chrome-extension":"file-pen",
+  "chatgpt-chat-save-chrome-extension":"folder-bookmark",
+  "terminal-scalars":"square-terminal",
+  "unicode-plus":"square-radical",
+  "liquid-plexiglass-26":"opacity",
+  "3d-liquid-glass-26-swift-package":"move-3d",
+  "apple-adobe-fx":"blend"
+});
+export const PROJECT_CARD_IMAGES=Object.freeze({
+  "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",
+  "chatgpt-chat-save-chrome-extension":"https://gagosian.com/media/images/exhibitions/2010/takashi-murakami/ktga-hG5fIhh_4800x4800.jpg",
+  "colosseum":"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/640px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
+  "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
+  "unicode-plus":"https://d3d00swyhr67nd.cloudfront.net/w1200h1200/collection/NTI/DYP/NTI_DYP_453771-001.jpg",
+  "protocol-monitor-pruner":"https://most-famous-paintings.com/media-resize/960/artworks/images-full/76/18/76183ece8e74b1c3404d66a0bc2e70a6.jpg.webp"
+});
+function fallbackImagePath(index){
  const wallpaper=WORKSPACE_WALLPAPERS[PHOTO_ROUTES[index%PHOTO_ROUTES.length]];
  return wallpaper.path||"/wallpapers/"+wallpaper.sha+"."+wallpaper.ext;
+}
+function imagePath(project,index){
+ return PROJECT_CARD_IMAGES[project.slug]||fallbackImagePath(index);
 }
 function element(tag,className,text){
  const node=document.createElement(tag);
@@ -62,7 +86,12 @@ function makeCard(project,index,slugRoute){
  // Do not fetch the full photographic image until hover, focus or touch.
  const photo=element("img","project-showcase-photo");
  photo.alt="";photo.loading="lazy";photo.decoding="async";
- const src=imagePath(index);
+ const src=imagePath(project,index);
+ const preferred=PROJECT_CARD_IMAGES[project.slug];
+ // If an external publisher removes or blocks its file, keep the card usable.
+ photo.addEventListener("error",()=>{
+  if(preferred&&photo.getAttribute("src")===src)photo.src=fallbackImagePath(index);
+ },{once:true});
  photo.addEventListener("load",()=>card.classList.add("is-photo-ready"),{once:true});
  const reveal=()=>{if(!photo.hasAttribute("src"))photo.src=src;};
  card.addEventListener("pointerenter",reveal,{once:true});
@@ -73,8 +102,15 @@ function makeCard(project,index,slugRoute){
  const content=element("span","project-showcase-content");
  const upper=element("span","project-showcase-upper");
  const top=element("span","project-showcase-top");
- const number=element("span","project-showcase-number",String(index+1));
+ const iconName=PROJECT_CARD_ICONS[project.slug];
+ const number=element("span","project-showcase-number",iconName?undefined:String(index+1));
  number.setAttribute("aria-hidden","true");
+ if(iconName){
+  const icon=element("img","project-showcase-lucide");
+  icon.src="/app/assets/project-icons/"+iconName+".svg";
+  icon.width=16;icon.height=16;icon.alt="";icon.decoding="async";
+  number.append(icon);
+ }
  const badge=element("span","project-showcase-badge "+statusClass,status);
  top.append(number,badge);
  const title=element("span","project-showcase-title",project.name);
