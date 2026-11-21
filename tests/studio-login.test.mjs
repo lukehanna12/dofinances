@@ -560,7 +560,8 @@ test("Original full WebGPU glass is the default; the scroll-composited hybrid re
     load("../src/styles.css"),load("../sites/_apex/assets/public-home.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
   ]);
-  assert.match(router,/body\.dataset\.authGlassMode=new URLSearchParams\(location\.search\)\.get\("auth-glass"\)==="compositor"/);
+  assert.match(router,/const requestedGlass=new URLSearchParams\(location\.search\)\.get\("auth-glass"\)/);
+  assert.match(router,/body\.dataset\.authGlassMode=\(requestedGlass==="compositor"\|\|requestedGlass==="refraction"\)/);
   assert.match(router,/"compositor":"webgpu"/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\)/);
   assert.match(css,/body\.public-home\[data-auth-glass-mode="compositor"\] \.auth3-root \[data-auth-glass-card\]/);
