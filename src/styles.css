@@ -109,6 +109,17 @@
 #public-route-content .auth3-root [data-auth-stage]{
   min-height:calc(100dvh - 44px);
 }
+/* The fixed public route outlet is the login form's actual vertical
+ * scroll container. Suppress its end-of-scroll elastic/rubber-band
+ * motion while preserving overflow:auto for short or mobile screens.
+ * Scope the viewport guard to this route: homepage scrolling is unchanged. */
+#public-route-content:has(.auth3-root){
+  overscroll-behavior-y:none;
+}
+html:has(#public-route-content .auth3-root),
+body:has(#public-route-content .auth3-root){
+  overscroll-behavior-y:none;
+}
 
 /* A separate 0%-tint glass back button floats on the card, sharing the
  * exact GPU shape/refraction/hover pipeline with the other route panes.
@@ -246,13 +257,14 @@
 .auth3-root:not(.dark) [data-auth-glass-submit]{
   color:#fff!important;
 }
-/* The "Or" and both 1px rules share a darker-than-footer neutral gray.
- * Apply one 95% group opacity to all three, preserving their alignment. */
+/* Darken the "Or" and both matched 1px lines halfway toward black,
+ * keeping their original 95% group opacity and alignment.
+ * Light #292d32 -> #151719; dark #34383d -> #1a1c1f. */
 .auth3-root [data-auth-or-separator]{
-  color:#292d32;
+  color:#151719;
   opacity:.95;
 }
-.auth3-root.dark [data-auth-or-separator]{color:#34383d}
+.auth3-root.dark [data-auth-or-separator]{color:#1a1c1f}
 .auth3-root .auth3-or-rule{background-color:currentColor}
 .auth3-root [data-auth-or-separator] span{color:inherit}
 /* White-only brand paths have deliberately intermediate translucencies;

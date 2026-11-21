@@ -400,8 +400,10 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6"'));
   assert.ok(css.includes(".auth3-root [data-auth-or-separator]{"));
   assert.ok(css.includes("opacity:.95"));
-  assert.ok(css.includes("color:#292d32"));
-  assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#34383d}"));
+  assert.ok(css.includes("color:#151719"),
+    "Light Or text/rules darken halfway toward black");
+  assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#1a1c1f}"),
+    "Dark Or text/rules darken halfway toward black");
   assert.ok(css.includes(".auth3-root .auth3-or-rule{background-color:currentColor}"));
   assert.ok(css.includes(".auth3-root [data-auth-or-separator] span{color:inherit}"));
   assert.ok(jsx.includes('import { AuthProviderIcon } from "./AuthProviderIcon.jsx";'));
@@ -487,4 +489,17 @@ test("back arrow uses exact square glass without artificial light lift or icon o
   // All homepage square and private app material data stays unchanged.
   assert.doesNotMatch(privateRenderer,/backTint:"none"|return -7;/);
   assert.doesNotMatch(privateShader,/tile.properties.y == -7.0/);
+});
+
+test("login scroll outlet suppresses vertical rubberbanding without locking overflow",async()=>{
+  const [css,jsx]=await Promise.all([
+    load("../src/styles.css"),load("../src/components/Auth3.jsx")
+  ]);
+  assert.match(css,/#public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:none;/,
+    "The actual fixed route scrollport disables elastic vertical overscroll");
+  assert.match(css,/html:has\(#public-route-content \.auth3-root\),\s*body:has\(#public-route-content \.auth3-root\)\{\s*overscroll-behavior-y:none;/,
+    "Viewport bounce must also be suppressed only while login is present");
+  assert.doesNotMatch(css,/overflow-y:hidden|touch-action:none|position:fixed!important/,
+    "Normal short-screen form scrolling and text inputs must remain available");
+  assert.match(jsx,/data-auth-stage className="min-h-screen/);
 });

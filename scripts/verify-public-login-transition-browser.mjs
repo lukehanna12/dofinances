@@ -204,7 +204,7 @@ try{
     "githubGradient:!!document.querySelector('#auth3-github-mono-gradient')};})()";
   const darkAccent=await evaluate(accents());
   assert.equal(darkAccent.ruleCount,2);
-  assert.equal(darkAccent.rule,"rgb(52, 56, 61)");
+  assert.equal(darkAccent.rule,"rgb(26, 28, 31)");
   assert.equal(darkAccent.iconCount,2);
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
   assert.deepEqual(darkAccent.googleColors,Array(4).fill("#FFFFFF"));
@@ -230,7 +230,11 @@ try{
     "const rgbRed=c=>{const canvas=document.createElement('canvas');"+
     "canvas.width=1;canvas.height=1;const ctx=canvas.getContext('2d',{willReadFrequently:true});"+
     "ctx.fillStyle=c;ctx.fillRect(0,0,1,1);return ctx.getImageData(0,0,1,1).data[0];};"+
+    "const route=document.querySelector('#public-route-content');"+
     "return {opacity:getComputedStyle(group).opacity,"+
+    "routeOverscroll:getComputedStyle(route).overscrollBehaviorY,"+
+    "routeOverflow:getComputedStyle(route).overflowY,"+
+    "rootOverscroll:getComputedStyle(document.documentElement).overscrollBehaviorY,"+
     "footerRed:rgbRed(getComputedStyle(footer).color),"+
     "labelRed:rgbRed(getComputedStyle(group.querySelector('span')).color),"+
     "label:getComputedStyle(group.querySelector('span')).color,"+
@@ -243,7 +247,13 @@ try{
   const darkOrnaments=await evaluate(ornaments());
   assert.equal(darkOrnaments.opacity,"0.95");
   assert.equal(darkOrnaments.label,darkOrnaments.line);
-  assert.equal(darkOrnaments.label,"rgb(52, 56, 61)");
+  assert.equal(darkOrnaments.label,"rgb(26, 28, 31)");
+  assert.equal(darkOrnaments.routeOverscroll,"none",
+    "Vertical rubberbanding disabled on real login scroll container");
+  assert.equal(darkOrnaments.rootOverscroll,"none",
+    "Viewport overscroll also suppressed only in login route");
+  assert.equal(darkOrnaments.routeOverflow,"auto",
+    "Legitimate short-viewport form scrolling remains enabled");
   assert.ok(darkOrnaments.labelRed<darkOrnaments.footerRed,
     "Or group must be a darker gray than Can't sign in?");
   assert.equal(darkOrnaments.backTint,"transparent");
@@ -392,12 +402,14 @@ try{
   await until("getComputedStyle(document.querySelector('[data-auth-glass-input]')).color==='rgb(23, 23, 23)'",100,60);
   await until("getComputedStyle(document.querySelector('[data-auth-glass-submit]')).color==='rgb(255, 255, 255)'",100,60);
   const lightAccent=await evaluate(accents());
-  assert.equal(lightAccent.rule,"rgb(41, 45, 50)");
+  assert.equal(lightAccent.rule,"rgb(21, 23, 25)");
   assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
   const lightOrnaments=await evaluate(ornaments());
   assert.equal(lightOrnaments.opacity,"0.95");
   assert.equal(lightOrnaments.label,lightOrnaments.line);
-  assert.equal(lightOrnaments.label,"rgb(41, 45, 50)");
+  assert.equal(lightOrnaments.label,"rgb(21, 23, 25)");
+  assert.equal(lightOrnaments.routeOverscroll,"none");
+  assert.equal(lightOrnaments.routeOverflow,"auto");
   assert.ok(lightOrnaments.labelRed<lightOrnaments.footerRed,
     "Light-mode Or stays darker than Can't sign in?");
   assert.equal(lightOrnaments.backTint,"transparent");
