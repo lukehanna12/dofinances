@@ -180,7 +180,7 @@ try{
   assert.ok(Math.abs(logo.markCenter-(logo.barBottom+logo.cardTop)/2)<1,
     "Doof must be exactly halfway between the fixed bar and the live card");
   assert.equal(logo.fontSize,"45px");
-  assert.match(logo.transform,/matrix\\(0\\.6, 0, 0, 0\\.6,/);
+  assert.match(logo.transform,/matrix\(0\.6, 0, 0, 0\.6,/);
   assert.equal(logo.backHref,"/");
   assert.equal(logo.backLabel,"Back to homepage");
 
