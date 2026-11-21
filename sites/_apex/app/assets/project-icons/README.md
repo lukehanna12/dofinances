@@ -15,10 +15,11 @@
 ## Artwork references
 
 - BootScript: Frederic Remington, *Buying Polo Ponies in the West* (1905), WikiArt.
+- ReadMe GLP: Claude Monet, *Gorge of the Petite Creuse* (1889), also catalogued as *Valley of the Petite Creuse* (Wildenstein 1230; Museum of Fine Arts, Boston, accession 23.541), direct Wikimedia Commons artwork image.
 - ChatStore: Takashi Murakami, *Dragon in Clouds – Indigo Blue* (2010), Gagosian image of the artwork itself (detail, without gallery surroundings; artwork copyright Takashi Murakami/Kaikai Kiki Co., Ltd.; photography rights may apply).
 - Colosseum: Thomas Cole, *The Course of Empire: The Arcadian or Pastoral State* (c. 1834), Wikimedia Commons (verified 960px rendering of the public-domain painting).
 - Apple HIGs Reader: René Magritte, *The Son of Man* (1964); copyright-protected reproduction referenced externally.
 - Unicode Plus: Samuel van Hoogstraten, *A Perspective View of the Courtyard of a House*, National Trust / Art UK image.
 - Protocol Monitor Pruner: Paul Gauguin, *Meadow in Martinique* (1887), public-domain artwork. Note: the user's WikiArt link credits Gauguin, not Vincent van Gogh.
-- Liquid Plexiglass 26: Andy Warhol, *After the Party* (1979), direct image from the Samek Art Museum, Bucknell University. Copyright belongs to the Andy Warhol Foundation / ARS; externally referenced, not redistributed in the repository.
+- Liquid Plexiglass 26: Andy Warhol, *After the Party* (1979), direct image from the Samek Art Museum, Bucknell University, shown at 112% final hover scale with a 3% downward shift; its entrance scale remains 1.1 × the final scale. Copyright belongs to the Andy Warhol Foundation / ARS; externally referenced, not redistributed in the repository.
 - Ozoning Board: Frederic Edwin Church, *El Khasné, Petra* (1874), original image on Wikimedia Commons; public domain.

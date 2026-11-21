@@ -101,12 +101,12 @@
 }
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
 /* Warhol's After the Party: center crop with 3% downward image offset.
-   Keep the 10% entrance-to-rest zoom animation: 1.21 -> 1.10. */
+   Keep the 10% entrance-to-rest zoom animation: 1.232 -> 1.12. */
 .view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
- transform:translateY(3%) scale(1.21)
+ transform:translateY(3%) scale(1.232)
 }
 .view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
- transform:translateY(3%) scale(1.10)
+ transform:translateY(3%) scale(1.12)
 }
 
 .view[data-view="projects"] .project-showcase-content{
