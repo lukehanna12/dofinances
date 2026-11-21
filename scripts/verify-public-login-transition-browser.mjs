@@ -120,7 +120,7 @@ try{
     "const rect=image.getBoundingClientRect();"+
     "const underlay=getComputedStyle(document.body,'::before');"+
     "const imageStyle=getComputedStyle(image);"+
-    "return {rect:{top:rect.top,bottom:rect.bottom,width:rect.width},"+
+    "return {viewportHeight:innerHeight,rect:{top:rect.top,bottom:rect.bottom,width:rect.width},"+
     "veilTop:veil.getBoundingClientRect().top,"+
     "veilBackground:getComputedStyle(veil).backgroundColor,"+
     "image: imageStyle.backgroundImage,cover:imageStyle.backgroundSize,"+
@@ -129,7 +129,7 @@ try{
     "preload:!!document.querySelector('link[rel=preload][as=image]'),"+
     "handoff:window.__handoff};})()");
   assert.equal(scene.rect.top,homeTop,"Photo must not reframe on sign-in");
-  assert.equal(scene.rect.bottom,880,"Photo must extend to viewport bottom");
+  assert.equal(scene.rect.bottom,scene.viewportHeight,"Photo must extend to viewport bottom");
   assert.equal(scene.veilTop,homeTop,"12% overlay must share the same crop");
   assert.match(scene.image,/dashboard-cloud-veiled-colorful-fields\.avif/);
   assert.equal(scene.cover,"cover");
