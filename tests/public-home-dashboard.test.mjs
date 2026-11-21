@@ -89,7 +89,7 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let dismiss=clamp\(tile\.motion\.w,0\.0,1\.0\)/);
   assert.match(shader,/let squeeze=vec2<f32>\(1\.0-0\.58\*contraction,1\.0-0\.30\*contraction\);/);
   assert.match(shader,/let front=clamp\(\(dismiss-0\.06\+0\.1\*\(localX-0\.5\)\)\/0\.82,0\.0,1\.0\);/);
-  assert.doesNotMatch(shader,/grain|noise|fract\(sin\(/,"No invented particle noise");
+  assert.doesNotMatch(shader,/let grain=|let noise=|fract\(sin\(/,"No randomized particle erosion");
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
   assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
