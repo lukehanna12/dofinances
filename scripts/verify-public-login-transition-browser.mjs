@@ -114,6 +114,9 @@ try{
     await sleep(70);
   }
   assert.ok(entered,"Sign in card did not mount on /login");
+  // Motion starts the card 50px to the left and settles after 600ms.
+  // Measure final layout after entrance, not the animated first frame.
+  await sleep(850);
   const cardLayout=await evaluate("(()=>{"+
     "const card=document.querySelector('.auth3-root .max-w-md');"+
     "const r=card.getBoundingClientRect();"+
