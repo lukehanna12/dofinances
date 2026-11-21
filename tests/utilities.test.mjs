@@ -307,8 +307,8 @@ test("Utility editorial fields remain separate from catalog labels and collectio
  assert.match(editor,/Unrated/);
  assert.match(css,/#ut-root \.ut-annotation-dialog/);
  assert.match(css,/#ut-root \.ut-editorial-section/);
- assert.match(html,/utilities\.css\?profile=v1/);
- assert.match(dashboard,/utilities\.js\?profile=v1/);
+ assert.match(html,/utilities\.css\?profile=v2/);
+ assert.match(dashboard,/utilities\.js\?profile=v2/);
 });
 
 test("Edit utility description: required, 250-character limit, one-paragraph input; preserve optional annotations",()=>{
