@@ -156,8 +156,9 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
                 event.preventDefault();
                 onBack();
               }}>
-              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-                <path d="M20 12H4m0 0 6-6m-6 6 6 6" />
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path className="auth3-back-arrow-underlay" strokeWidth="3.6" d="M20 12H4m0 0 6-6m-6 6 6 6" />
+                <path className="auth3-back-arrow-ink" strokeWidth="1.8" d="M20 12H4m0 0 6-6m-6 6 6 6" />
               </svg>
             </a>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
@@ -230,7 +231,7 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
               </button>}
             </form>
 
-            <div className="flex items-center gap-4 mb-6">
+            <div data-auth-or-separator className="flex items-center gap-4 mb-6">
               <div className="auth3-or-rule flex-1 h-px" />
               <span className="text-sm text-neutral-500 dark:text-neutral-500">Or</span>
               <div className="auth3-or-rule flex-1 h-px" />

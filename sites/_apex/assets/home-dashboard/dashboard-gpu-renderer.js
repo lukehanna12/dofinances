@@ -65,10 +65,11 @@ function authPaneElements(){
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
-// Negative route markers select only the subtle glass film of each
-// form role. -2 keeps the card/back arrow unchanged; -4 is the primary
-// action; -5 social sign-in; -6 text entry. The squares use no markers.
+// Negative route markers select only route-owned material variants.
+// -2 is the untinted card; -7 is the separate untinted back chip,
+// -4 primary, -5 social sign-in and -6 text input. Squares are unchanged.
 function authPaneMaterialTag(node){
+  if(node.classList.contains("auth3-back-link"))return -7;
   if(node.hasAttribute("data-auth-glass-submit"))return -4;
   if(node.hasAttribute("data-auth-glass-input"))return -6;
   if(node.hasAttribute("data-auth-glass-provider")&&
@@ -76,7 +77,8 @@ function authPaneMaterialTag(node){
   return -2;
 }
 function authPaneTint(node,scheme){
-  if(node.hasAttribute("data-auth-glass-card"))
+  if(node.hasAttribute("data-auth-glass-card")||
+     node.classList.contains("auth3-back-link"))
     return tintParameters("none",undefined,scheme);
   // Original neutral form palette, never added blue/saturated hues:
   // white primary + dark controls in dark; black primary + light in light.
@@ -524,12 +526,13 @@ async function initialize(){
       tileData[p+18]=opacity;tileData[p+19]=0;
       cornerInert[slot]=opacity<.025?1:0;
       roles.push(node.hasAttribute("data-auth-glass-card")?
-        "card":node.hasAttribute("data-auth-glass-submit")?"submit":"control");
+        "card":node.classList.contains("auth3-back-link")?
+        "back":node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
     authHover.retargetRects(tileData,tileCount,cornerInert);
     audit.authGlass={renderer:"shared-webgpu-glassPipeline",count:roles.length,
-      roles,scheme,cardTint:"none",faceScheme:tint.state.scheme,
+      roles,scheme,cardTint:"none",backTint:"none",faceScheme:tint.state.scheme,
       materialReference:"first-home-square",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
       hovered:authHover.cardHovered||authHover.controlHovered,

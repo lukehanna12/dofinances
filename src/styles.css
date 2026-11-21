@@ -110,24 +110,29 @@
   min-height:calc(100dvh - 44px);
 }
 
-/* A true return link sits at the upper-left *inside* the card and keeps
-   the original Auth-3 headings, fields and motion utility strings intact. */
+/* A separate 0%-tint glass back button floats on the card, sharing the
+ * exact GPU shape/refraction/hover pipeline with the other route panes.
+ * No CSS translation or substitute hover glow: the glass spring owns it. */
 .auth3-back-link{
+  position:relative;
+  z-index:1;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   width:34px;
   height:34px;
   margin:0 0 12px -4px;
-  border:1px solid transparent;
-  border-radius:9px;
-  color:inherit;
+  border:1px solid rgba(245,250,253,.40);
+  border-radius:10px;
+  color:#172027;
   text-decoration:none;
-  transition:background-color .16s ease,transform .16s ease;
+  transition:border-color 160ms ease;
 }
-.auth3-back-link:hover{background:rgba(127,127,127,.15);transform:translateX(-2px)}
-.auth3-back-link:active{transform:translateX(-4px)}
+.auth3-back-link:hover{border-color:rgba(247,250,252,.55)}
+.auth3-back-link:active{border-color:rgba(250,252,254,.72)}
 .auth3-back-link:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.auth3-back-arrow-underlay{stroke:rgba(241,246,250,.82)}
+.auth3-back-arrow-ink{stroke:rgba(20,27,33,.97)}
 @media(max-width:760px){
   /* Reserve enough room for a 27px-high label between header and card on
      short mobile viewports; the card can scroll instead of overlapping it. */
@@ -204,6 +209,17 @@
 .auth3-root:not(.dark) [data-auth-glass-provider]:not(.auth3-back-link){
   --auth-control-tint:rgba(255,255,255,.60);
 }
+/* The back control has ZERO neutral pigment. CSS-only fallback keeps an
+ * untinted optical sheen and inset rim, rather than a flat color patch. */
+.auth3-root.dark [data-auth-glass-provider].auth3-back-link,
+.auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link{
+  --auth-control-tint:transparent;
+  --dashboard-face-fill:rgba(240,246,250,.14);
+  background:
+    linear-gradient(var(--dashboard-face-fill),var(--dashboard-face-fill)),
+    var(--auth-control-tint);
+  box-shadow:inset 0 1px rgba(255,255,255,.32);
+}
 .auth3-root.dark [data-auth-glass-submit]{
   --auth-control-tint:rgba(255,255,255,.82);
   color:#171717;
@@ -223,20 +239,26 @@
 .auth3-root:not(.dark) [data-auth-glass-provider]{
   color:#171717!important;
 }
+/* Dark arrow on a lighter untinted pane, consistent across both UI modes. */
+.auth3-root.dark [data-auth-glass-provider].auth3-back-link,
+.auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link{
+  color:#172027!important;
+}
 .auth3-root.dark [data-auth-glass-submit]{
   color:#171717!important;
 }
 .auth3-root:not(.dark) [data-auth-glass-submit]{
   color:#fff!important;
 }
-/* Darker, one-pixel dividers around "Or"; only the form divider is
- * changed, not the dashboard mosaic or the rest of the page chrome. */
-.auth3-root.dark .auth3-or-rule{
-  background-color:rgba(15,18,22,.78);
+/* The "Or" and both 1px rules share a darker-than-footer neutral gray.
+ * Apply one 50% group opacity to all three, preserving their alignment. */
+.auth3-root [data-auth-or-separator]{
+  color:#292d32;
+  opacity:.5;
 }
-.auth3-root:not(.dark) .auth3-or-rule{
-  background-color:rgba(27,31,34,.48);
-}
+.auth3-root.dark [data-auth-or-separator]{color:#34383d}
+.auth3-root .auth3-or-rule{background-color:currentColor}
+.auth3-root [data-auth-or-separator] span{color:inherit}
 /* The brand SVG paths retain their hues and share the translucent glass
  * treatment. The provider names stay as accessible text on each button. */
 .auth3-root .auth3-provider-icon{
@@ -290,4 +312,6 @@ body[data-gpu-scene="ready"] .auth3-root [data-auth-glass-card]{
     color:ButtonText!important;
     border-color:ButtonText!important;
   }
+  .auth3-root .auth3-back-arrow-underlay{stroke:ButtonFace!important}
+  .auth3-root .auth3-back-arrow-ink{stroke:ButtonText!important}
 }

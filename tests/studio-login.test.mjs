@@ -397,10 +397,13 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
     load("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl")
   ]);
   assert.equal((jsx.match(/className="auth3-or-rule flex-1 h-px"/g)||[]).length,2);
-  assert.ok(css.includes("background-color:rgba(15,18,22,.78)"));
-  assert.ok(css.includes("background-color:rgba(27,31,34,.48)"));
-  assert.ok(css.includes(".auth3-root.dark .auth3-or-rule"));
-  assert.ok(css.includes(".auth3-root:not(.dark) .auth3-or-rule"));
+  assert.ok(jsx.includes('data-auth-or-separator className="flex items-center gap-4 mb-6"'));
+  assert.ok(css.includes(".auth3-root [data-auth-or-separator]{"));
+  assert.ok(css.includes("opacity:.5"));
+  assert.ok(css.includes("color:#292d32"));
+  assert.ok(css.includes(".auth3-root.dark [data-auth-or-separator]{color:#34383d}"));
+  assert.ok(css.includes(".auth3-root .auth3-or-rule{background-color:currentColor}"));
+  assert.ok(css.includes(".auth3-root [data-auth-or-separator] span{color:inherit}"));
   assert.ok(jsx.includes('import { AuthProviderIcon } from "./AuthProviderIcon.jsx";'));
   assert.ok(jsx.includes("<AuthProviderIcon provider={provider.key}/>"));
   assert.doesNotMatch(jsx,/mark:"G"|mark:"GH"|provider\.mark/);
@@ -442,4 +445,33 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(renderer.includes("audit.authOnlyFrames="));
   assert.doesNotMatch(privateRenderer,/renderAuthOnly|Sign-in-only transition frame/);
   assert.doesNotMatch(privateShader,/tile.properties.y == -4.0/);
+});
+
+test("back arrow is a separate 0%-tint glass pane with layered dark-over-light icon",async()=>{
+  const [jsx,css,renderer,shader,privateRenderer,privateShader]=await Promise.all([
+    load("../src/components/Auth3.jsx"),load("../src/styles.css"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/app/assets/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/app/assets/dashboard-gpu-glass.wgsl")
+  ]);
+  assert.ok(jsx.includes('href="/" data-auth-glass-provider className="auth3-back-link"'));
+  assert.ok(jsx.includes('className="auth3-back-arrow-underlay"'));
+  assert.ok(jsx.includes('className="auth3-back-arrow-ink"'));
+  assert.ok(jsx.includes('strokeWidth="3.6"')&&jsx.includes('strokeWidth="1.8"'));
+  assert.ok(css.includes(".auth3-back-arrow-underlay{stroke:rgba(241,246,250,.82)}"));
+  assert.ok(css.includes(".auth3-back-arrow-ink{stroke:rgba(20,27,33,.97)}"));
+  assert.ok(css.includes("--auth-control-tint:transparent;"));
+  assert.ok(css.includes(".auth3-root.dark [data-auth-glass-provider].auth3-back-link,"));
+  assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link"));
+  assert.ok(css.includes("  background:\n    linear-gradient(var(--dashboard-face-fill),var(--dashboard-face-fill)),\n    var(--auth-control-tint);"));
+  assert.doesNotMatch(css,/auth3-back-link:hover\{[^}]*transform:/);
+  assert.ok(renderer.includes('if(node.classList.contains("auth3-back-link"))return -7;'));
+  assert.ok(renderer.includes('node.classList.contains("auth3-back-link"))\n    return tintParameters("none",undefined,scheme);'));
+  assert.ok(renderer.includes('roles,scheme,cardTint:"none",backTint:"none"'));
+  assert.ok(shader.includes('if(tile.properties.y == -7.0){'));
+  assert.ok(shader.includes('color=clamp(color+vec3<f32>(0.10),vec3<f32>(0.0),vec3<f32>(1.0));'));
+  // All homepage square and private app material data stays unchanged.
+  assert.doesNotMatch(privateRenderer,/backTint:"none"|return -7;/);
+  assert.doesNotMatch(privateShader,/tile.properties.y == -7.0/);
 });
