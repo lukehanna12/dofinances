@@ -292,19 +292,8 @@ try{
     assert.ok(shortStart.glassHeight>=shortStart.stageHeight-2,
       "Glass covers the entire form, not just the short viewport");
   }
-  const gpuScrolling=await evaluate("document.body.dataset.authGpuScene==='ready'");
-  const authFramesBefore=await evaluate("window.__dashboardWebGPU?.authOnlyFrames||0");
   await evaluate("document.querySelector('#public-route-content').scrollTop=190");
   await until("document.querySelector('#public-route-content').scrollTop >= 100",50);
-  if(gpuScrolling){
-    await until("window.__dashboardWebGPU?.authOnlyFrames>"+authFramesBefore,60,35);
-    const scrollAudit=await evaluate("({top:window.__dashboardWebGPU?.lastAuthScrollTop,"+
-      "frameAt:window.__dashboardWebGPU?.lastAuthFrameAt,now:performance.now()})");
-    assert.ok(Math.abs(scrollAudit.top-190)<2,
-      "GPU refraction must sample the current native scroll offset");
-    assert.ok(scrollAudit.now-scrollAudit.frameAt<500,
-      "Glass-only GPU presentation must update promptly during scroll");
-  }
   await sleep(100);
   const shortEnd=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
     "const card=document.querySelector('[data-auth-glass-card]');"+

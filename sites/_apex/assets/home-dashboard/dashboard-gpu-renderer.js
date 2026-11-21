@@ -123,15 +123,6 @@ let restoreStart=null;
 // the route-owned sign-in card begins its reversed exit.
 let trackResumeRequested=false;
 const TRACK_FRAME_INTERVAL=1000/30;
-// Native scroll and rubberband animation can outlive the last scroll event.
-// Refresh ONLY the sign-in pane for a few more frames so its refraction
-// tracks the stationary backdrop without repainting the homepage mosaic.
-const AUTH_SCROLL_SETTLE_MS=420;
-let authScrollUntil=0;
-function requestAuthScrollFrame(){
-  authScrollUntil=performance.now()+AUTH_SCROLL_SETTLE_MS;
-  requestRender();
-}
 // A single event starts the transition even while first GPU initialization
 // is pending; the CSS-only fallback remains available if GPU never starts.
 window.addEventListener("dofinances:home-dismiss",event=>{
@@ -163,33 +154,23 @@ function requestRender(){
   if(!homeActive()||!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
-    const now=performance.now();
-    const state=window.__dofPublicRouter?.state;
-    const authReady=document.body.dataset.authGpuScene==="ready";
-    const loginActive=authReady&&state==="login"&&
-      !!routeMount?.querySelector("[data-auth-glass-card]");
-    // The homepage's moving squares keep their original 30fps clock. During
-    // an ordinary sign-in session the squares are already dismissed, so a
-    // scroll or hover needs ONLY the glass panes, not their 53-tile scene.
-    if(trackRunning&&now-lastMotionSubmission<TRACK_FRAME_INTERVAL){
-      if(authReady&&(loginActive||state==="exiting")){
+    if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL){
+      // Maintain the original 30fps square track clock, while allowing the
+      // exiting sign-in glass to follow Motion between those heavy full-scene
+      // submissions. This pass never draws/advances a square.
+      if(window.__dofPublicRouter?.state==="exiting"&&
+         document.body.dataset.authGpuScene==="ready"){
         try{engine.renderAuthOnly()}catch(error){void fallback(error);return;}
       }
       requestRender();return;
     }
+    lastMotionSubmission=performance.now();
     let animating=false;
-    try{
-      if(loginActive){
-        animating=engine.renderAuthOnly();
-      }else{
-        lastMotionSubmission=now;
-        animating=engine.render();
-      }
-    }catch(error){void fallback(error);return;}
-    if(!stopped&&(animating||trackRunning||now<authScrollUntil||
-      (dismissStart!==null&&now-dismissStart<DISMISS_MS+90)||
-      (restoreStart!==null&&now-restoreStart<DISMISS_MS+90)||
-      now-start<1250))
+    try{animating=engine.render()}catch(e){fallback(e);}
+    if(!stopped&&(animating||trackRunning||
+      (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
+      (restoreStart!==null&&performance.now()-restoreStart<DISMISS_MS+90)||
+      performance.now()-start<1250))
       requestRender();
   });
 }
@@ -892,21 +873,11 @@ async function initialize(){
     }
     return animating||authHoverAnimating||authAnimating;
   }
-  // Sign-in scroll, hover and Motion all use this independent glass-only
-  // pass. No homepage photograph copy, square rerender or 30fps throttle.
-  // It shares the exact square shader, SDF and spring state.
-  // On very short viewports, shade the visible canvas plus one viewport of
-  // overscan on each side; do not shade an entire long form on every tick.
-  function authVisibleScissor(pass){
-    const viewHeight=Math.max(1,routeOutlet?.clientHeight||physicalAuthHeight/dpr);
-    if(physicalAuthHeight<=3*viewHeight*dpr)return;
-    const scroll=routeOutlet?.scrollTop||0;
-    const top=Math.max(0,Math.min(physicalAuthHeight-1,
-      Math.floor((scroll-viewHeight)*dpr)));
-    const end=Math.max(top+1,Math.min(physicalAuthHeight,
-      Math.ceil((scroll+2*viewHeight)*dpr)));
-    pass.setScissorRect(0,top,physicalWidth,end-top);
-  }
+  // An auth-only presentation pass for the card's exit Motion. It leaves
+  // the homepage canvas, square buffers and 30fps square track clock intact.
+  // Only seven auth pane instances are updated, so the card needn't wait for
+  // a full wallpaper copy and 53 square glass draws on every intermediate
+  // Motion frame.
   function renderAuthOnly(){
     if(!authContext||!instanceCount||stopped)return false;
     const now=performance.now();
@@ -918,25 +889,18 @@ async function initialize(){
     syncTileTints();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
-    // Keep the homepage square buffer bytes unchanged during auth-only
-    // scrolling. Upload only the 10 possible card/control records.
-    const paneOffset=tileCount*TILE_FLOATS;
-    device.queue.writeBuffer(tileBuffer,paneOffset*4,
-      tileData.subarray(paneOffset));
-    const encoder=device.createCommandEncoder({label:"Sign-in-only interactive frame"});
+    device.queue.writeBuffer(tileBuffer,0,tileData);
+    const encoder=device.createCommandEncoder({label:"Sign-in-only transition frame"});
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:authContext.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
     });
-    authVisibleScissor(pass);
     pass.setPipeline(glassPipeline);pass.setBindGroup(0,authGlassGroup);
     pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
     pass.end();
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;
     audit.authOnlyFrames=(audit.authOnlyFrames||0)+1;
-    audit.lastAuthScrollTop=routeOutlet?.scrollTop||0;
-    audit.lastAuthFrameAt=now;
     if(audit.authGlass){
       audit.authGlass.cardHover=authHover.snapshot(0);
       audit.authGlass.controlHover=authHover.activeControl>=1?
@@ -1068,12 +1032,9 @@ async function initialize(){
     childList:true,subtree:true,attributes:true,
     attributeFilter:["style","class","disabled"]
   });
-  // Native scroll and its elastic tail should never wait for a full Home
-  // render. Wheel/touch events also wake the glass during Safari rubberband,
-  // where the compositor can move before scrollTop changes.
-  for(const type of ["scroll","wheel","touchmove"]){
-    routeOutlet?.addEventListener(type,requestAuthScrollFrame,{passive:true});
-  }
+  // Scroll is native/compositor-owned. GPU sampling still refreshes when the
+  // scrolled card crosses the fixed wallpaper; geometry never chases it.
+  routeOutlet?.addEventListener("scroll",requestRender,{passive:true});
   const authSizeObserver=routeMount?new ResizeObserver(()=>requestRender()):null;
   if(routeMount)authSizeObserver.observe(routeMount);
   let resizeGeneration=0;
