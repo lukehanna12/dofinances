@@ -292,7 +292,7 @@ test("Utility editorial fields remain separate from catalog labels and collectio
  assert.match(js,/item\.description\|\|"Description pending source review"/);
  assert.match(js,/data-ut-edit-annotation/);
  assert.match(js,/createUtilityAnnotationEditor/);
- assert.match(js,/editorial_version/);
+ assert.match(editor,/editorial_version/);
  assert.match(js,/Pending direct source review/);
  assert.match(editor,/action:"annotate"/);
  assert.match(editor,/expected_version:version/);
