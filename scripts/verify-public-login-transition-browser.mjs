@@ -151,7 +151,8 @@ try{
   assert.equal(active.route,"/login");
   assert.equal(active.back,"/");
   assert.equal(active.caption,false);
-  assert.ok(Math.abs(active.center-active.viewport)<1,"Sign-in card must be horizontally centered");
+  assert.ok(Math.abs(active.center-active.viewport)<1,
+    "Sign-in card must be horizontally centered; actual "+active.center+" versus "+active.viewport);
   assert.ok(Math.abs(active.logoY-(home.barBottom+46))<1,
     "The same doof logo moves to the shell-owned compact position");
   assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
