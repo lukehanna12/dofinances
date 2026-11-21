@@ -307,9 +307,11 @@ body.public-home .dashboard-home .cta6-center h1{
   transform-origin:center center;
   transition:transform 440ms cubic-bezier(.22,.72,.24,1);
 }
+/* Keep the one-time logo introduction animation running if a user
+   clicks early. Cancelling it would snap the brand upward by 16px and restart
+   the introduction when navigating back home. */
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center{
   pointer-events:none!important;
-  animation:none!important;
 }
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
   transform:translate3d(0,var(--doof-exit-y,0px),0) scale(.6);

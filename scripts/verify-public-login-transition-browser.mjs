@@ -108,6 +108,8 @@ try{
     throw Error("Timed out: "+expression);
   };
   await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
+  // Measure the normal settled homepage, not the logo's 16px introduction.
+  await sleep(1050);
   const home=await evaluate("(()=>{window.__persistedShell={"+
     "mosaic:document.querySelector('#cta6-mosaic'),"+
     "logo:document.querySelector('#dashboard-title'),"+

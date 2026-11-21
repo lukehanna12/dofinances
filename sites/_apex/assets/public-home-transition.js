@@ -20,9 +20,14 @@ function positionCompactLogo(){
   if(previous==="leaving")delete body.dataset.publicRoute;
   if(direct)delete body.dataset.directLogin;
   const rect=logo.getBoundingClientRect();
+  const parent=logo.closest(".cta6-center");
+  const parentTransform=parent?getComputedStyle(parent).transform:"none";
+  const introDy=parentTransform==="none"?0:new DOMMatrixReadOnly(parentTransform).m42;
   const navBottom=document.getElementById("global-menu")?.getBoundingClientRect().bottom??44;
+  // Measure against the intro animation's resting geometry so the compact
+  // target remains exact even if clicked while the 16px entrance is active.
   logo.style.setProperty("--doof-exit-y",
-    (navBottom+46-(rect.top+rect.height/2))+"px");
+    (navBottom+46-(rect.top+rect.height/2-introDy))+"px");
   if(previous)body.dataset.publicRoute=previous;
   if(direct)body.dataset.directLogin="true";
   body.dataset.publicReady="true";
