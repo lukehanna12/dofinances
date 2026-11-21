@@ -84,10 +84,12 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   // the recovered SDF/refraction logic remains the same; the SVG icon
   // uses the identical scale in dashboard-gpu-renderer.js.
   let dismiss=clamp(tile.motion.w,0.0,1.0);
-  let contraction=dismiss*dismiss;
-  let squeeze=vec2<f32>(1.0-0.58*contraction,1.0-0.30*contraction);
+  let bloom=dismiss*dismiss*(3.0-2.0*dismiss);
+  // Smoke expands at the ORIGINAL tile center. No swipe, no convergent
+  // rightward transport, no shrink into a distant point.
+  let plumeScale=vec2<f32>(1.0+0.40*bloom,1.0+0.32*bloom);
   let center=tile.rect.xy+tile.rect.zw*0.5;
-  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*squeeze;
+  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*plumeScale;
   var out:GlassOut;
   out.position=vec4<f32>(2.0*p.x/state.viewport.x-1.0,
     1.0-2.0*p.y/state.viewport.y,0.0,1.0);
@@ -292,6 +294,29 @@ fn mipSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
   return mix(levelBilinear(uv,lo),levelBilinear(uv,hi),fract(chosen));
 }
 
+/* Low-frequency interpolated noise rather than static/pixel speckle:
+   rounded gray billows with animated trailing wisps. Procedural browser
+   approximation to historic notification close "poof", not Apple source.
+   At progress=0 the new code is bypassed to preserve existing optics. */
+fn poofHash(p:vec2<f32>)->f32{
+  return fract(sin(dot(p,vec2<f32>(127.1,311.7)))*43758.5453);
+}
+fn poofNoise(p:vec2<f32>)->f32{
+  let i=floor(p);
+  let f=fract(p);
+  let blend=f*f*(vec2<f32>(3.0)-2.0*f);
+  let a=poofHash(i);
+  let b=poofHash(i+vec2<f32>(1.0,0.0));
+  let c=poofHash(i+vec2<f32>(0.0,1.0));
+  let d=poofHash(i+vec2<f32>(1.0,1.0));
+  return mix(mix(a,b,blend.x),mix(c,d,blend.x),blend.y);
+}
+fn poofCloud(p:vec2<f32>)->f32{
+  let lower=poofNoise(p);
+  let middle=poofNoise(p*2.03+vec2<f32>(11.3,4.7));
+  let upper=poofNoise(p*4.07+vec2<f32>(6.2,17.4));
+  return (lower*.52+middle*.31+upper*.17);
+}
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
@@ -315,7 +340,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));
   let signedRatio=nativeHalf1(-signed/nativeWidth);
   let coverage=nativeHalf1(clamp(0.5+signedRatio,0.0,1.0));
-  if(coverage<=0.0){discard;}
+  let dismiss=clamp(tile.motion.w,0.0,1.0);
+  // The cloud needs to live beyond the original rounded square outline
+  // in its (expanded) quad. At rest, retain exact original discard.
+  if(coverage<=0.0&&dismiss<=0.0){discard;}
   let d=min(dimensions.x,dimensions.y);
   let innerAmount=max(-60.0,-0.8*d);
   let innerInvHeight=1.0/min(20.0,0.25*d);
@@ -406,16 +434,38 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
   let ovalDistance=clamp(length(ovalUV),0.0,1.0);
   let logoOpacity=mix(0.60,1.0,ovalDistance*ovalDistance);
-  // Notification dismissal is a *coherent rightward material exit*,
-  // not a cloud of noise fragments. The live Mac exposes banner
-  // transition/offset interfaces, not a recovered pixel-erosion formula.
-  // motion.w is per-square, spring-shaped progress [0,1]. Slightly soften
-  // the trailing edge of each moved/squeezed glass surface, so the final
-  // alpha falls away like a continuous liquid sheet without speckle.
-  let dismiss=clamp(tile.motion.w,0.0,1.0);
-  let localX=clamp(in.local.x/max(1.0,tile.rect.z),0.0,1.0);
-  let front=clamp((dismiss-0.06+0.1*(localX-0.5))/0.82,0.0,1.0);
-  let fade=1.0-front*front*(3.0-2.0*front);
-  return vec4<f32>(color,coverage*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity*fade);
+  let baseAlpha=coverage*in.introAlpha*
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity;
+  // ZERO-DIFF baseline: never evaluate procedural smoke in normal
+  // presentation; the SDF, sampling, luminance, and opacity stay exact.
+  if(dismiss<=0.0){return vec4<f32>(color,baseAlpha);}
+  // Historic X-click notification closing is a short, *in-place* poof,
+  // unlike swipe dismiss, automatic banner timeout, or Dock removal.
+  // The observed precedent is a more realistic gray cloud than Dock's
+  // hand-drawn five-frame poof. Current 26.x GPU timing/texture is
+  // unrecovered: these soft billows are an explicitly authored model.
+  let centerUV=(in.local/tile.rect.zw-vec2<f32>(0.5))*2.0;
+  let seed=f32(in.tileIndex)*0.367;
+  let wind=vec2<f32>(0.06*dismiss,0.48*dismiss);
+  let cloud=poofCloud(centerUV*3.0+vec2<f32>(seed,seed*.49)+wind);
+  let fine=poofNoise(centerUV*11.0+vec2<f32>(seed*1.7,2.1*dismiss));
+  // Soft three-dimensional-looking cloud outline, not sharp noise cells.
+  // Expanding vertex geometry gives the billows room outside the source
+  // glass silhouette; no screenshot copies or external sprite assets.
+  let radius=length(centerUV*vec2<f32>(0.98,1.09));
+  let billowEdge=radius-0.52*(cloud-0.50)-0.10*(fine-0.50);
+  let billow=1.0-smoothstep(0.56,1.25,billowEdge);
+  let fringe=smoothstep(0.23,0.74,cloud)*0.77+0.23;
+  // Material frays organically, becomes translucent fog, then evaporates.
+  let breakup=dismiss+0.24*(cloud-0.5)+0.08*(fine-0.5);
+  let retained=1.0-smoothstep(0.15,0.51,breakup);
+  let cloudIn=smoothstep(0.075,0.26,dismiss);
+  let cloudOut=1.0-smoothstep(0.48,0.97,dismiss);
+  let smoke=cloudIn*cloudOut*billow*fringe*0.43;
+  var smokeColor=vec3<f32>(0.83,0.85,0.87);
+  if(state.tintMeta.y>0.5){smokeColor=vec3<f32>(0.68,0.71,0.75);}
+  let poofColor=mix(color,smokeColor,cloudIn*0.91);
+  let alpha=(coverage*retained+smoke)*in.introAlpha*
+    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity;
+  return vec4<f32>(poofColor,clamp(alpha,0.0,1.0));
 }

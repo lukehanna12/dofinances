@@ -253,7 +253,25 @@ try{
   'return {before,after:location.href};})()'
  ].join(""));
  assert.equal(inert.before,inert.after,"Placeholder buttons must not navigate");
+ // Non-reduced-motion is essential here: an X-close poof must have a
+ // visible intermediate state before the legitimate /login navigation.
+ await send("Emulation.setEmulatedMedia",{
+   features:[{name:"prefers-reduced-motion",value:"no-preference"}]
+ });
  await evaluate('document.querySelector(".cta6-bottom-action a").click()');
+ const duringDismiss=await evaluate(`(()=>{
+   const tile=document.querySelector(".cta6-tile--icon");
+   return {route:document.body.dataset.publicRoute,
+     path:location.pathname,
+     style:getComputedStyle(tile).transform,
+     target:getComputedStyle(document.querySelector(".cta6-bottom-action")).opacity,
+     theme:!!document.getElementById("public-theme-toggle")};
+ })()`);
+ assert.equal(duringDismiss.route,"leaving","Sign in starts the X-close poof");
+ assert.equal(duringDismiss.path,"/","Route changes only after the poof");
+ assert.equal(duringDismiss.theme,true,"Theme switch remains present during transition");
+ assert.ok(!duringDismiss.style.includes("600px"),
+   "Tiles must not use the old right-swipe transform");
  let loginReached=false;
  for(let i=0;i<50;i++){
   if(await evaluate('location.pathname==="/login" && !!document.querySelector("h1")')){loginReached=true;break;}

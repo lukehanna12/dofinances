@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
-import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift}
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
 import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
@@ -85,11 +85,17 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/state\.viewport\.y\*0\.5-2\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
   assert.match(shader,/let ovalRadii=vec2<f32>\(140\.0,100\.0\)\*state\.viewport\.w;/);
   assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
-  assert.match(shader,/clamp\(tile\.motion\.z,0\.0,1\.0\)\*edgeOpacity\*logoOpacity\*fade/);
-  assert.match(shader,/let dismiss=clamp\(tile\.motion\.w,0\.0,1\.0\)/);
-  assert.match(shader,/let squeeze=vec2<f32>\(1\.0-0\.58\*contraction,1\.0-0\.30\*contraction\);/);
-  assert.match(shader,/let front=clamp\(\(dismiss-0\.06\+0\.1\*\(localX-0\.5\)\)\/0\.82,0\.0,1\.0\);/);
-  assert.doesNotMatch(shader,/let grain=|let noise=|fract\(sin\(/,"No randomized particle erosion");
+  assert.match(shader,/let baseAlpha=coverage\*in\.introAlpha\*/);
+  assert.match(shader,/if\(dismiss<=0\.0\)\{return vec4<f32>\(color,baseAlpha\);\}/,
+    "Normal presentation must be byte-for-byte original material path");
+  assert.match(shader,/let plumeScale=vec2<f32>\(1\.0\+0\.40\*bloom,1\.0\+0\.32\*bloom\);/);
+  assert.match(shader,/fn poofNoise\(p:vec2<f32>\)/);
+  assert.match(shader,/fn poofCloud\(p:vec2<f32>\)/);
+  assert.match(shader,/let billow=1\.0-smoothstep\(0\.56,1\.25,billowEdge\);/);
+  assert.match(shader,/let smoke=cloudIn\*cloudOut\*billow\*fringe\*0\.43;/);
+  assert.match(shader,/return vec4<f32>\(poofColor,clamp\(alpha,0\.0,1\.0\)\);/);
+  assert.doesNotMatch(shader,/rightward material exit|let grain=|let front=|let squeeze=|convergent|infinite swipe/,
+    "Dismissal is a localized soft poof, never a lateral swipe");
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
   assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
@@ -128,7 +134,7 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
 });
 test("Notification-inspired dismissal is explicitly provisional and clears all square lanes",()=>{
-  assert.equal(DISMISS_MS,720);
+  assert.equal(DISMISS_MS,620);
   for(let row=0;row<7;row++)for(let col=0;col<11;col++){
     assert.equal(tileDismissProgress(0,row,col),0);
     assert.equal(tileDismissProgress(DISMISS_MS,row,col),1);
@@ -143,19 +149,24 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
     const middle=tileDismissDrift(.5,row,col,x,width,screen);
     const exit=tileDismissDrift(1,row,col,x,width,screen);
     assert.deepEqual(origin,{x:0,y:0});
-    assert.ok(middle.x>0&&exit.x>middle.x,"Rightward exit must be monotonic");
-    assert.equal(exit.y,0,"No invented vertical scatter");
-    assert.ok(Math.abs(x+width*.5+exit.x-(screen+width*.65))<1e-6,
-      "Each square converges on one right-edge exit boundary");
+    assert.ok(Math.abs(middle.x)<=3.4&&Math.abs(exit.x)<=3.4,
+      "Poof stays within a few pixels of its tile, never flies offscreen");
+    assert.ok(exit.y<0&&exit.y>=-6.001,
+      "Smoke rises gently at the original location");
+    assert.ok(Math.abs(x+exit.x-x)<4,"The notification's X-close isn't a swipe");
   }
   assert.equal(tileDismissIconOpacity(0),1);
   assert.equal(tileDismissIconOpacity(1),0);
   assert.ok(tileDismissIconOpacity(.5)<1);
   assert.deepEqual(tileDismissScale(0),{x:1,y:1});
-  assert.deepEqual(tileDismissScale(1),{x:.42000000000000004,y:.7});
-  assert.ok(tileDismissScale(.5).x<1&&tileDismissScale(.5).y<1);
-  assert.ok(tileDismissProgress(200,3,10)>tileDismissProgress(200,3,0),
-    "Rightmost tiles lead the dismissal wave");
+  assert.deepEqual(tileDismissScale(1),{x:1.4,y:1.32});
+  assert.ok(tileDismissScale(.5).x>1&&tileDismissScale(.5).y>1,
+    "Smoke expands instead of imploding");
+  assert.ok(tileDismissBlur(.4)>0&&tileDismissBlur(1)>tileDismissBlur(.4));
+  assert.ok(tileDismissProgress(200,3,10)>=0&&tileDismissProgress(200,3,0)>=0);
+  assert.ok(Math.abs(tileDismissProgress(200,3,10)-
+    tileDismissProgress(200,3,0))<.06,
+    "X-close poof is nearly simultaneous across the lattice");
   assert.throws(()=>tileDismissDrift(.5,3,4,120,0,1440),RangeError);
   const home=asset("index.html");
   const route=asset("assets/public-home-transition.js");
@@ -170,6 +181,7 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);
   assert.match(renderer,/shrink\.x\.toFixed\(5\)/);
   assert.match(renderer,/shrink\.y\.toFixed\(5\)/);
+  assert.match(renderer,/tileDismissBlur\(dissolving\)\.toFixed\(3\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
   assert.match(style,/data-public-route="leaving"/);
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/tileDismissProgress/);

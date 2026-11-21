@@ -23,7 +23,7 @@ import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.j
 import {createTintControls,tintForTile,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
-import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift} from "./dashboard-public-dismiss.js";
+import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
@@ -580,6 +580,12 @@ async function initialize(){
         shrink.x.toFixed(5)+","+shrink.y.toFixed(5)+")";
       trackTiles[i].style.opacity=(combinedOpacity*
         tileDismissIconOpacity(dissolving)).toFixed(5);
+      // Native X-close poofs diffuse the content while smoke replaces
+      // it. SVG icons cannot be drawn by the WebGPU material pass, so
+      // let their vector contours soften in place alongside the glass.
+      if(dissolving>0&&trackIcons[i]){
+        trackIcons[i].style.filter="blur("+tileDismissBlur(dissolving).toFixed(3)+"px)";
+      }
       if(trackIcons[i]){
         const glyphAlpha=publicIconSpatialAlpha(
           tileData[p]+tileData[p+2]*0.5,
@@ -596,7 +602,7 @@ async function initialize(){
       running:trackRunning,phase,elapsed:trackSeconds,
       cycleSeconds:TRACK_SECONDS,pitchCSS,rows:7,columns:11,
       fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
-      dismissal:"rightward convergent glass sheet, critically damped progress, shader alpha",
+      dismissal:"X-close localized soft poof; five smooth stages, no swipe or lateral exit",
       dismissElapsed:elapsedDismiss,dismissed:elapsedDismiss>=DISMISS_MS,
       fadedTiles:fading
     };
