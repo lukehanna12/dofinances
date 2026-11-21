@@ -125,10 +125,13 @@ try{
   await evaluate("document.querySelector('.cta6-bottom-action a[href=\"/login\"]').click()");
   await sleep(80);
   const falling=await evaluate("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
-    "return {top:b.getBoundingClientRect().top,opacity:parseFloat(getComputedStyle(b).opacity),"+
-    "transform:getComputedStyle(b).transform};})()");
+    "const st=getComputedStyle(b);"+
+    "return {top:b.getBoundingClientRect().top,opacity:parseFloat(st.opacity),"+
+    "transform:st.transform,transition:st.transition,route:document.body.dataset.publicRoute,"+
+    "reduced:matchMedia('(prefers-reduced-motion: reduce)').matches};})()");
   assert.ok(falling.top>home.bottomTop+2,
-    "Shell-owned bottom buttons must immediately begin dropping on card entry");
+    "Shell-owned bottom buttons must immediately begin dropping on card entry; home="+home.bottomTop+
+    " after="+JSON.stringify(falling));
   assert.ok(falling.opacity<.99,
     "Bottom buttons must fade while dropping, not disappear instantly");
   assert.equal(await evaluate("location.pathname"),"/",
