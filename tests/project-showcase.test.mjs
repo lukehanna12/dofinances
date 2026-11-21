@@ -173,6 +173,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "unicode-plus": "square-radical",
  "liquid-plexiglass-26": "opacity",
  "3d-liquid-glass-26-swift-package": "move-3d",
+ "apple-hig-reader": "apple-worm",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
  "ozoning-board": "treehouse-ozoning.v2"
@@ -217,13 +218,15 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
 });
 
 test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()=>{
- const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v2.svg");
- assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v2");
+ const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v3.svg");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v3");
  assert.match(svg,/viewBox="0 0 24 24"/);
  assert.match(svg,/stroke-width="2"/);
  assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
  assert.ok(svg.includes('M4 9v4.5h9V9L8.5 4.5z'),"Revised cabin and peaked roof");
- assert.ok(svg.includes('M5.5 13.5V22'),"Revised left ladder rail");
+ assert.ok(svg.includes('M6.5 13.5 L6.5 22'),"Latest centered ladder rail");
+ assert.ok(!svg.includes('M5.5 13.5V22'),"Older ladder rail must not return");
+ assert.ok(!svg.includes('M9 13.5V22'),"Earlier ladder right rail was removed");
  assert.ok(svg.includes('M9 19.5H5.5'),"Revised ladder rung");
  assert.ok(!svg.includes('M13 8.5H7v14'),"Retired earlier cabin geometry");
  const js=read("sites/_apex/app/assets/project-showcase.js");
@@ -245,12 +248,29 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  const dir="sites/_apex/app/assets/";
  const v1=read(dir+"project-icons/treehouse-ozoning.svg");
  const v2=read(dir+"project-icons/treehouse-ozoning.v2.svg");
- assert.equal(v1,v2,"The versioned path intentionally preserves the exact approved drawing");
+ const v3=read(dir+"project-icons/treehouse-ozoning.v3.svg");
+ assert.equal(v1,v2,"Earlier two SVG filenames contain the preceding approved drawing");
+ assert.notEqual(v2,v3,"The third SVG file contains the latest user-supplied ladder");
  assert.ok(v1.includes('M4 9v4.5h9V9L8.5 4.5z'),"Both filenames hold the revised image");
  assert.ok(v2.includes('M4 9v4.5h9V9L8.5 4.5z'));
  assert.ok(!v2.includes('M13 8.5H7v14'));
- assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v2"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?ozoning-icon=v2"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?ozoning-icon=v2"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?ozoning-icon=v2"'));
+ assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
+ assert.ok(!v3.includes('M5.5 13.5V22'));
+ assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v3"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v3"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v3"'));
+});
+
+test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
+ assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-worm");
+ const svg=read("sites/_apex/app/assets/project-icons/apple-worm.svg");
+ assert.ok(svg.includes('viewBox="0 0 24 24"'));
+ assert.ok(svg.includes('stroke="#fff"') && svg.includes('stroke-width="2"'));
+ assert.ok(svg.includes('M12 6.528V3a1 1 0 0 1 1-1h0'),"Lucide apple stem preserved");
+ assert.ok(svg.includes('M18.237 21A15 15 0 0 0 22 11'),"Lucide apple silhouette preserved");
+ assert.ok(svg.includes('M16.5 11.3c-1.8-1.1'),"Curved worm is positioned inside the apple");
+ assert.ok(svg.includes('<circle cx="17.4" cy="10.8"'),"Worm head is visible");
+ const shared=read("sites/_apex/app/assets/project-showcase.js");
+ assert.ok(shared.includes('icon.width=28;icon.height=28'));
 });

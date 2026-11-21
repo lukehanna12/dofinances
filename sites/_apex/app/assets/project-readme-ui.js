@@ -4,7 +4,7 @@
 // and separate Settings credentials remain available.
 // All credentials and writes stay behind the authenticated, same-origin Worker.
 import {setWorkspaceProjectRegistry} from "./workspace-nav.js";
-import {renderProjectShowcase} from "./project-showcase.js?ozoning-icon=v2";
+import {renderProjectShowcase} from "./project-showcase.js?project-icons=v3";
 import {renderRepositoryTree,resolveRepoLink,markdownFile,repositoryDirectory} from "./project-file-browser.js";
 import {createReadmeMarkdownConverter,preserveReadmeSource} from "./readme-rich-markdown.js";
 import {applyReadmeMarkdownInput,applyReadmeMarkdownBeforeInput} from "./readme-markdown-input-rules.js";
