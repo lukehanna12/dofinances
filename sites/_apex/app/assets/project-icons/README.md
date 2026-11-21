@@ -7,7 +7,7 @@
 
 - Ozoning Board uses the revised `treehouse-ozoning.v2.svg`, preserving the user-supplied 24 × 24 viewBox and 2-unit strokes. The shared icon styling displays it as a white 28 × 28 px icon without a surrounding circle.
 
-- The previous `treehouse-ozoning.svg` is retained for old references. The versioned asset and versioned project-module import chain prevent a cached older design from being reused after deployment.
+- The original `treehouse-ozoning.svg` path and its new versioned filename contain the same approved updated drawing. The versioned URL and versioned project-module import chain avoid stale cached responses from the original URL.
 - Protocol Monitor Pruner uses `funnel-code.svg`: the approved white funnel with a genuinely interrupted top rim and centered Lucide-style code chevrons. It uses the same 24 × 24 grid and 2-unit strokes as the other icons.
 
 ## Artwork references

@@ -245,8 +245,8 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  const dir="sites/_apex/app/assets/";
  const v1=read(dir+"project-icons/treehouse-ozoning.svg");
  const v2=read(dir+"project-icons/treehouse-ozoning.v2.svg");
- assert.notEqual(v1,v2,"Versioned SVG must differ from the old image");
- assert.ok(v1.includes('M13 8.5H7v14'),"Keep old image only for backward compatibility");
+ assert.equal(v1,v2,"The versioned path intentionally preserves the exact approved drawing");
+ assert.ok(v1.includes('M4 9v4.5h9V9L8.5 4.5z'),"Both filenames hold the revised image");
  assert.ok(v2.includes('M4 9v4.5h9V9L8.5 4.5z'));
  assert.ok(!v2.includes('M13 8.5H7v14'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v2"'));
