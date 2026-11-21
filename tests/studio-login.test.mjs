@@ -187,7 +187,7 @@ test("Sign-in glass uses the EXACT same WebGPU pipeline and hover springs as squ
     load("../src/components/Auth3.jsx"),load("../src/styles.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
-    load("../sites/_apex/assets/home-dashboard/dashboard-home.css")
+    load("../sites/_apex/assets/public-home.css")
   ]);
   assert.match(jsx,/data-auth-glass-card/);
   assert.doesNotMatch(jsx,/onPointerMove=\{moveGlassLight\}/);

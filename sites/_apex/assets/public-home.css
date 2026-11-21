@@ -356,6 +356,26 @@ body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .das
   body.public-home .dashboard-home .cta6-bottom-action{transition:none!important;}
 }
 
+/* The sign-in form is above the persistent Home DOM (z-index:6).
+   Render its panes in a transparent WebGPU layer at z-index:5 so the exact
+   shared tile shader remains visible even through homepage stacking contexts.
+   This layer never handles pointer input; the unchanged spring controller
+   receives the form's normal pointer events. */
+body.public-home #dashboard-auth-glass-scene{
+  position:fixed;
+  inset:var(--dashboard-scene-top) 0 0;
+  z-index:5;
+  display:block;
+  width:100vw;
+  height:var(--dashboard-scene-height);
+  pointer-events:none;
+  opacity:0;
+  contain:strict;
+}
+body.public-home[data-auth-gpu-scene="ready"] #dashboard-auth-glass-scene{
+  opacity:1;
+}
+
 /* Persistent public application shell: the backdrop, GPU and mark never unmount. */
 body.public-home > #public-route-content{
   position:fixed;inset:44px 0 0;z-index:6;
