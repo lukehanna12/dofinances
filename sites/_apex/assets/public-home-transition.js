@@ -5,6 +5,7 @@
  * Adding a route needs one registry entry; no copy of the shell.
  */
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
+import {initCompositedRefraction} from "./home-dashboard/dashboard-composited-refraction.js";
 const registry=new Map([["/login",{manifest:"/assets/public-login-manifest.json",mount:"mountLogin"}]]);
 const outlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
@@ -15,8 +16,13 @@ const body=document.body,reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // CSS-backdrop likeness or a partial shader when the user prefers this look.
 // The compositor-synchronized hybrid remains an explicit, reversible option
 // at /login?auth-glass=compositor while pursuing full-look scroll sync.
-body.dataset.authGlassMode=new URLSearchParams(location.search).get("auth-glass")==="compositor"
+const requestedGlass=new URLSearchParams(location.search).get("auth-glass");
+body.dataset.authGlassFilter=requestedGlass==="refraction"?"refraction":"none";
+body.dataset.authGlassMode=(requestedGlass==="compositor"||requestedGlass==="refraction")
   ?"compositor":"webgpu";
+// Explicit experiment only. Unsupported browsers remain on the existing
+// native-compositor hybrid; the original WebGPU default is never changed.
+if(requestedGlass==="refraction")initCompositedRefraction();
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=()=>location.pathname.replace(/\/+$/,"")||"/";
 let current=null,busy=false,fromHome=false,state="home",revision=0,pendingNavigate=false;

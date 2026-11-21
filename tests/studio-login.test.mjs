@@ -599,3 +599,37 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
   assert.match(css,/backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\) brightness\(\.79\)/);
   assert.match(shell,/z-index:2;\s*opacity:1!important;\s*visibility:visible!important/);
 });
+
+
+test("experimental native-refraction maps come from original shader's SDF and never capture DOM",async()=>{
+  const [module,router,css]=await Promise.all([
+    load("../sites/_apex/assets/home-dashboard/dashboard-composited-refraction.js"),
+    load("../sites/_apex/assets/public-home-transition.js"),
+    load("../src/styles.css")
+  ]);
+  assert.match(router,/requestedGlass==="refraction"/);
+  assert.match(router,/initCompositedRefraction\(\)/);
+  assert.match(css,/data-auth-glass-filter="refraction"/);
+  assert.match(module,/function supercircle\(/);
+  assert.match(module,/export function originalMode4Field/);
+  assert.match(module,/export function originalRefractionEnvelope/);
+  assert.match(module,/feDisplacementMap/);
+  assert.match(module,/feColorMatrix/);
+  assert.match(module,/feComposite/);
+  assert.doesNotMatch(module,/captureScreenshot|drawImage\(document|html2canvas|MediaRecorder/);
+  const {originalMode4Field,originalOpticalDisplacement,
+    originalRefractionEnvelope}=await import(
+    "../sites/_apex/assets/home-dashboard/dashboard-composited-refraction.js"
+  );
+  const left=originalMode4Field(3,50,100,100,15);
+  const right=originalMode4Field(97,50,100,100,15);
+  assert.ok(Number.isFinite(left[0])&&Number.isFinite(left[1]));
+  assert.ok(Math.abs(left[0]-right[0])<.01);
+  assert.ok(Math.abs(left[1]+right[1])<.01,
+    "The two edges' refraction normal directions must oppose");
+  assert.equal(originalRefractionEnvelope(-100,-60,.05),0);
+  assert.equal(originalRefractionEnvelope(10,-60,.05),-60);
+  const field=originalOpticalDisplacement(3,50,100,100,15);
+  assert.ok(field.inner[0]>0||field.inner[0]<0);
+  assert.ok(field.weight>=0&&field.weight<=.300048828125);
+});
