@@ -173,7 +173,8 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "unicode-plus": "square-radical",
  "liquid-plexiglass-26": "opacity",
  "3d-liquid-glass-26-swift-package": "move-3d",
- "apple-adobe-fx": "blend"
+ "apple-adobe-fx": "blend",
+ "ozoning-board": "treehouse-ozoning"
 };
  const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
@@ -212,4 +213,14 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
  assert.equal(pastoral,"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg");
  assert.ok(!mural.includes("ktga-hG5fIhh"),"Do not use the gallery installation image");
  assert.ok(!pastoral.includes("upload.wikimedia.org/wikipedia/commons/thumb"),"Use the verified Commons image thumbnail host");
+});
+
+test("Ozoning Board displays the original supplied treehouse SVG in the existing 28px icon system",()=>{
+ const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.svg");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning");
+ assert.match(svg,/viewBox="0 0 24 24"/);
+ assert.match(svg,/stroke-width="2"/);
+ assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
+ const js=read("sites/_apex/app/assets/project-showcase.js");
+ assert.ok(js.includes('icon.width=28;icon.height=28'));
 });

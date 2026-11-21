@@ -1,9 +1,11 @@
 # Projects card icons and artwork
 
-- Nine Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license). Assigned icons render in white at 28 × 28 px without the original number-circle background.
+- Nine Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license), plus an original custom treehouse SVG supplied by the user for Ozoning Board. Assigned icons render in white at 28 × 28 px without the original number-circle background.
 - Icon choices and image choices are keyed by permanent project slug in `../project-showcase.js`.
 - Images remain external HTTPS references; no copyrighted artwork files are copied into this repository. Images for unassigned projects and images that fail to load retain the existing workspace-wallpaper behavior.
 - External image servers may restrict hotlinking or change URLs. For guaranteed availability, obtain permission for copyrighted images and host licensed copies in Git-managed assets.
+
+- Ozoning Board uses `treehouse-ozoning.svg`, preserving the user-supplied 24 × 24 viewBox and 2-unit strokes. The shared icon styling displays it as a white 28 × 28 px icon without a surrounding circle.
 
 ## Artwork references
 

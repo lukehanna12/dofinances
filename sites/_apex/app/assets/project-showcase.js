@@ -43,7 +43,8 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "unicode-plus":"square-radical",
   "liquid-plexiglass-26":"opacity",
   "3d-liquid-glass-26-swift-package":"move-3d",
-  "apple-adobe-fx":"blend"
+  "apple-adobe-fx":"blend",
+  "ozoning-board":"treehouse-ozoning"
 });
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",
