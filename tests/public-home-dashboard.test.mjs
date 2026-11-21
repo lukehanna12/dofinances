@@ -110,7 +110,7 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/publicIconSpatialAlpha/);
   assert.doesNotMatch(asset("app/assets/dashboard-home.css"),/public-icon-spatial-alpha/);
   const width=1440,height=856,dpr=2,tile=(950/11)*dpr;
-  const logoY=height*dpr*0.5-1.5*(950/11)*dpr;
+  const logoY=height*dpr*0.5-2.5*(950/11)*dpr;
   const eps=1e-9;
   const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<eps,
     `expected ${expected}, got ${actual}`);
