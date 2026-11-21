@@ -364,11 +364,21 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // AIR 323-328 / 383-387: convert base UV to half2, multiply native
   // half displacement × half2 matrix, HALF add, then promote to sample UV.
   // GAP NATIVE-UV-TO-CSS still applies to the CSS/texture scale mapping.
-  let baseUV=nativeHalf2(in.position.xy/state.viewport.xy);
+  // Sign-in glass lives in a *scrolling* document-sized framebuffer, but
+  // its photograph still lives in the original fixed viewport scene.
+  // The auth uniform carries scene height in fit.w and scrollTop in pointer.w.
+  // No change to the homepage square optical math or material parameters.
+  var backdropExtent=state.viewport.xy;
+  var backdropPosition=in.position.xy;
+  if(authPane){
+    backdropExtent.y=max(1.0,state.fit.w);
+    backdropPosition.y-=state.pointer.w;
+  }
+  let baseUV=nativeHalf2(backdropPosition/backdropExtent);
   let innerUV=nativeHalf2(baseUV+nativeHalf2(
-    field.yz*inner*displacementFactor/state.viewport.xy));
+    field.yz*inner*displacementFactor/backdropExtent));
   let outerUV=nativeHalf2(baseUV+nativeHalf2(
-    field.yz*outer*displacementFactor/state.viewport.xy));
+    field.yz*outer*displacementFactor/backdropExtent));
   // GAP INTERACTIVE-NATIVE: per-square browser-only perturbation, not an
   // Apple material coefficient. The base AIR SDF/refraction/LOD inputs above
   // remain untouched and the effect decays to exactly zero when inactive.
@@ -380,7 +390,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let radial=delta/max(localRadius,1.0);
   let shiftPx=proximity*(radial*(hover*0.55+pressed*1.1)+
     tile.motion.xy*(hover*0.42+pressed*0.65));
-  let shiftUV=shiftPx/state.viewport.xy;
+  let shiftUV=shiftPx/backdropExtent;
   let interactiveInnerUV=innerUV+shiftUV;
   let interactiveOuterUV=outerUV+shiftUV;
   let innerLOD=glassLOD(tile.properties.z,

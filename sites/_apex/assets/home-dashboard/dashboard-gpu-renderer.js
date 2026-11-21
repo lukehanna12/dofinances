@@ -32,6 +32,11 @@ const root=document.getElementById("cta6-mosaic");
 if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const authCanvas=document.createElement("canvas");
+const routeOutlet=document.getElementById("public-route-content");
+const routeMount=document.getElementById("public-route-stage");
+// The route's scrollbox moves this canvas and its React card on the same
+// compositing layer, even when native rubberbanding precedes JS callbacks.
+const authOriginTop=()=>routeMount?.getBoundingClientRect().top ?? sceneTop;
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -306,7 +311,7 @@ async function initialize(){
   // overlay, DOM compositing can hide every otherwise valid auth GPU pane.
   authCanvas.id="dashboard-auth-glass-scene";
   authCanvas.setAttribute("aria-hidden","true");
-  document.body.insertBefore(authCanvas,document.getElementById("public-route-content"));
+  routeOutlet?.insertBefore(authCanvas,routeMount||routeOutlet.firstChild);
   const url="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif";
   // HTMLImageElement onload works without a CPU-side Blob/ImageBitmap
   // re-encode. The GPU still owns all downstream scene/mip operations.
@@ -442,9 +447,12 @@ async function initialize(){
   const globalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
+  const authGlobalsBuffer=device.createBuffer({
+    size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+  });
   let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
-    glassGroup=null,backgroundGroup=null,offscreenFrame=null,
-    tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,
+    glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
+    tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,physicalAuthHeight=0,
     dpr=1,sceneTop=0;
   let tintData=new Float32Array(0),lastTintKey="";
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
@@ -452,7 +460,25 @@ async function initialize(){
     pitchCSS=0,trackOpacity=new Float32Array(0),
     dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
   const uniform=new Float32Array(20);
+  const authUniform=new Float32Array(20);
   let tileData=new Float32Array(0);
+  function syncAuthCanvasSize(){
+    if(!authContext)return;
+    // The GLASS framebuffer spans the form's full scrollable height. Its
+    // immutable document coordinates cannot be clipped to the viewport when
+    // the user scrolls through sign-up, recovery or short-window layouts.
+    const cssHeight=Math.max(1,routeMount?.scrollHeight||0,routeOutlet?.clientHeight||0);
+    const height=Math.max(1,Math.ceil(cssHeight*dpr));
+    if(height>device.limits.maxTextureDimension2D)
+      throw Error("Sign-in glass scroll height exceeds GPU limit");
+    authCanvas.style.top="0px";authCanvas.style.width=window.innerWidth+"px";
+    authCanvas.style.height=cssHeight+"px";
+    if(authCanvas.width!==physicalWidth||authCanvas.height!==height){
+      authCanvas.width=physicalWidth;authCanvas.height=height;
+    }
+    physicalAuthHeight=height;
+    audit.authScrollCanvasHeight=cssHeight;
+  }
   function writeUniform(){
     uniform[0]=physicalWidth;
     uniform[1]=physicalHeight;
@@ -467,6 +493,16 @@ async function initialize(){
     uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
     uniform[18]=0;uniform[19]=0;
     device.queue.writeBuffer(globalsBuffer,0,uniform);
+    if(authContext){
+      authUniform.set(uniform);
+      authUniform[1]=physicalAuthHeight;
+      // Shader reuses the exact square refraction but samples the real
+      // viewport backdrop at content position minus native scrollTop.
+      authUniform[7]=physicalHeight;
+      authUniform[9]=(pointer.y-authOriginTop())*dpr;
+      authUniform[11]=(routeOutlet?.scrollTop||0)*dpr;
+      device.queue.writeBuffer(authGlobalsBuffer,0,authUniform);
+    }
   }
   function syncTileTints(force=false){
     const value=tint.state,panes=authPaneElements(),scheme=authGlassScheme();
@@ -512,7 +548,7 @@ async function initialize(){
         cornerInert[slot]=1;
         continue;
       }
-      tileData.set(makeLayoutData(node,dpr,sceneTop),p);
+      tileData.set(makeLayoutData(node,dpr,authOriginTop()),p);
       // Reuse the physical blur/LOD word of the already-rendered square.
       // Card and controls differ in silhouette, not optical material; their
       // own min-dimension must not silently change the glass family.
@@ -557,12 +593,10 @@ async function initialize(){
     canvas.style.top=sceneTop+"px";
     canvas.style.width=window.innerWidth+"px";
     canvas.style.height=viewport.height+"px";
-    authCanvas.style.top=canvas.style.top;
-    authCanvas.style.width=canvas.style.width;
-    authCanvas.style.height=canvas.style.height;
+    syncAuthCanvasSize();
     if(sized){
       canvas.width=w;canvas.height=h;
-      if(authContext){authCanvas.width=w;authCanvas.height=h;}
+      // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
@@ -661,14 +695,17 @@ async function initialize(){
     });
     lastTintKey="";
     syncTileTints(true);
+    const glassEntries=buffer=>[
+      {binding:0,resource:sceneView},
+      {binding:1,resource:{buffer:tileBuffer}},
+      {binding:2,resource:{buffer}},
+      {binding:3,resource:{buffer:tintTileBuffer}}
+    ];
     glassGroup=device.createBindGroup({
-      layout:glassPipeline.getBindGroupLayout(0),
-      entries:[
-        {binding:0,resource:sceneView},
-        {binding:1,resource:{buffer:tileBuffer}},
-        {binding:2,resource:{buffer:globalsBuffer}},
-        {binding:3,resource:{buffer:tintTileBuffer}}
-      ]
+      layout:glassPipeline.getBindGroupLayout(0),entries:glassEntries(globalsBuffer)
+    });
+    authGlassGroup=device.createBindGroup({
+      layout:glassPipeline.getBindGroupLayout(0),entries:glassEntries(authGlobalsBuffer)
     });
   }
   function buildScene(){
@@ -772,6 +809,7 @@ async function initialize(){
       trackRunning=allowTrack;
       if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     }
+    syncAuthCanvasSize();
     writeUniform();
     if(scenePending)buildScene();
     const now=performance.now();
@@ -817,7 +855,7 @@ async function initialize(){
         colorAttachments:[{view:authContext.getCurrentTexture().createView(),
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
       });
-      authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,glassGroup);
+      authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,authGlassGroup);
       authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
       authPass.end();
     }
@@ -843,6 +881,7 @@ async function initialize(){
     const now=performance.now();
     const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastAuthFrameTime=now;
+    syncAuthCanvasSize();
     writeUniform();
     const authAnimating=paintAuthPanes();
     syncTileTints();
@@ -854,7 +893,7 @@ async function initialize(){
       colorAttachments:[{view:authContext.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
     });
-    pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
+    pass.setPipeline(glassPipeline);pass.setBindGroup(0,authGlassGroup);
     pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
     pass.end();
     device.queue.submit([encoder.finish()]);
@@ -870,7 +909,7 @@ async function initialize(){
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
     scene?.destroy();offscreenFrame?.destroy();photo.destroy();
-    globalsBuffer.destroy();
+    globalsBuffer.destroy();authGlobalsBuffer.destroy();
   }
   await waitForVisibleHome();
   engine={rebuild,render,renderAuthOnly,dispose,device};
@@ -933,7 +972,7 @@ async function initialize(){
     if(event.pointerType==="touch"&&activePointerId===null)return;
     pointer.x=event.clientX;pointer.y=event.clientY;pointer.enabled=1;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-    authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
     requestRender();
   };
   const downPointer=event=>{
@@ -941,7 +980,7 @@ async function initialize(){
        (activePointerId!==null&&activePointerId!==event.pointerId))return;
     activePointerId=event.pointerId;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-    authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+    authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
     interaction.setPressed(true);authHover.setPressed(true);
     requestRender();
   };
@@ -952,7 +991,7 @@ async function initialize(){
       pointer.enabled=0;interaction.clear();authHover.clear();
     }else{
       interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-      authHover.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
+      authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
     }
     requestRender();
   };
@@ -986,12 +1025,16 @@ async function initialize(){
   // GPU completion is recorded for telemetry, never used as a color swap.
   // React mounts/unmounts and animates route panes independently.
   // Wake this same GPU frame loop without ever capturing DOM pixels.
-  const routeOutlet=document.getElementById("public-route-content");
   const authObserver=routeOutlet?new MutationObserver(()=>requestRender()):null;
   if(routeOutlet)authObserver.observe(routeOutlet,{
     childList:true,subtree:true,attributes:true,
     attributeFilter:["style","class","disabled"]
   });
+  // Scroll is native/compositor-owned. GPU sampling still refreshes when the
+  // scrolled card crosses the fixed wallpaper; geometry never chases it.
+  routeOutlet?.addEventListener("scroll",requestRender,{passive:true});
+  const authSizeObserver=routeMount?new ResizeObserver(()=>requestRender()):null;
+  if(routeMount)authSizeObserver.observe(routeMount);
   let resizeGeneration=0;
   const layoutKey=()=>{
     const viewport=actualSceneViewport(),b=root.getBoundingClientRect();
@@ -1034,7 +1077,7 @@ async function initialize(){
   const resizeObserver=new ResizeObserver(onSize);
   resizeObserver.observe(root);
   device.lost.then(reason=>{
-    authObserver?.disconnect();
+    authObserver?.disconnect();authSizeObserver?.disconnect();
     resizeObserver.disconnect();
     fallback("GPU device lost: "+reason.message);
   });

@@ -252,10 +252,10 @@ try{
     "Or text exactly matches account-linking note in dark mode");
   assert.equal(darkOrnaments.line,darkOrnaments.noteColor,
     "Both Or lines share the note's exact theme color");
-  assert.equal(darkOrnaments.routeOverscroll,"none",
-    "Vertical rubberbanding disabled on real login scroll container");
-  assert.equal(darkOrnaments.rootOverscroll,"none",
-    "Viewport overscroll also suppressed only in login route");
+  assert.equal(darkOrnaments.routeOverscroll,"auto",
+    "Native vertical rubberbanding restored on the real login scroll container");
+  assert.equal(darkOrnaments.rootOverscroll,"auto",
+    "Viewport overscroll must not be suppressed on the login route");
   assert.equal(darkOrnaments.routeOverflow,"auto",
     "Legitimate short-viewport form scrolling remains enabled");
   assert.ok(darkOrnaments.noteColor,"Account-linking note has a computed color");
@@ -413,7 +413,7 @@ try{
     "Or label matches the account-linking note in light mode");
   assert.equal(lightOrnaments.line,lightOrnaments.noteColor,
     "Both Or lines use the note's light theme color");
-  assert.equal(lightOrnaments.routeOverscroll,"none");
+  assert.equal(lightOrnaments.routeOverscroll,"auto");
   assert.equal(lightOrnaments.routeOverflow,"auto");
   assert.ok(lightOrnaments.noteColor,"Light-mode account-linking color must exist");
   assert.equal(lightOrnaments.backTint,"transparent");

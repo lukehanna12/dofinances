@@ -505,15 +505,24 @@ test("back arrow uses exact square glass without artificial light lift or icon o
   assert.doesNotMatch(privateShader,/tile.properties.y == -7.0/);
 });
 
-test("login scroll outlet suppresses vertical rubberbanding without locking overflow",async()=>{
-  const [css,jsx]=await Promise.all([
-    load("../src/styles.css"),load("../src/components/Auth3.jsx")
+test("sign-in rubberbanding restores native overflow with scroll-anchored glass",async()=>{
+  const [css,jsx,home,homeCss,renderer,shader,router]=await Promise.all([
+    load("../src/styles.css"),load("../src/components/Auth3.jsx"),
+    load("../sites/_apex/index.html"),load("../sites/_apex/assets/public-home.css"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/assets/public-home-transition.js")
   ]);
-  assert.match(css,/body\.public-home > #public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:none;/,
-    "The actual fixed route scrollport disables elastic vertical overscroll");
-  assert.match(css,/html:has\(#public-route-content \.auth3-root\),\s*body:has\(#public-route-content \.auth3-root\)\{\s*overscroll-behavior-y:none;/,
-    "Viewport bounce must also be suppressed only while login is present");
-  assert.doesNotMatch(css,/overflow-y:hidden|touch-action:none|position:fixed!important/,
-    "Normal short-screen form scrolling and text inputs must remain available");
+  assert.match(css,/body\.public-home > #public-route-content:has\(\.auth3-root\)\{\s*overscroll-behavior-y:auto;/);
+  assert.doesNotMatch(css,/overscroll-behavior-y:none|overflow-y:hidden|touch-action:none|position:fixed!important/);
+  assert.match(home,/<div id="public-route-content"[^>]*hidden><div id="public-route-stage"><\/div><\/div>/);
+  assert.match(homeCss,/#public-route-content > #dashboard-auth-glass-scene\{\s*position:absolute;/);
+  assert.match(homeCss,/#public-route-content > #public-route-stage\{\s*position:relative;z-index:1/);
+  assert.match(renderer,/routeOutlet\?\.insertBefore\(authCanvas,routeMount\|\|routeOutlet\.firstChild\)/);
+  assert.match(renderer,/routeMount\?\.scrollHeight/);
+  assert.match(renderer,/makeLayoutData\(node,dpr,authOriginTop\(\)\)/);
+  assert.match(renderer,/authGlobalsBuffer/);
+  assert.match(shader,/backdropPosition\.y-=state\.pointer\.w/);
+  assert.match(router,/current=mountLogin\(routeMount,/);
   assert.match(jsx,/data-auth-stage className="min-h-screen/);
 });

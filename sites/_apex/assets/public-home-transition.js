@@ -7,6 +7,7 @@
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const registry=new Map([["/login",{manifest:"/assets/public-login-manifest.json",mount:"mountLogin"}]]);
 const outlet=document.getElementById("public-route-content");
+const routeMount=document.getElementById("public-route-stage");
 const signIn=document.querySelector('.cta6-bottom-action a[href="/login"]');
 const body=document.body,reduced=matchMedia("(prefers-reduced-motion: reduce)");
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -99,7 +100,7 @@ async function openLogin({push=false,direct=false}={}){
       fromHome=!!history.state?.dofinancesPublic;
     }
     outlet.hidden=false;
-    current=mountLogin(outlet,{onBack:()=>closeLogin({navigate:true}),
+    current=mountLogin(routeMount,{onBack:()=>closeLogin({navigate:true}),
       onExitComplete:finishClose});
     state="login";
     document.title="Sign in · Dofinances";
@@ -112,7 +113,7 @@ async function openLogin({push=false,direct=false}={}){
     const note=document.createElement("p");
     note.className="public-route-error";note.setAttribute("role","alert");
     note.textContent="The sign-in card could not load. Please reload and try again.";
-    outlet.replaceChildren(note);
+    routeMount.replaceChildren(note);
     state="error";
   }finally{busy=false;}
 }
@@ -128,7 +129,7 @@ function closeLogin({navigate=false}={}){
 function finishClose(){
   if(!current||state!=="exiting")return;
   current.unmount();
-  current=null;outlet.replaceChildren();outlet.hidden=true;
+  current=null;routeMount.replaceChildren();outlet.hidden=true;
   state="home";document.title="DoFinances";
   if(pendingNavigate){
     if(fromHome){fromHome=false;history.back();}
@@ -150,7 +151,7 @@ addEventListener("popstate",()=>{
   }else if(path==="/"){
     if(current)closeLogin();
     else if(state==="error"){
-      outlet.replaceChildren();outlet.hidden=true;state="home";restoreHome();
+      routeMount.replaceChildren();outlet.hidden=true;state="home";restoreHome();
     }
   }
 });

@@ -356,18 +356,14 @@ body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .das
   body.public-home .dashboard-home .cta6-bottom-action{transition:none!important;}
 }
 
-/* The sign-in form is above the persistent Home DOM (z-index:6).
-   Render its panes in a transparent WebGPU layer at z-index:5 so the exact
-   shared tile shader remains visible even through homepage stacking contexts.
-   This layer never handles pointer input; the unchanged spring controller
-   receives the form's normal pointer events. */
-body.public-home #dashboard-auth-glass-scene{
-  position:fixed;
-  inset:var(--dashboard-scene-top) 0 0;
-  z-index:5;
+/* Render sign-in glass in the exact same scrolling coordinate space as
+   the React card. The two layers are compositor-scrolled together, including
+   native elastic overscroll, instead of chasing a fixed GPU canvas via JS. */
+body.public-home #public-route-content > #dashboard-auth-glass-scene{
+  position:absolute;
+  top:0;left:0;
+  z-index:0;
   display:block;
-  width:100vw;
-  height:var(--dashboard-scene-height);
   pointer-events:none;
   opacity:0;
   contain:strict;
@@ -380,9 +376,15 @@ body.public-home[data-auth-gpu-scene="ready"] #dashboard-auth-glass-scene{
 body.public-home > #public-route-content{
   position:fixed;inset:44px 0 0;z-index:6;
   display:block;overflow-x:hidden;overflow-y:auto;
-  overscroll-behavior:contain;background:transparent;pointer-events:auto;
+  overscroll-behavior:auto;background:transparent;pointer-events:auto;
 }
 body.public-home > #public-route-content[hidden]{display:none!important;}
+/* The React mount never owns/removes the WebGPU canvas. Both are direct
+   children of the same scrollport, and the transparent card text sits above
+   the scroll-anchored glass without a competing independent scroller. */
+body.public-home > #public-route-content > #public-route-stage{
+  position:relative;z-index:1;min-height:100%;
+}
 body.public-home[data-direct-login="true"]:not([data-public-ready="true"]) .cta6-center h1{visibility:hidden;}
 body.public-home[data-direct-login="true"] .cta6-center h1{transition:none!important;}
 body.public-home[data-public-route="returning"]:not([data-gpu-scene="ready"])
