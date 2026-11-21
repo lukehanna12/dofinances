@@ -176,14 +176,15 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "square-terminal",
  "unicode-plus": "square-radical",
- "liquid-plexiglass-26": "opacity",
+ "liquid-plexiglass-26": "lens",
  "3d-liquid-glass-26-swift-package": "move-3d",
  "apple-hig-reader": "apple-worm.v3",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
+ "app-caviar": "opacity",
  "ozoning-board": "treehouse-ozoning.v3"
 };
- const artworkSlugs=["bootscript","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
+ const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -262,9 +263,9 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v9"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v9"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v11"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v10"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v10"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v12"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
@@ -353,4 +354,17 @@ test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
  assert.equal(PROJECT_CARD_ICONS["github-readme-chrome-extension"],"file-pen","Keep ReadMe GLP's icon");
  const js=read("sites/_apex/app/assets/project-showcase.js");
  assert.match(js,/PROJECT_CARD_IMAGES\[project\.slug\]/,"ReadMe GLP shares the standard image reveal");
+});
+
+
+test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon handoff",()=>{
+ assert.equal(PROJECT_CARD_IMAGES["translucence-lab"],
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg");
+ assert.equal(PROJECT_CARD_ICONS["app-caviar"],"opacity");
+ assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens");
+ const lens=read("sites/_apex/app/assets/project-icons/lens.svg");
+ const opacity=read("sites/_apex/app/assets/project-icons/opacity.svg");
+ assert.match(lens,/<circle cx="12" cy="12" r="10" \/>/);
+ assert.match(lens,/<path d="M6 12a6 6 0 016-6" \/>/);
+ assert.match(opacity,/<path d="M21 6v13a2 2 0 0 1-2 2H6" \/>/);
 });

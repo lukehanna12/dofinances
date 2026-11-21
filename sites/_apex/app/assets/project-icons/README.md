@@ -1,6 +1,6 @@
 # Projects card icons and artwork
 
-- Nine Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license), plus four custom SVGs: the user-supplied treehouse for Ozoning Board, the approved Lucide-style Funnel + Code composite for Protocol Monitor Pruner, a Lucide apple with a short worm for Apple HIGs Reader, and an original Lucide-style Colosseum icon approved by the user. Assigned icons render in white at 28 × 28 px without the original number-circle background.
+- Ten Lucide icons are vendored as exact upstream SVGs from the `lucide-icons/lucide` project (ISC license), plus four custom SVGs: the user-supplied treehouse for Ozoning Board, the approved Lucide-style Funnel + Code composite for Protocol Monitor Pruner, a Lucide apple with a short worm for Apple HIGs Reader, and an original Lucide-style Colosseum icon approved by the user. Assigned icons render in white at 28 × 28 px without the original number-circle background.
 - Icon choices and image choices are keyed by permanent project slug in `../project-showcase.js`.
 - Images remain external HTTPS references; no copyrighted artwork files are copied into this repository. Images for unassigned projects and images that fail to load retain the existing workspace-wallpaper behavior.
 - External image servers may restrict hotlinking or change URLs. For guaranteed availability, obtain permission for copyrighted images and host licensed copies in Git-managed assets.
@@ -14,6 +14,7 @@
 
 ## Artwork references
 
+- Lightwork: Caravaggio, *The Calling of Saint Matthew* (1599–1600), verified Wikimedia Commons 960px reproduction, referenced externally.
 - BootScript: Frederic Remington, *Buying Polo Ponies in the West* (1905), WikiArt.
 - ReadMe GLP: Claude Monet, *Gorge of the Petite Creuse* (1889), also catalogued as *Valley of the Petite Creuse* (Wildenstein 1230; Museum of Fine Arts, Boston, accession 23.541), direct Wikimedia Commons artwork image.
 - ChatStore: Takashi Murakami, *Dragon in Clouds – Indigo Blue* (2010), Gagosian image of the artwork itself (detail, without gallery surroundings; artwork copyright Takashi Murakami/Kaikai Kiki Co., Ltd.; photography rights may apply).
@@ -23,3 +24,5 @@
 - Protocol Monitor Pruner: Paul Gauguin, *Meadow in Martinique* (1887), public-domain artwork. Note: the user's WikiArt link credits Gauguin, not Vincent van Gogh.
 - Liquid Plexiglass 26: Andy Warhol, *After the Party* (1979), direct image from the Samek Art Museum, Bucknell University, shown at 112% final hover scale with a 3% downward shift; its entrance scale remains 1.1 × the final scale. Copyright belongs to the Andy Warhol Foundation / ARS; externally referenced, not redistributed in the repository.
 - Ozoning Board: Frederic Edwin Church, *El Khasné, Petra* (1874), original image on Wikimedia Commons; public domain.
+
+- Icon handoff: App Caviar now uses the original Lucide `opacity.svg` icon previously assigned to Liquid Plexiglass 26. Liquid Plexiglass 26 now uses the exact upstream Lucide `lens.svg` (ISC), while keeping its Warhol hover artwork unchanged.

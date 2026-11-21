@@ -42,15 +42,17 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"square-terminal",
   "unicode-plus":"square-radical",
-  "liquid-plexiglass-26":"opacity",
+  "liquid-plexiglass-26":"lens",
   "3d-liquid-glass-26-swift-package":"move-3d",
   "apple-hig-reader":"apple-worm.v3",
   "apple-adobe-fx":"blend",
   "protocol-monitor-pruner":"funnel-code",
+  "app-caviar":"opacity",
   "ozoning-board":"treehouse-ozoning.v3"
 });
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",
+  "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
   "chatgpt-chat-save-chrome-extension":"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg",
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
