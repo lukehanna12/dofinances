@@ -123,17 +123,16 @@ try{
     "barBottom:window.__persistedShell.bar.getBoundingClientRect().bottom};})()");
   assert.equal(home.barBottom,44);
   await evaluate("document.querySelector('.cta6-bottom-action a[href=\"/login\"]').click()");
-  await sleep(80);
-  const falling=await evaluate("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
-    "const st=getComputedStyle(b);"+
-    "return {top:b.getBoundingClientRect().top,opacity:parseFloat(st.opacity),"+
-    "transform:st.transform,transition:st.transition,route:document.body.dataset.publicRoute,"+
-    "reduced:matchMedia('(prefers-reduced-motion: reduce)').matches};})()");
-  assert.ok(falling.top>home.bottomTop+2,
-    "Shell-owned bottom buttons must immediately begin dropping on card entry; home="+home.bottomTop+
-    " after="+JSON.stringify(falling));
-  assert.ok(falling.opacity<.99,
-    "Bottom buttons must fade while dropping, not disappear instantly");
+  // Headless Chrome may not commit the initial style-change frame until
+  // queried; poll rendered frames, not just a wall-clock delay. The motion
+  // must start during the 440ms shell dismissal, before /login mounts.
+  const falling=await until("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
+    "const st=getComputedStyle(b);const top=b.getBoundingClientRect().top;"+
+    "const opacity=parseFloat(st.opacity);"+
+    "return top>window.__persistedShell.bottomTop+2&&opacity<.99?"+
+    "{top,opacity,route:document.body.dataset.publicRoute}:null;})()",8,40);
+  assert.equal(falling.route,"leaving",
+    "Main-page buttons must drop and fade before the route changes");
   assert.equal(await evaluate("location.pathname"),"/",
     "The shell dismisses its squares before changing history");
   try{
