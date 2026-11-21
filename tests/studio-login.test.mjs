@@ -517,6 +517,8 @@ test("sign-in rubberbanding restores native overflow with scroll-anchored glass"
   assert.doesNotMatch(css,/overscroll-behavior-y:none|overflow-y:hidden|touch-action:none|position:fixed!important/);
   assert.match(home,/<div id="public-route-content"[^>]*hidden><div id="public-route-stage"><\/div><\/div>/);
   assert.match(homeCss,/#public-route-content > #dashboard-auth-glass-scene\{\s*position:absolute;/);
+  assert.match(homeCss,/body\.public-home\[data-auth-gpu-scene="ready"\] #public-route-content > #dashboard-auth-glass-scene\{\s*opacity:1;/,
+    "GPU-ready glass must override the hidden fallback with equal or higher specificity");
   assert.match(homeCss,/#public-route-content > #public-route-stage\{\s*position:relative;z-index:1/);
   assert.match(renderer,/routeOutlet\?\.insertBefore\(authCanvas,routeMount\|\|routeOutlet\.firstChild\)/);
   assert.match(renderer,/routeMount\?\.scrollHeight/);

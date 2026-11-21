@@ -368,7 +368,7 @@ body.public-home #public-route-content > #dashboard-auth-glass-scene{
   opacity:0;
   contain:strict;
 }
-body.public-home[data-auth-gpu-scene="ready"] #dashboard-auth-glass-scene{
+body.public-home[data-auth-gpu-scene="ready"] #public-route-content > #dashboard-auth-glass-scene{
   opacity:1;
 }
 
