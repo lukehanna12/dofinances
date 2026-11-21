@@ -92,7 +92,7 @@ test("Pages packages gallery root and preserves existing public sidebar and prot
       ' dist/gallery/assets/'+asset.replace(".","\\.")));
     assert.match(workflow,new RegExp('/gallery/assets/'+asset.replace(".","\\.")));
   }
-  assert.match(workflow,/cp dist\/index\.html sites\/_apex\/login\/index\.html/);
+  assert.match(workflow,/sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
   assert.match(workflow,/test ! -e dist\/app\/assets\/dashboard\.js/);
   assert.match(workflow,/node scripts\/verify-live-sidebar\.mjs/);
   assert.match(readme,/\/app/);

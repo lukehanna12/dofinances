@@ -47,12 +47,13 @@ test("login and Studio compile the same foundation while retaining authenticatio
   const css=await read("../src/styles.css");
   const studio=await read("../index.html");
   const jsx=await read("../src/components/Auth3.jsx");
-  assert.match(css,/@import "tailwindcss";\s*@import "\.\.\/sites\/_apex\/assets\/site-foundation\.css";/);
-  assert.match(css,/body\s*\{\s*background-color:\s*var\(--ui-canvas\)/);
+  assert.match(css,/@import "tailwindcss";/);
+  assert.doesNotMatch(css,/@import "\.\.\/sites\/_apex\/assets\/site-foundation\.css"/);
+  assert.match(css,/\.auth3-root\s*\{\s*min-height: calc\(100dvh - 44px\);/);
   assert.match(css,/--font-sans:\s*ui-sans-serif, system-ui, sans-serif/);
   assert.match(studio,/name="theme-color" content="#171717"/);
   assert.match(jsx,/window\.localStorage\.getItem\("dofinances-theme"\)/);
-  assert.match(jsx,/setTheme\(isDark \? "light" : "dark"\)/);
+  assert.match(jsx,/new MutationObserver\(update\)/);
   assert.match(jsx,/\/api\/auth\//);
 });
 

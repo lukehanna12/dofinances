@@ -16,7 +16,7 @@ test("both deployments run through gated GitHub Actions", async ()=>{
   assert.match(yaml,/needs: build/);
   assert.match(yaml,/name: Download built Studio for apex \/login/);
   assert.match(yaml,/name: Checkout Pages route handler/);
-  assert.match(yaml,/name: Package the Studio preview at the apex \/login path/);
+  assert.match(yaml,/name: Package the persistent public shell at the apex \/login path/);
   assert.match(yaml,/https:\/\/stu\.dofinances\.com\/login/);
   assert.match(yaml,/https:\/\/dofinances\.com\/login/);
 });

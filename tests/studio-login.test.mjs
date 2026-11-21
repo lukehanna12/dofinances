@@ -116,7 +116,7 @@ test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /logi
   assert.match(hostRouter, /sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
   assert.doesNotMatch(hostRouter, /studio\/sidebar|studio\/blank/);
   assert.match(workflow, /grep -Fq 'id="background-switcher"' "\$studio_body"/);
-  assert.match(workflow, /grep -Fq 'Sign in · Dofinances' "\$body"/);
+  assert.match(workflow, /grep -Fq 'dofinances-app-shell' "\$body"/);
 });
 
 test("original non-social Auth-3 layout utilities remain unchanged", async () => {
