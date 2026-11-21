@@ -103,6 +103,12 @@
 }
 .auth3-root.dark { color-scheme: dark; color: #fff; }
 .auth3-root:not(.dark) { color-scheme: light; color: #0a0a0a; }
+/* The route outlet starts below the 44px persistent header. Restrict the
+ * embedded card's stage to the remaining viewport; Tailwind min-h-screen
+ * otherwise adds a 44px overflow and a scrollbar that shifts the center. */
+#public-route-content .auth3-root [data-auth-stage]{
+  min-height:calc(100dvh - 44px);
+}
 
 /* A true return link sits at the upper-left *inside* the card and keeps
    the original Auth-3 headings, fields and motion utility strings intact. */
