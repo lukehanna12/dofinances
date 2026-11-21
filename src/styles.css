@@ -315,21 +315,6 @@ body.public-home[data-auth-glass-mode="compositor"] .auth3-root
    extra spotlights, or new pointer-driven raster passes. */
 /* Only the original WebGPU SDF/spring shader produces optical hover,
    never a second artificial CSS spotlight or scale animation. */
-
-/* Experimental: source-backed refraction envelopes displaced by SVG over
-   the browser's live, scroll-synchronous backdrop. The filter maps contain
-   only SDF normals/displacements; no screenshot or photo pixels. Explicit
-   opt-in and Chromium-only pending native Safari support and visual proof. */
-body.public-home[data-auth-glass-filter="refraction"][data-auth-refractive-status="ready"]
-  .auth3-root :is([data-auth-glass-card],[data-auth-glass-input],
-                 [data-auth-glass-submit],[data-auth-glass-provider]){
-  -webkit-backdrop-filter:var(--auth-native-refraction,blur(8px));
-  backdrop-filter:var(--auth-native-refraction,blur(8px));
-}
-body.public-home[data-auth-glass-filter="refraction"][data-auth-refractive-status="ready"]
-  .auth3-root [data-auth-glass-card]{
-  background:transparent;
-}
 /* The border is GPU SDF-owned, but keyboard focus must remain perceivable.
  * No bright spring scaling, and no independent hover hotspot. */
 .auth3-root [data-auth-glass-input]:focus-visible,
