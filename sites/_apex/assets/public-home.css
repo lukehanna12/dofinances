@@ -371,12 +371,13 @@ body.public-home #public-route-content > #dashboard-auth-glass-scene{
 body.public-home[data-auth-gpu-scene="ready"] #public-route-content > #dashboard-auth-glass-scene{
   opacity:1;
 }
-/* Experimental full-original-WebGPU presentation only. This canvas is
-   fixed to the SAME viewport as the photograph and therefore no longer
-   drags outdated background pixels under the form in quick native scroll.
-   The card itself still scrolls/rubberbands natively. Its moving SDF is
-   updated from DOM rects on the next GPU submission. No CSS substitute,
-   image capture, rewritten shader or alternate mipmap pipeline. */
+/* Fixed-viewport full WebGPU presentation (default). The canvas stays
+   anchored to the SAME viewport as the photograph and therefore cannot
+   drag old background pixels across the wallpaper during native quick
+   scroll/rubberband. The card still scrolls natively; its original SDF,
+   all mipmap/LOD sampling, tint and hover follow live DOM geometry on the
+   next WebGPU submission. No CSS optical substitute or image capture.
+   ?auth-scroll=native restores the scroll-attached canvas for comparison. */
 body.public-home[data-auth-scroll-mode="fixed"]
   #public-route-content > #dashboard-auth-glass-scene{
   position:fixed;

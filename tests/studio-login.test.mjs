@@ -601,19 +601,19 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
 });
 
 
-test("experimental fixed-viewport WebGPU still uses original full mip-mapped material",async()=>{
+test("default fixed-viewport WebGPU preserves the original full mipmapped material",async()=>{
   const [router,renderer,homeCss,shader]=await Promise.all([
     load("../sites/_apex/assets/public-home-transition.js"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
     load("../sites/_apex/assets/public-home.css"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl")
   ]);
-  assert.match(router,/body\.dataset\.authScrollMode=new URLSearchParams\(location\.search\)\.get\("auth-scroll"\)==="fixed"/);
-  assert.match(router,/"fixed":"native"/);
+  assert.match(router,/body\.dataset\.authScrollMode=new URLSearchParams\(location\.search\)\.get\("auth-scroll"\)==="native"/);
+  assert.match(router,/"native":"fixed"/);
   assert.match(homeCss,/body\.public-home\[data-auth-scroll-mode="fixed"\][\s\S]*?#public-route-content > #dashboard-auth-glass-scene\{\s*position:fixed;/);
   assert.match(renderer,/const authCanvasFixed=\(\)=>document\.body\.dataset\.authScrollMode==="fixed"/);
   assert.match(renderer,/authCanvasFixed\(\)\s*\?\s*Math\.max\(1,routeOutlet\?\.clientHeight\|\|0\)/);
-  assert.match(renderer,/authScrollPresentation:authCanvasFixed\(\)\?"fixed-viewport-experimental":"native-content"/);
+  assert.match(renderer,/authScrollPresentation:authCanvasFixed\(\)\?"fixed-viewport":"native-content"/);
   assert.match(renderer,/const desiredTop=authCanvasFixed\(\)\?sceneTop\+"px":"0px"/);
   assert.match(renderer,/authUniform\[11\]=offsetCSS\*dpr/);
   assert.match(renderer,/authHover\.move\(event\.clientX\*dpr,\(event\.clientY-authOriginTop\(\)\)\*dpr\)/);
@@ -624,4 +624,24 @@ test("experimental fixed-viewport WebGPU still uses original full mip-mapped mat
   assert.match(shader,/mipSample\(interactiveInnerUV,innerLOD\)/);
   assert.match(shader,/mipSample\(interactiveOuterUV,outerLOD\)/);
   assert.match(shader,/let faceBlack=select\(0\.20,0\.05,darkFace\)/);
+});
+
+
+test("fixed and native full-shader sampling are equivalent after scroll and elastic displacement",async()=>{
+  const {authBackdropOffsetCSS}=await import("../sites/_apex/assets/home-dashboard/dashboard-scroll-optics.js");
+  const dpr=2,sceneTop=44,cardContentY=708.5;
+  for(const [scroll,elastic] of [[0,0],[190,0],[190,23],[190,-17],[-32,0],[1100,0],[1100,37]]){
+    // Previous scrolling canvas: fragment is content-relative, and the shader
+    // subtracts the measured position of the native compositor's canvas.
+    const scrollingCanvasTop=sceneTop-scroll+elastic;
+    const scrollingFragment=(cardContentY+33)*dpr;
+    const scrollingUniform=authBackdropOffsetCSS(sceneTop,scrollingCanvasTop)*dpr;
+    const nativeWallpaperSample=scrollingFragment-scrollingUniform;
+    // New fixed viewport canvas: fragment itself is viewport-relative and
+    // the shader's sampled backdrop offset is zero. Same original photo mip,
+    // SDF, blur distribution, refraction envelope, tint and per-pane hover.
+    const viewportFragment=(cardContentY+33-scroll+elastic)*dpr;
+    const fixedUniform=authBackdropOffsetCSS(sceneTop,sceneTop)*dpr;
+    assert.equal(nativeWallpaperSample,viewportFragment-fixedUniform);
+  }
 });

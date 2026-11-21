@@ -646,9 +646,9 @@ try{
   assert.equal(direct.direct,"true");
   await evaluate("document.querySelector('.auth3-back-link').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
-  // Separate experimental full-WebGPU presentation: the exact original
-  // WGSL material remains, but its canvas is viewport-anchored. No capture.
-  await send("Page.navigate",{url:origin+"/login?auth-scroll=fixed"});
+  // Full original WebGPU material remains, but its canvas is fixed to
+  // the wallpaper by DEFAULT. No capture and no shader/mipmap substitution.
+  await send("Page.navigate",{url:origin+"/login"});
   await until("document.body.dataset.authScrollMode==='fixed'&&"+
     "!!document.querySelector('[data-auth-glass-card]')",170);
   assert.equal(await evaluate("document.body.dataset.authGlassMode"),"webgpu");
@@ -669,12 +669,30 @@ try{
       "fullShader:window.__dashboardWebGPU.authPresentation,"+
       "canvasHeight:canvas.height,clientHeight:canvas.clientHeight,position:css.position};})()");
     assert.equal(sample.position,"fixed");
-    assert.equal(sample.mode,"fixed-viewport-experimental");
+    assert.equal(sample.mode,"fixed-viewport");
     assert.equal(sample.fullShader,"shared-pipeline-transparent-overlay");
     assert.ok(sample.mips>=5,"Full original WebGPU mip chain is preserved");
     assert.ok(Math.abs(sample.deltaCard+190)<2);
     assert.ok(Math.abs(sample.deltaCanvas)<1,
       "Existing WebGPU background pixels must not be dragged by native scroll");
+  }
+  // The original native-content canvas remains a reversible one-parameter
+  // rollback if Mac compositor behavior differs from Chromium's.
+  await send("Page.navigate",{url:origin+"/login?auth-scroll=native"});
+  await until("document.body.dataset.authScrollMode==='native'&&"+
+    "!!document.querySelector('[data-auth-glass-card]')",170);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    const fallback=await evaluate("(()=>{"+
+      "const r=document.querySelector('#public-route-content'),"+
+      "canvas=document.querySelector('#dashboard-auth-glass-scene');"+
+      "const before=canvas.getBoundingClientRect().top,prior=r.style.height;"+
+      "r.style.height='340px';r.scrollTop=190;"+
+      "const delta=canvas.getBoundingClientRect().top-before;"+
+      "r.scrollTop=0;r.style.height=prior;"+
+      "return {delta,mode:window.__dashboardWebGPU.authScrollPresentation};})()");
+    assert.equal(fallback.mode,"native-content");
+    assert.ok(Math.abs(fallback.delta+190)<1,
+      "One-parameter rollback restores the previous scroll-attached canvas");
   }
   assert.deepEqual(misses,[],"No missing shell or lazy login assets");
   process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");

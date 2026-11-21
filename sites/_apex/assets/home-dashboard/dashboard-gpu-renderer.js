@@ -37,10 +37,11 @@ const authUsesCompositor=()=>document.body.dataset.authGlassMode==="compositor";
 const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed";
 const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
-// Native (default): the canvas scrolls with the document-sized card.
-// Fixed (experimental): the very same WebGPU surface stays fixed to the
+// Native (legacy rollback): the canvas scrolls with the document-sized card.
+// Fixed (default): the very same WebGPU surface stays fixed to the
 // wallpaper; only the live pane rectangles follow the native scroll. This
-// prevents a compositor-scrolled stale photo but might lag pane geometry.
+// prevents a compositor-scrolled stale photo. Pane geometry continues to
+// update using native scrolling positions when each WebGPU frame is submitted.
 const authOriginTop=()=>authCanvasFixed()
   ? (authCanvas.isConnected?authCanvas.getBoundingClientRect().top:44)
   : (routeMount?.getBoundingClientRect().top ?? 44);
@@ -107,7 +108,7 @@ const audit={
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
   oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
   mipCount:0,sceneBuilds:0,frameCount:0,tiles:0,errors:[],
-  authScrollPresentation:authCanvasFixed()?"fixed-viewport-experimental":"native-content"
+  authScrollPresentation:authCanvasFixed()?"fixed-viewport":"native-content"
 };
 Object.defineProperty(window,"__dashboardWebGPU",{
   configurable:true,get:()=>Object.freeze({...audit,errors:[...audit.errors]})
@@ -509,7 +510,7 @@ async function initialize(){
     audit.authScrollCanvasHeight=cssHeight;
     audit.authPresentationPixelArea=physicalWidth*physicalAuthHeight;
     audit.authScrollPresentation=authCanvasFixed()
-      ?"fixed-viewport-experimental":"native-content";
+      ?"fixed-viewport":"native-content";
   }
   function writeUniform(){
     uniform[0]=physicalWidth;

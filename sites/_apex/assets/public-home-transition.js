@@ -17,11 +17,13 @@ const body=document.body,reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // at /login?auth-glass=compositor while pursuing full-look scroll sync.
 body.dataset.authGlassMode=new URLSearchParams(location.search).get("auth-glass")==="compositor"
   ?"compositor":"webgpu";
-// Experimental PRESENTATION ONLY: the original WebGPU mipmaps, WGSL SDF,
-// refraction LOD and tint never change. The fixed viewport surface avoids
-// moving a previously painted photograph on the compositor's scroll thread.
-body.dataset.authScrollMode=new URLSearchParams(location.search).get("auth-scroll")==="fixed"
-  ?"fixed":"native";
+// Full original WGSL glass remains the only WebGPU material. Default to
+// viewport-fixed presentation so a previously completed refracted-photo
+// frame cannot be dragged across the wallpaper during native fast-scroll or
+// elastic overscroll. The form and native scroll mechanics remain untouched.
+// Explicit ?auth-scroll=native restores the former scroll-attached canvas.
+body.dataset.authScrollMode=new URLSearchParams(location.search).get("auth-scroll")==="native"
+  ?"native":"fixed";
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=()=>location.pathname.replace(/\/+$/,"")||"/";
 let current=null,busy=false,fromHome=false,state="home",revision=0,pendingNavigate=false;
