@@ -208,19 +208,19 @@ try{
   assert.equal(darkAccent.iconCount,2);
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
   assert.deepEqual(darkAccent.googleColors,Array(4).fill("#FFFFFF"));
-  assert.deepEqual(darkAccent.googleAlpha,[".456",".5155",".864",".6175"]);
+  assert.deepEqual(darkAccent.googleAlpha,[".49952",".55426",".87488",".6481"]);
   assert.equal(darkAccent.githubColor,"url(#auth3-github-mono-gradient)");
   assert.equal(darkAccent.githubGradient,true);
   assert.deepEqual(darkAccent.githubStops,[
-    {color:"#FFFFFF",opacity:".711"},
-    {color:"#FFFFFF",opacity:".4815"}
+    {color:"#FFFFFF",opacity:".73412"},
+    {color:"#FFFFFF",opacity:".52298"}
   ]);
   assert.ok([...darkAccent.googleAlpha,...darkAccent.githubStops.map(s=>s.opacity)]
     .every(v=>Number(v)>.3&&Number(v)<.9),
     "Monochrome logo alphas remain strictly intermediate");
-  assert.ok(Number(darkAccent.googleAlpha[2])-Number(darkAccent.googleAlpha[0])>.40,
+  assert.ok(Number(darkAccent.googleAlpha[2])-Number(darkAccent.googleAlpha[0])>.37,
     "Google yellow and red segments retain luminance contrast");
-  assert.ok(Number(darkAccent.githubStops[0].opacity)-Number(darkAccent.githubStops[1].opacity)>.22,
+  assert.ok(Number(darkAccent.githubStops[0].opacity)-Number(darkAccent.githubStops[1].opacity)>.20,
     "GitHub keeps an expanded white-only luminance gradient");
   const ornaments=()=> "(()=>{"+
     "const group=document.querySelector('[data-auth-or-separator]');"+

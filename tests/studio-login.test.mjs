@@ -423,17 +423,18 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.equal((marks.match(/fill="#FFFFFF"/g)||[]).length,4,
     "Google segments remain white-only with individual luminance alphas");
   assert.deepEqual([...marks.matchAll(/<path fill="#FFFFFF" opacity="(\.[0-9]+)"/g)]
-    .map(m=>Number(m[1])),[.456,.5155,.864,.6175]);
-  assert.ok(.456<.5155&&.5155<.6175&&.6175<.864,
+    .map(m=>Number(m[1])),[.49952,.55426,.87488,.6481]);
+  assert.ok(.49952<.55426&&.55426<.6481&&.6481<.87488,
     "Google monochrome brightness preserves red < blue < green < yellow");
   assert.ok(marks.includes('id="auth3-github-mono-gradient"'));
   assert.ok(marks.includes('fill="url(#auth3-github-mono-gradient)"'));
-  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".711"'));
-  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".4815"'));
-  assert.ok(.711-.4815>.22&&.864-.456>.4,"Both brands retain useful contrast");
-  for(const [before,after] of [[.36,.456],[.43,.5155],[.84,.864],[.55,.6175],[.66,.711],[.39,.4815]])
-    assert.ok(Math.abs(after-(before+.15*(1-before)))<1e-8,
-      "Each monochrome stop moves exactly 15% of remaining distance toward white");
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".73412"'));
+  assert.ok(marks.includes('stopColor="#FFFFFF" stopOpacity=".52298"'));
+  assert.ok(.73412-.52298>.20&&.87488-.49952>.37,
+    "Both brands retain distinct relative luminance");
+  for(const [before,after] of [[.456,.49952],[.5155,.55426],[.864,.87488],[.6175,.6481],[.711,.73412],[.4815,.52298]])
+    assert.ok(Math.abs(after-(before+.08*(1-before)))<1e-8,
+      "Each monochrome stop moves exactly another 8% of remaining distance toward white");
   assert.doesNotMatch(marks,/#(?:EA4335|4285F4|FBBC05|34A853|7A8DDD|A56BCF)|stopColor="(?!#FFFFFF)|stopOpacity="(?:0|1)"/,
     "No colored or fully opaque/invisible gradient stops");
   assert.ok(marks.includes('aria-hidden="true" focusable="false"'));
