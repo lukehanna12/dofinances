@@ -179,7 +179,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "protocol-monitor-pruner": "funnel-code",
  "ozoning-board": "treehouse-ozoning.v3"
 };
- const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
+ const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -258,9 +258,9 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-icons=v6"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-icons=v6"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-icons=v6"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v7"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v7"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v7"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
@@ -313,4 +313,16 @@ test("Colosseum uses the approved white Lucide-style Coliseum SVG",()=>{
  assert.ok(svg.includes('M1.5 21h21'),"Original approved foundation retained");
  assert.ok(PROJECT_CARD_IMAGES.colosseum.includes('Cole_Thomas_The_Course_of_Empire'),"Colosseum hover artwork preserved");
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
+});
+
+test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated artworks",()=>{
+ const warhol=PROJECT_CARD_IMAGES["liquid-plexiglass-26"];
+ const church=PROJECT_CARD_IMAGES["ozoning-board"];
+ assert.equal(warhol,"https://museum.bucknell.edu/files/2020/07/Warhol_Glasses-scaled.jpg");
+ assert.equal(church,"https://upload.wikimedia.org/wikipedia/commons/a/a9/El_Khasne%2C_Petra_Frederic_Edwin_Church.jpg");
+ assert.ok(!warhol.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
+ assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
+ assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"opacity","Keep the existing Liquid Plexiglass icon");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v3","Keep the existing Ozoning Board icon");
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes("PROJECT_CARD_IMAGES[project.slug]"),"Keep per-project hover assignment");
 });

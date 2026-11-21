@@ -20,3 +20,5 @@
 - Apple HIGs Reader: René Magritte, *The Son of Man* (1964); copyright-protected reproduction referenced externally.
 - Unicode Plus: Samuel van Hoogstraten, *A Perspective View of the Courtyard of a House*, National Trust / Art UK image.
 - Protocol Monitor Pruner: Paul Gauguin, *Meadow in Martinique* (1887), public-domain artwork. Note: the user's WikiArt link credits Gauguin, not Vincent van Gogh.
+- Liquid Plexiglass 26: Andy Warhol, *After the Party* (1979), direct image from the Samek Art Museum, Bucknell University. Copyright belongs to the Andy Warhol Foundation / ARS; externally referenced, not redistributed in the repository.
+- Ozoning Board: Frederic Edwin Church, *El Khasné, Petra* (1874), original image on Wikimedia Commons; public domain.
