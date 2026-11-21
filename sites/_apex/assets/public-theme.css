@@ -29,7 +29,17 @@
 }
 :root[data-dof-theme="light"] body:is(.public-home,.public-login) .global-menu-control{color:#252a31}
 :root[data-dof-theme="light"] body:is(.public-home,.public-login) .global-menu-control:hover{
+  color:#111;background:transparent;
+}
+/* Same icon-only feedback as the /app header, adjusted for light chrome. */
+:root[data-dof-theme="light"] body:is(.public-home,.public-login) :is(.global-menu-icon,.public-github):hover,
+:root[data-dof-theme="light"] body:is(.public-home,.public-login) .global-menu-icon[aria-expanded="true"]{
   color:#111;background:rgba(0,0,0,.09);
+}
+@media(max-width:748px){
+  :root[data-dof-theme="light"] body:is(.public-home,.public-login) .public-menu-panel .global-menu-control:hover{
+    background:rgba(255,255,255,.08);color:#fff;
+  }
 }
 :root[data-dof-theme="light"] body.public-home .dashboard-home .cta6-center h1{
   color:#20252b;text-shadow:0 1px 18px rgba(255,255,255,.36);

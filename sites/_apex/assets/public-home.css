@@ -83,8 +83,8 @@ body:is(.public-home,.public-login) .global-menu-control{
   padding:5px 8px;
   background:transparent;
   border:0;
-  border-radius:7px;
-  color:rgba(230,230,235,.88);
+  border-radius:0;
+  color:rgba(230,230,235,.8);
   font:inherit;
   font-size:12px;
   font-weight:400;
@@ -92,28 +92,39 @@ body:is(.public-home,.public-login) .global-menu-control{
   white-space:nowrap;
   text-decoration:none;
   cursor:pointer;
-  transition:background-color 140ms ease,color 140ms ease,transform 135ms ease;
+  /* Match /app .global-menu-links a: color only, no button backing. */
+  transition:color 125ms ease;
 }
 body:is(.public-home,.public-login) .global-menu-control:hover{
-  background:rgba(255,255,255,.13);
+  background:transparent;
   color:#fff;
 }
 body:is(.public-home,.public-login) .global-menu-control:active{
-  transform:scale(.94);
-  background:rgba(255,255,255,.22);
+  background:transparent;
+  color:#fff;
+  transform:none;
 }
 body:is(.public-home,.public-login) .global-menu-control:focus-visible{
-  outline:2px solid #fff;
-  outline-offset:2px;
+  outline:2px solid var(--ui-focus);
+  outline-offset:3px;
 }
 body:is(.public-home,.public-login) .public-github{
-  width:32px;height:32px;padding:5px;flex:none;
+  width:32px;height:32px;padding:5px;flex:none;border-radius:7px;
+}
+body:is(.public-home,.public-login) .public-github:hover{
+  background:rgba(255,255,255,.09);
 }
 body:is(.public-home,.public-login) .public-github svg{
   width:21px;height:21px;display:block;flex:none;
 }
 body:is(.public-home,.public-login) .global-menu-actions{display:flex;align-items:center;flex:none;}
-body:is(.public-home,.public-login) .global-menu-icon{width:32px;height:32px;padding:6px;}
+body:is(.public-home,.public-login) .global-menu-icon{
+  width:32px;height:32px;padding:6px;border-radius:7px;
+}
+body:is(.public-home,.public-login) .global-menu-icon:hover,
+body:is(.public-home,.public-login) .global-menu-icon[aria-expanded="true"]{
+  color:#fff;background:rgba(255,255,255,.09);
+}
 body:is(.public-home,.public-login) .global-menu-icon svg{width:19px;height:19px;display:block;}
 /* The three-button row spans 374px at desktop sizes.
    Below approximately twice that span (2 * 374 = 748px), collapse
@@ -153,10 +164,15 @@ body:is(.public-home,.public-login) .public-menu-panel[hidden]{display:none!impo
     justify-content:flex-start;
     padding-inline:13px;
     font-size:12px;
+    border-radius:8px;
+  }
+  body:is(.public-home,.public-login) .public-menu-panel .global-menu-control:hover{
+    background:rgba(255,255,255,.08);
+    color:#fff;
   }
   body:is(.public-home,.public-login) .public-menu-toggle[aria-expanded="true"]{
     color:#fff;
-    background:rgba(255,255,255,.16);
+    background:rgba(255,255,255,.09);
   }
 }
 @keyframes public-menu-enter{
@@ -293,12 +309,22 @@ body.public-home .dashboard-home .cta6-action:active{
 /* X-close local optical dissolution, not the historical AppKit smoke poof.
    Background and persistent theme control remain unchanged. */
 body.public-home .dashboard-home .cta6-bottom-action{
-  transition:opacity 280ms cubic-bezier(.24,.72,.3,1);
+  /* The persistent main page owns this motion, not /login. The horizontal
+     centering transform remains intact while the whole row drops out. */
+  transform:translate3d(-50%,0,0);
+  transition:transform 440ms cubic-bezier(.22,.72,.24,1),
+    opacity 390ms cubic-bezier(.24,.72,.3,1);
+  will-change:transform,opacity;
 }
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-bottom-action{
+  transform:translate3d(-50%,calc(100% + clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px) + 28px),0);
   opacity:0!important;
   pointer-events:none!important;
   animation:none!important;
+}
+/* Direct /login navigation never briefly displays the home buttons. */
+body.public-home[data-direct-login="true"] .dashboard-home .cta6-bottom-action{
+  transition:none!important;
 }
 /* The wordmark survives dismissal: the same named element is visible in
    Home and Auth-3. Separate its transform from the tiles' optical dissolve. */

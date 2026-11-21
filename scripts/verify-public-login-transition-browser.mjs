@@ -116,10 +116,21 @@ try{
     "bar:document.querySelector('#global-menu'),"+
     "theme:document.querySelector('#public-theme-toggle')};"+
     "const r=window.__persistedShell.logo.getBoundingClientRect();"+
-    "return {homeY:(r.top+r.bottom)/2,barBottom:window.__persistedShell.bar.getBoundingClientRect().bottom};})()");
+    "const buttons=document.querySelector('.cta6-bottom-action');"+
+    "const b=buttons.getBoundingClientRect();"+
+    "window.__persistedShell.bottomTop=b.top;"+
+    "return {homeY:(r.top+r.bottom)/2,bottomTop:b.top,"+
+    "barBottom:window.__persistedShell.bar.getBoundingClientRect().bottom};})()");
   assert.equal(home.barBottom,44);
   await evaluate("document.querySelector('.cta6-bottom-action a[href=\"/login\"]').click()");
   await sleep(80);
+  const falling=await evaluate("(()=>{const b=document.querySelector('.cta6-bottom-action');"+
+    "return {top:b.getBoundingClientRect().top,opacity:parseFloat(getComputedStyle(b).opacity),"+
+    "transform:getComputedStyle(b).transform};})()");
+  assert.ok(falling.top>home.bottomTop+2,
+    "Shell-owned bottom buttons must immediately begin dropping on card entry");
+  assert.ok(falling.opacity<.99,
+    "Bottom buttons must fade while dropping, not disappear instantly");
   assert.equal(await evaluate("location.pathname"),"/",
     "The shell dismisses its squares before changing history");
   try{
@@ -146,6 +157,8 @@ try{
     "logoY:(brand.top+brand.bottom)/2,scale:getComputedStyle(r.logo).transform,"+
     "caption:document.body.textContent.includes('A clearer view of what comes next.'),"+
     "back:document.querySelector('.auth3-back-link')?.getAttribute('href'),"+
+    "buttonsTop:document.querySelector('.cta6-bottom-action').getBoundingClientRect().top,"+
+    "buttonsOpacity:getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity,"+
     "state:window.__dofPublicRouter.state,route:location.pathname};})()");
   for(const field of ["sameMosaic","sameBrand","sameBar","sameTheme"])
     assert.equal(active[field],true,"Persistent shell lost: "+field);
@@ -153,6 +166,9 @@ try{
   assert.equal(active.route,"/login");
   assert.equal(active.back,"/");
   assert.equal(active.caption,false);
+  assert.ok(active.buttonsTop>=await evaluate("innerHeight"),
+    "Bottom buttons must move completely below the viewport on /login");
+  assert.equal(active.buttonsOpacity,"0");
   assert.ok(Math.abs(active.center-active.viewport)<1,
     "Sign-in card must be horizontally centered; actual "+active.center+" versus "+active.viewport);
   assert.ok(Math.abs(active.logoY-(home.barBottom+46))<1,
@@ -169,12 +185,15 @@ try{
   const exit=await evaluate("({route:location.pathname,"+
     "state:window.__dofPublicRouter.state,card:!!document.querySelector('.auth3-root form'),"+
     "shell:document.body.dataset.publicRoute,resume:window.__trackResumeEvents,"+
+    "buttonsOpacity:getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity,"+
     "gpuReady:document.body.dataset.gpuScene==='ready',"+
     "track:window.__dashboardWebGPU?.track||null})");
   assert.equal(exit.route,"/login");
   assert.equal(exit.state,"exiting");
   assert.equal(exit.card,true);
   assert.equal(exit.shell,"leaving");
+  assert.equal(exit.buttonsOpacity,"0",
+    "Bottom buttons remain offscreen during the route-owned card exit");
   assert.equal(exit.resume,1,"Back arrow immediately signals the shared renderer");
   if(exit.gpuReady){
     assert.equal(exit.track?.running,true,
@@ -193,6 +212,8 @@ try{
     "logo:document.querySelector('#dashboard-title')===r.logo,"+
     "topbar:document.querySelector('#global-menu')===r.bar,"+
     "card:!!document.querySelector('.auth3-root'),"+
+    "buttonsTop:document.querySelector('.cta6-bottom-action').getBoundingClientRect().top,"+
+    "buttonsOpacity:getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity,"+
     "shell:document.body.dataset.publicRoute||'home',"+
     "logoY:(b.top+b.bottom)/2};})()");
   assert.equal(returned.mosaic,true);
@@ -200,6 +221,10 @@ try{
   assert.equal(returned.topbar,true);
   assert.equal(returned.card,false);
   assert.equal(returned.shell,"home");
+  assert.ok(Math.abs(returned.buttonsTop-home.bottomTop)<1,
+    "The same bottom button row must slide back to its original home position");
+  assert.equal(returned.buttonsOpacity,"1",
+    "Buttons must finish fading in after their upward return");
   if(await evaluate("document.body.dataset.gpuScene==='ready'")){
     const before=await evaluate("window.__dashboardWebGPU?.track?.elapsed");
     await sleep(140);

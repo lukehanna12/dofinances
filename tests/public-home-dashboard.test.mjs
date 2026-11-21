@@ -232,3 +232,26 @@ test("Public footer centers at bottom and is exactly seven-percent opaque",()=>{
   assert.match(style,/body\.public-home:has\(> #workspace-shell \.dashboard-home:not\(\[hidden\]\)\) > \.workspace-footer\{[^}]*left:50%!important;[^}]*transform:translateX\(-50%\)!important;[^}]*opacity:\.07!important;/);
   assert.match(style,/@media\(max-width:760px\)\{[\s\S]*\.workspace-footer\{[^}]*left:50%!important;/);
 });
+
+test("public bottom row belongs to shell: drops below viewport and reverses on returning",()=>{
+  const route=asset("assets/public-home-transition.js");
+  assert.match(style,/body\.public-home \.dashboard-home \.cta6-bottom-action\{[^}]*transform:translate3d\(-50%,0,0\);[^}]*transition:transform 440ms[^}]*opacity 390ms/);
+  assert.match(style,/body\.public-home\[data-public-route="leaving"\] \.dashboard-home \.cta6-bottom-action\{[^}]*transform:translate3d\(-50%,calc\(100% \+ clamp\(42px,5\.4vh,66px\) \+ env\(safe-area-inset-bottom,0px\) \+ 28px\),0\);[^}]*opacity:0!important;/);
+  assert.match(style,/body\.public-home\[data-direct-login="true"\] \.dashboard-home \.cta6-bottom-action\{[^}]*transition:none!important;/);
+  assert.match(route,/function activateCompact\(/);
+  assert.match(route,/function restoreHome\(\)\{[\s\S]*?body\.dataset\.publicRoute="returning"/);
+  const auth=readFileSync(new URL("../src/components/Auth3.jsx",import.meta.url),"utf8");
+  assert.doesNotMatch(auth,/cta6-bottom-action|doofinances:home-dismiss|doofinances:home-restore/);
+});
+test("public top-bar text controls match /app text-link hover, not boxed-button styling",()=>{
+  const app=asset("app/assets/workspace-enhancements.css");
+  const light=asset("assets/public-theme.css");
+  assert.match(app,/\.global-menu-links a,\.global-menu-account\{color:rgba\(230,230,235,\.8\);white-space:nowrap;transition:color 125ms ease;\}/);
+  assert.match(app,/\.global-menu a:hover\{color:#fff;text-decoration:none;\}/);
+  assert.match(style,/body:is\(\.public-home,\.public-login\) \.global-menu-control\{[\s\S]*?border-radius:0;[\s\S]*?color:rgba\(230,230,235,\.8\);[\s\S]*?transition:color 125ms ease;/);
+  assert.match(style,/\.global-menu-control:hover\{\s*background:transparent;\s*color:#fff;/);
+  assert.match(style,/\.global-menu-control:active\{\s*background:transparent;\s*color:#fff;\s*transform:none;/);
+  assert.match(style,/\.global-menu-icon:hover,[\s\S]*?\.global-menu-icon\[aria-expanded="true"\]\{\s*color:#fff;background:rgba\(255,255,255,\.09\);/);
+  assert.match(light,/\.global-menu-control:hover\{\s*color:#111;background:transparent;/);
+  assert.doesNotMatch(style,/\.global-menu-control:hover\{\s*background:rgba\(255,255,255,\.13\)/);
+});

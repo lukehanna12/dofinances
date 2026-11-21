@@ -223,6 +223,29 @@ try{
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }
+ // Compare the actual desktop text-button hover/press rendering to the
+ // authenticated /app bar: only glyph color changes, never a button box.
+ await send("Emulation.setDeviceMetricsOverride",{
+   width:1440,height:900,deviceScaleFactor:1,mobile:false
+ });
+ const topText=await evaluate("(()=>{const r=document.querySelector('#global-menu-links>button').getBoundingClientRect();"+
+   "return {x:r.left+r.width/2,y:r.top+r.height/2};})()");
+ await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:topText.x,y:topText.y});
+ await sleep(165);
+ const hoverText=await evaluate("(()=>{const s=getComputedStyle(document.querySelector('#global-menu-links>button'));"+
+   "return {color:s.color,bg:s.backgroundColor,border:s.borderTopWidth,transform:s.transform};})()");
+ assert.equal(hoverText.bg,"rgba(0, 0, 0, 0)",
+   "Hovering public top-bar text must not draw a rounded button backing");
+ assert.equal(hoverText.border,"0px");
+ assert.equal(hoverText.color,"rgb(255, 255, 255)");
+ assert.equal(hoverText.transform,"none");
+ await send("Input.dispatchMouseEvent",{type:"mousePressed",x:topText.x,y:topText.y,button:"left",clickCount:1});
+ const pressedText=await evaluate("(()=>{const s=getComputedStyle(document.querySelector('#global-menu-links>button'));"+
+   "return {bg:s.backgroundColor,transform:s.transform};})()");
+ assert.equal(pressedText.bg,"rgba(0, 0, 0, 0)",
+   "Pressing public top-bar text must not create a button outline or fill");
+ assert.equal(pressedText.transform,"none");
+ await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:topText.x,y:topText.y,button:"left",clickCount:1});
  // Verify shared theme preference without affecting layout or the route.
  assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-label")'),
   "Switch to light mode");
@@ -230,6 +253,13 @@ try{
  assert.equal(await evaluate('document.documentElement.dataset.dofTheme'),"light");
  assert.equal(await evaluate('localStorage.getItem("dofinances-theme")'),"light");
  assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-pressed")'),"false");
+ await sleep(150);
+ const lightText=await evaluate("(()=>{const s=getComputedStyle(document.querySelector('#global-menu-links>button'));"+
+   "return {bg:s.backgroundColor,border:s.borderTopWidth,transform:s.transform};})()");
+ assert.equal(lightText.bg,"rgba(0, 0, 0, 0)",
+   "Light mode must also keep text-link hover free of button boxes");
+ assert.equal(lightText.border,"0px");
+ assert.equal(lightText.transform,"none");
  // Verify disclosure open/close, inert entries, Escape and breakpoint reset.
  await send("Emulation.setDeviceMetricsOverride",{
   width:500,height:670,deviceScaleFactor:1,mobile:false
