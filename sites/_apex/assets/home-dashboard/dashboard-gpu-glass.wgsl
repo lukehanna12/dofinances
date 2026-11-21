@@ -407,7 +407,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // The unchanged full WebGPU refraction remains for the homepage squares
   // and the explicit ?auth-glass=webgpu reference implementation.
   if(authPane && state.tintMeta.z>0.5){
-    let tintStrength=select(0.25,0.60,authPane);
+    var tintStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){tintStrength=0.82;}
     else if(tile.properties.y == -5.0){tintStrength=0.62;}
     else if(tile.properties.y == -6.0){tintStrength=0.40;}
