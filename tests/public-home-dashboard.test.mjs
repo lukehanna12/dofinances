@@ -94,8 +94,8 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let billow=1\.0-smoothstep\(0\.56,1\.25,billowEdge\);/);
   assert.match(shader,/let smoke=cloudIn\*cloudOut\*billow\*fringe\*0\.43;/);
   assert.match(shader,/return vec4<f32>\(poofColor,clamp\(alpha,0\.0,1\.0\)\);/);
-  assert.doesNotMatch(shader,/rightward material exit|let grain=|let front=|let squeeze=|convergent|infinite swipe/,
-    "Dismissal is a localized soft poof, never a lateral swipe");
+  assert.doesNotMatch(shader,/let grain=|let front=|let squeeze=|let contraction=/,
+    "No lingering pixel-glitch, swipe-front, or contraction shader expressions");
   assert.doesNotMatch(style,/\.cta6-center::before/,"No logo fill or halo");
   assert.doesNotMatch(style,/background:rgba\(5,8,13,\.60\);/);
   assert.doesNotMatch(style,/\.cta6-center h1\s*\{[^}]*background:/,
