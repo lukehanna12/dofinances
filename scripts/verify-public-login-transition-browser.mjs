@@ -206,6 +206,19 @@ try{
   assert.deepEqual(darkAccent.logoOpacity,["0.82","0.82"]);
   assert.deepEqual(darkAccent.googleColors,["#EA4335","#4285F4","#FBBC05","#34A853"]);
   assert.equal(darkAccent.githubGradient,true);
+  const neutralTints=()=> "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
+    "const value=el=>getComputedStyle(el).getPropertyValue('--auth-control-tint').trim();"+
+    "const input=card.querySelector('[data-auth-glass-input]');"+
+    "const providers=[...card.querySelectorAll('[data-auth-glass-provider]:not(.auth3-back-link)')];"+
+    "return {input:value(input),providers:providers.map(value),"+
+    "primary:value(card.querySelector('[data-auth-glass-submit]'))};})()";
+  const darkNeutral=await evaluate(neutralTints());
+  assert.deepEqual(darkNeutral.providers,["#0009","#0009"],
+    "Google and GitHub retain their original 0.60 dark film");
+  assert.equal(darkNeutral.input,"#0006",
+    "Email and password share the 0.40 dark tint");
+  assert.equal(darkNeutral.primary,"#ffffffd1",
+    "Primary sign-in brightness stays unchanged");
   const darkGlass=await evaluate(material());
   assert.equal(darkGlass.mode,"dark");
   assert.equal(darkGlass.ink,"rgb(255, 255, 255)",
@@ -327,6 +340,13 @@ try{
   const lightAccent=await evaluate(accents());
   assert.equal(lightAccent.rule,"rgba(27, 31, 34, 0.48)");
   assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
+  const lightNeutral=await evaluate(neutralTints());
+  assert.deepEqual(lightNeutral.providers,["#fff9","#fff9"],
+    "Google and GitHub keep 0.60 in light UI mode");
+  assert.equal(lightNeutral.input,"#fff6",
+    "Email and password use 0.40 in light UI mode");
+  assert.equal(lightNeutral.primary,"#000000d1",
+    "Primary sign-in tint is unaffected in light mode");
   const lightGlass=await evaluate(material());
   assert.equal(lightGlass.mode,"light");
   assert.notEqual(lightGlass.ink,darkGlass.ink,

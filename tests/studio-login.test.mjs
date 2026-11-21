@@ -420,11 +420,17 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(renderer.includes('!node.classList.contains("auth3-back-link")'));
   assert.ok(shader.includes("var filmStrength=select(0.25,0.60,authPane);"));
   assert.ok(shader.includes("tile.properties.y == -4.0){filmStrength=0.82;"));
-  assert.ok(shader.includes("tile.properties.y == -5.0){filmStrength=0.64;"));
-  assert.ok(shader.includes("tile.properties.y == -6.0){filmStrength=0.56;"));
-  for(const amount of [".56",".64"])assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,"+amount+")")&&
+  assert.ok(shader.includes("tile.properties.y == -5.0){filmStrength=0.60;"),
+    "Google/GitHub return to 0.60 in the shared GPU film");
+  assert.ok(shader.includes("tile.properties.y == -6.0){filmStrength=0.40;"),
+    "Email/Password use 0.40 in the shared GPU film");
+  assert.doesNotMatch(shader,/filmStrength=0\.(?:64|56);/,
+    "Old provider/input tint strengths must not persist");
+  for(const amount of [".40",".60"])assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,"+amount+")")&&
     css.includes("--auth-control-tint:rgba(255,255,255,"+amount+")"),
-    "Both UI modes use the matching subtle material film for "+amount);
+    "Dark and light fallback use the matching tint for "+amount);
+  assert.ok(css.includes(".auth3-root.dark [data-auth-glass-input]{\n  --auth-control-tint:rgba(0,0,0,.40);"), "Exact dark text-input tint");
+  assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-input]{\n  --auth-control-tint:rgba(255,255,255,.40);"), "Exact light text-input tint");
   assert.ok(css.includes('[data-auth-glass-provider]:not(.auth3-back-link)'));
   assert.ok(shader.includes("select(0.25,"));
   assert.ok(jsx.includes("duration: 0.42"));

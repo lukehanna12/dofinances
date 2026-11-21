@@ -188,20 +188,21 @@
 .auth3-root:not(.dark) [data-auth-glass-provider]{
   --auth-control-tint:rgba(255,255,255,.60);
 }
-/* Slightly stronger neutral background film on social providers and
- * slightly softer film on text fields, including CSS-only fallback.
- * The back link and the primary action remain unmodified. */
+/* Social providers use the original 0.60 neutral tint; text-entry fields
+ * use 0.40 for more see-through glass. Mirror the WebGPU shader in
+ * both modes and the CSS-only fallback, without changing the back link
+ * or primary sign-in action. */
 .auth3-root.dark [data-auth-glass-input]{
-  --auth-control-tint:rgba(0,0,0,.56);
+  --auth-control-tint:rgba(0,0,0,.40);
 }
 .auth3-root:not(.dark) [data-auth-glass-input]{
-  --auth-control-tint:rgba(255,255,255,.56);
+  --auth-control-tint:rgba(255,255,255,.40);
 }
 .auth3-root.dark [data-auth-glass-provider]:not(.auth3-back-link){
-  --auth-control-tint:rgba(0,0,0,.64);
+  --auth-control-tint:rgba(0,0,0,.60);
 }
 .auth3-root:not(.dark) [data-auth-glass-provider]:not(.auth3-back-link){
-  --auth-control-tint:rgba(255,255,255,.64);
+  --auth-control-tint:rgba(255,255,255,.60);
 }
 .auth3-root.dark [data-auth-glass-submit]{
   --auth-control-tint:rgba(255,255,255,.82);

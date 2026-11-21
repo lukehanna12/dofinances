@@ -420,17 +420,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // the Dark UI lighter, contrary to the observed face inputs.
     // Preserve the EXACT same untinted glass optics/face and blend only
     // after calculating refraction, rim and hover. Home keeps its prior
-    // 0.25 film; neutral form controls use a stronger 0.60 film so white
-    // and black presets remain clearly distinct with 40% optical detail.
+    // 0.25 film; neutral route controls use independent role-owned films.
     // These coefficients are browser-authored, NOT native compositor proof.
     // The squares retain exactly 0.25. Primary action remains 0.82.
-    // Compared with the original 0.60 neutral film, social buttons get
-    // a barely stronger 0.64; text-entry fields get a softer 0.56.
+    // Social providers return to 0.60; text fields use 0.40.
     // Back arrow (route -2), untouched card, optics and hover are unchanged.
     var filmStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){filmStrength=0.82;}
-    else if(tile.properties.y == -5.0){filmStrength=0.64;}
-    else if(tile.properties.y == -6.0){filmStrength=0.56;}
+    else if(tile.properties.y == -5.0){filmStrength=0.60;}
+    else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
   // Route panes share the material, SDF and original hover
