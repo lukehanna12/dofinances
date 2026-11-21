@@ -65,6 +65,16 @@ function authPaneElements(){
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
+// Negative route markers select only the subtle glass film of each
+// form role. -2 keeps the card/back arrow unchanged; -4 is the primary
+// action; -5 social sign-in; -6 text entry. The squares use no markers.
+function authPaneMaterialTag(node){
+  if(node.hasAttribute("data-auth-glass-submit"))return -4;
+  if(node.hasAttribute("data-auth-glass-input"))return -6;
+  if(node.hasAttribute("data-auth-glass-provider")&&
+     !node.classList.contains("auth3-back-link"))return -5;
+  return -2;
+}
 function authPaneTint(node,scheme){
   if(node.hasAttribute("data-auth-glass-card"))
     return tintParameters("none",undefined,scheme);
@@ -508,9 +518,9 @@ async function initialize(){
       // A negative delay selects the route pane's Motion-owned geometry.
       // Face color MUST remain the squares' material, controlled by the
       // shared tint state rather than the page's unrelated UI color mode.
-      // -4 marks the primary action for a brighter neutral pigment. Both
-      // signs are still route-owned and use the same original glass shader.
-      tileData[p+5]=node.hasAttribute("data-auth-glass-submit")?-4:-2;
+      // Only the sign-in controls' neutral pigment film varies by role.
+      // Every pane retains the exact shared square glass optics and hover.
+      tileData[p+5]=authPaneMaterialTag(node);
       tileData[p+18]=opacity;tileData[p+19]=0;
       cornerInert[slot]=opacity<.025?1:0;
       roles.push(node.hasAttribute("data-auth-glass-card")?

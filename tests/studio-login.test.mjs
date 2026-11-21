@@ -413,8 +413,19 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(css.includes("opacity:.86"));
   assert.ok(css.includes("--auth-control-tint:rgba(255,255,255,.82)"));
   assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,.82)"));
-  assert.ok(renderer.includes('tileData[p+5]=node.hasAttribute("data-auth-glass-submit")?-4:-2;'));
-  assert.ok(shader.includes("select(0.60,0.82,tile.properties.y == -4.0)"));
+  assert.ok(renderer.includes("tileData[p+5]=authPaneMaterialTag(node);"));
+  assert.ok(renderer.includes('node.hasAttribute("data-auth-glass-submit")'));
+  assert.ok(renderer.includes('node.hasAttribute("data-auth-glass-input")'));
+  assert.ok(renderer.includes('node.hasAttribute("data-auth-glass-provider")'));
+  assert.ok(renderer.includes('!node.classList.contains("auth3-back-link")'));
+  assert.ok(shader.includes("var filmStrength=select(0.25,0.60,authPane);"));
+  assert.ok(shader.includes("tile.properties.y == -4.0){filmStrength=0.82;"));
+  assert.ok(shader.includes("tile.properties.y == -5.0){filmStrength=0.64;"));
+  assert.ok(shader.includes("tile.properties.y == -6.0){filmStrength=0.56;"));
+  for(const amount of [".56",".64"])assert.ok(css.includes("--auth-control-tint:rgba(0,0,0,"+amount+")")&&
+    css.includes("--auth-control-tint:rgba(255,255,255,"+amount+")"),
+    "Both UI modes use the matching subtle material film for "+amount);
+  assert.ok(css.includes('[data-auth-glass-provider]:not(.auth3-back-link)'));
   assert.ok(shader.includes("select(0.25,"));
   assert.ok(jsx.includes("duration: 0.42"));
   assert.ok(jsx.includes("duration: 0.6"));
