@@ -225,6 +225,9 @@ try{
   await evaluate("document.getElementById('public-theme-toggle').click()");
   await until("document.documentElement.dataset.dofTheme==='light'&&"+
     "!!document.querySelector('.auth3-root:not(.dark)')",50);
+  // Glass control tints crossfade for 180ms. Compare their fully settled
+  // appearance instead of the first style flush after React updates mode.
+  await sleep(260);
   const lightGlass=await evaluate(material());
   assert.equal(lightGlass.face,darkGlass.face,
     "Dark and light modes must have the identical untinted card face");
