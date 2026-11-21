@@ -25,12 +25,13 @@ test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
   ["bootscript","lukehanna12/bootscript"],
   ["translucence-lab","lukehanna12/lightwork"],
+  ["github-readme-chrome-extension","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","lukehanna12/chatstore"],
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
   ["unicode-plus","lukehanna12/unicode-plus"],
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,7);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,6);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner"
@@ -39,9 +40,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
   "bootscript","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension"
  ]);
- assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[
-  "github-readme-chrome-extension"
- ]);
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"in-progress");
 });
@@ -114,6 +113,7 @@ test("Verified repository associations backfill once and respect account overrid
   ["bootscript","BootScript","lukehanna12/bootscript"],
   ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
   ["translucence-lab","Lightwork","lukehanna12/lightwork"],
+  ["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
  ]){
   assert.ok(store.includes(JSON.stringify([slug,name,repository])));
@@ -124,6 +124,10 @@ test("Verified repository associations backfill once and respect account overrid
  assert.ok(store.includes("SELECT 1 FROM project_repository_link_migrations WHERE user_id=? AND slug=?"));
  assert.ok(store.includes("DELETE FROM project_repository_link_migrations WHERE user_id=?"));
  assert.ok(ui.includes("repository:saved.repository||null"));
+ assert.ok(ui.includes('"github-readme-chrome-extension"'),"ReadMe GLP uses authoritative account repository associations");
+ assert.ok(store.includes('["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"]'));
+ assert.match(store,/SELECT 1 FROM project_repository_link_migrations WHERE user_id=\? AND slug=\?/);
+ assert.match(store,/UPDATE project_records SET repository=\?,updated_at=\? WHERE user_id=\? AND slug=\? AND repository IS NULL/);
 });
 
 test("Project cards order Active → In Progress → Coming Soon with stable ties",()=>{
@@ -258,9 +262,9 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v8"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v8"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v8"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v9"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v9"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v9"'));
 });
 
 test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{

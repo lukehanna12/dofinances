@@ -5,7 +5,7 @@ import {WORKSPACE_WALLPAPERS} from "./workspace-wallpapers.js";
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
- {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:null,status:"in-progress",docs:true},
+ {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"in-progress",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
  {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
@@ -139,8 +139,8 @@ function makeCard(project,index,slugRoute){
 }
 export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
- // Account records are authoritative for the three curated repository links.
- const linkedSlugs=new Set(["bootscript","unicode-plus","translucence-lab","chatgpt-chat-save-chrome-extension"]);
+ // Account records are authoritative for migrated curated repository links.
+ const linkedSlugs=new Set(["bootscript","unicode-plus","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension"]);
  const account=new Map((Array.isArray(projects)?projects:[])
   .filter(p=>p&&linkedSlugs.has(p.slug)).map(p=>[p.slug,p]));
  // Preserve account-created projects: the curated items always come first.

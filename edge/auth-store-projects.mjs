@@ -58,6 +58,7 @@ export class AuthStore extends FederatedAuthStore{
    ["bootscript","BootScript","lukehanna12/bootscript"],
    ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
    ["translucence-lab","Lightwork","lukehanna12/lightwork"],
+   ["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"],
    ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
   ]){
    if(this.sql.exec("SELECT 1 FROM project_repository_link_migrations WHERE user_id=? AND slug=?",userId,slug).toArray().length)continue;
