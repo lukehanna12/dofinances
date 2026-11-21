@@ -97,7 +97,7 @@ test("Projects uses native static catalog without exposing private data in Studi
  const ui=read("sites/_apex/app/assets/project-readme-ui.js");
  const store=read("edge/auth-store-projects.mjs");
  const workflow=read(".github/workflows/site.yml");
- assert.match(html,/href="\/app\/assets\/project-showcase\.css\?liquid-plexiglass-crop=112-shift-down-3"/);
+ assert.match(html,/href="\/app\/assets\/project-showcase\.css\?liquid-plexiglass-crop=112-shift-down-1_5"/);
  assert.match(html,/id="project-list" class="project-showcase-grid"/);
  assert.match(ui,/renderProjectShowcase\(cards,projects,slugRoute\)/);
  assert.match(ui,/location\.hash="#"\+slugRoute\(data\.project\.slug\)/);
@@ -327,19 +327,19 @@ test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated ar
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes("PROJECT_CARD_IMAGES[project.slug]"),"Keep per-project hover assignment");
 });
 
-test("Liquid Plexiglass 26 hover artwork is cropped by 12% and shifted down 3% without changing other project cards",()=>{
+test("Liquid Plexiglass 26 hover artwork is cropped by 12% and shifted down 1.5% without changing other project cards",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
  const html=read("sites/_apex/app/index.html");
  const js=read("sites/_apex/app/assets/project-showcase.js");
  const selector='.project-showcase-card[data-project-slug="liquid-plexiglass-26"]';
  assert.ok(css.includes(selector),'The crop must target only Liquid Plexiglass 26');
- assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\] \.project-showcase-photo\{\s*transform:translateY\(3%\) scale\(1\.232\)/,'Retains the 1.232 entrance scale with a 3% downward shift');
- assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:translateY\(3%\) scale\(1\.12\)/,'Resting photo is 12% closer and 3% lower');
+ assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\] \.project-showcase-photo\{\s*transform:translateY\(1\.5%\) scale\(1\.232\)/,'Retains the 1.232 entrance scale with a 1.5% downward shift');
+ assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:translateY\(1\.5%\) scale\(1\.12\)/,'Resting photo is 12% closer and 1.5% lower');
  assert.ok(css.includes('object-fit:cover;object-position:center'),'Center crop and cover remain intact');
  assert.ok(css.includes('transition:opacity .5s ease-out,transform .5s ease-out'),'Hover fade and zoom animation remain');
  assert.ok(css.includes('overflow:hidden'),'Card continues clipping zoomed image');
  assert.ok(js.includes('card.dataset.projectSlug=project.slug'),'Per-project attribute exists');
- assert.ok(html.includes('/app/assets/project-showcase.css?liquid-plexiglass-crop=112-shift-down-3'),'Updated stylesheet bypasses old cache');
+ assert.ok(html.includes('/app/assets/project-showcase.css?liquid-plexiglass-crop=112-shift-down-1_5'),'Updated stylesheet bypasses old cache');
 });
 
 test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
