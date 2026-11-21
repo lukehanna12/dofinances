@@ -182,6 +182,47 @@ test("theme defaults to dark and is controlled exclusively by the persistent she
   assert.match(source,/credentials:\s*"same-origin"/);
 });
 
+test("login uses untinted live square-style glass with pointer-reactive highlights",async()=>{
+  const [jsx,css,square]=await Promise.all([
+    load("../src/components/Auth3.jsx"),
+    load("../src/styles.css"),
+    load("../sites/_apex/assets/home-dashboard/dashboard-home.css")
+  ]);
+  assert.match(jsx,/data-auth-glass-card/);
+  assert.match(jsx,/onPointerMove=\{moveGlassLight\}/);
+  assert.match(jsx,/--auth-glass-pointer-x/);
+  assert.match(jsx,/--auth-glass-pointer-y/);
+  assert.match(css,/\.auth3-root \[data-auth-glass-card\]\{[\s\S]*?backdrop-filter:blur\(8px\)/);
+  assert.match(square,/\.dashboard-home \.cta6-tile--glass\{[\s\S]*?backdrop-filter:blur\(var\(--glass-fallback-blur,8px\)\)/);
+  assert.match(css,/\.auth3-root \[data-auth-glass-card\]::after\{[\s\S]*?--auth-glass-pointer-x/);
+  assert.match(css,/\.auth3-root \[data-auth-glass-card\]:hover::after/);
+  assert.match(css,/\.auth3-root \[data-auth-glass-card\] > \*\{/);
+  // All card/child material is scoped to the lazy-loaded route. The shell
+  // canvas, tile SDF, and its GPU renderer must remain untouched.
+  assert.doesNotMatch(jsx,/id="dashboard-webgpu-scene"|id="cta6-mosaic"/);
+});
+test("all login inputs and actions receive mode-aware tint, but the outer glass never does",async()=>{
+  const [jsx,css]=await Promise.all([
+    load("../src/components/Auth3.jsx"),load("../src/styles.css")
+  ]);
+  assert.equal((jsx.match(/data-auth-glass-input/g)||[]).length,4,
+    "Email, password, confirmation and MFA all receive tinted glass");
+  assert.match(jsx,/data-auth-glass-submit/);
+  assert.equal((jsx.match(/data-auth-glass-provider/g)||[]).length,2);
+  assert.match(css,/\.auth3-root:not\(\.dark\) \[data-auth-glass-card\]\{/);
+  for(const name of ["--auth-control-background","--auth-action-background",
+    "--auth-provider-background","--auth-control-ink","--auth-control-focus"]){
+    const body=css.split(".auth3-root:not(.dark) [data-auth-glass-card]{")[1]?.split("}")[0]||"";
+    assert.ok(body.includes(name+":"),"Light mode tint missing: "+name);
+  }
+  const light=css.split(".auth3-root:not(.dark) [data-auth-glass-card]{")[1]?.split("}")[0]||"";
+  assert.doesNotMatch(light,/(?:^|\n)\s*(?:background|backdrop-filter|box-shadow):/,
+    "Mode switches must not tint or replace the untinted outer glass material");
+  assert.match(css,/\[data-auth-glass-input\]:focus\{/);
+  assert.match(css,/\[data-auth-glass-provider\]:disabled\{/);
+  assert.match(css,/@media\(prefers-reduced-transparency:reduce\)/);
+  assert.match(css,/@media\(forced-colors:active\)/);
+});
 test("the sign-in card remains the sole centered Motion panel", async () => {
   const source = await load("../src/components/Auth3.jsx");
   assert.match(source, /className="relative z-10 w-full max-w-\[1400px\] mx-auto flex items-center justify-center gap-12"/);

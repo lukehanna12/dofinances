@@ -177,6 +177,71 @@ try{
     "Same doof logo compact Y: "+active.logoY+" expected "+(home.barBottom+46)+
     "; home Y "+home.homeY+"; computed transform "+active.scale);
   assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
+  const material=()=>{
+    return "(()=>{const card=document.querySelector('[data-auth-glass-card]');"+
+      "const input=card.querySelector('[data-auth-glass-input]');"+
+      "const primary=card.querySelector('[data-auth-glass-submit]');"+
+      "const provider=card.querySelector('[data-auth-glass-provider]');"+
+      "const face=getComputedStyle(card);"+
+      "return {mode:card.closest('.auth3-root').classList.contains('dark')?'dark':'light',"+
+      "face:face.backgroundImage,blur:face.backdropFilter,border:face.borderTopColor,"+
+      "input:getComputedStyle(input).backgroundColor,inputInk:getComputedStyle(input).color,"+
+      "primary:getComputedStyle(primary).backgroundColor,"+
+      "provider:getComputedStyle(provider).backgroundColor,"+
+      "placeholder:getComputedStyle(input,'::placeholder').color};})()";
+  };
+  const darkGlass=await evaluate(material());
+  assert.equal(darkGlass.mode,"dark");
+  assert.equal(darkGlass.blur,"blur(8px)",
+    "Clear card must sample the actual live backdrop, like the square fallback");
+  assert.match(darkGlass.face,/linear-gradient/,
+    "Card surface must be a neutral translucent face, not an opaque box");
+  assert.ok(darkGlass.input!==darkGlass.primary &&
+    darkGlass.input!==darkGlass.provider,
+    "Tinted glass inputs and actions must have distinct readable roles");
+  // Verify the native browser pointer actually moves the route-owned glint;
+  // no image capture and no GPU wallpaper re-creation.
+  const bounds=await evaluate("(()=>{const r=document.querySelector('[data-auth-glass-card]').getBoundingClientRect();"+
+    "return {left:r.left,top:r.top,width:r.width,height:r.height};})()");
+  await send("Input.dispatchMouseEvent",{
+    type:"mouseMoved",x:bounds.left+bounds.width*.20,y:bounds.top+32
+  });
+  await sleep(160);
+  const firstGlint=await evaluate("(()=>{const c=document.querySelector('[data-auth-glass-card]');"+
+    "return {x:c.style.getPropertyValue('--auth-glass-pointer-x'),"+
+    "opacity:Number(getComputedStyle(c,'::after').opacity)};})()");
+  assert.ok(firstGlint.x.endsWith("%"),
+    "The card's pointer-responsive glass highlight must receive real pointer coordinates");
+  assert.ok(firstGlint.opacity>.1,
+    "Hover must activate the card's specular light");
+  await send("Input.dispatchMouseEvent",{
+    type:"mouseMoved",x:bounds.left+bounds.width*.80,y:bounds.top+40
+  });
+  const secondGlint=await evaluate("document.querySelector('[data-auth-glass-card]')"+
+    ".style.getPropertyValue('--auth-glass-pointer-x')");
+  assert.ok(Number.parseFloat(secondGlint)>Number.parseFloat(firstGlint.x)+40,
+    "Specular hotspot must follow pointer travel, as on the glass tiles");
+  // Dark/light changes control tint and ink, NOT the clear outer face.
+  await evaluate("document.getElementById('public-theme-toggle').click()");
+  await until("document.documentElement.dataset.dofTheme==='light'&&"+
+    "!!document.querySelector('.auth3-root:not(.dark)')",50);
+  const lightGlass=await evaluate(material());
+  assert.equal(lightGlass.face,darkGlass.face,
+    "Dark and light modes must have the identical untinted card face");
+  assert.equal(lightGlass.blur,darkGlass.blur);
+  for(const field of ["input","primary","provider","inputInk","placeholder"]){
+    assert.notEqual(lightGlass[field],darkGlass[field],
+      "Mode toggle must change the tinted control "+field);
+  }
+  const focused=await evaluate("(()=>{const i=document.querySelector('[data-auth-glass-input]');"+
+    "i.focus();return {focused:document.activeElement===i,"+
+    "outline:getComputedStyle(i).outlineWidth,bg:getComputedStyle(i).backgroundColor};})()");
+  assert.equal(focused.focused,true);
+  assert.ok(Number.parseFloat(focused.outline)>=2,
+    "Focused tinted inputs retain an accessible ring");
+  await evaluate("document.getElementById('public-theme-toggle').click()");
+  await until("document.documentElement.dataset.dofTheme==='dark'&&"+
+    "!!document.querySelector('.auth3-root.dark')",50);
   // Clicking the card-owned back arrow reverses the card's 600ms Motion
   // entry first. The route remains active until that exit finishes.
   await evaluate("window.__trackResumeEvents=0;"+

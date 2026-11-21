@@ -131,6 +131,18 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
     setError("");setNotice("");setPassword("");setConfirmPassword("");setChallenge("");setCode("");
   }
 
+  // The card follows the same pointer-highlight concept as the squares.
+  // Never alter its Motion transform: the shell owns the background,
+  // and this route owns only the card and its entry/exit animation.
+  function moveGlassLight(event){
+    const card=event.currentTarget,rect=card.getBoundingClientRect();
+    if(!rect.width||!rect.height)return;
+    const x=Math.max(0,Math.min(100,(event.clientX-rect.left)*100/rect.width));
+    const y=Math.max(0,Math.min(100,(event.clientY-rect.top)*100/rect.height));
+    card.style.setProperty("--auth-glass-pointer-x",x.toFixed(2)+"%");
+    card.style.setProperty("--auth-glass-pointer-y",y.toFixed(2)+"%");
+  }
+
   return (
     <main className={`auth3-root font-sans antialiased ${isDark ? "dark" : ""}`}>
       <div data-auth-stage className="min-h-screen w-full relative flex items-center justify-center p-6">
@@ -140,6 +152,8 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
             animate={exiting ? { opacity: 0, x: -50 } : { opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             onAnimationComplete={() => { if(exiting) onExitComplete(); }}
+            onPointerMove={moveGlassLight}
+            data-auth-glass-card
             className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-2xl p-8 shadow-2xl"
           >
             <a href="/" className="auth3-back-link" aria-label="Back to homepage" title="Back to homepage"
@@ -177,6 +191,7 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="Email address"
                 required
+                data-auth-glass-input
                 className="w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200"
               />}
               {(mode === "login" || mode === "signup") && <input
@@ -189,11 +204,12 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
                 minLength={mode === "signup" ? 12 : undefined}
                 maxLength={128}
                 required
+                data-auth-glass-input
                 className={inputClasses}
               />}
               {mode === "mfa" && <input type="text" inputMode="numeric" autoComplete="one-time-code" value={code}
                 onChange={event=>setCode(event.target.value)} placeholder="6-digit code or recovery code"
-                aria-label="Authenticator or recovery code" required maxLength={48} className={inputClasses}/>}
+                aria-label="Authenticator or recovery code" required maxLength={48} data-auth-glass-input className={inputClasses}/>}
               {mode === "signup" && <input
                 type="password"
                 value={confirmPassword}
@@ -204,6 +220,7 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
                 minLength={12}
                 maxLength={128}
                 required
+                data-auth-glass-input
                 className={inputClasses}
               />}
               {mode === "signup" && <p className={isDark ? "mb-4 text-sm text-neutral-400" : "mb-4 text-sm text-neutral-600"}>
@@ -213,6 +230,7 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
               {(mode !== "forgotSent") && <button
                 type="submit"
                 disabled={loading}
+                data-auth-glass-submit
                 className="w-full px-6 py-3 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors duration-200"
               >
                 {loading ? "Please wait…" : mode === "signup" ? "Create account" : mode === "mfa" ? "Verify code" : mode === "verify" ? "Resend verification" : mode === "forgot" ? "Send reset link" : "Sign in"}
@@ -232,8 +250,10 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
                 const contents=<><span aria-hidden="true" className="w-5 font-semibold text-center">{provider.mark}</span>{available?"Continue with "+provider.label:provider.label+" (setup required)"}</>;
                 return available
                   ? <a key={provider.key} href={"/api/auth/oauth/start?provider="+provider.key+"&intent=signin"}
+                       data-auth-glass-provider
                        className={common+" no-underline hover:bg-neutral-100 dark:hover:bg-neutral-700"}>{contents}</a>
                   : <button key={provider.key} type="button" disabled aria-disabled="true"
+                       data-auth-glass-provider
                        title="OAuth application credentials are not configured"
                        className={common+" opacity-60 cursor-not-allowed"}>{contents}</button>;
               })}
