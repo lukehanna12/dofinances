@@ -615,6 +615,11 @@ test("experimental native-refraction maps come from original shader's SDF and ne
   assert.match(module,/export function originalMode4Field/);
   assert.match(module,/export function originalRefractionEnvelope/);
   assert.match(module,/feDisplacementMap/);
+  assert.match(module,/const chromium=\/\(\?:Chrome\|Chromium\|Edg\|OPR\)\\\//,
+    "Only browser families with supported SVG backdrop displacement should use the experimental filter");
+  assert.doesNotMatch(module,/if\(card===lastCard\)return/,
+    "Late-mounted providers and changing form modes must receive unique filters");
+  assert.match(module,/const active=new Set\(nodes\)/);
   assert.match(module,/feColorMatrix/);
   assert.match(module,/feComposite/);
   assert.match(module,/operator:"arithmetic"/,

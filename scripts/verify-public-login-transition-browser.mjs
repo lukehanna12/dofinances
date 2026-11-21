@@ -646,6 +646,54 @@ try{
   assert.equal(direct.direct,"true");
   await evaluate("document.querySelector('.auth3-back-link').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
+  // Chromium experimental compositor-refraction check: a source-derived
+  // numerical distortion map is attached to EVERY dynamically mounted pane.
+  // No screen/DOM image capture and no dependence on scrolling JavaScript.
+  await send("Page.navigate",{url:origin+"/login?auth-glass=refraction"});
+  await until("document.querySelector('[data-auth-glass-card]')&&"+
+    "document.body.dataset.authGlassFilter==='refraction'",170);
+  const canRefraction=await evaluate(
+    "CSS.supports('backdrop-filter','url(\"#probe\")')&&"+
+    "/(?:Chrome|Chromium|Edg|OPR)\\//.test(navigator.userAgent)"
+  );
+  if(canRefraction){
+    await until("document.body.dataset.authRefractiveStatus==='ready'&&"+
+      "[...document.querySelectorAll('[data-auth-glass-card],[data-auth-glass-input],"+
+      "[data-auth-glass-submit],[data-auth-glass-provider]')].every(x=>"+
+      "!!x.dataset.refractiveFilter)",180);
+    const material=await evaluate("(()=>{const panes=[...document.querySelectorAll("+
+      "'[data-auth-glass-card],[data-auth-glass-input],[data-auth-glass-submit],"+
+      "[data-auth-glass-provider]')];"+
+      "return {panes:panes.length,unique:new Set(panes.map(x=>x.dataset.refractiveFilter)).size,"+
+      "allNative:panes.every(x=>getComputedStyle(x).backdropFilter.includes('url(')),"+
+      "maps:document.querySelectorAll('feImage').length,"+
+      "displacements:document.querySelectorAll('feDisplacementMap').length,"+
+      "mixers:document.querySelectorAll('feComposite[operator=arithmetic]').length,"+
+      "mode:document.body.dataset.authGlassMode};})()");
+    assert.equal(material.mode,"compositor");
+    assert.ok(material.panes>=7&&material.unique===material.panes,
+      "Every late-mounted provider must have its own SDF optical map");
+    assert.ok(material.allNative,"Each pane uses live compositor backdrop displacement");
+    assert.equal(material.maps,material.panes*3);
+    assert.equal(material.displacements,material.panes*2);
+    assert.equal(material.mixers,material.panes);
+    const unchanged=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+      "const card=document.querySelector('[data-auth-glass-card]');"+
+      "const prev=route.style.height,old=route.scrollTop;route.style.height='340px';"+
+      "const before={top:card.getBoundingClientRect().top,"+
+      "filter:getComputedStyle(card).backdropFilter};route.scrollTop=185;"+
+      "const after={top:card.getBoundingClientRect().top,"+
+      "filter:getComputedStyle(card).backdropFilter,scroll:route.scrollTop};"+
+      "route.scrollTop=old;route.style.height=prev;return {before,after};})()");
+    assert.ok(unchanged.after.scroll>90);
+    assert.ok(Math.abs(unchanged.after.top-unchanged.before.top+
+      unchanged.after.scroll)<2);
+    assert.equal(unchanged.after.filter,unchanged.before.filter,
+      "Native scroll must preserve the exact same optical displacement filter");
+  }else{
+    assert.equal(await evaluate("document.body.dataset.authRefractiveStatus"),
+      "unsupported","Unsupported browsers fall back without a broken URL filter");
+  }
   assert.deepEqual(misses,[],"No missing shell or lazy login assets");
   process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");
 }finally{

@@ -153,7 +153,12 @@ function makeFilter(id,width,height,maps){
 export function initCompositedRefraction(){
   if(typeof document==="undefined"||
      document.body.dataset.authGlassFilter!=="refraction")return ()=>{};
-  const modeSupported=CSS.supports("backdrop-filter",'url("#probe")');
+  // Safari/WebKit currently accepts some SVG URL filter syntax without
+  // actually applying feDisplacementMap to backdrop pixels. Only enable
+  // this opt-in implementation on Chromium-family rendering engines until
+  // filter primitive support is confirmed on other native compositors.
+  const chromium=/(?:Chrome|Chromium|Edg|OPR)\//.test(navigator.userAgent);
+  const modeSupported=chromium&&CSS.supports("backdrop-filter",'url("#probe")');
   document.body.dataset.authRefractiveStatus=modeSupported?"initializing":"unsupported";
   if(!modeSupported)return ()=>{};
   const host=svgElement("svg",{"aria-hidden":"true",width:0,height:0});
@@ -170,10 +175,10 @@ export function initCompositedRefraction(){
     const deviceScale=window.devicePixelRatio||1;
     const key=[width,height,radius,materialSize,deviceScale].join("|");
     if(observed.get(node)===key)return;
-    observed.set(node,key);
     const id="dof-refractive-"+(++sequence);
     const filter=makeFilter(id,width,height,pixelMap(width,height,radius,materialSize,deviceScale));
     defs.append(filter);
+    observed.set(node,key);
     const old=node.dataset.refractiveFilter;
     node.dataset.refractiveFilter=id;
     node.style.setProperty("--auth-native-refraction",`url(#${id})`);
@@ -184,15 +189,28 @@ export function initCompositedRefraction(){
     if(dead)return;
     const card=document.querySelector(".auth3-root [data-auth-glass-card]");
     if(!card)return;
-    if(card===lastCard)return;
-    for(const observer of observers.values())observer.disconnect();
-    observers.clear();observed=new Map();defs.replaceChildren();lastCard=card;
+    // React providers and extra MFA/signup fields can mount *after* the
+    // card itself. A same-card early return leaves later controls inheriting
+    // its displacement map. Reconcile each actual pane on childList changes.
+    if(card!==lastCard){
+      for(const observer of observers.values())observer.disconnect();
+      observers.clear();observed=new Map();defs.replaceChildren();lastCard=card;
+    }
     const nodes=[card,...card.querySelectorAll(
       '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
     )];
+    const active=new Set(nodes);
+    for(const [node,ro] of observers){
+      if(active.has(node))continue;
+      ro.disconnect();observers.delete(node);observed.delete(node);
+      const id=node.dataset.refractiveFilter;
+      if(id)document.getElementById(id)?.remove();
+    }
     for(const node of nodes){
+      if(observers.has(node))continue;
       build(node);
-      const ro=new ResizeObserver(()=>build(node));ro.observe(node);observers.set(node,ro);
+      const ro=new ResizeObserver(()=>build(node));
+      ro.observe(node);observers.set(node,ro);
     }
     document.body.dataset.authRefractivePanes=String(nodes.length);
   };
