@@ -139,6 +139,11 @@ test("original non-social Auth-3 layout utilities remain unchanged", async () =>
       assert.equal(classes.filter(x=>x==="auth3-or-rule flex-1 h-px").length,2);
       continue;
     }
+    if(expected==="flex items-center gap-4 mb-6"){
+      assert.ok(classes.includes(expected+" text-neutral-500 dark:text-neutral-400"),
+        "The original Or row layout retains exact geometry plus the note's theme colors");
+      continue;
+    }
     assert.ok(classes.includes(expected),"Core UI utility lost: "+expected);
   }
   assert.match(source,/const signInProviders=/);
