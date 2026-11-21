@@ -8,7 +8,7 @@
 - Ozoning Board uses the latest `treehouse-ozoning.v3.svg`, preserving the user-supplied 24 × 24 viewBox and 2-unit strokes. The shared icon styling displays it as a white 28 × 28 px icon without a surrounding circle.
 
 - Earlier Ozoning drawings remain at `treehouse-ozoning.svg` and `treehouse-ozoning.v2.svg` for compatibility. `treehouse-ozoning.v3.svg` contains the new single ladder rail and two rungs specified by the user. The versioned icon path and module-import chain avoid stale cached responses.
-- Apple HIGs Reader uses `apple-worm.v2.svg`: the unchanged Lucide apple silhouette plus a short, open C-shaped white worm with a rounded head. The previous S-like `apple-worm.svg` remains available for backward compatibility; the versioned file is selected by the Projects card at 28 × 28 px.
+- Apple HIGs Reader uses `apple-worm.v3.svg`: the original Lucide apple outline is scaled and shifted slightly to make space for a short, single white curve that protrudes *outside the right edge*. There is no separate head or squiggle inside the apple. The earlier worm versions remain available for backward compatibility; the Projects card selects v3 at 28 × 28 px.
 - Protocol Monitor Pruner uses `funnel-code.svg`: the approved white funnel with a genuinely interrupted top rim and centered Lucide-style code chevrons. It uses the same 24 × 24 grid and 2-unit strokes as the other icons.
 
 ## Artwork references

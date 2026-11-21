@@ -1,0 +1,19 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="#fff"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Original Lucide apple outline; shifted slightly left to make room outside the rim. -->
+  <g transform="translate(-.3 .5) scale(.9)">
+    <path vector-effect="non-scaling-stroke" d="M12 6.528V3a1 1 0 0 1 1-1h0" />
+    <path vector-effect="non-scaling-stroke" d="M18.237 21A15 15 0 0 0 22 11a6 6 0 0 0-10-4.472A6 6 0 0 0 2 11a15.1 15.1 0 0 0 3.763 10 3 3 0 0 0 3.648.648 5.5 5.5 0 0 1 5.178 0A3 3 0 0 0 18.237 21" />
+  </g>
+  <!-- A short, headless worm protruding entirely outside the apple's right contour. -->
+  <path d="M19.25 13.1q1.15-1.6 3.1-1.1" />
+</svg>
