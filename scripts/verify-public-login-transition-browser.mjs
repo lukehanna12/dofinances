@@ -161,5 +161,6 @@ try{
   try{socket?.close();}catch{}
   try{chrome?.kill("SIGKILL");}catch{}
   await new Promise(resolve=>server.close(resolve));
-  rmSync(profile,{force:true,recursive:true});
+  try{rmSync(profile,{force:true,recursive:true,maxRetries:12,retryDelay:150});}
+  catch(cleanupError){process.stderr.write("Chrome profile cleanup: "+String(cleanupError)+"\n");}
 }
