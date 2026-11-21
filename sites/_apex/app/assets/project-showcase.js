@@ -44,6 +44,7 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "liquid-plexiglass-26":"opacity",
   "3d-liquid-glass-26-swift-package":"move-3d",
   "apple-adobe-fx":"blend",
+  "protocol-monitor-pruner":"funnel-code",
   "ozoning-board":"treehouse-ozoning"
 });
 export const PROJECT_CARD_IMAGES=Object.freeze({

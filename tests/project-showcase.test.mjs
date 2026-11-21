@@ -174,6 +174,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "liquid-plexiglass-26": "opacity",
  "3d-liquid-glass-26-swift-package": "move-3d",
  "apple-adobe-fx": "blend",
+ "protocol-monitor-pruner": "funnel-code",
  "ozoning-board": "treehouse-ozoning"
 };
  const artworkSlugs=["bootscript","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner"];
@@ -215,12 +216,27 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
  assert.ok(!pastoral.includes("upload.wikimedia.org/wikipedia/commons/thumb"),"Use the verified Commons image thumbnail host");
 });
 
-test("Ozoning Board displays the original supplied treehouse SVG in the existing 28px icon system",()=>{
+test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()=>{
  const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.svg");
  assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning");
  assert.match(svg,/viewBox="0 0 24 24"/);
  assert.match(svg,/stroke-width="2"/);
  assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
+ assert.ok(svg.includes('M4 9v4.5h9V9L8.5 4.5z'),"Revised cabin and peaked roof");
+ assert.ok(svg.includes('M5.5 13.5V22'),"Revised left ladder rail");
+ assert.ok(svg.includes('M9 19.5H5.5'),"Revised ladder rung");
+ assert.ok(!svg.includes('M13 8.5H7v14'),"Retired earlier cabin geometry");
  const js=read("sites/_apex/app/assets/project-showcase.js");
  assert.ok(js.includes('icon.width=28;icon.height=28'));
+});
+
+test("Protocol Monitor Pruner uses the approved white funnel-code icon with a genuine rim gap",()=>{
+ assert.equal(PROJECT_CARD_ICONS["protocol-monitor-pruner"],"funnel-code");
+ const svg=read("sites/_apex/app/assets/project-icons/funnel-code.svg");
+ assert.match(svg,/viewBox="0 0 24 24"/);
+ assert.match(svg,/stroke="#fff" stroke-width="2"/);
+ assert.ok(svg.includes('M2.75 5.25h2.65m13.2 0h2.65'),"Funnel rim consists of two separated segments");
+ assert.ok(svg.includes('m10.4 3.33-1.92 1.92 1.92 1.92m3.2-3.84 1.92 1.92-1.92 1.92'),"Code chevrons occupy the cutout");
+ const css=read("sites/_apex/app/assets/project-showcase.css");
+ assert.match(css,/filter:brightness\(0\) invert\(1\)/);
 });
