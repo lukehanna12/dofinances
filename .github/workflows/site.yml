@@ -254,6 +254,7 @@ jobs:
           test -s sites/_apex/assets/public-login-manifest.json
           test -s sites/_apex/assets/public-projects-entry.js
           test -s sites/_apex/assets/public-projects-catalog.js
+          test -s sites/_apex/assets/public-projects-controls.js
           test -s sites/_apex/assets/public-projects.css
           grep -Fq 'dofinances-app-shell' sites/_apex/login/index.html
           grep -Fq 'dofinances-app-shell' sites/_apex/projects/index.html
@@ -314,6 +315,7 @@ jobs:
             /assets/home-dashboard/dashboard-home-loader.js \
             /assets/public-projects-entry.js \
             /assets/public-projects-catalog.js \
+            /assets/public-projects-controls.js \
             /assets/public-projects.css \
             /assets/project-icons/colosseum-lucide.svg \
             /assets/home-dashboard/dashboard-gpu-renderer.js \

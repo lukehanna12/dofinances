@@ -13,9 +13,16 @@
  * below the entire header rather than sharing its first horizontal row. */
 .public-projects-header{
   display:flex;flex-direction:column;align-items:flex-start;
-  gap:12px;margin:0 0 24px
+  gap:12px;margin:0 0 24px;position:relative;z-index:5
 }
-.public-projects-title{margin:0;color:#fff;font-size:clamp(23px,2vw,31px);font-weight:550;letter-spacing:-.035em}
+.public-projects-heading-row{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;width:100%;min-width:0
+}
+.public-projects-title{
+  margin:0;color:#fff;font-size:clamp(34.5px,3vw,46.5px);
+  font-weight:550;line-height:1.12;letter-spacing:-.035em
+}
 .public-projects-back{
   appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;
   padding:0;border:1px solid transparent;border-radius:10px;cursor:pointer;
@@ -128,7 +135,8 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
   animation-delay:calc(var(--project-reverse-index,0)*45ms)
 }
 .public-projects-root.is-exiting .public-projects-back,
-.public-projects-root.is-exiting .public-projects-title{
+.public-projects-root.is-exiting .public-projects-title,
+.public-projects-root.is-exiting .public-projects-toolbar{
   animation:project-showcase-exit .42s both;
   animation-delay:540ms
 }
@@ -151,4 +159,130 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
   .public-projects-root .project-showcase-action,
   .public-projects-root .project-showcase-row{transition:none!important}
   .public-projects-root.is-exiting{opacity:0}
+}
+
+
+/* Three identically sized, spaced toolbar chips. Only GPU glassPipeline
+ * paints their optical faces when ready; CSS owns layout/entrance alone. */
+.public-projects-toolbar{
+  position:relative;z-index:10;display:flex;align-items:center;justify-content:flex-end;
+  flex:none;gap:10px;height:40px
+}
+.public-projects-search-wrap,.public-projects-filter-wrap{
+  position:relative;flex:0 0 40px;width:40px;height:40px
+}
+.public-projects-tool-button,.public-projects-search-cancel{
+  box-sizing:border-box;display:grid;place-items:center;
+  width:40px;height:40px;min-width:40px;min-height:40px;
+  padding:0;border:1px solid transparent;border-radius:12px;
+  background:#242424;color:#fff;text-decoration:none;
+  appearance:none;cursor:pointer;position:relative;
+  outline-offset:3px
+}
+.public-projects-tool-button svg,.public-projects-search-cancel svg{
+  display:block;pointer-events:none;flex:none
+}
+.public-projects-tool-button:focus-visible,
+.public-projects-search-cancel:focus-visible,
+.public-projects-filter-option:focus-visible{
+  outline:2px solid #fff;outline-offset:3px
+}
+.public-projects-search-button{transition:opacity 100ms ease}
+.public-projects-search-field{
+  box-sizing:border-box;position:absolute;right:calc(100% + 10px);top:0;
+  width:min(390px,calc(100vw - 192px));height:40px;
+  border:1px solid transparent;border-radius:999px;
+  background:#242424;color:#fff;
+  display:flex;align-items:center;gap:12px;padding:0 15px;
+  opacity:0;transform:scaleX(.025);transform-origin:right center;
+  transition:transform 320ms cubic-bezier(.2,.78,.2,1),
+    opacity 280ms ease;
+  pointer-events:none;white-space:nowrap;
+}
+.public-projects-search-field>svg{display:block;flex:none;width:18px;height:18px}
+.public-projects-search-input{
+  box-sizing:border-box;min-width:0;width:100%;height:100%;
+  appearance:none;outline:none;border:0;background:transparent;
+  color:#fff;font:400 14px/1.4 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:0;opacity:0;transition:opacity 110ms ease;
+}
+.public-projects-search-input::placeholder{color:rgba(255,255,255,.68)}
+.public-projects-search-input::-webkit-search-cancel-button{display:none}
+.public-projects-search-wrap.is-expanded .public-projects-search-field{
+  transform:scaleX(1);opacity:1;pointer-events:auto
+}
+.public-projects-search-wrap.is-ready .public-projects-search-input{opacity:1}
+.public-projects-search-wrap.is-ready .public-projects-search-button{
+  opacity:0;pointer-events:none
+}
+/* A separate circle (not an icon painted onto the capsule) takes over the
+ * original magnifier's 40px position only AFTER the expansion completes. */
+.public-projects-search-cancel{
+  position:absolute;inset:0;z-index:2;border-radius:999px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity 150ms ease,visibility 0s linear 150ms
+}
+.public-projects-search-wrap.is-ready .public-projects-search-cancel{
+  opacity:1;visibility:visible;pointer-events:auto;
+  transition-delay:0s,0s
+}
+/* The dropdown stays in the public route's layer stack above the cards.
+ * A *single* shared WebGPU pane is the backdrop of the entire dropdown. */
+.public-projects-filter-button>svg{grid-area:1/1;transition:opacity 140ms ease,transform 220ms ease}
+.public-projects-filter-button .public-projects-icon-up{opacity:0;transform:translateY(3px)}
+.public-projects-filter-wrap.is-open .public-projects-icon-filter{opacity:0;transform:translateY(-3px)}
+.public-projects-filter-wrap.is-open .public-projects-icon-up{opacity:1;transform:translateY(0)}
+.public-projects-filter-panel{
+  box-sizing:border-box;position:absolute;right:0;top:calc(100% + 10px);
+  width:min(232px,calc(100vw - 36px));padding:8px;z-index:15;
+  border:1px solid transparent;border-radius:14px;
+  background:#242424;color:#fff;
+  visibility:hidden;opacity:0;pointer-events:none;
+  transform-origin:top right;transform:translateY(-12px) scaleY(.94);
+  transition:transform 270ms cubic-bezier(.2,.78,.2,1),
+    opacity 220ms ease,visibility 0s linear 270ms;
+}
+.public-projects-filter-wrap.is-open .public-projects-filter-panel{
+  visibility:visible;opacity:1;pointer-events:auto;
+  transform:translateY(0) scaleY(1);
+  transition-delay:0s,0s,0s
+}
+.public-projects-filter-option{
+  appearance:none;box-sizing:border-box;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;width:100%;min-height:38px;
+  padding:8px 10px;border:0;border-radius:9px;
+  background:transparent;color:#fff;text-align:left;
+  font:400 13px/1.3 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  cursor:pointer;transition:background-color 140ms ease
+}
+.public-projects-filter-option:is(:hover,:focus-visible){background:rgba(255,255,255,.09)}
+.public-projects-filter-check{display:grid;place-items:center;width:18px;height:18px;opacity:0;flex:none}
+.public-projects-filter-check svg{display:block;width:16px;height:16px}
+.public-projects-filter-option.is-selected .public-projects-filter-check{opacity:1}
+.public-projects-github-button svg{fill:#fff}
+/* When active, clear every fallback face; this is the existing real GPU
+ * pane material, not a CSS background-filter or optical approximation. */
+body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
+  :is(.public-projects-tool-button,.public-projects-search-cancel,
+      .public-projects-search-field,.public-projects-filter-panel){
+  background:transparent!important;border-color:transparent!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important
+}
+.public-projects-root .project-showcase-card[hidden]{display:none!important}
+.public-projects-empty{
+  margin:18px 0;padding:18px 4px;color:rgba(255,255,255,.75);
+  font-size:14px;line-height:1.5
+}
+.public-projects-empty[hidden]{display:none!important}
+@media(max-width:699px){
+  .public-projects-heading-row{flex-wrap:wrap;gap:14px}
+  .public-projects-toolbar{margin-left:auto}
+  .public-projects-search-field{width:min(390px,calc(100vw - 192px))}
+}
+@media(prefers-reduced-motion:reduce){
+  .public-projects-tool-button,.public-projects-search-cancel,
+  .public-projects-search-field,.public-projects-filter-panel,
+  .public-projects-filter-button>svg,.public-projects-filter-option,
+  .public-projects-search-input{transition:none!important}
 }

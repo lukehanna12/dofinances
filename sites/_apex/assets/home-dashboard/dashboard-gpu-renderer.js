@@ -74,8 +74,13 @@ function authPaneElements(){
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
   )].slice(0,AUTH_PANE_CAPACITY);
   const projects=document.querySelector(".public-projects-root");
-  return projects?[...projects.querySelectorAll("[data-public-project-glass]")]
-    .slice(0,AUTH_PANE_CAPACITY):[];
+  if(!projects)return [];
+  const all=[...projects.querySelectorAll("[data-public-project-glass]")];
+  // The dropdown overlays the cards in the route-owned DOM stack; draw its
+  // very same glass pane LAST so the GPU material obeys that stacking order.
+  const top=all.filter(node=>node.dataset.publicProjectGlass==="filter-dropdown");
+  return [...all.filter(node=>node.dataset.publicProjectGlass!=="filter-dropdown"),
+    ...top].slice(0,AUTH_PANE_CAPACITY);
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
@@ -587,7 +592,9 @@ async function initialize(){
     // handles geometry optics, tint and interaction for all instances.
     for(let i=0;i<AUTH_PANE_CAPACITY;i++){
       const slot=tileCount+i,p=slot*TILE_FLOATS,node=panes[i];
-      if(!node){
+      // Filtering uses the genuine HTML hidden state. Skip these panes
+      // rather than emitting stray 1px refracting quads at the origin.
+      if(!node||node.hidden||getComputedStyle(node).display==="none"){
         tileData.fill(0,p,p+TILE_FLOATS);
         tileData[p]=-100000;tileData[p+1]=-100000;
         tileData[p+2]=1;tileData[p+3]=1;

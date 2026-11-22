@@ -5,6 +5,7 @@
  */
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
+import {mountProjectControls} from "./public-projects-controls.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // Keep in sync with the route-owned CSS reverse stagger and final header exit.
 const PROJECT_EXIT_DURATION_MS=420;
@@ -96,17 +97,35 @@ export function mountProjects(host,{onBack,onExitComplete}){
   back.title="Back to homepage";
   back.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
   const title=el("h1","public-projects-title","Projects");
-  head.append(back,title);
+  const headingRow=el("div","public-projects-heading-row");
+  headingRow.append(title);
+  head.append(back,headingRow);
   const grid=el("div","project-showcase-grid");
   grid.setAttribute("aria-label","Project cards");
   projects.forEach((project,index)=>grid.append(makeCard(project,index)));
   root.append(head,grid);
   host.replaceChildren(root);
-  // Keep WebGPU submitting synchronized frames throughout the stagger.
-  // Stop its animation loop once the final card has completed its intro.
-  let exiting=false,closed=false,timer=null;
-  const introTimer=setTimeout(()=>root.classList.add("is-settled"),
-    reduced.matches?0:500+12*65+60);
+  // Route-owned changes extend the live WebGPU submission window. The shared
+  // renderer reads each pane's actual DOM rect, never a CSS glass substitute.
+  let exiting=false,closed=false,timer=null,introFinished=false;
+  let controlsAnimating=false,controlTimer=null;
+  const settle=()=>{
+    if(introFinished&&!controlsAnimating&&!exiting&&!closed)
+      root.classList.add("is-settled");
+  };
+  const animateGlass=durationMs=>{
+    if(closed||exiting)return;
+    controlsAnimating=true;
+    root.classList.remove("is-settled");
+    if(controlTimer!==null)clearTimeout(controlTimer);
+    controlTimer=setTimeout(()=>{
+      controlTimer=null;controlsAnimating=false;settle();
+    },reduced.matches?0:durationMs+50);
+  };
+  const introTimer=setTimeout(()=>{
+    introFinished=true;settle();
+  },reduced.matches?0:500+12*65+60);
+  const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
   back.addEventListener("click",event=>{
     if(closed||exiting)return;
     if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
@@ -115,7 +134,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   return {
     exit(){
       if(closed||exiting)return;
-      exiting=true;root.classList.add("is-exiting");
+      exiting=true;controls.closeForExit();root.classList.add("is-exiting");
       // Reverse the same 24px staggered entry geometry, with shorter
       // per-card timing and closer spacing. The shell restores only after
       // the route-owned reverse completes.
@@ -127,7 +146,9 @@ export function mountProjects(host,{onBack,onExitComplete}){
     unmount(){
       if(closed)return;closed=true;
       if(timer!==null)clearTimeout(timer);
+      if(controlTimer!==null)clearTimeout(controlTimer);
       clearTimeout(introTimer);
+      controls.unmount();
       root.remove();
     }
   };

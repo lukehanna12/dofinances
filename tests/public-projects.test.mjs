@@ -9,6 +9,9 @@ import {
   PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
   PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,sortProjectShowcase
 } from "../sites/_apex/assets/public-projects-catalog.js";
+import {
+  PROJECT_FILTER_CATEGORIES,PROJECT_CATEGORY_BY_KIND,projectMatchesFilters
+} from "../sites/_apex/assets/public-projects-controls.js";
 import {createAuthGlassHoverController} from "../sites/_apex/assets/home-dashboard/dashboard-auth-hover.js";
 import {TILE_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-interaction.js";
 const load=path=>readFile(new URL(path,import.meta.url),"utf8");
@@ -21,6 +24,28 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.equal(PUBLIC_PROJECTS.length,14);
   const fallback=publicProjectImage({slug:"terminal-scalars"},6);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
+});
+test("Projects search and the five multiselect filters use only public curated kinds",()=>{
+  assert.deepEqual(PROJECT_FILTER_CATEGORIES,
+    ["Applications","Extensions","Plugins","Add-ons","CLIs"]);
+  assert.equal(PUBLIC_PROJECTS.length,14);
+  const types=new Set(PROJECT_FILTER_CATEGORIES);
+  for(const p of PUBLIC_PROJECTS)
+    assert.ok(types.has(PROJECT_CATEGORY_BY_KIND[p.kind]),"Unclassified "+p.slug);
+  const all=PUBLIC_PROJECTS.filter(project=>projectMatchesFilters(project));
+  assert.equal(all.length,14);
+  const extensions=PUBLIC_PROJECTS.filter(project=>
+    projectMatchesFilters(project,"",new Set(["Extensions"])));
+  assert.deepEqual(extensions.map(project=>project.name).sort(),["ChatStore","ReadMe GLP"]);
+  const cliAndExt=PUBLIC_PROJECTS.filter(project=>
+    projectMatchesFilters(project,"",new Set(["CLIs","Extensions"])));
+  assert.equal(cliAndExt.length,5);
+  assert.equal(PUBLIC_PROJECTS.filter(project=>
+    projectMatchesFilters(project,"ReadMe",new Set(["Extensions"]))).length,1);
+  assert.equal(PUBLIC_PROJECTS.filter(project=>
+    projectMatchesFilters(project,"ReadMe",new Set(["CLIs"]))).length,0);
+  assert.equal(PUBLIC_PROJECTS.filter(project=>
+    projectMatchesFilters(project,"no-project-can-match-this-phrase")).length,0);
 });
 test("all three public Projects triggers use the persistent route registry",async()=>{
   const [html,router,entry,workflow]=await Promise.all([
@@ -38,21 +63,30 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/root\.classList\.add\("is-exiting"\)/);
   assert.match(entry,/project-showcase-card/);
   assert.match(entry,/card\.type="button"/);
+  assert.match(entry,/mountProjectControls\(\{root,headingRow,grid,projects,animateGlass\}\)/);
   assert.match(entry,/const PROJECT_EXIT_DURATION_MS=420;/);
   assert.match(entry,/const PROJECT_EXIT_STAGGER_MS=45;/);
   assert.match(entry,/const PROJECT_EXIT_TAIL_MS=60;/);
   assert.doesNotMatch(entry,/\bfetch\s*\(|\blocation\.(assign|replace)\s*\(|\bcard\.href\s*=|["']\/app\/assets/);
 });
 test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optics",async()=>{
-  const [renderer,hover,css,shader]=await Promise.all([
+  const [renderer,hover,css,shader,controls]=await Promise.all([
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),
     load("../sites/_apex/assets/home-dashboard/dashboard-auth-hover.js"),
     load("../sites/_apex/assets/public-projects.css"),
-    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl")
+    load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
+    load("../sites/_apex/assets/public-projects-controls.js")
   ]);
   assert.match(renderer,/const AUTH_PANE_CAPACITY=24;/);
   assert.match(renderer,/\.public-projects-root/);
   assert.match(renderer,/projects\?"independent":"nested"/);
+  assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
+  assert.match(renderer,/node\.hidden\|\|getComputedStyle\(node\)\.display==="none"/);
+  assert.match(controls,/github\.href="https:\/\/github\.com\/lukehanna12"/);
+  assert.match(controls,/github\.target="_blank"/);
+  assert.match(controls,/github\.rel="noopener noreferrer"/);
+  assert.match(controls,/input\.focus\(\{preventScroll:true\}\)/);
+  assert.match(controls,/if\(filterOpen&&!filterWrap\.contains\(event\.target\)\)closeFilters\(\)/);
   assert.match(renderer,/audit\.projectGlass=\{renderer:"shared-webgpu-glassPipeline"/);
   assert.match(renderer,/authPass\.setPipeline\(glassPipeline\)/);
   assert.match(renderer,/authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\)/);
@@ -64,6 +98,10 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
   assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
+  assert.match(css,/font-size:clamp\(34\.5px,3vw,46\.5px\)/);
+  assert.match(css,/\.public-projects-search-field\{[\s\S]*?transform-origin:right center;/);
+  assert.match(css,/\.public-projects-filter-panel\{[\s\S]*?transform-origin:top right/);
+  assert.match(css,/\.public-projects-root \.project-showcase-card\[hidden\]\{display:none!important\}/);
   assert.match(css,/\.public-projects-root\.is-exiting \.project-showcase-card\{\s*animation:project-showcase-exit \.42s both;/);
   assert.match(css,/animation-delay:calc\(var\(--project-reverse-index,0\)\*45ms\)/);
   assert.match(css,/\.public-projects-root\.is-exiting \.public-projects-back,\s*\.public-projects-root\.is-exiting \.public-projects-title/);

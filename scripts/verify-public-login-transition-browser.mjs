@@ -689,6 +689,9 @@ try{
     "backBottom:root.querySelector('.public-projects-back').getBoundingClientRect().bottom,"+
     "headingTop:root.querySelector('.public-projects-title').getBoundingClientRect().top,"+
     "headingBottom:root.querySelector('.public-projects-title').getBoundingClientRect().bottom,"+
+    "titleSize:parseFloat(getComputedStyle(root.querySelector('.public-projects-title')).fontSize),"+
+    "tools:[...root.querySelector('.public-projects-toolbar').children].map(node=>({x:node.getBoundingClientRect().x,w:node.getBoundingClientRect().width,h:node.getBoundingClientRect().height})),"+
+    "github:(()=>{const a=root.querySelector('.public-projects-github-button');return {href:a.href,target:a.target,rel:a.rel}})(),"+
     "gridTop:root.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
     "shell:!!document.querySelector('#cta6-mosaic'),"+
     "transparent: getComputedStyle(first).backgroundColor};})()");
@@ -701,6 +704,19 @@ try{
   assert.equal(projectState.allButtons,true);
   assert.equal(projectState.firstImageLazy,true);
   assert.equal(projectState.shell,true);
+  assert.ok(Math.abs(projectState.titleSize-42)<1,
+    "Projects title is 50% larger than its prior 28px desktop size");
+  assert.equal(projectState.tools.length,3,"Search, filter and GitHub are three equal chips");
+  for(const tool of projectState.tools){
+    assert.equal(tool.w,40);assert.equal(tool.h,40);
+  }
+  assert.ok(Math.abs((projectState.tools[1].x-projectState.tools[0].x)-
+    (projectState.tools[2].x-projectState.tools[1].x))<1,
+    "All three toolbar chips are equally spaced");
+  assert.equal(projectState.github.href,"https://github.com/lukehanna12");
+  assert.equal(projectState.github.target,"_blank");
+  assert.match(projectState.github.rel,/noopener/);
+  assert.match(projectState.github.rel,/noreferrer/);
   assert.ok(projectState.headingTop>=projectState.backBottom+8,
     "Projects heading must sit clearly below the back glass button");
   assert.ok(projectState.gridTop>=projectState.headingBottom+16,
@@ -712,12 +728,104 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
-    await until("window.__dashboardWebGPU?.projectGlass?.count===15",70);
+    await until("window.__dashboardWebGPU?.projectGlass?.count===21",70);
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
     assert.equal(projectState.transparent,"rgba(0, 0, 0, 0)",
       "Public projects use the genuine transparent WebGPU glass layer");
+  }
+  // The search pill extends LEFT of the original square, then reveals its
+  // own separate circular untinted-glass cancel button and focuses typing.
+  await evaluate("document.querySelector('.public-projects-search-button').click()");
+  await until("document.querySelector('.public-projects-search-wrap').classList.contains('is-ready')&&"+
+    "document.activeElement===document.querySelector('.public-projects-search-input')",50);
+  const searchState=await evaluate("(()=>{"+
+    "const pill=document.querySelector('.public-projects-search-field').getBoundingClientRect(),"+
+    "cancel=document.querySelector('.public-projects-search-cancel'),"+
+    "button=document.querySelector('.public-projects-search-button').getBoundingClientRect();"+
+    "return {pillLeft:pill.left,pillRight:pill.right,pillWidth:pill.width,"+
+    "buttonLeft:button.left,cancelRadius:getComputedStyle(cancel).borderTopLeftRadius,"+
+    "cancelVisible:getComputedStyle(cancel).visibility,"+
+    "inputActive:document.activeElement?.classList.contains('public-projects-search-input')};})()");
+  assert.ok(searchState.pillRight<searchState.buttonLeft,
+    "The long capsule expands strictly to the left of the original search button");
+  assert.ok(searchState.pillWidth>300,"Desktop search capsule is a long glass input");
+  assert.equal(searchState.cancelRadius,"999px");
+  assert.equal(searchState.cancelVisible,"visible");
+  assert.equal(searchState.inputActive,true);
+  await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
+    "input.value='ReadMe';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  assert.equal(await evaluate("document.querySelectorAll('.public-projects-root .project-showcase-card:not([hidden])').length"),1,
+    "Search filters existing cards immediately without navigation");
+  assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-card:not([hidden])').dataset.projectSlug"),
+    "github-readme-chrome-extension");
+  await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
+    "input.value='unmatchable-phrase-964752';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  assert.equal(await evaluate("document.querySelectorAll('.public-projects-root .project-showcase-card:not([hidden])').length"),0);
+  assert.equal(await evaluate("document.querySelector('.public-projects-empty').hidden"),false);
+  await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
+    "input.value='ReadMe';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  assert.equal(await evaluate("document.querySelector('.public-projects-empty').hidden"),true);
+
+  // Multiselect filters and the downward overlay are independently owned
+  // by Projects; the search term and the selected type chips compose.
+  await evaluate("document.querySelector('.public-projects-filter-button').click()");
+  await until("document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",30);
+  await sleep(330);
+  const dropdown=await evaluate("(()=>{const p=document.querySelector('.public-projects-filter-panel');"+
+    "return {names:[...p.querySelectorAll('.public-projects-filter-label')].map(x=>x.textContent),"+
+    "top:p.getBoundingClientRect().top,bottom:p.getBoundingClientRect().bottom,"+
+    "firstCardTop:document.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
+    "glass:p.dataset.publicProjectGlass,expanded:document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded'),"+
+    "upOpacity:getComputedStyle(document.querySelector('.public-projects-icon-up')).opacity};})()");
+  assert.deepEqual(dropdown.names,["Applications","Extensions","Plugins","Add-ons","CLIs"]);
+  assert.equal(dropdown.glass,"filter-dropdown");
+  assert.equal(dropdown.expanded,"true");
+  assert.equal(dropdown.upOpacity,"1");
+  assert.ok(dropdown.top<dropdown.firstCardTop&&dropdown.bottom>dropdown.firstCardTop,
+    "The glass menu must drop over project cards, not push the grid down");
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').getAttribute('aria-pressed')"),"true");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),1);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').click()");
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').getAttribute('aria-pressed')"),"true");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),1);
+  await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
+    "input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),5,
+    "Selected types are combined with OR while search uses AND");
+
+  // Clicking outside collapses (rather than unmounting) the glass menu,
+  // then reopening shows persistent checkmarks.
+  await evaluate("document.querySelector('.public-projects-title').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
+  await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
+  await sleep(320);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-panel')).visibility"),"hidden");
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded')"),"false");
+  await evaluate("document.querySelector('.public-projects-filter-button').click()");
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').classList.contains('is-selected')"),true);
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').classList.contains('is-selected')"),true);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),14);
+  await evaluate("document.querySelector('.public-projects-filter-button').click()");
+  await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
+  // Cancel reverses the expansion and restores the original search chip.
+  await evaluate("document.querySelector('.public-projects-search-cancel').click()");
+  await until("!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded')",20);
+  await sleep(360);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).opacity"),"0");
+  assert.equal(await evaluate("document.querySelector('.public-projects-search-input').disabled"),true);
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),14);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    const controlAudit=await evaluate("window.__dashboardWebGPU.projectGlass");
+    assert.equal(controlAudit.materialReference,"first-home-square");
+    for(const name of [".public-projects-search-button",".public-projects-filter-button",
+      ".public-projects-github-button"]){
+      assert.equal(await evaluate("getComputedStyle(document.querySelector("+JSON.stringify(name)+")).backgroundColor"),
+        "rgba(0, 0, 0, 0)","Real GPU glass is visible behind the "+name+" surface");
+    }
   }
   await evaluate("document.querySelector('.public-projects-back').click()");
   assert.equal(await evaluate("window.__dofPublicRouter.state"),"exiting");
