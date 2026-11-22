@@ -305,6 +305,47 @@ try{
  ].join(""));
  assert.equal(inert.before,inert.after,"Non-Projects placeholders remain inert");
  assert.equal(await evaluate('document.querySelectorAll("[data-public-target]").length'),3,"Three public Projects triggers available");
+ // The EXACT same h1 must stay viewport-pinned throughout horizontal and
+ // vertical resizing. The route owns its opacity on native scroll only.
+ await evaluate('document.querySelector("#global-menu-links [data-public-target=\\\"/projects\\\"]").click()');
+ let projectsReady=false;
+ for(let i=0;i<90;i++){
+  if(await evaluate('location.pathname==="/projects" && !!document.querySelector(".public-projects-root") && document.getElementById("dashboard-title").parentElement===document.body')){
+   projectsReady=true;break;
+  }
+  await sleep(50);
+ }
+ assert.ok(projectsReady,"Public Projects must mount the original doof in the viewport layer");
+ const projectLogo=()=>evaluate('(()=>{const e=document.getElementById("dashboard-title");const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,position:getComputedStyle(e).position,pinned:document.body.dataset.projectsLogoPinned,hidden:document.body.hasAttribute("data-projects-logo-hidden")};})()');
+ for(const [width,height] of [[1440,900],[1440,480],[1440,1120],[900,1120],[1600,580],[640,760]]){
+  await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
+  await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
+  const rect=await projectLogo();
+  assert.equal(rect.position,"fixed","Projects wordmark must be viewport-fixed");
+  assert.equal(rect.pinned,"true");
+  near(rect.y,90,"Projects doof fixed 90px from viewport top",width);
+  near(rect.x,width/2,"Projects doof centered across viewport widths",width);
+  assert.equal(rect.hidden,false,"Resizing without scrolling must not hide doof");
+ }
+ const projectsScroll=await evaluate('(()=>{const s=document.getElementById("public-route-content");s.scrollTop=300;return s.scrollTop;})()');
+ assert.ok(projectsScroll>0,"Projects grid must scroll when viewport is short");
+ let logoFaded=false;
+ for(let i=0;i<40;i++){
+  if(await evaluate('document.body.hasAttribute("data-projects-logo-hidden")')){logoFaded=true;break;}
+  await sleep(25);
+ }
+ assert.ok(logoFaded,"Native Projects scroll must still fade doof near search");
+ await evaluate('document.querySelector(".public-projects-back").click()');
+ let returnedHome=false;
+ for(let i=0;i<90;i++){
+  if(await evaluate('location.pathname==="/" && !document.body.hasAttribute("data-projects-logo-pinned") && document.querySelector(".cta6-center > #dashboard-title")')){
+   returnedHome=true;break;
+  }
+  await sleep(50);
+ }
+ assert.ok(returnedHome,"Back must restore original h1 to the homepage mosaic");
+ await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+ await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
  // Non-reduced-motion is essential here: an X-close poof must have a
  // visible intermediate state before the legitimate /login navigation.
  await send("Emulation.setEmulatedMedia",{

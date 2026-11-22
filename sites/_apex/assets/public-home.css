@@ -338,7 +338,7 @@ body.public-home .dashboard-home .cta6-center h1{
  * search capsule crosses 5px beneath its visible bottom edge. This never
  * changes its position, scale, glass material or other route behavior.
  * The route owns setting and clearing the attribute on native scroll. */
-body.public-home[data-projects-logo-hidden] .dashboard-home .cta6-center h1{
+body.public-home[data-projects-logo-hidden] #dashboard-title{
   opacity:0;
 }
 /* Keep the one-time logo introduction animation running if a user
@@ -350,27 +350,30 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center{
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
   transform:translate3d(0,var(--doof-exit-y,0px),0) scale(.6);
 }
-/* While Projects is mounted, the original h1 stays at a fixed viewport
- * center of 90px below the screen top (44px navigation + 46px). Do NOT
- * remeasure it or animate its transform in response to window resizing.
- *
- * The homepage's 1080px lattice is centered: its center is 50dvh+22px.
- * The original title has an independent -215.90909px translate, and its
- * exact unchanged 0.6 scale remains centered. Therefore the required
- * Projects-only transform is:
- *   90px - (50dvh + 22px - 215.90909px) = 283.90909px - 50dvh.
- * The Projects route owns data-projects-logo-pinned. Its explicit state and
- * scoped priority win over the inherited leaving transform (which still
- * belongs to Home/Login); the element retains its font, offset, tint,
- * opacity fade and exact size. No animated rectangle or new renderer.
- */
-body.public-home[data-projects-logo-pinned="true"]
-  .dashboard-home .cta6-center h1{
-  transform:translate3d(0,calc(283.90909px - 50dvh),0) scale(.6)!important;
-  /* The normal 440ms transform transition would animate from the old y
-   * during EVERY viewport resize even though the target stays at 90px.
-   * Keep only the scroll-owned 210ms opacity fade; position is instant
-   * and visually invariant across window width and height changes. */
+/* Projects is the only public route that detaches the ORIGINAL doof h1
+ * from the vertically centered .cta6 mosaic. It becomes a direct child of
+ * body and is fixed to the viewport: 46px below the 44px navigation bar.
+ * No 50dvh compensation, mosaic translate, ancestor transform, or resize JS
+ * may influence its vertical placement. The same element, font and scale
+ * return to .cta6-center when the Projects route unmounts. */
+body.public-home[data-projects-logo-pinned="true"] > #dashboard-title{
+  position:fixed;
+  top:90px;
+  left:50%;
+  z-index:5;
+  margin:0;
+  font-size:45px;
+  line-height:1.08;
+  letter-spacing:-.055em;
+  font-weight:600;
+  color:#f7f9fa;
+  text-shadow:0 2px 18px rgba(0,0,0,.22);
+  transform:translate(-50%,-50%) scale(.6);
+  transform-origin:center center;
+  pointer-events:none;
+  view-transition-name:doof-brand;
+  /* Scroll still controls opacity; neither window dimension animates the
+   * wordmark or changes the native-scroll hide threshold. */
   transition:opacity 210ms cubic-bezier(.22,.72,.24,1)!important;
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){

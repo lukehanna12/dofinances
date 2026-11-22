@@ -125,9 +125,9 @@ export function mountProjects(host,{onBack,onExitComplete}){
   projects.forEach((project,index)=>grid.append(makeCard(project,index)));
   root.append(head,grid);
   host.replaceChildren(root);
-  // Once mounted, the persistent doof uses the Projects-only viewport anchor
-  // instead of the homepage's height-dependent mosaic-centered transform.
-  // Keep this state for the entire reverse exit and always clear on unmount.
+  // The logo remains the original DOM h1, not a duplicated text or image.
+  // Projects pins it to body to escape the home's centered, transformed
+  // mosaic containing block. Unmount puts it back before Home resumes.
   document.body.dataset.projectsLogoPinned="true";
   // Route-owned changes extend the live WebGPU submission window. The shared
   // renderer reads each pane's actual DOM rect, never a CSS glass substitute.
@@ -153,6 +153,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
   const routeScroll=root.closest("#public-route-content");
   const logo=document.getElementById("dashboard-title");
+  const logoHomeParent=logo?.parentElement??null;
+  if(logoHomeParent)document.body.append(logo);
   const searchCapsule=headingRow.querySelector(".public-projects-search-field");
   const logoScrollAbort=new AbortController();
   let logoHidden=false;
@@ -206,6 +208,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
     unmount(){
       if(closed)return;closed=true;
       logoScrollAbort.abort();
+      if(logoHomeParent&&logo?.parentElement===document.body)
+        logoHomeParent.append(logo);
       document.body.removeAttribute("data-projects-logo-pinned");
       document.body.removeAttribute("data-projects-logo-hidden");
       if(timer!==null)clearTimeout(timer);

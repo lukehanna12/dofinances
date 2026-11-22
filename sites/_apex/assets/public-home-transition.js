@@ -158,6 +158,10 @@ function closeRoute({navigate=false}={}){
 function finishClose(){
   if(!current||state!=="exiting")return;
   current.unmount();
+  // After Projects restores the original h1 to its homepage parent, refresh
+  // the compact departure offset for the CURRENT viewport. That lets Home's
+  // returning transition start at the same 90px anchor even after a resize.
+  if(activeRoute==="/projects")positionCompactLogo();
   current=null;activeRoute=null;
   routeMount.replaceChildren();outlet.hidden=true;
   state="home";document.title="DoFinances";
