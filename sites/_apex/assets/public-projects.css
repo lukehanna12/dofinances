@@ -9,6 +9,17 @@
   color:#f5f5f5; font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   color-scheme:dark;
 }
+/* Exactly the sign-in boundary fix: keep native wheel, momentum and
+ * legitimate short-viewport scrolling, but never allow the DOM contents to
+ * elastically outrun their viewport-fixed WebGPU glass casing. Safari's
+ * root bounce is also suppressed while this route is mounted. */
+body.public-home > #public-route-content:has(.public-projects-root){
+  overscroll-behavior-y:none;
+}
+html:has(body.public-home #public-route-content .public-projects-root),
+body.public-home:has(#public-route-content .public-projects-root){
+  overscroll-behavior-y:none;
+}
 /* Stack the glass back chip above the page title; the project grid begins
  * below the entire header rather than sharing its first horizontal row. */
 .public-projects-header{
@@ -27,7 +38,7 @@
 .public-projects-back{
   appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;
   padding:0;border:1px solid transparent;border-radius:10px;cursor:pointer;
-  color:#fff;background:#242424;
+  overflow:hidden;color:#fff;background:#242424;
   animation:project-showcase-enter .5s both;
 }
 .public-projects-back svg{display:block;width:18px;height:18px;pointer-events:none}
@@ -135,11 +146,23 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
   animation:project-showcase-exit .42s both;
   animation-delay:calc(var(--project-reverse-index,0)*45ms)
 }
-.public-projects-root.is-exiting .public-projects-back,
-.public-projects-root.is-exiting .public-projects-title,
-.public-projects-root.is-exiting .public-projects-toolbar{
-  animation:project-showcase-exit .42s both;
-  animation-delay:540ms
+/* Unlike the cards' reversed stagger, the header is dismissed through
+ * the HOMEPAGE SQUARES' exact WGSL dissolve and shared progress functions.
+ * CSS owns no competing fade, slide or optical substitute on a GPU browser. */
+.public-projects-root.is-exiting .public-projects-header{pointer-events:none}
+.public-projects-root.is-exiting :is(.public-projects-back,.public-projects-title,.public-projects-toolbar){
+  animation:none!important
+}
+/* Only on unsupported-GPU browsers, mirror the existing square fallback.
+ * The real WebGPU path uses its own tile.motion.w and coherent alpha holes. */
+body.public-home:not([data-auth-gpu-scene="ready"])
+  .public-projects-root.is-dissolving-header
+  :is(.public-projects-back,.public-projects-title,.public-projects-toolbar){
+  opacity:0!important;
+  transform:translate3d(0,-1px,0) scale(1.085,1.065);
+  filter:blur(1.4px);
+  transition:opacity 390ms cubic-bezier(.22,.62,.33,1),
+    transform 420ms cubic-bezier(.26,.62,.36,1),filter 420ms ease
 }
 @media(max-width:1499px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:1199px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
@@ -185,7 +208,7 @@ body.public-home[data-auth-gpu-scene="ready"]
   width:40px;height:40px;min-width:40px;min-height:40px;
   padding:0;border:1px solid transparent;border-radius:12px;
   background:#242424;color:#fff;text-decoration:none;
-  appearance:none;cursor:pointer;position:relative;
+  overflow:hidden;appearance:none;cursor:pointer;position:relative;
   outline-offset:3px
 }
 .public-projects-tool-button svg,.public-projects-search-cancel svg{
@@ -206,7 +229,7 @@ body.public-home[data-auth-gpu-scene="ready"]
   opacity:0;transform:scaleX(.025);transform-origin:right center;
   transition:transform 320ms cubic-bezier(.2,.78,.2,1),
     opacity 280ms ease;
-  pointer-events:none;white-space:nowrap;
+  pointer-events:none;white-space:nowrap;overflow:hidden;
 }
 .public-projects-search-field>svg{display:block;flex:none;width:18px;height:18px}
 .public-projects-search-input{
@@ -245,7 +268,7 @@ body.public-home[data-auth-gpu-scene="ready"]
   box-sizing:border-box;position:absolute;right:0;top:calc(100% + 10px);
   width:min(232px,calc(100vw - 36px));padding:8px;z-index:15;
   border:1px solid transparent;border-radius:14px;
-  background:#242424;color:#fff;
+  background:#242424;color:#fff;overflow:hidden;
   visibility:hidden;opacity:0;pointer-events:none;
   transform-origin:top right;transform:translateY(-12px) scaleY(.94);
   transition:transform 270ms cubic-bezier(.2,.78,.2,1),

@@ -89,7 +89,10 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   let scale=select(0.85+0.15*a,1.0,authPane);
   // Only a slight local expansion; underlying Oracle material coordinates
   // remain unchanged, and no invented large smoke cloud is emitted.
-  let dismiss=select(clamp(tile.motion.w,0.0,1.0),0.0,authPane);
+  // Route-owned panes normally keep motion.w=0, preserving sign-in and
+  // Projects card optics. The Projects header explicitly reuses the *same*
+  // local square dissolution lane while its own route is exiting.
+  let dismiss=clamp(tile.motion.w,0.0,1.0);
   let bloom=dismiss*dismiss*(3.0-2.0*dismiss);
   let diffuseScale=vec2<f32>(1.0+0.085*bloom,1.0+0.065*bloom);
   let center=tile.rect.xy+tile.rect.zw*0.5;
@@ -497,11 +500,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
-  // Route panes share the material, SDF and original hover
-  // response above. Do not apply the squares' left/right fade, title oval
-  // or X-close effect to a sign-in card or its form controls.
-  // DOM Motion drives the pane opacity and position, not shader scaling.
-  if(authPane){
+  // Only route panes with the explicit motion.w dismissal lane enter the
+  // homepage squares' identical SDF/noise/fringe dissolution below.
+  // Sign-in and normal Projects panes preserve their original appearance.
+  if(authPane&&dismiss<=0.0){
     return vec4<f32>(color,coverage*clamp(tile.motion.z,0.0,1.0));
   }
   // Public homepage ONLY: attenuate the alpha of glass squares within
@@ -525,8 +527,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
   let ovalDistance=clamp(length(ovalUV),0.0,1.0);
   let logoOpacity=mix(0.60,1.0,ovalDistance*ovalDistance);
+  // The homepage spatial edge/brand fades do not belong on the Projects
+  // header. The exact same local optical decoherence works at full alpha.
+  let routeSpatialAlpha=select(edgeOpacity*logoOpacity,1.0,authPane);
   let baseAlpha=coverage*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity;
+    clamp(tile.motion.z,0.0,1.0)*routeSpatialAlpha;
   // Normal frames remain exactly the recovered SDF/refraction/color path.
   if(dismiss<=0.0){return vec4<f32>(color,baseAlpha);}
   if(dismiss>=1.0){return vec4<f32>(color,0.0);}
@@ -549,6 +554,6 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let fringe=(1.0-coverage)*fringeWindow*0.09*
     (0.45+0.55*noiseField)*exp(-abs(signed)*0.18);
   let alpha=(coverage*retained+fringe)*in.introAlpha*
-    clamp(tile.motion.z,0.0,1.0)*edgeOpacity*logoOpacity;
+    clamp(tile.motion.z,0.0,1.0)*routeSpatialAlpha;
   return vec4<f32>(color,clamp(alpha,0.0,1.0));
 }

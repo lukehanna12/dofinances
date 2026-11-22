@@ -6,11 +6,15 @@
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
 import {mountProjectControls} from "./public-projects-controls.js";
+import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // Keep in sync with the route-owned CSS reverse stagger and final header exit.
 const PROJECT_EXIT_DURATION_MS=420;
 const PROJECT_EXIT_STAGGER_MS=45;
 const PROJECT_EXIT_TAIL_MS=60;
+// The homepage's single 440ms tile dissipation starts when the first card
+// in the reverse stagger exits (540ms). It finishes before route unmount.
+const PROJECT_HEADER_DISMISS_DELAY_MS=12*PROJECT_EXIT_STAGGER_MS;
 const el=(tag,className,text)=>{
   const node=document.createElement(tag);
   if(className)node.className=className;
@@ -110,7 +114,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   host.replaceChildren(root);
   // Route-owned changes extend the live WebGPU submission window. The shared
   // renderer reads each pane's actual DOM rect, never a CSS glass substitute.
-  let exiting=false,closed=false,timer=null,introFinished=false;
+  let exiting=false,closed=false,timer=null,headerTimer=null,introFinished=false;
   let controlsAnimating=false,controlTimer=null;
   const settle=()=>{
     if(introFinished&&!controlsAnimating&&!exiting&&!closed)
@@ -138,6 +142,16 @@ export function mountProjects(host,{onBack,onExitComplete}){
     exit(){
       if(closed||exiting)return;
       exiting=true;controls.closeForExit();root.classList.add("is-exiting");
+      // In the same time window previously occupied by the header's plain
+      // fade, use the HOME SQUARES' single DISMISS_MS optical decoherence.
+      // The renderer consumes this timestamp as tile.motion.w; its shader
+      // and icon progress helpers are not duplicated by Projects CSS.
+      headerTimer=setTimeout(()=>{
+        headerTimer=null;
+        if(closed)return;
+        root.dataset.projectHeaderDismissAt=String(performance.now());
+        root.classList.add("is-dissolving-header");
+      },reduced.matches?0:PROJECT_HEADER_DISMISS_DELAY_MS);
       // Reverse the same 24px staggered entry geometry, with shorter
       // per-card timing and closer spacing. The shell restores only after
       // the route-owned reverse completes.
@@ -149,6 +163,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
     unmount(){
       if(closed)return;closed=true;
       if(timer!==null)clearTimeout(timer);
+      if(headerTimer!==null)clearTimeout(headerTimer);
       if(controlTimer!==null)clearTimeout(controlTimer);
       clearTimeout(introTimer);
       controls.unmount();

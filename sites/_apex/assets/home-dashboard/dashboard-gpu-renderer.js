@@ -68,6 +68,12 @@ const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 // Login and Projects reuse the exact homepage WebGPU material.
 const AUTH_PANE_CAPACITY=24;
+// Only the route-owned Projects header shares the homepage squares' optical
+// dismissal. Cards retain their existing reverse stagger; login stays intact.
+const PROJECT_HEADER_DISMISS_ROLES=new Set([
+  "back","title","search","search-field","search-cancel",
+  "filter","filter-dropdown","github"
+]);
 function authPaneElements(){
   const card=document.querySelector(".auth3-root [data-auth-glass-card]");
   if(card)return [card,...card.querySelectorAll(
@@ -679,8 +685,13 @@ async function initialize(){
   }
   function paintAuthPanes(){
     const panes=authPaneElements(),scheme=authGlassScheme();
-    const projects=Boolean(document.querySelector(".public-projects-root"));
+    const projectRoot=document.querySelector(".public-projects-root");
+    const projects=Boolean(projectRoot);
     if(projects)syncProjectTitleMask(panes);
+    const dismissAt=Number.parseFloat(projectRoot?.dataset.projectHeaderDismissAt);
+    const projectDismissElapsed=Number.isFinite(dismissAt)?
+      Math.max(0,performance.now()-dismissAt):-1;
+    let projectHeaderDissolve=0;
     const card=panes[0];
     const opacity=card?Math.max(0,Math.min(1,
       Number.parseFloat(getComputedStyle(card).opacity)||0)):0;
@@ -713,7 +724,41 @@ async function initialize(){
       const paneOpacity=projects?Math.max(0,Math.min(1,
         Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
       tileData[p+18]=paneOpacity;tileData[p+19]=0;
-      cornerInert[slot]=paneOpacity<.025?1:0;
+      const projectRole=node.dataset.publicProjectGlass;
+      if(projects&&projectDismissElapsed>=0&&
+         PROJECT_HEADER_DISMISS_ROLES.has(projectRole)){
+        // Reuse the HOMEPAGE SQUARES' exact finite optical dissipation
+        // progress, local drift, expansion, icon fade and blur. The shader
+        // consumes motion.w and its existing SDF/noise/fringe math unchanged.
+        const col=i%11;
+        const progress=reducedMotion.matches?1:
+          tileDismissProgress(projectDismissElapsed,0,col);
+        const drift=tileDismissDrift(progress,0,col,
+          tileData[p],tileData[p+2],physicalWidth,dpr);
+        tileData[p]+=drift.x*dpr;
+        tileData[p+1]+=drift.y*dpr;
+        tileData[p+19]=progress;
+        projectHeaderDissolve=Math.max(projectHeaderDissolve,progress);
+        const alpha=tileDismissIconOpacity(progress);
+        const blur=tileDismissBlur(progress);
+        const scale=tileDismissScale(progress);
+        for(const glyph of node.querySelectorAll("svg")){
+          // A closed filter's up-arrow must STAY hidden. Capture its
+          // pre-dismiss base alpha before touching any inline style.
+          if(!glyph.hasAttribute("data-project-dismiss-base-alpha")){
+            const base=Number.parseFloat(getComputedStyle(glyph).opacity);
+            glyph.dataset.projectDismissBaseAlpha=String(Number.isFinite(base)?base:1);
+          }
+          const base=Number.parseFloat(glyph.dataset.projectDismissBaseAlpha);
+          const nextOpacity=(base*alpha).toFixed(5);
+          const nextBlur=progress>0?"blur("+blur.toFixed(3)+"px)":"";
+          const nextScale="scale("+scale.x.toFixed(5)+","+scale.y.toFixed(5)+")";
+          if(glyph.style.opacity!==nextOpacity)glyph.style.opacity=nextOpacity;
+          if(glyph.style.filter!==nextBlur)glyph.style.filter=nextBlur;
+          if(glyph.style.transform!==nextScale)glyph.style.transform=nextScale;
+        }
+      }
+      cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1?1:0;
       roles.push(projects?node.dataset.publicProjectGlass:
         node.hasAttribute("data-auth-glass-card")?"card":
         node.classList.contains("auth3-back-link")?"back":
@@ -728,6 +773,10 @@ async function initialize(){
         materialReference:"first-home-square",tint:"none",
         titleGlyphGlass:roles.includes("title"),
         titleMaskPixels:[...glyphMaskDimensions],
+        headerDissolve:projectDismissElapsed>=0?{
+          source:"dashboard-public-dismiss.js / shared WGSL optical decoherence",
+          elapsedMs:projectDismissElapsed,progress:projectHeaderDissolve
+        }:null,
         hovered:authHover.activeControl>=0};
       audit.authGlass=null;
       return Boolean(card&&(!document.querySelector(".public-projects-root.is-settled")||

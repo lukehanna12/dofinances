@@ -721,6 +721,56 @@ try{
     "Projects heading must sit clearly below the back glass button");
   assert.ok(projectState.gridTop>=projectState.headingBottom+16,
     "Project cards must start below the stacked page header");
+  // Reuse the sign-in page's native scroll contract: both the route
+  // scrollport and viewport boundary reject elastic rubberbanding without
+  // disabling ordinary wheel/trackpad/touch scrolling.
+  const projectScrollPolicy=await evaluate("(()=>{"+
+    "const route=document.querySelector('#public-route-content');"+
+    "const first=document.querySelector('.project-showcase-card');"+
+    "const back=document.querySelector('.public-projects-back');"+
+    "const filter=document.querySelector('.public-projects-filter-panel');"+
+    "return {route:getComputedStyle(route).overscrollBehaviorY,"+
+    "html:getComputedStyle(document.documentElement).overscrollBehaviorY,"+
+    "body:getComputedStyle(document.body).overscrollBehaviorY,"+
+    "scroll:getComputedStyle(route).overflowY,"+
+    "canvas:getComputedStyle(document.querySelector('#dashboard-auth-glass-scene')).position,"+
+    "card:getComputedStyle(first).overflowX,"+
+    "back:getComputedStyle(back).overflowX,"+
+    "filter:getComputedStyle(filter).overflowX};})()");
+  assert.equal(projectScrollPolicy.route,"none");
+  assert.equal(projectScrollPolicy.html,"none");
+  assert.equal(projectScrollPolicy.body,"none");
+  assert.equal(projectScrollPolicy.scroll,"auto",
+    "Projects preserves native scrolling instead of canceling wheel/touch events");
+  assert.equal(projectScrollPolicy.canvas,"fixed",
+    "Projects shares the sign-in fix: viewport-fixed true WebGPU glass");
+  assert.equal(projectScrollPolicy.card,"hidden");
+  assert.equal(projectScrollPolicy.back,"hidden");
+  assert.equal(projectScrollPolicy.filter,"hidden");
+  const projectsScrollMotion=await evaluate("(()=>{"+
+    "const route=document.querySelector('#public-route-content');"+
+    "const card=document.querySelector('.project-showcase-card');"+
+    "const icon=card.querySelector('.project-showcase-lucide');"+
+    "const glass=document.querySelector('#dashboard-auth-glass-scene');"+
+    "const oldHeight=route.style.height,oldScroll=route.scrollTop;"+
+    "route.style.height='300px';"+
+    "const before={card:card.getBoundingClientRect().top,"+
+    "icon:icon.getBoundingClientRect().top,"+
+    "canvas:glass.getBoundingClientRect().top};"+
+    "route.scrollTop=160;"+
+    "const result={dy:route.scrollTop-oldScroll,"+
+    "cardDelta:card.getBoundingClientRect().top-before.card,"+
+    "iconDelta:icon.getBoundingClientRect().top-before.icon,"+
+    "canvasDelta:glass.getBoundingClientRect().top-before.canvas};"+
+    "route.scrollTop=oldScroll;route.style.height=oldHeight;"+
+    "return result;})()");
+  assert.ok(projectsScrollMotion.dy>80,
+    "Short viewports must scroll the project cards natively");
+  assert.ok(Math.abs(projectsScrollMotion.cardDelta+projectsScrollMotion.dy)<2);
+  assert.ok(Math.abs(projectsScrollMotion.iconDelta-projectsScrollMotion.cardDelta)<2,
+    "Card artwork/icon and glass geometry remain in the same scroll tree");
+  assert.ok(Math.abs(projectsScrollMotion.canvasDelta)<1,
+    "The actual WebGPU canvas remains fixed against elastic scroll");
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
@@ -849,9 +899,36 @@ try{
   }
   await evaluate("document.querySelector('.public-projects-back').click()");
   assert.equal(await evaluate("window.__dofPublicRouter.state"),"exiting");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .public-projects-back')).animationName"),"none",
+    "Back arrow must not use a second DOM fade/slide in place of square dissolution");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .project-showcase-card')).animationName"),"project-showcase-exit");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .project-showcase-card')).animationDuration"),"0.42s",
     "Project card reverse motion should be slightly quicker than entrance");
+  await until("document.querySelector('.public-projects-root.is-dissolving-header')",30,30);
+  const dismissal=await evaluate("(()=>{const p=document.querySelector('.public-projects-root');"+
+    "return {stamp:Number(p.dataset.projectHeaderDismissAt),"+
+    "backAnimation:getComputedStyle(p.querySelector('.public-projects-back')).animationName,"+
+    "titleAnimation:getComputedStyle(p.querySelector('.public-projects-title')).animationName,"+
+    "toolbarAnimation:getComputedStyle(p.querySelector('.public-projects-toolbar')).animationName};})()");
+  assert.ok(Number.isFinite(dismissal.stamp)&&dismissal.stamp>0);
+  assert.equal(dismissal.backAnimation,"none");
+  assert.equal(dismissal.titleAnimation,"none");
+  assert.equal(dismissal.toolbarAnimation,"none");
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.projectGlass?.headerDissolve?.progress>0.42",16,30);
+    const decay=await evaluate("(()=>{const audit=window.__dashboardWebGPU.projectGlass;"+
+      "const back=document.querySelector('.public-projects-back svg');"+
+      "const filter=document.querySelector('.public-projects-filter-button svg');"+
+      "return {source:audit.headerDissolve.source,progress:audit.headerDissolve.progress,"+
+      "backAlpha:parseFloat(back.style.opacity),filterAlpha:parseFloat(filter.style.opacity),"+
+      "canvas:document.querySelector('#dashboard-auth-glass-scene')?.isConnected};})()");
+    assert.match(decay.source,/dashboard-public-dismiss\.js \/ shared WGSL optical decoherence/);
+    assert.ok(decay.progress>0.42&&decay.progress<1,
+      "The header's GPU material is actually dissolving before route unmount");
+    assert.ok(decay.backAlpha<.95&&decay.filterAlpha<.95,
+      "Back arrow and filter SVGs inherit the SAME fading icon curve as the home squares");
+    assert.equal(decay.canvas,true);
+  }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
   await sleep(560);

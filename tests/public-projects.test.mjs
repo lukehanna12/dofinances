@@ -67,6 +67,10 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/const PROJECT_EXIT_DURATION_MS=420;/);
   assert.match(entry,/const PROJECT_EXIT_STAGGER_MS=45;/);
   assert.match(entry,/const PROJECT_EXIT_TAIL_MS=60;/);
+  assert.match(entry,/const PROJECT_HEADER_DISMISS_DELAY_MS=12\*PROJECT_EXIT_STAGGER_MS;/);
+  assert.match(entry,/import \{DISMISS_MS\} from "\.\/home-dashboard\/dashboard-public-dismiss\.js";/);
+  assert.match(entry,/root\.dataset\.projectHeaderDismissAt=String\(performance\.now\(\)\)/);
+  assert.match(entry,/root\.classList\.add\("is-dissolving-header"\)/);
   assert.doesNotMatch(entry,/\bfetch\s*\(|\blocation\.(assign|replace)\s*\(|\bcard\.href\s*=|["']\/app\/assets/);
 });
 test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optics",async()=>{
@@ -87,6 +91,14 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/rebindGlassGroups\(\)/);
   assert.match(renderer,/device\.queue\.writeTexture\(\{texture\},pixels/);
   assert.match(renderer,/titleGlyphGlass:roles\.includes\("title"\)/);
+  assert.match(renderer,/const PROJECT_HEADER_DISMISS_ROLES=new Set\(\[/);
+  assert.match(renderer,/tileDismissProgress\(projectDismissElapsed,0,col\)/);
+  assert.match(renderer,/tileDismissDrift\(progress,0,col,/);
+  assert.match(renderer,/tileDismissIconOpacity\(progress\)/);
+  assert.match(renderer,/tileDismissBlur\(progress\)/);
+  assert.match(renderer,/tileDismissScale\(progress\)/);
+  assert.match(renderer,/tileData\[p\+19\]=progress;/);
+  assert.match(renderer,/headerDissolve:projectDismissElapsed>=0/);
   assert.match(renderer,/node\.hidden\|\|getComputedStyle\(node\)\.display==="none"/);
   assert.match(controls,/github\.href="https:\/\/github\.com\/lukehanna12"/);
   assert.match(controls,/github\.target="_blank"/);
@@ -99,7 +111,10 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/tileData\[p\+5\]=authPaneMaterialTag\(node\)/);
   assert.match(hover,/mode="nested"/);
   assert.match(shader,/if\(authPane\)\{/);
-  assert.doesNotMatch(css,/backdrop-filter\s*:\s*blur\(|-webkit-backdrop-filter\s*:\s*blur\(|filter\s*:\s*blur\(/);
+  // An optional unsupported-GPU DISMISSAL blur is not a CSS imitation
+  // of the native glass material. Backdrop filters remain forbidden.
+  assert.doesNotMatch(css,/backdrop-filter\s*:\s*blur\(|-webkit-backdrop-filter\s*:\s*blur\(/);
+  assert.match(css,/\.public-projects-root\.is-dissolving-header[\s\S]*?filter:blur\(1\.4px\)/);
   assert.match(css,/body\.public-home\[data-auth-gpu-scene="ready"\]/);
   assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
@@ -111,13 +126,22 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(shader,/fn titleGlyphField\(local:vec2<f32>\)/);
   assert.match(shader,/let glassTitle=tile\.properties\.y == -8\.0;/);
   assert.match(shader,/glyphCoverage,glassTitle/);
+  assert.match(shader,/let dismiss=clamp\(tile\.motion\.w,0\.0,1\.0\);/);
+  assert.match(shader,/if\(authPane&&dismiss<=0\.0\)\{/);
+  assert.match(shader,/let routeSpatialAlpha=select\(edgeOpacity\*logoOpacity,1\.0,authPane\);/);
+  assert.match(shader,/let noiseField=dissolveField\(/);
+  assert.match(shader,/let fine=dissolveNoise\(/);
   assert.match(shader,/let inner=refractionEnvelope\(signed,innerAmount,innerInvHeight\);/);
   assert.match(css,/\.public-projects-search-field\{[\s\S]*?transform-origin:right center;/);
   assert.match(css,/\.public-projects-filter-panel\{[\s\S]*?transform-origin:top right/);
   assert.match(css,/\.public-projects-root \.project-showcase-card\[hidden\]\{display:none!important\}/);
   assert.match(css,/\.public-projects-root\.is-exiting \.project-showcase-card\{\s*animation:project-showcase-exit \.42s both;/);
   assert.match(css,/animation-delay:calc\(var\(--project-reverse-index,0\)\*45ms\)/);
-  assert.match(css,/\.public-projects-root\.is-exiting \.public-projects-back,\s*\.public-projects-root\.is-exiting \.public-projects-title/);
+  assert.match(css,/\.public-projects-root\.is-exiting :is\(\.public-projects-back,\.public-projects-title,\.public-projects-toolbar\)\{/);
+  assert.match(css,/\.public-projects-root\.is-dissolving-header/);
+  assert.match(css,/body\.public-home > #public-route-content:has\(\.public-projects-root\)\{\s*overscroll-behavior-y:none;/);
+  assert.match(css,/html:has\(body\.public-home #public-route-content \.public-projects-root\),\s*body\.public-home:has\(#public-route-content \.public-projects-root\)\{\s*overscroll-behavior-y:none;/);
+  assert.doesNotMatch(css,/\.public-projects-root\.is-exiting \.public-projects-back,\s*\.public-projects-root\.is-exiting \.public-projects-title/);
 });
 test("independent project panes get isolated hover springs without breaking nested login",()=>{
   const base=2,capacity=3,data=new Float32Array((base+capacity)*TILE_FLOATS);
