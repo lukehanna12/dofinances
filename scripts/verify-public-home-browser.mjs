@@ -286,13 +286,25 @@ try{
  // About is intentionally inert, so hold its press without navigating.
  const aboutCta=await ctaCenter('.cta6-bottom-action [data-home-cta-glass]');
  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:aboutCta.x,y:aboutCta.y});
- await sleep(210);
+ // A click MUST be tested from an established hover state. Headless
+ // Chromium can delay style/transition advancement while WebGPU is busy:
+ // a fixed sleep after mouseMoved did not guarantee the new capsule had
+ // completed its own 180ms 0->1 green-tint transition.
+ let aboutHovered=false;
+ for(let i=0;i<35;i++){
+   aboutHovered=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-home-cta-glass]');"+
+     "return e.matches(':hover')&&Number(getComputedStyle(e).getPropertyValue('--home-cta-tint'))>.98;})()");
+   if(aboutHovered)break;
+   await sleep(35);
+ }
+ assert.ok(aboutHovered,"Click fixture must start from a fully green hovered capsule");
  await send("Input.dispatchMouseEvent",{type:"mousePressed",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
  await sleep(135);
  const heldClick=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-home-cta-glass]'),c=getComputedStyle(e),a=window.__dashboardWebGPU?.homeCtaGlass;return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(c.getPropertyValue('--home-cta-tint')),pane:a?.activePane,hover:a?.hover,press:a?.press,ready:document.body.dataset.gpuScene==='ready'};})()");
  assert.ok(Math.abs(heldClick.scale-1.00783)<.017,
    "Press contracts 3% relative to the already-enlarged hovered capsule");
- assert.ok(heldClick.tint>.98,"The green hover tint persists through the click");
+ assert.ok(heldClick.tint>.98,
+   "The green hover tint persists through the click: "+JSON.stringify(heldClick));
  if(heldClick.ready){
    assert.equal(heldClick.pane,0,"About alone owns its press spring");
    assert.ok(heldClick.hover>.85,"Click must not reset the hover glass");
