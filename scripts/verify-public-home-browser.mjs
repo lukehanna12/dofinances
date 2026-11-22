@@ -226,6 +226,12 @@ try{
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }
+ // This browser script deliberately runs its baseline layout matrix with
+ // reduced motion. Temporarily opt IN to motion before measuring a 180ms
+ // transition, then restore the original emulation for other checks.
+ await send("Emulation.setEmulatedMedia",{
+   features:[{name:"prefers-reduced-motion",value:"no-preference"}]
+ });
  // Verify the capsule's tint and scale interpolate through the SAME
  // 180ms CSS transition, with GPU geometry tracking transformed bounds.
  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
@@ -265,6 +271,9 @@ try{
  const restedCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint'))};})()");
  assert.ok(Math.abs(restedCta.scale-1)<.004&&restedCta.tint<.02,
    "Green tint and scale return together after hover leave");
+ await send("Emulation.setEmulatedMedia",{
+   features:[{name:"prefers-reduced-motion",value:"reduce"}]
+ });
  // Compare the actual desktop text-button hover/press rendering to the
  // authenticated /app bar: only glyph color changes, never a button box.
  await send("Emulation.setDeviceMetricsOverride",{
