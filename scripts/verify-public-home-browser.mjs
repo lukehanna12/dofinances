@@ -109,7 +109,7 @@ try{
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
- 'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e)})),',
+ 'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius})),',
  'nav:nav.map(e=>e.textContent.trim()),',
  'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
  'hamburgerDisplay:getComputedStyle(document.getElementById("public-menu-toggle")).display,',
@@ -213,7 +213,10 @@ try{
    near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
    near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
   }
+  assert.ok(g.items.every(item=>item.glass),"All three CTAs share the WebGPU glass contract");
+  assert.ok(g.items.every(item=>parseFloat(item.radius)>100),"All three CTAs are capsules");
   const [about,projects,signIn]=g.items.map(item=>item.rect);
+  near(about.height,width<=760?48:58.5,"CTA 50%-increased capsule height",width);
   near(about.width,signIn.width,"About/Sign in matching widths",width);
   near(projects.width,about.width*1.5,"See Projects 50% wider",width);
   const left=g.items[0].rect.left;
@@ -223,6 +226,45 @@ try{
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }
+ // Verify the capsule's tint and scale interpolate through the SAME
+ // 180ms CSS transition, with GPU geometry tracking transformed bounds.
+ await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+ const ctaCenter=selector=>evaluate("(()=>{const e=document.querySelector("+JSON.stringify(selector)+
+   ");const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()");
+ const projectsCta=await ctaCenter('.cta6-bottom-action [data-public-target="/projects"]');
+ await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:projectsCta.x,y:projectsCta.y});
+ await sleep(255);
+ const hoveredCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint')),transition:s.transitionProperty,ready:document.body.dataset.gpuScene==='ready',glass:window.__dashboardWebGPU?.homeCtaGlass||null};})()");
+ assert.ok(Math.abs(hoveredCta.scale-1.039)<.004,
+   "Hover growth must increase 30% from 3% to 3.9%");
+ assert.ok(hoveredCta.tint>.98,"Green glass tint must finish with hover growth");
+ assert.ok(hoveredCta.transition.includes("transform")&&hoveredCta.transition.includes("--home-cta-tint"),
+   "Growth and tint must share the 180ms interpolator");
+ if(hoveredCta.ready){
+   assert.equal(hoveredCta.glass?.renderer,"shared-webgpu-glassPipeline");
+   assert.equal(hoveredCta.glass.count,3);
+   near(hoveredCta.glass.capsules[1].width,150*1.039,
+     "GPU rectangle follows the actually scaled capsule",1440);
+   near(hoveredCta.glass.capsules[1].radius,58.5*1.039/2,
+     "GPU SDF radius follows scaled capsule height",1440);
+ }
+ // About is intentionally inert, so hold its press without navigating.
+ const aboutCta=await ctaCenter('.cta6-bottom-action [data-home-cta-glass]');
+ await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:aboutCta.x,y:aboutCta.y});
+ await sleep(210);
+ await send("Input.dispatchMouseEvent",{type:"mousePressed",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
+ await sleep(100);
+ if(await evaluate('document.body.dataset.gpuScene==="ready"')){
+   const press=await evaluate("(()=>{const a=window.__dashboardWebGPU.homeCtaGlass;return {pane:a?.activePane,press:a?.press}})()");
+   assert.equal(press.pane,0,"About alone owns its press spring");
+   assert.ok(press.press>.15,"Shared shader press light must rise during click");
+ }
+ await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
+ await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:500,y:160});
+ await sleep(255);
+ const restedCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint'))};})()");
+ assert.ok(Math.abs(restedCta.scale-1)<.004&&restedCta.tint<.02,
+   "Green tint and scale return together after hover leave");
  // Compare the actual desktop text-button hover/press rendering to the
  // authenticated /app bar: only glyph color changes, never a button box.
  await send("Emulation.setDeviceMetricsOverride",{

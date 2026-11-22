@@ -22,13 +22,32 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   assert.ok(group);
   const items=[...group[1].matchAll(/<(a|button)\b[^>]*>([^<]+)<\/\1>/g)].map(m=>[m[1],m[2].trim()]);
   assert.deepEqual(items,[["button","About"],["button","See Projects"],["a","Sign in"]]);
-  assert.match(group[1],/<button class="cta6-action" type="button" data-public-target="\/projects">See Projects<\/button>/);
-   assert.match(group[1],/<a class="cta6-action" href="\/login">Sign in<\/a>/);
+  assert.match(group[1],/<button class="cta6-action" type="button" data-home-cta-glass data-public-target="\/projects">See Projects<\/button>/);
+   assert.equal((group[1].match(/data-home-cta-glass/g)||[]).length,3);
+   assert.match(group[1],/<a class="cta6-action" data-home-cta-glass href="\/login">Sign in<\/a>/);
   assert.match(style,/\.cta6-bottom-action button\.cta6-action\[data-public-target="\/projects"\]\{\s*min-width:150px;\s*width:150px;/);
   assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?\.cta6-bottom-action button\.cta6-action\[data-public-target="\/projects"\]\{\s*min-width:129px;\s*width:129px;/);
   assert.match(style,/\.cta6-bottom-action\{[\s\S]*?flex-wrap:nowrap;/);
-  assert.match(style,/\.cta6-action:hover\{[\s\S]*?transform:scale\(1\.03\)/);
+  assert.match(style,/\.cta6-action:hover,[\s\S]*?transform:scale\(1\.039\)/);
   assert.match(style,/\.cta6-action:active\{[\s\S]*?transform:scale\(\.97\)/);
+});
+test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
+  const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
+  const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
+  assert.match(style,/@property --home-cta-tint\{\s*syntax:"<number>";/);
+  assert.match(style,/min-height:58\.5px;\s*height:58\.5px;/);
+  assert.match(style,/min-height:48px;\s*height:48px;/);
+  assert.match(style,/border-radius:999px;/);
+  assert.match(style,/--home-cta-tint 180ms cubic-bezier\(\.2,\.78,\.2,1\)/);
+  assert.match(style,/transform:scale\(1\.039\)/);
+  assert.match(style,/data-gpu-scene="ready"\] \.dashboard-home \.cta6-bottom-action \.cta6-action\{\s*background:transparent!important;/);
+  assert.match(renderer,/HOME_CTA_SELECTOR="\.cta6-bottom-action > \[data-home-cta-glass\]"/);
+  assert.match(renderer,/tile\.hasAttribute\("data-home-cta-glass"\)\|\|/);
+  assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
+  assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
+  assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
+  assert.match(shader,/let pressEnergy=select\(0\.06,0\.32,tile\.properties\.y == -9\.0\)/);
+  assert.match(shader,/else if\(tile\.properties\.y == -9\.0\)\{filmStrength=0\.88;/);
 });
 test("GitHub profile opens in a new tab; remaining public top-bar controls are inert",()=>{
   const nav=home.match(/<nav class="global-menu"[\s\S]*?<\/nav>/)?.[0];
