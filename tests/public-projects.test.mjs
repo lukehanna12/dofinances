@@ -139,8 +139,10 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.doesNotMatch(entry,/addEventListener\("resize",syncLogoWithScroll/);
   assert.doesNotMatch(entry,/visualViewport\?\.addEventListener\("resize"/);
   assert.match(router,/!outlet\.querySelector\("\.public-projects-root"\)\)positionCompactLogo\(\);/);
-  assert.match(homeCss,/body\.public-home:has\(#public-route-content \.public-projects-root\)/);
-  assert.match(homeCss,/transform:translate3d\(0,calc\(283\.90909px - 50dvh\),0\) scale\(\.6\)/);
+  assert.match(homeCss,/body\.public-home\[data-projects-logo-pinned="true"\]/);
+  assert.match(entry,/document\.body\.dataset\.projectsLogoPinned="true"/);
+  assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-pinned"\)/);
+  assert.match(homeCss,/transform:translate3d\(0,calc\(283\.90909px - 50dvh\),0\) scale\(\.6\)!important/);
   assert.match(entry,/logoScrollAbort\.abort\(\)/);
   assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-hidden"\)/);
   assert.match(homeCss,/body\.public-home\[data-projects-logo-hidden\] \.dashboard-home \.cta6-center h1\{\s*opacity:0;/);

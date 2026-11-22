@@ -125,6 +125,10 @@ export function mountProjects(host,{onBack,onExitComplete}){
   projects.forEach((project,index)=>grid.append(makeCard(project,index)));
   root.append(head,grid);
   host.replaceChildren(root);
+  // Once mounted, the persistent doof uses the Projects-only viewport anchor
+  // instead of the homepage's height-dependent mosaic-centered transform.
+  // Keep this state for the entire reverse exit and always clear on unmount.
+  document.body.dataset.projectsLogoPinned="true";
   // Route-owned changes extend the live WebGPU submission window. The shared
   // renderer reads each pane's actual DOM rect, never a CSS glass substitute.
   let exiting=false,closed=false,timer=null,headerTimer=null,introFinished=false;
@@ -202,6 +206,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
     unmount(){
       if(closed)return;closed=true;
       logoScrollAbort.abort();
+      document.body.removeAttribute("data-projects-logo-pinned");
       document.body.removeAttribute("data-projects-logo-hidden");
       if(timer!==null)clearTimeout(timer);
       if(headerTimer!==null)clearTimeout(headerTimer);

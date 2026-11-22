@@ -359,13 +359,14 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
  * exact unchanged 0.6 scale remains centered. Therefore the required
  * Projects-only transform is:
  *   90px - (50dvh + 22px - 215.90909px) = 283.90909px - 50dvh.
- * This deliberately uses the SAME fixed lattice/wordmark geometry as
- * the homepage; it avoids dependence on intermediate animated DOM bounds,
- * undefined custom properties and compositor-frame timing.
+ * The Projects route owns data-projects-logo-pinned. Its explicit state and
+ * scoped priority win over the inherited leaving transform (which still
+ * belongs to Home/Login); the element retains its font, offset, tint,
+ * opacity fade and exact size. No animated rectangle or new renderer.
  */
-body.public-home:has(#public-route-content .public-projects-root)
+body.public-home[data-projects-logo-pinned="true"]
   .dashboard-home .cta6-center h1{
-  transform:translate3d(0,calc(283.90909px - 50dvh),0) scale(.6);
+  transform:translate3d(0,calc(283.90909px - 50dvh),0) scale(.6)!important;
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;

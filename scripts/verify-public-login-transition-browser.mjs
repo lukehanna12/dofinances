@@ -725,6 +725,8 @@ try{
   assert.ok(Math.abs(projectLogoBaseline.x-projectLogoBaseline.width/2)<1,
     "Projects logo must remain horizontally centered");
   assert.equal(projectLogoBaseline.hidden,false);
+  assert.equal(await evaluate("document.body.dataset.projectsLogoPinned"),"true",
+    "Projects must own an explicit viewport-anchored doof, not its animated home offset");
   const checkProjectLogoResize=async(width,height,label,expectedHidden=false)=>{
     await send("Emulation.setDeviceMetricsOverride",
       {width,height,deviceScaleFactor:1,mobile:false});
@@ -1155,6 +1157,8 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
   assert.equal(await evaluate("document.body.hasAttribute('data-projects-logo-hidden')"),false,
     "Unmount must clear Projects-only logo fading before the homepage returns");
+  assert.equal(await evaluate("document.body.hasAttribute('data-projects-logo-pinned')"),false,
+    "Unmount must remove the Projects-specific fixed logo anchor");
   await sleep(560);
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"))>.995,
     "Bottom buttons return visibly fully opaque after the Projects reverse transition");
