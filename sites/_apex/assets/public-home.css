@@ -275,11 +275,11 @@ body.public-home .dashboard-home .cta6-action{
   text-align:center;
   white-space:nowrap;
 }
-/* The Sign in CTA is exactly 1.5x the width of its two 100px peers. */
-body.public-home .dashboard-home a.cta6-action[href="/login"]{
-  min-width:150px;
-  width:150px;
-}
+/* The centered "See Projects" CTA is 1.5x the width of its two 100px peers. */
+ body.public-home .dashboard-home .cta6-bottom-action button.cta6-action[data-public-target="/projects"]{
+   min-width:150px;
+   width:150px;
+ }
 body.public-home .dashboard-home .cta6-action:hover{
   background:#000;
   transform:scale(1.03);
@@ -295,10 +295,10 @@ body.public-home .dashboard-home .cta6-action:active{
     padding:7px 10px;
   }
   /* Preserve the same 3:2 width ratio at narrow viewport sizes. */
-  body.public-home .dashboard-home a.cta6-action[href="/login"]{
-    min-width:129px;
-    width:129px;
-  }
+  body.public-home .dashboard-home .cta6-bottom-action button.cta6-action[data-public-target="/projects"]{
+     min-width:129px;
+     width:129px;
+   }
 }
 @media(prefers-reduced-motion:reduce){
   body.public-home .global-menu-control,

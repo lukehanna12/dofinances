@@ -208,14 +208,14 @@ try{
   assert.ok(g.githubRel.split(/\s+/).includes("noopener"));
   assert.ok(g.githubRel.split(/\s+/).includes("noreferrer"));
   assert.deepEqual(g.items.map(e=>[e.tag,e.name,e.href]),[
-   ["BUTTON","About",null],["A","Sign in","/login"],["BUTTON","Projects",null]]);
+   ["BUTTON","About",null],["BUTTON","See Projects",null],["A","Sign in","/login"]]);
   for(let i=1;i<g.items.length;i++){
    near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
    near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
   }
-  const [about,signIn,projects]=g.items.map(item=>item.rect);
-  near(about.width,projects.width,"About/Projects matching widths",width);
-  near(signIn.width,about.width*1.5,"Sign in 50% wider",width);
+  const [about,projects,signIn]=g.items.map(item=>item.rect);
+  near(about.width,signIn.width,"About/Sign in matching widths",width);
+  near(projects.width,about.width*1.5,"See Projects 50% wider",width);
   const left=g.items[0].rect.left;
   const right=g.items[2].rect.left+g.items[2].rect.width;
   near((left+right)/2,width/2,"Bottom action group center",width);
