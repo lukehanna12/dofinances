@@ -486,23 +486,27 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
-    // GAP TINT-RGB-PRODUCER / TINT-C: the separate CAFilter vibrancy
-    // matrix is NOT a proved RGB→tint-hue transform. Previously
-    // applying its light=-0.1/dark=+0.1 offsets to the pigment made
-    // the Dark UI lighter, contrary to the observed face inputs.
-    // Preserve the EXACT same untinted glass optics/face and blend only
-    // after calculating refraction, rim and hover. Home keeps its prior
-    // 0.25 film; neutral route controls use independent role-owned films.
-    // These coefficients are browser-authored, NOT native compositor proof.
-    // The squares retain exactly 0.25. Primary action remains 0.82.
-    // Social providers use 0.62; text fields remain at 0.40.
-    // Back arrow (-7), card (-2), and the square optical face are unchanged.
-    var filmStrength=select(0.25,0.60,authPane);
-    if(tile.properties.y == -4.0){filmStrength=0.82;}
-    else if(tile.properties.y == -5.0){filmStrength=0.62;}
-    else if(tile.properties.y == -6.0){filmStrength=0.40;}
-    else if(tile.properties.y == -9.0){filmStrength=0.88;}
-    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
+    // The HOME capsule (-9) is an absorption filter over the SAME
+    // refracted/mip-sampled glass as the mosaic squares, not an 88%-opaque
+    // flat green film. Channel-selective transmission retains the scene's
+    // detail, SDF edge, and localized press highlights THROUGH the pigment.
+    // These transmission coefficients are browser-authored, not an Apple
+    // compositor claim. The green hue still comes from the shared tint lane.
+    if(tile.properties.y == -9.0){
+      let greenTransmission=clamp(
+        vec3<f32>(0.28,0.40,0.30)+localTint.rgb*vec3<f32>(2.4,2.8,2.1),
+        vec3<f32>(0.25),vec3<f32>(0.76));
+      let tintProgress=clamp(localTint.w,0.0,1.0);
+      color=color*mix(vec3<f32>(1.0),greenTransmission,tintProgress);
+    }else{
+      // All other panes and homepage squares preserve their previous
+      // film model, native-constrained optics and face endpoints exactly.
+      var filmStrength=select(0.25,0.60,authPane);
+      if(tile.properties.y == -4.0){filmStrength=0.82;}
+      else if(tile.properties.y == -5.0){filmStrength=0.62;}
+      else if(tile.properties.y == -6.0){filmStrength=0.40;}
+      color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
+    }
   }
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.

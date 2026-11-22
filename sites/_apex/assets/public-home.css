@@ -295,13 +295,29 @@ body.public-home .dashboard-home .cta6-action{
 body.public-home .dashboard-home .cta6-action:hover,
 body.public-home .dashboard-home .cta6-action:focus-visible{
   --home-cta-tint:1;
-  background:rgba(4,28,16,.9);
+  background:rgba(5,46,23,.45); /* Translucent fallback only. */
   transform:scale(1.039); /* Prior 3% growth, increased 30%. */
 }
 body.public-home .dashboard-home .cta6-action:active{
   transform:scale(.97);
-  background:rgba(17,63,36,.93);
+  background:rgba(17,63,36,.55);
   box-shadow:0 0 14px rgba(154,255,175,.25),inset 0 0 10px rgba(185,255,206,.18);
+}
+/* Non-WebGPU fallback: translucent filter rather than a solid green fill.
+ * This layer NEVER runs on top of the true GPU optical material. */
+body.public-home:not([data-gpu-scene="ready"]) .dashboard-home .cta6-bottom-action .cta6-action{
+  -webkit-backdrop-filter:blur(0px) saturate(1);
+  backdrop-filter:blur(0px) saturate(1);
+  transition:transform 180ms cubic-bezier(.2,.78,.2,1),
+    --home-cta-tint 180ms cubic-bezier(.2,.78,.2,1),
+    background-color 180ms cubic-bezier(.2,.78,.2,1),
+    box-shadow 180ms cubic-bezier(.2,.78,.2,1),
+    -webkit-backdrop-filter 180ms cubic-bezier(.2,.78,.2,1),
+    backdrop-filter 180ms cubic-bezier(.2,.78,.2,1);
+}
+body.public-home:not([data-gpu-scene="ready"]) .dashboard-home .cta6-bottom-action .cta6-action:is(:hover,:focus-visible){
+  -webkit-backdrop-filter:blur(12px) saturate(1.12);
+  backdrop-filter:blur(12px) saturate(1.12);
 }
 /* Home CTAs are SOLID BLACK at rest, not permanently transparent glass.
  * Keep black DOM pigment on top of the shared GPU material until hover;

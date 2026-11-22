@@ -50,7 +50,19 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
   assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
   assert.match(shader,/let pressEnergy=select\(0\.06,0\.32,tile\.properties\.y == -9\.0\)/);
-  assert.match(shader,/else if\(tile\.properties\.y == -9\.0\)\{filmStrength=0\.88;/);
+  assert.match(shader,/if\(tile\.properties\.y == -9\.0\)\{\s*let greenTransmission=clamp\(/);
+  assert.match(shader,/color=color\*mix\(vec3<f32>\(1\.0\),greenTransmission,tintProgress\);/);
+  assert.doesNotMatch(shader,/filmStrength=0\.88/,"Do not erase refracted details with an 88% opaque pigment");
+  assert.match(style,/background:rgba\(5,46,23,\.45\)/);
+  assert.match(style,/body\.public-home:not\(\[data-gpu-scene="ready"\]\)[^{}]*\.cta6-action:is\(:hover,:focus-visible\)\{[^}]*backdrop-filter:blur\(12px\)/);
+  // Transmissive green means the scene's highlights and texture survive
+  // with non-zero, channel-dependent contrast, unlike a flat color mix.
+  const rgb=[6,27,16].map(v=>v/255);
+  const transmission=[.28+rgb[0]*2.4,.40+rgb[1]*2.8,.30+rgb[2]*2.1];
+  assert.ok(transmission[1]>transmission[2]&&transmission[2]>transmission[0],
+    "Green-filter transmission must prefer green to blue to red");
+  assert.ok(transmission.every(v=>v>.3&&v<.76),
+    "At full hover, meaningful refracted source contrast must survive in every channel");
 });
 test("GitHub profile opens in a new tab; remaining public top-bar controls are inert",()=>{
   const nav=home.match(/<nav class="global-menu"[\s\S]*?<\/nav>/)?.[0];
