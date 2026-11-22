@@ -118,7 +118,7 @@ test("quick Home-style click preserves hover and produces a one-frame press impu
   const after=ctl.snapshot(0);
   assert.ok(after.hover>.99,"Hover stays active during and after click");
   assert.ok(after.press>.13,"Tap must be visible even between two 30fps frames");
-  assert.ok(after.pressVelocity>0,"Impulse rises before its release tail");
+  assert.ok(after.press<1,"A quick click creates a brief pulse, not a latched press");
   for(let i=0;i<50;i++)ctl.advance(1/60);
   assert.ok(ctl.snapshot(0).press<.003,"Impulse decays completely");
   assert.ok(ctl.snapshot(0).hover>.99,"Hovered glass remains hovered");
