@@ -303,9 +303,15 @@ body.public-home .dashboard-home .cta6-action:active{
   background:rgba(17,63,36,.93);
   box-shadow:0 0 14px rgba(154,255,175,.25),inset 0 0 10px rgba(185,255,206,.18);
 }
-/* Once the real GPU material renders, no CSS pseudo-glass may double tint it. */
+/* Home CTAs are SOLID BLACK at rest, not permanently transparent glass.
+ * Keep black DOM pigment on top of the shared GPU material until hover;
+ * dissolve ONLY its opacity with the SAME registered 180ms value that
+ * drives the 1.039 scale and dark-green GPU glass tint. At t=1 the
+ * pigment is fully absent, exposing the authentic refractive capsule.
+ * This is an opaque-to-optical crossfade, not a second CSS glass shader.
+ * Without WebGPU the rules above preserve black -> dark-green fallback. */
 body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-bottom-action .cta6-action{
-  background:transparent!important;
+  background:rgb(0 0 0 / calc(1 - var(--home-cta-tint)))!important;
   box-shadow:none!important;
 }
 @media(max-width:760px){

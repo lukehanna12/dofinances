@@ -109,7 +109,7 @@ try{
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
- 'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius})),',
+ 'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius,background:getComputedStyle(e).backgroundColor,tint:Number(getComputedStyle(e).getPropertyValue("--home-cta-tint"))})),',
  'nav:nav.map(e=>e.textContent.trim()),',
  'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
  'hamburgerDisplay:getComputedStyle(document.getElementById("public-menu-toggle")).display,',
@@ -215,6 +215,8 @@ try{
   }
   assert.ok(g.items.every(item=>item.glass),"All three CTAs share the WebGPU glass contract");
   assert.ok(g.items.every(item=>parseFloat(item.radius)>100),"All three CTAs are capsules");
+  assert.ok(g.items.every(item=>item.background==="rgb(0, 0, 0)"&&item.tint===0),
+    "Every button must be solid opaque black at rest, including with GPU ready");
   const [about,projects,signIn]=g.items.map(item=>item.rect);
   near(about.height,width<=760?48:58.5,"CTA 50%-increased capsule height",width);
   near(about.width,signIn.width,"About/Sign in matching widths",width);
@@ -240,10 +242,15 @@ try{
  const projectsCta=await ctaCenter('.cta6-bottom-action [data-public-target="/projects"]');
  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:projectsCta.x,y:projectsCta.y});
  await sleep(255);
- const hoveredCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint')),transition:s.transitionProperty,ready:document.body.dataset.gpuScene==='ready',glass:window.__dashboardWebGPU?.homeCtaGlass||null};})()");
+ const hoveredCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint')),background:s.backgroundColor,transition:s.transitionProperty,ready:document.body.dataset.gpuScene==='ready',glass:window.__dashboardWebGPU?.homeCtaGlass||null};})()");
  assert.ok(Math.abs(hoveredCta.scale-1.039)<.004,
    "Hover growth must increase 30% from 3% to 3.9%");
  assert.ok(hoveredCta.tint>.98,"Green glass tint must finish with hover growth");
+ if(hoveredCta.ready)
+   assert.equal(hoveredCta.background,"rgba(0, 0, 0, 0)",
+     "At full hover the black pigment must disappear, revealing the shared green glass");
+ else assert.match(hoveredCta.background,/rgba?\(/,
+   "Fallback hover must remain visible and dark green");
  assert.ok(hoveredCta.transition.includes("transform")&&hoveredCta.transition.includes("--home-cta-tint"),
    "Growth and tint must share the 180ms interpolator");
  if(hoveredCta.ready){
@@ -268,9 +275,11 @@ try{
  await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:500,y:160});
  await sleep(255);
- const restedCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint'))};})()");
+ const restedCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint')),background:s.backgroundColor};})()");
  assert.ok(Math.abs(restedCta.scale-1)<.004&&restedCta.tint<.02,
    "Green tint and scale return together after hover leave");
+ assert.equal(restedCta.background,"rgb(0, 0, 0)",
+   "Hover exit must restore a fully opaque BLACK capsule, not translucent glass");
  await send("Emulation.setEmulatedMedia",{
    features:[{name:"prefers-reduced-motion",value:"reduce"}]
  });

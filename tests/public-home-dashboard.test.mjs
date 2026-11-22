@@ -40,7 +40,10 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(style,/border-radius:999px;/);
   assert.match(style,/--home-cta-tint 180ms cubic-bezier\(\.2,\.78,\.2,1\)/);
   assert.match(style,/transform:scale\(1\.039\)/);
-  assert.match(style,/data-gpu-scene="ready"\] \.dashboard-home \.cta6-bottom-action \.cta6-action\{\s*background:transparent!important;/);
+  assert.match(style,/data-gpu-scene="ready"\] \.dashboard-home \.cta6-bottom-action \.cta6-action\{\s*background:rgb\(0 0 0 \/ calc\(1 - var\(--home-cta-tint\)\)\)!important;/);
+  assert.doesNotMatch(style,/data-gpu-scene="ready"\][^{}]*\.cta6-action\{[^}]*background:transparent!important;/);
+  assert.match(style,/--home-cta-tint:0;/);
+  assert.match(style,/\.cta6-action:hover,[\s\S]*?--home-cta-tint:1;/);
   assert.match(renderer,/HOME_CTA_SELECTOR="\.cta6-bottom-action > \[data-home-cta-glass\]"/);
   assert.match(renderer,/tile\.hasAttribute\("data-home-cta-glass"\)\|\|/);
   assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
