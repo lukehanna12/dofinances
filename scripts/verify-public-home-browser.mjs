@@ -288,10 +288,12 @@ try{
  const inert=await evaluate([
   '(()=>{const before=location.href;',
   'for(const b of [...document.querySelectorAll(".global-menu button"),',
-  '...document.querySelectorAll(".cta6-bottom-action button")])b.click();',
+  '...document.querySelectorAll(".cta6-bottom-action button")]){',
+  'if(!b.matches("[data-public-target]"))b.click();}',
   'return {before,after:location.href};})()'
  ].join(""));
- assert.equal(inert.before,inert.after,"Placeholder buttons must not navigate");
+ assert.equal(inert.before,inert.after,"Non-Projects placeholders remain inert");
+ assert.equal(await evaluate('document.querySelectorAll("[data-public-target]").length'),3,"Three public Projects triggers available");
  // Non-reduced-motion is essential here: an X-close poof must have a
  // visible intermediate state before the legitimate /login navigation.
  await send("Emulation.setEmulatedMedia",{
