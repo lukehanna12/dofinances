@@ -256,7 +256,11 @@ try{
  if(hoveredCta.ready){
    assert.equal(hoveredCta.glass?.renderer,"shared-webgpu-glassPipeline");
    assert.equal(hoveredCta.glass.count,3);
-   assert.equal(hoveredCta.glass.tintModel,"shared-authPane-film");
+   assert.equal(hoveredCta.glass.tintModel,"shared-square-film");
+   assert.equal(hoveredCta.glass.tintFilmStrength,0.25,
+     "Capsule tint film strength must be identical to the squares");
+   assert.equal(hoveredCta.glass.pressLightGain,0.06,
+     "Capsule press lighting must use the square's interaction strength");
    assert.equal(hoveredCta.glass.backdrop,"GPU-composited-moving-squares");
    assert.ok(hoveredCta.glass.compositeFrames>0,
      "The live GPU square animation must be composed before glass capsule sampling");
