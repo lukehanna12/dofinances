@@ -14,7 +14,7 @@ const apex=join(repo,"sites/_apex");
 const dist=join(repo,"dist");
 assert.ok(existsSync(join(dist,"assets","public-login-manifest.json")),"Build and package the login route first");
 const mime={".html":"text/html; charset=utf-8",".json":"application/json",".css":"text/css",
-  ".js":"text/javascript",".avif":"image/avif",".svg":"image/svg+xml",
+  ".js":"text/javascript",".avif":"image/avif",".webp":"image/webp",".svg":"image/svg+xml",
   ".wgsl":"text/plain"};
 const misses=[];
 const server=createServer((req,res)=>{
