@@ -24,7 +24,8 @@ import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
 import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
- planGlassLayers,GLASS_INTERACTION} from "./dashboard-glass-model.js";
+ planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass}
+ from "./dashboard-glass-model.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
@@ -844,6 +845,8 @@ async function initialize(){
           const p=(tileCount+i)*TILE_FLOATS;
           return {width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
             radius:tileData[p+4]/dpr,renderMode:tileData[p+7],
+            nativeClear:projectFiniteNativeClearGlass(
+              tileData[p+2]/dpr,tileData[p+3]/dpr),
             content:surfaceContentFromElement(node),opacity:tileData[p+18],
             tint:Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"))||0};
         })};

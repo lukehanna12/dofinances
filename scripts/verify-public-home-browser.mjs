@@ -268,6 +268,14 @@ try{
      "Three capsules must use true CSS round-ended SDF geometry");
    assert.ok(hoveredCta.glass.capsules.every(x=>x.content==="text"),
      "Button text should remain live content over the glass");
+   assert.ok(hoveredCta.glass.capsules.every(x=>
+     x.nativeClear?.innerHeight===20&&
+     x.nativeClear?.outerAmount===0&&
+     x.nativeClear?.innerAmount<=-58.5),
+     "Homepage capsules use per-surface native Clear scalar geometry");
+   assert.ok(hoveredCta.glass.capsules.every(x=>
+     x.nativeClear?.evidenceId==="E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE"),
+     "Optical inputs are explicitly bound to retained target-native evidence");
    assert.ok(hoveredCta.glass.compositeFrames>0,
      "The live GPU square animation must be composed before glass capsule sampling");
    near(hoveredCta.glass.capsules[1].width,150*1.039,

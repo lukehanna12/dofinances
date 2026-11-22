@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {
  GLASS_GEOMETRY_SOURCE,GLASS_SHAPES,GLASS_INTERACTION,
  normalizeGlassCornerRadii,resolveGlassSurface,resolveGlassOpticalGeometry,
+ projectFiniteNativeClearGlass,
  selectGlassSdfMode,glassContainsPoint,planGlassLayers,
  classifyGlassContent,glassSpring
 } from "../sites/_apex/assets/home-dashboard/dashboard-glass-model.js";
@@ -53,6 +54,29 @@ test("finite Oracle optical envelopes use THIS surface minimum, never the first 
  assert.equal(card.outerHeight,43.75);
 });
 
+test("finite native Clear inputs differ from historical regular-square profile",()=>{
+ const capsule=projectFiniteNativeClearGlass(150,58.5);
+ const circle=projectFiniteNativeClearGlass(58.5,58.5);
+ const rectangle=projectFiniteNativeClearGlass(280,58.5);
+ const square=projectFiniteNativeClearGlass(75,75);
+ assert.deepEqual(capsule,circle);
+ assert.deepEqual(capsule,rectangle);
+ assert.equal(capsule.innerAmount,-58.5);
+ assert.equal(capsule.innerHeight,20);
+ assert.equal(capsule.outerAmount,0);
+ assert.equal(capsule.outerHeight,0);
+ assert.equal(capsule.nativeInputBlurRadius,5.729166666666667);
+ assert.equal(capsule.nativeInputLayerScale,.5);
+ assert.equal(square.innerAmount,-60);
+ assert.equal(square.innerHeight,20);
+ assert.equal(square.nativeInputBlurRadius,6.875);
+ assert.match(capsule.scope,/observed native Clear/);
+ const thin=projectFiniteNativeClearGlass(100,19);
+ assert.equal(thin.innerAmount,-19);
+ assert.ok(Math.abs(thin.innerHeight-6.84)<1e-12);
+ assert.match(thin.scope,/projection/);
+ assert.equal(thin.evidenceId,"E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE");
+});
 test("shape-aware hit region excludes transparent round-corner pixels",()=>{
  assert.equal(glassContainsPoint([0,0,40,40],[20,20,20,20],0,0),false);
  assert.equal(glassContainsPoint([0,0,40,40],[20,20,20,20],20,0),true);
