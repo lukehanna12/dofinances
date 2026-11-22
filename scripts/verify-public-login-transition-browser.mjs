@@ -815,8 +815,9 @@ try{
   // Cancel reverses the expansion and restores the original search chip.
   await evaluate("document.querySelector('.public-projects-search-cancel').click()");
   await until("!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded')",20);
-  await sleep(360);
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).opacity"),"0");
+  await until("Number(getComputedStyle(document.querySelector('.public-projects-search-field')).opacity)<.01",30,75);
+  assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).opacity"))<.01,
+    "The reversed search capsule must be visually fully collapsed");
   assert.equal(await evaluate("document.querySelector('.public-projects-search-input').disabled"),true);
   assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),14);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
