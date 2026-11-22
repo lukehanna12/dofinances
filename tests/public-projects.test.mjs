@@ -192,12 +192,12 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   ]);
   assert.match(renderer,/const AUTH_PANE_CAPACITY=24;/);
   assert.match(renderer,/\.public-projects-root/);
-  assert.match(renderer,/projects\?"independent":"nested"/);
+  assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="title"\)return -8;/);
   assert.match(renderer,/syncProjectTitleMask\(panes\)/);
   assert.match(renderer,/normalizeGlassCornerRadii\(\[/);
-  assert.match(renderer,/const live=glassPaneNeedsLiveTransform\(tile\.dataset\?\.publicProjectGlass\)/);
+  assert.match(renderer,/const live=tile\.hasAttribute\("data-home-cta-glass"\)\|\|\s*glassPaneNeedsLiveTransform\(tile\.dataset\?\.publicProjectGlass\)/);
   assert.match(renderer,/const w=live\?Math\.max\(1,b\.width\):tile\.offsetWidth;/);
   assert.match(renderer,/searchGlass,/);
   assert.match(controls,/FILTER_MORPH_ICON=svg\(/);

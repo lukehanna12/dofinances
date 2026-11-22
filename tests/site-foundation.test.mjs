@@ -62,7 +62,7 @@ test("homepage and recovery pages preserve their links and live form controls",a
   const verify=await read("../sites/_apex/verify/index.html");
   const reset=await read("../sites/_apex/reset/index.html");
   assert.match(home,/class="cta6-bottom-action"/);
-  assert.match(home,/<a class="cta6-action" href="\/login">Sign in<\/a>/);
+  assert.match(home,/<a class="cta6-action" data-home-cta-glass href="\/login">Sign in<\/a>/);
   assert.doesNotMatch(home,/href="\/app"|href="\/login\?mode=signup"/);
   assert.match(verify,/id="verify"/);
   assert.match(verify,/\/verify\/assets\/verification\.js/);

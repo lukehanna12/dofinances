@@ -525,7 +525,7 @@ test("sign-in content scrolls normally without elastic overscroll; full WebGPU s
   assert.match(homeCss,/#public-route-content > #public-route-stage\{\s*position:relative;z-index:1/);
   assert.match(renderer,/routeOutlet\?\.insertBefore\(authCanvas,routeMount\|\|routeOutlet\.firstChild\)/);
   assert.match(renderer,/routeMount\?\.scrollHeight/);
-  assert.match(renderer,/makeLayoutData\(node,dpr,authOriginTop\(\)\)/);
+  assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
   assert.match(renderer,/authGlobalsBuffer/);
   assert.match(shader,/backdropPosition\.y-=state\.pointer\.w/);
   assert.match(router,/current=mount\(routeMount,/);
@@ -617,8 +617,9 @@ test("default fixed-viewport WebGPU preserves the original full mipmapped materi
   assert.match(renderer,/authScrollPresentation:authCanvasFixed\(\)\?"fixed-viewport":"native-content"/);
   assert.match(renderer,/const desiredTop=authCanvasFixed\(\)\?sceneTop\+"px":"0px"/);
   assert.match(renderer,/authUniform\[11\]=offsetCSS\*dpr/);
-  assert.match(renderer,/authHover\.move\(event\.clientX\*dpr,\(event\.clientY-authOriginTop\(\)\)\*dpr\)/);
-  assert.match(renderer,/tileData\.set\(makeLayoutData\(node,dpr,authOriginTop\(\)\),p\)/);
+  assert.match(renderer,/authHover\.move\(event\.clientX\*dpr,\(event\.clientY-panePointerOrigin\(\)\)\*dpr\)/);
+  assert.match(renderer,/sceneTop:authOriginTop\(\)/);
+  assert.match(renderer,/tileData\.set\(makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\),p\)/);
   assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,authGlassGroup\)/);
   assert.match(shader,/let innerLOD=glassLOD/);
   assert.match(shader,/let outerLOD=glassLOD/);
