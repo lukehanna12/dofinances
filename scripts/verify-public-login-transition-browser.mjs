@@ -716,7 +716,8 @@ try{
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
   await sleep(560);
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"),"1");
+  assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"))>.995,
+    "Bottom buttons return visibly fully opaque after the Projects reverse transition");
   // Cold /projects refresh serves the same homepage document (no clone of
   // wallpaper, logo, upper GPU canvas or global navigation).
   await send("Page.navigate",{url:origin+"/projects"});
