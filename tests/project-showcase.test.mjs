@@ -9,9 +9,10 @@ test("Projects roster applies requested names and progress states without retire
   "BootScript","Lightwork","ReadMe GLP","ChatStore",
   "Colosseum","Apple HIGs Reader","Terminal Scalars","Unicode Plus",
   "Liquid Plexiglass 26","3D Liquid Glass","Apple Adobe FX",
-  "Protocol Monitor Pruner","App Caviar","Ozoning Board"
+  "Protocol Monitor Pruner","App Caviar","Ozoning Board",
+  "Hidden Functions","LaTeXceL"
  ]);
- assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,14);
+ assert.equal(new Set(PROJECT_SHOWCASE.map(p=>p.slug)).size,16);
  assert.ok(!PROJECT_SHOWCASE.some(p=>p.slug==="bootscribe"),"Retired BootScribe must not be rendered");
  assert.ok(!PROJECT_SHOWCASE.some(p=>p.slug==="3d-liquid-glass-27-swift-package"));
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="3d-liquid-glass-26-swift-package"),{
@@ -20,6 +21,12 @@ test("Projects roster applies requested names and progress states without retire
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
   slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null
  });
+ for(const [slug,name] of [["hidden-functions","Hidden Functions"],["latexcel","LaTeXceL"]]){
+  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug===slug),{
+   slug,name,kind:"Project",repository:null,status:"coming-soon"
+  });
+  assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug===slug)),"Coming Soon");
+ }
 });
 test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
@@ -31,7 +38,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
   ["unicode-plus","lukehanna12/unicode-plus"],
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
- assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,6);
+ assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,8);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner"
@@ -182,7 +189,9 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
  "app-caviar": "opacity",
- "ozoning-board": "treehouse-ozoning.v3"
+ "ozoning-board": "treehouse-ozoning.v3",
+ "hidden-functions": "hidden-functions",
+ "latexcel": "latexcel"
 };
  const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
