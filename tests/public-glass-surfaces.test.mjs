@@ -77,6 +77,30 @@ test("finite native Clear inputs differ from historical regular-square profile",
  assert.match(thin.scope,/browser interpolation/);
  assert.equal(thin.evidenceId,"E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE");
 });
+test("homepage capsules sample live squares in viewport coordinates, never the 1px auth extent",()=>{
+ const shader=asset("dashboard-gpu-glass.wgsl");
+ const renderer=asset("dashboard-gpu-renderer.js");
+ // Home material tag -9 is a capsule on the HOME canvas, even though its
+ // negative tag also marks it as a glass pane for shared material stages.
+ assert.match(shader,/let homeCapsule=tile\.properties\.y == -9\.0;/);
+ assert.match(shader,/let routePane=authPane && !homeCapsule;/);
+ assert.match(shader,/var backdropExtent=state\.viewport\.xy;/);
+ assert.match(shader,/var backdropPosition=in\.position\.xy;/);
+ assert.match(shader,/if\(routePane\)\{\s*backdropExtent\.y=max\(1\.0,state\.fit\.w\);\s*backdropPosition\.y-=state\.pointer\.w;/);
+ assert.doesNotMatch(shader,/if\(authPane\)\{\s*backdropExtent\.y=/);
+ // The Home uniform intentionally has no auth scroll scene height; its
+ // viewport dimensions must remain the complete composited GPU source.
+ assert.match(renderer,/uniform\[7\]=0;/);
+ assert.match(renderer,/authUniform\[7\]=physicalHeight;/);
+ assert.match(renderer,/homeCapsuleGroup=compositeSceneView\?/);
+ assert.match(renderer,/pass\.setBindGroup\(0,homeCompositeActive\?homeCapsuleGroup:glassGroup\)/);
+ const viewportHeight=900,fragY=720,authExtent=0;
+ const brokenUV=fragY/Math.max(1,authExtent);
+ const correctedUV=fragY/viewportHeight;
+ assert.ok(brokenUV>1,"Old route mistakenly sampled clamp-to-edge");
+ assert.ok(correctedUV>0&&correctedUV<1,
+   "Home capsule samples a location inside the same scene as its squares");
+});
 test("shape-aware hit region excludes transparent round-corner pixels",()=>{
  assert.equal(glassContainsPoint([0,0,40,40],[20,20,20,20],0,0),false);
  assert.equal(glassContainsPoint([0,0,40,40],[20,20,20,20],20,0),true);

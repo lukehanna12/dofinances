@@ -427,13 +427,24 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // AIR 323-328 / 383-387: convert base UV to half2, multiply native
   // half displacement × half2 matrix, HALF add, then promote to sample UV.
   // GAP NATIVE-UV-TO-CSS still applies to the CSS/texture scale mapping.
-  // Sign-in glass lives in a *scrolling* document-sized framebuffer, but
-  // its photograph still lives in the original fixed viewport scene.
-  // The auth uniform carries scene height in fit.w and scrollTop in pointer.w.
-  // No change to the homepage square optical math or material parameters.
+  // IMPORTANT: a negative material tag is NOT sufficient to classify
+  // the draw target as the route-owned scrolling glass canvas. Home CTA
+  // capsules use tag -9 but are drawn on the HOME canvas and must sample
+  // the SAME viewport UVs as the moving squares they refract. The home
+  // globals intentionally have fit.w=0 and pointer.w=0: the old
+  // if(authPane) branch replaced backdropExtent.y with 1 pixel and
+  // sampled the clamp-to-edge row for nearly every capsule fragment.
+  //
+  // Only actual /login and /projects panes use the scrolling backdrop
+  // coordinates; they receive authGlobalsBuffer with a positive fit.w.
+  // Keep the squares, their optical coefficients and the shared face/tint
+  // entirely unchanged. The home capsules still use their own Clear
+  // shape profile, but MUST use viewport-space backdrop sampling.
+  let homeCapsule=tile.properties.y == -9.0;
+  let routePane=authPane && !homeCapsule;
   var backdropExtent=state.viewport.xy;
   var backdropPosition=in.position.xy;
-  if(authPane){
+  if(routePane){
     backdropExtent.y=max(1.0,state.fit.w);
     backdropPosition.y-=state.pointer.w;
   }
