@@ -52,8 +52,8 @@ test("login and Studio compile the same foundation while retaining authenticatio
   assert.match(css,/\.auth3-root\s*\{\s*min-height: calc\(100dvh - 44px\);/);
   assert.match(css,/--font-sans:\s*ui-sans-serif, system-ui, sans-serif/);
   assert.match(studio,/name="theme-color" content="#171717"/);
-  assert.match(jsx,/window\.localStorage\.getItem\("dofinances-theme"\)/);
-  assert.match(jsx,/new MutationObserver\(update\)/);
+  assert.match(jsx,/const isDark = true;/);
+  assert.doesNotMatch(jsx,/dofinances-theme|new MutationObserver\(update\)/);
   assert.match(jsx,/\/api\/auth\//);
 });
 

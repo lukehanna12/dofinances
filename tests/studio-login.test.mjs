@@ -54,19 +54,18 @@ test("the sign-in route owns the card entrance and reversed exit, not homepage a
   assert.match(gpu,/DISMISS_MS-\(performance\.now\(\)-restoreStart\)/);
   assert.match(shell,/positionCompactLogo/);
 });
-test("the live shell owns the top bar, theme toggle and compact doof mark",async()=>{
-  const [home,auth,theme,renderer]=await Promise.all([
+test("the live shell owns the top bar, fixed dark palette and compact doof mark",async()=>{
+  const [home,auth,renderer]=await Promise.all([
     load("../sites/_apex/index.html"),
     load("../src/components/Auth3.jsx"),
-    load("../sites/_apex/assets/public-theme.js"),
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")
   ]);
   assert.match(home,/<nav class="global-menu" id="global-menu"/);
-  assert.match(home,/id="public-theme-toggle"/);
+  assert.match(home,/<html lang="en" data-dof-theme="dark">/);
+  assert.doesNotMatch(home,/public-theme-toggle|public-theme\.(js|css)|doof-theme-toggle/);
   assert.match(home,/id="dashboard-title">doof<\/h1>/);
   assert.doesNotMatch(auth,/id="global-menu"|doof-theme-toggle|data-auth-scene/);
-  assert.match(theme,/dofinances-theme/);
-  assert.match(auth,/new MutationObserver\(update\)/);
+  assert.match(auth,/const isDark = true;/);
   assert.match(renderer,/let restoreStart=null;/);
 });
 test("Studio's independent Vite root is retained for development, but not deployed as apex /login",async()=>{
@@ -187,14 +186,13 @@ test("Tailwind 4 reuses captured radius and color scale, rather than approximate
   }
 });
 
-test("theme defaults to dark and is controlled exclusively by the persistent shell",async()=>{
-  const source=await load("../src/components/Auth3.jsx");
-  const shellTheme=await load("../sites/_apex/assets/public-theme.js");
-  assert.match(source,/window\.localStorage\.getItem\("dofinances-theme"\)/);
-  assert.match(source,/new MutationObserver\(update\)/);
-  assert.match(shellTheme,/window\.localStorage\.setItem\(KEY,next\)/);
-  assert.match(shellTheme,/button\?\.addEventListener\("click"/);
-  assert.doesNotMatch(source,/setTheme\(isDark \? "light"/);
+test("sign-in is locked to dark and ignores former saved light preferences",async()=>{
+  const [source,home]=await Promise.all([
+    load("../src/components/Auth3.jsx"),load("../sites/_apex/index.html")
+  ]);
+  assert.match(home,/data-dof-theme="dark"/);
+  assert.match(source,/const isDark = true;/);
+  assert.doesNotMatch(source,/dofinances-theme|new MutationObserver\(update\)|setTheme\(/);
   assert.doesNotMatch(source,/sessionStorage|document\.cookie/);
   assert.match(source,/credentials:\s*"same-origin"/);
 });
@@ -318,17 +316,16 @@ test("both retired Studio /login URLs return a scoped Pages Function 404", async
   }
 });
 
-test("both routes use one fixed bottom-left rounded square icon toggle", async () => {
-  const css = await load("../sites/_apex/assets/public-theme.css");
-  const authCSS = await load("../src/styles.css");
-  const home = await load("../sites/_apex/index.html");
-  assert.match(css, /\.doof-theme-toggle\{/);
-  assert.match(css, /border-radius:12px/);
-  assert.match(css, /left:max\(20px,env\(safe-area-inset-left\)\)/);
-  assert.match(css, /bottom:max\(20px,env\(safe-area-inset-bottom\)\)/);
+test("homepage and sign-in contain no theme controls or external theme scripts",async()=>{
+  const [home,authCSS,jsx]=await Promise.all([
+    load("../sites/_apex/index.html"),
+    load("../src/styles.css"),
+    load("../src/components/Auth3.jsx")
+  ]);
+  assert.match(home,/<html lang="en" data-dof-theme="dark">/);
+  assert.doesNotMatch(home,/public-theme-toggle|doof-theme-toggle|public-theme\.(js|css)/);
   assert.doesNotMatch(authCSS,/doof-theme-toggle/);
-  assert.match(home, /id="public-theme-toggle"/);
-  assert.match(home, /src="\/assets\/public-theme\.js"/);
+  assert.match(jsx,/const isDark = true;/);
 });
 
 test("original iframe dark-mode base foreground propagates to the Auth-3 root", async () => {
@@ -391,7 +388,7 @@ test("original Auth-3 text selection has exact inverted light/dark colors", asyn
   const jsx = await load("../src/components/Auth3.jsx");
   assert.match(css, /\.auth3-root::selection,\s*\.auth3-root \*::selection\s*\{\s*color: oklch\(100% 0 0\);\s*background-color: oklch\(14\.5% 0 0\);/);
   assert.match(css, /\.auth3-root\.dark::selection,\s*\.auth3-root\.dark \*::selection\s*\{\s*color: #0a0a0a;\s*background-color: oklch\(100% 0 0\);/);
-  assert.ok(jsx.includes('window.localStorage.getItem("dofinances-theme")'));
+  assert.ok(jsx.includes("const isDark = true;"));
   // No global ::selection override. Keep the feature within Studio Auth-3.
   assert.doesNotMatch(css, /\n::selection\s*\{/);
 });

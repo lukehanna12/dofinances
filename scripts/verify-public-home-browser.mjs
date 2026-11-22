@@ -116,8 +116,8 @@ try{
  'search:box(document.querySelector(".global-menu-actions>button[aria-label=Search]")),',
  'hamburger:box(document.getElementById("public-menu-toggle")),',
  'panelHidden:document.getElementById("public-menu-panel").hidden,',
- 'themeButton:box(document.getElementById("public-theme-toggle")),',
- 'themeLabel:document.getElementById("public-theme-toggle").getAttribute("aria-label"),',
+ 'themeRemoved:!document.getElementById("public-theme-toggle"),',
+ 'themeMode:document.documentElement.dataset.dofTheme,',
  'footer:box(document.querySelector("body>.workspace-footer")),',
  'footerOpacity:getComputedStyle(document.querySelector("body>.workspace-footer")).opacity,',
  'edgeMask:getComputedStyle(grid).maskImage,',
@@ -170,8 +170,8 @@ try{
    near(g.search.top,g.hamburger.top,"Toolbar icon alignment",width);
   }
   assert.equal(g.panelHidden,true,"Dropdown defaults closed");
-  assert.ok(g.themeButton.left>=0&&g.themeButton.left+g.themeButton.width<=width);
-  assert.equal(g.themeButton.width,43,"Persistent theme switch is a compact rounded square");
+  assert.equal(g.themeRemoved,true,"No public theme toggle");
+  assert.equal(g.themeMode,"dark","Public shell is dark-only");
   near(g.footer.center,width/2,"Copyright horizontal center",width);
   assert.equal(g.footerOpacity,"0.07","Public copyright must be 7% opaque");
   assert.ok(g.footer.top+g.footer.height<=height-12 &&
@@ -246,20 +246,10 @@ try{
    "Pressing public top-bar text must not create a button outline or fill");
  assert.equal(pressedText.transform,"none");
  await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:topText.x,y:topText.y,button:"left",clickCount:1});
- // Verify shared theme preference without affecting layout or the route.
- assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-label")'),
-  "Switch to light mode");
- await evaluate('document.getElementById("public-theme-toggle").click()');
- assert.equal(await evaluate('document.documentElement.dataset.dofTheme'),"light");
- assert.equal(await evaluate('localStorage.getItem("dofinances-theme")'),"light");
- assert.equal(await evaluate('document.getElementById("public-theme-toggle").getAttribute("aria-pressed")'),"false");
- await sleep(150);
- const lightText=await evaluate("(()=>{const s=getComputedStyle(document.querySelector('#global-menu-links>button'));"+
-   "return {bg:s.backgroundColor,border:s.borderTopWidth,transform:s.transform};})()");
- assert.equal(lightText.bg,"rgba(0, 0, 0, 0)",
-   "Light mode must also keep text-link hover free of button boxes");
- assert.equal(lightText.border,"0px");
- assert.equal(lightText.transform,"none");
+ // A legacy local preference must not switch the site to light mode.
+ await evaluate('localStorage.setItem("dofinances-theme","light")');
+ assert.equal(await evaluate('document.documentElement.dataset.dofTheme'),"dark");
+ assert.equal(await evaluate('document.getElementById("public-theme-toggle")'),null);
  // Verify disclosure open/close, inert entries, Escape and breakpoint reset.
  await send("Emulation.setDeviceMetricsOverride",{
   width:500,height:670,deviceScaleFactor:1,mobile:false
@@ -314,11 +304,11 @@ try{
      path:location.pathname,
      style:getComputedStyle(tile).transform,
      target:getComputedStyle(document.querySelector(".cta6-bottom-action")).opacity,
-     theme:!!document.getElementById("public-theme-toggle")};
+     themeRemoved:!document.getElementById("public-theme-toggle")};
  })()`);
  assert.equal(duringDismiss.route,"leaving","Sign in starts the X-close poof");
  assert.equal(duringDismiss.path,"/","Route changes only after the poof");
- assert.equal(duringDismiss.theme,true,"Theme switch remains present during transition");
+ assert.equal(duringDismiss.themeRemoved,true,"No theme switch during transition");
  assert.ok(!duringDismiss.style.includes("600px"),
    "Tiles must not use the old right-swipe transform");
  let loginReached=false;

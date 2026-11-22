@@ -108,13 +108,16 @@ try{
     throw Error("Timed out: "+expression);
   };
   await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
+  // A former saved light preference must not restore light mode on reload.
+  await evaluate("localStorage.setItem('dofinances-theme','light');location.reload()");
+  await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
   // Measure the normal settled homepage, not the logo's 16px introduction.
   await sleep(1050);
   const home=await evaluate("(()=>{window.__persistedShell={"+
     "mosaic:document.querySelector('#cta6-mosaic'),"+
     "logo:document.querySelector('#dashboard-title'),"+
     "bar:document.querySelector('#global-menu'),"+
-    "theme:document.querySelector('#public-theme-toggle')};"+
+    "themeAbsent:!document.querySelector('#public-theme-toggle')};"+
     "const r=window.__persistedShell.logo.getBoundingClientRect();"+
     "const buttons=document.querySelector('.cta6-bottom-action');"+
     "const b=buttons.getBoundingClientRect();"+
@@ -154,7 +157,7 @@ try{
     "return {sameMosaic:document.querySelector('#cta6-mosaic')===r.mosaic,"+
     "sameBrand:document.querySelector('#dashboard-title')===r.logo,"+
     "sameBar:document.querySelector('#global-menu')===r.bar,"+
-    "sameTheme:document.querySelector('#public-theme-toggle')===r.theme,"+
+    "themeAbsent:!document.querySelector('#public-theme-toggle'),"+
     "center:(c.left+c.right)/2,viewport:innerWidth/2,"+
     "logoY:(brand.top+brand.bottom)/2,scale:getComputedStyle(r.logo).transform,"+
     "caption:document.body.textContent.includes('A clearer view of what comes next.'),"+
@@ -162,7 +165,7 @@ try{
     "buttonsTop:document.querySelector('.cta6-bottom-action').getBoundingClientRect().top,"+
     "buttonsOpacity:getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity,"+
     "state:window.__dofPublicRouter.state,route:location.pathname};})()");
-  for(const field of ["sameMosaic","sameBrand","sameBar","sameTheme"])
+  for(const field of ["sameMosaic","sameBrand","sameBar","themeAbsent"])
     assert.equal(active[field],true,"Persistent shell lost: "+field);
   assert.equal(active.state,"login");
   assert.equal(active.route,"/login");
@@ -520,64 +523,16 @@ try{
       Math.abs(onExit.cardHover.vy)<.001,
       "Leaving the card must stop velocity-driven opposite-direction travel");
   }
-  // Toggling the site mode only changes the existing neutral tint presets
-  // and the original form text palette, never the untinted card tint name.
-  await evaluate("document.getElementById('public-theme-toggle').click()");
-  await until("document.documentElement.dataset.dofTheme==='light'&&"+
-    "!!document.querySelector('.auth3-root:not(.dark)')",50);
-  // Tailwind preserves 200ms color transitions. A headless browser under
-  // software rendering can defer animation frames despite elapsed wall time;
-  // wait for the ACTUAL computed neutral palette instead of assuming that
-  // sleeping 290ms guarantees visual style settlement.
-  await until("getComputedStyle(document.querySelector('[data-auth-glass-input]')).color==='rgb(23, 23, 23)'",100,60);
-  await until("getComputedStyle(document.querySelector('[data-auth-glass-submit]')).color==='rgb(255, 255, 255)'",100,60);
-  const lightAccent=await evaluate(accents());
-  assert.ok(lightAccent.rule,"Divider line must remain visible");
-  assert.deepEqual(lightAccent.logoOpacity,["0.86","0.86"]);
-  const lightOrnaments=await evaluate(ornaments());
-  assert.equal(lightOrnaments.opacity,"1");
-  assert.equal(lightOrnaments.label,lightOrnaments.noteColor,
-    "Or label matches the account-linking note in light mode");
-  assert.equal(lightOrnaments.line,lightOrnaments.noteColor,
-    "Both Or lines use the note's light theme color");
-  assert.equal(lightOrnaments.routeOverscroll,"none");
-  assert.equal(lightOrnaments.rootOverscroll,"none");
-  assert.equal(lightOrnaments.routeOverflow,"auto");
-  assert.ok(lightOrnaments.noteColor,"Light-mode account-linking color must exist");
-  assert.equal(lightOrnaments.backTint,"transparent");
-  assert.equal(lightOrnaments.backInk,"rgb(23, 23, 23)");
-  assert.deepEqual(lightOrnaments.backStroke,["rgb(23, 23, 23)"]);
-  assert.equal(lightOrnaments.backTransform,"none");
-  const lightNeutral=await evaluate(neutralTints());
-  assert.ok(lightNeutral.providers.length===2&&lightNeutral.providers.every(v=>Math.abs(tintAlpha(v)-.62)<.01),
-    "Google and GitHub use 0.62 in light UI mode");
-  assert.equal(lightNeutral.input,"#fff6",
-    "Email and password use 0.40 in light UI mode");
-  assert.equal(lightNeutral.primary,"#000000d1",
-    "Primary sign-in tint is unaffected in light mode");
-  const lightGlass=await evaluate(material());
-  assert.equal(lightGlass.mode,"light");
-  assert.notEqual(lightGlass.ink,darkGlass.ink,
-    "Original light mode must restore dark field text");
-  assert.ok(Number.parseFloat(lightGlass.actionInk.match(/[0-9]+/)?.[0]??0)>225,
-    "Original light mode must restore the dark primary action / near-white text; computed "+lightGlass.actionInk);
-  if(lightGlass.gpu==="ready"&&!compositorMode){
-    await until("window.__dashboardWebGPU?.authGlass?.scheme==='light'",30);
-    const audit=await evaluate("window.__dashboardWebGPU.authGlass");
-    assert.equal(audit.cardTint,"none");
-    assert.equal(audit.faceScheme,"dark",
-      "Light UI mode must not turn the unchanged square glass into a light face");
-    assert.equal(audit.neutralControlTints,"white / black primary");
-  }
+  // The former preference must not affect the card, controls or GPU material.
+  assert.equal(await evaluate("document.documentElement.dataset.dofTheme"),"dark");
+  assert.equal(await evaluate("document.getElementById('public-theme-toggle')"),null);
+  assert.equal(await evaluate("document.querySelector('.auth3-root').classList.contains('dark')"),true);
   const focused=await evaluate("(()=>{const i=document.querySelector('[data-auth-glass-input]');"+
     "i.focus();return {focused:document.activeElement===i,"+
     "outline:getComputedStyle(i).outlineWidth};})()");
   assert.equal(focused.focused,true);
   assert.ok(Number.parseFloat(focused.outline)>=2,
     "Focused neutral-glass inputs retain an accessible ring");
-  await evaluate("document.getElementById('public-theme-toggle').click()");
-  await until("document.documentElement.dataset.dofTheme==='dark'&&"+
-    "!!document.querySelector('.auth3-root.dark')",50);
   // Clicking the card-owned back arrow uses a 420ms compositor-friendly exit.
   // entry first. The route remains active until that exit finishes.
   await evaluate("window.__trackResumeEvents=0;"+

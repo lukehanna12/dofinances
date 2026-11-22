@@ -307,7 +307,7 @@ body.public-home .dashboard-home .cta6-action:active{
 }
 
 /* X-close local optical dissolution, not the historical AppKit smoke poof.
-   Background and persistent theme control remain unchanged. */
+   Background remains unchanged. */
 body.public-home .dashboard-home .cta6-bottom-action{
   /* The persistent main page owns this motion, not /login. The horizontal
      centering transform remains intact while the whole row drops out. */

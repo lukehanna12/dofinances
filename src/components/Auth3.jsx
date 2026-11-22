@@ -2,8 +2,7 @@
  * Auth-3 reconstruction: faithfully transcribed Tailwind utilities and Motion
  * parameters from the recovered React Bits Pro Webpack module 55010.
  *
- * Dofinances branding, dark-first mode and theme toggle are intentional
- * additions. Credentials now use a server-side Cloudflare Durable Object.
+ * Dofinances branding uses a fixed dark palette. Credentials now use a server-side Cloudflare Durable Object.
  */
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
@@ -61,21 +60,8 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
     {key:"github",label:"GitHub"}
   ];
   const inputClasses = "w-full px-4 py-3 mb-4 rounded-lg border-2 border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-600 transition-all duration-200";
-  const [theme, setTheme] = useState(()=>{
-    try{return window.localStorage.getItem("dofinances-theme")==="light"?"light":"dark";}
-    catch{return "dark";}
-  });
-  const isDark = theme === "dark";
-  useEffect(()=>{
-    // The persistent public shell owns theme persistence and the toggle.
-    // This route merely observes the shell so the Tailwind dark variant
-    // updates without duplicating a global control or touching the backdrop.
-    const update=()=>setTheme(document.documentElement.dataset.dofTheme==="light"?"light":"dark");
-    const observer=new MutationObserver(update);
-    observer.observe(document.documentElement,{attributes:true,attributeFilter:["data-dof-theme"]});
-    update();
-    return ()=>observer.disconnect();
-  },[]);
+  // Sign-in always uses the dark palette, regardless of legacy saved preferences.
+  const isDark = true;
 
   async function submit(endpoint,payload) {
     const response=await fetch("/api/auth/"+endpoint,{

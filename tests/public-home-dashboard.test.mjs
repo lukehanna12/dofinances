@@ -245,13 +245,12 @@ test("public bottom row belongs to shell: drops below viewport and reverses on r
 });
 test("public top-bar text controls match /app text-link hover, not boxed-button styling",()=>{
   const app=asset("app/assets/workspace-enhancements.css");
-  const light=asset("assets/public-theme.css");
   assert.match(app,/\.global-menu-links a,\.global-menu-account\{color:rgba\(230,230,235,\.8\);white-space:nowrap;transition:color 125ms ease;\}/);
   assert.match(app,/\.global-menu a:hover\{color:#fff;text-decoration:none;\}/);
   assert.match(style,/body:is\(\.public-home,\.public-login\) \.global-menu-control\{[\s\S]*?border-radius:0;[\s\S]*?color:rgba\(230,230,235,\.8\);[\s\S]*?transition:color 125ms ease;/);
   assert.match(style,/\.global-menu-control:hover\{\s*background:transparent;\s*color:#fff;/);
   assert.match(style,/\.global-menu-control:active\{\s*background:transparent;\s*color:#fff;\s*transform:none;/);
   assert.match(style,/\.global-menu-icon:hover,[\s\S]*?\.global-menu-icon\[aria-expanded="true"\]\{\s*color:#fff;background:rgba\(255,255,255,\.09\);/);
-  assert.match(light,/\.global-menu-control:hover\{\s*color:#111;background:transparent;/);
+  assert.doesNotMatch(asset("index.html"),/public-theme\.(js|css)|public-theme-toggle/);
   assert.doesNotMatch(style,/\.global-menu-control:hover\{\s*background:rgba\(255,255,255,\.13\)/);
 });
