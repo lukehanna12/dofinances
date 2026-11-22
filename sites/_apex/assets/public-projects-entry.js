@@ -156,9 +156,10 @@ export function mountProjects(host,{onBack,onExitComplete}){
       // per-card timing and closer spacing. The shell restores only after
       // the route-owned reverse completes.
       timer=setTimeout(()=>{timer=null;if(!closed)onExitComplete();},
-        reduced.matches?0:PROJECT_EXIT_DURATION_MS+
-          Math.min(projects.length-1,12)*PROJECT_EXIT_STAGGER_MS+
-          PROJECT_EXIT_TAIL_MS);
+        reduced.matches?0:Math.max(
+          PROJECT_EXIT_DURATION_MS+Math.min(projects.length-1,12)*PROJECT_EXIT_STAGGER_MS,
+          PROJECT_HEADER_DISMISS_DELAY_MS+DISMISS_MS
+        )+PROJECT_EXIT_TAIL_MS);
     },
     unmount(){
       if(closed)return;closed=true;

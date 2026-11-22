@@ -236,7 +236,8 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(homepageCss,/z-index:0;[\s\S]*?pointer-events:none;/);
   assert.match(shader,/let authPane=tile\.properties\.y<0\.0;/);
   assert.match(shader,/let scale=select\(0\.85\+0\.15\*a,1\.0,authPane\);/);
-  assert.match(shader,/if\(authPane\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/);
+  assert.match(shader,/if\(authPane&&dismiss<=0\.0\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/,
+    "Sign-in still uses the unchanged route material; only explicit motion.w enables home-square dismissal");
   assert.match(shader,/let hover=clamp\(tile\.interaction\.x,0\.0,1\.0\)/);
   assert.match(shader,/let pressed=clamp\(tile\.interaction\.y,0\.0,1\.0\)/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\) \.auth3-root \[data-auth-glass-card\]/);

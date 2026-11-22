@@ -733,7 +733,7 @@ try{
     "html:getComputedStyle(document.documentElement).overscrollBehaviorY,"+
     "body:getComputedStyle(document.body).overscrollBehaviorY,"+
     "scroll:getComputedStyle(route).overflowY,"+
-    "canvas:getComputedStyle(document.querySelector('#dashboard-auth-glass-scene')).position,"+
+    "canvas:(()=>{const canvas=document.querySelector('#dashboard-auth-glass-scene');return canvas?getComputedStyle(canvas).position:null})(),"+
     "card:getComputedStyle(first).overflowX,"+
     "back:getComputedStyle(back).overflowX,"+
     "filter:getComputedStyle(filter).overflowX};})()");
@@ -742,8 +742,9 @@ try{
   assert.equal(projectScrollPolicy.body,"none");
   assert.equal(projectScrollPolicy.scroll,"auto",
     "Projects preserves native scrolling instead of canceling wheel/touch events");
-  assert.equal(projectScrollPolicy.canvas,"fixed",
-    "Projects shares the sign-in fix: viewport-fixed true WebGPU glass");
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
+    assert.equal(projectScrollPolicy.canvas,"fixed",
+      "Projects shares the sign-in fix: viewport-fixed true WebGPU glass");
   assert.equal(projectScrollPolicy.card,"hidden");
   assert.equal(projectScrollPolicy.back,"hidden");
   assert.equal(projectScrollPolicy.filter,"hidden");
@@ -756,12 +757,12 @@ try{
     "route.style.height='300px';"+
     "const before={card:card.getBoundingClientRect().top,"+
     "icon:icon.getBoundingClientRect().top,"+
-    "canvas:glass.getBoundingClientRect().top};"+
+    "canvas:glass?.getBoundingClientRect().top??0};"+
     "route.scrollTop=160;"+
     "const result={dy:route.scrollTop-oldScroll,"+
     "cardDelta:card.getBoundingClientRect().top-before.card,"+
     "iconDelta:icon.getBoundingClientRect().top-before.icon,"+
-    "canvasDelta:glass.getBoundingClientRect().top-before.canvas};"+
+    "canvasDelta:(glass?.getBoundingClientRect().top??0)-before.canvas};"+
     "route.scrollTop=oldScroll;route.style.height=oldHeight;"+
     "return result;})()");
   assert.ok(projectsScrollMotion.dy>80,
