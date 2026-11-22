@@ -256,6 +256,11 @@ body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta
 body.public-home .dashboard-home .cta6-center h1{
   translate:0 calc(-2.5 * var(--cta6-title-tile));
 }
+@property --home-cta-tint{
+  syntax:"<number>";
+  inherits:false;
+  initial-value:0;
+}
 /* Exactly three horizontally aligned actions, using the Dashboard CTA
    material, hover/press effects, and viewport-bottom positioning. */
 body.public-home .dashboard-home .cta6-bottom-action{
@@ -268,9 +273,16 @@ body.public-home .dashboard-home .cta6-action{
   box-sizing:border-box;
   display:inline-flex;
   min-width:100px;
-  height:39px;
+  min-height:58.5px;
+  height:58.5px;
   margin:0;
   padding:9px 17px;
+  border-radius:999px;
+  --home-cta-tint:0;
+  transition:transform 180ms cubic-bezier(.2,.78,.2,1),
+    --home-cta-tint 180ms cubic-bezier(.2,.78,.2,1),
+    background-color 180ms cubic-bezier(.2,.78,.2,1),
+    box-shadow 180ms cubic-bezier(.2,.78,.2,1);
   font-family:inherit;
   text-align:center;
   white-space:nowrap;
@@ -280,18 +292,28 @@ body.public-home .dashboard-home .cta6-action{
    min-width:150px;
    width:150px;
  }
-body.public-home .dashboard-home .cta6-action:hover{
-  background:#000;
-  transform:scale(1.03);
+body.public-home .dashboard-home .cta6-action:hover,
+body.public-home .dashboard-home .cta6-action:focus-visible{
+  --home-cta-tint:1;
+  background:rgba(4,28,16,.9);
+  transform:scale(1.039); /* Prior 3% growth, increased 30%. */
 }
 body.public-home .dashboard-home .cta6-action:active{
   transform:scale(.97);
+  background:rgba(17,63,36,.93);
+  box-shadow:0 0 14px rgba(154,255,175,.25),inset 0 0 10px rgba(185,255,206,.18);
+}
+/* Once the real GPU material renders, no CSS pseudo-glass may double tint it. */
+body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-bottom-action .cta6-action{
+  background:transparent!important;
+  box-shadow:none!important;
 }
 @media(max-width:760px){
   body.public-home .dashboard-home .cta6-bottom-action{gap:9px;}
   body.public-home .dashboard-home .cta6-action{
     min-width:86px;
-    height:32px;
+    min-height:48px;
+    height:48px;
     padding:7px 10px;
   }
   /* Preserve the same 3:2 width ratio at narrow viewport sizes. */

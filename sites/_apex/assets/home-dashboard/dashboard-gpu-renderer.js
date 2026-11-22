@@ -69,6 +69,7 @@ const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 // Login and Projects reuse the exact homepage WebGPU material.
 const AUTH_PANE_CAPACITY=24;
+const HOME_CTA_SELECTOR=".cta6-bottom-action > [data-home-cta-glass]";
 // Only the route-owned Projects header shares the homepage squares' optical
 // dismissal. Cards retain their existing reverse stagger; login stays intact.
 const PROJECT_HEADER_DISMISS_ROLES=new Set([
@@ -81,7 +82,7 @@ function authPaneElements(){
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
   )].slice(0,AUTH_PANE_CAPACITY);
   const projects=document.querySelector(".public-projects-root");
-  if(!projects)return [];
+  if(!projects)return [...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
   const all=[...projects.querySelectorAll("[data-public-project-glass]")];
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
@@ -95,6 +96,7 @@ const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
 // -2 is the untinted card; -7 is the separate untinted back chip,
 // -4 primary, -5 social sign-in and -6 text input. Squares are unchanged.
 function authPaneMaterialTag(node){
+  if(node.hasAttribute("data-home-cta-glass"))return -9;
   if(node.dataset.publicProjectGlass==="title")return -8;
   if(node.classList.contains("auth3-back-link")||
      node.dataset.publicProjectGlass==="back")return -7;
@@ -105,6 +107,12 @@ function authPaneMaterialTag(node){
   return -2;
 }
 function authPaneTint(node,scheme){
+  if(node.hasAttribute("data-home-cta-glass")){
+    // The same computed CSS transition value drives tint and scale timing.
+    const raw=Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"));
+    const t=Number.isFinite(raw)?Math.max(0,Math.min(1,raw)):0;
+    return tintParameters("#061b10",t*.95,scheme);
+  }
   if(node.hasAttribute("data-public-project-glass")||
      node.hasAttribute("data-auth-glass-card")||
      node.classList.contains("auth3-back-link"))
@@ -281,7 +289,8 @@ function makeLayoutData(tile,scale,sceneTop=0){
   // Route dropdowns and the search capsule have their own transform
   // animation. Refract against their PRESENTED bounds, not offsetWidth,
   // which remains the full 390px while scaleX() is only 0.025.
-  const live=glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass);
+  const live=tile.hasAttribute("data-home-cta-glass")||
+    glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass);
   const w=live?Math.max(1,b.width):tile.offsetWidth;
   const h=live?Math.max(1,b.height):tile.offsetHeight;
   const x=live?b.left:b.left+b.width*.5-w*.5;
@@ -581,11 +590,14 @@ async function initialize(){
   }
   function syncTileTints(force=false){
     const value=tint.state,panes=authPaneElements(),scheme=authGlassScheme();
-    const roles=panes.map(node=>node.dataset.publicProjectGlass?
+    const roles=panes.map(node=>node.hasAttribute("data-home-cta-glass")?
+      "home-cta":node.dataset.publicProjectGlass?
       "project-"+node.dataset.publicProjectGlass:node.hasAttribute("data-auth-glass-card")?
       "card":node.hasAttribute("data-auth-glass-submit")?"submit":"neutral");
+    const liveTints=panes.map(node=>node.hasAttribute("data-home-cta-glass")?
+      getComputedStyle(node).getPropertyValue("--home-cta-tint").trim():"").join(",");
     const key=value.name+"|"+value.opacity+"|"+value.scheme+"|"+tileCount+
-      "|"+scheme+"|"+roles.join(",");
+      "|"+scheme+"|"+roles.join(",")+"|"+liveTints;
     if(!force&&key===lastTintKey)return;
     lastTintKey=key;
     const counts={};
@@ -696,6 +708,9 @@ async function initialize(){
     const panes=authPaneElements(),scheme=authGlassScheme();
     const projectRoot=document.querySelector(".public-projects-root");
     const projects=Boolean(projectRoot);
+    const homeCtas=panes[0]?.hasAttribute("data-home-cta-glass")===true;
+    const homeGroupOpacity=homeCtas?Math.max(0,Math.min(1,
+      Number.parseFloat(getComputedStyle(panes[0].parentElement).opacity)||0)):1;
     if(projects)syncProjectTitleMask(panes);
     const dismissAt=Number.parseFloat(projectRoot?.dataset.projectHeaderDismissAt);
     const projectDismissElapsed=Number.isFinite(dismissAt)?
@@ -719,7 +734,7 @@ async function initialize(){
         cornerInert[slot]=1;
         continue;
       }
-      tileData.set(makeLayoutData(node,dpr,authOriginTop()),p);
+      tileData.set(makeLayoutData(node,dpr,homeCtas?sceneTop:authOriginTop()),p);
       // Reuse the physical blur/LOD word of the already-rendered square.
       // Card and controls differ in silhouette, not optical material; their
       // own min-dimension must not silently change the glass family.
@@ -730,8 +745,11 @@ async function initialize(){
       // Only the sign-in controls' neutral pigment film varies by role.
       // Every pane retains the exact shared square glass optics and hover.
       tileData[p+5]=authPaneMaterialTag(node);
-      const paneOpacity=projects?Math.max(0,Math.min(1,
-        Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
+      const paneOpacity=homeCtas?
+        homeGroupOpacity*Math.max(0,Math.min(1,
+          Number.parseFloat(getComputedStyle(node).opacity)||0)):
+        projects?Math.max(0,Math.min(1,
+          Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
       tileData[p+18]=paneOpacity;tileData[p+19]=0;
       const projectRole=node.dataset.publicProjectGlass;
       if(projects&&projectDismissElapsed>=0&&
@@ -768,14 +786,28 @@ async function initialize(){
         }
       }
       cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1?1:0;
-      roles.push(projects?node.dataset.publicProjectGlass:
+      roles.push(homeCtas?"home-cta-"+i:
+        projects?node.dataset.publicProjectGlass:
         node.hasAttribute("data-auth-glass-card")?"card":
         node.classList.contains("auth3-back-link")?"back":
         node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
     authHover.retargetRects(tileData,tileCount,cornerInert,
-      projects?"independent":"nested");
+      projects||homeCtas?"independent":"nested");
+    if(homeCtas){
+      audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
+        materialTag:-9,face:"first-home-square",count:panes.length,roles,
+        liveGeometry:true,capsules:panes.map((node,i)=>{
+          const p=(tileCount+i)*TILE_FLOATS;
+          return {width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
+            radius:tileData[p+4]/dpr,opacity:tileData[p+18],
+            tint:Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"))||0};
+        })};
+      audit.authGlass=null;audit.projectGlass=null;
+      return homeGroupOpacity>.001&&homeGroupOpacity<.999;
+    }
+    audit.homeCtaGlass=null;
     if(projects){
       const searchIndex=panes.findIndex(node=>
         node.dataset.publicProjectGlass==="search-field");
@@ -1074,6 +1106,10 @@ async function initialize(){
     if(tileCount){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
       pass.draw(6,tileCount);
+      // The three scaled capsules are separate instances of the same
+      // shader on the HOMEPAGE canvas, under their real DOM text.
+      if(audit.homeCtaGlass?.count)
+        pass.draw(6,audit.homeCtaGlass.count,0,tileCount);
     }
     pass.end();
     // Draw only the route panes above the persistent homepage DOM. This is
@@ -1093,6 +1129,12 @@ async function initialize(){
     audit.focusedTile=interaction.focusedTile;
     audit.pressed=interaction.isPressed;
     audit.tint=tint.state;
+    if(audit.homeCtaGlass){
+      const active=authHover.activeControl;
+      audit.homeCtaGlass.activePane=active;
+      audit.homeCtaGlass.hover=active>=0?authHover.snapshot(active).hover:0;
+      audit.homeCtaGlass.press=active>=0?authHover.snapshot(active).press:0;
+    }
     if(audit.projectGlass){
       audit.projectGlass.hovered=authHover.activeControl>=0;
       audit.projectGlass.activePane=authHover.activeControl;
@@ -1205,12 +1247,14 @@ async function initialize(){
   });
   // Browser-only interaction model. No DOM screenshot, no scene/mip rebuild,
   // no global mutable native material. Each tile keeps independent spring state.
+  const panePointerOrigin=()=>authPaneElements()[0]?.hasAttribute("data-home-cta-glass")?
+    sceneTop:authOriginTop();
   const movePointer=event=>{
     if(activePointerId!==null&&event.pointerId!==activePointerId)return;
     if(event.pointerType==="touch"&&activePointerId===null)return;
     pointer.x=event.clientX;pointer.y=event.clientY;pointer.enabled=1;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-    authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
+    authHover.move(event.clientX*dpr,(event.clientY-panePointerOrigin())*dpr);
     requestRender();
   };
   const downPointer=event=>{
@@ -1218,7 +1262,7 @@ async function initialize(){
        (activePointerId!==null&&activePointerId!==event.pointerId))return;
     activePointerId=event.pointerId;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-    authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
+    authHover.move(event.clientX*dpr,(event.clientY-panePointerOrigin())*dpr);
     interaction.setPressed(true);authHover.setPressed(true);
     requestRender();
   };
@@ -1229,7 +1273,7 @@ async function initialize(){
       pointer.enabled=0;interaction.clear();authHover.clear();
     }else{
       interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
-      authHover.move(event.clientX*dpr,(event.clientY-authOriginTop())*dpr);
+      authHover.move(event.clientX*dpr,(event.clientY-panePointerOrigin())*dpr);
     }
     requestRender();
   };

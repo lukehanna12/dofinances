@@ -438,7 +438,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Explicitly provisional; not derived from Apple event-dependent light.
   // Only the hovered/pressed square changes, and lighting follows local
   // pointer coordinates instead of leaking to neighboring tiles.
-  let pointerLight=proximity*(hover*0.075+pressed*0.06)+
+  // The deep-green capsule retains shared radial/rim lighting, with
+  // a stronger press input to remain visible through its dark tint.
+  let pressEnergy=select(0.06,0.32,tile.properties.y == -9.0);
+  let pointerLight=proximity*(hover*0.075+pressed*pressEnergy)+
     rim*proximity*pressed*0.035;
   // Native compositing owns the photographic pixels in this scrolling
   // route. Only the old shader's optical SDF rim and independent hover
@@ -498,6 +501,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     if(tile.properties.y == -4.0){filmStrength=0.82;}
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
+    else if(tile.properties.y == -9.0){filmStrength=0.88;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
   // Only route panes with the explicit motion.w dismissal lane enter the
