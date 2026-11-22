@@ -731,16 +731,22 @@ try{
     await until("innerWidth==="+width+"&&innerHeight==="+height,60,25);
     await sleep(90);
     const actual=await evaluate("(()=>{"+
-      "const logo=document.querySelector('#dashboard-title');"+
-      "const r=logo.getBoundingClientRect();"+
+      "const logo=document.querySelector('#dashboard-title'),p=logo.closest('.cta6-center');"+
+      "const r=logo.getBoundingClientRect(),q=p.getBoundingClientRect();"+
+      "const scene=document.querySelector('.dashboard-home').getBoundingClientRect();"+
+      "const css=getComputedStyle(logo),body=getComputedStyle(document.body);"+
       "return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,"+
+      "parentCenter:(q.top+q.bottom)/2,sceneTop:scene.top,sceneHeight:scene.height,"+
+      "sceneVar:body.getPropertyValue('--dashboard-scene-height'),"+
+      "sceneTopVar:body.getPropertyValue('--dashboard-scene-top'),"+
+      "logoTransform:css.transform,logoTranslate:css.translate,"+
       "hidden:document.body.hasAttribute('data-projects-logo-hidden'),"+
       "exitY:logo.style.getPropertyValue('--doof-exit-y')};})()");
     assert.ok(Math.abs(actual.x-width/2)<1,
       label+": width resize must keep doof horizontally centered");
     assert.ok(Math.abs(actual.y-projectLogoBaseline.y)<1,
       label+": doof must not react to viewport height or width changes ("+
-      actual.y+" vs "+projectLogoBaseline.y+")");
+      actual.y+" vs "+projectLogoBaseline.y+"; "+JSON.stringify(actual)+")");
     assert.equal(actual.exitY,projectLogoBaseline.exitY,
       label+": Projects resize must never rewrite --doof-exit-y");
     assert.equal(actual.hidden,expectedHidden,
