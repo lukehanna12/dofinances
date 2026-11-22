@@ -149,6 +149,7 @@ Object.defineProperty(window,"__dashboardWebGPU",{
 const start=performance.now();
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
+let pointerPressFramePending=false;
 const interaction=createInteractionController();
 // Auth-only nested hover; all homepage square lanes remain owned by interaction.
 const authHover=createAuthGlassHoverController(AUTH_PANE_CAPACITY);
@@ -200,7 +201,8 @@ function requestRender(){
   if(!homeActive()||!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
-    if(trackRunning&&performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL&&
+    if(trackRunning&&!pointerPressFramePending&&
+       performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL&&
        performance.now()>=authScrollRefreshUntil){
       // Maintain the original 30fps square track clock, while allowing the
       // exiting sign-in glass to follow Motion between those heavy full-scene
@@ -211,6 +213,10 @@ function requestRender(){
       }
       requestRender();return;
     }
+    // A CTA pointer-down/up deserves the next available RAF even when
+    // the moving-square scene is throttled to 30fps. This prioritizes
+    // only discrete press edges, not every mousemove or full animation.
+    pointerPressFramePending=false;
     lastMotionSubmission=performance.now();
     let animating=false;
     try{
@@ -1365,12 +1371,19 @@ async function initialize(){
     activePointerId=event.pointerId;
     interaction.move(event.clientX*dpr,(event.clientY-sceneTop)*dpr);
     authHover.move(event.clientX*dpr,(event.clientY-panePointerOrigin())*dpr);
-    interaction.setPressed(true);authHover.setPressed(true);
+    const homePress=authPaneElements()[0]?.hasAttribute("data-home-cta-glass")===true
+      &&authHover.activeControl>=0;
+    interaction.setPressed(true);
+    authHover.setPressed(true,{tapImpulse:homePress});
+    if(homePress)pointerPressFramePending=true;
     requestRender();
   };
   const upPointer=event=>{
     if(activePointerId!==event.pointerId)return;
+    const homeRelease=authPaneElements()[0]?.hasAttribute("data-home-cta-glass")===true
+      &&authHover.activeControl>=0;
     activePointerId=null;interaction.setPressed(false);authHover.setPressed(false);
+    if(homeRelease)pointerPressFramePending=true;
     if(event.pointerType==="touch"){
       pointer.enabled=0;interaction.clear();authHover.clear();
     }else{

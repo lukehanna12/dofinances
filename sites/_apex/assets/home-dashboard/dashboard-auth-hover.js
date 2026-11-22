@@ -97,7 +97,22 @@ export function createAuthGlassHoverController(capacity){
       slot.vy=clamp(slot.vy+(y-oldY)/Math.max(1,slot.rect[3])*3,-1,1);
     });
   }
-  function setPressed(value){pressed=Boolean(value)&&(independent?controlIndex>=0:slots[0].active);}
+  function setPressed(value,{tapImpulse=false}={}){
+    const next=Boolean(value)&&(independent?controlIndex>=0:slots[0].active);
+    // The Home mosaic deliberately renders at 30fps. Very quick mouse
+    // down/up pairs can both arrive between full-scene frames: a normal
+    // pressTarget=1 may never be sampled. On a Home CTA only, preserve a
+    // small local spring VELOCITY impulse at pointerdown, so the very next
+    // GPU frame still shows a brief press even after release. The hover
+    // spring, tint and pointer position are not reset or replaced.
+    // Projects and nested Sign in have exactly their previous dynamics.
+    if(next&&!pressed&&tapImpulse){
+      const index=independent?controlIndex:0;
+      const slot=slots[index];
+      if(slot?.active)slot.pressVelocity=Math.max(slot.pressVelocity,21);
+    }
+    pressed=next;
+  }
   function clear(){
     hasPointer=false;px=-1;py=-1;pressed=false;
     updateTargets();

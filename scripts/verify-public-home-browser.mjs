@@ -288,13 +288,29 @@ try{
  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:aboutCta.x,y:aboutCta.y});
  await sleep(210);
  await send("Input.dispatchMouseEvent",{type:"mousePressed",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
- await sleep(100);
- if(await evaluate('document.body.dataset.gpuScene==="ready"')){
-   const press=await evaluate("(()=>{const a=window.__dashboardWebGPU.homeCtaGlass;return {pane:a?.activePane,press:a?.press}})()");
-   assert.equal(press.pane,0,"About alone owns its press spring");
-   assert.ok(press.press>.15,"Shared shader press light must rise during click");
+ await sleep(135);
+ const heldClick=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-home-cta-glass]'),c=getComputedStyle(e),a=window.__dashboardWebGPU?.homeCtaGlass;return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(c.getPropertyValue('--home-cta-tint')),pane:a?.activePane,hover:a?.hover,press:a?.press,ready:document.body.dataset.gpuScene==='ready'};})()");
+ assert.ok(Math.abs(heldClick.scale-1.00783)<.017,
+   "Press contracts 3% relative to the already-enlarged hovered capsule");
+ assert.ok(heldClick.tint>.98,"The green hover tint persists through the click");
+ if(heldClick.ready){
+   assert.equal(heldClick.pane,0,"About alone owns its press spring");
+   assert.ok(heldClick.hover>.85,"Click must not reset the hover glass");
+   assert.ok(heldClick.press>.15,"Shared shader press light must rise during click");
  }
  await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
+ await sleep(345);
+ const beforeTap=await evaluate("window.__dashboardWebGPU?.homeCtaGlass?.press||0");
+ await send("Input.dispatchMouseEvent",{type:"mousePressed",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
+ await send("Input.dispatchMouseEvent",{type:"mouseReleased",x:aboutCta.x,y:aboutCta.y,button:"left",clickCount:1});
+ await sleep(65);
+ if(await evaluate('document.body.dataset.gpuScene==="ready"')){
+   const tap=await evaluate("(()=>{const a=window.__dashboardWebGPU.homeCtaGlass;return {hover:a?.hover,press:a?.press,pane:a?.activePane}})()");
+   assert.equal(tap.pane,0);
+   assert.ok(tap.hover>.85,"A quick click cannot interrupt persistent hover");
+   assert.ok(tap.press>Math.max(.08,beforeTap+.06),
+     "Even down/up between GPU frames must leave a visible press pulse");
+ }
  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:500,y:160});
  await sleep(255);
  const restedCta=await evaluate("(()=>{const e=document.querySelector('.cta6-bottom-action [data-public-target=\"/projects\"]'),s=getComputedStyle(e);return {scale:e.getBoundingClientRect().width/e.offsetWidth,tint:Number(s.getPropertyValue('--home-cta-tint')),background:s.backgroundColor};})()");

@@ -97,6 +97,39 @@ test("late-mounted card initializes at its own center, not an offscreen dummy",(
   assert.equal(s.snapshot(1).y,22.5);
 });
 
+test("quick Home-style click preserves hover and produces a one-frame press impulse",()=>{
+  const cap=3,base=1,ctl=createAuthGlassHoverController(cap);
+  const data=new Float32Array((base+cap)*TILE_FLOATS);
+  for(let i=0;i<cap;i++){
+    const p=(base+i)*TILE_FLOATS;
+    data[p]=i*160;data[p+1]=10;data[p+2]=150;data[p+3]=58.5;
+    data[p+8]=data[p+9]=data[p+10]=data[p+11]=-29.25;
+  }
+  const mask=new Uint8Array(base+cap);
+  ctl.retargetRects(data,base,mask,"independent");
+  ctl.move(75,39);
+  for(let i=0;i<35;i++)ctl.advance(1/60);
+  const before=ctl.snapshot(0);
+  assert.ok(before.hover>.99);
+  assert.equal(before.press,0);
+  ctl.setPressed(true,{tapImpulse:true});
+  ctl.setPressed(false); // Release before even one GPU frame has advanced.
+  ctl.advance(1/60);
+  const after=ctl.snapshot(0);
+  assert.ok(after.hover>.99,"Hover stays active during and after click");
+  assert.ok(after.press>.13,"Tap must be visible even between two 30fps frames");
+  assert.ok(after.pressVelocity>0,"Impulse rises before its release tail");
+  for(let i=0;i<50;i++)ctl.advance(1/60);
+  assert.ok(ctl.snapshot(0).press<.003,"Impulse decays completely");
+  assert.ok(ctl.snapshot(0).hover>.99,"Hovered glass remains hovered");
+  ctl.move(235,39);
+  ctl.setPressed(true); // Projects/default behavior: no seeded press.
+  ctl.setPressed(false);
+  ctl.advance(1/60);
+  assert.equal(ctl.snapshot(1).press,0,
+    "Normal public-route panes retain the original press behavior");
+});
+
 test("auth-only hover respects masked/unmounted elements and pointer cancellation",()=>{
   const {s,data,mask}=make();
   mask[BASE+1]=1;

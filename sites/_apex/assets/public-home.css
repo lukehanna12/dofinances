@@ -299,9 +299,18 @@ body.public-home .dashboard-home .cta6-action:focus-visible{
   transform:scale(1.039); /* Prior 3% growth, increased 30%. */
 }
 body.public-home .dashboard-home .cta6-action:active{
+  /* Preserve the original touch/non-hover fallback press. */
   transform:scale(.97);
   background:rgba(17,63,36,.55);
   box-shadow:0 0 14px rgba(154,255,175,.25),inset 0 0 10px rgba(185,255,206,.18);
+}
+/* An actual mouse click begins from a hovering 1.039x capsule.
+ * Compress it by 3% of THAT hovered size, not 3% of the initial 1x
+ * button. The old hover->.97 jump collapsed the capsule by 6.6%
+ * and made its GPU refractive contour visibly snap at pointer-down.
+ * Keep --home-cta-tint:1 throughout press: click adds lighting to hover. */
+body.public-home .dashboard-home .cta6-action:is(:hover,:focus-visible):active{
+  transform:scale(1.00783); /* 1.039 * .97 */
 }
 /* Non-WebGPU fallback: translucent filter rather than a solid green fill.
  * This layer NEVER runs on top of the true GPU optical material. */

@@ -29,6 +29,8 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?\.cta6-bottom-action button\.cta6-action\[data-public-target="\/projects"\]\{\s*min-width:129px;\s*width:129px;/);
   assert.match(style,/\.cta6-bottom-action\{[\s\S]*?flex-wrap:nowrap;/);
   assert.match(style,/\.cta6-action:hover,[\s\S]*?transform:scale\(1\.039\)/);
+  assert.match(style,/\.cta6-action:is\(:hover,:focus-visible\):active\{\s*transform:scale\(1\.00783\)/);
+  assert.match(style,/transform:scale\(1\.00783\); \/\* 1\.039 \* \.97 \*\//);
   assert.match(style,/\.cta6-action:active\{[\s\S]*?transform:scale\(\.97\)/);
 });
 test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
@@ -50,6 +52,10 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
   assert.match(renderer,/tintModel:"shared-square-film",tintFilmStrength:0\.25,/);
   assert.match(renderer,/pressLightGain:GLASS_INTERACTION\.pressLight,/);
+  assert.match(renderer,/let pointerPressFramePending=false;/);
+  assert.match(renderer,/trackRunning&&!pointerPressFramePending&&/);
+  assert.match(renderer,/authHover\.setPressed\(true,\{tapImpulse:homePress\}\)/);
+  assert.match(renderer,/if\(homeRelease\)pointerPressFramePending=true;/);
   assert.match(renderer,/backdrop:"GPU-composited-moving-squares"/);
   assert.match(renderer,/compositeGlassPipeline=device\.createRenderPipeline\(/);
   assert.match(renderer,/underlay\.draw\(6,tileCount\)/);
