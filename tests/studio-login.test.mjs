@@ -258,10 +258,10 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
   assert.match(shader,/let darkFace=state\.tintMeta\.y>0\.5;/,
     "Card and squares use one material face, not independent UI-mode tones");
   assert.doesNotMatch(shader,/let darkFace=select\(/);
-  assert.match(renderer,/if\(tileCount\)tileData\[p\+6\]=tileData\[6\];/,
-    "Every sign-in pane reuses the original square material's blur/LOD word");
-  assert.match(shader,/let d=select\(min\(dimensions\.x,dimensions\.y\),\s*min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\),authPane\);/,
-    "The same square-size optical envelope drives all panes and hover radii");
+  assert.doesNotMatch(renderer,/tileData\[p\+6\]=tileData\[6\]/,
+    "Public sign-in card/controls use their own geometry-derived blur input");
+  assert.match(shader,/let d=min\(dimensions\.x,dimensions\.y\);/,
+    "Public sign-in must no longer inherit the first square's optical size");
   assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
   assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);

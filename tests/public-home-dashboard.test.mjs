@@ -71,10 +71,13 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   // One instanced geometry shader and one shared SDF/LOD stage for all
   // tile shapes; only the actual DOM corner radii select the silhouette.
   assert.match(shader,/else if\(tile\.properties\.w==4\.0\)\{\s*field=mode4SDF\(/);
-  assert.match(shader,/let d=select\(min\(dimensions\.x,dimensions\.y\),\s*min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\),authPane\)/);
-  assert.match(renderer,/if\(tileCount\)tileData\[p\+6\]=tileData\[6\]/);
-  assert.match(renderer,/const radii=normalizeGlassCornerRadii\(/);
-  assert.match(renderer,/const nativeMode=selectModeForNormalizedCorners\(radii\)/);
+  assert.match(shader,/let d=min\(dimensions\.x,dimensions\.y\)/);
+  assert.doesNotMatch(shader,/min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\)/);
+  assert.doesNotMatch(renderer,/tileData\[p\+6\]=tileData\[6\]/);
+  assert.match(renderer,/const corners=normalizeGlassCornerRadii\(/);
+  assert.match(renderer,/const surface=resolveGlassSurface\(/);
+  assert.match(renderer,/surface\.renderMode/);
+  assert.match(shader,/field=cssCapsuleSDF\(in\.local,dimensions\)/);
   assert.match(style,/background:rgba\(5,46,23,\.45\)/);
   assert.match(style,/body\.public-home:not\(\[data-gpu-scene="ready"\]\)[^{}]*\.cta6-action:is\(:hover,:focus-visible\)\{[^}]*backdrop-filter:blur\(12px\)/);
   // Transmissive green means the scene's highlights and texture survive

@@ -262,6 +262,12 @@ try{
    assert.equal(hoveredCta.glass.pressLightGain,0.06,
      "Capsule press lighting must use the square's interaction strength");
    assert.equal(hoveredCta.glass.backdrop,"GPU-composited-moving-squares");
+   assert.equal(hoveredCta.glass.geometry,"oracle-finite-per-surface-min-dimension");
+   assert.deepEqual(hoveredCta.glass.layers.map(x=>x.layer),[0,1]);
+   assert.ok(hoveredCta.glass.capsules.every(x=>x.renderMode===6),
+     "Three capsules must use true CSS round-ended SDF geometry");
+   assert.ok(hoveredCta.glass.capsules.every(x=>x.content==="text"),
+     "Button text should remain live content over the glass");
    assert.ok(hoveredCta.glass.compositeFrames>0,
      "The live GPU square animation must be composed before glass capsule sampling");
    near(hoveredCta.glass.capsules[1].width,150*1.039,

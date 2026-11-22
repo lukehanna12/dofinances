@@ -229,7 +229,7 @@ fn mode5SDF(local:vec2<f32>,size:vec2<f32>,radii:vec4<f32>)->vec3<f32>{
  * normal and signed distance; native mode4/mode5 remain untouched. */
 fn cssCapsuleSDF(local:vec2<f32>,size:vec2<f32>)->vec3<f32>{
   let radius=0.5*min(size.x,size.y);
-  let segment=max(vec2<f32>(0.0),0.5*(size-2.0*radius));
+  let segment=max(vec2<f32>(0.0),0.5*(size-vec2<f32>(2.0*radius)));
   let delta=local-0.5*size;
   let offset=delta-clamp(delta,-segment,segment);
   let magnitude=length(offset);
