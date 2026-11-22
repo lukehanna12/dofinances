@@ -686,7 +686,7 @@ try{
   await sleep(1050);
   await evaluate("document.querySelector('.cta6-bottom-action [data-public-target]').click()");
   await until("location.pathname==='/projects'&&"+
-    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
+    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===16",190);
   // The glass back arrow enters at 0ms, then the glyph-shaped title and
   // all three right-hand glass chips together at 165ms, before any card
   // enters at 330ms. Check each pane's OWN animation, not a parent fade
@@ -731,8 +731,29 @@ try{
     "transparent: getComputedStyle(first).backgroundColor};})()");
   assert.equal(projectState.state,"projects");
   assert.equal(projectState.route,"/projects");
-  assert.equal(projectState.count,14);
-  assert.equal(projectState.icons,14);
+  assert.equal(projectState.count,16);
+  assert.equal(projectState.icons,16);
+  const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
+    "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
+    "const icon=card?.querySelector('.project-showcase-lucide');"+
+    "return {slug,name:card?.querySelector('.project-showcase-title')?.textContent,"+
+    "badge:card?.querySelector('.project-showcase-badge')?.textContent,"+
+    "coming:card?.classList.contains('is-coming-soon'),"+
+    "src:icon?.getAttribute('src')};}))()");
+  assert.deepEqual(newCards,[
+    {slug:"hidden-functions",name:"Hidden Functions",badge:"Coming Soon",
+      coming:true,src:"/assets/project-icons/hidden-functions.svg"},
+    {slug:"latexcel",name:"LaTeXceL",badge:"Coming Soon",
+      coming:true,src:"/assets/project-icons/latexcel.svg"}
+  ],"The two additional Coming Soon cards must use the original SVG paths");
+  const newIconAssets=await evaluate("(async()=>Promise.all("+
+    "['hidden-functions','latexcel'].map(async slug=>{"+
+    "const response=await fetch('/assets/project-icons/'+slug+'.svg');"+
+    "return {slug,ok:response.ok,contentType:response.headers.get('content-type'),"+
+    "body:(await response.text()).includes('stroke-width=\"2\"')};})))()");
+  assert.ok(newIconAssets.every(asset=>asset.ok&&
+    asset.contentType?.startsWith("image/svg+xml")&&asset.body),
+    "Both new icons must be served as real SVG image assets");
   assert.equal(projectState.back,true);
   assert.equal(projectState.glass,true);
   assert.equal(projectState.allButtons,true);
@@ -850,7 +871,7 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
-    await until("window.__dashboardWebGPU?.projectGlass?.count===22",70);
+    await until("window.__dashboardWebGPU?.projectGlass?.count===24",70);
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
@@ -1002,7 +1023,7 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').classList.contains('is-selected')"),true);
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').click()");
-  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),14);
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
   await evaluate("document.querySelector('.public-projects-filter-button').click()");
   await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
   // Cancel reverses the expansion and restores the original search chip.
@@ -1012,7 +1033,7 @@ try{
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).opacity"))<.01,
     "The reversed search capsule must be visually fully collapsed");
   assert.equal(await evaluate("document.querySelector('.public-projects-search-input').disabled"),true);
-  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),14);
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     const controlAudit=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(controlAudit.materialReference,"first-home-square");
@@ -1065,7 +1086,7 @@ try{
   // wallpaper, logo, upper GPU canvas or global navigation).
   await send("Page.navigate",{url:origin+"/projects"});
   await until("location.pathname==='/projects'&&"+
-    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
+    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===16",190);
   assert.equal(await evaluate("document.body.dataset.directLogin"),"true");
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);

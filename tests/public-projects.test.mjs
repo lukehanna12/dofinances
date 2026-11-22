@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {
   PROJECT_SHOWCASE as PRIVATE_PROJECTS,PROJECT_CARD_ICONS as PRIVATE_ICONS,
-  PROJECT_CARD_IMAGES as PRIVATE_IMAGES,sortProjectShowcase as sortPrivate
+  PROJECT_CARD_IMAGES as PRIVATE_IMAGES,sortProjectShowcase as sortPrivate,
+  projectShowcaseStatus as privateStatus
 } from "../sites/_apex/app/assets/project-showcase.js";
 import {
   PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
-  PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,sortProjectShowcase
+  PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,sortProjectShowcase,
+  projectShowcaseStatus as publicStatus
 } from "../sites/_apex/assets/public-projects-catalog.js";
 import {
   PROJECT_FILTER_CATEGORIES,PROJECT_CATEGORY_BY_KIND,projectMatchesFilters
@@ -24,19 +26,49 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.deepEqual(PUBLIC_ICONS,PRIVATE_ICONS);
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
   assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS),sortPrivate(PRIVATE_PROJECTS));
-  assert.equal(PUBLIC_PROJECTS.length,14);
+  assert.equal(PUBLIC_PROJECTS.length,16);
   const fallback=publicProjectImage({slug:"terminal-scalars"},6);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
+});
+test("new Coming Soon cards and their exact supplied SVGs appear in both Projects views",async()=>{
+  const incoming=[
+    ["hidden-functions","Hidden Functions","M 14 2 A2.4 2.4 0 0 1 15.704 2.706"],
+    ["latexcel","LaTeXceL","M14 17h2l2 5 2-10h2.5"]
+  ];
+  const sorted=sortProjectShowcase(PUBLIC_PROJECTS);
+  assert.deepEqual(sorted.slice(-2).map(project=>project.slug),
+    incoming.map(row=>row[0]),"The new Coming Soon cards end the curated catalog");
+  for(const [slug,name,specialPath] of incoming){
+    const match=PUBLIC_PROJECTS.find(project=>project.slug===slug);
+    assert.ok(match,"Missing project "+slug);
+    assert.equal(match.name,name);
+    assert.equal(match.kind,"Project");
+    assert.equal(match.status,"coming-soon");
+    assert.equal(match.repository,null);
+    assert.equal(publicStatus(match),"Coming Soon");
+    assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug===slug)),"Coming Soon");
+    assert.equal(PUBLIC_ICONS[slug],slug);
+    assert.equal(PRIVATE_ICONS[slug],slug);
+    const [pub,priv]=await Promise.all([
+      load("../sites/_apex/assets/project-icons/"+slug+".svg"),
+      load("../sites/_apex/app/assets/project-icons/"+slug+".svg")
+    ]);
+    assert.equal(pub,priv,"Both routes must use the identical authored icon");
+    assert.match(pub,/<svg\s+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+    assert.match(pub,/viewBox="0 0 24 24"/);
+    assert.match(pub,/stroke-width="2"/);
+    assert.ok(pub.includes(specialPath),"Original supplied SVG geometry changed");
+  }
 });
 test("Projects search and the five multiselect filters use only public curated kinds",()=>{
   assert.deepEqual(PROJECT_FILTER_CATEGORIES,
     ["Applications","Extensions","Plugins","Add-ons","CLIs"]);
-  assert.equal(PUBLIC_PROJECTS.length,14);
+  assert.equal(PUBLIC_PROJECTS.length,16);
   const types=new Set(PROJECT_FILTER_CATEGORIES);
   for(const p of PUBLIC_PROJECTS)
     assert.ok(types.has(PROJECT_CATEGORY_BY_KIND[p.kind]),"Unclassified "+p.slug);
   const all=PUBLIC_PROJECTS.filter(project=>projectMatchesFilters(project));
-  assert.equal(all.length,14);
+  assert.equal(all.length,16);
   const extensions=PUBLIC_PROJECTS.filter(project=>
     projectMatchesFilters(project,"",new Set(["Extensions"])));
   assert.deepEqual(extensions.map(project=>project.name).sort(),["ChatStore","ReadMe GLP"]);
@@ -106,11 +138,11 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(homeCss,/body\.public-home\[data-direct-login="true"\]:has\(\.public-projects-root\)/);
   assert.match(entry,/root\.style\.setProperty\("--project-heading-enter-delay",PROJECT_ENTER_HEADING_DELAY_MS\+"ms"\)/);
   assert.match(entry,/root\.style\.setProperty\("--project-first-card-enter-delay",PROJECT_ENTER_FIRST_CARD_DELAY_MS\+"ms"\)/);
-  assert.match(entry,/PROJECT_ENTER_FIRST_CARD_DELAY_MS\+\s*PROJECT_ENTER_DURATION_MS\+12\*PROJECT_ENTER_STAGGER_MS\+PROJECT_ENTER_TAIL_MS/);
+  assert.match(entry,/PROJECT_ENTER_FIRST_CARD_DELAY_MS\+\s*PROJECT_ENTER_DURATION_MS\+15\*PROJECT_ENTER_STAGGER_MS\+PROJECT_ENTER_TAIL_MS/);
   assert.match(entry,/const PROJECT_EXIT_DURATION_MS=420;/);
   assert.match(entry,/const PROJECT_EXIT_STAGGER_MS=45;/);
   assert.match(entry,/const PROJECT_EXIT_TAIL_MS=60;/);
-  assert.match(entry,/const PROJECT_HEADER_DISMISS_DELAY_MS=12\*PROJECT_EXIT_STAGGER_MS;/);
+  assert.match(entry,/const PROJECT_HEADER_DISMISS_DELAY_MS=15\*PROJECT_EXIT_STAGGER_MS;/);
   assert.match(entry,/import \{DISMISS_MS\} from "\.\/home-dashboard\/dashboard-public-dismiss\.js";/);
   assert.match(entry,/root\.dataset\.projectHeaderDismissAt=String\(performance\.now\(\)\)/);
   assert.match(entry,/root\.classList\.add\("is-dissolving-header"\)/);
@@ -168,7 +200,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/body\.public-home\[data-auth-gpu-scene="ready"\]/);
   assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
   assert.match(css,/\.public-projects-title,\s*\.public-projects-search-button,\s*\.public-projects-filter-button,\s*\.public-projects-github-button\{\s*animation:project-showcase-enter \.5s both;\s*animation-delay:var\(--project-heading-enter-delay,165ms\)/);
-  assert.match(css,/animation-delay:calc\(var\(--project-first-card-enter-delay,330ms\) \+ min\(var\(--project-index,0\),12\)\*65ms\)/);
+  assert.match(css,/animation-delay:calc\(var\(--project-first-card-enter-delay,330ms\) \+ min\(var\(--project-index,0\),15\)\*65ms\)/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
   assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
   assert.match(css,/font-size:clamp\(34\.5px,3vw,46\.5px\)/);

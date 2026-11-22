@@ -254,6 +254,12 @@ jobs:
           test -s sites/_apex/assets/public-login-manifest.json
           test -s sites/_apex/assets/public-projects-entry.js
           test -s sites/_apex/assets/public-projects-catalog.js
+          test -s sites/_apex/assets/project-icons/hidden-functions.svg
+          test -s sites/_apex/assets/project-icons/latexcel.svg
+          test -s sites/_apex/app/assets/project-icons/hidden-functions.svg
+          test -s sites/_apex/app/assets/project-icons/latexcel.svg
+          cmp sites/_apex/assets/project-icons/hidden-functions.svg sites/_apex/app/assets/project-icons/hidden-functions.svg
+          cmp sites/_apex/assets/project-icons/latexcel.svg sites/_apex/app/assets/project-icons/latexcel.svg
           test -s sites/_apex/assets/public-projects-controls.js
           test -s sites/_apex/assets/home-dashboard/dashboard-glass-geometry.js
           test -s sites/_apex/assets/public-projects.css
@@ -320,6 +326,8 @@ jobs:
             /assets/home-dashboard/dashboard-glass-geometry.js \
             /assets/public-projects.css \
             /assets/project-icons/colosseum-lucide.svg \
+            /assets/project-icons/hidden-functions.svg \
+            /assets/project-icons/latexcel.svg \
             /assets/home-dashboard/dashboard-gpu-renderer.js \
             /assets/home-dashboard/dashboard-mosaic.js \
             /assets/home-dashboard/dashboard-gpu-glass.wgsl \

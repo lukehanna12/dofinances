@@ -15,7 +15,9 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
  {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
- {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null}
+ {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null},
+ {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},
+ {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"coming-soon"}
 ]);
 const PHOTO_ROUTES=Object.freeze([
  "projects","colosseum/readme","colosseum/utilities","colosseum/collections",
@@ -25,6 +27,7 @@ const PHOTO_ROUTES=Object.freeze([
 // does not silently promote an explicitly In Progress project to Active.
 export function projectShowcaseStatus(project){
  if(project.status==="in-progress")return "In Progress";
+ if(project.status==="coming-soon")return "Coming Soon";
  return project.repository||project.docs===true?"Active":"Coming Soon";
 }
 const STATUS_ORDER=Object.freeze({"Active":0,"In Progress":1,"Coming Soon":2});
@@ -47,7 +50,9 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "apple-adobe-fx":"blend",
   "protocol-monitor-pruner":"funnel-code",
   "app-caviar":"opacity",
-  "ozoning-board":"treehouse-ozoning.v3"
+  "ozoning-board":"treehouse-ozoning.v3",
+  "hidden-functions":"hidden-functions",
+  "latexcel":"latexcel"
 });
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",

@@ -23,9 +23,9 @@ const PROJECT_LOGO_SEARCH_GAP_PX=5;
 const PROJECT_EXIT_DURATION_MS=420;
 const PROJECT_EXIT_STAGGER_MS=45;
 const PROJECT_EXIT_TAIL_MS=60;
-// The homepage's single 440ms tile dissipation starts when the first card
-// in the reverse stagger exits (540ms). It finishes before route unmount.
-const PROJECT_HEADER_DISMISS_DELAY_MS=12*PROJECT_EXIT_STAGGER_MS;
+// The homepage's single 440ms tile dissipation begins after the reversed
+// 16-card stagger reaches the first card; preserve its exact optical effect.
+const PROJECT_HEADER_DISMISS_DELAY_MS=15*PROJECT_EXIT_STAGGER_MS;
 const el=(tag,className,text)=>{
   const node=document.createElement(tag);
   if(className)node.className=className;
@@ -48,7 +48,7 @@ function makeCard(project,index){
   card.dataset.projectSlug=project.slug;
   card.setAttribute("aria-label",project.name+" · "+status+" · Preview only");
   card.style.setProperty("--project-index",String(index));
-  card.style.setProperty("--project-reverse-index",String(Math.min(PROJECT_SHOWCASE.length-1-index,12)));
+  card.style.setProperty("--project-reverse-index",String(Math.min(PROJECT_SHOWCASE.length-1-index,15)));
   // No location changes, hrefs, or private /api/projects calls.
   const photo=el("img","project-showcase-photo");
   photo.alt="";photo.loading="lazy";photo.decoding="async";
@@ -145,7 +145,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   const introTimer=setTimeout(()=>{
     introFinished=true;settle();
   },reduced.matches?0:PROJECT_ENTER_FIRST_CARD_DELAY_MS+
-    PROJECT_ENTER_DURATION_MS+12*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
+    PROJECT_ENTER_DURATION_MS+15*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
   const routeScroll=root.closest("#public-route-content");
   const logo=document.getElementById("dashboard-title");
@@ -196,7 +196,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
       // the route-owned reverse completes.
       timer=setTimeout(()=>{timer=null;if(!closed)onExitComplete();},
         reduced.matches?0:Math.max(
-          PROJECT_EXIT_DURATION_MS+Math.min(projects.length-1,12)*PROJECT_EXIT_STAGGER_MS,
+          PROJECT_EXIT_DURATION_MS+Math.min(projects.length-1,15)*PROJECT_EXIT_STAGGER_MS,
           PROJECT_HEADER_DISMISS_DELAY_MS+DISMISS_MS
         )+PROJECT_EXIT_TAIL_MS);
     },

@@ -65,7 +65,7 @@ body.public-home:has(#public-route-content .public-projects-root){
   background:#242424;color:#f5f5f5;text-align:left;
   font:inherit;cursor:pointer;appearance:none;
   animation:project-showcase-enter .5s both;
-  animation-delay:calc(var(--project-first-card-enter-delay,330ms) + min(var(--project-index,0),12)*65ms);
+  animation-delay:calc(var(--project-first-card-enter-delay,330ms) + min(var(--project-index,0),15)*65ms);
 }
 .public-projects-root .project-showcase-card:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
