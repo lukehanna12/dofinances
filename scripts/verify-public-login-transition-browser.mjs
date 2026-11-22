@@ -687,7 +687,28 @@ try{
   await evaluate("document.querySelector('.cta6-bottom-action [data-public-target]').click()");
   await until("location.pathname==='/projects'&&"+
     "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
-  await sleep(1440);
+  // The glass back arrow enters at 0ms, then the glyph-shaped title and
+  // all three right-hand glass chips together at 165ms, before any card
+  // enters at 330ms. Check each pane's OWN animation, not a parent fade
+  // (the shared WebGPU renderer reads each individual pane's opacity).
+  const entranceOrder=await evaluate("(()=>{"+
+    "const selectors=['.public-projects-back','.public-projects-title',"+
+      "'.public-projects-search-button','.public-projects-filter-button',"+
+      "'.public-projects-github-button','.project-showcase-card',"+
+      "'.project-showcase-card:nth-child(2)'];"+
+    "const value=sel=>{const el=document.querySelector(sel),css=getComputedStyle(el);"+
+      "const raw=css.animationDelay;"+
+      "return {name:css.animationName,delayMs:parseFloat(raw)*(raw.endsWith('ms')?1:1000),"+
+        "durationMs:parseFloat(css.animationDuration)*1000}};"+
+    "return selectors.map(value);})()");
+  assert.deepEqual(entranceOrder.map(x=>x.name),
+    Array(7).fill("project-showcase-enter"),
+    "Every stage uses the original project entrance, not a new glass effect");
+  assert.deepEqual(entranceOrder.map(x=>Math.round(x.delayMs)),
+    [0,165,165,165,165,330,395],
+    "Back → title and three glass controls together → first card → remaining cards");
+  assert.ok(entranceOrder.every(x=>x.durationMs===500));
+  await sleep(1740);
   const projectState=await evaluate("(()=>{"+
     "const root=document.querySelector('.public-projects-root');"+
     "const cards=[...root.querySelectorAll('.project-showcase-card')];"+

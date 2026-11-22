@@ -8,6 +8,14 @@ import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES,
 import {mountProjectControls} from "./public-projects-controls.js";
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
+// One staggered arrival timeline: back chip at 0ms, both heading and three
+// toolbar chips at 165ms, first card at 330ms, then the original 65ms
+// per-card cascade. The exact WebGPU pane material is unchanged.
+const PROJECT_ENTER_DURATION_MS=500;
+const PROJECT_ENTER_HEADING_DELAY_MS=165;
+const PROJECT_ENTER_FIRST_CARD_DELAY_MS=330;
+const PROJECT_ENTER_STAGGER_MS=65;
+const PROJECT_ENTER_TAIL_MS=60;
 // Keep in sync with the route-owned CSS reverse stagger and final header exit.
 const PROJECT_EXIT_DURATION_MS=420;
 const PROJECT_EXIT_STAGGER_MS=45;
@@ -93,6 +101,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
   const projects=sortProjectShowcase(PROJECT_SHOWCASE);
   const root=el("section","public-projects-root");
   root.setAttribute("aria-label","Projects");
+  root.style.setProperty("--project-heading-enter-delay",PROJECT_ENTER_HEADING_DELAY_MS+"ms");
+  root.style.setProperty("--project-first-card-enter-delay",PROJECT_ENTER_FIRST_CARD_DELAY_MS+"ms");
   const head=el("header","public-projects-header");
   const back=el("button","public-projects-back");
   back.type="button";
@@ -131,7 +141,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
   };
   const introTimer=setTimeout(()=>{
     introFinished=true;settle();
-  },reduced.matches?0:500+12*65+60);
+  },reduced.matches?0:PROJECT_ENTER_FIRST_CARD_DELAY_MS+
+    PROJECT_ENTER_DURATION_MS+12*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
   back.addEventListener("click",event=>{
     if(closed||exiting)return;

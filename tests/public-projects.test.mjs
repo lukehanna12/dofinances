@@ -87,6 +87,13 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/project-showcase-card/);
   assert.match(entry,/card\.type="button"/);
   assert.match(entry,/mountProjectControls\(\{root,headingRow,grid,projects,animateGlass\}\)/);
+  assert.match(entry,/const PROJECT_ENTER_DURATION_MS=500;/);
+  assert.match(entry,/const PROJECT_ENTER_HEADING_DELAY_MS=165;/);
+  assert.match(entry,/const PROJECT_ENTER_FIRST_CARD_DELAY_MS=330;/);
+  assert.match(entry,/const PROJECT_ENTER_STAGGER_MS=65;/);
+  assert.match(entry,/root\.style\.setProperty\("--project-heading-enter-delay",PROJECT_ENTER_HEADING_DELAY_MS\+"ms"\)/);
+  assert.match(entry,/root\.style\.setProperty\("--project-first-card-enter-delay",PROJECT_ENTER_FIRST_CARD_DELAY_MS\+"ms"\)/);
+  assert.match(entry,/PROJECT_ENTER_FIRST_CARD_DELAY_MS\+\s*PROJECT_ENTER_DURATION_MS\+12\*PROJECT_ENTER_STAGGER_MS\+PROJECT_ENTER_TAIL_MS/);
   assert.match(entry,/const PROJECT_EXIT_DURATION_MS=420;/);
   assert.match(entry,/const PROJECT_EXIT_STAGGER_MS=45;/);
   assert.match(entry,/const PROJECT_EXIT_TAIL_MS=60;/);
@@ -147,6 +154,8 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/\.public-projects-root\.is-dissolving-header[\s\S]*?filter:blur\(1\.4px\)/);
   assert.match(css,/body\.public-home\[data-auth-gpu-scene="ready"\]/);
   assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
+  assert.match(css,/\.public-projects-title,\s*\.public-projects-search-button,\s*\.public-projects-filter-button,\s*\.public-projects-github-button\{\s*animation:project-showcase-enter \.5s both;\s*animation-delay:var\(--project-heading-enter-delay,165ms\)/);
+  assert.match(css,/animation-delay:calc\(var\(--project-first-card-enter-delay,330ms\) \+ min\(var\(--project-index,0\),12\)\*65ms\)/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
   assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
   assert.match(css,/font-size:clamp\(34\.5px,3vw,46\.5px\)/);
@@ -171,7 +180,8 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/\.public-projects-root \.project-showcase-card\[hidden\]\{display:none!important\}/);
   assert.match(css,/\.public-projects-root\.is-exiting \.project-showcase-card\{\s*animation:project-showcase-exit \.42s both;/);
   assert.match(css,/animation-delay:calc\(var\(--project-reverse-index,0\)\*45ms\)/);
-  assert.match(css,/\.public-projects-root\.is-exiting :is\(\.public-projects-back,\.public-projects-title,\.public-projects-toolbar\)\{/);
+  assert.match(css,/\.public-projects-root\.is-exiting :is\(\.public-projects-back,\.public-projects-title,\s*\.public-projects-toolbar,\.public-projects-search-button,\.public-projects-filter-button,\s*\.public-projects-github-button\)\{/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[\s\S]*?\.public-projects-root \.public-projects-title,[\s\S]*?\.public-projects-root \.public-projects-github-button\{animation:none!important\}/);
   assert.match(css,/\.public-projects-root\.is-dissolving-header/);
   assert.match(css,/body\.public-home > #public-route-content:has\(\.public-projects-root\)\{\s*overscroll-behavior-y:none;/);
   assert.match(css,/html:has\(body\.public-home #public-route-content \.public-projects-root\),\s*body\.public-home:has\(#public-route-content \.public-projects-root\)\{\s*overscroll-behavior-y:none;/);

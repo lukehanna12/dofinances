@@ -35,6 +35,17 @@ body.public-home:has(#public-route-content .public-projects-root){
   font-weight:550;line-height:1.12;letter-spacing:-.035em;
   -webkit-user-select:none;user-select:none
 }
+/* The back chip enters first. Heading glyphs and each top-right glass
+ * chip enter together 165ms later, before the first card (330ms).
+ * Animate the actual pane-owning elements, not an opaque parent: the shared
+ * WebGPU pipeline reads their own opacity and live transformed bounds. */
+.public-projects-title,
+.public-projects-search-button,
+.public-projects-filter-button,
+.public-projects-github-button{
+  animation:project-showcase-enter .5s both;
+  animation-delay:var(--project-heading-enter-delay,165ms)
+}
 .public-projects-back{
   appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;
   padding:0;border:1px solid transparent;border-radius:10px;cursor:pointer;
@@ -54,7 +65,7 @@ body.public-home:has(#public-route-content .public-projects-root){
   background:#242424;color:#f5f5f5;text-align:left;
   font:inherit;cursor:pointer;appearance:none;
   animation:project-showcase-enter .5s both;
-  animation-delay:calc(min(var(--project-index,0),12)*65ms);
+  animation-delay:calc(var(--project-first-card-enter-delay,330ms) + min(var(--project-index,0),12)*65ms);
 }
 .public-projects-root .project-showcase-card:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
@@ -150,7 +161,9 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
  * the HOMEPAGE SQUARES' exact WGSL dissolve and shared progress functions.
  * CSS owns no competing fade, slide or optical substitute on a GPU browser. */
 .public-projects-root.is-exiting .public-projects-header{pointer-events:none}
-.public-projects-root.is-exiting :is(.public-projects-back,.public-projects-title,.public-projects-toolbar){
+.public-projects-root.is-exiting :is(.public-projects-back,.public-projects-title,
+  .public-projects-toolbar,.public-projects-search-button,.public-projects-filter-button,
+  .public-projects-github-button){
   animation:none!important
 }
 /* Only on unsupported-GPU browsers, mirror the existing square fallback.
@@ -177,7 +190,11 @@ body.public-home:not([data-auth-gpu-scene="ready"])
 }
 @media(prefers-reduced-motion:reduce){
   .public-projects-root .project-showcase-card,
-  .public-projects-root .public-projects-back{animation:none!important}
+  .public-projects-root .public-projects-back,
+  .public-projects-root .public-projects-title,
+  .public-projects-root .public-projects-search-button,
+  .public-projects-root .public-projects-filter-button,
+  .public-projects-root .public-projects-github-button{animation:none!important}
   .public-projects-root .project-showcase-photo,
   .public-projects-root .project-showcase-shade,
   .public-projects-root .project-showcase-action,
