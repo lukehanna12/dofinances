@@ -742,6 +742,15 @@ try{
       "sceneVar:body.getPropertyValue('--dashboard-scene-height'),"+
       "sceneTopVar:body.getPropertyValue('--dashboard-scene-top'),"+
       "logoTransform:css.transform,logoTranslate:css.translate,"+
+      "logoInlineTransform:logo.style.getPropertyValue('transform'),"+
+      "logoInlinePriority:logo.style.getPropertyPriority('transform'),"+
+      "pinAttr:document.body.dataset.projectsLogoPinned,"+
+      "pinMatches:logo.matches('body.public-home[data-projects-logo-pinned=\"true\"] .dashboard-home .cta6-center h1'),"+
+      "matchingTransformRules:[...document.styleSheets].flatMap(sheet=>{"+
+      "try{return [...sheet.cssRules].filter(rule=>rule.style?.transform&&"+
+      "logo.matches(rule.selectorText||':not(*)')).map(rule=>({selector:rule.selectorText,"+
+      "transform:rule.style.transform,priority:rule.style.getPropertyPriority('transform'),"+
+      "href:sheet.href}));}catch{return []}}),"+
       "hidden:document.body.hasAttribute('data-projects-logo-hidden'),"+
       "exitY:logo.style.getPropertyValue('--doof-exit-y')};})()");
     assert.ok(Math.abs(actual.x-width/2)<1,
