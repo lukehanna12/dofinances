@@ -1,3 +1,4 @@
+import {glassContainsPoint,glassSpring} from "./dashboard-glass-model.js";
 /*
  * Browser-only interaction dynamics for the isolated Dashboard preview.
  * NOT a recovered Apple Glass input/response law. Static SDF/LOD shader
@@ -11,19 +12,14 @@ const makeState=()=>({
   hover:0,hoverVelocity:0,press:0,pressVelocity:0,
   x:0,y:0,vx:0,vy:0
 });
-function spring(value,velocity,target,dt,rate){
-  const offset=value-target;
-  const j=velocity+rate*offset;
-  const decay=Math.exp(-rate*dt);
-  return [target+(offset+j*dt)*decay,(velocity-rate*j*dt)*decay];
-}
+const spring=glassSpring;
 export function createInteractionController(){
-  let bounds=[],state=[],inert=new Uint8Array(0),focus=-1,pressed=false,px=-1,py=-1,hasPointer=false;
+  let bounds=[],state=[],inert=new Uint8Array(0),radii=[],
+    focus=-1,pressed=false,px=-1,py=-1,hasPointer=false;
   function hit(x,y){
     for(let i=bounds.length-1;i>=0;i--){
       if(inert[i])continue;
-      const b=bounds[i];
-      if(x>=b[0]&&x<=b[0]+b[2]&&y>=b[1]&&y<=b[1]+b[3])return i;
+      if(glassContainsPoint(bounds[i],radii[i],x,y))return i;
     }
     return -1;
   }
@@ -35,6 +31,7 @@ export function createInteractionController(){
         throw new TypeError("Four finite tile bounds required");
       return [...b];
     });
+    radii=bounds.map(()=>[0,0,0,0]);
     state=bounds.map((b,i)=>{
       const v=previous[i]||makeState();
       if(!previous[i]){v.x=b[2]*.5;v.y=b[3]*.5;}
@@ -55,6 +52,7 @@ export function createInteractionController(){
     for(let i=0;i<bounds.length;i++){
       const p=i*TILE_FLOATS,b=bounds[i];
       b[0]=data[p];b[1]=data[p+1];b[2]=data[p+2];b[3]=data[p+3];
+      radii[i]=Array.from(data.subarray(p+8,p+12),Math.abs);
     }
     const target=hasPointer?hit(px,py):-1;
     if(target!==focus)pressed=false;

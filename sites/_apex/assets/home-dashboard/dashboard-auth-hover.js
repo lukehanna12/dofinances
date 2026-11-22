@@ -1,3 +1,4 @@
+import {glassContainsPoint,glassSpring} from "./dashboard-glass-model.js";
 /*
  * Shared public-route hover ownership. Homepage squares continue to use the
  * unmodified dashboard-interaction.js controller, spring and GPU lanes.
@@ -12,20 +13,14 @@ import {TILE_FLOATS} from "./dashboard-interaction.js";
 
 const clamp=(x,min,max)=>Math.min(max,Math.max(min,x));
 const finite=v=>Number.isFinite(v)?v:0;
-function spring(value,velocity,target,dt,rate){
-  const offset=value-target;
-  const j=velocity+rate*offset;
-  const decay=Math.exp(-rate*dt);
-  return [target+(offset+j*dt)*decay,(velocity-rate*j*dt)*decay];
-}
+const spring=glassSpring;
 const makeSlot=()=>({
-  rect:[-100000,-100000,1,1],inert:true,initialized:false,
+  rect:[-100000,-100000,1,1],radii:[0,0,0,0],inert:true,initialized:false,
   active:false,hover:0,hoverVelocity:0,press:0,pressVelocity:0,
   x:0,y:0,vx:0,vy:0
 });
 function contains(slot,x,y){
-  const [left,top,w,h]=slot.rect;
-  return !slot.inert&&x>=left&&x<=left+w&&y>=top&&y<=top+h;
+  return !slot.inert&&glassContainsPoint(slot.rect,slot.radii,x,y);
 }
 export function createAuthGlassHoverController(capacity){
   if(!Number.isSafeInteger(capacity)||capacity<2)
@@ -44,6 +39,7 @@ export function createAuthGlassHoverController(capacity){
     slots.forEach((slot,i)=>{
       const p=(base+i)*TILE_FLOATS;
       slot.rect=[data[p],data[p+1],data[p+2],data[p+3]];
+      slot.radii=Array.from(data.subarray(p+8,p+12),Math.abs);
       slot.inert=Boolean(mask[base+i]);
       // The route may mount after the first GPU frame. Never initialize a
       // still-missing pane against the 1px offscreen dummy rectangle.

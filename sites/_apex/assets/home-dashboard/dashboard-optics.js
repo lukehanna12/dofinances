@@ -54,6 +54,8 @@
  *      no measured macOS specular/interaction equation is claimed.
  */
 import "./dashboard-mosaic.js";
+import {resolveGlassOpticalGeometry,normalizeGlassCornerRadii}
+  from "./dashboard-glass-model.js";
 import {
   ORACLE_FINITE_REFRACTION,
   ORACLE_CORNER_FLOOR,
@@ -170,15 +172,14 @@ function filterGraph(){
  * values to a browser square with private mode5 thresholds is GAP
  * (JOINT-MATERIAL/PUBLIC-STATE), not an Apple target capture. */
 export function finiteGeometryParameters(w,h){
-  const d=Math.min(w,h);
-  const innerHeight=Math.min(20,.25*d);
-  const outerHeight=.125*d;
+  const geometry=resolveGlassOpticalGeometry(w,h);
+  const d=geometry.minDimension;
   const profile={
     ...ORACLE_FINITE_REFRACTION,
-    innerAmount:round(Math.max(-60,-.8*d)),
-    innerInvHeight:round(1/innerHeight),
-    outerAmount:round(.2*d),
-    outerInvHeight:round(1/outerHeight),
+    innerAmount:round(geometry.innerAmount),
+    innerInvHeight:round(1/geometry.innerHeight),
+    outerAmount:round(geometry.outerAmount),
+    outerInvHeight:round(1/geometry.outerHeight),
     blurDist:[round(-.5*d),-1,0,0],
     blurAlpha:ORACLE_FINITE_REFRACTION.blurAlpha
   };
@@ -286,8 +287,12 @@ function readTileGeometry(tile){
   // offsetWidth/Height are the NON-TRANSFORMED layout dimensions.
   const w=Math.max(1,Math.round(tile.offsetWidth));
   const h=Math.max(1,Math.round(tile.offsetHeight));
-  const radiusCSS=Number.parseFloat(getComputedStyle(tile).borderTopLeftRadius)||0;
-  const radius=Math.max(ORACLE_CORNER_FLOOR,Math.min(radiusCSS,w/2,h/2));
+  const style=getComputedStyle(tile);
+  const radii=normalizeGlassCornerRadii([
+    style.borderTopLeftRadius,style.borderTopRightRadius,
+    style.borderBottomRightRadius,style.borderBottomLeftRadius
+  ],w,h);
+  const radius=Math.max(ORACLE_CORNER_FLOOR,radii[0]);
   return {w,h,radius,screenRect:b};
 }
 function init(){
