@@ -997,6 +997,12 @@ try{
   await evaluate("document.querySelector('.public-projects-search-button').click()");
   await until("document.querySelector('.public-projects-search-wrap').classList.contains('is-ready')&&"+
     "document.activeElement===document.querySelector('.public-projects-search-input')",50);
+  // is-ready is the focus gate at SEARCH_EXPAND_MS; the CSS capsule has a
+  // longer 320ms geometry transition. Never measure halfway through the
+  // transform and misreport a correctly expanding 390px glass surface.
+  await until("(()=>{const p=document.querySelector('.public-projects-search-field');"+
+    "if(!p)return false;const r=p.getBoundingClientRect();"+
+    "return r.width>300&&Math.abs(r.width-p.offsetWidth)<2;})()",60,25);
   const searchState=await evaluate("(()=>{"+
     "const pill=document.querySelector('.public-projects-search-field').getBoundingClientRect(),"+
     "cancel=document.querySelector('.public-projects-search-cancel'),"+
