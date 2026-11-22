@@ -233,6 +233,15 @@ body.public-home .dashboard-home .cta6-mosaic{
   -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
 }
+/* The Home mosaic and Projects cards request the SAME SVG asset. The
+ * homepage colors it black without creating or maintaining a second
+ * icon drawing; Projects colors the identical source white. Keep the
+ * brightness operation when GPU goes ready and icons move with tiles. */
+body.public-home .dashboard-home .cta6-tile--icon img.cta6-icon{
+  display:block;
+  object-fit:contain;
+  filter:brightness(0);
+}
 /* When WebGPU is ready, glass squares are painted in the separate viewport-
    sized GPU canvas. Keeping a mask on this 6-row DOM mosaic clips moving
    icons to the original grid rectangle: they visibly "peel" away at its

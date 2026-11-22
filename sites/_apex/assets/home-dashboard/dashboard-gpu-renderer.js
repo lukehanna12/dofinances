@@ -1106,7 +1106,7 @@ async function initialize(){
       // The DOM icon follows its own refracting square's brief local
       // fade and softening. No synthetic gray smoke replaces the glass.
       if(dissolving>0&&trackIcons[i]){
-        trackIcons[i].style.filter="blur("+tileDismissBlur(dissolving).toFixed(3)+"px)";
+        trackIcons[i].style.filter="brightness(0) blur("+tileDismissBlur(dissolving).toFixed(3)+"px)";
       }
       else if(trackIcons[i])trackIcons[i].style.filter="";
       if(trackIcons[i]){

@@ -4,6 +4,8 @@ import {readFileSync,existsSync} from "node:fs";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
 import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
+import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortProjectShowcase,publicProjectIconSource}
+  from "../sites/_apex/assets/public-projects-catalog.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
 const home=asset("index.html"),style=asset("assets/public-home.css");
 const original=asset("app/assets/dashboard-home.css");
@@ -187,6 +189,35 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
     "The private Dashboard renderer must remain untouched");
   assert.doesNotMatch(style,/\.cta6\{[^}]*width:\s*(?!1080px)\d+px;/);
 });
+test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay black",()=>{
+ const mosaic=asset("assets/home-dashboard/dashboard-mosaic.js");
+ const publicProject=asset("assets/public-projects-entry.js");
+ const projectCSS=asset("assets/public-projects.css");
+ const homeCSS=asset("assets/public-home.css");
+ assert.equal(PROJECT_SHOWCASE.length,16);
+ assert.equal(Object.keys(PROJECT_CARD_ICONS).length,16);
+ const match=mosaic.match(/const HOME_ICON_POSITIONS=Object\.freeze\((\[[^\n]*\])\)/);
+ assert.ok(match,"Preserve the 16 original mosaic slot positions");
+ const positions=JSON.parse(match[1]);
+ assert.equal(positions.length,16);
+ assert.equal(new Set(positions).size,16);
+ assert.deepEqual(positions,["0:1","0:5","0:8","1:0","1:6","1:9",
+   "2:1","2:9","3:0","3:10","4:2","4:5","4:8","5:1","5:6","5:9"]);
+ const ordered=sortProjectShowcase(PROJECT_SHOWCASE);
+ assert.ok(ordered.every(p=>publicProjectIconSource(p.slug)===
+   "/assets/project-icons/"+PROJECT_CARD_ICONS[p.slug]+".svg"));
+ for(const project of ordered)assert.ok(
+   existsSync(new URL("../sites/_apex"+publicProjectIconSource(project.slug),import.meta.url)),
+   "Both public views use an existing SVG for "+project.slug);
+ assert.match(mosaic,/const sortedProjects=sortProjectShowcase\(PROJECT_SHOWCASE\)/);
+ assert.match(mosaic,/project\?publicProjectIconSource\(project\.slug\)/);
+ assert.match(mosaic,/icon\.src=iconSource;/);
+ assert.match(publicProject,/const iconSource=publicProjectIconSource\(project\.slug\)/);
+ assert.match(publicProject,/icon\.src=iconSource;/);
+ assert.doesNotMatch(mosaic,/const icons=\{|<svg class="cta6-icon"/);
+ assert.match(homeCSS,/\.cta6-tile--icon img\.cta6-icon\{[^}]*filter:brightness\(0\);/);
+ assert.match(projectCSS,/\.project-showcase-lucide\{[^}]*filter:brightness\(0\) invert\(1\)/);
+});
 test("Icon fade uses the same shader opacity as each square without cropping moving glyphs",()=>{
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
   assert.match(renderer,/import \{publicIconSpatialAlpha\} from "\.\/dashboard-public-icon-fade\.js";/);
@@ -274,6 +305,7 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(renderer,/tileDismissScale\(dissolving\)/);
   assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);
   assert.match(renderer,/shrink\.x\.toFixed\(5\)/);
+  assert.match(renderer,/brightness\(0\) blur\("/);
   assert.match(renderer,/shrink\.y\.toFixed\(5\)/);
   assert.match(renderer,/tileDismissBlur\(dissolving\)\.toFixed\(3\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
@@ -297,9 +329,13 @@ test("Public rendering uses explicitly copied shader and AVIF assets, not privat
   // The public optics/interaction intentionally diverge from /app to
   // consume the new shared public geometry contract. The authenticated
   // assets are UNCHANGED, not mirrored from the public renderer.
-  for(const name of ["dashboard-mosaic.js","dashboard-home-loader.js",
+  for(const name of ["dashboard-home-loader.js",
     "dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
     assert.equal(asset("assets/home-dashboard/"+name),asset("app/assets/"+name),name+" stays in parity");
+  assert.match(asset("assets/home-dashboard/dashboard-mosaic.js"),
+    /import \{PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource\}/);
+  assert.doesNotMatch(asset("app/assets/dashboard-mosaic.js"),/public-projects-catalog/,
+    "The separate authenticated /app mosaic must remain unchanged");
   assert.match(asset("assets/home-dashboard/dashboard-optics.js"),/resolveGlassOpticalGeometry\(/);
   assert.match(asset("assets/home-dashboard/dashboard-interaction.js"),/glassContainsPoint\(/);
   assert.doesNotMatch(asset("app/assets/dashboard-interaction.js"),/dashboard-glass-model/);

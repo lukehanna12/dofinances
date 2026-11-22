@@ -8,7 +8,7 @@ import {
 } from "../sites/_apex/app/assets/project-showcase.js";
 import {
   PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
-  PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,sortProjectShowcase,
+  PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,publicProjectIconSource,sortProjectShowcase,
   projectShowcaseStatus as publicStatus
 } from "../sites/_apex/assets/public-projects-catalog.js";
 import {
@@ -37,6 +37,17 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
   assert.equal(PUBLIC_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
   assert.equal(PRIVATE_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
+  for(const project of PUBLIC_PROJECTS)
+    assert.equal(publicProjectIconSource(project.slug),
+      "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg");
+  assert.equal(publicProjectIconSource("__unknown__"),null);
+});
+test("ReadMe GLP artwork is gently enlarged and shifted up on public Projects only",async()=>{
+ const publicCSS=await load("../sites/_apex/assets/public-projects.css");
+ const path='[data-project-slug="github-readme-chrome-extension"]';
+ assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\] \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.144\)/);
+ assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.04\)/);
+ assert.ok(path.length>0);
 });
 test("Named art sources and all-sided Piranesi crop are the same on both routes",async()=>{
   const [publicCSS,privateCSS]=await Promise.all([

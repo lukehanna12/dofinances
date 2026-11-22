@@ -3,7 +3,7 @@
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
  * Project controls intentionally do not navigate or call private APIs.
  */
-import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES,
+import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
@@ -68,12 +68,12 @@ function makeCard(project,index){
   const content=el("span","project-showcase-content");
   const upper=el("span","project-showcase-upper");
   const top=el("span","project-showcase-top");
-  const iconName=PROJECT_CARD_ICONS[project.slug];
-  const marker=el("span","project-showcase-number"+(iconName?" project-showcase-number--icon":""),iconName?undefined:String(index+1));
+  const iconSource=publicProjectIconSource(project.slug);
+  const marker=el("span","project-showcase-number"+(iconSource?" project-showcase-number--icon":""),iconSource?undefined:String(index+1));
   marker.setAttribute("aria-hidden","true");
-  if(iconName){
+  if(iconSource){
     const icon=el("img","project-showcase-lucide");
-    icon.src="/assets/project-icons/"+iconName+".svg";
+    icon.src=iconSource;
     icon.alt="";icon.width=28;icon.height=28;icon.decoding="async";
     marker.append(icon);
   }

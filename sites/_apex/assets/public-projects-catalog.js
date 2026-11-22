@@ -54,6 +54,13 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "hidden-functions":"hidden-functions",
   "latexcel":"latexcel"
 });
+/* One public source for project icon asset URLs. Both the Projects cards
+ * and the Home mosaic reference this same lookup and exact same SVG file.
+ * Styling owns black-on-Home vs white-on-Projects; SVGs stay unmodified. */
+export function publicProjectIconSource(slug){
+ const icon=PROJECT_CARD_ICONS[slug];
+ return icon?"/assets/project-icons/"+icon+".svg":null;
+}
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",
   "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",

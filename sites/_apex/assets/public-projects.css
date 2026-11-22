@@ -88,6 +88,15 @@ body.public-home:has(#public-route-content .public-projects-root){
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
   transform:translateY(1.5%) scale(1.12)
 }
+/* ReadMe GLP / Monet: crop the hairline edges at the top and bottom
+ * without changing the underlying artwork. Shift slightly upward; keep
+ * the same 1.1x entrance-to-rest relationship as the other cards. */
+.public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"] .project-showcase-photo{
+  transform:translateY(-.6%) scale(1.144)
+}
+.public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+  transform:translateY(-.6%) scale(1.04)
+}
 /* Piranesi NGA print: enlarge past the complete paper/etched-plate border
  * on every side, including during the fully revealed hover/resting state.
  * Keep the same 10% entrance-to-rest scale ratio as other project cards. */
