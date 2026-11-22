@@ -81,6 +81,12 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/\.public-projects-root/);
   assert.match(renderer,/projects\?"independent":"nested"/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
+  assert.match(renderer,/node\.dataset\.publicProjectGlass==="title"\)return -8;/);
+  assert.match(renderer,/syncProjectTitleMask\(panes\)/);
+  assert.match(renderer,/glyphMaskTexture\.createView\(\)/);
+  assert.match(renderer,/rebindGlassGroups\(\)/);
+  assert.match(renderer,/device\.queue\.writeTexture\(\{texture\},pixels/);
+  assert.match(renderer,/titleGlyphGlass:roles\.includes\("title"\)/);
   assert.match(renderer,/node\.hidden\|\|getComputedStyle\(node\)\.display==="none"/);
   assert.match(controls,/github\.href="https:\/\/github\.com\/lukehanna12"/);
   assert.match(controls,/github\.target="_blank"/);
@@ -99,6 +105,12 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
   assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
   assert.match(css,/font-size:clamp\(34\.5px,3vw,46\.5px\)/);
+  assert.match(css,/\.public-projects-root \.public-projects-title\{\s*color:transparent!important;/);
+  assert.match(shader,/@group\(0\) @binding\(4\) var titleGlyphAlpha: texture_2d<f32>;/);
+  assert.match(shader,/fn titleGlyphField\(local:vec2<f32>\)/);
+  assert.match(shader,/let glassTitle=tile\.properties\.y == -8\.0;/);
+  assert.match(shader,/glyphCoverage,glassTitle/);
+  assert.match(shader,/let inner=refractionEnvelope\(signed,innerAmount,innerInvHeight\);/);
   assert.match(css,/\.public-projects-search-field\{[\s\S]*?transform-origin:right center;/);
   assert.match(css,/\.public-projects-filter-panel\{[\s\S]*?transform-origin:top right/);
   assert.match(css,/\.public-projects-root \.project-showcase-card\[hidden\]\{display:none!important\}/);

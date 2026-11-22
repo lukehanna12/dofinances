@@ -88,6 +88,7 @@ const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
 // -2 is the untinted card; -7 is the separate untinted back chip,
 // -4 primary, -5 social sign-in and -6 text input. Squares are unchanged.
 function authPaneMaterialTag(node){
+  if(node.dataset.publicProjectGlass==="title")return -8;
   if(node.classList.contains("auth3-back-link")||
      node.dataset.publicProjectGlass==="back")return -7;
   if(node.hasAttribute("data-auth-glass-submit"))return -4;
@@ -487,6 +488,15 @@ async function initialize(){
     glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
     tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,physicalAuthHeight=0,
     dpr=1,sceneTop=0;
+  // A shape-only texture for the *letterforms* of route-owned glass text.
+  // It contains font alpha, never photographic pixels, optics or captured DOM.
+  // The one shared glassPipeline consumes it only for the title material tag.
+  const glyphUsage=GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST;
+  let glyphMaskTexture=device.createTexture({
+    label:"Placeholder alpha for glyph-shaped WebGPU glass",
+    size:[1,1,1],format:"r8unorm",usage:glyphUsage
+  });
+  let glyphMaskKey="",glyphMaskDimensions=[1,1];
   let tintData=new Float32Array(0),lastTintKey="";
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
@@ -581,9 +591,96 @@ async function initialize(){
     audit.tintShowcase=value.name==="showcase"?
       {hues:[...SHOWCASE_TINTS],opacityTiers:[...SHOWCASE_OPACITIES]}:null;
   }
+  function rebindGlassGroups(){
+    if(!sceneView||!tileBuffer||!tintTileBuffer)return;
+    const entries=buffer=>[
+      {binding:0,resource:sceneView},
+      {binding:1,resource:{buffer:tileBuffer}},
+      {binding:2,resource:{buffer}},
+      {binding:3,resource:{buffer:tintTileBuffer}},
+      {binding:4,resource:glyphMaskTexture.createView()}
+    ];
+    glassGroup=device.createBindGroup({
+      layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
+    });
+    authGlassGroup=device.createBindGroup({
+      layout:glassPipeline.getBindGroupLayout(0),entries:entries(authGlobalsBuffer)
+    });
+  }
+  function syncProjectTitleMask(panes){
+    const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
+    if(!title)return;
+    const style=getComputedStyle(title),rect=title.getBoundingClientRect();
+    const width=Math.max(1,Math.ceil(rect.width*dpr));
+    const height=Math.max(1,Math.ceil(rect.height*dpr));
+    const text=title.textContent||"";
+    const signature=[text,width,height,dpr,style.fontFamily,style.fontSize,
+      style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight].join("|");
+    if(signature===glyphMaskKey)return;
+    if(width>device.limits.maxTextureDimension2D||
+       height>device.limits.maxTextureDimension2D)
+      throw Error("Project title glyph mask exceeds GPU texture dimensions");
+    const scratch=document.createElement("canvas");
+    scratch.width=width;scratch.height=height;
+    const ctx=scratch.getContext("2d",{willReadFrequently:true});
+    if(!ctx)throw Error("Project title font mask context unavailable");
+    ctx.scale(dpr,dpr);
+    ctx.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
+    ctx.fillStyle="#fff";
+    ctx.textBaseline="alphabetic";
+    // Use the DOM's computed font, letter spacing and line box. This draws
+    // only authored glyph geometry into an ephemeral alpha mask, not any
+    // underlying page pixels. The actual glass still comes from WGSL.
+    const letterSpacing=Number.parseFloat(style.letterSpacing)||0;
+    const supportsLetterSpacing="letterSpacing" in ctx;
+    if(supportsLetterSpacing)ctx.letterSpacing=style.letterSpacing;
+    const metrics=ctx.measureText(text);
+    const ascent=metrics.fontBoundingBoxAscent||metrics.actualBoundingBoxAscent||0;
+    const descent=metrics.fontBoundingBoxDescent||metrics.actualBoundingBoxDescent||0;
+    const baseline=(rect.height-ascent-descent)*0.5+ascent;
+    if(supportsLetterSpacing){
+      ctx.fillText(text,0,baseline);
+    }else{
+      let cursor=0;
+      for(const char of text){
+        ctx.fillText(char,cursor,baseline);
+        cursor+=ctx.measureText(char).width+letterSpacing;
+      }
+    }
+    const rgba=ctx.getImageData(0,0,width,height).data;
+    const rowBytes=Math.ceil(width/256)*256;
+    const pixels=new Uint8Array(rowBytes*height);
+    let filled=0;
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+      const alpha=rgba[(y*width+x)*4+3];
+      pixels[y*rowBytes+x]=alpha;
+      if(alpha>0)filled++;
+    }
+    scratch.width=0;scratch.height=0;
+    if(!filled)throw Error("Project title glyph raster is empty");
+    const texture=device.createTexture({
+      label:"Projects font alpha, shape-only, original Liquid Glass shader",
+      size:[width,height,1],format:"r8unorm",usage:glyphUsage
+    });
+    device.queue.writeTexture({texture},pixels,
+      {offset:0,bytesPerRow:rowBytes,rowsPerImage:height},
+      {width,height,depthOrArrayLayers:1});
+    const previous=glyphMaskTexture;
+    glyphMaskTexture=texture;
+    glyphMaskKey=signature;
+    glyphMaskDimensions=[width,height];
+    rebindGlassGroups();
+    previous.destroy();
+    audit.projectTitleMask={
+      source:"computed-font alpha silhouette, no DOM or wallpaper capture",
+      width,height,nonzeroPixels:filled,shaderTag:-8,
+      pipeline:"shared-webgpu-glassPipeline"
+    };
+  }
   function paintAuthPanes(){
     const panes=authPaneElements(),scheme=authGlassScheme();
     const projects=Boolean(document.querySelector(".public-projects-root"));
+    if(projects)syncProjectTitleMask(panes);
     const card=panes[0];
     const opacity=card?Math.max(0,Math.min(1,
       Number.parseFloat(getComputedStyle(card).opacity)||0)):0;
@@ -629,6 +726,8 @@ async function initialize(){
       audit.projectGlass={renderer:"shared-webgpu-glassPipeline",
         count:roles.length,roles,faceScheme:tint.state.scheme,
         materialReference:"first-home-square",tint:"none",
+        titleGlyphGlass:roles.includes("title"),
+        titleMaskPixels:[...glyphMaskDimensions],
         hovered:authHover.activeControl>=0};
       audit.authGlass=null;
       return Boolean(card&&(!document.querySelector(".public-projects-root.is-settled")||
@@ -767,18 +866,7 @@ async function initialize(){
     });
     lastTintKey="";
     syncTileTints(true);
-    const glassEntries=buffer=>[
-      {binding:0,resource:sceneView},
-      {binding:1,resource:{buffer:tileBuffer}},
-      {binding:2,resource:{buffer}},
-      {binding:3,resource:{buffer:tintTileBuffer}}
-    ];
-    glassGroup=device.createBindGroup({
-      layout:glassPipeline.getBindGroupLayout(0),entries:glassEntries(globalsBuffer)
-    });
-    authGlassGroup=device.createBindGroup({
-      layout:glassPipeline.getBindGroupLayout(0),entries:glassEntries(authGlobalsBuffer)
-    });
+    rebindGlassGroups();
   }
   function buildScene(){
     const encoder=device.createCommandEncoder({label:"Scene & full real mip chain"});
@@ -986,6 +1074,7 @@ async function initialize(){
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
+    glyphMaskTexture.destroy();
     scene?.destroy();offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();
   }

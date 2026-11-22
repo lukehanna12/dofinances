@@ -97,6 +97,9 @@ export function mountProjects(host,{onBack,onExitComplete}){
   back.title="Back to homepage";
   back.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
   const title=el("h1","public-projects-title","Projects");
+  // The DOM heading remains semantic and supplies its computed font shape.
+  // The shared WebGPU shader refracts through the GLYPHS, not a text box.
+  title.dataset.publicProjectGlass="title";
   const headingRow=el("div","public-projects-heading-row");
   headingRow.append(title);
   head.append(back,headingRow);

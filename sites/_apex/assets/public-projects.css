@@ -162,6 +162,14 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
 }
 
 
+/* The visible title is the existing Liquid Glass material clipped at the
+ * individual glyphs by its font-alpha texture. Hide only the DOM ink after
+ * a valid GPU frame; preserve accessibility and a plain white fallback. */
+body.public-home[data-auth-gpu-scene="ready"]
+  .public-projects-root .public-projects-title{
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important
+}
 /* Three identically sized, spaced toolbar chips. Only GPU glassPipeline
  * paints their optical faces when ready; CSS owns layout/entrance alone. */
 .public-projects-toolbar{

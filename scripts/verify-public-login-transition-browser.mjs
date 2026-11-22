@@ -728,10 +728,26 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
-    await until("window.__dashboardWebGPU?.projectGlass?.count===21",70);
+    await until("window.__dashboardWebGPU?.projectGlass?.count===22",70);
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
+    assert.equal(gpu.titleGlyphGlass,true,
+      "Projects heading must share the actual WebGPU glassPipeline as a glyph pane");
+    assert.ok(gpu.roles.includes("title"));
+    assert.ok(gpu.titleMaskPixels[0]>100&&gpu.titleMaskPixels[1]>30,
+      "Font-shape texture must cover the title's native glyph bounds");
+    const textMask=await evaluate("window.__dashboardWebGPU.projectTitleMask");
+    assert.equal(textMask.pipeline,"shared-webgpu-glassPipeline");
+    assert.ok(textMask.nonzeroPixels>300,"Text alpha mask must contain visible glyph pixels");
+    const titlePaint=await evaluate("(()=>{const t=document.querySelector('.public-projects-title');"+
+      "return {text:t.textContent,role:t.dataset.publicProjectGlass,"+
+      "color:getComputedStyle(t).color,fill:getComputedStyle(t).webkitTextFillColor}})()");
+    assert.equal(titlePaint.text,"Projects");
+    assert.equal(titlePaint.role,"title");
+    assert.equal(titlePaint.color,"rgba(0, 0, 0, 0)",
+      "DOM text ink must not cover the letter-shaped WebGPU material");
+    assert.equal(titlePaint.fill,"rgba(0, 0, 0, 0)");
     assert.equal(projectState.transparent,"rgba(0, 0, 0, 0)",
       "Public projects use the genuine transparent WebGPU glass layer");
   }

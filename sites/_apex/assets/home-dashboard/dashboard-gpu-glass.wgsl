@@ -36,6 +36,9 @@ struct Tile {
 @group(0) @binding(1) var<storage,read> tiles: array<Tile>;
 @group(0) @binding(2) var<uniform> state: Globals;
 @group(0) @binding(3) var<storage,read> tintTiles: array<vec4<f32>>;
+// A one-channel, DOM-font-rasterized GLYPH SHAPE only, never a sampled
+// wallpaper or pre-rendered glass image. All optical work stays in fsGlass.
+@group(0) @binding(4) var titleGlyphAlpha: texture_2d<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -316,6 +319,31 @@ fn dissolveField(p:vec2<f32>)->f32{
   let upper=dissolveNoise(p*4.07+vec2<f32>(6.2,17.4));
   return (lower*.52+middle*.31+upper*.17);
 }
+/* The title supplies a live alpha silhouette, not a separate glass
+ * appearance. Its local alpha gradient estimates the letterform SDF normal,
+ * so the *same* refraction envelope, blur LOD, glass face, rim and hover
+ * calculations below apply at the edge of each individual glyph.
+ * Normalized r8 input is from locally rasterizing the heading's font
+ * (not a DOM screenshot, image capture, or mipmap).
+ */
+fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
+  let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
+  let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);
+  let a=textureLoad(titleGlyphAlpha,p,0).r;
+  let left=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(-1,0),vec2<i32>(0),limit),0).r;
+  let right=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(1,0),vec2<i32>(0),limit),0).r;
+  let above=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(0,-1),vec2<i32>(0),limit),0).r;
+  let below=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(0,1),vec2<i32>(0),limit),0).r;
+  let gradient=vec2<f32>(right-left,below-above)*0.5;
+  let magnitude=length(gradient);
+  // alpha increases *inward*, so the outward contour normal is -gradient.
+  let outward=select(vec2<f32>(0.0),-gradient/max(magnitude,0.00001),
+    magnitude>0.00001);
+  // Approximate a local signed contour distance in physical pixels.
+  // The true antialiased glyph alpha is kept independently as coverage.
+  let distance=clamp((0.5-a)/max(magnitude,0.08),-6.0,6.0);
+  return vec4<f32>(distance,outward,a);
+}
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
@@ -327,8 +355,14 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // AIR branches rather than evaluating both branches under eager select:
   // native compute_sdf_with_mode uses an i32 mode gate, so only the selected
   // path participates in arithmetic and its half-return rounding.
+  let glassTitle=tile.properties.y == -8.0;
   var field:vec3<f32>;
-  if(tile.properties.w==4.0){
+  var glyphCoverage:f32=1.0;
+  if(glassTitle){
+    let glyph=titleGlyphField(in.local);
+    field=glyph.xyz;
+    glyphCoverage=glyph.w;
+  }else if(tile.properties.w==4.0){
     field=mode4SDF(in.local,dimensions,tile.properties.x);
   }else{
     field=mode5SDF(in.local,dimensions,tile.cornerRadii);
@@ -339,7 +373,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // final truncation to half. Derivatives' exact G14G rules remain open.
   let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));
   let signedRatio=nativeHalf1(-signed/nativeWidth);
-  let coverage=nativeHalf1(clamp(0.5+signedRatio,0.0,1.0));
+  // For text, use the font rasterizer's own antialiased glyph coverage;
+  // the estimated distance/normal still drives the identical glass optics.
+  let coverage=select(nativeHalf1(clamp(0.5+signedRatio,0.0,1.0)),
+    glyphCoverage,glassTitle);
   let dismiss=clamp(tile.motion.w,0.0,1.0);
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
