@@ -62,6 +62,7 @@ jobs:
           test -s dist/404.html
           test -s dist/_routes.json
           test ! -e dist/login/index.html
+          test ! -e dist/projects/index.html
           grep -Fq 'await fetch' src/components/Auth3.jsx
           test -s sites/_apex/app/index.html
           test -s sites/_apex/assets/site-foundation.css
@@ -244,12 +245,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p sites/_apex/login sites/_apex/assets
+          mkdir -p sites/_apex/login sites/_apex/projects sites/_apex/assets
           sed 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' sites/_apex/index.html > sites/_apex/login/index.html
+          sed 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' sites/_apex/index.html > sites/_apex/projects/index.html
           cp -R dist/assets/. sites/_apex/assets/
           test -s sites/_apex/login/index.html
+          test -s sites/_apex/projects/index.html
           test -s sites/_apex/assets/public-login-manifest.json
+          test -s sites/_apex/assets/public-projects-entry.js
+          test -s sites/_apex/assets/public-projects-catalog.js
+          test -s sites/_apex/assets/public-projects.css
           grep -Fq 'dofinances-app-shell' sites/_apex/login/index.html
+          grep -Fq 'dofinances-app-shell' sites/_apex/projects/index.html
           ! grep -Fq 'auth3-studio-preview-v1' sites/_apex/login/index.html
       - name: Publish Git-managed Worker (routes managed separately)
         uses: cloudflare/wrangler-action@v4
@@ -305,12 +312,21 @@ jobs:
             /assets/public-home-menu.js \
             /assets/home-dashboard/dashboard-home.css \
             /assets/home-dashboard/dashboard-home-loader.js \
+            /assets/public-projects-entry.js \
+            /assets/public-projects-catalog.js \
+            /assets/public-projects.css \
+            /assets/project-icons/colosseum-lucide.svg \
             /assets/home-dashboard/dashboard-gpu-renderer.js \
             /assets/home-dashboard/dashboard-mosaic.js \
             /assets/home-dashboard/dashboard-gpu-glass.wgsl \
             /assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif; do
             curl --retry 3 --retry-delay 2 -fsSL --max-time 20 "https://dofinances.com$path" -o /dev/null
           done
+          projects_page="$(mktemp)"
+          curl -fsSL --max-time 20 https://dofinances.com/projects > "$projects_page"
+          grep -Fq 'data-direct-login="true"' "$projects_page"
+          grep -Fq 'dofinances-app-shell' "$projects_page"
+          rm "$projects_page"
           test "$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' https://dofinances.com/app/assets/dashboard-gpu-renderer.js)" = 302
           echo "Public mosaic assets and sign-in navigation verified; private workspace assets remain protected"
 

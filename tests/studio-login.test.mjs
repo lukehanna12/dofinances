@@ -21,7 +21,8 @@ test("the public shell persists across / and /login; no login document recreates
   assert.match(route, /history\.back\(\)/);
   assert.match(route, /addEventListener\("popstate"/);
   assert.match(route, /registry=new Map/);
-  assert.match(route, /loadModule\("\/login"\)/);
+  assert.match(route, /openRoute\("\/login"/);
+  assert.match(route, /openRoute\("\/projects"/);
   assert.match(route, /dofinances:home-dismiss/);
   assert.match(route, /dofinances:home-restore/);
   assert.match(route, /state="exiting"/);
@@ -207,7 +208,7 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(jsx,/data-auth-glass-card/);
   assert.doesNotMatch(jsx,/onPointerMove=\{moveGlassLight\}/);
   assert.doesNotMatch(css,/--auth-glass-pointer-|circle 225px/);
-  assert.match(renderer,/const AUTH_PANE_CAPACITY=10;/);
+  assert.match(renderer,/const AUTH_PANE_CAPACITY=24;/);
   assert.match(renderer,/function authPaneElements\(\)/);
   assert.match(renderer,/const source=makeTileFloatData\(all,dpr,sceneTop\)/);
   assert.match(renderer,/data\.set\(source\)/);

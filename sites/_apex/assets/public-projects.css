@@ -1,0 +1,145 @@
+/* Public Projects route. These rules own layout, markup and Motion-style
+ * stagger only. The actual untinted glass is exclusively the EXISTING
+ * homepage WebGPU glassPipeline, drawn on its existing upper GPU canvas.
+ * There is NO CSS backdrop-filter, box-shadow glass simulation or shader copy.
+ */
+.public-projects-root{
+  position:relative;width:100%;min-height:100%;box-sizing:border-box;
+  padding:clamp(19px,2.3vw,36px) clamp(18px,3vw,44px) 40px;
+  color:#f5f5f5; font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+.public-projects-header{display:flex;align-items:center;gap:14px;margin:0 0 22px}
+.public-projects-title{margin:0;color:#fff;font-size:clamp(23px,2vw,31px);font-weight:550;letter-spacing:-.035em}
+.public-projects-back{
+  appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;
+  padding:0;border:1px solid transparent;border-radius:10px;cursor:pointer;
+  color:#fff;background:#242424;
+  animation:project-showcase-enter .5s both;
+}
+.public-projects-back svg{display:block;width:18px;height:18px;pointer-events:none}
+.public-projects-back:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.public-projects-root .project-showcase-grid{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);
+  align-items:stretch;margin:0;
+}
+.public-projects-root .project-showcase-card{
+  position:relative;isolation:isolate;overflow:hidden;min-width:0;
+  min-height:clamp(215px,18vw,250px);border:0;border-radius:10px;padding:0;
+  display:flex;flex-direction:column;box-sizing:border-box;
+  background:#242424;color:#f5f5f5;text-align:left;
+  font:inherit;cursor:pointer;appearance:none;
+  animation:project-showcase-enter .5s both;
+  animation-delay:calc(min(var(--project-index,0),12)*65ms);
+}
+.public-projects-root .project-showcase-card:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
+  position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none
+}
+.public-projects-root .project-showcase-photo{
+  object-fit:cover;object-position:center;opacity:0;transform:scale(1.1);
+  transition:opacity .5s ease-out,transform .5s ease-out
+}
+.public-projects-root .project-showcase-shade{
+  background:rgba(0,0,0,.6);opacity:0;transition:opacity .4s ease-out
+}
+.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+  opacity:1;transform:scale(1)
+}
+.public-projects-root .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
+.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
+  transform:translateY(1.5%) scale(1.232)
+}
+.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+  transform:translateY(1.5%) scale(1.12)
+}
+.public-projects-root .project-showcase-content{
+  position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
+  min-height:100%;box-sizing:border-box;
+  padding:clamp(12px,1.2vw,16px) clamp(12px,1.2vw,16px) 0;
+  pointer-events:none
+}
+.public-projects-root .project-showcase-upper{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0}
+.public-projects-root .project-showcase-top{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:5px;width:100%;margin-bottom:9px
+}
+.public-projects-root .project-showcase-number{
+  display:grid;place-items:center;flex:none;width:20px;height:20px;
+  border-radius:50%;font-size:10px;font-weight:700;background:#fff;color:#171717
+}
+.public-projects-root .project-showcase-number--icon{
+  width:28px;height:28px;border-radius:0;background:transparent;color:#fff
+}
+.public-projects-root .project-showcase-lucide{
+  display:block;flex:none;width:28px;height:28px;pointer-events:none;
+  filter:brightness(0) invert(1)
+}
+.public-projects-root .project-showcase-badge{
+  font-size:9px;font-weight:500;line-height:12px;padding:2px 9px;
+  border-radius:999px;white-space:nowrap;
+  background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45,201,100)
+}
+.public-projects-root .project-showcase-badge--progress{
+  background:color(srgb 0.98 0.76 0.07 / .09);color:rgb(230,180,51)
+}
+.public-projects-root .project-showcase-badge--soon{
+  background:color(srgb 0.172549 0.403922 0.772549 / .1);color:rgb(44,103,197)
+}
+.public-projects-root .project-showcase-title{
+  display:block;font-weight:500;font-size:clamp(12px,1.05vw,16px);
+  line-height:1.16;letter-spacing:-.035em;overflow-wrap:anywhere;
+  margin:0 0 5px;color:#fff
+}
+.public-projects-root .project-showcase-action{
+  display:inline-flex;align-items:center;gap:4px;color:#bdbdbd;
+  font-size:10px;font-weight:500;line-height:1.35;transition:color .3s ease
+}
+.public-projects-root .project-showcase-action svg{width:12px;height:12px;transition:transform .2s ease}
+.public-projects-root .project-showcase-card.is-active:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(2px)}
+.public-projects-root .project-showcase-card:is(:hover,:focus-within) .project-showcase-action{color:rgba(255,255,255,.9)}
+.public-projects-root .project-showcase-details{display:block;margin:10px calc(-1*clamp(12px,1.2vw,16px)) 0}
+.public-projects-root .project-showcase-row{
+  display:block;padding:6px clamp(12px,1.2vw,16px);border-top:1px solid #414141;
+  color:#d5d5d5;font-size:10px;line-height:1.35;overflow-wrap:anywhere;
+  transition:border-color .3s ease,color .3s ease
+}
+.public-projects-root .project-showcase-card:is(:hover,:focus-within) .project-showcase-row{
+  border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.9)
+}
+/* Only when the same original GPU pipeline has submitted a valid first frame
+ * do we reveal the actual glass and remove the ordinary opaque fallback. */
+body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-projects-back,.project-showcase-card){
+  background:transparent!important;border-color:transparent!important;
+  box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important
+}
+@keyframes project-showcase-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes project-showcase-exit{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(24px)}}
+.public-projects-root.is-exiting .project-showcase-card{
+  animation:project-showcase-exit .5s both;
+  animation-delay:calc(var(--project-reverse-index,0)*65ms)
+}
+.public-projects-root.is-exiting .public-projects-back{
+  animation:project-showcase-exit .5s both;
+  animation-delay:780ms
+}
+@media(max-width:1499px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(max-width:1199px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:899px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:699px){
+  .public-projects-root .project-showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .public-projects-root .project-showcase-card{min-height:220px}
+  .public-projects-root .project-showcase-content{padding:12px 12px 0}
+  .public-projects-root .project-showcase-details{margin-left:-12px;margin-right:-12px}
+  .public-projects-root .project-showcase-row{padding:6px 12px}
+  .public-projects-root .project-showcase-title{font-size:clamp(12px,3.2vw,15px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .public-projects-root .project-showcase-card,
+  .public-projects-root .public-projects-back{animation:none!important}
+  .public-projects-root .project-showcase-photo,
+  .public-projects-root .project-showcase-shade,
+  .public-projects-root .project-showcase-action,
+  .public-projects-root .project-showcase-row{transition:none!important}
+  .public-projects-root.is-exiting{opacity:0}
+}

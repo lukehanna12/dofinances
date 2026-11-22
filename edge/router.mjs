@@ -502,7 +502,7 @@ export async function handleRequest(request,env={}) {
   const folder=siteFolder(url.hostname);
   if(folder===null) return new Response("Unknown host",{status:404,headers:NO_STORE});
   // www has no authentication cookies; preserve canonical apex origin for all auth routes.
-  if(folder==="_www" && (/^\/(login|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")||url.pathname.startsWith("/api/projects")||url.pathname.startsWith("/api/github/")))) {
+  if(folder==="_www" && (/^\/(login|projects|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")||url.pathname.startsWith("/api/projects")||url.pathname.startsWith("/api/github/")))) {
     url.hostname=ROOT;
     return redirect(url.href,301);
   }

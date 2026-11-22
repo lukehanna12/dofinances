@@ -20,7 +20,7 @@ const misses=[];
 const server=createServer((req,res)=>{
   const pathname=new URL(req.url||"/","http://localhost").pathname;
   let target;
-  if(pathname==="/login"||pathname==="/login/"||pathname==="/"){
+  if(pathname==="/login"||pathname==="/login/"||pathname==="/projects"||pathname==="/projects/"||pathname==="/"){
     target=join(apex,"index.html");
   }else{
     const apexCandidate=resolve(apex,"."+pathname);
@@ -32,7 +32,7 @@ const server=createServer((req,res)=>{
   }
   try{
     let body=readFileSync(target);
-    if(pathname==="/login"||pathname==="/login/")body=Buffer.from(body.toString("utf8").replace('<body class="public-home">','<body class="public-home" data-public-route="leaving" data-direct-login="true">'));
+    if(pathname==="/login"||pathname==="/login/"||pathname==="/projects"||pathname==="/projects/")body=Buffer.from(body.toString("utf8").replace('<body class="public-home">','<body class="public-home" data-public-route="leaving" data-direct-login="true">'));
     res.writeHead(200,{"Content-Type":mime[extname(target)]||"application/octet-stream",
       "Cache-Control":"no-store"});
     res.end(body);
@@ -666,6 +666,65 @@ try{
     assert.ok(Math.abs(fallback.delta+190)<1,
       "One-parameter rollback restores the previous scroll-attached canvas");
   }
+  // The same persistent shell exposes public Projects as an independent
+  // route with the original staggered cards and EXACT shared WebGPU glass.
+  await send("Page.navigate",{url:origin+"/"});
+  await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
+  await sleep(1050);
+  await evaluate("document.querySelector('.cta6-bottom-action [data-public-target=\\\"/projects\\\"]').click()");
+  await until("location.pathname==='/projects'&&"+
+    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
+  await sleep(1440);
+  const projectState=await evaluate("(()=>{"+
+    "const root=document.querySelector('.public-projects-root');"+
+    "const cards=[...root.querySelectorAll('.project-showcase-card')];"+
+    "const first=cards[0];"+
+    "return {state:window.__dofPublicRouter.state,route:location.pathname,"+
+    "count:cards.length,icons:cards.filter(c=>!!c.querySelector('.project-showcase-lucide')).length,"+
+    "back:!!root.querySelector('[data-public-project-glass=back]'),"+
+    "glass:cards.every(c=>c.dataset.publicProjectGlass==='card'),"+
+    "allButtons:cards.every(c=>c.tagName==='BUTTON'&&!c.hasAttribute('href')),"+
+    "firstImageLazy:!first.querySelector('.project-showcase-photo').hasAttribute('src'),"+
+    "shell:!!document.querySelector('#cta6-mosaic'),"+
+    "transparent: getComputedStyle(first).backgroundColor};})()");
+  assert.equal(projectState.state,"projects");
+  assert.equal(projectState.route,"/projects");
+  assert.equal(projectState.count,14);
+  assert.equal(projectState.icons,14);
+  assert.equal(projectState.back,true);
+  assert.equal(projectState.glass,true);
+  assert.equal(projectState.allButtons,true);
+  assert.equal(projectState.firstImageLazy,true);
+  assert.equal(projectState.shell,true);
+  const pathBefore=await evaluate("location.pathname");
+  await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
+  assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
+  await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
+  assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
+    "Hover begins loading the exact curated project artwork");
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.projectGlass?.count===15",70);
+    const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
+    assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
+    assert.equal(gpu.tint,"none");
+    assert.equal(projectState.transparent,"rgba(0, 0, 0, 0)",
+      "Public projects use the genuine transparent WebGPU glass layer");
+  }
+  await evaluate("document.querySelector('.public-projects-back').click()");
+  assert.equal(await evaluate("window.__dofPublicRouter.state"),"exiting");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .project-showcase-card')).animationName"),"project-showcase-exit");
+  await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
+  assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
+  await sleep(560);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"),"1");
+  // Cold /projects refresh serves the same homepage document (no clone of
+  // wallpaper, logo, upper GPU canvas or global navigation).
+  await send("Page.navigate",{url:origin+"/projects"});
+  await until("location.pathname==='/projects'&&"+
+    "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
+  assert.equal(await evaluate("document.body.dataset.directLogin"),"true");
+  await evaluate("document.querySelector('.public-projects-back').click()");
+  await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.deepEqual(misses,[],"No missing shell or lazy login assets");
   process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");
 }finally{

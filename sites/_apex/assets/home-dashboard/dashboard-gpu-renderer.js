@@ -66,15 +66,16 @@ async function waitForVisibleHome(){
 
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
-// Route-owned sign-in panes are drawn as extra instances of this SAME
-// Oracle-derived shader, tint film and hover/press spring pipeline.
-const AUTH_PANE_CAPACITY=10;
+// Login and Projects reuse the exact homepage WebGPU material.
+const AUTH_PANE_CAPACITY=24;
 function authPaneElements(){
   const card=document.querySelector(".auth3-root [data-auth-glass-card]");
-  if(!card)return [];
-  return [card,...card.querySelectorAll(
+  if(card)return [card,...card.querySelectorAll(
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
   )].slice(0,AUTH_PANE_CAPACITY);
+  const projects=document.querySelector(".public-projects-root");
+  return projects?[...projects.querySelectorAll("[data-public-project-glass]")]
+    .slice(0,AUTH_PANE_CAPACITY):[];
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
@@ -82,7 +83,8 @@ const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
 // -2 is the untinted card; -7 is the separate untinted back chip,
 // -4 primary, -5 social sign-in and -6 text input. Squares are unchanged.
 function authPaneMaterialTag(node){
-  if(node.classList.contains("auth3-back-link"))return -7;
+  if(node.classList.contains("auth3-back-link")||
+     node.dataset.publicProjectGlass==="back")return -7;
   if(node.hasAttribute("data-auth-glass-submit"))return -4;
   if(node.hasAttribute("data-auth-glass-input"))return -6;
   if(node.hasAttribute("data-auth-glass-provider")&&
@@ -90,7 +92,8 @@ function authPaneMaterialTag(node){
   return -2;
 }
 function authPaneTint(node,scheme){
-  if(node.hasAttribute("data-auth-glass-card")||
+  if(node.hasAttribute("data-public-project-glass")||
+     node.hasAttribute("data-auth-glass-card")||
      node.classList.contains("auth3-back-link"))
     return tintParameters("none",undefined,scheme);
   // Original neutral form palette, never added blue/saturated hues:
@@ -172,7 +175,7 @@ function requestRender(){
       // Maintain the original 30fps square track clock, while allowing the
       // exiting sign-in glass to follow Motion between those heavy full-scene
       // submissions. This pass never draws/advances a square.
-      if(["exiting","login"].includes(window.__dofPublicRouter?.state)&&
+      if(["exiting","login","projects"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"){
         try{engine.renderAuthOnly()}catch(error){void fallback(error);return;}
       }
@@ -183,7 +186,7 @@ function requestRender(){
     try{
       // The native backdrop remains synchronized independently of GPU
       // scroll frames; render only the original local optical response.
-      if(window.__dofPublicRouter?.state==="login"&&
+      if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"&&
          (authUsesCompositor()||performance.now()<authScrollRefreshUntil)){
         animating=engine.renderAuthOnly();
@@ -548,7 +551,8 @@ async function initialize(){
   }
   function syncTileTints(force=false){
     const value=tint.state,panes=authPaneElements(),scheme=authGlassScheme();
-    const roles=panes.map(node=>node.hasAttribute("data-auth-glass-card")?
+    const roles=panes.map(node=>node.dataset.publicProjectGlass?
+      "project-"+node.dataset.publicProjectGlass:node.hasAttribute("data-auth-glass-card")?
       "card":node.hasAttribute("data-auth-glass-submit")?"submit":"neutral");
     const key=value.name+"|"+value.opacity+"|"+value.scheme+"|"+tileCount+
       "|"+scheme+"|"+roles.join(",");
@@ -574,6 +578,7 @@ async function initialize(){
   }
   function paintAuthPanes(){
     const panes=authPaneElements(),scheme=authGlassScheme();
+    const projects=Boolean(document.querySelector(".public-projects-root"));
     const card=panes[0];
     const opacity=card?Math.max(0,Math.min(1,
       Number.parseFloat(getComputedStyle(card).opacity)||0)):0;
@@ -601,14 +606,31 @@ async function initialize(){
       // Only the sign-in controls' neutral pigment film varies by role.
       // Every pane retains the exact shared square glass optics and hover.
       tileData[p+5]=authPaneMaterialTag(node);
-      tileData[p+18]=opacity;tileData[p+19]=0;
-      cornerInert[slot]=opacity<.025?1:0;
-      roles.push(node.hasAttribute("data-auth-glass-card")?
-        "card":node.classList.contains("auth3-back-link")?
-        "back":node.hasAttribute("data-auth-glass-submit")?"submit":"control");
+      const paneOpacity=projects?Math.max(0,Math.min(1,
+        Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
+      tileData[p+18]=paneOpacity;tileData[p+19]=0;
+      cornerInert[slot]=paneOpacity<.025?1:0;
+      roles.push(projects?node.dataset.publicProjectGlass:
+        node.hasAttribute("data-auth-glass-card")?"card":
+        node.classList.contains("auth3-back-link")?"back":
+        node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
-    authHover.retargetRects(tileData,tileCount,cornerInert);
+    authHover.retargetRects(tileData,tileCount,cornerInert,
+      projects?"independent":"nested");
+    if(projects){
+      audit.projectGlass={renderer:"shared-webgpu-glassPipeline",
+        count:roles.length,roles,faceScheme:tint.state.scheme,
+        materialReference:"first-home-square",tint:"none",
+        hovered:authHover.activeControl>=0};
+      audit.authGlass=null;
+      return Boolean(card&&(!document.querySelector(".public-projects-root.is-settled")||
+        panes.some(node=>{
+          const value=Number.parseFloat(getComputedStyle(node).opacity);
+          return value>.001&&value<.999;
+        })||document.querySelector(".public-projects-root.is-exiting")));
+    }
+    audit.projectGlass=null;
     audit.authGlass={renderer:authUsesCompositor()?
       "native-backdrop+webgpu-material-highlights":"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",backTint:"none",faceScheme:tint.state.scheme,
@@ -907,6 +929,10 @@ async function initialize(){
     audit.focusedTile=interaction.focusedTile;
     audit.pressed=interaction.isPressed;
     audit.tint=tint.state;
+    if(audit.projectGlass){
+      audit.projectGlass.hovered=authHover.activeControl>=0;
+      audit.projectGlass.activePane=authHover.activeControl;
+    }
     if(audit.authGlass){
       audit.authGlass.cardHover=authHover.snapshot(0);
       audit.authGlass.controlHover=authHover.activeControl>=1?
@@ -915,7 +941,7 @@ async function initialize(){
     return animating||authHoverAnimating||authAnimating;
   }
   // Auth-only submission for the card's exit Motion and native scroll.
-  // The 10 extra pane instances share the unchanged homepage WebGPU shader
+  // Every route pane shares the unchanged homepage WebGPU shader
   // and material. Scroll events submit this pass before their next RAF. 
   function renderAuthOnly(){
     if(!authContext||!instanceCount||stopped)return false;
@@ -929,7 +955,7 @@ async function initialize(){
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
     device.queue.writeBuffer(tileBuffer,0,tileData);
-    const encoder=device.createCommandEncoder({label:"Sign-in-only transition frame"});
+    const encoder=device.createCommandEncoder({label:"Public-route-only glass frame"});
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:authContext.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
@@ -940,6 +966,10 @@ async function initialize(){
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;
     audit.authOnlyFrames=(audit.authOnlyFrames||0)+1;
+    if(audit.projectGlass){
+      audit.projectGlass.hovered=authHover.activeControl>=0;
+      audit.projectGlass.activePane=authHover.activeControl;
+    }
     if(audit.authGlass){
       audit.authGlass.cardHover=authHover.snapshot(0);
       audit.authGlass.controlHover=authHover.activeControl>=1?
@@ -1079,7 +1109,7 @@ async function initialize(){
   const onAuthScroll=()=>{
     if(authUsesCompositor()||stopped||!engine||!homeActive())return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
-    if(window.__dofPublicRouter?.state==="login"&&
+    if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
        document.body.dataset.authGpuScene==="ready"){
       try{
         engine.renderAuthOnly();
@@ -1092,7 +1122,7 @@ async function initialize(){
   // Wheel/touch can initiate native elastic motion before (or even without)
   // scrollTop changing. Keep checking the observed compositor displacement.
   const armElasticRefresh=()=>{
-    if(authUsesCompositor()||window.__dofPublicRouter?.state!=="login")return;
+    if(authUsesCompositor()||!["login","projects"].includes(window.__dofPublicRouter?.state))return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
     requestRender();
   };

@@ -5,7 +5,11 @@
  * Adding a route needs one registry entry; no copy of the shell.
  */
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
-const registry=new Map([["/login",{manifest:"/assets/public-login-manifest.json",mount:"mountLogin"}]]);
+const registry=new Map([
+  ["/login",{manifest:"/assets/public-login-manifest.json",mount:"mountLogin"}],
+  ["/projects",{module:"/assets/public-projects-entry.js",
+    css:["/assets/public-projects.css"],mount:"mountProjects"}]
+]);
 const outlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
 const signIn=document.querySelector('.cta6-bottom-action a[href="/login"]');
@@ -27,6 +31,7 @@ body.dataset.authScrollMode=new URLSearchParams(location.search).get("auth-scrol
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=()=>location.pathname.replace(/\/+$/,"")||"/";
 let current=null,busy=false,fromHome=false,state="home",revision=0,pendingNavigate=false;
+let activeRoute=null,reopenPath=null;
 function positionCompactLogo(){
   const logo=document.getElementById("dashboard-title");
   if(!logo)return;
@@ -82,14 +87,22 @@ async function loadModule(path){
   const pending=(async()=>{
     const def=registry.get(path);
     if(!def)throw Error("Unregistered route");
-    const response=await fetch(def.manifest,{cache:"no-store"});
-    if(!response.ok)throw Error("Missing public route manifest");
-    const manifest=await response.json();
-    if(typeof manifest.js!=="string"||!/^\/assets\/[\w./-]+\.js$/.test(manifest.js)||
-       !Array.isArray(manifest.css)||manifest.css.some(x=>typeof x!=="string"||!/^\/assets\/[\w./-]+\.css$/.test(x)))
-      throw Error("Invalid public route manifest");
-    await Promise.all(manifest.css.map(loadCss));
-    const module=await import(manifest.js);
+    // Login uses Vite's versioned JS/CSS manifest. Projects is an isolated,
+    // static, route-owned ESM module. Both obey the same mount/exit contract.
+    let module;
+    if(def.module){
+      await Promise.all((def.css||[]).map(loadCss));
+      module=await import(def.module);
+    }else{
+      const response=await fetch(def.manifest,{cache:"no-store"});
+      if(!response.ok)throw Error("Missing public route manifest");
+      const manifest=await response.json();
+      if(typeof manifest.js!=="string"||!/^\/assets\/[\w./-]+\.js$/.test(manifest.js)||
+         !Array.isArray(manifest.css)||manifest.css.some(x=>typeof x!=="string"||!/^\/assets\/[\w./-]+\.css$/.test(x)))
+        throw Error("Invalid public route manifest");
+      await Promise.all(manifest.css.map(loadCss));
+      module=await import(manifest.js);
+    }
     if(typeof module[def.mount]!=="function")throw Error("Route has no mount function");
     return module[def.mount];
   })();
@@ -97,91 +110,112 @@ async function loadModule(path){
   pending.catch(()=>moduleCache.delete(path));
   return pending;
 }
-async function openLogin({push=false,direct=false}={}){
-  if(busy||current)return;
+async function openRoute(path,{push=false,direct=false}={}){
+  if(!registry.has(path)||busy||current)return;
   busy=true;state="entering";
   const token=++revision;
   activateCompact({immediate:direct});
-  const loaded=loadModule("/login");
+  const loaded=loadModule(path);
   const settle=delay(direct||reduced.matches?0:DISMISS_MS+45);
   try{
-    const [mountLogin]=await Promise.all([loaded,settle]);
+    const [mount]=await Promise.all([loaded,settle]);
     if(token!==revision)return;
     if(push){
-      history.pushState({dofinancesPublic:true},"","/login");
+      history.pushState({dofinancesPublic:true},"",path);
       fromHome=true;
     }else{
       fromHome=!!history.state?.dofinancesPublic;
     }
     outlet.hidden=false;
-    current=mountLogin(routeMount,{onBack:()=>closeLogin({navigate:true}),
+    routeMount.replaceChildren();
+    current=mount(routeMount,{onBack:()=>closeRoute({navigate:true}),
       onExitComplete:finishClose});
-    state="login";
-    document.title="Sign in · Dofinances";
+    activeRoute=path;
+    state=path.slice(1);
+    document.title=(path==="/login"?"Sign in":"Projects")+" · Dofinances";
   }catch(error){
     await settle;
     if(token!==revision)return;
-    console.error("The public sign-in route did not load",error);
-    if(push)history.pushState({dofinancesPublic:true},"","/login");
+    console.error("The public route did not load",path,error);
+    if(push)history.pushState({dofinancesPublic:true},"",path);
     outlet.hidden=false;
     const note=document.createElement("p");
     note.className="public-route-error";note.setAttribute("role","alert");
-    note.textContent="The sign-in card could not load. Please reload and try again.";
+    note.textContent="This page could not load. Please reload and try again.";
     routeMount.replaceChildren(note);
     state="error";
   }finally{busy=false;}
 }
-function closeLogin({navigate=false}={}){
+function closeRoute({navigate=false}={}){
   if(!current||state==="exiting")return;
   pendingNavigate=navigate;
   state="exiting";
-  // Resume the shell's track clock on this same arrow-click turn. The tiles
-  // remain dissolved until the route-owned 600ms card exit completes.
+  // The public shell resumes its own tile clock on the back click.
+  // The route alone owns its reverse card/button sequence.
   dispatchEvent(new CustomEvent("dofinances:home-track-resume"));
-  current.exit(); // /login owns the exact reverse slide-and-fade.
+  current.exit();
 }
 function finishClose(){
   if(!current||state!=="exiting")return;
   current.unmount();
-  current=null;routeMount.replaceChildren();outlet.hidden=true;
+  current=null;activeRoute=null;
+  routeMount.replaceChildren();outlet.hidden=true;
   state="home";document.title="DoFinances";
   if(pendingNavigate){
     if(fromHome){fromHome=false;history.back();}
     else history.replaceState({dofinancesPublic:true},"","/");
   }
   pendingNavigate=false;
-  restoreHome();
+  if(reopenPath&&registry.has(reopenPath)){
+    const next=reopenPath;reopenPath=null;
+    void openRoute(next);
+  }else{
+    reopenPath=null;
+    restoreHome();
+  }
 }
 signIn?.addEventListener("click",event=>{
   if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||
     event.shiftKey||event.altKey||busy||current)return;
   event.preventDefault();
-  void openLogin({push:true});
+  void openRoute("/login",{push:true});
 });
+for(const trigger of document.querySelectorAll('[data-public-target="/projects"]')){
+  trigger.addEventListener("click",event=>{
+    if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||
+       event.shiftKey||event.altKey||busy||current)return;
+    event.preventDefault();
+    void openRoute("/projects",{push:true});
+  });
+}
 addEventListener("popstate",()=>{
   const path=routePath();
-  if(path==="/login"){
-    if(!current&&!busy)void openLogin();
+  if(registry.has(path)){
+    if(current&&activeRoute!==path){
+      reopenPath=path;closeRoute();
+    }else if(!current&&!busy)void openRoute(path);
   }else if(path==="/"){
-    if(current)closeLogin();
+    reopenPath=null;
+    if(current)closeRoute();
     else if(state==="error"){
       routeMount.replaceChildren();outlet.hidden=true;state="home";restoreHome();
     }
   }
 });
 addEventListener("pageshow",event=>{
-  if(event.persisted&&routePath()==="/login"&&!current&&!busy)
-    void openLogin({direct:true});
+  const path=routePath();
+  if(event.persisted&&registry.has(path)&&!current&&!busy)
+    void openRoute(path,{direct:true});
 });
 addEventListener("resize",()=>{
   if(body.dataset.publicRoute==="leaving")positionCompactLogo();
 });
 Object.defineProperty(window,"__dofPublicRouter",{
   get:()=>Object.freeze({state,route:routePath(),persistentShell:true,
-    hasCard:!!current,registeredRoutes:[...registry.keys()]})
+    hasCard:!!current,activeRoute,registeredRoutes:[...registry.keys()]})
 });
-if(routePath()==="/login"){
+if(registry.has(routePath())){
   body.dataset.publicRoute="leaving";
   body.dataset.directLogin="true";
-  void openLogin({direct:true});
+  void openRoute(routePath(),{direct:true});
 }

@@ -1,5 +1,5 @@
 /*
- * Sign-in-only hover ownership. The homepage squares continue to use the
+ * Shared public-route hover ownership. Homepage squares continue to use the
  * unmodified dashboard-interaction.js controller, spring and GPU lanes.
  * The card contains its inputs/buttons, so its hover and the topmost
  * nested control must be independently active. Leaving a pane fades its
@@ -32,11 +32,15 @@ export function createAuthGlassHoverController(capacity){
     throw new RangeError("Card and at least one control required");
   const slots=Array.from({length:capacity},makeSlot);
   let px=-1,py=-1,hasPointer=false,pressed=false,controlIndex=-1;
-  function retargetRects(data,base,mask){
+  let independent=false;
+  function retargetRects(data,base,mask,mode="nested"){
     if(!(data instanceof Float32Array)||!Number.isSafeInteger(base)||
        base<0||data.length<(base+capacity)*TILE_FLOATS||
        !(mask instanceof Uint8Array)||mask.length<base+capacity)
       throw new TypeError("Whole-scene auth glass rects and hit mask required");
+    if(mode!=="nested"&&mode!=="independent")throw new TypeError("Unknown pane layout");
+    if(independent!==(mode==="independent"))clear();
+    independent=mode==="independent";
     slots.forEach((slot,i)=>{
       const p=(base+i)*TILE_FLOATS;
       slot.rect=[data[p],data[p+1],data[p+2],data[p+3]];
@@ -51,6 +55,22 @@ export function createAuthGlassHoverController(capacity){
     updateTargets();
   }
   function updateTargets(){
+    if(independent){
+      // Projects cards and the back arrow are siblings, not nested controls.
+      // Only the topmost touched pane receives the original hover spring.
+      let next=-1;
+      if(hasPointer)for(let i=slots.length-1;i>=0;i--){
+        if(contains(slots[i],px,py)){next=i;break;}
+      }
+      slots.forEach((slot,i)=>{
+        const active=i===next;
+        if(slot.active&&!active){slot.vx=0;slot.vy=0;}
+        slot.active=active;
+      });
+      if(controlIndex!==next)pressed=false;
+      controlIndex=next;
+      return;
+    }
     const card=hasPointer&&contains(slots[0],px,py);
     // The card remains hovered when any contained control has hover.
     // Among overlapping controls only the visually topmost gets focus.
@@ -81,7 +101,7 @@ export function createAuthGlassHoverController(capacity){
       slot.vy=clamp(slot.vy+(y-oldY)/Math.max(1,slot.rect[3])*3,-1,1);
     });
   }
-  function setPressed(value){pressed=Boolean(value)&&slots[0].active;}
+  function setPressed(value){pressed=Boolean(value)&&(independent?controlIndex>=0:slots[0].active);}
   function clear(){
     hasPointer=false;px=-1;py=-1;pressed=false;
     updateTargets();
