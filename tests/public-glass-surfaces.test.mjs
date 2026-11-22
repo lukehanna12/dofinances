@@ -74,7 +74,7 @@ test("finite native Clear inputs differ from historical regular-square profile",
  const thin=projectFiniteNativeClearGlass(100,19);
  assert.equal(thin.innerAmount,-19);
  assert.ok(Math.abs(thin.innerHeight-6.84)<1e-12);
- assert.match(thin.scope,/projection/);
+ assert.match(thin.scope,/browser interpolation/);
  assert.equal(thin.evidenceId,"E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE");
 });
 test("shape-aware hit region excludes transparent round-corner pixels",()=>{
