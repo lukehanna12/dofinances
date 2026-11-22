@@ -140,7 +140,7 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.doesNotMatch(entry,/visualViewport\?\.addEventListener\("resize"/);
   assert.match(router,/!outlet\.querySelector\("\.public-projects-root"\)\)positionCompactLogo\(\);/);
   assert.match(homeCss,/body\.public-home\[data-public-route="leaving"\]:has\(#public-route-content \.public-projects-root\)/);
-  assert.match(homeCss,/var\(--global-menu-height,44px\) \+ 46px -\s*var\(--dashboard-scene-top,44px\) \+\s*2\.5 \* var\(--cta6-title-tile\) -\s*\.5 \* var\(--dashboard-scene-height\)/);
+  assert.match(homeCss,/var\(--global-menu-height,44px\) \+ 46px -\s*var\(--dashboard-scene-top,44px\) \+\s*2\.5 \* var\(--cta6-title-tile\) -\s*\.5 \* \(100dvh - var\(--dashboard-scene-top,44px\)\)/);
   assert.match(entry,/logoScrollAbort\.abort\(\)/);
   assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-hidden"\)/);
   assert.match(homeCss,/body\.public-home\[data-projects-logo-hidden\] \.dashboard-home \.cta6-center h1\{\s*opacity:0;/);

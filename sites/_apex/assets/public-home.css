@@ -358,15 +358,17 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
  *
  * The same h1, font, translate, 0.6 scale, entrance and opacity survive.
  * 2.5 tiles compensates its existing independent title translate, and
- * (nav height - scene top) handles the fixed public header. No breakpoint
- * and no 100vh-dependent scroll threshold are introduced. */
+ * (nav height - scene top) handles the fixed public header. Use the actual
+ * dynamic viewport height directly: --dashboard-scene-height is not defined
+ * in the public shell, so referencing it invalidated the whole transform.
+ * No breakpoint and no viewport-dependent scroll threshold are introduced. */
 body.public-home[data-public-route="leaving"]:has(#public-route-content .public-projects-root)
   .dashboard-home .cta6-center h1{
   transform:translate3d(0,calc(
     var(--global-menu-height,44px) + 46px -
     var(--dashboard-scene-top,44px) +
     2.5 * var(--cta6-title-tile) -
-    .5 * var(--dashboard-scene-height)
+    .5 * (100dvh - var(--dashboard-scene-top,44px))
   ),0) scale(.6);
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){

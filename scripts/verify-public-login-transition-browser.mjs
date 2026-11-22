@@ -664,7 +664,7 @@ try{
   // The original native-content canvas remains a reversible one-parameter
   // rollback if Mac compositor behavior differs from Chromium's.
   await send("Page.navigate",{url:origin+"/login?auth-scroll=native"});
-  await until("document.body.dataset.authScrollMode==='native'&&"+
+  await until("document.body?.dataset?.authScrollMode==='native'&&"+
     "!!document.querySelector('[data-auth-glass-card]')",170);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     const fallback=await evaluate("(()=>{"+
