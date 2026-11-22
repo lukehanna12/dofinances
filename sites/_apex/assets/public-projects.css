@@ -88,6 +88,15 @@ body.public-home:has(#public-route-content .public-projects-root){
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
   transform:translateY(1.5%) scale(1.12)
 }
+/* Piranesi NGA print: enlarge past the complete paper/etched-plate border
+ * on every side, including during the fully revealed hover/resting state.
+ * Keep the same 10% entrance-to-rest scale ratio as other project cards. */
+.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"] .project-showcase-photo{
+  transform:scale(1.221)
+}
+.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+  transform:scale(1.11)
+}
 .public-projects-root .project-showcase-content{
   position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
   min-height:100%;box-sizing:border-box;

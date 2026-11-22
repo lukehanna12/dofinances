@@ -30,10 +30,24 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.equal(publicProjectImage({slug:"terminal-scalars"},6),
     "/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
     "The attached Manfred Mohr artwork is served locally on the public site");
-  const fallback=publicProjectImage({slug:"app-caviar"},12);
+  assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v1.webp");
+  assert.equal(publicProjectImage({slug:"hidden-functions"},14),"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg");
+  assert.equal(publicProjectImage({slug:"latexcel"},15),"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
+  const fallback=publicProjectImage({slug:"__unassigned__"},12);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
   assert.equal(PUBLIC_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
   assert.equal(PRIVATE_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
+});
+test("Named art sources and all-sided Piranesi crop are the same on both routes",async()=>{
+  const [publicCSS,privateCSS]=await Promise.all([
+    load("../sites/_apex/assets/public-projects.css"),
+    load("../sites/_apex/app/assets/project-showcase.css")
+  ]);
+  for(const css of [publicCSS,privateCSS]){
+    assert.match(css,/\[data-project-slug="hidden-functions"\][^{}]*\.project-showcase-photo\{\s*transform:scale\(1\.221\)/);
+    assert.match(css,/\[data-project-slug="hidden-functions"\]\.is-photo-ready[^{}]*\.project-showcase-photo\{\s*transform:scale\(1\.11\)/);
+  }
+  assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
 });
 test("new Coming Soon cards and their exact supplied SVGs appear in both Projects views",async()=>{
   const incoming=[
