@@ -754,6 +754,29 @@ try{
   assert.ok(newIconAssets.every(asset=>asset.ok&&
     asset.contentType?.startsWith("image/svg+xml")&&asset.body),
     "Both new icons must be served as real SVG image assets");
+  const updatedArt=await evaluate("(()=>{"+
+    "const terminal=document.querySelector('[data-project-slug=\"terminal-scalars\"]');"+
+    "terminal.dispatchEvent(new Event('pointerenter'));"+
+    "const apple=document.querySelector('[data-project-slug=\"apple-hig-reader\"]');"+
+    "return {image:terminal.querySelector('.project-showcase-photo').getAttribute('src'),"+
+    "appleIcon:apple.querySelector('.project-showcase-lucide').getAttribute('src')};})()");
+  assert.equal(updatedArt.image,"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
+    "Terminal Scalars must reveal the exact attached artwork instead of a wallpaper");
+  assert.equal(updatedArt.appleIcon,"/assets/project-icons/apple-higs-reader.v4.svg",
+    "Apple HIGs Reader must use the new supplied icon");
+  const artAssets=await evaluate("(async()=>{const [art,icon]=await Promise.all(["+
+    "fetch('/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp'),"+
+    "fetch('/assets/project-icons/apple-higs-reader.v4.svg')]);"+
+    "const bytes=new Uint8Array(await art.arrayBuffer());const svg=await icon.text();"+
+    "return {artOk:art.ok,mime:art.headers.get('content-type'),size:bytes.length,"+
+    "webp:String.fromCharCode(...bytes.slice(8,12))==='WEBP',"+
+    "iconOk:icon.ok,hasCircle:svg.includes('circle cx=\"18\" cy=\"15\" r=\"2\"')};})()");
+  assert.equal(artAssets.artOk,true);
+  assert.ok(artAssets.mime?.includes('image/webp'));
+  assert.ok(artAssets.size>5000&&artAssets.webp,
+    "The attached image must arrive as actual WebP binary data");
+  assert.equal(artAssets.iconOk,true);
+  assert.equal(artAssets.hasCircle,true);
   assert.equal(projectState.back,true);
   assert.equal(projectState.glass,true);
   assert.equal(projectState.allButtons,true);

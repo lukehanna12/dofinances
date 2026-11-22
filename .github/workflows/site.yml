@@ -256,6 +256,15 @@ jobs:
           test -s sites/_apex/assets/public-projects-catalog.js
           test -s sites/_apex/assets/project-icons/hidden-functions.svg
           test -s sites/_apex/assets/project-icons/latexcel.svg
+          test -s sites/_apex/assets/project-icons/apple-higs-reader.v4.svg
+          test -s sites/_apex/app/assets/project-icons/apple-higs-reader.v4.svg
+          cmp sites/_apex/assets/project-icons/apple-higs-reader.v4.svg sites/_apex/app/assets/project-icons/apple-higs-reader.v4.svg
+          test -s sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp
+          test -s public/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp
+          cmp sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp public/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp
+          test -s public/assets/project-icons/apple-higs-reader.v4.svg
+          cmp sites/_apex/assets/project-icons/apple-higs-reader.v4.svg public/assets/project-icons/apple-higs-reader.v4.svg
+          test -s dist/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp
           test -s sites/_apex/app/assets/project-icons/hidden-functions.svg
           test -s sites/_apex/app/assets/project-icons/latexcel.svg
           cmp sites/_apex/assets/project-icons/hidden-functions.svg sites/_apex/app/assets/project-icons/hidden-functions.svg
@@ -328,6 +337,8 @@ jobs:
             /assets/project-icons/colosseum-lucide.svg \
             /assets/project-icons/hidden-functions.svg \
             /assets/project-icons/latexcel.svg \
+            /assets/project-icons/apple-higs-reader.v4.svg \
+            /assets/project-art/terminal-scalars-liquid-symmetry.v1.webp \
             /assets/home-dashboard/dashboard-gpu-renderer.js \
             /assets/home-dashboard/dashboard-mosaic.js \
             /assets/home-dashboard/dashboard-gpu-glass.wgsl \

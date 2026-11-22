@@ -27,8 +27,13 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
   assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS),sortPrivate(PRIVATE_PROJECTS));
   assert.equal(PUBLIC_PROJECTS.length,16);
-  const fallback=publicProjectImage({slug:"terminal-scalars"},6);
+  assert.equal(publicProjectImage({slug:"terminal-scalars"},6),
+    "/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
+    "The attached Manfred Mohr artwork is served locally on the public site");
+  const fallback=publicProjectImage({slug:"app-caviar"},12);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
+  assert.equal(PUBLIC_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
+  assert.equal(PRIVATE_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
 });
 test("new Coming Soon cards and their exact supplied SVGs appear in both Projects views",async()=>{
   const incoming=[

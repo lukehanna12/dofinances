@@ -185,7 +185,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "unicode-plus": "square-radical",
  "liquid-plexiglass-26": "lens",
  "3d-liquid-glass-26-swift-package": "move-3d",
- "apple-hig-reader": "apple-worm.v3",
+ "apple-hig-reader": "apple-higs-reader.v4",
  "apple-adobe-fx": "blend",
  "protocol-monitor-pruner": "funnel-code",
  "app-caviar": "opacity",
@@ -193,7 +193,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
- const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
+ const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -203,7 +203,9 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  }
  for(const [slug,url] of Object.entries(PROJECT_CARD_IMAGES)){
   assert.ok(slugs.has(slug),"Image references unknown project "+slug);
-  assert.ok(url.startsWith("https://"),"Image must use HTTPS");
+  if(slug==="terminal-scalars"){
+  assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+ }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
  const script=read("sites/_apex/app/assets/project-showcase.js");
  assert.ok(script.includes("PROJECT_CARD_ICONS[project.slug]"));
@@ -221,6 +223,15 @@ test("Assigned Lucide project icons display large, white, and without number cir
  assert.match(css,/\.project-showcase-lucide\{[^}]*width:28px;height:28px/);
  assert.match(css,/filter:brightness\(0\) invert\(1\)/);
  assert.match(css,/\.project-showcase-number\{[^}]*border-radius:50%/);
+});
+
+test("Terminal Scalars uses the supplied Manfred Mohr artwork as local WebP",()=>{
+ const path="sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp";
+ const bytes=readFileSync(new URL("../"+path,import.meta.url));
+ assert.equal(bytes.toString("ascii",0,4),"RIFF");
+ assert.equal(bytes.toString("ascii",8,12),"WEBP");
+ assert.ok(bytes.byteLength>5000&&bytes.byteLength<40000);
+ assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
 });
 
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
@@ -277,19 +288,20 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v12"'));
 });
 
-test("Apple HIGs Reader uses original Lucide apple geometry plus a white worm",()=>{
- assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-worm.v3");
- const svg=read("sites/_apex/app/assets/project-icons/apple-worm.v3.svg");
+test("Apple HIGs Reader uses the exact user-supplied v4 icon",()=>{
+ assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
+ const svg=read("sites/_apex/app/assets/project-icons/apple-higs-reader.v4.svg");
+ assert.equal(svg,read("sites/_apex/assets/project-icons/apple-higs-reader.v4.svg"),
+  "Authenticated and public cards share identical authored SVG");
  assert.ok(svg.includes('viewBox="0 0 24 24"'));
- assert.ok(svg.includes('stroke="#fff"') && svg.includes('stroke-width="2"'));
- assert.ok(svg.includes('M12 6.528V3a1 1 0 0 1 1-1h0'),"Lucide apple stem preserved");
- assert.ok(svg.includes('M18.237 21A15 15 0 0 0 22 11'),"Lucide apple silhouette preserved");
- assert.ok(svg.includes('M19.25 13.1q1.15-1.6 3.1-1.1'),"Single tiny curve protrudes from outside the right contour");
- assert.ok(svg.includes('transform="translate(-.3 .5) scale(.9)"'),"Apple is positioned to provide external room");
- assert.ok(!svg.includes('M16.5 11.3c-1.8-1.1'),"Older S-shaped worm remains retired");
- assert.ok(!svg.includes("<circle"),"There is no worm head");
- const shared=read("sites/_apex/app/assets/project-showcase.js");
- assert.ok(shared.includes('icon.width=28;icon.height=28'));
+ assert.ok(svg.includes('stroke="currentColor"')&&svg.includes('stroke-width="2"'));
+ for(const fragment of [
+  'm11.25 10.5 1.75 7','M12 6.528V3a1 1 0 011-1h0',
+  'M14 22a2 2 0 012-2h4a2 2 0 012 2',
+  'M21.971 12A15 15 0 0022 11a6 6 0 00-10-4.472',
+  'M5.5 9.5V15','M8.5 9.5v9','<circle cx="18" cy="15" r="2" />'
+ ])assert.ok(svg.includes(fragment),"Missing user-supplied SVG geometry: "+fragment);
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
 });
 
 test("Apple worm v2 is a short hooked curl with a separate head, not the former S",()=>{
@@ -300,14 +312,15 @@ test("Apple worm v2 is a short hooked curl with a separate head, not the former 
  assert.ok(updated.includes('M12.4 17.8c-1-1.7-.5-3.3 1.1-4.2'),"Updated worm has one continuous curved hook");
  assert.ok(!updated.includes('2.4 1.3 2.3 2.6'),"S-shaped middle reversal is removed");
  assert.ok(updated.includes('<circle cx="17.35" cy="13.65" r="1"'),"Separate, rounded head is retained");
- assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('"apple-hig-reader":"apple-worm.v3"'));
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('"apple-hig-reader":"apple-higs-reader.v4"'));
 });
 
 test("Apple worm v3 is outside the right side with no head or internal squiggle",()=>{
  const svg=read("sites/_apex/app/assets/project-icons/apple-worm.v3.svg");
  const old=read("sites/_apex/app/assets/project-icons/apple-worm.v2.svg");
  assert.notEqual(svg,old,"New icon differs from the earlier worm");
- assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-worm.v3");
+ assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-higs-reader.v4",
+  "v3 stays archived while v4 is active");
  assert.ok(svg.includes('M19.25 13.1q1.15-1.6 3.1-1.1'),"Worm protrudes beyond right edge");
  assert.ok(svg.includes('scale(.9)'),"Apple shifted inward to provide room for outside worm");
  assert.ok(svg.includes('vector-effect="non-scaling-stroke"'),"Apple preserves Lucide stroke weight at its new scale");
