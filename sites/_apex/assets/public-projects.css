@@ -21,7 +21,8 @@
 }
 .public-projects-title{
   margin:0;color:#fff;font-size:clamp(34.5px,3vw,46.5px);
-  font-weight:550;line-height:1.12;letter-spacing:-.035em
+  font-weight:550;line-height:1.12;letter-spacing:-.035em;
+  -webkit-user-select:none;user-select:none
 }
 .public-projects-back{
   appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;

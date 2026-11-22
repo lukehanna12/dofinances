@@ -105,6 +105,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
   assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
   assert.match(css,/font-size:clamp\(34\.5px,3vw,46\.5px\)/);
+  assert.match(css,/\.public-projects-title\{[\s\S]*?-webkit-user-select:none;user-select:none/);
   assert.match(css,/\.public-projects-root \.public-projects-title\{\s*color:transparent!important;/);
   assert.match(shader,/@group\(0\) @binding\(4\) var titleGlyphAlpha: texture_2d<f32>;/);
   assert.match(shader,/fn titleGlyphField\(local:vec2<f32>\)/);

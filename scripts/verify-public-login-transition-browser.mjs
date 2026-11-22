@@ -744,6 +744,8 @@ try{
       "return {text:t.textContent,role:t.dataset.publicProjectGlass,"+
       "color:getComputedStyle(t).color,fill:getComputedStyle(t).webkitTextFillColor}})()");
     assert.equal(titlePaint.text,"Projects");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-title')).userSelect"),"none",
+      "The glass title remains semantic but its text cannot be selected");
     assert.equal(titlePaint.role,"title");
     assert.equal(titlePaint.color,"rgba(0, 0, 0, 0)",
       "DOM text ink must not cover the letter-shaped WebGPU material");
