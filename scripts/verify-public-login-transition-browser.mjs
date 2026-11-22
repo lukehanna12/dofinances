@@ -735,19 +735,20 @@ try{
     await until("innerWidth==="+width+"&&innerHeight==="+height,60,25);
     await sleep(90);
     const actual=await evaluate("(()=>{"+
-      "const logo=document.querySelector('#dashboard-title'),p=logo.closest('.cta6-center');"+
-      "const r=logo.getBoundingClientRect(),q=p.getBoundingClientRect();"+
+      "const logo=document.querySelector('#dashboard-title');"+
+      "const r=logo.getBoundingClientRect();"+
       "const scene=document.querySelector('.dashboard-home').getBoundingClientRect();"+
       "const css=getComputedStyle(logo),body=getComputedStyle(document.body);"+
       "return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,"+
-      "parentCenter:(q.top+q.bottom)/2,sceneTop:scene.top,sceneHeight:scene.height,"+
+      "bodyChild:logo.parentElement===document.body,position:css.position,"+
+      "sceneTop:scene.top,sceneHeight:scene.height,"+
       "sceneVar:body.getPropertyValue('--dashboard-scene-height'),"+
       "sceneTopVar:body.getPropertyValue('--dashboard-scene-top'),"+
       "logoTransform:css.transform,logoTranslate:css.translate,"+
       "logoInlineTransform:logo.style.getPropertyValue('transform'),"+
       "logoInlinePriority:logo.style.getPropertyPriority('transform'),"+
       "pinAttr:document.body.dataset.projectsLogoPinned,"+
-      "pinMatches:logo.matches('body.public-home[data-projects-logo-pinned=\"true\"] .dashboard-home .cta6-center h1'),"+
+      "pinMatches:logo.matches('body.public-home[data-projects-logo-pinned=\"true\"] > #dashboard-title'),"+
       "matchingTransformRules:[...document.styleSheets].flatMap(sheet=>{"+
       "try{return [...sheet.cssRules].filter(rule=>rule.style?.transform&&"+
       "logo.matches(rule.selectorText||':not(*)')).map(rule=>({selector:rule.selectorText,"+
@@ -755,6 +756,12 @@ try{
       "href:sheet.href}));}catch{return []}}),"+
       "hidden:document.body.hasAttribute('data-projects-logo-hidden'),"+
       "exitY:logo.style.getPropertyValue('--doof-exit-y')};})()");
+    assert.equal(actual.bodyChild,true,
+      label+": original doof must escape the homepage mosaic containing block");
+    assert.equal(actual.position,"fixed",
+      label+": doof must be truly fixed to the viewport");
+    assert.equal(actual.pinMatches,true,
+      label+": Projects-only pinned CSS selector must remain active");
     assert.ok(Math.abs(actual.x-width/2)<1,
       label+": width resize must keep doof horizontally centered");
     assert.ok(Math.abs(actual.y-projectLogoBaseline.y)<1,
