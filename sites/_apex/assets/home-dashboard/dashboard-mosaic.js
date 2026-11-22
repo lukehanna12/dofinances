@@ -37,7 +37,7 @@ if(root){
     tile.className="cta6-tile "+(iconSource?"cta6-tile--icon":
       filled?"cta6-tile--plain":"cta6-tile--empty");
     if(iconSource){
-      tile.dataset.projectSlug=project.slug;
+      tile.dataset.homeProjectIcon=project.slug;
       const icon=document.createElement("img");
       icon.className="cta6-icon";
       icon.src=iconSource;

@@ -212,6 +212,9 @@ test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay b
  assert.match(mosaic,/const sortedProjects=sortProjectShowcase\(PROJECT_SHOWCASE\)/);
  assert.match(mosaic,/project\?publicProjectIconSource\(project\.slug\)/);
  assert.match(mosaic,/icon\.src=iconSource;/);
+ assert.match(mosaic,/tile\.dataset\.homeProjectIcon=project\.slug;/);
+ assert.doesNotMatch(mosaic,/tile\.dataset\.projectSlug/,
+   "Home icon markers must not collide with Projects card data-project-slug selectors");
  assert.match(publicProject,/const iconSource=publicProjectIconSource\(project\.slug\)/);
  assert.match(publicProject,/icon\.src=iconSource;/);
  assert.doesNotMatch(mosaic,/const icons=\{|<svg class="cta6-icon"/);
