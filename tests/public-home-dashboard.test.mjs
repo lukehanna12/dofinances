@@ -49,7 +49,7 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
   assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
   assert.match(renderer,/tintModel:"shared-square-film",tintFilmStrength:0\.25,/);
-  assert.match(renderer,/pressLightGain:0\.06,/);
+  assert.match(renderer,/pressLightGain:GLASS_INTERACTION\.pressLight,/);
   assert.match(renderer,/backdrop:"GPU-composited-moving-squares"/);
   assert.match(renderer,/compositeGlassPipeline=device\.createRenderPipeline\(/);
   assert.match(renderer,/underlay\.draw\(6,tileCount\)/);
@@ -273,7 +273,7 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
   const names=["dashboard-mosaic.js","dashboard-gpu-renderer.js","dashboard-home-loader.js",
     "dashboard-public-icon-fade.js","dashboard-public-dismiss.js",
-    "dashboard-optics.js","dashboard-interaction.js","dashboard-track.js",
+    "dashboard-optics.js","dashboard-interaction.js","dashboard-glass-model.js","dashboard-track.js",
     "dashboard-tint.js","sidebar-glass-oracle.js",
     "dashboard-gpu-scene.wgsl","dashboard-gpu-mipmap.wgsl","dashboard-gpu-glass.wgsl",
     "dashboard-cloud-veiled-colorful-fields.avif"];
@@ -282,9 +282,15 @@ test("Public rendering uses explicitly copied shader and AVIF assets, not privat
   assert.match(renderer,/const base="\/assets\/home-dashboard\/";/);
   assert.match(renderer,/const url="\/assets\/home-dashboard\/dashboard-cloud-veiled-colorful-fields\.avif";/);
   assert.doesNotMatch(renderer,/"\/app\/assets\//);
-  for(const name of ["dashboard-mosaic.js","dashboard-optics.js","dashboard-home-loader.js",
-    "dashboard-interaction.js","dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
+  // The public optics/interaction intentionally diverge from /app to
+  // consume the new shared public geometry contract. The authenticated
+  // assets are UNCHANGED, not mirrored from the public renderer.
+  for(const name of ["dashboard-mosaic.js","dashboard-home-loader.js",
+    "dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
     assert.equal(asset("assets/home-dashboard/"+name),asset("app/assets/"+name),name+" stays in parity");
+  assert.match(asset("assets/home-dashboard/dashboard-optics.js"),/resolveGlassOpticalGeometry\(/);
+  assert.match(asset("assets/home-dashboard/dashboard-interaction.js"),/glassContainsPoint\(/);
+  assert.doesNotMatch(asset("app/assets/dashboard-interaction.js"),/dashboard-glass-model/);
 });
 
 test("Public footer centers at bottom and is exactly seven-percent opaque",()=>{

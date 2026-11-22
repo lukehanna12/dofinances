@@ -198,7 +198,9 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/syncProjectTitleMask\(panes\)/);
   assert.match(renderer,/normalizeGlassCornerRadii\(\[/);
   assert.match(renderer,/const live=tile\.hasAttribute\("data-home-cta-glass"\)\|\|\s*glassPaneNeedsLiveTransform\(tile\.dataset\?\.publicProjectGlass\)/);
-  assert.match(renderer,/const w=live\?Math\.max\(1,b\.width\):tile\.offsetWidth;/);
+  assert.match(renderer,/const layoutW=Math\.max\(1,tile\.offsetWidth\),layoutH=Math\.max\(1,tile\.offsetHeight\)/);
+  assert.match(renderer,/const w=live\?Math\.max\(1,b\.width\):layoutW;/);
+  assert.match(renderer,/const surface=resolveGlassSurface\(/);
   assert.match(renderer,/searchGlass,/);
   assert.match(controls,/FILTER_MORPH_ICON=svg\(/);
   assert.match(controls,/class="public-projects-icon-morph"/);
