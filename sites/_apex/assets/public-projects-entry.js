@@ -16,6 +16,9 @@ const PROJECT_ENTER_HEADING_DELAY_MS=165;
 const PROJECT_ENTER_FIRST_CARD_DELAY_MS=330;
 const PROJECT_ENTER_STAGGER_MS=65;
 const PROJECT_ENTER_TAIL_MS=60;
+// Keep the logo only until the (possibly unopened) search capsule approaches
+// within 5 CSS pixels below its bottom edge in the scrolled Projects route.
+const PROJECT_LOGO_SEARCH_GAP_PX=5;
 // Keep in sync with the route-owned CSS reverse stagger and final header exit.
 const PROJECT_EXIT_DURATION_MS=420;
 const PROJECT_EXIT_STAGGER_MS=45;
@@ -144,6 +147,31 @@ export function mountProjects(host,{onBack,onExitComplete}){
   },reduced.matches?0:PROJECT_ENTER_FIRST_CARD_DELAY_MS+
     PROJECT_ENTER_DURATION_MS+12*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
+  const routeScroll=root.closest("#public-route-content");
+  const logo=document.getElementById("dashboard-title");
+  const searchCapsule=headingRow.querySelector(".public-projects-search-field");
+  const logoScrollAbort=new AbortController();
+  let logoHidden=false;
+  const syncLogoWithScroll=()=>{
+    if(closed||exiting||!routeScroll||!logo||!searchCapsule)return;
+    // The search capsule exists even while collapsed, and scaleX does not
+    // change its vertical position. Measure its real rect, not search state
+    // or the input's visibility. Use doof's displayed compact bounds.
+    const searchTop=searchCapsule.getBoundingClientRect().top;
+    const logoBottom=logo.getBoundingClientRect().bottom;
+    const hide=routeScroll.scrollTop>0&&
+      searchTop<=logoBottom+PROJECT_LOGO_SEARCH_GAP_PX;
+    if(hide===logoHidden)return;
+    logoHidden=hide;
+    document.body.toggleAttribute("data-projects-logo-hidden",hide);
+  };
+  routeScroll?.addEventListener("scroll",syncLogoWithScroll,
+    {passive:true,signal:logoScrollAbort.signal});
+  addEventListener("resize",syncLogoWithScroll,
+    {passive:true,signal:logoScrollAbort.signal});
+  visualViewport?.addEventListener("resize",syncLogoWithScroll,
+    {passive:true,signal:logoScrollAbort.signal});
+  syncLogoWithScroll();
   back.addEventListener("click",event=>{
     if(closed||exiting)return;
     if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
@@ -174,6 +202,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
     },
     unmount(){
       if(closed)return;closed=true;
+      logoScrollAbort.abort();
+      document.body.removeAttribute("data-projects-logo-hidden");
       if(timer!==null)clearTimeout(timer);
       if(headerTimer!==null)clearTimeout(headerTimer);
       if(controlTimer!==null)clearTimeout(controlTimer);

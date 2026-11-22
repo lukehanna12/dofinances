@@ -806,6 +806,43 @@ try{
     "Card artwork/icon and glass geometry remain in the same scroll tree");
   assert.ok(Math.abs(projectsScrollMotion.canvasDelta)<1,
     "The actual WebGPU canvas remains fixed against elastic scroll");
+  // The expanded capsule is not required for the visibility trigger: its
+  // inert DOM box remains positioned above the search button when closed.
+  // Position is measured against the compact logo's actual bottom edge,
+  // with precisely a 5px separation, not an arbitrary scrollTop constant.
+  const logoThreshold=await evaluate("(()=>{"+
+    "const route=document.querySelector('#public-route-content');"+
+    "const logo=document.querySelector('#dashboard-title');"+
+    "const field=document.querySelector('.public-projects-search-field');"+
+    "const inactive=!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded');"+
+    "const oldHeight=route.style.height;route.style.height='300px';"+
+    "route.scrollTop=0;route.dispatchEvent(new Event('scroll'));"+
+    "const startTop=field.getBoundingClientRect().top;"+
+    "const logoBottom=logo.getBoundingClientRect().bottom;"+
+    "return {oldHeight,inactive,startTop,logoBottom,"+
+      "distance:startTop-logoBottom-5,hidden:document.body.hasAttribute('data-projects-logo-hidden')};})()");
+  assert.equal(logoThreshold.inactive,true,
+    "Scroll-triggered doof fade must work before search is ever opened");
+  assert.equal(logoThreshold.hidden,false,
+    "The logo stays visible at the top of the Projects scrollport");
+  const crossingScroll=Math.max(12,Math.ceil(logoThreshold.distance)+9);
+  await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+    "route.scrollTop="+crossingScroll+";route.dispatchEvent(new Event('scroll'));})()");
+  await until("document.body.hasAttribute('data-projects-logo-hidden')",25,30);
+  const crossed=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
+    "return {scrollTop:route.scrollTop,"+
+    "searchTop:document.querySelector('.public-projects-search-field').getBoundingClientRect().top,"+
+    "logoBottom:document.querySelector('#dashboard-title').getBoundingClientRect().bottom}})()");
+  assert.ok(crossed.scrollTop>0);
+  assert.ok(crossed.searchTop<=crossed.logoBottom+5,
+    "Fade starts only when the would-be search bar top crosses 5px below doof");
+  await until("Number(getComputedStyle(document.querySelector('#dashboard-title')).opacity)<.06",20,35);
+  await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
+    "r.scrollTop=0;r.dispatchEvent(new Event('scroll'));})()");
+  await until("!document.body.hasAttribute('data-projects-logo-hidden')",25,30);
+  await until("Number(getComputedStyle(document.querySelector('#dashboard-title')).opacity)>.95",20,35);
+  await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
+    "r.style.height="+JSON.stringify(logoThreshold.oldHeight)+";})()");
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
@@ -1019,6 +1056,8 @@ try{
   }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
+  assert.equal(await evaluate("document.body.hasAttribute('data-projects-logo-hidden')"),false,
+    "Unmount must clear Projects-only logo fading before the homepage returns");
   await sleep(560);
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"))>.995,
     "Bottom buttons return visibly fully opaque after the Projects reverse transition");

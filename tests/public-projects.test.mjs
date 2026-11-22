@@ -71,9 +71,10 @@ test("WebGPU capsule radius resolves to the rendered CSS semicircle",()=>{
   assert.throws(()=>normalizeGlassCornerRadii(["999px","999px","999px","999px"],0,40),RangeError);
 });
 test("all three public Projects triggers use the persistent route registry",async()=>{
-  const [html,router,entry,workflow]=await Promise.all([
+  const [html,router,entry,workflow,homeCss]=await Promise.all([
     load("../sites/_apex/index.html"),load("../sites/_apex/assets/public-home-transition.js"),
-    load("../sites/_apex/assets/public-projects-entry.js"),load("../.github/workflows/site.yml")
+    load("../sites/_apex/assets/public-projects-entry.js"),load("../.github/workflows/site.yml"),
+    load("../sites/_apex/assets/public-home.css")
   ]);
   assert.equal((html.match(/data-public-target="\/projects"/g)||[]).length,3);
   assert.match(router,/\["\/projects",\{module:"\/assets\/public-projects-entry\.js"/);
@@ -91,6 +92,18 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/const PROJECT_ENTER_HEADING_DELAY_MS=165;/);
   assert.match(entry,/const PROJECT_ENTER_FIRST_CARD_DELAY_MS=330;/);
   assert.match(entry,/const PROJECT_ENTER_STAGGER_MS=65;/);
+  assert.match(entry,/const PROJECT_LOGO_SEARCH_GAP_PX=5;/);
+  assert.match(entry,/const searchCapsule=headingRow\.querySelector\("\.public-projects-search-field"\);/);
+  assert.match(entry,/const searchTop=searchCapsule\.getBoundingClientRect\(\)\.top;/);
+  assert.match(entry,/const logoBottom=logo\.getBoundingClientRect\(\)\.bottom;/);
+  assert.match(entry,/const hide=routeScroll\.scrollTop>0&&\s*searchTop<=logoBottom\+PROJECT_LOGO_SEARCH_GAP_PX;/);
+  assert.match(entry,/document\.body\.toggleAttribute\("data-projects-logo-hidden",hide\)/);
+  assert.match(entry,/routeScroll\?\.addEventListener\("scroll",syncLogoWithScroll,/);
+  assert.match(entry,/logoScrollAbort\.abort\(\)/);
+  assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-hidden"\)/);
+  assert.match(homeCss,/body\.public-home\[data-projects-logo-hidden\] \.dashboard-home \.cta6-center h1\{\s*opacity:0;/);
+  assert.match(homeCss,/transition:transform 440ms cubic-bezier\(\.22,\.72,\.24,1\),\s*opacity 210ms cubic-bezier\(\.22,\.72,\.24,1\);/);
+  assert.match(homeCss,/body\.public-home\[data-direct-login="true"\]:has\(\.public-projects-root\)/);
   assert.match(entry,/root\.style\.setProperty\("--project-heading-enter-delay",PROJECT_ENTER_HEADING_DELAY_MS\+"ms"\)/);
   assert.match(entry,/root\.style\.setProperty\("--project-first-card-enter-delay",PROJECT_ENTER_FIRST_CARD_DELAY_MS\+"ms"\)/);
   assert.match(entry,/PROJECT_ENTER_FIRST_CARD_DELAY_MS\+\s*PROJECT_ENTER_DURATION_MS\+12\*PROJECT_ENTER_STAGGER_MS\+PROJECT_ENTER_TAIL_MS/);

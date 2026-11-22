@@ -331,7 +331,15 @@ body.public-home[data-direct-login="true"] .dashboard-home .cta6-bottom-action{
 body.public-home .dashboard-home .cta6-center h1{
   view-transition-name:doof-brand;
   transform-origin:center center;
-  transition:transform 440ms cubic-bezier(.22,.72,.24,1);
+  transition:transform 440ms cubic-bezier(.22,.72,.24,1),
+    opacity 210ms cubic-bezier(.22,.72,.24,1);
+}
+/* Projects alone: fade the persistent, compact doof when the unexpanded
+ * search capsule crosses 5px beneath its visible bottom edge. This never
+ * changes its position, scale, glass material or other route behavior.
+ * The route owns setting and clearing the attribute on native scroll. */
+body.public-home[data-projects-logo-hidden] .dashboard-home .cta6-center h1{
+  opacity:0;
 }
 /* Keep the one-time logo introduction animation running if a user
    clicks early. Cancelling it would snap the brand upward by 16px and restart
@@ -409,6 +417,12 @@ body.public-home > #public-route-content > #public-route-stage{
 }
 body.public-home[data-direct-login="true"]:not([data-public-ready="true"]) .cta6-center h1{visibility:hidden;}
 body.public-home[data-direct-login="true"] .cta6-center h1{transition:none!important;}
+/* Direct /projects loads still fade on scroll, while keeping their compact
+ * logo's initial position immediate (only its opacity may animate). */
+body.public-home[data-direct-login="true"]:has(.public-projects-root)
+  .dashboard-home .cta6-center h1{
+  transition:opacity 210ms cubic-bezier(.22,.72,.24,1)!important
+}
 body.public-home[data-public-route="returning"]:not([data-gpu-scene="ready"])
   .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   transition:opacity 440ms cubic-bezier(.24,.72,.3,1),
