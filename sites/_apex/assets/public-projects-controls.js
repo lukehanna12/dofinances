@@ -37,8 +37,14 @@ export function projectMatchesFilters(project,query="",selectedCategories=new Se
 const svg=(body,extra="")=>
   '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+extra+'>'+body+'</svg>';
 const SEARCH_ICON=svg('<circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.5 4.5"/>');
-const FILTER_ICON=svg('<path d="M4 5.5h16l-6.4 7.1v5.7l-3.2 1.7v-7.4z"/>','class="public-projects-icon-filter"');
-const FILTER_UP=svg('<path d="m6.5 14.5 5.5-5.5 5.5 5.5"/>','class="public-projects-icon-up"');
+// The filter icon is a three-stroke, narrowing-line filter glyph. The SAME
+// physical strokes rotate/translate into an upward chevron and return on
+// collapse; there are no overlapping SVGs or cross-faded glyph replacements.
+const FILTER_MORPH_ICON=svg(
+  '<path class="public-projects-filter-morph-left" d="M5 7.5h14"/>'+
+  '<path class="public-projects-filter-morph-right" d="M7 12h10"/>'+
+  '<path class="public-projects-filter-morph-tail" d="M9.5 16.5h5"/>',
+  'class="public-projects-icon-morph"');
 const X_ICON=svg('<path d="M6 6l12 12M18 6 6 18"/>');
 const CHECK_ICON=svg('<path d="m5 12 4 4L19 6"/>');
 const GITHUB_ICON='<svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor" aria-hidden="true"><path d="M12 .75a11.25 11.25 0 0 0-3.557 21.925c.563.104.769-.244.769-.542 0-.268-.01-.976-.015-1.915-3.127.679-3.787-1.507-3.787-1.507-.511-1.298-1.248-1.645-1.248-1.645-1.021-.697.077-.683.077-.683 1.129.079 1.723 1.16 1.723 1.16 1.003 1.721 2.63 1.224 3.27.936.101-.727.392-1.224.714-1.506-2.496-.284-5.12-1.248-5.12-5.558 0-1.228.438-2.231 1.158-3.018-.117-.285-.502-1.428.11-2.977 0 0 .943-.302 3.094 1.153A10.775 10.775 0 0 1 12 6.43c.956.004 1.918.129 2.817.379 2.149-1.455 3.09-1.153 3.09-1.153.613 1.549.227 2.692.112 2.977.722.787 1.156 1.79 1.156 3.018 0 4.32-2.628 5.271-5.132 5.549.403.349.763 1.038.763 2.093 0 1.511-.014 2.731-.014 3.102 0 .301.204.652.774.54A11.253 11.253 0 0 0 12 .75z"/></svg>';
@@ -90,7 +96,7 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
   const filterWrap=el("div","public-projects-filter-wrap");
   const filterButton=namedButton("public-projects-tool-button public-projects-filter-button",
     "Filter projects","filter");
-  filterButton.innerHTML=FILTER_ICON+FILTER_UP;
+  filterButton.innerHTML=FILTER_MORPH_ICON;
   filterButton.setAttribute("aria-haspopup","true");
   filterButton.setAttribute("aria-controls","public-projects-filter-options");
   filterButton.setAttribute("aria-expanded","false");

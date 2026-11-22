@@ -260,10 +260,32 @@ body.public-home[data-auth-gpu-scene="ready"]
 }
 /* The dropdown stays in the public route's layer stack above the cards.
  * A *single* shared WebGPU pane is the backdrop of the entire dropdown. */
-.public-projects-filter-button>svg{grid-area:1/1;transition:opacity 140ms ease,transform 220ms ease}
-.public-projects-filter-button .public-projects-icon-up{opacity:0;transform:translateY(3px)}
-.public-projects-filter-wrap.is-open .public-projects-icon-filter{opacity:0;transform:translateY(-3px)}
-.public-projects-filter-wrap.is-open .public-projects-icon-up{opacity:1;transform:translateY(0)}
+/* One continuous FILTER -> UP morph. Three physical strokes form an
+ * ordinary tiered filter icon at rest. Their endpoints align into the
+ * upward chevron through transform interpolation, with no icon swap.
+ * Reversing the .is-open state plays the exact inverse motion. */
+.public-projects-filter-button>.public-projects-icon-morph{
+  display:block;overflow:visible;
+  grid-area:1/1
+}
+.public-projects-icon-morph>path{
+  transform-box:view-box;
+  transition:transform 280ms cubic-bezier(.22,.72,.24,1),
+    opacity 185ms ease;
+  will-change:transform
+}
+.public-projects-filter-morph-left{transform-origin:12px 7.5px}
+.public-projects-filter-morph-right{transform-origin:12px 12px}
+.public-projects-filter-morph-tail{transform-origin:12px 16.5px}
+.public-projects-filter-wrap.is-open .public-projects-filter-morph-left{
+  transform:translate(-2.75px,4.25px) rotate(-45deg) scaleX(.5556)
+}
+.public-projects-filter-wrap.is-open .public-projects-filter-morph-right{
+  transform:translate(2.75px,-.25px) rotate(45deg) scaleX(.7778)
+}
+.public-projects-filter-wrap.is-open .public-projects-filter-morph-tail{
+  transform:translateY(-4.75px) scaleX(.2);opacity:0
+}
 .public-projects-filter-panel{
   box-sizing:border-box;position:absolute;right:0;top:calc(100% + 10px);
   width:min(232px,calc(100vw - 36px));padding:8px;z-index:15;
@@ -315,6 +337,6 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 @media(prefers-reduced-motion:reduce){
   .public-projects-tool-button,.public-projects-search-cancel,
   .public-projects-search-field,.public-projects-filter-panel,
-  .public-projects-filter-button>svg,.public-projects-filter-option,
+  .public-projects-icon-morph>path,.public-projects-filter-option,
   .public-projects-search-input{transition:none!important}
 }

@@ -823,6 +823,34 @@ try{
   assert.equal(searchState.cancelRadius,"999px");
   assert.equal(searchState.cancelVisible,"visible");
   assert.equal(searchState.inputActive,true);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    // A transparent CSS face is insufficient: a 999px radius previously
+    // discarded even the center of the capsule in the WebGPU shader.
+    await until("window.__dashboardWebGPU?.projectGlass?.searchGlass?.opacity>=.99&&"+
+      "window.__dashboardWebGPU.projectGlass.searchGlass.widthPx>300",60,35);
+    const pane=await evaluate("window.__dashboardWebGPU.projectGlass.searchGlass");
+    assert.equal(pane.materialTag,-2,
+      "Search capsule shares the untinted card/home-square glass material");
+    assert.ok(Math.abs(pane.radiusPx-20)<1,
+      "Capsule must have a 20px GPU corner radius, not the authored CSS 999px");
+    assert.ok(Math.abs(pane.heightPx-40)<1);
+    assert.ok(Math.abs(pane.widthPx-searchState.pillWidth)<2,
+      "The actual GPU pane follows the presented capsule size");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).backgroundColor"),
+      "rgba(0, 0, 0, 0)");
+    const pixel=await evaluate("(async()=>{"+
+      "const canvas=document.querySelector('#dashboard-auth-glass-scene');"+
+      "const image=new Image();image.src=canvas.toDataURL('image/png');await image.decode();"+
+      "const copy=document.createElement('canvas');copy.width=canvas.width;copy.height=canvas.height;"+
+      "const context=copy.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);"+
+      "const origin=canvas.getBoundingClientRect();"+
+      "const bounds=document.querySelector('.public-projects-search-field').getBoundingClientRect();"+
+      "const x=Math.floor((bounds.left+bounds.width*.5-origin.left)*canvas.width/origin.width);"+
+      "const y=Math.floor((bounds.top+bounds.height*.5-origin.top)*canvas.height/origin.height);"+
+      "return Array.from(context.getImageData(x,y,1,1).data);})()");
+    assert.ok(pixel[3]>=200,
+      "Expanded search MUST have a real WebGPU glass pixel in its center, got "+pixel);
+  }
   await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
     "input.value='ReadMe';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
   assert.equal(await evaluate("document.querySelectorAll('.public-projects-root .project-showcase-card:not([hidden])').length"),1,
@@ -839,19 +867,41 @@ try{
 
   // Multiselect filters and the downward overlay are independently owned
   // by Projects; the search term and the selected type chips compose.
+  // The filter icon changes via continuous three-stroke geometry, with
+  // no overlay/crossfade between two SVGs.
+  const closedFilter=await evaluate("(()=>{const b=document.querySelector('.public-projects-filter-button');"+
+    "return {svgCount:b.querySelectorAll('svg').length,pathCount:b.querySelectorAll('svg path').length,"+
+    "left:getComputedStyle(b.querySelector('.public-projects-filter-morph-left')).transform,"+
+    "tail:Number(getComputedStyle(b.querySelector('.public-projects-filter-morph-tail')).opacity)};})()");
+  assert.equal(closedFilter.svgCount,1);
+  assert.equal(closedFilter.pathCount,3);
+  assert.equal(closedFilter.left,"none");
+  assert.equal(closedFilter.tail,1);
   await evaluate("document.querySelector('.public-projects-filter-button').click()");
   await until("document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",30);
-  await sleep(330);
+  await sleep(100);
+  const duringMorph=await evaluate("(()=>{const b=document.querySelector('.public-projects-filter-button');"+
+    "return {left:getComputedStyle(b.querySelector('.public-projects-filter-morph-left')).transform,"+
+    "tail:Number(getComputedStyle(b.querySelector('.public-projects-filter-morph-tail')).opacity)};})()");
+  assert.notEqual(duringMorph.left,"none",
+    "The actual filter stroke must move; no SVG icon replacement");
+  assert.ok(duringMorph.tail<1,"The third stroke recedes into the upward chevron");
+  await sleep(255);
   const dropdown=await evaluate("(()=>{const p=document.querySelector('.public-projects-filter-panel');"+
     "return {names:[...p.querySelectorAll('.public-projects-filter-label')].map(x=>x.textContent),"+
     "top:p.getBoundingClientRect().top,bottom:p.getBoundingClientRect().bottom,"+
     "firstCardTop:document.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
     "glass:p.dataset.publicProjectGlass,expanded:document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded'),"+
-    "upOpacity:getComputedStyle(document.querySelector('.public-projects-icon-up')).opacity};})()");
+    "leftTransform:getComputedStyle(document.querySelector('.public-projects-filter-morph-left')).transform,"+
+    "rightTransform:getComputedStyle(document.querySelector('.public-projects-filter-morph-right')).transform,"+
+    "tailOpacity:Number(getComputedStyle(document.querySelector('.public-projects-filter-morph-tail')).opacity)};})()");
   assert.deepEqual(dropdown.names,["Applications","Extensions","Plugins","Add-ons","CLIs"]);
   assert.equal(dropdown.glass,"filter-dropdown");
   assert.equal(dropdown.expanded,"true");
-  assert.equal(dropdown.upOpacity,"1");
+  assert.notEqual(dropdown.leftTransform,"none");
+  assert.notEqual(dropdown.rightTransform,"none");
+  assert.equal(dropdown.tailOpacity,0,
+    "Arrowhead has two strokes and no overlaid SVG to crossfade");
   assert.ok(dropdown.top<dropdown.firstCardTop&&dropdown.bottom>dropdown.firstCardTop,
     "The glass menu must drop over project cards, not push the grid down");
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
@@ -870,6 +920,8 @@ try{
   await evaluate("document.querySelector('.public-projects-title').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
   await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
   await until("getComputedStyle(document.querySelector('.public-projects-filter-panel')).visibility==='hidden'",30,75);
+  await until("getComputedStyle(document.querySelector('.public-projects-filter-morph-left')).transform==='none'&&"+
+    "Number(getComputedStyle(document.querySelector('.public-projects-filter-morph-tail')).opacity)>.99",30,75);
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-panel')).opacity"))<.02,
     "The outside-click collapse must finish its reverse opacity and geometry");
   assert.equal(await evaluate("document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded')"),"false");

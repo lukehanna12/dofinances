@@ -13,6 +13,9 @@ import {
   PROJECT_FILTER_CATEGORIES,PROJECT_CATEGORY_BY_KIND,projectMatchesFilters
 } from "../sites/_apex/assets/public-projects-controls.js";
 import {createAuthGlassHoverController} from "../sites/_apex/assets/home-dashboard/dashboard-auth-hover.js";
+import {
+  normalizeGlassCornerRadii,glassPaneNeedsLiveTransform
+} from "../sites/_apex/assets/home-dashboard/dashboard-glass-geometry.js";
 import {TILE_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-interaction.js";
 const load=path=>readFile(new URL(path,import.meta.url),"utf8");
 
@@ -46,6 +49,26 @@ test("Projects search and the five multiselect filters use only public curated k
     projectMatchesFilters(project,"ReadMe",new Set(["CLIs"]))).length,0);
   assert.equal(PUBLIC_PROJECTS.filter(project=>
     projectMatchesFilters(project,"no-project-can-match-this-phrase")).length,0);
+});
+test("WebGPU capsule radius resolves to the rendered CSS semicircle",()=>{
+  assert.deepEqual(normalizeGlassCornerRadii(["999px","999px","999px","999px"],390,40),
+    [20,20,20,20],
+    "A long pill MUST NOT pass 999px into the mode4 glass SDF");
+  assert.deepEqual(normalizeGlassCornerRadii(["999px","999px","999px","999px"],10,40),
+    [5,5,5,5],
+    "While opening, the GPU capsule follows its live scaleX transform");
+  assert.deepEqual(normalizeGlassCornerRadii(["999px","999px","999px","999px"],40,40),
+    [20,20,20,20],"The circular search cancel has a valid glass SDF");
+  assert.deepEqual(normalizeGlassCornerRadii(["12px","12px","12px","12px"],40,40),
+    [12,12,12,12],"Existing square button optical geometry must stay unchanged");
+  assert.deepEqual(normalizeGlassCornerRadii(["10px","10px","10px","10px"],200,250),
+    [10,10,10,10],"Existing project card optical geometry stays unchanged");
+  assert.equal(glassPaneNeedsLiveTransform("search-field"),true);
+  assert.equal(glassPaneNeedsLiveTransform("filter-dropdown"),true);
+  assert.equal(glassPaneNeedsLiveTransform("card"),false);
+  assert.equal(glassPaneNeedsLiveTransform("title"),false);
+  assert.throws(()=>normalizeGlassCornerRadii(["999px"],390,40),TypeError);
+  assert.throws(()=>normalizeGlassCornerRadii(["999px","999px","999px","999px"],0,40),RangeError);
 });
 test("all three public Projects triggers use the persistent route registry",async()=>{
   const [html,router,entry,workflow]=await Promise.all([
@@ -87,6 +110,13 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="title"\)return -8;/);
   assert.match(renderer,/syncProjectTitleMask\(panes\)/);
+  assert.match(renderer,/normalizeGlassCornerRadii\(\[/);
+  assert.match(renderer,/const live=glassPaneNeedsLiveTransform\(tile\.dataset\?\.publicProjectGlass\)/);
+  assert.match(renderer,/const w=live\?Math\.max\(1,b\.width\):tile\.offsetWidth;/);
+  assert.match(renderer,/searchGlass,/);
+  assert.match(controls,/FILTER_MORPH_ICON=svg\(/);
+  assert.match(controls,/class="public-projects-icon-morph"/);
+  assert.doesNotMatch(controls,/FILTER_ICON\+FILTER_UP/);
   assert.match(renderer,/glyphMaskTexture\.createView\(\)/);
   assert.match(renderer,/rebindGlassGroups\(\)/);
   assert.match(renderer,/device\.queue\.writeTexture\(\{texture\},pixels/);
@@ -134,6 +164,10 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(shader,/let inner=refractionEnvelope\(signed,innerAmount,innerInvHeight\);/);
   assert.match(css,/\.public-projects-search-field\{[\s\S]*?transform-origin:right center;/);
   assert.match(css,/\.public-projects-filter-panel\{[\s\S]*?transform-origin:top right/);
+  assert.match(css,/\.public-projects-filter-wrap\.is-open \.public-projects-filter-morph-left\{\s*transform:translate\(-2\.75px,4\.25px\) rotate\(-45deg\) scaleX\(\.5556\)/);
+  assert.match(css,/\.public-projects-filter-wrap\.is-open \.public-projects-filter-morph-right\{\s*transform:translate\(2\.75px,-\.25px\) rotate\(45deg\) scaleX\(\.7778\)/);
+  assert.match(css,/\.public-projects-filter-wrap\.is-open \.public-projects-filter-morph-tail\{\s*transform:translateY\(-4\.75px\) scaleX\(\.2\);opacity:0/);
+  assert.doesNotMatch(css,/\.public-projects-icon-up\{|\.public-projects-icon-filter\{/);
   assert.match(css,/\.public-projects-root \.project-showcase-card\[hidden\]\{display:none!important\}/);
   assert.match(css,/\.public-projects-root\.is-exiting \.project-showcase-card\{\s*animation:project-showcase-exit \.42s both;/);
   assert.match(css,/animation-delay:calc\(var\(--project-reverse-index,0\)\*45ms\)/);

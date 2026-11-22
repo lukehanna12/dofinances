@@ -22,6 +22,7 @@ import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
+import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform} from "./dashboard-glass-geometry.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
@@ -277,14 +278,22 @@ function makeLayoutData(tile,scale,sceneTop=0){
   // Reading DOM positions only establishes the INITIAL user-selected layout.
   // Future translations are GPU-side parameters, not wallpaper captures.
   const b=tile.getBoundingClientRect();
-  const w=tile.offsetWidth,h=tile.offsetHeight;
-  const x=b.left+b.width*.5-w*.5;
-  const y=b.top+b.height*.5-h*.5-sceneTop;
+  // Route dropdowns and the search capsule have their own transform
+  // animation. Refract against their PRESENTED bounds, not offsetWidth,
+  // which remains the full 390px while scaleX() is only 0.025.
+  const live=glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass);
+  const w=live?Math.max(1,b.width):tile.offsetWidth;
+  const h=live?Math.max(1,b.height):tile.offsetHeight;
+  const x=live?b.left:b.left+b.width*.5-w*.5;
+  const y=(live?b.top:b.top+b.height*.5-h*.5)-sceneTop;
   const style=getComputedStyle(tile);
-  const radii=[
+  // CSS 999px pill corners render as a 20px semicircle on a 40px-high
+  // field. Feeding 999 directly into mode4SDF discards the glass even
+  // at the field's center; clamp only the geometry, never the material.
+  const radii=normalizeGlassCornerRadii([
     style.borderTopLeftRadius,style.borderTopRightRadius,
     style.borderBottomRightRadius,style.borderBottomLeftRadius
-  ].map(v=>Number.parseFloat(v)||0);
+  ],w,h);
   const radius=radii[0];
   const nativeMode=selectModeForNormalizedCorners(radii);
   // The retained native writer compares FOUR NORMALIZED PRIVATE LANES.
@@ -768,9 +777,20 @@ async function initialize(){
     authHover.retargetRects(tileData,tileCount,cornerInert,
       projects?"independent":"nested");
     if(projects){
+      const searchIndex=panes.findIndex(node=>
+        node.dataset.publicProjectGlass==="search-field");
+      const searchOffset=searchIndex<0?-1:(tileCount+searchIndex)*TILE_FLOATS;
+      const searchGlass=searchOffset<0?null:{
+        widthPx:tileData[searchOffset+2]/dpr,
+        heightPx:tileData[searchOffset+3]/dpr,
+        radiusPx:tileData[searchOffset+4]/dpr,
+        opacity:tileData[searchOffset+18],
+        // The exact same material tag as the untinted square/card.
+        materialTag:tileData[searchOffset+5]
+      };
       audit.projectGlass={renderer:"shared-webgpu-glassPipeline",
         count:roles.length,roles,faceScheme:tint.state.scheme,
-        materialReference:"first-home-square",tint:"none",
+        materialReference:"first-home-square",tint:"none",searchGlass,
         titleGlyphGlass:roles.includes("title"),
         titleMaskPixels:[...glyphMaskDimensions],
         headerDissolve:projectDismissElapsed>=0?{
