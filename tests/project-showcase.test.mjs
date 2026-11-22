@@ -193,7 +193,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
- const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
+ const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -205,6 +205,8 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   assert.ok(slugs.has(slug),"Image references unknown project "+slug);
   if(slug==="terminal-scalars"){
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+ }else if(slug==="app-caviar"){
+  assert.equal(url,"/assets/project-art/app-caviar-source.v1.webp");
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
  const script=read("sites/_apex/app/assets/project-showcase.js");
@@ -234,6 +236,16 @@ test("Terminal Scalars uses the supplied Manfred Mohr artwork as local WebP",()=
  assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
 });
 
+test("App Caviar uses the attached local WebP and the requested artworks are assigned by slug",()=>{
+ const path="sites/_apex/assets/project-art/app-caviar-source.v1.webp";
+ const bytes=readFileSync(new URL("../"+path,import.meta.url));
+ assert.equal(bytes.toString("ascii",0,4),"RIFF");
+ assert.equal(bytes.toString("ascii",8,12),"WEBP");
+ assert.ok(bytes.byteLength>2000&&bytes.byteLength<20000);
+ assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v1.webp");
+ assert.equal(PROJECT_CARD_IMAGES["latexcel"],"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
+ assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg");
+});
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
  const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
  const pastoral=PROJECT_CARD_IMAGES.colosseum;
