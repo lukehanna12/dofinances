@@ -491,7 +491,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // never a different film strength, transmission or color equation.
     // Other route-specific form controls retain their established films.
     let squareFilmStrength=0.25;
-    var filmStrength=select(squareFilmStrength,0.60,authPane);
+    var filmStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -9.0){filmStrength=squareFilmStrength;}
     else if(tile.properties.y == -4.0){filmStrength=0.82;}
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
