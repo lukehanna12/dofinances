@@ -685,6 +685,11 @@ try{
     "glass:cards.every(c=>c.dataset.publicProjectGlass==='card'),"+
     "allButtons:cards.every(c=>c.tagName==='BUTTON'&&!c.hasAttribute('href')),"+
     "firstImageLazy:!first.querySelector('.project-showcase-photo').hasAttribute('src'),"+
+    "backTop:root.querySelector('.public-projects-back').getBoundingClientRect().top,"+
+    "backBottom:root.querySelector('.public-projects-back').getBoundingClientRect().bottom,"+
+    "headingTop:root.querySelector('.public-projects-title').getBoundingClientRect().top,"+
+    "headingBottom:root.querySelector('.public-projects-title').getBoundingClientRect().bottom,"+
+    "gridTop:root.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
     "shell:!!document.querySelector('#cta6-mosaic'),"+
     "transparent: getComputedStyle(first).backgroundColor};})()");
   assert.equal(projectState.state,"projects");
@@ -696,6 +701,10 @@ try{
   assert.equal(projectState.allButtons,true);
   assert.equal(projectState.firstImageLazy,true);
   assert.equal(projectState.shell,true);
+  assert.ok(projectState.headingTop>=projectState.backBottom+8,
+    "Projects heading must sit clearly below the back glass button");
+  assert.ok(projectState.gridTop>=projectState.headingBottom+16,
+    "Project cards must start below the stacked page header");
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
@@ -713,6 +722,8 @@ try{
   await evaluate("document.querySelector('.public-projects-back').click()");
   assert.equal(await evaluate("window.__dofPublicRouter.state"),"exiting");
   assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .project-showcase-card')).animationName"),"project-showcase-exit");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-root .project-showcase-card')).animationDuration"),"0.42s",
+    "Project card reverse motion should be slightly quicker than entrance");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
   await sleep(560);

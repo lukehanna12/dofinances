@@ -9,7 +9,12 @@
   color:#f5f5f5; font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   color-scheme:dark;
 }
-.public-projects-header{display:flex;align-items:center;gap:14px;margin:0 0 22px}
+/* Stack the glass back chip above the page title; the project grid begins
+ * below the entire header rather than sharing its first horizontal row. */
+.public-projects-header{
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:12px;margin:0 0 24px
+}
 .public-projects-title{margin:0;color:#fff;font-size:clamp(23px,2vw,31px);font-weight:550;letter-spacing:-.035em}
 .public-projects-back{
   appearance:none;display:grid;place-items:center;flex:none;width:36px;height:36px;
@@ -115,13 +120,17 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
 }
 @keyframes project-showcase-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes project-showcase-exit{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(24px)}}
+/* A slightly quicker reverse: 420ms per card, 45ms between siblings.
+ * Last-to-first order remains unchanged. The header then exits as one unit.
+ * Total route-owned exit ~1.02s versus the previous ~1.35s. */
 .public-projects-root.is-exiting .project-showcase-card{
-  animation:project-showcase-exit .5s both;
-  animation-delay:calc(var(--project-reverse-index,0)*65ms)
+  animation:project-showcase-exit .42s both;
+  animation-delay:calc(var(--project-reverse-index,0)*45ms)
 }
-.public-projects-root.is-exiting .public-projects-back{
-  animation:project-showcase-exit .5s both;
-  animation-delay:780ms
+.public-projects-root.is-exiting .public-projects-back,
+.public-projects-root.is-exiting .public-projects-title{
+  animation:project-showcase-exit .42s both;
+  animation-delay:540ms
 }
 @media(max-width:1499px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(max-width:1199px){.public-projects-root .project-showcase-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}

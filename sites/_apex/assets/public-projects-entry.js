@@ -6,6 +6,10 @@
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,PROJECT_CARD_IMAGES,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
+// Keep in sync with the route-owned CSS reverse stagger and final header exit.
+const PROJECT_EXIT_DURATION_MS=420;
+const PROJECT_EXIT_STAGGER_MS=45;
+const PROJECT_EXIT_TAIL_MS=60;
 const el=(tag,className,text)=>{
   const node=document.createElement(tag);
   if(className)node.className=className;
@@ -112,9 +116,13 @@ export function mountProjects(host,{onBack,onExitComplete}){
     exit(){
       if(closed||exiting)return;
       exiting=true;root.classList.add("is-exiting");
-      // Reverse the exact 24px / 500ms entrance, in last-to-first order.
+      // Reverse the same 24px staggered entry geometry, with shorter
+      // per-card timing and closer spacing. The shell restores only after
+      // the route-owned reverse completes.
       timer=setTimeout(()=>{timer=null;if(!closed)onExitComplete();},
-        reduced.matches?0:500+Math.min(projects.length-1,12)*65+70);
+        reduced.matches?0:PROJECT_EXIT_DURATION_MS+
+          Math.min(projects.length-1,12)*PROJECT_EXIT_STAGGER_MS+
+          PROJECT_EXIT_TAIL_MS);
     },
     unmount(){
       if(closed)return;closed=true;

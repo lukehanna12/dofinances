@@ -38,6 +38,9 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/root\.classList\.add\("is-exiting"\)/);
   assert.match(entry,/project-showcase-card/);
   assert.match(entry,/card\.type="button"/);
+  assert.match(entry,/const PROJECT_EXIT_DURATION_MS=420;/);
+  assert.match(entry,/const PROJECT_EXIT_STAGGER_MS=45;/);
+  assert.match(entry,/const PROJECT_EXIT_TAIL_MS=60;/);
   assert.doesNotMatch(entry,/\bfetch\s*\(|\blocation\.(assign|replace)\s*\(|\bcard\.href\s*=|["']\/app\/assets/);
 });
 test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optics",async()=>{
@@ -60,6 +63,10 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/body\.public-home\[data-auth-gpu-scene="ready"\]/);
   assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);
+  assert.match(css,/\.public-projects-header\{\s*display:flex;flex-direction:column;align-items:flex-start;/);
+  assert.match(css,/\.public-projects-root\.is-exiting \.project-showcase-card\{\s*animation:project-showcase-exit \.42s both;/);
+  assert.match(css,/animation-delay:calc\(var\(--project-reverse-index,0\)\*45ms\)/);
+  assert.match(css,/\.public-projects-root\.is-exiting \.public-projects-back,\s*\.public-projects-root\.is-exiting \.public-projects-title/);
 });
 test("independent project panes get isolated hover springs without breaking nested login",()=>{
   const base=2,capacity=3,data=new Float32Array((base+capacity)*TILE_FLOATS);
