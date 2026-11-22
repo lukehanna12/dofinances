@@ -880,6 +880,7 @@ try{
   await evaluate("document.querySelector('.public-projects-filter-button').click()");
   await until("document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",30);
   await sleep(100);
+  await until("Number(getComputedStyle(document.querySelector('.public-projects-filter-morph-tail')).opacity)<.99",45,30);
   const duringMorph=await evaluate("(()=>{const b=document.querySelector('.public-projects-filter-button');"+
     "return {left:getComputedStyle(b.querySelector('.public-projects-filter-morph-left')).transform,"+
     "tail:Number(getComputedStyle(b.querySelector('.public-projects-filter-morph-tail')).opacity)};})()");
