@@ -350,26 +350,22 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center{
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
   transform:translate3d(0,var(--doof-exit-y,0px),0) scale(.6);
 }
-/* Once Projects mounts, pin the compact doof to its existing 46px-below-
- * navigation center in VIEWPORT coordinates. The large homepage mosaic's
- * center moves by half the scene-height delta on vertical resize; exactly
- * cancel that delta in CSS, without remeasuring an animated logo or writing
- * --doof-exit-y on every resize.
+/* While Projects is mounted, the original h1 stays at a fixed viewport
+ * center of 90px below the screen top (44px navigation + 46px). Do NOT
+ * remeasure it or animate its transform in response to window resizing.
  *
- * The same h1, font, translate, 0.6 scale, entrance and opacity survive.
- * 2.5 tiles compensates its existing independent title translate, and
- * (nav height - scene top) handles the fixed public header. Use the actual
- * dynamic viewport height directly: --dashboard-scene-height is not defined
- * in the public shell, so referencing it invalidated the whole transform.
- * No breakpoint and no viewport-dependent scroll threshold are introduced. */
-body.public-home[data-public-route="leaving"]:has(#public-route-content .public-projects-root)
+ * The homepage's 1080px lattice is centered: its center is 50dvh+22px.
+ * The original title has an independent -215.90909px translate, and its
+ * exact unchanged 0.6 scale remains centered. Therefore the required
+ * Projects-only transform is:
+ *   90px - (50dvh + 22px - 215.90909px) = 283.90909px - 50dvh.
+ * This deliberately uses the SAME fixed lattice/wordmark geometry as
+ * the homepage; it avoids dependence on intermediate animated DOM bounds,
+ * undefined custom properties and compositor-frame timing.
+ */
+body.public-home:has(#public-route-content .public-projects-root)
   .dashboard-home .cta6-center h1{
-  transform:translate3d(0,calc(
-    var(--global-menu-height,44px) + 46px -
-    var(--dashboard-scene-top,44px) +
-    2.5 * var(--cta6-title-tile) -
-    .5 * (100dvh - var(--dashboard-scene-top,44px))
-  ),0) scale(.6);
+  transform:translate3d(0,calc(283.90909px - 50dvh),0) scale(.6);
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;
