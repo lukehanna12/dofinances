@@ -800,8 +800,9 @@ try{
   // then reopening shows persistent checkmarks.
   await evaluate("document.querySelector('.public-projects-title').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
   await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
-  await sleep(320);
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-panel')).visibility"),"hidden");
+  await until("getComputedStyle(document.querySelector('.public-projects-filter-panel')).visibility==='hidden'",30,75);
+  assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-panel')).opacity"))<.02,
+    "The outside-click collapse must finish its reverse opacity and geometry");
   assert.equal(await evaluate("document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded')"),"false");
   await evaluate("document.querySelector('.public-projects-filter-button').click()");
   assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').classList.contains('is-selected')"),true);
