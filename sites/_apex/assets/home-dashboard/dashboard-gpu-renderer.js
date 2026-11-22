@@ -22,12 +22,20 @@ import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js
 import {createInteractionController,TILE_FLOATS} from "./dashboard-interaction.js";
 import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
-import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform} from "./dashboard-glass-geometry.js";
+import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
+ resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
+ planGlassLayers,GLASS_INTERACTION} from "./dashboard-glass-model.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
+// Layer zero is the live mosaic. Layer one samples its completed GPU
+// composite. A layer never samples the texture it is writing.
+const PUBLIC_HOME_GLASS_LAYERS=planGlassLayers([
+ {id:"mosaic",layer:0,backdrop:"scene"},
+ {id:"home-cta",layer:1,backdrop:"previous-layer"}
+]);
 const OFFSCREEN_CI=typeof location!=="undefined" &&
   new URLSearchParams(location.search).get("webgpu-offscreen-ci")==="1";
 const root=document.getElementById("cta6-mosaic");
@@ -283,39 +291,35 @@ function actualSceneViewport(){
     bar?.getBoundingClientRect().bottom ?? 44);
 }
 function makeLayoutData(tile,scale,sceneTop=0){
-  // Reading DOM positions only establishes the INITIAL user-selected layout.
-  // Future translations are GPU-side parameters, not wallpaper captures.
+  // Shared public geometry: one resolver for squares, cards, capsules,
+  // rectangles, circles and foreground content.
   const b=tile.getBoundingClientRect();
-  // Route dropdowns and the search capsule have their own transform
-  // animation. Refract against their PRESENTED bounds, not offsetWidth,
-  // which remains the full 390px while scaleX() is only 0.025.
   const live=tile.hasAttribute("data-home-cta-glass")||
     glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass);
-  const w=live?Math.max(1,b.width):tile.offsetWidth;
-  const h=live?Math.max(1,b.height):tile.offsetHeight;
+  const layoutW=Math.max(1,tile.offsetWidth),layoutH=Math.max(1,tile.offsetHeight);
+  const w=live?Math.max(1,b.width):layoutW;
+  const h=live?Math.max(1,b.height):layoutH;
   const x=live?b.left:b.left+b.width*.5-w*.5;
   const y=(live?b.top:b.top+b.height*.5-h*.5)-sceneTop;
   const style=getComputedStyle(tile);
-  // CSS 999px pill corners render as a 20px semicircle on a 40px-high
-  // field. Feeding 999 directly into mode4SDF discards the glass even
-  // at the field's center; clamp only the geometry, never the material.
-  const radii=normalizeGlassCornerRadii([
+  // Isotropic min-axis radius scaling of an anisotropic CSS transform
+  // is an explicit browser adapter, not an Oracle-proved native route.
+  const s=live?Math.min(w/layoutW,h/layoutH):1;
+  const corners=normalizeGlassCornerRadii([
     style.borderTopLeftRadius,style.borderTopRightRadius,
     style.borderBottomRightRadius,style.borderBottomLeftRadius
-  ],w,h);
-  const radius=radii[0];
-  const nativeMode=selectModeForNormalizedCorners(radii);
-  // The retained native writer compares FOUR NORMALIZED PRIVATE LANES.
-  // CSS radii are NOT a proved public-to-private writer. For this uniformly
-  // rounded square, exact equality is at least the source-backed selection.
+  ],layoutW,layoutH).map(v=>v*s);
+  const surface=resolveGlassSurface({
+    width:w,height:h,scale,radii:corners,
+    content:surfaceContentFromElement(tile)
+  });
   const delay=Number.parseFloat(style.getPropertyValue("--cta6-delay"))||0;
-  const r=nativePublicBlurRadius("clear",w,h);
-  // Finite native f32 selected factor, NOT universal scale-selection proof.
-  const word=observedBlurWord(r,1,.25);
-  return [x*scale,y*scale,w*scale,h*scale,
-    radius*scale,delay,word,nativeMode,
-    ...radii.map(v=>-Math.max(.009999999776482582,v*scale)),
-    0,0,w*scale*.5,h*scale*.5,0,0,0,0];
+  const radius=nativePublicBlurRadius("clear",w,h);
+  const blurWord=observedBlurWord(radius,1,.25);
+  return [x*scale,y*scale,surface.width,surface.height,
+    surface.radius,delay,blurWord,surface.renderMode,
+    ...surface.cornerLanes,
+    0,0,surface.width*.5,surface.height*.5,0,0,0,0];
 }
 // Mirrors the native AArch64 FCMP/FCCMP mode gate; the caller is responsible
 // for supplying correctly normalized private lanes. CSS -> private producer
@@ -323,8 +327,7 @@ function makeLayoutData(tile,scale,sceneTop=0){
 export function selectModeForNormalizedCorners(lanes){
   if(!Array.isArray(lanes)||lanes.length!==4)
     throw new TypeError("Four native corner lanes required");
-  return lanes[0]===lanes[1] && lanes[1]===lanes[2] &&
-    lanes[2]===lanes[3] ? 4 : 5;
+  return selectGlassSdfMode(lanes);
 }
 export function makeTileFloatData(elements,dpr,sceneTop=0){
   const out=new Float32Array(elements.length*TILE_FLOATS);
@@ -770,10 +773,8 @@ async function initialize(){
         continue;
       }
       tileData.set(makeLayoutData(node,dpr,homeCtas?sceneTop:authOriginTop()),p);
-      // Reuse the physical blur/LOD word of the already-rendered square.
-      // Card and controls differ in silhouette, not optical material; their
-      // own min-dimension must not silently change the glass family.
-      if(tileCount)tileData[p+6]=tileData[6];
+      // Per-surface finite Blur/LOD word is owned by makeLayoutData.
+      // Never override a capsule/card with the first square's word.
       // A negative delay selects the route pane's Motion-owned geometry.
       // Face color MUST remain the squares' material, controlled by the
       // shared tint state rather than the page's unrelated UI color mode.
@@ -832,15 +833,18 @@ async function initialize(){
       projects||homeCtas?"independent":"nested");
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
-        materialTag:-9,face:"first-home-square",count:panes.length,roles,
+        materialTag:-9,face:"shared-per-surface-Clear",count:panes.length,roles,
         tintModel:"shared-square-film",tintFilmStrength:0.25,
-        pressLightGain:0.06,
+        pressLightGain:GLASS_INTERACTION.pressLight,
+        geometry:"oracle-finite-per-surface-min-dimension",
+        layers:PUBLIC_HOME_GLASS_LAYERS.map(x=>({...x})),
         backdrop:"GPU-composited-moving-squares",
         compositeFrames:homeCompositeFrames,
         liveGeometry:true,capsules:panes.map((node,i)=>{
           const p=(tileCount+i)*TILE_FLOATS;
           return {width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
-            radius:tileData[p+4]/dpr,opacity:tileData[p+18],
+            radius:tileData[p+4]/dpr,renderMode:tileData[p+7],
+            content:surfaceContentFromElement(node),opacity:tileData[p+18],
             tint:Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"))||0};
         })};
       audit.authGlass=null;audit.projectGlass=null;
@@ -861,7 +865,7 @@ async function initialize(){
       };
       audit.projectGlass={renderer:"shared-webgpu-glassPipeline",
         count:roles.length,roles,faceScheme:tint.state.scheme,
-        materialReference:"first-home-square",tint:"none",searchGlass,
+        materialReference:"shared-per-surface-Clear",tint:"none",searchGlass,
         titleGlyphGlass:roles.includes("title"),
         titleMaskPixels:[...glyphMaskDimensions],
         headerDissolve:projectDismissElapsed>=0?{
@@ -880,7 +884,7 @@ async function initialize(){
     audit.authGlass={renderer:authUsesCompositor()?
       "native-backdrop+webgpu-material-highlights":"shared-webgpu-glassPipeline",count:roles.length,
       roles,scheme,cardTint:"none",backTint:"none",faceScheme:tint.state.scheme,
-      materialReference:"first-home-square",
+      materialReference:"shared-per-surface-Clear",
       neutralControlTints:scheme==="dark"?"black / white primary":"white / black primary",
       hovered:authHover.cardHovered||authHover.controlHovered,
       cardHovered:authHover.cardHovered,controlHovered:authHover.controlHovered,

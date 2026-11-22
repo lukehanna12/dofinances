@@ -223,6 +223,20 @@ fn mode5SDF(local:vec2<f32>,size:vec2<f32>,radii:vec4<f32>)->vec3<f32>{
   return nativeHalf3(vec3<f32>(chosen.x,chosen.y,-chosen.z));
 }
 
+/* Analytic CSS round-ended silhouette, not an Apple-native SDF mode.
+ * For a square bounds this is a circle; for oblong bounds a capsule.
+ * The SAME refraction, LOD, tint and interaction stages consume its
+ * normal and signed distance; native mode4/mode5 remain untouched. */
+fn cssCapsuleSDF(local:vec2<f32>,size:vec2<f32>)->vec3<f32>{
+  let radius=0.5*min(size.x,size.y);
+  let segment=max(vec2<f32>(0.0),0.5*(size-2.0*radius));
+  let delta=local-0.5*size;
+  let offset=delta-clamp(delta,-segment,segment);
+  let magnitude=length(offset);
+  let normal=select(vec2<f32>(0.0),offset/max(magnitude,0.00001),
+    magnitude>0.00001);
+  return nativeHalf3(vec3<f32>(magnitude-radius,normal));
+}
 /* AIR glass_background_sdf_no_bleed_lph lines 256-271 and 352-366:
  * uniform float -> HALF, multiply/saturate in HALF, 2-t, multiply, HALF
  * sqrt/saturate, amount*root, amount-difference; return HALF displacement.
@@ -365,6 +379,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     let glyph=titleGlyphField(in.local);
     field=glyph.xyz;
     glyphCoverage=glyph.w;
+  }else if(tile.properties.w==6.0){
+    field=cssCapsuleSDF(in.local,dimensions);
   }else if(tile.properties.w==4.0){
     field=mode4SDF(in.local,dimensions,tile.properties.x);
   }else{
@@ -384,12 +400,9 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
   if(coverage<=0.0&&dismiss<=0.0){discard;}
-  // Optical/refraction and hover radii come from the SAME physical square
-  // material even when the host pane is a larger card or a shorter button.
-  // The signed-distance shape itself still uses each pane's actual bounds
-  // and corner radii. This is material reuse, not a scaled hover effect.
-  let d=select(min(dimensions.x,dimensions.y),
-    min(tiles[0].rect.z,tiles[0].rect.w),authPane);
+  // Oracle's finite geometry relationship uses EACH resolved glass
+  // surface's minimum dimension. The first-square proxy was incorrect.
+  let d=min(dimensions.x,dimensions.y);
   let innerAmount=max(-60.0,-0.8*d);
   let innerInvHeight=1.0/min(20.0,0.25*d);
   let outerAmount=0.2*d;
@@ -424,10 +437,14 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // remain untouched and the effect decays to exactly zero when inactive.
   let delta=in.local-tile.interaction.zw;
   let localRadius=max(24.0,d*.8);
-  let proximity=exp(-dot(delta,delta)/(localRadius*localRadius));
+  // Browser-authored elongated hotspot; aspect 1 preserves square law.
+  let reach=localRadius*clamp(dimensions/max(d,1.0),
+    vec2<f32>(1.0),vec2<f32>(2.4));
+  let relative=delta/max(reach,vec2<f32>(1.0));
+  let proximity=exp(-dot(relative,relative));
   let hover=clamp(tile.interaction.x,0.0,1.0);
   let pressed=clamp(tile.interaction.y,0.0,1.0);
-  let radial=delta/max(localRadius,1.0);
+  let radial=relative;
   let shiftPx=proximity*(radial*(hover*0.55+pressed*1.1)+
     tile.motion.xy*(hover*0.42+pressed*0.65));
   let shiftUV=shiftPx/backdropExtent;
