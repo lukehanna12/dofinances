@@ -367,6 +367,11 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
 body.public-home[data-projects-logo-pinned="true"]
   .dashboard-home .cta6-center h1{
   transform:translate3d(0,calc(283.90909px - 50dvh),0) scale(.6)!important;
+  /* The normal 440ms transform transition would animate from the old y
+   * during EVERY viewport resize even though the target stays at 90px.
+   * Keep only the scroll-owned 210ms opacity fade; position is instant
+   * and visually invariant across window width and height changes. */
+  transition:opacity 210ms cubic-bezier(.22,.72,.24,1)!important;
 }
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;

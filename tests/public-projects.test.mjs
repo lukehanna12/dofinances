@@ -143,6 +143,7 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/document\.body\.dataset\.projectsLogoPinned="true"/);
   assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-pinned"\)/);
   assert.match(homeCss,/transform:translate3d\(0,calc\(283\.90909px - 50dvh\),0\) scale\(\.6\)!important/);
+  assert.match(homeCss,/transition:opacity 210ms cubic-bezier\(\.22,\.72,\.24,1\)!important/);
   assert.match(entry,/logoScrollAbort\.abort\(\)/);
   assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-hidden"\)/);
   assert.match(homeCss,/body\.public-home\[data-projects-logo-hidden\] \.dashboard-home \.cta6-center h1\{\s*opacity:0;/);

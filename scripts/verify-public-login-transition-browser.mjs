@@ -727,6 +727,8 @@ try{
   assert.equal(projectLogoBaseline.hidden,false);
   assert.equal(await evaluate("document.body.dataset.projectsLogoPinned"),"true",
     "Projects must own an explicit viewport-anchored doof, not its animated home offset");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).transitionProperty"),
+    "opacity","Projects must never animate logo transforms during viewport resizes");
   const checkProjectLogoResize=async(width,height,label,expectedHidden=false)=>{
     await send("Emulation.setDeviceMetricsOverride",
       {width,height,deviceScaleFactor:1,mobile:false});
