@@ -48,11 +48,20 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/tile\.hasAttribute\("data-home-cta-glass"\)\|\|/);
   assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
   assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
+  assert.match(renderer,/tintModel:"shared-authPane-film",backdrop:"GPU-composited-moving-squares"/);
+  assert.match(renderer,/compositeGlassPipeline=device\.createRenderPipeline\(/);
+  assert.match(renderer,/underlay\.draw\(6,tileCount\)/);
+  assert.match(renderer,/mip\.setBindGroup\(0,compositeMips\[level-1\]\)/);
+  assert.match(renderer,/homeCompositeActive\?homeCapsuleGroup:glassGroup/);
+  assert.match(renderer,/entries:entries\(globalsBuffer,compositeSceneView\)/);
+  assert.doesNotMatch(renderer,/homeCapsuleGroup=glassGroup/,
+    "Capsule glass must not sample the static wallpaper alone");
   assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
   assert.match(shader,/let pressEnergy=select\(0\.06,0\.32,tile\.properties\.y == -9\.0\)/);
-  assert.match(shader,/if\(tile\.properties\.y == -9\.0\)\{\s*let greenTransmission=clamp\(/);
-  assert.match(shader,/color=color\*mix\(vec3<f32>\(1\.0\),greenTransmission,tintProgress\);/);
-  assert.doesNotMatch(shader,/filmStrength=0\.88/,"Do not erase refracted details with an 88% opaque pigment");
+  assert.match(shader,/var filmStrength=select\(0\.25,0\.60,authPane\)/);
+  assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
+  assert.doesNotMatch(shader,/greenTransmission|tintProgress|filmStrength=0\.88/,
+    "Home capsules must use the SAME liquid-glass tint film, never a capsule-only recipe");
   assert.match(style,/background:rgba\(5,46,23,\.45\)/);
   assert.match(style,/body\.public-home:not\(\[data-gpu-scene="ready"\]\)[^{}]*\.cta6-action:is\(:hover,:focus-visible\)\{[^}]*backdrop-filter:blur\(12px\)/);
   // Transmissive green means the scene's highlights and texture survive

@@ -484,15 +484,34 @@ async function initialize(){
     fragment:{module:modules[2],entryPoint:"fsCopy",
       targets:[{format}]},primitive:{topology:"triangle-list"}
   });
+  // Same shader and blend law for on-screen squares and their live,
+  // GPU-only backdrop surface. No separate color/glass implementation.
+  const glassBlend={
+    color:{srcFactor:"src-alpha",dstFactor:"one-minus-src-alpha",operation:"add"},
+    alpha:{srcFactor:"one",dstFactor:"one-minus-src-alpha",operation:"add"}
+  };
   const glassPipeline=device.createRenderPipeline({
     label:"Oracle refraction per instanced tile; manual trilinear mip sampling",
     layout:"auto",
     vertex:{module:modules[2],entryPoint:"vsGlass"},
     fragment:{module:modules[2],entryPoint:"fsGlass",targets:[{
-      format,blend:{
-        color:{srcFactor:"src-alpha",dstFactor:"one-minus-src-alpha",operation:"add"},
-        alpha:{srcFactor:"one",dstFactor:"one-minus-src-alpha",operation:"add"}
-      }
+      format,blend:glassBlend
+    }]},primitive:{topology:"triangle-list"}
+  });
+  const compositeBackdropPipeline=device.createRenderPipeline({
+    label:"Static backdrop -> live Home glass underlay",
+    layout:"auto",
+    vertex:{module:modules[2],entryPoint:"vsCopy"},
+    fragment:{module:modules[2],entryPoint:"fsCopy",
+      targets:[{format:"rgba16float"}]},
+    primitive:{topology:"triangle-list"}
+  });
+  const compositeGlassPipeline=device.createRenderPipeline({
+    label:"Original moving squares -> live Home glass underlay",
+    layout:"auto",
+    vertex:{module:modules[2],entryPoint:"vsGlass"},
+    fragment:{module:modules[2],entryPoint:"fsGlass",targets:[{
+      format:"rgba16float",blend:glassBlend
     }]},primitive:{topology:"triangle-list"}
   });
   if(root)root.dataset.gpuPhase="validate-pipelines";
@@ -510,6 +529,12 @@ async function initialize(){
   });
   let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
+    // Home-only background texture: same GPU-owned photograph + each
+    // PRESENTED moving square, composited in the current frame before
+    // capsules refract it. Never captures browser/DOM/screen pixels.
+    compositeScene=null,compositeSceneView=null,compositeMips=[],
+    compositeBackdropGroup=null,compositeGlassGroup=null,homeCapsuleGroup=null,
+    homeCompositeFrames=0,
     tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,physicalAuthHeight=0,
     dpr=1,sceneTop=0;
   // A shape-only texture for the *letterforms* of route-owned glass text.
@@ -620,8 +645,8 @@ async function initialize(){
   }
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer)return;
-    const entries=buffer=>[
-      {binding:0,resource:sceneView},
+    const entries=(buffer,source=sceneView)=>[
+      {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer}},
       {binding:3,resource:{buffer:tintTileBuffer}},
@@ -633,6 +658,16 @@ async function initialize(){
     authGlassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(authGlobalsBuffer)
     });
+    // Offscreen squares read the existing STATIC wallpaper, as always.
+    compositeGlassGroup=device.createBindGroup({
+      layout:compositeGlassPipeline.getBindGroupLayout(0),
+      entries:entries(globalsBuffer)
+    });
+    // Only HOME CAPSULES read this frame's composited moving glass.
+    homeCapsuleGroup=compositeSceneView?device.createBindGroup({
+      layout:glassPipeline.getBindGroupLayout(0),
+      entries:entries(globalsBuffer,compositeSceneView)
+    }):null;
   }
   function syncProjectTitleMask(panes){
     const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
@@ -798,6 +833,8 @@ async function initialize(){
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
         materialTag:-9,face:"first-home-square",count:panes.length,roles,
+        tintModel:"shared-authPane-film",backdrop:"GPU-composited-moving-squares",
+        compositeFrames:homeCompositeFrames,
         liveGeometry:true,capsules:panes.map((node,i)=>{
           const p=(tileCount+i)*TILE_FLOATS;
           return {width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
@@ -870,6 +907,7 @@ async function initialize(){
       canvas.width=w;canvas.height=h;
       // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
+      compositeScene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -883,6 +921,10 @@ async function initialize(){
       }
       scene=rgba16Texture(device,w,h);
       sceneView=scene.createView();
+      // Maintain a distinct, true GPU mip chain for the live mosaic
+      // backdrop. Its source is built only when a capsule exposes glass.
+      compositeScene=rgba16Texture(device,w,h);
+      compositeSceneView=compositeScene.createView();
       audit.mipCount=scene.mipLevelCount;
       backgroundGroup=device.createBindGroup({
         layout:backdropPipeline.getBindGroupLayout(0),
@@ -893,6 +935,7 @@ async function initialize(){
         ]
       });
       mipGroups=[];
+      compositeMips=[];
       for(let level=1;level<scene.mipLevelCount;level++){
         mipGroups.push(device.createBindGroup({
           layout:mipPipeline.getBindGroupLayout(0),
@@ -903,9 +946,22 @@ async function initialize(){
               baseMipLevel:level,mipLevelCount:1})}
           ]
         }));
+        compositeMips.push(device.createBindGroup({
+          layout:mipPipeline.getBindGroupLayout(0),
+          entries:[
+            {binding:0,resource:compositeScene.createView({
+              baseMipLevel:level-1,mipLevelCount:1})},
+            {binding:1,resource:compositeScene.createView({
+              baseMipLevel:level,mipLevelCount:1})}
+          ]
+        }));
       }
       copyGroup=device.createBindGroup({
         layout:copyPipeline.getBindGroupLayout(0),
+        entries:[{binding:0,resource:sceneView}]
+      });
+      compositeBackdropGroup=device.createBindGroup({
+        layout:compositeBackdropPipeline.getBindGroupLayout(0),
         entries:[{binding:0,resource:sceneView}]
       });
       scenePending=true;
@@ -1096,6 +1152,38 @@ async function initialize(){
       device.queue.writeBuffer(tileBuffer,0,tileData);
     }
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
+    // No CSS/DOM capture: directly re-render the CURRENT GPU square tiles
+    // into a separate RGBA16F surface atop the original GPU photo. Build
+    // its real mip levels in this same submission before the capsule draw.
+    // The backdrop is dynamic ONLY while any black capsule is transitioning
+    // toward/away from transparent green glass, avoiding idle GPU overhead.
+    const homeCompositeActive=Boolean(audit.homeCtaGlass?.count)&&
+      audit.homeCtaGlass.capsules.some(c=>c.opacity>.002&&c.tint>.002);
+    if(homeCompositeActive&&compositeScene&&homeCapsuleGroup){
+      const underlay=encoder.beginRenderPass({colorAttachments:[{
+        view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
+        loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"
+      }]});
+      underlay.setPipeline(compositeBackdropPipeline);
+      underlay.setBindGroup(0,compositeBackdropGroup);
+      underlay.draw(3);
+      if(tileCount){
+        underlay.setPipeline(compositeGlassPipeline);
+        underlay.setBindGroup(0,compositeGlassGroup);
+        underlay.draw(6,tileCount);
+      }
+      underlay.end();
+      for(let level=1;level<compositeScene.mipLevelCount;level++){
+        const mip=encoder.beginComputePass({label:"live square underlay mip "+level});
+        mip.setPipeline(mipPipeline);
+        mip.setBindGroup(0,compositeMips[level-1]);
+        mip.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
+          Math.ceil(Math.max(1,physicalHeight>>level)/8),1);
+        mip.end();
+      }
+      homeCompositeFrames++;
+      audit.homeCtaGlass.compositeFrames=homeCompositeFrames;
+    }
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:OFFSCREEN_CI?
           offscreenFrame.createView():context.getCurrentTexture().createView(),
@@ -1108,8 +1196,12 @@ async function initialize(){
       pass.draw(6,tileCount);
       // The three scaled capsules are separate instances of the same
       // shader on the HOMEPAGE canvas, under their real DOM text.
-      if(audit.homeCtaGlass?.count)
+      if(audit.homeCtaGlass?.count){
+        // Square refraction still reads the original scene; only the three
+        // capsules sample the GPU frame including live moving squares.
+        pass.setBindGroup(0,homeCompositeActive?homeCapsuleGroup:glassGroup);
         pass.draw(6,audit.homeCtaGlass.count,0,tileCount);
+      }
     }
     pass.end();
     // Draw only the route panes above the persistent homepage DOM. This is
@@ -1186,7 +1278,8 @@ async function initialize(){
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();
     glyphMaskTexture.destroy();
-    scene?.destroy();offscreenFrame?.destroy();photo.destroy();
+    scene?.destroy();compositeScene?.destroy();
+    offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();
   }
   await waitForVisibleHome();

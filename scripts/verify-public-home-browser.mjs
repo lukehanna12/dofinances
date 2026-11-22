@@ -256,6 +256,10 @@ try{
  if(hoveredCta.ready){
    assert.equal(hoveredCta.glass?.renderer,"shared-webgpu-glassPipeline");
    assert.equal(hoveredCta.glass.count,3);
+   assert.equal(hoveredCta.glass.tintModel,"shared-authPane-film");
+   assert.equal(hoveredCta.glass.backdrop,"GPU-composited-moving-squares");
+   assert.ok(hoveredCta.glass.compositeFrames>0,
+     "The live GPU square animation must be composed before glass capsule sampling");
    near(hoveredCta.glass.capsules[1].width,150*1.039,
      "GPU rectangle follows the actually scaled capsule",1440);
    near(hoveredCta.glass.capsules[1].radius,58.5*1.039/2,

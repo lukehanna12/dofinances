@@ -486,27 +486,16 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
-    // The HOME capsule (-9) is an absorption filter over the SAME
-    // refracted/mip-sampled glass as the mosaic squares, not an 88%-opaque
-    // flat green film. Channel-selective transmission retains the scene's
-    // detail, SDF edge, and localized press highlights THROUGH the pigment.
-    // These transmission coefficients are browser-authored, not an Apple
-    // compositor claim. The green hue still comes from the shared tint lane.
-    if(tile.properties.y == -9.0){
-      let greenTransmission=clamp(
-        vec3<f32>(0.28,0.40,0.30)+localTint.rgb*vec3<f32>(2.4,2.8,2.1),
-        vec3<f32>(0.25),vec3<f32>(0.76));
-      let tintProgress=clamp(localTint.w,0.0,1.0);
-      color=color*mix(vec3<f32>(1.0),greenTransmission,tintProgress);
-    }else{
-      // All other panes and homepage squares preserve their previous
-      // film model, native-constrained optics and face endpoints exactly.
-      var filmStrength=select(0.25,0.60,authPane);
-      if(tile.properties.y == -4.0){filmStrength=0.82;}
-      else if(tile.properties.y == -5.0){filmStrength=0.62;}
-      else if(tile.properties.y == -6.0){filmStrength=0.40;}
-      color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
-    }
+    // ALL panes, including the Home CTA capsules (-9), use the SAME
+    // built-in tint film applied after shared refraction, face and hover.
+    // The per-pane input supplies the dark-green hue and 180ms opacity;
+    // there is no capsule-only absorption, transmission or color equation.
+    // Native public tint RGB is not proved; this is the existing film.
+    var filmStrength=select(0.25,0.60,authPane);
+    if(tile.properties.y == -4.0){filmStrength=0.82;}
+    else if(tile.properties.y == -5.0){filmStrength=0.62;}
+    else if(tile.properties.y == -6.0){filmStrength=0.40;}
+    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
   }
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.
