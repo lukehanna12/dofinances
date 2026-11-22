@@ -80,10 +80,23 @@ try{
     socket.send(JSON.stringify({id,method,params}));
   });
   const evaluate=async expression=>{
-    const result=await send("Runtime.evaluate",
-      {expression,returnByValue:true,awaitPromise:true});
-    if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails));
-    return result.result.value;
+    // A navigation or reload can invalidate the old CDP execution context
+    // between the browser's event and our next assertion. This is a test
+    // harness race, not an app error. Retry only those transient CDP errors;
+    // do not repeat the reload action itself.
+    for(let attempt=0;attempt<9;attempt++){
+      try{
+        const result=await send("Runtime.evaluate",
+          {expression,returnByValue:true,awaitPromise:true});
+        if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails));
+        return result.result.value;
+      }catch(error){
+        if(!/Inspected target navigated or closed|Execution context was destroyed|Cannot find context with specified id/i.test(String(error))||
+           attempt===8)throw error;
+        if(expression.includes("location.reload()"))return undefined;
+        await sleep(45);
+      }
+    }
   };
   await send("Page.enable");
   await send("Runtime.enable");
