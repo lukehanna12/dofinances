@@ -438,10 +438,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Explicitly provisional; not derived from Apple event-dependent light.
   // Only the hovered/pressed square changes, and lighting follows local
   // pointer coordinates instead of leaking to neighboring tiles.
-  // The deep-green capsule retains shared radial/rim lighting, with
-  // a stronger press input to remain visible through its dark tint.
-  let pressEnergy=select(0.06,0.32,tile.properties.y == -9.0);
-  let pointerLight=proximity*(hover*0.075+pressed*pressEnergy)+
+  // Identical pointer/press lighting for squares AND Home capsules.
+  // The negative Home material tag must not introduce an alternate
+  // light response; capsule silhouette alone is set by the shared SDF.
+  let pointerLight=proximity*(hover*0.075+pressed*0.06)+
     rim*proximity*pressed*0.035;
   // Native compositing owns the photographic pixels in this scrolling
   // route. Only the old shader's optical SDF rim and independent hover
@@ -486,13 +486,14 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
   if(localTint.w>0.0){
-    // ALL panes, including the Home CTA capsules (-9), use the SAME
-    // built-in tint film applied after shared refraction, face and hover.
-    // The per-pane input supplies the dark-green hue and 180ms opacity;
-    // there is no capsule-only absorption, transmission or color equation.
-    // Native public tint RGB is not proved; this is the existing film.
-    var filmStrength=select(0.25,0.60,authPane);
-    if(tile.properties.y == -4.0){filmStrength=0.82;}
+    // The shared square film is 0.25, including the tinted capsule (-9).
+    // The dark green is a hue/opacity INPUT to the original tint mixer,
+    // never a different film strength, transmission or color equation.
+    // Other route-specific form controls retain their established films.
+    let squareFilmStrength=0.25;
+    var filmStrength=select(squareFilmStrength,0.60,authPane);
+    if(tile.properties.y == -9.0){filmStrength=squareFilmStrength;}
+    else if(tile.properties.y == -4.0){filmStrength=0.82;}
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);

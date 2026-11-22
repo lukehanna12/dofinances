@@ -833,7 +833,9 @@ async function initialize(){
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
         materialTag:-9,face:"first-home-square",count:panes.length,roles,
-        tintModel:"shared-authPane-film",backdrop:"GPU-composited-moving-squares",
+        tintModel:"shared-square-film",tintFilmStrength:0.25,
+        pressLightGain:0.06,
+        backdrop:"GPU-composited-moving-squares",
         compositeFrames:homeCompositeFrames,
         liveGeometry:true,capsules:panes.map((node,i)=>{
           const p=(tileCount+i)*TILE_FLOATS;

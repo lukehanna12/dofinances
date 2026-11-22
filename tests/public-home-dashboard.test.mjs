@@ -48,7 +48,9 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/tile\.hasAttribute\("data-home-cta-glass"\)\|\|/);
   assert.match(renderer,/makeLayoutData\(node,dpr,homeCtas\?sceneTop:authOriginTop\(\)\)/);
   assert.match(renderer,/pass\.draw\(6,audit\.homeCtaGlass\.count,0,tileCount\)/);
-  assert.match(renderer,/tintModel:"shared-authPane-film",backdrop:"GPU-composited-moving-squares"/);
+  assert.match(renderer,/tintModel:"shared-square-film",tintFilmStrength:0\.25,/);
+  assert.match(renderer,/pressLightGain:0\.06,/);
+  assert.match(renderer,/backdrop:"GPU-composited-moving-squares"/);
   assert.match(renderer,/compositeGlassPipeline=device\.createRenderPipeline\(/);
   assert.match(renderer,/underlay\.draw\(6,tileCount\)/);
   assert.match(renderer,/mip\.setBindGroup\(0,compositeMips\[level-1\]\)/);
@@ -57,11 +59,22 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.doesNotMatch(renderer,/homeCapsuleGroup=glassGroup/,
     "Capsule glass must not sample the static wallpaper alone");
   assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
-  assert.match(shader,/let pressEnergy=select\(0\.06,0\.32,tile\.properties\.y == -9\.0\)/);
-  assert.match(shader,/var filmStrength=select\(0\.25,0\.60,authPane\)/);
+  assert.match(shader,/let pointerLight=proximity\*\(hover\*0\.075\+pressed\*0\.06\)/);
+  assert.doesNotMatch(shader,/pressEnergy|tile\.properties\.y == -9\.0\)\s*\{?[^}]*pressed/,
+    "No CTA-specific interaction intensity");
+  assert.match(shader,/let squareFilmStrength=0\.25;/);
+  assert.match(shader,/var filmStrength=select\(squareFilmStrength,0\.60,authPane\)/);
+  assert.match(shader,/if\(tile\.properties\.y == -9\.0\)\{filmStrength=squareFilmStrength;\}/);
   assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
-  assert.doesNotMatch(shader,/greenTransmission|tintProgress|filmStrength=0\.88/,
-    "Home capsules must use the SAME liquid-glass tint film, never a capsule-only recipe");
+  assert.doesNotMatch(shader,/greenTransmission|tintProgress|filmStrength=0\.88|pressEnergy/,
+    "No alternative capsule-only tint or lighting formula");
+  // One instanced geometry shader and one shared SDF/LOD stage for all
+  // tile shapes; only the actual DOM corner radii select the silhouette.
+  assert.match(shader,/else if\(tile\.properties\.w==4\.0\)\{\s*field=mode4SDF\(/);
+  assert.match(shader,/let d=select\(min\(dimensions\.x,dimensions\.y\),\s*min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\),authPane\)/);
+  assert.match(renderer,/if\(tileCount\)tileData\[p\+6\]=tileData\[6\]/);
+  assert.match(renderer,/const radii=normalizeGlassCornerRadii\(/);
+  assert.match(renderer,/const nativeMode=selectModeForNormalizedCorners\(radii\)/);
   assert.match(style,/background:rgba\(5,46,23,\.45\)/);
   assert.match(style,/body\.public-home:not\(\[data-gpu-scene="ready"\]\)[^{}]*\.cta6-action:is\(:hover,:focus-visible\)\{[^}]*backdrop-filter:blur\(12px\)/);
   // Transmissive green means the scene's highlights and texture survive
