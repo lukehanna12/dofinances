@@ -165,11 +165,10 @@ export function mountProjects(host,{onBack,onExitComplete}){
     logoHidden=hide;
     document.body.toggleAttribute("data-projects-logo-hidden",hide);
   };
+  // Only native Projects scrolling controls the visibility threshold.
+  // A window-width or window-height resize must not change the doof
+  // opacity, and no viewport-resize handler should reposition the logo.
   routeScroll?.addEventListener("scroll",syncLogoWithScroll,
-    {passive:true,signal:logoScrollAbort.signal});
-  addEventListener("resize",syncLogoWithScroll,
-    {passive:true,signal:logoScrollAbort.signal});
-  visualViewport?.addEventListener("resize",syncLogoWithScroll,
     {passive:true,signal:logoScrollAbort.signal});
   syncLogoWithScroll();
   back.addEventListener("click",event=>{

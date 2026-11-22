@@ -350,6 +350,25 @@ body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center{
 body.public-home[data-public-route="leaving"] .dashboard-home .cta6-center h1{
   transform:translate3d(0,var(--doof-exit-y,0px),0) scale(.6);
 }
+/* Once Projects mounts, pin the compact doof to its existing 46px-below-
+ * navigation center in VIEWPORT coordinates. The large homepage mosaic's
+ * center moves by half the scene-height delta on vertical resize; exactly
+ * cancel that delta in CSS, without remeasuring an animated logo or writing
+ * --doof-exit-y on every resize.
+ *
+ * The same h1, font, translate, 0.6 scale, entrance and opacity survive.
+ * 2.5 tiles compensates its existing independent title translate, and
+ * (nav height - scene top) handles the fixed public header. No breakpoint
+ * and no 100vh-dependent scroll threshold are introduced. */
+body.public-home[data-public-route="leaving"]:has(#public-route-content .public-projects-root)
+  .dashboard-home .cta6-center h1{
+  transform:translate3d(0,calc(
+    var(--global-menu-height,44px) + 46px -
+    var(--dashboard-scene-top,44px) +
+    2.5 * var(--cta6-title-tile) -
+    .5 * var(--dashboard-scene-height)
+  ),0) scale(.6);
+}
 body.public-home[data-public-route="leaving"]:not([data-gpu-scene="ready"]) .dashboard-home .cta6-tile:not(.cta6-tile--empty){
   opacity:0!important;
   transform:translate3d(0,-1px,0) scale(1.085,1.065)!important;

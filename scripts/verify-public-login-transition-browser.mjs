@@ -709,6 +709,49 @@ try{
     "Back → title and three glass controls together → first card → remaining cards");
   assert.ok(entranceOrder.every(x=>x.durationMs===500));
   await sleep(1740);
+  // The Projects logo is fixed to the top bar, not the viewport-height-
+  // centered homepage mosaic. Width changes must never rewrite its animated
+  // transform, and height changes must not move it or change visibility.
+  // No screenshots: compare DOM geometry across live CDP viewport changes.
+  const projectLogoBaseline=await evaluate("(()=>{"+
+    "const b=document.querySelector('#dashboard-title').getBoundingClientRect();"+
+    "return {width:innerWidth,height:innerHeight,x:(b.left+b.right)/2,"+
+    "y:(b.top+b.bottom)/2,navBottom:document.querySelector('#global-menu').getBoundingClientRect().bottom,"+
+    "cssTransform:getComputedStyle(document.querySelector('#dashboard-title')).transform,"+
+    "exitY:document.querySelector('#dashboard-title').style.getPropertyValue('--doof-exit-y'),"+
+    "hidden:document.body.hasAttribute('data-projects-logo-hidden')};})()");
+  assert.ok(Math.abs(projectLogoBaseline.y-(projectLogoBaseline.navBottom+46))<1,
+    "Projects doof must already be anchored 46px beneath the nav at entry");
+  assert.ok(Math.abs(projectLogoBaseline.x-projectLogoBaseline.width/2)<1,
+    "Projects logo must remain horizontally centered");
+  assert.equal(projectLogoBaseline.hidden,false);
+  const checkProjectLogoResize=async(width,height,label,expectedHidden=false)=>{
+    await send("Emulation.setDeviceMetricsOverride",
+      {width,height,deviceScaleFactor:1,mobile:false});
+    await until("innerWidth==="+width+"&&innerHeight==="+height,60,25);
+    await sleep(90);
+    const actual=await evaluate("(()=>{"+
+      "const logo=document.querySelector('#dashboard-title');"+
+      "const r=logo.getBoundingClientRect();"+
+      "return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,"+
+      "hidden:document.body.hasAttribute('data-projects-logo-hidden'),"+
+      "exitY:logo.style.getPropertyValue('--doof-exit-y')};})()");
+    assert.ok(Math.abs(actual.x-width/2)<1,
+      label+": width resize must keep doof horizontally centered");
+    assert.ok(Math.abs(actual.y-projectLogoBaseline.y)<1,
+      label+": doof must not react to viewport height or width changes ("+
+      actual.y+" vs "+projectLogoBaseline.y+")");
+    assert.equal(actual.exitY,projectLogoBaseline.exitY,
+      label+": Projects resize must never rewrite --doof-exit-y");
+    assert.equal(actual.hidden,expectedHidden,
+      label+": resize must not trigger the scroll-only logo fade");
+  };
+  await checkProjectLogoResize(850,projectLogoBaseline.height,"width shrunk");
+  await checkProjectLogoResize(1400,projectLogoBaseline.height,"width expanded");
+  await checkProjectLogoResize(projectLogoBaseline.width,590,"height shrunk");
+  await checkProjectLogoResize(projectLogoBaseline.width,1060,"height expanded");
+  await checkProjectLogoResize(projectLogoBaseline.width,projectLogoBaseline.height,
+    "restored viewport");
   const projectState=await evaluate("(()=>{"+
     "const root=document.querySelector('.public-projects-root');"+
     "const cards=[...root.querySelectorAll('.project-showcase-card')];"+
@@ -881,6 +924,10 @@ try{
   assert.ok(crossed.searchTop<=crossed.logoBottom+5,
     "Fade starts only when the would-be search bar top crosses 5px below doof");
   await until("Number(getComputedStyle(document.querySelector('#dashboard-title')).opacity)<.06",20,35);
+  await checkProjectLogoResize(projectLogoBaseline.width,630,
+    "height resized while scrolled and faded",true);
+  await checkProjectLogoResize(projectLogoBaseline.width,projectLogoBaseline.height,
+    "height restored while scrolled and faded",true);
   await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
     "r.scrollTop=0;r.dispatchEvent(new Event('scroll'));})()");
   await until("!document.body.hasAttribute('data-projects-logo-hidden')",25,30);

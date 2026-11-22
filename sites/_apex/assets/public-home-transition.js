@@ -208,7 +208,12 @@ addEventListener("pageshow",event=>{
     void openRoute(path,{direct:true});
 });
 addEventListener("resize",()=>{
-  if(body.dataset.publicRoute==="leaving")positionCompactLogo();
+  // The Projects logo is CSS-pinned to the 44px navigation bar after mount.
+  // In particular, never measure an interpolating transform and rewrite
+  // --doof-exit-y during either horizontal or vertical Projects resizes.
+  // Sign-in and an unfinished homepage dismissal retain their old behavior.
+  if(body.dataset.publicRoute==="leaving"&&
+     !outlet.querySelector(".public-projects-root"))positionCompactLogo();
 });
 Object.defineProperty(window,"__dofPublicRouter",{
   get:()=>Object.freeze({state,route:routePath(),persistentShell:true,

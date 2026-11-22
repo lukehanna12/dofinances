@@ -136,6 +136,11 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/const hide=routeScroll\.scrollTop>0&&\s*searchTop<=logoBottom\+PROJECT_LOGO_SEARCH_GAP_PX;/);
   assert.match(entry,/document\.body\.toggleAttribute\("data-projects-logo-hidden",hide\)/);
   assert.match(entry,/routeScroll\?\.addEventListener\("scroll",syncLogoWithScroll,/);
+  assert.doesNotMatch(entry,/addEventListener\("resize",syncLogoWithScroll/);
+  assert.doesNotMatch(entry,/visualViewport\?\.addEventListener\("resize"/);
+  assert.match(router,/!outlet\.querySelector\("\.public-projects-root"\)\)positionCompactLogo\(\);/);
+  assert.match(homeCss,/body\.public-home\[data-public-route="leaving"\]:has\(#public-route-content \.public-projects-root\)/);
+  assert.match(homeCss,/var\(--global-menu-height,44px\) \+ 46px -\s*var\(--dashboard-scene-top,44px\) \+\s*2\.5 \* var\(--cta6-title-tile\) -\s*\.5 \* var\(--dashboard-scene-height\)/);
   assert.match(entry,/logoScrollAbort\.abort\(\)/);
   assert.match(entry,/document\.body\.removeAttribute\("data-projects-logo-hidden"\)/);
   assert.match(homeCss,/body\.public-home\[data-projects-logo-hidden\] \.dashboard-home \.cta6-center h1\{\s*opacity:0;/);
