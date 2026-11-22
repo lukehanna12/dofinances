@@ -254,6 +254,17 @@ try{
  await send("Emulation.setDeviceMetricsOverride",{
   width:500,height:670,deviceScaleFactor:1,mobile:false
  });
+ // CDP viewport changes and matchMedia change-events can be processed
+ // in different compositor frames. The menu intentionally refuses to open
+ // until compact.matches is true, so wait for the real mobile breakpoint.
+ let compactReady=false;
+ for(let i=0;i<40;i++){
+  compactReady=await evaluate("matchMedia('(max-width:748px)').matches && "+
+    "getComputedStyle(document.getElementById('public-menu-toggle')).display!=='none'");
+  if(compactReady)break;
+  await sleep(25);
+ }
+ assert.equal(compactReady,true,"Mobile navigation breakpoint must settle before menu interaction");
  await evaluate("document.getElementById('public-menu-toggle').click()");
  const openPanel=await evaluate(`(()=>{
   const toggle=document.getElementById("public-menu-toggle");
