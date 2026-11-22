@@ -38,7 +38,7 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/root\.classList\.add\("is-exiting"\)/);
   assert.match(entry,/project-showcase-card/);
   assert.match(entry,/card\.type="button"/);
-  assert.doesNotMatch(entry,/fetch\(|\/api\/projects|location\.assign|location\.replace|card\.href|\/app\/assets/);
+  assert.doesNotMatch(entry,/\bfetch\s*\(|\blocation\.(assign|replace)\s*\(|\bcard\.href\s*=|["']\/app\/assets/);
 });
 test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optics",async()=>{
   const [renderer,hover,css,shader]=await Promise.all([

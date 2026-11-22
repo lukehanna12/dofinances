@@ -671,7 +671,7 @@ try{
   await send("Page.navigate",{url:origin+"/"});
   await until("document.querySelectorAll('#cta6-mosaic>.cta6-tile').length===66");
   await sleep(1050);
-  await evaluate("document.querySelector('.cta6-bottom-action [data-public-target=\\\"/projects\\\"]').click()");
+  await evaluate("document.querySelector('.cta6-bottom-action [data-public-target]').click()");
   await until("location.pathname==='/projects'&&"+
     "document.querySelectorAll('.public-projects-root .project-showcase-card').length===14",190);
   await sleep(1440);

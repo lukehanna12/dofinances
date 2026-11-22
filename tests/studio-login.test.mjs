@@ -465,7 +465,7 @@ test("sign-in divider, primary tint, provider SVGs and short exit remain scoped"
   assert.ok(jsx.includes('willChange: exiting ? "transform, opacity" : "auto"'));
   assert.ok(renderer.includes("engine.renderAuthOnly()"));
   assert.ok(renderer.includes("function renderAuthOnly()"));
-  assert.ok(renderer.includes('label:"Sign-in-only transition frame"'));
+  assert.ok(renderer.includes('label:"Public-route-only glass frame"'));
   assert.ok(renderer.includes("audit.authOnlyFrames="));
   assert.doesNotMatch(privateRenderer,/renderAuthOnly|Sign-in-only transition frame/);
   assert.doesNotMatch(privateShader,/tile.properties.y == -4.0/);
@@ -490,8 +490,8 @@ test("back arrow uses exact square glass without artificial light lift or icon o
   assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link"));
   assert.ok(css.includes("  background:\n    linear-gradient(var(--dashboard-face-fill),var(--dashboard-face-fill)),\n    var(--auth-control-tint);"));
   assert.doesNotMatch(css,/auth3-back-link:hover\{[^}]*transform:/);
-  assert.ok(renderer.includes('if(node.classList.contains("auth3-back-link"))return -7;'));
-  assert.ok(renderer.includes('node.classList.contains("auth3-back-link"))\n    return tintParameters("none",undefined,scheme);'));
+  assert.match(renderer,/if\(node\.classList\.contains\("auth3-back-link"\)\|\|\s*node\.dataset\.publicProjectGlass==="back"\)return -7;/);
+  assert.match(renderer,/node\.hasAttribute\("data-public-project-glass"\)\|\|\s*node\.hasAttribute\("data-auth-glass-card"\)\|\|\s*node\.classList\.contains\("auth3-back-link"\)\)\s*return tintParameters\("none",undefined,scheme\);/);
   assert.ok(renderer.includes('roles,scheme,cardTint:"none",backTint:"none"'));
 
   assert.doesNotMatch(shader,/if\(tile\.properties\.y == -7\.0\)\{|color\+vec3<f32>\(0\.10\)/,
@@ -527,7 +527,7 @@ test("sign-in content scrolls normally without elastic overscroll; full WebGPU s
   assert.match(renderer,/makeLayoutData\(node,dpr,authOriginTop\(\)\)/);
   assert.match(renderer,/authGlobalsBuffer/);
   assert.match(shader,/backdropPosition\.y-=state\.pointer\.w/);
-  assert.match(router,/current=mountLogin\(routeMount,/);
+  assert.match(router,/current=mount\(routeMount,/);
   assert.match(jsx,/data-auth-stage className="min-h-screen/);
 });
 
