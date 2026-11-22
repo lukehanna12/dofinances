@@ -147,6 +147,31 @@ export function resolveGlassOpticalGeometry(width,height){
     outerAmount:0.2*d,outerHeight:0.125*d,
     scope:GLASS_GEOMETRY_SOURCE});
 }
+/**
+ * Bounded 25F80/M2 native SwiftUI Clear CAFilter INPUT geometry,
+ * not a universal final Metal or displayed-pixel model.
+ * At 58.5pt: innerAmount=-58.5pt, innerHeight=20pt,
+ * outerAmount=0, filter blur radius=5.729166666666667.
+ * At 75pt: innerAmount=-60pt, innerHeight=20pt, blur=6.875.
+ * The intermediate height slope is a browser projection also
+ * supported by 16..23pt thin-Clear finite native controls.
+ * Oracle evidence: E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE.
+ */
+export function projectFiniteNativeClearGlass(width,height){
+ const d=Math.min(finitePositive(width,"width"),finitePositive(height,"height"));
+ const observed=[58.5,75].some(x=>near(x,d));
+ return Object.freeze({
+   minDimension:d,
+   innerAmount:Math.max(-60,-d),
+   innerHeight:Math.min(20,0.36*d),
+   outerAmount:0,outerHeight:0,
+   nativeInputBlurRadius:Math.min(10,Math.max(5,5+((d-48)/72)*5)),
+   nativeInputLayerScale:0.5,
+   scope:observed?"observed native Clear scalar endpoints":
+     "browser interpolation, native universal producer unproved",
+   evidenceId:"E-P-SWIFTUI-SHAPE-GEOMETRY-FINITE"
+ });
+}
 export function glassContainsPoint(rect,radii,x,y){
   if(!Array.isArray(rect)||rect.length!==4||!Number.isFinite(x)||!Number.isFinite(y))
     return false;

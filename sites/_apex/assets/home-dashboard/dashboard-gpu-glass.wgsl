@@ -400,13 +400,23 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
   if(coverage<=0.0&&dismiss<=0.0){discard;}
-  // Oracle's finite geometry relationship uses EACH resolved glass
-  // surface's minimum dimension. The first-square proxy was incorrect.
+  // The old geometry_331 family remains unchanged for mosaic squares.
+  // Real target-native Clear (25F80/M2) CAFilter scalar inputs for a
+  // 58.5pt capsule: innerAmount=-58.5pt, innerHeight=20pt, outer=0.
+  // Public Clear panes use the same material shader with this family.
+  // Native POINT values must be converted to SDF DEVICE PIXELS; the
+  // previous model mistook points for pixels on 2x Retina backing.
+  // Filter inputs do NOT establish final native GPU binding/Q numerics.
   let d=min(dimensions.x,dimensions.y);
-  let innerAmount=max(-60.0,-0.8*d);
-  let innerInvHeight=1.0/min(20.0,0.25*d);
-  let outerAmount=0.2*d;
-  let outerInvHeight=1.0/(0.125*d);
+  let pointScale=max(state.viewport.w,1.0);
+  let clearD=d/pointScale;
+  let clearInnerAmount=max(-60.0,-clearD)*pointScale;
+  let clearInnerHeight=min(20.0,0.36*clearD)*pointScale;
+  let innerAmount=select(max(-60.0,-0.8*d),clearInnerAmount,authPane);
+  let innerInvHeight=select(1.0/min(20.0,0.25*d),
+    1.0/max(clearInnerHeight,0.001),authPane);
+  let outerAmount=select(0.2*d,0.0,authPane);
+  let outerInvHeight=select(1.0/(0.125*d),0.0,authPane);
   let inner=refractionEnvelope(signed,innerAmount,innerInvHeight);
   let outer=refractionEnvelope(signed,outerAmount,outerInvHeight);
   // GAP NATIVE-UV-TO-CSS: normalized native displacement matrix
