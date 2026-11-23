@@ -77,10 +77,10 @@ async function waitForVisibleHome(){
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 // Login and Projects reuse the exact homepage WebGPU material.
-const AUTH_PANE_CAPACITY=24;
+const AUTH_PANE_CAPACITY=25;
 const HOME_CTA_SELECTOR=".cta6-bottom-action > [data-home-cta-glass]";
-// Only the route-owned Projects header shares the homepage squares' optical
-// dismissal. Cards retain their existing reverse stagger; login stays intact.
+// The Projects header and individually displaced project cards share the
+// homepage squares' actual shader dismissal; login and original tiles stay intact.
 const PROJECT_HEADER_DISMISS_ROLES=new Set([
   "back","title","search","search-field","search-cancel",
   "filter","filter-dropdown","github"
@@ -108,7 +108,8 @@ function authPaneMaterialTag(node){
   if(node.hasAttribute("data-home-cta-glass"))return -9;
   if(node.dataset.publicProjectGlass==="title")return -8;
   if(node.classList.contains("auth3-back-link")||
-     node.dataset.publicProjectGlass==="back")return -7;
+     node.dataset.publicProjectGlass==="back"||
+     node.dataset.publicProjectGlass==="expand-close")return -7;
   if(node.hasAttribute("data-auth-glass-submit"))return -4;
   if(node.hasAttribute("data-auth-glass-input"))return -6;
   if(node.hasAttribute("data-auth-glass-provider")&&
@@ -826,6 +827,38 @@ async function initialize(){
           if(glyph.style.opacity!==nextOpacity)glyph.style.opacity=nextOpacity;
           if(glyph.style.filter!==nextBlur)glyph.style.filter=nextBlur;
           if(glyph.style.transform!==nextScale)glyph.style.transform=nextScale;
+        }
+      }
+      if(projects&&projectRole==="card"){
+        const cardDismissStart=Number.parseFloat(node.dataset.projectCardDismissAt);
+        const cardRestoreStart=Number.parseFloat(node.dataset.projectCardRestoreAt);
+        const now=performance.now();
+        const restoring=Number.isFinite(cardRestoreStart)&&now>=cardRestoreStart;
+        const dismissing=!restoring&&Number.isFinite(cardDismissStart)&&now>=cardDismissStart;
+        const foreground=node.querySelector(".project-showcase-content");
+        if(restoring||dismissing){
+          const col=i%11;
+          const elapsed=now-(restoring?cardRestoreStart:cardDismissStart);
+          const progress=reducedMotion.matches?(restoring?0:1):
+            restoring?1-tileDismissProgress(elapsed,0,col):
+              tileDismissProgress(elapsed,0,col);
+          // Project cards use precisely the square's WGSL decoherence and
+          // tile.motion.w, with no copied shader or CSS optical layer.
+          const drift=tileDismissDrift(progress,0,col,
+            tileData[p],tileData[p+2],physicalWidth,dpr);
+          tileData[p]+=drift.x*dpr;
+          tileData[p+1]+=drift.y*dpr;
+          tileData[p+19]=progress;
+          if(foreground){
+            foreground.style.opacity=String(tileDismissIconOpacity(progress));
+            foreground.style.filter=progress>0?
+              "blur("+tileDismissBlur(progress).toFixed(3)+"px)":"";
+          }
+        }else if(foreground){
+          // The same DOM card is recycled after every cascade. No inline
+          // optical artifacts may survive its arrival or a route exit.
+          foreground.style.removeProperty("opacity");
+          foreground.style.removeProperty("filter");
         }
       }
       cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1?1:0;
