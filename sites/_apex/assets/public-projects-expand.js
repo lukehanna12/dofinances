@@ -159,9 +159,13 @@ export function mountProjectExpansion({root,grid,animateGlass}){
        width:cssPixels(expandedRect.width)}
     ],{duration,easing:MOTION_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
+    // X stays attached to the growing card's actual right edge, then follows
+    // that same edge backwards at identical velocity during collapse.
     const buttonAnimation=duration?animate(closeButton,[
-      {opacity:0,transform:"translate3d(0,-8px,0)"},
-      {opacity:1,transform:"translate3d(0,0,0)"}
+      {left:cssPixels(selectedRect.right-gridRect.left-53),
+       opacity:0,transform:"translate3d(0,-8px,0)"},
+      {left:cssPixels(expandedRect.right-gridRect.left-53),
+       opacity:1,transform:"translate3d(0,0,0)"}
     ],{duration,easing:MOTION_EASING}):null;
     if(buttonAnimation)animations.push(buttonAnimation);
     const originalColumnWidth=selectedRect.width;
