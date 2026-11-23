@@ -5,9 +5,12 @@
  */
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 
-const EXPAND_MS=620;
-const REAPPEAR_MS=340;
-const ROW_CASCADE_MS=175;
+// One common, constant-speed clock for selected-width, displacement, wrap,
+// disappearance, re-entry and the close glyph. Reverse never uses a second
+// faster timing curve or the previous row-stagger schedule.
+const EXPAND_MS=760;
+const REAPPEAR_MS=EXPAND_MS-DISMISS_MS;
+const MOTION_EASING="linear";
 const clampInt=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 
 /* Pure stable row packing. The clicked card occupies its ENTIRE original row,
@@ -80,6 +83,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.classList.remove("is-expanded");
       card.removeAttribute("data-project-card-dismiss-at");
       card.removeAttribute("data-project-card-restore-at");
+      card.removeAttribute("data-project-card-restore-from");
       const foreground=card.querySelector(".project-showcase-content");
       if(foreground){
         foreground.style.removeProperty("opacity");
@@ -153,12 +157,12 @@ export function mountProjectExpansion({root,grid,animateGlass}){
        width:cssPixels(selectedRect.width)},
       {left:cssPixels(expandedRect.left-gridRect.left),
        width:cssPixels(expandedRect.width)}
-    ],{duration,easing:"cubic-bezier(.22,.72,.24,1)"}):null;
+    ],{duration,easing:MOTION_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
     const buttonAnimation=duration?animate(closeButton,[
       {opacity:0,transform:"translate3d(0,-8px,0)"},
       {opacity:1,transform:"translate3d(0,0,0)"}
-    ],{duration:250,delay:380,easing:"ease-out"}):null;
+    ],{duration,easing:MOTION_EASING}):null;
     if(buttonAnimation)animations.push(buttonAnimation);
     const originalColumnWidth=selectedRect.width;
     const initialTime=performance.now();
@@ -171,43 +175,36 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       if(role==="still")continue;
       const dx=before.left-after.left,dy=before.top-after.top;
       const from=translate(dx,dy);
-      let frames,delay=0,length=EXPAND_MS;
+      let frames;
       if(role==="shift"){
-        delay=Math.max(0,Math.floor(index/columns)-Math.floor(selectedIndex/columns)-1)*ROW_CASCADE_MS+220;
         frames=[{transform:from,opacity:1},
           {transform:translate(0,0),opacity:1}];
       }else{
         const toRight=translate(gridRect.right-after.left+originalColumnWidth*.45,dy);
         const fromLeft=translate(gridRect.left-after.left-originalColumnWidth*.75,0);
         const dissolving=role==="dissolve";
-        delay=dissolving?0:
-          290+Math.max(0,Math.floor(index/columns)-Math.floor(selectedIndex/columns)-1)*ROW_CASCADE_MS;
-        length=dissolving?DISMISS_MS+REAPPEAR_MS:590;
-        const join=dissolving?DISMISS_MS/length:245/length;
-        // One opaque movement exits the right edge; on a zero-opacity
-        // boundary it re-enters from the NEXT row's left edge. No diagonal
-        // interpolation is ever visible between two different rows.
+        // Every row and every direction crosses the invisible wrap point
+        // at the SAME instant. Only the square's optical decay determines
+        // how the selected rowmates lose coherence during the first phase.
+        const join=DISMISS_MS/EXPAND_MS;
         frames=[
           {offset:0,transform:from,opacity:1},
           {offset:join,transform:dissolving?translate(dx+10,dy-1):toRight,opacity:0},
           {offset:join+.0001,transform:fromLeft,opacity:0},
           {offset:1,transform:translate(0,0),opacity:1}
         ];
-        if(dissolving&&!immediate&&!hasReduce()){
-          // The renderer uses the HOME SQUARES' tileDismissProgress and the
-          // existing WGSL motion.w optics, not a CSS-only fade.
-          node.dataset.projectCardDismissAt=String(initialTime+delay);
-          timers.push(setTimeout(()=>{
-            node.removeAttribute("data-project-card-dismiss-at");
-          },delay+DISMISS_MS+20));
+        if(dissolving&&duration){
+          node.dataset.projectCardDismissAt=String(initialTime);
+          timers.push(setTimeout(()=>
+            node.removeAttribute("data-project-card-dismiss-at"),
+          DISMISS_MS+20));
         }
       }
       if(duration){
         const animation=animate(node,frames,{
-          delay,duration:length,easing:"cubic-bezier(.22,.72,.24,1)"
+          duration:EXPAND_MS,easing:MOTION_EASING
         });
         if(animation)animations.push(animation);
-        longest=Math.max(longest,delay+length);
       }
     }
     state={card,placeholder,animations,timers,longest,phase:"open",immediate};
@@ -229,26 +226,35 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const current=state;
     const now=performance.now();
     const animations=current.animations;
-    // WAAPI reverse plays every original horizontal push, edge wrap,
-    // fade and width change in precisely the opposite order.
+    // All animations share one duration, zero delay and a LINEAR timebase,
+    // so playing backward has exactly the same constant speed as opening.
+    // Even an X click midway through opening reverses continuously.
+    const elapsed=Math.min(EXPAND_MS,Math.max(0,
+      Number(animations[0]?.currentTime??EXPAND_MS)));
     for(const animation of animations){
       try{animation.reverse()}catch{animation.cancel()}
     }
-    // Neighbors return through the same optical dissolve in reverse:
-    // tile.motion.w decreases from 1 to 0 during their final re-entry.
+    // The selected row's peers regain their original optical coherence in
+    // the LAST DISMISS_MS of that same common reverse clock. If closed early,
+    // resume from their actual partial fade, not from full disappearance.
     const selectedIndex=cards.filter(c=>!c.hidden).indexOf(current.card);
     const columns=columnsFor(grid);
+    const originalRow=Math.floor(selectedIndex/columns);
+    const restoreDelay=Math.max(0,elapsed-DISMISS_MS);
+    const restoreFrom=Math.min(DISMISS_MS,elapsed);
     for(const node of cards){
       if(node===current.card||node.hidden)continue;
       const position=cards.filter(c=>!c.hidden).indexOf(node);
-      if(Math.floor(position/columns)!==Math.floor(selectedIndex/columns))continue;
-      const when=now+REAPPEAR_MS;
-      node.dataset.projectCardRestoreAt=String(when);
-      current.timers.push(setTimeout(()=>
-        node.removeAttribute("data-project-card-restore-at"),
-      REAPPEAR_MS+DISMISS_MS+30));
+      if(Math.floor(position/columns)!==originalRow)continue;
+      node.removeAttribute("data-project-card-dismiss-at");
+      node.dataset.projectCardRestoreAt=String(now+restoreDelay);
+      node.dataset.projectCardRestoreFrom=String(restoreFrom);
+      current.timers.push(setTimeout(()=>{
+        node.removeAttribute("data-project-card-restore-at");
+        node.removeAttribute("data-project-card-restore-from");
+      },elapsed+30));
     }
-    animateGlass(current.longest+90);
+    animateGlass(elapsed+90);
     const finish=Promise.all(animations.map(animation=>
       animation.finished.catch(()=>{})));
     void finish.then(()=>{
