@@ -75,6 +75,19 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(controls,/public-projects:before-filter/);
   assert.match(controller,/tileDismissProgress|projectCardDismissAt/);
   assert.match(controller,/animation\.reverse\(\)/);
+  // A single 760ms clock makes every row start together; the X uses the
+  // same speed when reversing, even if it is clicked mid-expansion.
+  assert.match(controller,/const EXPAND_MS=760;/);
+  assert.match(controller,/const REAPPEAR_MS=EXPAND_MS-DISMISS_MS;/);
+  assert.match(controller,/const MOTION_EASING="linear";/);
+  assert.match(controller,/duration:EXPAND_MS,easing:MOTION_EASING/);
+  assert.match(controller,/const join=DISMISS_MS\/EXPAND_MS;/);
+  assert.match(controller,/restoreDelay=Math\.max\(0,elapsed-DISMISS_MS\)/);
+  assert.match(controller,/restoreFrom=Math\.min\(DISMISS_MS,elapsed\)/);
+  assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
+  assert.match(renderer,/cardRestoreFrom/);
+  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\)-elapsed/);
+
   assert.match(controller,/gridTemplateColumns/);
   assert.match(controller,/position="absolute"/);
   assert.match(renderer,/projectCardDismissAt/);
