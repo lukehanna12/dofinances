@@ -77,7 +77,9 @@ async function waitForVisibleHome(){
 const activeTiles=()=>root?[...root.querySelectorAll(
   ".cta6-tile--plain, .cta6-tile--icon")]:[];
 // Login and Projects reuse the exact homepage WebGPU material.
-const AUTH_PANE_CAPACITY=25;
+// Up to 16 live cards, 8 header controls, one X, and five temporary
+// dissolving rowmates share this EXACT WebGPU glass pipeline.
+const AUTH_PANE_CAPACITY=32;
 const HOME_CTA_SELECTOR=".cta6-bottom-action > [data-home-cta-glass]";
 // The Projects header and individually displaced project cards share the
 // homepage squares' actual shader dismissal; login and original tiles stay intact.
@@ -95,8 +97,10 @@ function authPaneElements(){
   const all=[...projects.querySelectorAll("[data-public-project-glass]")];
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
-  const top=all.filter(node=>node.dataset.publicProjectGlass==="filter-dropdown");
-  return [...all.filter(node=>node.dataset.publicProjectGlass!=="filter-dropdown"),
+  const top=all.filter(node=>
+    ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass));
+  return [...all.filter(node=>
+    !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)),
     ...top].slice(0,AUTH_PANE_CAPACITY);
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
@@ -834,7 +838,9 @@ async function initialize(){
         const cardRestoreStart=Number.parseFloat(node.dataset.projectCardRestoreAt);
         const cardRestoreFrom=Number.parseFloat(node.dataset.projectCardRestoreFrom);
         const now=performance.now();
-        const restoring=Number.isFinite(cardRestoreStart)&&now>=cardRestoreStart;
+        // A pending restore remains optically invisible until its clock
+        // starts; never expose a solid ghost before the X reversal reaches it.
+        const restoring=Number.isFinite(cardRestoreStart);
         const dismissing=!restoring&&Number.isFinite(cardDismissStart)&&now>=cardDismissStart;
         const foreground=node.querySelector(".project-showcase-content");
         if(restoring||dismissing){
