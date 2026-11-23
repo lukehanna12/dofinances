@@ -380,7 +380,9 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
  * scaled snapshot. The real WebGPU pane follows the animated DOM rectangle.
  * Sibling WAAPI transforms provide horizontal push/edge wrap/re-entry. */
 .public-projects-root .project-showcase-grid{position:relative}
-.public-projects-root.has-project-expansion .project-showcase-card{
+.public-projects-root.project-expansion-was-used:not(.is-exiting) .project-showcase-card{
+  /* Never replay the 500ms initial entrance when a closed row reflows.
+   * Ordinary route exit still has its original reverse stagger. */
   animation:none!important
 }
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded{
