@@ -962,7 +962,30 @@ try{
     "r.style.height="+JSON.stringify(logoThreshold.oldHeight)+";})()");
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
-  assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
+  assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links"); 
+  // All panels—including side dissolves, downstream shifts, row wraps and
+  // the attached glass X—must start on the SAME no-delay, linear timeline.
+  const expansionClocks=await evaluate("(()=>{"+
+    "const grid=document.querySelector('.project-showcase-grid');"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const panes=[cards[0],cards[1],cards[6],cards[7],"+
+      "grid.querySelector('.project-showcase-expand-close')];"+
+    "return panes.map(node=>{const animation=[...node.getAnimations()].find(a=>"+
+      "a.effect?.getTiming().duration===760);"+
+      "const t=animation?.effect?.getTiming();"+
+      "return {duration:t?.duration,delay:t?.delay,easing:t?.easing,"+
+        "time:animation?.currentTime,rate:animation?.playbackRate};});})()");
+  assert.equal(expansionClocks.length,5);
+  for(const clock of expansionClocks){
+    assert.equal(clock.duration,760,"All animated panes use one 760ms timeline");
+    assert.equal(clock.delay,0,"No card or row waits before starting");
+    assert.equal(clock.easing,"linear","Movement cannot accelerate differently per panel");
+    assert.equal(clock.rate,1);
+  }
+  assert.ok(Math.max(...expansionClocks.map(x=>x.time))-
+    Math.min(...expansionClocks.map(x=>x.time))<35,
+    "All panel and close-button animations must share the same start time");
+
   // Actual non-screenshot browser proof: the real button expands both
   // directions across its ORIGINAL row, pushing all its peers to the next.
   await until("(()=>{const grid=document.querySelector('.project-showcase-grid');"+
@@ -989,6 +1012,19 @@ try{
   assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
     "Displaced panels must enter at the left side of the next row");
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  const reverseClocks=await evaluate("(()=>{"+
+    "const grid=document.querySelector('.project-showcase-grid');"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const panes=[cards[0],cards[1],cards[6],cards[7],"+
+      "grid.querySelector('.project-showcase-expand-close')];"+
+    "return panes.map(node=>{const a=[...node.getAnimations()].find(x=>"+
+      "x.effect?.getTiming().duration===760);"+
+      "return {rate:a?.playbackRate,time:a?.currentTime};});})()");
+  assert.ok(reverseClocks.every(clock=>clock.rate===-1),
+    "The X reverses all panels with the same constant-speed playback rate");
+  assert.ok(Math.max(...reverseClocks.map(x=>x.time))-
+    Math.min(...reverseClocks.map(x=>x.time))<35,
+    "Every return motion must start together—not accelerate at different times");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
@@ -1019,6 +1055,14 @@ try{
     "Both sides of the clicked card must be displaced together");
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
+  // Closing during the forward movement must reverse its CURRENT progress
+  // and finish cleanly, rather than replaying a long, accelerated reset.
+  await evaluate("document.querySelectorAll('.project-showcase-card')[5].click()");
+  await sleep(160);
+  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
+  assert.equal(await evaluate("document.querySelectorAll('[data-project-card-dismiss-at],[data-project-card-restore-at],[data-project-card-restore-from]').length"),0,
+    "Mid-motion reverse must clean all square-dissolve optical timestamps");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
