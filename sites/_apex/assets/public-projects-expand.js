@@ -5,12 +5,12 @@
  */
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 
-// One common, constant-speed clock for selected-width, displacement, wrap,
-// disappearance, re-entry and the close glyph. Reverse never uses a second
-// faster timing curve or the previous row-stagger schedule.
-const EXPAND_MS=760;
-const REAPPEAR_MS=EXPAND_MS-DISMISS_MS;
-const MOTION_EASING="linear";
+// Restore the clicked card's ORIGINAL speed and easing, with an exact
+// playback reversal. Neighboring rows use a uniform spatial conveyor.
+const EXPAND_MS=620;
+const SELECTED_EASING="cubic-bezier(.22,.72,.24,1)";
+const CONVEYOR_EASING="linear";
+const EDGE_FADE_FRACTION=.055;
 const clampInt=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 
 /* Pure stable row packing. The clicked card occupies its ENTIRE original row,
@@ -33,6 +33,26 @@ export function planProjectExpansion(count,columns,selectedIndex){
     return {row:selectedRow+2+Math.floor(rank/columns),
       column:rank%columns+1,span:1};
   });
+}
+/* Pure conveyor geometry, in column pitches. Every moving pane advances
+ * at precisely the same speed; crossing is per-card, never one shared
+ * teleport timestamp that causes siblings to overlap at row boundaries.
+ * Cards enter the following row one pitch before its left edge. */
+export function projectConveyorPosition(column,columns,shift,progress){
+  if(!Number.isInteger(column)||!Number.isInteger(columns)||columns<1||
+     column<0||column>=columns||!Number.isInteger(shift)||shift<0||
+     shift>=columns||!Number.isFinite(progress)||progress<0||progress>1)
+    throw new RangeError("Invalid conveyor parameters");
+  const advance=column+shift*progress;
+  return advance>=columns-1&&shift>0?
+    {rowOffset:1,x:advance-columns}:
+    {rowOffset:0,x:advance};
+}
+export function projectConveyorEdge(column,columns,shift){
+  if(!Number.isInteger(column)||!Number.isInteger(columns)||columns<1||
+     column<0||column>=columns||!Number.isInteger(shift)||shift<1||shift>=columns)
+    throw new RangeError("Invalid conveyor edge");
+  return Math.max(0,Math.min(1,(columns-1-column)/shift));
 }
 export function projectExpansionMovement(index,columns,selectedIndex,position){
   const fromRow=Math.floor(index/columns);
@@ -102,6 +122,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     state=null;
     for(const timeout of previous.timers)clearTimeout(timeout);
     for(const animation of previous.animations)animation.cancel();
+    for(const ghost of previous.ghosts)ghost.remove();
     previous.placeholder.remove();
     clearInline();
     if(focus&&!disposed&&root.isConnected&&!previous.card.hidden)
@@ -150,14 +171,44 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     closeButton.style.top=cssPixels(expandedRect.top-gridRect.top+13);
     closeButton.style.left=cssPixels(expandedRect.right-gridRect.left-53);
     closeButton.setAttribute("aria-label","Close "+card.dataset.projectSlug+" project");
-    const animations=[],timers=[];
+    const animations=[],timers=[],ghosts=[];
     const duration=immediate||hasReduce()?0:EXPAND_MS;
+    const initialTime=performance.now();
+    const firstRow=Math.floor(selectedIndex/columns);
+    const shift=columns-1;
+    const columnGap=Number.parseFloat(getComputedStyle(grid).columnGap)||0;
+    const pitch=(gridRect.width+columnGap)/columns;
+    const travel=shift*pitch;
+    // Keep the original row's optical dissolves on actual DOM clones,
+    // while their live cards enter the next row from off the left edge.
+    // The clones use the very same square WGSL / tile.motion.w pipeline.
+    if(duration){
+      for(let index=firstRow*columns;
+        index<Math.min(visible.length,(firstRow+1)*columns);index++){
+        const node=visible[index];
+        if(node===card)continue;
+        const before=original.get(node);
+        const ghost=node.cloneNode(true);
+        ghost.classList.add("project-showcase-dissolve-ghost");
+        ghost.setAttribute("aria-hidden","true");
+        ghost.tabIndex=-1;
+        ghost.inert=true;
+        ghost.style.position="absolute";
+        ghost.style.top=cssPixels(before.top-gridRect.top);
+        ghost.style.left=cssPixels(before.left-gridRect.left);
+        ghost.style.width=cssPixels(before.width);
+        ghost.style.height=cssPixels(before.height);
+        ghost.dataset.projectCardDismissAt=String(initialTime);
+        grid.append(ghost);
+        ghosts.push(ghost);
+      }
+    }
     const selectedAnimation=duration?animate(card,[
       {left:cssPixels(selectedRect.left-gridRect.left),
        width:cssPixels(selectedRect.width)},
       {left:cssPixels(expandedRect.left-gridRect.left),
        width:cssPixels(expandedRect.width)}
-    ],{duration,easing:MOTION_EASING}):null;
+    ],{duration,easing:SELECTED_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
     // X stays attached to the growing card's actual right edge, then follows
     // that same edge backwards at identical velocity during collapse.
@@ -166,53 +217,70 @@ export function mountProjectExpansion({root,grid,animateGlass}){
        opacity:0,transform:"translate3d(0,-8px,0)"},
       {left:cssPixels(expandedRect.right-gridRect.left-53),
        opacity:1,transform:"translate3d(0,0,0)"}
-    ],{duration,easing:MOTION_EASING}):null;
+    ],{duration,easing:SELECTED_EASING}):null;
     if(buttonAnimation)animations.push(buttonAnimation);
-    const originalColumnWidth=selectedRect.width;
-    const initialTime=performance.now();
-    let longest=duration;
     for(let index=0;index<visible.length;index++){
       const node=visible[index];
       if(node===card)continue;
       const before=original.get(node),after=destinations.get(node);
       const role=projectExpansionMovement(index,columns,selectedIndex,plan[index]);
-      if(role==="still")continue;
-      const dx=before.left-after.left,dy=before.top-after.top;
-      const from=translate(dx,dy);
+      if(role==="still"||!duration)continue;
       let frames;
-      if(role==="shift"){
-        frames=[{transform:from,opacity:1},
-          {transform:translate(0,0),opacity:1}];
-      }else{
-        const toRight=translate(gridRect.right-after.left+originalColumnWidth*.45,dy);
-        const fromLeft=translate(gridRect.left-after.left-originalColumnWidth*.75,0);
-        const dissolving=role==="dissolve";
-        // Every row and every direction crosses the invisible wrap point
-        // at the SAME instant. Only the square's optical decay determines
-        // how the selected rowmates lose coherence during the first phase.
-        const join=DISMISS_MS/EXPAND_MS;
+      if(role==="dissolve"){
+        // The card's real destination is the next row. Its ghost above is
+        // simultaneously undergoing the native-square optical dismissal.
+        // Every incoming card moves by the SAME number of pixels at the
+        // SAME speed as the established cards in that destination row.
+        const fadeEnd=Math.min(.3,Math.max(.08,1/Math.max(1,shift)));
         frames=[
-          {offset:0,transform:from,opacity:1},
-          {offset:join,transform:dissolving?translate(dx+10,dy-1):toRight,opacity:0},
-          {offset:join+.0001,transform:fromLeft,opacity:0},
+          {offset:0,transform:translate(-travel,0),opacity:0},
+          {offset:fadeEnd,transform:translate(-travel*(1-fadeEnd),0),opacity:1},
           {offset:1,transform:translate(0,0),opacity:1}
         ];
-        if(dissolving&&duration){
-          node.dataset.projectCardDismissAt=String(initialTime);
-          timers.push(setTimeout(()=>
-            node.removeAttribute("data-project-card-dismiss-at"),
-          DISMISS_MS+20));
+      }else if(role==="shift"){
+        // Exactly one shared translation across every downstream row:
+        // no proportional-to-distance velocities or differential easing.
+        frames=[
+          {transform:translate(-travel,0),opacity:1},
+          {transform:translate(0,0),opacity:1}
+        ];
+      }else{
+        // Wrap when THIS card reaches the rightmost position, rather
+        // than sending every card in the row to the edge at once.
+        const col=index%columns;
+        const edge=projectConveyorEdge(col,columns,shift);
+        const exitX=(gridRect.right-before.width)-after.left;
+        const entryX=(gridRect.left-pitch)-after.left;
+        const oldY=before.top-after.top;
+        if(edge===0){
+          frames=[
+            {offset:0,transform:translate(entryX,0),opacity:0},
+            {offset:EDGE_FADE_FRACTION,
+              transform:translate(entryX+travel*EDGE_FADE_FRACTION,0),opacity:1},
+            {offset:1,transform:translate(0,0),opacity:1}
+          ];
+        }else{
+          const fadeOut=Math.max(0,edge-EDGE_FADE_FRACTION);
+          const fadeIn=Math.min(1,edge+EDGE_FADE_FRACTION);
+          frames=[
+            {offset:0,transform:translate(before.left-after.left,oldY),opacity:1},
+            {offset:fadeOut,
+              transform:translate(before.left-after.left+travel*fadeOut,oldY),opacity:1},
+            {offset:edge,transform:translate(exitX,oldY),opacity:0},
+            {offset:Math.min(1,edge+.0001),transform:translate(entryX,0),opacity:0},
+            {offset:fadeIn,
+              transform:translate(entryX+travel*(fadeIn-edge),0),opacity:1},
+            {offset:1,transform:translate(0,0),opacity:1}
+          ];
         }
       }
-      if(duration){
-        const animation=animate(node,frames,{
-          duration:EXPAND_MS,easing:MOTION_EASING
-        });
-        if(animation)animations.push(animation);
-      }
+      const animation=animate(node,frames,{
+        duration:EXPAND_MS,easing:CONVEYOR_EASING
+      });
+      if(animation)animations.push(animation);
     }
-    state={card,placeholder,animations,timers,longest,phase:"open",immediate};
-    animateGlass(longest+90);
+    state={card,placeholder,animations,timers,ghosts,phase:"open",immediate};
+    animateGlass(EXPAND_MS+90);
     if(duration){
       closeButton.tabIndex=0;
       closeButton.focus({preventScroll:true});
@@ -230,33 +298,22 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const current=state;
     const now=performance.now();
     const animations=current.animations;
-    // All animations share one duration, zero delay and a LINEAR timebase,
-    // so playing backward has exactly the same constant speed as opening.
-    // Even an X click midway through opening reverses continuously.
+    // The selected card uses the exact reverse of its original
+    // 620ms cubic-bezier expansion (including the X attached to its edge).
+    // Other cards return at the identical uniform horizontal velocity.
     const elapsed=Math.min(EXPAND_MS,Math.max(0,
       Number(animations[0]?.currentTime??EXPAND_MS)));
     for(const animation of animations){
       try{animation.reverse()}catch{animation.cancel()}
     }
-    // The selected row's peers regain their original optical coherence in
-    // the LAST DISMISS_MS of that same common reverse clock. If closed early,
-    // resume from their actual partial fade, not from full disappearance.
-    const selectedIndex=cards.filter(c=>!c.hidden).indexOf(current.card);
-    const columns=columnsFor(grid);
-    const originalRow=Math.floor(selectedIndex/columns);
+    // Existing ghosts restore the old row through the SAME WebGPU optics.
+    // A reversed tile.motion.w never affects the incoming conveyor cards.
     const restoreDelay=Math.max(0,elapsed-DISMISS_MS);
     const restoreFrom=Math.min(DISMISS_MS,elapsed);
-    for(const node of cards){
-      if(node===current.card||node.hidden)continue;
-      const position=cards.filter(c=>!c.hidden).indexOf(node);
-      if(Math.floor(position/columns)!==originalRow)continue;
-      node.removeAttribute("data-project-card-dismiss-at");
-      node.dataset.projectCardRestoreAt=String(now+restoreDelay);
-      node.dataset.projectCardRestoreFrom=String(restoreFrom);
-      current.timers.push(setTimeout(()=>{
-        node.removeAttribute("data-project-card-restore-at");
-        node.removeAttribute("data-project-card-restore-from");
-      },elapsed+30));
+    for(const ghost of current.ghosts){
+      ghost.removeAttribute("data-project-card-dismiss-at");
+      ghost.dataset.projectCardRestoreAt=String(now+restoreDelay);
+      ghost.dataset.projectCardRestoreFrom=String(restoreFrom);
     }
     animateGlass(elapsed+90);
     // An animation reversed after reaching its finished fill state can
