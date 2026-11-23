@@ -1,9 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
-import {planProjectExpansion,projectExpansionMovement}
+import {planProjectExpansion,projectExpansionMovement,
+  projectConveyorPosition,projectConveyorEdge}
   from "../sites/_apex/assets/public-projects-expand.js";
 
+test("conveyor preserves a full pitch of separation at every animation sample",()=>{
+  for(const columns of [2,3,4,5,6])
+    for(let shift=1;shift<columns;shift++){
+      for(let frame=0;frame<=100;frame++){
+        const progress=frame/100;
+        const occupied=Array.from({length:columns},(_,column)=>
+          projectConveyorPosition(column,columns,shift,progress));
+        for(const row of [0,1]){
+          const positions=occupied.filter(p=>p.rowOffset===row).map(p=>p.x)
+            .sort((a,b)=>a-b);
+          for(let i=1;i<positions.length;i++)
+            assert.ok(positions[i]-positions[i-1]>.999999,
+              "Overlapping panels: "+JSON.stringify({columns,shift,progress,row,positions}));
+        }
+      }
+      for(let column=0;column<columns;column++){
+        const edge=projectConveyorEdge(column,columns,shift);
+        assert.ok(edge>=0&&edge<=1);
+        const atEdge=projectConveyorPosition(column,columns,shift,edge);
+        assert.equal(atEdge.rowOffset,
+          column+shift>=columns-1?1:0);
+      }
+    }
+});
 test("six-column expansion consumes the selected card's original FULL row",()=>{
   const positions=planProjectExpansion(16,6,8);
   assert.deepEqual(positions[8],{row:2,column:1,span:6});
@@ -75,18 +100,23 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(controls,/public-projects:before-filter/);
   assert.match(controller,/tileDismissProgress|projectCardDismissAt/);
   assert.match(controller,/animation\.reverse\(\)/);
-  // A single 760ms clock makes every row start together; the X uses the
-  // same speed when reversing, even if it is clicked mid-expansion.
-  assert.match(controller,/const EXPAND_MS=760;/);
-  assert.match(controller,/const REAPPEAR_MS=EXPAND_MS-DISMISS_MS;/);
-  assert.match(controller,/const MOTION_EASING="linear";/);
-  assert.match(controller,/duration:EXPAND_MS,easing:MOTION_EASING/);
-  assert.match(controller,/const join=DISMISS_MS\/EXPAND_MS;/);
-  assert.match(controller,/restoreDelay=Math\.max\(0,elapsed-DISMISS_MS\)/);
-  assert.match(controller,/restoreFrom=Math\.min\(DISMISS_MS,elapsed\)/);
-  assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
+  // The selected panel restores the original 620ms easing and the X
+  // reverses exactly that WAAPI animation. Every row uses a common
+  // 620ms linear conveyor, independent of traveled/remaining distance.
+  assert.match(controller,/const EXPAND_MS=620;/);
+  assert.match(controller,/const SELECTED_EASING="cubic-bezier\\(\\.22,\\.72,\\.24,1\\)";/);
+  assert.match(controller,/const CONVEYOR_EASING="linear";/);
+  assert.match(controller,/duration:EXPAND_MS,easing:CONVEYOR_EASING/);
+  assert.match(controller,/const travel=shift\\*pitch;/);
+  assert.match(controller,/projectConveyorEdge\\(col,columns,shift\\)/);
+  assert.match(controller,/const ghost=node\\.cloneNode\\(true\\)/);
+  assert.match(controller,/ghost\\.dataset\\.projectCardDismissAt/);
+  assert.match(controller,/const restoreFrom=Math\\.min\\(DISMISS_MS,elapsed\\);/);
+  assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\\.playbackRate=/);
   assert.match(renderer,/cardRestoreFrom/);
-  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\)-elapsed/);
+  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\\)-elapsed/);
+  assert.match(renderer,/const AUTH_PANE_CAPACITY=32;/);
+  assert.match(css,/project-showcase-dissolve-ghost/);
 
   assert.match(controller,/gridTemplateColumns/);
   assert.match(controller,/position="absolute"/);
