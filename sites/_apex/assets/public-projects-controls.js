@@ -147,6 +147,8 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
   let searchTimer=null;
   const abort=new AbortController();
   function applyFilters(){
+    // A filter changes the visible packing; clear any full-row overlay first.
+    root.dispatchEvent(new Event("public-projects:before-filter"));
     let count=0,changed=false;
     for(let i=0;i<projects.length;i++){
       const visible=projectMatchesFilters(projects[i],query,selected);
