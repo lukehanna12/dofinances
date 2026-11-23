@@ -47,7 +47,7 @@ const columnsFor=grid=>{
   // A computed CSS grid template contains resolved pixel tracks, rather than
   // the authored repeat() function. Filtering never changes their count.
   const value=getComputedStyle(grid).gridTemplateColumns;
-  return Math.max(1,value.trim().split(/\\s+/).filter(Boolean).length);
+  return Math.max(1,value.trim().split(/\s+/).filter(Boolean).length);
 };
 const animate=(element,frames,options)=>{
   if(!element.animate)return null;
@@ -80,6 +80,11 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.classList.remove("is-expanded");
       card.removeAttribute("data-project-card-dismiss-at");
       card.removeAttribute("data-project-card-restore-at");
+      const foreground=card.querySelector(".project-showcase-content");
+      if(foreground){
+        foreground.style.removeProperty("opacity");
+        foreground.style.removeProperty("filter");
+      }
       card.setAttribute("aria-expanded","false");
     }
     root.classList.remove("has-project-expansion");
@@ -135,7 +140,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.style.height=cssPixels(expandedRect.height);
     card.classList.add("is-expanded");
     card.setAttribute("aria-expanded","true");
-    root.classList.add("has-project-expansion");
+    root.classList.add("has-project-expansion","project-expansion-was-used");
     // Preserve the same actual WebGPU glass for the X, drawn last on top.
     closeButton.hidden=false;
     closeButton.style.top=cssPixels(expandedRect.top-gridRect.top+13);
