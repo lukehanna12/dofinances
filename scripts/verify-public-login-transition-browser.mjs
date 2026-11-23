@@ -1012,6 +1012,14 @@ try{
   assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
     "Displaced panels must enter at the left side of the next row");
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  // WAAPI applies the pending reversed playback rate at its next timeline
+  // sample. Wait for that sample rather than inspecting the stale forward
+  // rate in the very same JavaScript turn as the click.
+  await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
+    "const c=[...g.querySelectorAll('.project-showcase-card')];"+
+    "return [c[0],c[1],c[6],c[7],g.querySelector('.project-showcase-expand-close')]"+
+      ".every(node=>[...node.getAnimations()].some(a=>"+
+      "a.effect?.getTiming().duration===760&&a.playbackRate===-1));})()",30,20);
   const reverseClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
