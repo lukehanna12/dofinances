@@ -832,6 +832,7 @@ async function initialize(){
       if(projects&&projectRole==="card"){
         const cardDismissStart=Number.parseFloat(node.dataset.projectCardDismissAt);
         const cardRestoreStart=Number.parseFloat(node.dataset.projectCardRestoreAt);
+        const cardRestoreFrom=Number.parseFloat(node.dataset.projectCardRestoreFrom);
         const now=performance.now();
         const restoring=Number.isFinite(cardRestoreStart)&&now>=cardRestoreStart;
         const dismissing=!restoring&&Number.isFinite(cardDismissStart)&&now>=cardDismissStart;
@@ -840,7 +841,8 @@ async function initialize(){
           const col=i%11;
           const elapsed=now-(restoring?cardRestoreStart:cardDismissStart);
           const progress=reducedMotion.matches?(restoring?0:1):
-            restoring?1-tileDismissProgress(elapsed,0,col):
+            restoring?tileDismissProgress(Math.max(0,
+              (Number.isFinite(cardRestoreFrom)?cardRestoreFrom:DISMISS_MS)-elapsed),0,col):
               tileDismissProgress(elapsed,0,col);
           // Project cards use precisely the square's WGSL decoherence and
           // tile.motion.w, with no copied shader or CSS optical layer.
