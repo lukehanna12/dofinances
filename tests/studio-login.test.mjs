@@ -208,7 +208,7 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(jsx,/data-auth-glass-card/);
   assert.doesNotMatch(jsx,/onPointerMove=\{moveGlassLight\}/);
   assert.doesNotMatch(css,/--auth-glass-pointer-|circle 225px/);
-  assert.match(renderer,/const AUTH_PANE_CAPACITY=24;/);
+  assert.match(renderer,/const AUTH_PANE_CAPACITY=25;/);
   assert.match(renderer,/function authPaneElements\(\)/);
   assert.match(renderer,/const source=makeTileFloatData\(all,dpr,sceneTop\)/);
   assert.match(renderer,/data\.set\(source\)/);
@@ -491,7 +491,7 @@ test("back arrow uses exact square glass without artificial light lift or icon o
   assert.ok(css.includes(".auth3-root:not(.dark) [data-auth-glass-provider].auth3-back-link"));
   assert.ok(css.includes("  background:\n    linear-gradient(var(--dashboard-face-fill),var(--dashboard-face-fill)),\n    var(--auth-control-tint);"));
   assert.doesNotMatch(css,/auth3-back-link:hover\{[^}]*transform:/);
-  assert.match(renderer,/if\(node\.classList\.contains\("auth3-back-link"\)\|\|\s*node\.dataset\.publicProjectGlass==="back"\)return -7;/);
+  assert.match(renderer,/if\(node\.classList\.contains\("auth3-back-link"\)\|\|\s*node\.dataset\.publicProjectGlass==="back"\|\|\s*node\.dataset\.publicProjectGlass==="expand-close"\)return -7;/);
   assert.match(renderer,/node\.hasAttribute\("data-public-project-glass"\)\|\|\s*node\.hasAttribute\("data-auth-glass-card"\)\|\|\s*node\.classList\.contains\("auth3-back-link"\)\)\s*return tintParameters\("none",undefined,scheme\);/);
   assert.ok(renderer.includes('roles,scheme,cardTint:"none",backTint:"none"'));
 
