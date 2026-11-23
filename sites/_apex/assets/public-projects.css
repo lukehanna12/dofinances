@@ -375,3 +375,56 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
   .public-projects-icon-morph>path,.public-projects-filter-option,
   .public-projects-search-input{transition:none!important}
 }
+
+/* Card expansion is a tracked grid transaction, not a second gallery or a
+ * scaled snapshot. The real WebGPU pane follows the animated DOM rectangle.
+ * Sibling WAAPI transforms provide horizontal push/edge wrap/re-entry. */
+.public-projects-root .project-showcase-grid{position:relative}
+.public-projects-root.has-project-expansion .project-showcase-card{
+  animation:none!important
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded{
+  z-index:3;will-change:left,width
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded .project-showcase-top{
+  padding-right:53px;box-sizing:border-box
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-photo{
+  opacity:1;transform:scale(1)
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="liquid-plexiglass-26"].is-photo-ready .project-showcase-photo{
+  transform:translateY(1.5%) scale(1.12)
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="github-readme-chrome-extension"].is-photo-ready .project-showcase-photo{
+  transform:translateY(-.6%) scale(1.04)
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="hidden-functions"].is-photo-ready .project-showcase-photo{
+  transform:scale(1.11)
+}
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded .project-showcase-shade{opacity:1}
+.public-projects-root .project-showcase-expanded-slot{min-height:clamp(215px,18vw,250px);pointer-events:none}
+.public-projects-root .project-showcase-expand-close{
+  position:absolute;z-index:6;display:grid;place-items:center;
+  width:40px;height:40px;padding:0;border:1px solid transparent;
+  border-radius:11px;background:#242424;color:#fff;cursor:pointer;
+  appearance:none;outline-offset:3px;box-sizing:border-box
+}
+.public-projects-root .project-showcase-expand-close[hidden]{display:none!important}
+.public-projects-root .project-showcase-expand-close svg{
+  display:block;pointer-events:none
+}
+.public-projects-root .project-showcase-expand-close:focus-visible{
+  outline:2px solid #fff
+}
+body.public-home[data-auth-gpu-scene="ready"]
+ .public-projects-root .project-showcase-expand-close{
+  background:transparent!important;border-color:transparent!important;
+  box-shadow:none!important;-webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important
+}
+@media(max-width:699px){
+  .public-projects-root .project-showcase-expanded-slot{min-height:220px}
+}
+@media(prefers-reduced-motion:reduce){
+  .public-projects-root .project-showcase-expand-close{transition:none!important}
+}
