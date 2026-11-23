@@ -963,11 +963,63 @@ try{
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links");
+  // Actual non-screenshot browser proof: the real button expands both
+  // directions across its ORIGINAL row, pushing all its peers to the next.
+  await until("(()=>{const grid=document.querySelector('.project-showcase-grid');"+
+    "const selected=grid.querySelector('.project-showcase-card.is-expanded');"+
+    "return !!selected&&Math.abs(selected.getBoundingClientRect().width-grid.getBoundingClientRect().width)<2;})()",100,30);
+  const expandedFirst=await evaluate("(()=>{"+
+    "const grid=document.querySelector('.project-showcase-grid');"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const selected=cards[0].getBoundingClientRect();"+
+    "const firstPushed=cards[1].getBoundingClientRect();"+
+    "const close=grid.querySelector('.project-showcase-expand-close');"+
+    "return {selectedTop:selected.top,selectedBottom:selected.bottom,"+
+      "selectedWidth:selected.width,gridWidth:grid.getBoundingClientRect().width,"+
+      "pushedTop:firstPushed.top,pushedLeft:firstPushed.left,"+
+      "gridLeft:grid.getBoundingClientRect().left,closeGlass:close.dataset.publicProjectGlass,"+
+      "closeVisible:!close.hidden,expanded:cards[0].getAttribute('aria-expanded')};})()");
+  assert.equal(expandedFirst.expanded,"true");
+  assert.equal(expandedFirst.closeVisible,true);
+  assert.equal(expandedFirst.closeGlass,"expand-close");
+  assert.ok(expandedFirst.pushedTop>=expandedFirst.selectedBottom-3,
+    "Rowmate must wrap to the row BELOW the expanded first card");
+  assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
+    "Displaced panels must enter at the left side of the next row");
+  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
+  assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
+    "The X fully reverses the expansion and hides its glass pane");
+  const resetFirst=await evaluate("(()=>{"+
+    "const grid=document.querySelector('.project-showcase-grid');"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const first=cards[0].getBoundingClientRect(),second=cards[1].getBoundingClientRect();"+
+    "return {oneRow:Math.abs(first.top-second.top)<2,"+
+      "firstWidth:first.width,secondWidth:second.width,"+
+      "hasOverlay:!!grid.querySelector('.project-showcase-expanded-slot')};})()");
+  assert.equal(resetFirst.oneRow,true,"Reversal restores the original row");
+  assert.ok(Math.abs(resetFirst.firstWidth-resetFirst.secondWidth)<2);
+  assert.equal(resetFirst.hasOverlay,false,"Reversal removes the spacer");
+  // A middle-row click must take BOTH its left and right neighbors with it.
+  await evaluate("document.querySelectorAll('.project-showcase-card')[2].click()");
+  await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
+    "const c=g.querySelectorAll('.project-showcase-card');"+
+    "return c[2].classList.contains('is-expanded')&&"+
+    "Math.abs(c[2].getBoundingClientRect().width-g.getBoundingClientRect().width)<2;})()",100,30);
+  const expandedMiddle=await evaluate("(()=>{const c=document.querySelectorAll('.project-showcase-card');"+
+    "const selected=c[2].getBoundingClientRect();"+
+    "return {left:c[0].getBoundingClientRect().top,right:c[3].getBoundingClientRect().top,"+
+      "bottom:selected.bottom};})()");
+  assert.ok(expandedMiddle.left>=expandedMiddle.bottom-3&&
+    expandedMiddle.right>=expandedMiddle.bottom-3,
+    "Both sides of the clicked card must be displaced together");
+  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
-    await until("window.__dashboardWebGPU?.projectGlass?.count===24",70);
+    await until("window.__dashboardWebGPU?.projectGlass?.count===25",70);
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
