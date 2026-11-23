@@ -259,14 +259,19 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       },elapsed+30));
     }
     animateGlass(elapsed+90);
-    const finish=Promise.all(animations.map(animation=>
-      animation.finished.catch(()=>{})));
-    void finish.then(()=>{
-      if(state===current&&current.phase==="closing")
-        discard({focus:restoreFocus});
-    });
-    // On browsers without WAAPI, avoid retaining the overlay indefinitely.
-    if(!animations.length)discard({focus:restoreFocus});
+    // An animation reversed after reaching its finished fill state can
+    // expose the ALREADY-RESOLVED forward .finished promise until the next
+    // animation tick. Awaiting that promise prematurely discards every card
+    // and produces the seemingly accelerated/snapping X reversal. The shared
+    // clock—not stale promises—owns reverse cleanup.
+    if(!animations.length){
+      discard({focus:restoreFocus});
+    }else{
+      current.timers.push(setTimeout(()=>{
+        if(state===current&&current.phase==="closing")
+          discard({focus:restoreFocus});
+      },elapsed+35));
+    }
   }
   for(const card of cards){
     card.setAttribute("aria-expanded","false");
