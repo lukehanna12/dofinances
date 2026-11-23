@@ -968,6 +968,8 @@ try{
   await until("(()=>{const grid=document.querySelector('.project-showcase-grid');"+
     "const selected=grid.querySelector('.project-showcase-card.is-expanded');"+
     "return !!selected&&Math.abs(selected.getBoundingClientRect().width-grid.getBoundingClientRect().width)<2;})()",100,30);
+  await until("[...document.querySelectorAll('.project-showcase-card')].every("+
+    "card=>card.getAnimations().every(animation=>animation.playState!=='running'))",100,30);
   const expandedFirst=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
@@ -1006,6 +1008,8 @@ try{
     "const c=g.querySelectorAll('.project-showcase-card');"+
     "return c[2].classList.contains('is-expanded')&&"+
     "Math.abs(c[2].getBoundingClientRect().width-g.getBoundingClientRect().width)<2;})()",100,30);
+  await until("[...document.querySelectorAll('.project-showcase-card')].every("+
+    "card=>card.getAnimations().every(animation=>animation.playState!=='running'))",100,30);
   const expandedMiddle=await evaluate("(()=>{const c=document.querySelectorAll('.project-showcase-card');"+
     "const selected=c[2].getBoundingClientRect();"+
     "return {left:c[0].getBoundingClientRect().top,right:c[3].getBoundingClientRect().top,"+
