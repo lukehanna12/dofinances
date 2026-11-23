@@ -6,6 +6,7 @@
 import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
 import {mountProjectControls} from "./public-projects-controls.js";
+import {mountProjectExpansion} from "./public-projects-expand.js";
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // One staggered arrival timeline: back chip at 0ms, both heading and three
@@ -151,6 +152,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   },reduced.matches?0:PROJECT_ENTER_FIRST_CARD_DELAY_MS+
     PROJECT_ENTER_DURATION_MS+15*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
+  const expansion=mountProjectExpansion({root,grid,animateGlass});
   const routeScroll=root.closest("#public-route-content");
   const logo=document.getElementById("dashboard-title");
   const logoHomeParent=logo?.parentElement??null;
@@ -185,7 +187,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
   return {
     exit(){
       if(closed||exiting)return;
-      exiting=true;controls.closeForExit();root.classList.add("is-exiting");
+      exiting=true;expansion.close({immediate:true,restoreFocus:false});
+      controls.closeForExit();root.classList.add("is-exiting");
       // In the same time window previously occupied by the header's plain
       // fade, use the HOME SQUARES' single DISMISS_MS optical decoherence.
       // The renderer consumes this timestamp as tile.motion.w; its shader
@@ -216,6 +219,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
       if(headerTimer!==null)clearTimeout(headerTimer);
       if(controlTimer!==null)clearTimeout(controlTimer);
       clearTimeout(introTimer);
+      expansion.unmount();
       controls.unmount();
       root.remove();
     }
