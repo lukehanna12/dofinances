@@ -388,6 +388,13 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded{
   z-index:3;will-change:left,width
 }
+/* The dismissed original-row silhouette remains a separate, inert pane
+ * while its live counterpart joins the next row's collision-free conveyor.
+ * Its optical deconstruction is still the original shared WGSL shader. */
+.public-projects-root .project-showcase-dissolve-ghost{
+  pointer-events:none!important;z-index:2;animation:none!important;
+  user-select:none;-webkit-user-select:none
+}
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded .project-showcase-top{
   padding-right:53px;box-sizing:border-box
 }
