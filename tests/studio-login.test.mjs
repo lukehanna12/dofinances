@@ -208,7 +208,7 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(jsx,/data-auth-glass-card/);
   assert.doesNotMatch(jsx,/onPointerMove=\{moveGlassLight\}/);
   assert.doesNotMatch(css,/--auth-glass-pointer-|circle 225px/);
-  assert.match(renderer,/const AUTH_PANE_CAPACITY=25;/);
+  assert.match(renderer,/const AUTH_PANE_CAPACITY=32;/);
   assert.match(renderer,/function authPaneElements\(\)/);
   assert.match(renderer,/const source=makeTileFloatData\(all,dpr,sceneTop\)/);
   assert.match(renderer,/data\.set\(source\)/);
