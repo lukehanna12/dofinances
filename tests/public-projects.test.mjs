@@ -201,7 +201,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
     load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),
     load("../sites/_apex/assets/public-projects-controls.js")
   ]);
-  assert.match(renderer,/const AUTH_PANE_CAPACITY=24;/);
+  assert.match(renderer,/const AUTH_PANE_CAPACITY=25;/);
   assert.match(renderer,/\.public-projects-root/);
   assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
