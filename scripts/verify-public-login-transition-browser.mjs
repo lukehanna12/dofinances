@@ -963,28 +963,51 @@ try{
   const pathBefore=await evaluate("location.pathname");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links"); 
-  // All panels—including side dissolves, downstream shifts, row wraps and
-  // the attached glass X—must start on the SAME no-delay, linear timeline.
+  // The clicked panel and its attached glass X use the ORIGINAL 620ms
+  // curve, while every displaced card starts at once and travels at the
+  // exact same horizontal velocity under a shared linear timebase.
   const expansionClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
-    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
     "const panes=[cards[0],cards[1],cards[6],cards[7],"+
       "grid.querySelector('.project-showcase-expand-close')];"+
     "return panes.map(node=>{const animation=[...node.getAnimations()].find(a=>"+
-      "a.effect?.getTiming().duration===760);"+
+      "a.effect?.getTiming().duration===620);"+
       "const t=animation?.effect?.getTiming();"+
       "return {duration:t?.duration,delay:t?.delay,easing:t?.easing,"+
         "time:animation?.currentTime,rate:animation?.playbackRate};});})()");
   assert.equal(expansionClocks.length,5);
-  for(const clock of expansionClocks){
-    assert.equal(clock.duration,760,"All animated panes use one 760ms timeline");
-    assert.equal(clock.delay,0,"No card or row waits before starting");
-    assert.equal(clock.easing,"linear","Movement cannot accelerate differently per panel");
+  for(const [index,clock] of expansionClocks.entries()){
+    assert.equal(clock.duration,620,"All moving panels share one 620ms timeline");
+    assert.equal(clock.delay,0,"No row or panel waits before moving");
+    assert.equal(clock.easing,index===0||index===4?
+      "cubic-bezier(0.22, 0.72, 0.24, 1)":"linear",
+      "Only selected card and attached X keep the original expansion curve");
     assert.equal(clock.rate,1);
   }
   assert.ok(Math.max(...expansionClocks.map(x=>x.time))-
     Math.min(...expansionClocks.map(x=>x.time))<35,
     "All panel and close-button animations must share the same start time");
+  // Sample actual DOM rectangles while the conveyor moves. Ignore the
+  // intentional dissolving original-row ghost; no two live cards may share
+  // visible horizontal space inside the same row.
+  for(let sample=0;sample<3;sample++){
+    await sleep(105);
+    const collision=await evaluate("(()=>{"+
+      "const grid=document.querySelector('.project-showcase-grid').getBoundingClientRect();"+
+      "const cards=[...document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost):not(.is-expanded)')];"+
+      "const visible=cards.map(card=>({r:card.getBoundingClientRect(),"+
+      "a:parseFloat(getComputedStyle(card).opacity)})).filter(c=>"+
+        "c.a>.2&&c.r.right>grid.left+1&&c.r.left<grid.right-1);"+
+      "for(let i=0;i<visible.length;i++)for(let j=i+1;j<visible.length;j++){"+
+        "const a=visible[i].r,b=visible[j].r;"+
+        "if(Math.abs(a.top-b.top)<2&&Math.min(a.right,b.right)-"+
+          "Math.max(a.left,b.left)>2)return {i,j,one:[a.left,a.right,a.top],"+
+          "two:[b.left,b.right,b.top]};}return null;})()");
+    assert.equal(collision,null,
+      "Uniform-speed row conveyor must never overlap live panels: "+
+      JSON.stringify(collision));
+  }
 
   // Actual non-screenshot browser proof: the real button expands both
   // directions across its ORIGINAL row, pushing all its peers to the next.
@@ -1016,23 +1039,28 @@ try{
   // sample. Wait for that sample rather than inspecting the stale forward
   // rate in the very same JavaScript turn as the click.
   await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
-    "const c=[...g.querySelectorAll('.project-showcase-card')];"+
+    "const c=[...g.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
     "return [c[0],c[1],c[6],c[7],g.querySelector('.project-showcase-expand-close')]"+
       ".every(node=>[...node.getAnimations()].some(a=>"+
-      "a.effect?.getTiming().duration===760&&a.playbackRate===-1));})()",30,20);
+      "a.effect?.getTiming().duration===620&&a.playbackRate===-1));})()",30,20);
   const reverseClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
-    "const cards=[...grid.querySelectorAll('.project-showcase-card')];"+
+    "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
     "const panes=[cards[0],cards[1],cards[6],cards[7],"+
       "grid.querySelector('.project-showcase-expand-close')];"+
     "return panes.map(node=>{const a=[...node.getAnimations()].find(x=>"+
-      "x.effect?.getTiming().duration===760);"+
-      "return {rate:a?.playbackRate,time:a?.currentTime};});})()");
+      "x.effect?.getTiming().duration===620);"+
+      "return {rate:a?.playbackRate,time:a?.currentTime,"+
+        "easing:a?.effect?.getTiming()?.easing};});})()");
   assert.ok(reverseClocks.every(clock=>clock.rate===-1),
-    "The X reverses all panels with the same constant-speed playback rate");
+    "X must reverse every animation at its original playback speed");
+  assert.equal(reverseClocks[0].easing,"cubic-bezier(0.22, 0.72, 0.24, 1)",
+    "Clicked card contraction uses the EXACT reversed expansion easing");
+  assert.equal(reverseClocks[4].easing,reverseClocks[0].easing,
+    "Glass X follows the same mirrored curve as the selected card");
   assert.ok(Math.max(...reverseClocks.map(x=>x.time))-
     Math.min(...reverseClocks.map(x=>x.time))<35,
-    "Every return motion must start together—not accelerate at different times");
+    "Every return motion must begin together");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
