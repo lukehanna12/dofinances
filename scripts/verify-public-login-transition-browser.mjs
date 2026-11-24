@@ -1335,7 +1335,7 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
-    await until("window.__dashboardWebGPU?.projectGlass?.count===25",70);
+    await until("window.__dashboardWebGPU?.projectGlass?.count===24",70);
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
@@ -1366,30 +1366,50 @@ try{
     assert.equal(projectState.transparent,"rgba(0, 0, 0, 0)",
       "Public projects use the genuine transparent WebGPU glass layer");
   }
-  // The search pill extends LEFT of the original square, then reveals its
-  // own separate circular untinted-glass cancel button and focuses typing.
-  await evaluate("document.querySelector('.public-projects-search-button').click()");
+  // One persistent button and two persistent SVG path elements. Sample
+  // the real path interpolation and live geometry during the same expansion.
+  const searchMorph=await evaluate(`(async()=>{
+    const b=document.querySelector('.public-projects-search-button'),f=document.querySelector('.public-projects-search-field');
+    const ring=b.querySelector('.public-projects-search-morph-ring'),handle=b.querySelector('.public-projects-search-morph-handle');
+    const before={ring:getComputedStyle(ring).d,handle:getComputedStyle(handle).d,width:f.getBoundingClientRect().width,right:b.getBoundingClientRect().right};
+    window.__searchMorphProbe={b,ring,handle,before};
+    b.click();
+    let mid;
+    for(let i=0;i<20;i++){
+      await new Promise(requestAnimationFrame);
+      const w=f.getBoundingClientRect().width,r=getComputedStyle(ring).d;
+      if(w>5&&w<375&&r!==before.ring){
+        mid={width:w,ring:r,handle:getComputedStyle(handle).d,gap:b.getBoundingClientRect().left-f.getBoundingClientRect().right,ready:b.parentElement.classList.contains('is-ready')};break;
+      }
+    }
+    return {before,mid,same:b===document.querySelector('.public-projects-search-cancel'),svgs:b.querySelectorAll('svg').length,paths:b.querySelectorAll('path').length,focus:document.activeElement===f.querySelector('input')};
+  })()`);
+  assert.equal(searchMorph.before.width,0);
+  assert.equal(searchMorph.same,true);
+  assert.equal(searchMorph.svgs,1);assert.equal(searchMorph.paths,2);
+  assert.equal(searchMorph.focus,true);
+  assert.ok(searchMorph.mid&&searchMorph.mid.width>5&&searchMorph.mid.width<375,JSON.stringify(searchMorph));
+  assert.notEqual(searchMorph.mid.ring,searchMorph.before.ring);
+  assert.notEqual(searchMorph.mid.handle,searchMorph.before.handle);
+  assert.ok(searchMorph.mid.gap>=-0.5);
+  assert.equal(searchMorph.mid.ready,false,"Icon morph must begin BEFORE the expansion completes");
   await until("document.querySelector('.public-projects-search-wrap').classList.contains('is-ready')&&"+
     "document.activeElement===document.querySelector('.public-projects-search-input')",50);
-  // is-ready is the focus gate at SEARCH_EXPAND_MS; the CSS capsule has a
-  // longer 320ms geometry transition. Never measure halfway through the
-  // transform and misreport a correctly expanding 390px glass surface.
-  await until("(()=>{const p=document.querySelector('.public-projects-search-field');"+
-    "if(!p)return false;const r=p.getBoundingClientRect();"+
-    "return r.width>300&&Math.abs(r.width-p.offsetWidth)<2;})()",60,25);
   const searchState=await evaluate("(()=>{"+
     "const pill=document.querySelector('.public-projects-search-field').getBoundingClientRect(),"+
     "cancel=document.querySelector('.public-projects-search-cancel'),"+
-    "button=document.querySelector('.public-projects-search-button').getBoundingClientRect();"+
+    "button=cancel.getBoundingClientRect();"+
     "return {pillLeft:pill.left,pillRight:pill.right,pillWidth:pill.width,"+
-    "buttonLeft:button.left,cancelRadius:getComputedStyle(cancel).borderTopLeftRadius,"+
-    "cancelVisible:getComputedStyle(cancel).visibility,"+
+    "buttonLeft:button.left,buttonRight:button.right,cancelRadius:getComputedStyle(cancel).borderTopLeftRadius,"+
+    "same:cancel===window.__searchMorphProbe.b&&cancel.querySelector('.public-projects-search-morph-ring')===window.__searchMorphProbe.ring,"+
+    "ring:getComputedStyle(window.__searchMorphProbe.ring).d,handle:getComputedStyle(window.__searchMorphProbe.handle).d,"+
     "inputActive:document.activeElement?.classList.contains('public-projects-search-input')};})()");
-  assert.ok(searchState.pillRight<searchState.buttonLeft,
-    "The long capsule expands strictly to the left of the original search button");
+  assert.ok(Math.abs(searchState.buttonLeft-searchState.pillRight-6)<1);
+  assert.ok(Math.abs(searchState.buttonRight-searchMorph.before.right)<1,"Right edge is anchored");
   assert.ok(searchState.pillWidth>300,"Desktop search capsule is a long glass input");
-  assert.equal(searchState.cancelRadius,"999px");
-  assert.equal(searchState.cancelVisible,"visible");
+  assert.equal(searchState.cancelRadius,"20px");assert.equal(searchState.same,true);
+  assert.notEqual(searchState.ring,searchMorph.before.ring);
+  assert.notEqual(searchState.handle,searchMorph.before.handle);
   assert.equal(searchState.inputActive,true);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     // A transparent CSS face is insufficient: a 999px radius previously
@@ -1429,6 +1449,7 @@ try{
     "input.value='unmatchable-phrase-964752';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
   assert.equal(await evaluate("document.querySelectorAll('.public-projects-root .project-showcase-card:not([hidden])').length"),0);
   assert.equal(await evaluate("document.querySelector('.public-projects-empty').hidden"),false);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-empty')).color"),"rgb(173, 65, 78)");
   await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
     "input.value='ReadMe';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
   assert.equal(await evaluate("document.querySelector('.public-projects-empty').hidden"),true);
@@ -1526,16 +1547,30 @@ try{
   if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
     await until("document.querySelectorAll('[data-native-glass-occluded]').length===0",80,40);
   // Cancel reverses the expansion and restores the original search chip.
-  await evaluate("document.querySelector('.public-projects-search-cancel').click()");
+  const reverseMorph=await evaluate(`(async()=>{
+    const {b,ring,handle,before}=window.__searchMorphProbe,f=document.querySelector('.public-projects-search-field');
+    const full={ring:getComputedStyle(ring).d,handle:getComputedStyle(handle).d,width:f.getBoundingClientRect().width};
+    b.click();
+    for(let i=0;i<20;i++){
+      await new Promise(requestAnimationFrame);
+      const w=f.getBoundingClientRect().width,r=getComputedStyle(ring).d;
+      if(w>5&&w<full.width-5&&r!==full.ring)return {width:w,ring:r,handle:getComputedStyle(handle).d,same:b===document.querySelector('.public-projects-search-button'),full};
+    }
+    return null;
+  })()`);
+  assert.ok(reverseMorph&&reverseMorph.same,"Same button must reverse both width and icon");
+  assert.notEqual(reverseMorph.ring,reverseMorph.full.ring);
+  assert.notEqual(reverseMorph.handle,reverseMorph.full.handle);
   await until("!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded')",20);
   await until("Number(getComputedStyle(document.querySelector('.public-projects-search-field')).opacity)<.01",30,75);
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.public-projects-search-field')).opacity"))<.01,
     "The reversed search capsule must be visually fully collapsed");
+  await until("document.querySelector('.public-projects-search-field').getBoundingClientRect().width===0&&getComputedStyle(window.__searchMorphProbe.ring).d===window.__searchMorphProbe.before.ring&&getComputedStyle(window.__searchMorphProbe.handle).d===window.__searchMorphProbe.before.handle",40,30);
   assert.equal(await evaluate("document.querySelector('.public-projects-search-input').disabled"),true);
   assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     const controlAudit=await evaluate("window.__dashboardWebGPU.projectGlass");
-    assert.equal(controlAudit.materialReference,"first-home-square");
+    assert.equal(controlAudit.materialReference,"shared-per-surface-Clear");
     for(const name of [".public-projects-search-button",".public-projects-filter-button",
       ".public-projects-github-button"]){
       assert.equal(await evaluate("getComputedStyle(document.querySelector("+JSON.stringify(name)+")).backgroundColor"),

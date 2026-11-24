@@ -294,44 +294,54 @@ body.public-home:not([data-auth-gpu-scene="ready"])
 .public-projects-filter-option:focus-visible{
   outline:2px solid #fff;outline-offset:3px
 }
-.public-projects-search-button{transition:opacity 100ms ease}
+/* One right-anchored search control: the input grows out from the same
+ * button edge, not an already-sized pill scaled from a detached point.
+ * Both live geometries are submitted to the existing shared glass pass.
+ * The gap emerges continuously; the two glass surfaces never overlap. */
+.public-projects-search-button{
+  z-index:2;transition:border-radius 320ms cubic-bezier(.2,.78,.2,1);
+}
+.public-projects-search-wrap.is-expanded .public-projects-search-button{
+  border-radius:20px
+}
 .public-projects-search-field{
-  box-sizing:border-box;position:absolute;right:calc(100% + 10px);top:0;
-  width:min(390px,calc(100vw - 192px));height:40px;
-  border:1px solid transparent;border-radius:999px;
+  box-sizing:border-box;position:absolute;right:100%;top:0;
+  width:0;height:40px;
+  border:0;border-radius:999px;
   background:#242424;color:#fff;
-  display:flex;align-items:center;gap:12px;padding:0 15px;
-  opacity:0;transform:scaleX(.025);transform-origin:right center;
-  transition:transform 320ms cubic-bezier(.2,.78,.2,1),
-    opacity 280ms ease;
+  display:flex;align-items:center;
+  opacity:0;transform-origin:right center;
+  transition:width 320ms cubic-bezier(.2,.78,.2,1),
+    right 320ms cubic-bezier(.2,.78,.2,1),opacity 160ms ease;
   pointer-events:none;white-space:nowrap;overflow:hidden;
 }
-.public-projects-search-field>svg{display:block;flex:none;width:18px;height:18px}
 .public-projects-search-input{
-  box-sizing:border-box;min-width:0;width:100%;height:100%;
+  box-sizing:border-box;min-width:0;width:100%;height:100%;padding:0 15px;
   appearance:none;outline:none;border:0;background:transparent;
   color:#fff;font:400 14px/1.4 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  letter-spacing:0;opacity:0;transition:opacity 110ms ease;
+  letter-spacing:0;opacity:0;transition:opacity 180ms ease;
 }
 .public-projects-search-input::placeholder{color:rgba(255,255,255,.68)}
 .public-projects-search-input::-webkit-search-cancel-button{display:none}
 .public-projects-search-wrap.is-expanded .public-projects-search-field{
-  transform:scaleX(1);opacity:1;pointer-events:auto
+  right:calc(100% + 6px);width:min(390px,max(0px,calc(100vw - 192px)));
+  opacity:1;pointer-events:auto
 }
-.public-projects-search-wrap.is-ready .public-projects-search-input{opacity:1}
-.public-projects-search-wrap.is-ready .public-projects-search-button{
-  opacity:0;pointer-events:none
+.public-projects-search-wrap.is-expanded .public-projects-search-input{opacity:1}
+/* Native SVG geometry morphs in both directions from the very same state
+ * change that starts the width/radius transitions. No icon swap or delay. */
+.public-projects-search-morph>path{
+  transition:d 320ms cubic-bezier(.2,.78,.2,1)
 }
-/* A separate circle (not an icon painted onto the capsule) takes over the
- * original magnifier's 40px position only AFTER the expansion completes. */
-.public-projects-search-cancel{
-  position:absolute;inset:0;z-index:2;border-radius:999px;
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity 150ms ease,visibility 0s linear 150ms
+.public-projects-search-morph-ring{
+  d:path("M4.4 10.8 C4.4 7.2654 7.2654 4.4 10.8 4.4 C14.3346 4.4 17.2 7.2654 17.2 10.8 C17.2 14.3346 14.3346 17.2 10.8 17.2 C7.2654 17.2 4.4 14.3346 4.4 10.8")
 }
-.public-projects-search-wrap.is-ready .public-projects-search-cancel{
-  opacity:1;visibility:visible;pointer-events:auto;
-  transition-delay:0s,0s
+.public-projects-search-morph-handle{d:path("M16 16 L20.5 20.5")}
+.public-projects-search-wrap.is-expanded .public-projects-search-morph-ring{
+  d:path("M6 6 C7 7 8 8 9 9 C10 10 11 11 12 12 C13 13 14 14 15 15 C16 16 17 17 18 18")
+}
+.public-projects-search-wrap.is-expanded .public-projects-search-morph-handle{
+  d:path("M18 6 L6 18")
 }
 /* The dropdown stays in the public route's layer stack above the cards.
  * A *single* shared WebGPU pane is the backdrop of the entire dropdown. */
@@ -399,19 +409,18 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 }
 .public-projects-root .project-showcase-card[hidden]{display:none!important}
 .public-projects-empty{
-  margin:18px 0;padding:18px 4px;color:rgba(255,255,255,.75);
+  margin:18px 0;padding:18px 4px;color:#ad414e;
   font-size:14px;line-height:1.5
 }
 .public-projects-empty[hidden]{display:none!important}
 @media(max-width:699px){
   .public-projects-heading-row{flex-wrap:wrap;gap:14px}
   .public-projects-toolbar{margin-left:auto}
-  .public-projects-search-field{width:min(390px,calc(100vw - 192px))}
 }
 @media(prefers-reduced-motion:reduce){
   .public-projects-tool-button,.public-projects-search-cancel,
   .public-projects-search-field,.public-projects-filter-panel,
-  .public-projects-icon-morph>path,.public-projects-filter-option,
+  .public-projects-icon-morph>path,.public-projects-search-morph>path,.public-projects-filter-option,
   .public-projects-search-input{transition:none!important}
 }
 

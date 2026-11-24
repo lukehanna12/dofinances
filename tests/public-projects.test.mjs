@@ -375,3 +375,17 @@ test("BootScript framing uses the same top-left cover alignment and 10.25 percen
  }
  assert.match(csses[0],/\.is-expanded\[data-project-slug="bootscript"\]\.is-photo-ready \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
 });
+
+test("search has one persistent native morphing button and a continuously expanding glass field",async()=>{
+ const [controls,css]=await Promise.all([load("../sites/_apex/assets/public-projects-controls.js"),load("../sites/_apex/assets/public-projects.css")]);
+ assert.match(controls,/searchButton\.innerHTML=SEARCH_MORPH_ICON/);
+ assert.match(controls,/searchWrap\.append\(searchField,searchButton\)/);
+ assert.doesNotMatch(controls,/const cancel=namedButton/);
+ assert.match(controls,/searchWrap\.classList\.add\("is-expanded"\);\s*input\.focus/);
+ assert.match(css,/\.public-projects-search-field\{[\s\S]*?right:100%;top:0;\s*width:0;height:40px/);
+ assert.match(css,/\.public-projects-search-wrap\.is-expanded \.public-projects-search-button\{\s*border-radius:20px/);
+ assert.match(css,/\.public-projects-search-morph>path\{\s*transition:d 320ms/);
+ assert.match(css,/\.public-projects-search-wrap\.is-expanded \.public-projects-search-morph-ring\{\s*d:path\(/);
+ assert.doesNotMatch(css,/\.is-ready \.public-projects-search-(?:button|cancel)/);
+ assert.match(css,/\.public-projects-empty\{[^}]*color:#ad414e/);
+});
