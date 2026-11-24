@@ -422,7 +422,8 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternatives/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
   assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is an Excel add-in and Google Sheets add-on project/);
-  assert.match(PROJECT_DESCRIPTIONS.bootscript,/benchmarked against eight competing extensions/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/most broadly capable Google Apps Script Chrome extension.*comparison against eight competitors.*ten assessed capability domains/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/documented breadth, not independently tested live performance/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
