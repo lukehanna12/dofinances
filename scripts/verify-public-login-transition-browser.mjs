@@ -897,7 +897,7 @@ try{
 
   const iconDeclarations=await evaluate(`[...document.querySelectorAll(".project-showcase-lucide")].map(img=>({tint:img.dataset.glassSilhouetteTint,opacity:img.dataset.glassSilhouetteOpacity,registered:img.hasAttribute("data-glass-silhouette-source")}))`);
   assert.equal(iconDeclarations.length,16);
-  assert.ok(iconDeclarations.every(i=>i.registered&&i.tint==="white"&&i.opacity==="0.3"),"Every project icon registers white Clear tint at 30%");
+  assert.ok(iconDeclarations.every(i=>i.registered&&i.tint==="white"&&i.opacity==="0.2"),"Every project icon registers white Clear tint at 20%");
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
     "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
     "const icon=card?.querySelector('.project-showcase-lucide');"+

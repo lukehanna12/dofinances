@@ -55,7 +55,7 @@ struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:
 @group(0) @binding(9) var projectArtworkDetail: texture_2d<f32>;
 @group(0) @binding(10) var projectArtworkSampler: sampler;
 // Optional authored arbitrary silhouette per owner; no route tags.
-struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, optics:vec4<f32> };
+struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32> };
 @group(0) @binding(11) var<storage,read> silhouettes:array<GlassSilhouette>;
 @group(0) @binding(12) var silhouetteMaskTexture:texture_2d_array<f32>;
 
@@ -480,8 +480,8 @@ fn clearFace(baseColor:vec3<f32>,darkFace:bool)->vec3<f32>{
 fn clearTint(color:vec3<f32>,pigment:vec4<f32>,filmStrength:f32)->vec3<f32>{
   return mix(color,pigment.rgb,clamp(pigment.w,0.0,1.0)*filmStrength);
 }
-fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec2<f32>{
-  return textureSampleLevel(silhouetteMaskTexture,projectArtworkSampler,uv,layer,0.0).rg;
+fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec3<f32>{
+  return textureSampleLevel(silhouetteMaskTexture,projectArtworkSampler,uv,layer,0.0).rgb;
 }
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
@@ -494,41 +494,30 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
     dimensions:vec2<f32>,region:GlassRegion,parentInnerUV:vec2<f32>,
     parentLOD:f32,backdropExtent:vec2<f32>,darkFace:bool,split:bool,pointScale:f32)->vec3<f32>{
   if(icon.params.x<=0.0||icon.params.w<=0.0||any(icon.rect.zw<=vec2<f32>(0.0))){return color;}
-  // 384 content texels inside a 768 mask; 192 transparent texels per
-  // side accommodate the doubled CSS-space margin without clipping.
+  // Original 256 content texels and optical distance encoding. Extra
+  // transparent padding and separate extended distance only for the haze.
   let uv=((local-icon.rect.xy)/icon.rect.zw)*0.5+vec2<f32>(0.25);
   if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){return color;}
   let layer=i32(icon.params.x)-1;
   let mask=silhouetteMask(uv,layer);
-  let scale=min(icon.rect.z,icon.rect.w)/384.0;
-  let signed=mask.g*scale;
+  let scale=min(icon.rect.z,icon.rect.w)/256.0;
+  let signed=(mask.g-0.5)*128.0*scale;
   let distanceCSS=signed/pointScale;
   let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
   let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
-  let haze=silhouetteHaze(luminance,distanceCSS,hover);
-  // Brightness-only exposure multiplier. No grey veil or white additive
-  // halo outside the icon; preserve the artwork's channel proportions.
-  let glowDistance=max(distanceCSS,0.0)/1.8;
-  let halo=0.027*hover*exp(-0.5*glowDistance*glowDistance);
-  let shaded=clamp(color*((1.0-haze)*(1.0+halo)),vec3<f32>(0.0),vec3<f32>(1.0));
-  // Antialias in physical-pixel units using the high-precision signed
-  // distance; retain raster alpha for subpixel detail at the contour.
-  let aa=max(0.5*pointScale,0.5);
-  let coverage=clamp(0.5-signed/(2.0*aa),0.0,1.0);
-  let iconCoverage=mix(mask.r,coverage,0.75);
-  if(iconCoverage<=0.001){return shaded;}
-  // Central difference over a CSS subpixel rather than adjacent quantized
-  // texels. Do not amplify vanishing gradients on stroke medial axes.
-  let stepCSS=0.45;
-  let stepTexels=max(1.0,stepCSS*pointScale/max(scale,0.00001));
-  let texelStep=stepTexels/768.0;
+  let hazeDistance=(mask.b-0.5)*256.0*scale/pointScale;
+  let haze=silhouetteHaze(luminance,hazeDistance,hover);
+  var shaded=color*(1.0-haze);
+  let glowDistance=max(hazeDistance,0.0)/1.8;
+  shaded=clamp(shaded+vec3<f32>(0.018*hover*exp(-0.5*glowDistance*glowDistance)),
+    vec3<f32>(0.0),vec3<f32>(1.0));
+  if(mask.r<=0.001){return shaded;}
+  let texelStep=1.0/512.0;
   let gx=silhouetteMask(uv+vec2<f32>(texelStep,0.0),layer).g-silhouetteMask(uv-vec2<f32>(texelStep,0.0),layer).g;
   let gy=silhouetteMask(uv+vec2<f32>(0.0,texelStep),layer).g-silhouetteMask(uv-vec2<f32>(0.0,texelStep),layer).g;
-  let grad=vec2<f32>(gx,gy)/(2.0*stepTexels);
-  let normal=grad/max(length(grad),0.75);
-  // Same Clear envelope, evaluated at the actual optical stroke width
-  // rather than the full icon bounding box (especially important on arcs).
-  let d=max(pointScale,min(icon.optics.x,min(icon.rect.z,icon.rect.w)));
+  let grad=vec2<f32>(gx,gy);
+  let normal=grad/max(length(grad),0.00001);
+  let d=min(icon.rect.z,icon.rect.w);
   let clearD=d/pointScale;
   let inner=refractionEnvelope(signed,max(-60.0,-clearD)*pointScale,
     1.0/max(min(20.0,0.36*clearD)*pointScale,0.001));
@@ -546,12 +535,12 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
     let paint=textureSampleLevel(projectArtworkDetail,projectArtworkSampler,artUV,artLOD);
     source=mix(source,paint.rgb,clamp(paint.a*region.params.w,0.0,1.0));
   }
-  let rim=exp(-abs(signed/pointScale)*1.16);
+  let rim=exp(-abs(signed)*1.16);
   let edge=clamp(rim*0.28,0.0,0.28);
-  let base=clamp(source*(1.0-haze)+vec3<f32>(edge+hover*0.1125),
+  let base=clamp(source*(1.0-haze)+vec3<f32>(edge+hover*0.075),
     vec3<f32>(0.0),vec3<f32>(1.0));
   let glass=clearTint(clearFace(base,darkFace),icon.tint,0.25);
-  return mix(shaded,glass,clamp(iconCoverage*icon.params.w,0.0,1.0));
+  return mix(shaded,glass,clamp(mask.r*icon.params.w,0.0,1.0));
 }
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{

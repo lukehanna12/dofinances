@@ -78,7 +78,7 @@ function makeCard(project,index){
     const icon=el("img","project-showcase-lucide");
     icon.src=iconSource;
     icon.alt="";icon.width=46;icon.height=46;icon.decoding="async";
-    registerGlassSilhouette(icon,{tint:"white",opacity:.30});
+    registerGlassSilhouette(icon,{tint:"white",opacity:.20});
     marker.append(icon);
   }
   const badge=el("span","project-showcase-badge "+badgeClass,status);
