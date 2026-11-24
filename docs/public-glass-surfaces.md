@@ -61,3 +61,7 @@ Every public project card uses its own measured title ratio and actual line coun
 ### Inactive dark Clear title bands (current project card material)
 
 The former Regular title band now uses the shared Clear optical path, explicitly dark and non-interactive. Region-local minimum dimensions determine the Clear refraction envelope and blur word; hover and press lanes are exactly zero in the band, with no tint overlay. The raw backdrop capture uses Clear's half-resolution base and original artwork/shade, with no prior glass draws. The title-specific boundary, hover artwork reveal, View project position, 10% expanded height and upper Clear glass are unchanged. The legacy CSS geometry variable names are retained for compatibility; whole-surface Regular remains available independently. This preserves the existing Clear browser face and sampling model, not a new claim of exact native output equivalence.
+
+### Proportional title-band upper clearance
+
+The inactive dark Clear band uses the ratio of Terminal Scalars' previous upper clearance (8px internal title padding plus 90% of the bottom inset) to its full unpadded two-line text stack, recomputed at the normal grid-track width. Every card's upper clearance is that reference ratio times its own complete unpadded title height, including all lines. Terminal Scalars itself retains the previous boundary; bottom inset, title typography and the original width-frozen transition to 10% on expansion remain unchanged. The region, artwork clip and action position share this single CSS calculation.

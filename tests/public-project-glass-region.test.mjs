@@ -49,10 +49,11 @@ test("region is independently profiled within same GPU instance, and follows eac
  assert.match(render,/glassDrawsInCapture:0,mutuallyExclusiveMaterials:true/);
  assert.match(render,/resolveInactiveClearRegion\(\{width:w,height\}\)/);
  assert.match(render,/boundary.getBoundingClientRect\(\).height/);
- assert.match(css,/1.9\*var\(--project-card-inset\)/);
+ assert.match(css,/--project-terminal-upper-gap:calc\(8px \+ .9\*var\(--project-card-inset\)\)/);
  assert.match(css,/var\(--project-title-ratio/);
  assert.match(css,/1\.04\*var\(--project-title-lines,1\)/);
- assert.doesNotMatch(css,/--project-terminal-title-ratio/);
+ assert.match(css,/var\(--project-terminal-title-ratio/);
+ assert.match(css,/var\(--project-resting-title-height\)\/var\(--project-terminal-title-height\)/);
  assert.match(render,/halfBase=Math.min\(1,scene.mipLevelCount-1\)/);
  assert.match(css,/var\(--project-regular-progress\)\*10%/);
  assert.match(expand,/"--project-regular-progress":"1"/);

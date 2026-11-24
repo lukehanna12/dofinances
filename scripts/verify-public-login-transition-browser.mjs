@@ -846,15 +846,21 @@ try{
   const readRegionGeometry=()=>evaluate(`(()=>{
     const cards=[...document.querySelectorAll(".public-projects-root .project-showcase-card")];
     const ref=cards.find(c=>c.dataset.projectSlug==="terminal-scalars");
-    const rr=ref.getBoundingClientRect(),tr=ref.querySelector(".project-showcase-title").getBoundingClientRect();
-    const upperGap=tr.top-(rr.bottom-(tr.height+1.9*(rr.bottom-tr.bottom)));
-    return {upperGap,cards:cards.map(c=>{
+    const titleStack=c=>{
+      const lines=c.querySelectorAll(".project-showcase-title-line");
+      const first=lines[0].getBoundingClientRect(),last=lines[lines.length-1].getBoundingClientRect();
+      return {top:first.top,bottom:last.bottom,height:last.bottom-first.top};
+    };
+    const rr=ref.getBoundingClientRect(),tr=titleStack(ref);
+    const referenceGap=8+.9*(rr.bottom-tr.bottom);
+    const referenceRatio=referenceGap/tr.height;
+    return {referenceRatio,referenceGap,cards:cards.map(c=>{
       const r=c.getBoundingClientRect(),b=c.querySelector(".project-showcase-regular-boundary").getBoundingClientRect();
       const a=c.querySelector(".project-showcase-action"),ar=a.getBoundingClientRect();
       const ir=c.querySelector(".project-showcase-lucide").getBoundingClientRect();
-      const t=c.querySelector(".project-showcase-title").getBoundingClientRect();
-      return {slug:c.dataset.projectSlug,height:b.height,expected:t.height+1.9*(r.bottom-t.bottom),
-       upperGap:t.top-b.top,actionGap:b.top-ar.bottom,icon:ir.width,iconTop:ir.top-r.top,
+      const t=titleStack(c);
+      return {slug:c.dataset.projectSlug,height:b.height,expected:t.height*(1+referenceRatio)+(r.bottom-t.bottom),
+       titleHeight:t.height,upperGap:t.top-b.top,actionGap:b.top-ar.bottom,icon:ir.width,iconTop:ir.top-r.top,
        iconLeft:ir.left-r.left,label:a.textContent,arrow:!!a.querySelector("svg")};
     })};
   })()`);
@@ -863,7 +869,8 @@ try{
   assert.ok(new Set(regionGeometry.cards.map(c=>Math.round(c.height))).size>1,"Title-specific inactive Clear heights must differ");
   for(const c of regionGeometry.cards){
     assert.ok(Math.abs(c.height-c.expected)<1.2,JSON.stringify(c));
-    assert.ok(Math.abs(c.upperGap-regionGeometry.upperGap)<1.2,JSON.stringify(c));
+    assert.ok(Math.abs(c.upperGap-c.titleHeight*regionGeometry.referenceRatio)<1.2,JSON.stringify(c));
+    if(c.slug==="terminal-scalars")assert.ok(Math.abs(c.upperGap-regionGeometry.referenceGap)<1.2,JSON.stringify(c));
     assert.ok(Math.abs(c.actionGap-4)<1.1,JSON.stringify(c));
     assert.ok(Math.abs(c.icon-45.5)<.6,JSON.stringify(c));
     assert.ok(Math.abs(c.iconTop-c.iconLeft)<1.1,JSON.stringify(c));

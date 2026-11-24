@@ -58,7 +58,12 @@ export function mountProjectTitleSizing(root){
     const ratio=projectTitleRatio(lines.map(line=>line.textContent),widths);
     // The card owns the measured ratio, so its title and material
     // boundary inherit exactly the same typography, including ghost copies.
-    title.closest(".project-showcase-card")?.style.setProperty("--project-title-ratio",String(ratio));
+    const card=title.closest(".project-showcase-card");
+    card?.style.setProperty("--project-title-ratio",String(ratio));
+    if(card?.dataset.projectSlug==="terminal-scalars"){
+     root.style.setProperty("--project-terminal-title-ratio",String(ratio));
+     root.style.setProperty("--project-terminal-title-lines",String(lines.length));
+    }
    }
   }
  };
