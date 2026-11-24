@@ -388,6 +388,11 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded{
   z-index:3;will-change:left,width
 }
+.public-projects-root.has-project-expansion .project-showcase-card:not(.is-expanded){
+  /* Moving cards may cross the pointer: do not reveal artwork or accept
+   * hover/click state changes during a shared row-layout transaction. */
+  pointer-events:none!important;will-change:transform,opacity
+}
 /* The dismissed original-row silhouette remains a separate, inert pane
  * while its live counterpart joins the next row's collision-free conveyor.
  * Its optical deconstruction is still the original shared WGSL shader. */
