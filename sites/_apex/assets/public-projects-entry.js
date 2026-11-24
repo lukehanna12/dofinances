@@ -111,7 +111,7 @@ function makeCard(project,index){
   description.id="project-description-"+project.slug;
   description.setAttribute("role","paragraph");
   description.setAttribute("aria-hidden","true");
-  const details=el("span","project-showcase-details");
+  const details=el("span","project-showcase-expanded-detail");
   details.append(description,createProjectDiagrams(project.slug));
   content.append(upper,details);
   card.append(artwork,regularBoundary,content);

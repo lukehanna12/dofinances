@@ -238,7 +238,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const baseRect=box(card);
     const description=card.querySelector(".project-showcase-description");
     const inset=Number.parseFloat(getComputedStyle(card.querySelector(".project-showcase-content")).paddingLeft)||16;
-    const details=card.querySelector(".project-showcase-details");
+    const details=card.querySelector(".project-showcase-expanded-detail");
     const diagrams=card.querySelector(".project-showcase-diagrams");
     const extra=projectDescriptionExtension(details.getBoundingClientRect().height,inset);
     card.style.setProperty("--project-description-space",cssPixels(extra));
