@@ -479,6 +479,14 @@ body.public-home[data-auth-scroll-mode="fixed"]
   position:fixed;
   top:var(--dashboard-scene-top,44px);
 }
+/* Projects artwork, material split and DOM foreground must translate as
+   one native-scroll subtree. The renderer uses a content-sized attachment
+   and reprojects the fixed wallpaper without changing the glass shader.
+   Login's fixed-viewport default and opt-in compositor remain untouched. */
+body.public-home:not([data-auth-glass-mode="compositor"])
+  #public-route-content:has(.public-projects-root) > #dashboard-auth-glass-scene{
+  position:absolute;top:0;
+}
 /* Native scroll/rubberband directly samples the fixed wallpaper, while
    the separate GPU layer emits ONLY the original SDF rim/hover response,
    never stale photograph pixels. Every homepage square remains full WebGPU;

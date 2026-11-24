@@ -97,6 +97,10 @@ export function createAuthGlassHoverController(capacity){
       slot.vy=clamp(slot.vy+(y-oldY)/Math.max(1,slot.rect[3])*3,-1,1);
     });
   }
+  function reproject(x,y){
+    if(!hasPointer||!Number.isFinite(x)||!Number.isFinite(y))return;
+    px=x;py=y;
+  }
   function setPressed(value,{tapImpulse=false}={}){
     const next=Boolean(value)&&(independent?controlIndex>=0:slots[0].active);
     // The Home mosaic deliberately renders at 30fps. Very quick mouse
@@ -175,7 +179,7 @@ export function createAuthGlassHoverController(capacity){
     return {hover,press,x,y,active,vx,vy};
   }
   return Object.freeze({
-    retargetRects,move,setPressed,clear,advance,writeTo,snapshot,
+    retargetRects,move,reproject,setPressed,clear,advance,writeTo,snapshot,
     get cardHovered(){return slots[0].active;},
     get controlHovered(){return controlIndex>=1;},
     get activeControl(){return controlIndex;}

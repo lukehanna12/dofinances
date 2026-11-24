@@ -983,8 +983,8 @@ try{
   assert.equal(projectScrollPolicy.scroll,"auto",
     "Projects preserves native scrolling instead of canceling wheel/touch events");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
-    assert.equal(projectScrollPolicy.canvas,"fixed",
-      "Projects shares the sign-in fix: viewport-fixed true WebGPU glass");
+    assert.equal(projectScrollPolicy.canvas,"absolute",
+      "Projects glass and foreground are attached to the same native scroll node");
   assert.equal(projectScrollPolicy.card,"hidden");
   assert.equal(projectScrollPolicy.back,"hidden");
   assert.equal(projectScrollPolicy.filter,"hidden");
@@ -1010,8 +1010,39 @@ try{
   assert.ok(Math.abs(projectsScrollMotion.cardDelta+projectsScrollMotion.dy)<2);
   assert.ok(Math.abs(projectsScrollMotion.iconDelta-projectsScrollMotion.cardDelta)<2,
     "Card artwork/icon and glass geometry remain in the same scroll tree");
-  assert.ok(Math.abs(projectsScrollMotion.canvasDelta)<1,
-    "The actual WebGPU canvas remains fixed against elastic scroll");
+  if(projectScrollPolicy.canvas==="absolute")assert.ok(Math.abs(projectsScrollMotion.canvasDelta-projectsScrollMotion.cardDelta)<1,
+    "Projects glass canvas must translate with card artwork and foreground before any new GPU submission");
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.projectGlass?.scrollGeometry?.presentation==='shared-native-scroll'&&window.__dashboardWebGPU?.projectGlass?.regions?.length===16",70);
+    // Multiple direction reversals in ONE JS task, before any RAF or GPU
+    // submission can update the uploaded card geometry. The compositor
+    // scroll transform alone must preserve the original title/art seam.
+    const fast=await evaluate(`(()=>{
+      const route=document.querySelector("#public-route-content"),canvas=document.querySelector("#dashboard-auth-glass-scene");
+      const oldHeight=route.style.height,oldScroll=route.scrollTop;
+      route.style.height="300px";
+      const regions=window.__dashboardWebGPU.projectGlass.regions;
+      let maxTopError=0,maxBandError=0,maxMotionError=0;
+      const initial=canvas.getBoundingClientRect().top;
+      const first=document.querySelector(".project-showcase-card");
+      const firstTop=first.getBoundingClientRect().top;
+      for(const y of [0,140,15,260,32,310,0,150,5]){
+        route.scrollTop=y;
+        const origin=canvas.getBoundingClientRect().top;
+        maxMotionError=Math.max(maxMotionError,Math.abs((origin-initial)-(first.getBoundingClientRect().top-firstTop)));
+        for(const region of regions){
+          const c=document.querySelector('[data-project-slug="'+region.slug+'"]');
+          const band=c.querySelector(".project-showcase-regular-boundary");
+          maxTopError=Math.max(maxTopError,Math.abs(origin+region.canvasLocalTop-c.getBoundingClientRect().top));
+          maxBandError=Math.max(maxBandError,Math.abs(origin+region.canvasLocalBandTop-band.getBoundingClientRect().top));
+        }
+      }
+      route.scrollTop=oldScroll;route.style.height=oldHeight;
+      return {maxMotionError,maxTopError,maxBandError};
+    })()`);
+    assert.ok(fast.maxMotionError<1,JSON.stringify(fast));
+    assert.ok(fast.maxTopError<1.2&&fast.maxBandError<1.2,JSON.stringify(fast));
+  }
   // The expanded capsule is not required for the visibility trigger: its
   // inert DOM box remains positioned above the search button when closed.
   // Position is measured against the compact logo's actual bottom edge,

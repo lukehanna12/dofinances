@@ -47,17 +47,16 @@ if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const authCanvas=document.createElement("canvas");
 const authUsesCompositor=()=>document.body.dataset.authGlassMode==="compositor";
-const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed";
 const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
-// Native (legacy rollback): the canvas scrolls with the document-sized card.
-// Fixed (default): the very same WebGPU surface stays fixed to the
-// wallpaper; only the live pane rectangles follow the native scroll. This
-// prevents a compositor-scrolled stale photo. Pane geometry continues to
-// update using native scrolling positions when each WebGPU frame is submitted.
-const authOriginTop=()=>authCanvasFixed()
-  ? (authCanvas.isConnected?authCanvas.getBoundingClientRect().top:44)
-  : (routeMount?.getBoundingClientRect().top ?? 44);
+const projectScrollAttached=()=>!authUsesCompositor()&&!!routeMount?.querySelector(".public-projects-root");
+const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed"&&!projectScrollAttached();
+// Login retains its viewport-fixed default. Projects has separate DOM
+// artwork and glass partitions, so both must share the native scroll node.
+// Canvas-local geometry stays invariant under scroll even before a new
+// GPU frame; wallpaper UVs are still projected using its actual position.
+const authOriginTop=()=>authCanvas.isConnected?authCanvas.getBoundingClientRect().top:
+  (authCanvasFixed()?44:routeMount?.getBoundingClientRect().top??44);
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -241,7 +240,7 @@ function requestRender(){
       // scroll frames; render only the original local optical response.
       if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"&&
-         (authUsesCompositor()||performance.now()<authScrollRefreshUntil)){
+         (authUsesCompositor()||projectScrollAttached()||performance.now()<authScrollRefreshUntil)){
         animating=engine.renderAuthOnly();
       }else{
         animating=engine.render();
@@ -541,6 +540,12 @@ async function initialize(){
       format:"rgba16float",blend:glassBlend
     }]},primitive:{topology:"triangle-list"}
   });
+  const projectRegionCopyPipeline=device.createRenderPipeline({
+    label:"Fixed wallpaper -> scroll-content half-resolution raw backdrop",
+    layout:"auto",vertex:{module:modules[2],entryPoint:"vsCopy"},
+    fragment:{module:modules[2],entryPoint:"fsProjectRegionCopy",targets:[{format:"rgba16float"}]},
+    primitive:{topology:"triangle-list"}
+  });
   const projectRegionCapturePipeline=device.createRenderPipeline({
     label:"Raw project artwork -> half-resolution Clear backdrop (no glass)",
     layout:"auto",vertex:{module:modules[2],entryPoint:"vsProjectRegionCapture"},
@@ -603,7 +608,7 @@ async function initialize(){
       : Math.max(1,routeMount?.scrollHeight||0,routeOutlet?.clientHeight||0);
     const height=Math.max(1,Math.ceil(cssHeight*dpr));
     if(height>device.limits.maxTextureDimension2D)
-      throw Error("Sign-in glass scroll height exceeds GPU limit");
+      throw Error("Public route glass scroll height exceeds GPU limit");
     const desiredTop=authCanvasFixed()?sceneTop+"px":"0px";
     if(authCanvas.style.top!==desiredTop)authCanvas.style.top=desiredTop;
     const cssWidth=window.innerWidth+"px",cssH=cssHeight+"px";
@@ -617,6 +622,31 @@ async function initialize(){
     audit.authPresentationPixelArea=physicalWidth*physicalAuthHeight;
     audit.authScrollPresentation=authCanvasFixed()
       ?"fixed-viewport":"native-content";
+  }
+  // The source-only capture shares the canvas's content extent. Its
+  // original artwork remains valid above/below the visible viewport.
+  // Reallocate only on a real size/route change, never on scroll.
+  function syncProjectRegionScene(){
+    if(!scene)return;
+    const active=projectScrollAttached()||!!routeMount?.querySelector(".public-projects-root");
+    const halfBase=Math.min(1,scene.mipLevelCount-1);
+    const w=active?Math.max(1,physicalWidth>>halfBase):1;
+    const h=active?Math.max(1,physicalAuthHeight>>halfBase):1;
+    if(projectRegionScene&&w===projectRegionWidth&&h===projectRegionHeight)return;
+    projectRegionScene?.destroy();
+    projectRegionWidth=w;projectRegionHeight=h;
+    projectRegionScene=rgba16Texture(device,w,h);
+    projectRegionSceneView=projectRegionScene.createView();
+    projectRegionCopyGroup=device.createBindGroup({layout:projectRegionCopyPipeline.getBindGroupLayout(0),
+      entries:[{binding:0,resource:scene.createView({baseMipLevel:halfBase,mipLevelCount:1})},
+        {binding:2,resource:{buffer:authGlobalsBuffer}}]});
+    projectRegionMips=[];
+    for(let level=1;level<projectRegionScene.mipLevelCount;level++)projectRegionMips.push(device.createBindGroup({
+      layout:mipPipeline.getBindGroupLayout(0),entries:[
+        {binding:0,resource:projectRegionScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
+        {binding:1,resource:projectRegionScene.createView({baseMipLevel:level,mipLevelCount:1})}
+      ]}));
+    rebindGlassGroups();
   }
   function writeUniform(){
     uniform[0]=physicalWidth;
@@ -756,6 +786,8 @@ async function initialize(){
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
+        canvasLocalTop:tileData[p+1]/dpr,canvasLocalLeft:tileData[p]/dpr,
+        canvasLocalBandTop:(tileData[p+1]+tileData[p+3])/dpr-height,
         material:profile.material,scheme:profile.scheme,interactive:profile.interactive,
         blurWord:profile.blurWord,nativeInputLayerScale:profile.nativeInputLayerScale,
         backdrop:"raw-wallpaper-and-artwork-before-glass",clearUnderlay:false});
@@ -764,7 +796,10 @@ async function initialize(){
     device.queue.writeBuffer(regionBuffer,0,regionData);
     if(audit.projectGlass){
       audit.projectGlass.regions=regions;
-      audit.projectGlass.projectRegionBackdrop={source:"raw-wallpaper-and-artwork",halfScale:true,
+      audit.projectGlass.scrollGeometry={presentation:projectScrollAttached()?"shared-native-scroll":"viewport-fixed",
+        canvasTop:authOriginTop(),stageTop:routeMount?.getBoundingClientRect().top,
+        canvasHeight:physicalAuthHeight/dpr,submittedScrollTop:routeOutlet?.scrollTop||0};
+      audit.projectGlass.projectRegionBackdrop={source:"raw-wallpaper-and-artwork",halfScale:true,coordinateSpace:"canvas-content",
         glassDrawsInCapture:0,mutuallyExclusiveMaterials:true,dimensions:[projectRegionWidth,projectRegionHeight],
         frames:projectRegionCaptureFrames};
     }
@@ -1006,6 +1041,9 @@ async function initialize(){
         node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
+    // Reproject the stationary pointer as content scrolls under it. Do not
+    // feed scroll delta into the pointer velocity/refraction spring.
+    if(projects&&pointer.enabled)authHover.reproject(pointer.x*dpr,(pointer.y-authOriginTop())*dpr);
     authHover.retargetRects(tileData,tileCount,cornerInert,
       projects||homeCtas?"independent":"nested");
     if(homeCtas){
@@ -1092,7 +1130,7 @@ async function initialize(){
       canvas.width=w;canvas.height=h;
       // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
-      compositeScene?.destroy();projectRegionScene?.destroy();
+      compositeScene?.destroy();projectRegionScene?.destroy();projectRegionScene=null;projectRegionSceneView=null;
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -1110,20 +1148,6 @@ async function initialize(){
       // backdrop. Its source is built only when a capsule exposes glass.
       compositeScene=rgba16Texture(device,w,h);
       compositeSceneView=compositeScene.createView();
-      // Clear uses a half-resolution raw base and its own mip chain.
-      // Never sample the glass-composited Home scene.
-      const halfBase=Math.min(1,scene.mipLevelCount-1);
-      projectRegionWidth=Math.max(1,w>>halfBase);projectRegionHeight=Math.max(1,h>>halfBase);
-      projectRegionScene=rgba16Texture(device,projectRegionWidth,projectRegionHeight);
-      projectRegionSceneView=projectRegionScene.createView();
-      projectRegionCopyGroup=device.createBindGroup({layout:compositeBackdropPipeline.getBindGroupLayout(0),
-        entries:[{binding:0,resource:scene.createView({baseMipLevel:halfBase,mipLevelCount:1})}]});
-      projectRegionMips=[];
-      for(let level=1;level<projectRegionScene.mipLevelCount;level++)projectRegionMips.push(device.createBindGroup({
-        layout:mipPipeline.getBindGroupLayout(0),entries:[
-          {binding:0,resource:projectRegionScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
-          {binding:1,resource:projectRegionScene.createView({baseMipLevel:level,mipLevelCount:1})}
-        ]}));
       audit.mipCount=scene.mipLevelCount;
       backgroundGroup=device.createBindGroup({
         layout:backdropPipeline.getBindGroupLayout(0),
@@ -1165,6 +1189,7 @@ async function initialize(){
       });
       scenePending=true;
     }
+    syncProjectRegionScene();
     // Reset only compositor transforms for truthful baseline grid metrics.
     // A resize synchronously reapplies track motion in the same GPU frame.
     const all=activeTiles();
@@ -1260,7 +1285,7 @@ async function initialize(){
     const pass=encoder.beginRenderPass({label:"Raw wallpaper + original project artwork (no glass)",
       colorAttachments:[{view:projectRegionScene.createView({baseMipLevel:0,mipLevelCount:1}),
         loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
-    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,projectRegionCopyGroup);pass.draw(3);
+    pass.setPipeline(projectRegionCopyPipeline);pass.setBindGroup(0,projectRegionCopyGroup);pass.draw(3);
     pass.setPipeline(projectRegionCapturePipeline);pass.setBindGroup(0,projectRegionCaptureGroup);
     pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);pass.end();
     for(let level=1;level<projectRegionScene.mipLevelCount;level++){
@@ -1352,6 +1377,7 @@ async function initialize(){
       if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     }
     syncAuthCanvasSize();
+    syncProjectRegionScene();
     writeUniform();
     if(scenePending)buildScene();
     const now=performance.now();
@@ -1465,7 +1491,7 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return animating||authHoverAnimating||authAnimating;
+    return animating||authHoverAnimating||authAnimating||artworkAnimating;
   }
   // Auth-only submission for the card's exit Motion and native scroll.
   // Every route pane shares the unchanged homepage WebGPU shader
@@ -1476,6 +1502,7 @@ async function initialize(){
     const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastAuthFrameTime=now;
     syncAuthCanvasSize();
+    syncProjectRegionScene();
     writeUniform();
     const authAnimating=paintAuthPanes();
     syncTileTints();
@@ -1650,6 +1677,10 @@ async function initialize(){
   const onAuthScroll=()=>{
     if(authUsesCompositor()||stopped||!engine||!homeActive())return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
+    // Projects geometry is already compositor-attached. Do not enqueue a
+    // second expensive full-content capture inside every scroll event;
+    // coalesce wallpaper re-projection with the next presentation RAF.
+    if(projectScrollAttached()){requestRender();return;}
     if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
        document.body.dataset.authGpuScene==="ready"){
       try{
