@@ -2,6 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {silhouetteMask,silhouetteHazeMask,silhouetteHazeStrength,registerGlassSilhouette,silhouetteAtlasBytes,MASK_SIZE,MASK_INNER,MASK_RANGE,HAZE_SIZE,HAZE_INNER,HAZE_RANGE} from "../sites/_apex/assets/home-dashboard/dashboard-glass-silhouette.js";
+import {coverageGeometry} from "../sites/_apex/assets/home-dashboard/dashboard-glass-vector-coverage.js";
 const asset=name=>readFileSync(new URL("../sites/_apex/assets/home-dashboard/"+name,import.meta.url),"utf8");
 test("silhouette preserves authored alpha, signed contour and holes",()=>{
  const a=new Uint8Array(9*9);
@@ -62,4 +63,23 @@ test("shared silhouette registration uses Clear tint and same owner fragment",()
  assert.match(r,/suppressHover:suppressed/);
  assert.match(r,/owner.matches\("\.is-expanded,\.project-showcase-dissolve-ghost"\)/);
  assert.match(asset("dashboard-glass-source-paint.js"),/if\(el.hasAttribute\("data-glass-icon-owned"\)\)return/);
+});
+
+test("native SVG final coverage is independent of 512px optical mask and haze",()=>{
+ const g=coverageGeometry([10.25,8.5,91,91],[50.5,80.25,400,300],0);
+ assert.equal(g.phaseX,1.75);assert.equal(g.phaseY,1.75);
+ assert.equal(g.width,94);assert.equal(g.height,94);
+ assert.deepEqual(g.rect,[8.5,6.75,1,1]);
+ const shifted=coverageGeometry([10.25,8.5,91,91],[51.5,82.25,400,300],0);
+ assert.deepEqual(shifted,g);
+ const bloom=coverageGeometry([10.25,8.5,91,91],[50.5,80.25,400,300],1);
+ assert.ok(Math.abs(bloom.pw-91*1.085)<1e-10);
+ assert.ok(Math.abs(bloom.ph-91*1.065)<1e-10);
+ const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js"),v=asset("dashboard-glass-vector-coverage.js");
+ assert.match(shader,/textureLoad\(silhouetteVectorCoverage,pixel,i32\(icon.coverageMeta.x\)-1,0\)\.r/);
+ assert.match(shader,/let iconCoverage=finalSilhouetteCoverage\(icon,local,mask.r\)/);
+ assert.match(shader,/mix\(shaded,glass,clamp\(iconCoverage\*icon.params.w/);
+ assert.match(v,/new Path2D\(node.getAttribute\("d"\)/);
+ assert.match(v,/ctx.stroke\(op.path\)/);
+ assert.match(r,/binding:14,resource:silhouetteAtlas.coverageView/);
 });

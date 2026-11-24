@@ -55,10 +55,11 @@ struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:
 @group(0) @binding(9) var projectArtworkDetail: texture_2d<f32>;
 @group(0) @binding(10) var projectArtworkSampler: sampler;
 // Optional authored arbitrary silhouette per owner; no route tags.
-struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32> };
+struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };
 @group(0) @binding(11) var<storage,read> silhouettes:array<GlassSilhouette>;
 @group(0) @binding(12) var silhouetteMaskTexture:texture_2d_array<f32>;
 @group(0) @binding(13) var silhouetteHazeTexture:texture_2d_array<f32>;
+@group(0) @binding(14) var silhouetteVectorCoverage:texture_2d_array<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -487,6 +488,14 @@ fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec2<f32>{
 fn silhouetteHazeMask(uv:vec2<f32>,layer:i32)->f32{
   return textureSampleLevel(silhouetteHazeTexture,projectArtworkSampler,uv,layer,0.0).r;
 }
+// Read the original SVG's vector-painter coverage at its exact pixel grid.
+fn finalSilhouetteCoverage(icon:GlassSilhouette,local:vec2<f32>,fallback:f32)->f32{
+  if(icon.coverageMeta.x<=0.0){return fallback;}
+  let pixel=vec2<i32>(floor((local-icon.coverageRect.xy)*icon.coverageRect.zw));
+  let extent=vec2<i32>(icon.coverageMeta.yz);
+  if(any(pixel<vec2<i32>(0))||any(pixel>=extent)){return 0.0;}
+  return textureLoad(silhouetteVectorCoverage,pixel,i32(icon.coverageMeta.x)-1,0).r;
+}
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
   let brightness=smoothstep(0.25,0.90,luminance);
@@ -517,7 +526,8 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
   let uv=iconUV*(512.0/544.0)+vec2<f32>(16.0/544.0);
   if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){return shaded;}
   let mask=silhouetteMask(uv,layer);
-  if(mask.r<=0.001){return shaded;}
+  let iconCoverage=finalSilhouetteCoverage(icon,local,mask.r);
+  if(iconCoverage<=0.001){return shaded;}
   // The doubled encoded range cancels the halved texel scale exactly:
   // original 128*size/256 == new 256*size/512, still 8-bit.
   let scale=min(icon.rect.z,icon.rect.w)/512.0;
@@ -552,7 +562,7 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
   let base=clamp(source*(1.0-haze)+vec3<f32>(edge+hover*0.075),
     vec3<f32>(0.0),vec3<f32>(1.0));
   let glass=clearTint(clearFace(base,darkFace),icon.tint,0.25);
-  return mix(shaded,glass,clamp(mask.r*icon.params.w,0.0,1.0));
+  return mix(shaded,glass,clamp(iconCoverage*icon.params.w,0.0,1.0));
 }
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{

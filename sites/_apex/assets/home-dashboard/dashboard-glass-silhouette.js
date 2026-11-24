@@ -3,7 +3,8 @@
 import {glassSpring} from "./dashboard-glass-model.js";
 import {tintParameters} from "./dashboard-tint.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
-export const GLASS_ICON_FLOATS=12;
+import {createVectorCoverageAtlas} from "./dashboard-glass-vector-coverage.js";
+export const GLASS_ICON_FLOATS=20;
 // Double the vector raster resolution, NOT the optical quantization.
  // 128 high-resolution distance texels equal the old 64 in icon space.
 export const MASK_SIZE=544,MASK_INNER=512,MASK_PAD=16,MASK_RANGE=128;
@@ -76,7 +77,8 @@ export function silhouetteHazeStrength(luminance,distanceCSS,hover=1){
  const x=Math.max(0,distanceCSS-1.6)/5.4,tail=clamp((distanceCSS-16)/6);
  return .16*clamp(hover)*brightness*Math.exp(-.5*x*x)*(1-tail*tail*(3-2*tail));
 }
-export function createGlassSilhouetteAtlas(device){
+export function createGlassSilhouetteAtlas(device,wake=()=>{}){
+ const coverageAtlas=createVectorCoverageAtlas(device,wake);
  const usage=GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.COPY_SRC;
  const placeholder=device.createTexture({size:[1,1,1],format:"rg8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
  const hazePlaceholder=device.createTexture({size:[1,1,1],format:"r8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
@@ -131,7 +133,7 @@ export function createGlassSilhouetteAtlas(device){
   }catch(error){console.warn("Authored glass silhouette:",String(error));return null;}
  }
  function begin(){for(const img of owned)if(!img.isConnected)owned.delete(img);}
- function sync(owner,img,{width,height,dpr,scheme,hover=false,suppressHover=false,dt=0,reduced=false,opacity=1}){
+ function sync(owner,img,{width,height,dpr,scheme,hover=false,suppressHover=false,dt=0,reduced=false,opacity=1,slot=-1,ownerRect=null,dismiss=0}){
   const rect=owner.getBoundingClientRect(),r=img.getBoundingClientRect();
   if(!rect.width||!rect.height||!r.width||!r.height||!(width>0&&height>0)){img.removeAttribute("data-glass-icon-owned");return null;}
   const layer=layerFor(img);
@@ -143,14 +145,15 @@ export function createGlassSilhouetteAtlas(device){
   const next=suppressHover||reduced?[target,0]:glassSpring(old[0],old[1],target,dt,target?26:18);
   if(Math.abs(next[0]-target)<.001&&Math.abs(next[1])<.01){next[0]=target;next[1]=0;}
   springs.set(owner,next);
+  const coverage=ownerRect?coverageAtlas.sync(img,slot,bounds,ownerRect,dismiss):null;
   const word=observedBlurWord(nativePublicBlurRadius("clear",bounds[2]/dpr,bounds[3]/dpr),1,.25);
   if(!img.hasAttribute("data-glass-icon-owned"))img.dataset.glassIconOwned="";
   owned.add(img);
-  return {lanes:[...bounds,layer+1,clamp(next[0]),word,clamp(opacity),...material.rgb,material.opacity],
-   animating:next[0]!==target||next[1]!==0,bounds,hover:clamp(next[0]),tint:material.name,tintOpacity:material.opacity};
+  return {lanes:[...bounds,layer+1,clamp(next[0]),word,clamp(opacity),...material.rgb,material.opacity,...(coverage?.rect||[0,0,0,0]),...(coverage?.meta||[0,0,0,0])],
+   animating:next[0]!==target||next[1]!==0,bounds,vectorCoverage:Boolean(coverage),hover:clamp(next[0]),tint:material.name,tintOpacity:material.opacity};
  }
- return {get view(){return view;},get hazeView(){return hazeView;},begin,sync,
+ return {get view(){return view;},get hazeView(){return hazeView;},get coverageView(){return coverageAtlas.view;},begin,sync,
   stats(){return {uploads,layers:slots.size,capacity,maskContent:MASK_INNER,maskSize:MASK_SIZE,format:"rg8unorm",
-   hazeContent:HAZE_INNER,hazeSize:HAZE_SIZE,hazeFormat:"r8unorm",atlasBytes:silhouetteAtlasBytes(capacity)};},
-  dispose(){for(const img of owned)img.removeAttribute("data-glass-icon-owned");owned.clear();texture?.destroy();hazeTexture?.destroy();placeholder.destroy();hazePlaceholder.destroy();slots.clear();}};
+   hazeContent:HAZE_INNER,hazeSize:HAZE_SIZE,hazeFormat:"r8unorm",atlasBytes:silhouetteAtlasBytes(capacity),...coverageAtlas.stats()};},
+  dispose(){coverageAtlas.dispose();for(const img of owned)img.removeAttribute("data-glass-icon-owned");owned.clear();texture?.destroy();hazeTexture?.destroy();placeholder.destroy();hazePlaceholder.destroy();slots.clear();}};
 }

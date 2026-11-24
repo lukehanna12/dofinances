@@ -618,7 +618,7 @@ async function initialize(){
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const sourcePainter=createGlassSourcePainter(device,format);
-  const silhouetteAtlas=createGlassSilhouetteAtlas(device);
+  const silhouetteAtlas=createGlassSilhouetteAtlas(device,requestRender);
   let iconData=new Float32Array(0),iconBuffer=null;
   const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
@@ -893,7 +893,7 @@ async function initialize(){
   // The route supplies hover policy; the shared atlas owns alpha and distance.
   function syncGlassIcons(dt){
     iconData.fill(0);silhouetteAtlas.begin();
-    const before=silhouetteAtlas.view,icons=[];
+    const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,icons=[];
     let animating=false;
     if(!authUsesCompositor()){
       const panes=authPaneElements(),scheme=authGlassScheme();
@@ -906,16 +906,17 @@ async function initialize(){
           Boolean(owner.closest(".has-project-expansion"))||tileData[p+19]>0;
         const icon=silhouetteAtlas.sync(owner,img,{width:tileData[p+2],height:tileData[p+3],dpr,scheme,
           hover:owner.matches(":hover"),suppressHover:suppressed,dt,reduced:reducedMotion.matches,
-          opacity:tileDismissIconOpacity(tileData[p+19])});
+          opacity:tileDismissIconOpacity(tileData[p+19]),slot:i,
+          ownerRect:Array.from(tileData.subarray(p,p+4)),dismiss:tileData[p+19]});
         if(!icon)continue;
         iconData.set(icon.lanes,slot*GLASS_ICON_FLOATS);
         animating ||= icon.animating;
-        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,hover:icon.hover,
+        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed});
       }
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
     device.queue.writeBuffer(iconBuffer,0,iconData);
-    if(before!==silhouetteAtlas.view)rebindGlassGroups();
+    if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView)rebindGlassGroups();
     audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),backdrop:"current fragment color + original GPU sources"};
     return animating;
   }
@@ -942,7 +943,7 @@ async function initialize(){
       {binding:8,resource:projectRegionSceneView},
       {binding:9,resource:detail},{binding:10,resource:detailSampler},
       {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view},
-      {binding:13,resource:silhouetteAtlas.hazeView}
+      {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:silhouetteAtlas.coverageView}
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
