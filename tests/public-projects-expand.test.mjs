@@ -104,17 +104,17 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   // reverses exactly that WAAPI animation. Every row uses a common
   // 620ms linear conveyor, independent of traveled/remaining distance.
   assert.match(controller,/const EXPAND_MS=620;/);
-  assert.match(controller,/const SELECTED_EASING="cubic-bezier\\(\\.22,\\.72,\\.24,1\\)";/);
+  assert.match(controller,/const SELECTED_EASING="cubic-bezier\(\.22,\.72,\.24,1\)";/);
   assert.match(controller,/const CONVEYOR_EASING="linear";/);
   assert.match(controller,/duration:EXPAND_MS,easing:CONVEYOR_EASING/);
-  assert.match(controller,/const travel=shift\\*pitch;/);
-  assert.match(controller,/projectConveyorEdge\\(col,columns,shift\\)/);
-  assert.match(controller,/const ghost=node\\.cloneNode\\(true\\)/);
-  assert.match(controller,/ghost\\.dataset\\.projectCardDismissAt/);
-  assert.match(controller,/const restoreFrom=Math\\.min\\(DISMISS_MS,elapsed\\);/);
-  assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\\.playbackRate=/);
+  assert.match(controller,/const travel=shift\*pitch;/);
+  assert.match(controller,/projectConveyorEdge\(col,columns,shift\)/);
+  assert.match(controller,/const ghost=node\.cloneNode\(true\)/);
+  assert.match(controller,/ghost\.dataset\.projectCardDismissAt/);
+  assert.match(controller,/const restoreFrom=Math\.min\(DISMISS_MS,elapsed\);/);
+  assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
   assert.match(renderer,/cardRestoreFrom/);
-  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\\)-elapsed/);
+  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\)-elapsed/);
   assert.match(renderer,/const AUTH_PANE_CAPACITY=32;/);
   assert.match(css,/project-showcase-dissolve-ghost/);
 
