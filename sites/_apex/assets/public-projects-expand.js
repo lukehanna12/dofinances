@@ -9,7 +9,9 @@ import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 // playback reversal. Neighboring rows use a uniform spatial conveyor.
 const EXPAND_MS=620;
 const SELECTED_EASING="cubic-bezier(.22,.72,.24,1)";
-const CONVEYOR_EASING="linear";
+// Emil Kowalski: spatial rearrangement is ease-in-out, not a perpetual
+// linear marquee. Every card uses this ONE progress curve, preserving pitch.
+const CONVEYOR_EASING="cubic-bezier(.77,0,.175,1)";
 const EDGE_FADE_FRACTION=.055;
 const clampInt=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 
@@ -279,7 +281,11 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       });
       if(animation)animations.push(animation);
     }
-    state={card,placeholder,animations,timers,ghosts,phase:"open",immediate};
+    state={card,placeholder,animations,timers,ghosts,phase:"open",immediate,
+      initialTime,selectedAnimation,buttonAnimation,
+      initialLeft:selectedRect.left-gridRect.left,
+      initialWidth:selectedRect.width,
+      initialButtonLeft:selectedRect.right-gridRect.left-53};
     animateGlass(EXPAND_MS+90);
     if(duration){
       closeButton.tabIndex=0;
@@ -298,36 +304,67 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const current=state;
     const now=performance.now();
     const animations=current.animations;
-    // The selected card uses the exact reverse of its original
-    // 620ms cubic-bezier expansion (including the X attached to its edge).
-    // Other cards return at the identical uniform horizontal velocity.
+    // WAAPI.reverse() flips an ease-out into a perceived ease-IN. That is
+    // mechanically symmetric, but wrong for an X-close UI action. Sample
+    // actual presented geometry, then give contraction a NEW forward
+    // 620ms ease-out. This is explicitly what the user requested.
     const elapsed=Math.min(EXPAND_MS,Math.max(0,
-      Number(animations[0]?.currentTime??EXPAND_MS)));
+      Number(current.selectedAnimation?.currentTime??EXPAND_MS)));
+    const paneStyle=getComputedStyle(current.card);
+    const startLeft=Number.parseFloat(paneStyle.left);
+    const startWidth=Number.parseFloat(paneStyle.width);
+    const xStyle=getComputedStyle(closeButton);
+    const startButtonLeft=Number.parseFloat(xStyle.left);
+    const startButtonOpacity=Number.parseFloat(xStyle.opacity);
+    current.selectedAnimation?.cancel();
+    current.buttonAnimation?.cancel();
+    const contract=animate(current.card,[
+      {left:cssPixels(startLeft),width:cssPixels(startWidth)},
+      {left:cssPixels(current.initialLeft),width:cssPixels(current.initialWidth)}
+    ],{duration:EXPAND_MS,easing:SELECTED_EASING});
+    const contractButton=animate(closeButton,[
+      {left:cssPixels(startButtonLeft),
+        opacity:String(startButtonOpacity),
+        transform:"translate3d(0,0,0)"},
+      {left:cssPixels(current.initialButtonLeft),
+        opacity:"0",transform:"translate3d(0,-8px,0)"}
+    ],{duration:EXPAND_MS,easing:SELECTED_EASING});
+    if(contract)animations.push(contract);
+    if(contractButton)animations.push(contractButton);
+    // All neighbors use the same easing and retime from their CURRENT
+    // position to their initial slot over the SAME 620ms as the card.
+    // Reducing the playback magnitude when interrupted avoids racing
+    // through the remainder while the selected card contracts.
+    const remaining=Math.max(.001,elapsed/EXPAND_MS);
     for(const animation of animations){
-      try{animation.reverse()}catch{animation.cancel()}
+      if(animation===contract||animation===contractButton||
+         animation===current.selectedAnimation||
+         animation===current.buttonAnimation)continue;
+      try{
+        animation.reverse();
+        animation.updatePlaybackRate(-remaining);
+      }catch{animation.cancel()}
     }
-    // Existing ghosts restore the old row through the SAME WebGPU optics.
-    // A reversed tile.motion.w never affects the incoming conveyor cards.
-    const restoreDelay=Math.max(0,elapsed-DISMISS_MS);
-    const restoreFrom=Math.min(DISMISS_MS,elapsed);
+    // The original-row dissipating ghosts cohere at the end of closure,
+    // with native GPU material. No duplicate CSS glass shader.
+    const restoreFrom=Math.min(DISMISS_MS,
+      Math.max(0,now-current.initialTime));
+    const restoreDelay=EXPAND_MS-restoreFrom;
     for(const ghost of current.ghosts){
       ghost.removeAttribute("data-project-card-dismiss-at");
       ghost.dataset.projectCardRestoreAt=String(now+restoreDelay);
       ghost.dataset.projectCardRestoreFrom=String(restoreFrom);
     }
-    animateGlass(elapsed+90);
-    // An animation reversed after reaching its finished fill state can
-    // expose the ALREADY-RESOLVED forward .finished promise until the next
-    // animation tick. Awaiting that promise prematurely discards every card
-    // and produces the seemingly accelerated/snapping X reversal. The shared
-    // clock—not stale promises—owns reverse cleanup.
+    animateGlass(EXPAND_MS+90);
+    // The old .finished promise may already be resolved; clean up only
+    // after the new ease-out closure completes, never in mid-animation.
     if(!animations.length){
       discard({focus:restoreFocus});
     }else{
       current.timers.push(setTimeout(()=>{
         if(state===current&&current.phase==="closing")
           discard({focus:restoreFocus});
-      },elapsed+35));
+      },EXPAND_MS+35));
     }
   }
   for(const card of cards){
