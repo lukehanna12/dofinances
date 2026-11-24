@@ -42,9 +42,10 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
       "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg");
   assert.equal(publicProjectIconSource("__unknown__"),null);
 });
-test("six supplied project SVGs are identical across public and authenticated views",async()=>{
+test("seven supplied project SVGs are identical across public and authenticated views",async()=>{
   const assigned=[
-    ["terminal-scalars","terminal-scalars.v2",12],
+    ["terminal-scalars","terminal-scalars.v3",13],
+    ["colosseum","colosseum-lucide.v2",14],
     ["translucence-lab","lightwork.v3",6],
     ["apple-adobe-fx","apple-adobe-fx.v2",6],
     ["ozoning-board","treehouse-ozoning.v4",6],
@@ -65,8 +66,8 @@ test("six supplied project SVGs are identical across public and authenticated vi
     assert.match(publicSvg,/stroke-width="2"/);
     assert.equal((publicSvg.match(/<path d=/g)||[]).length,pathCount);
   }
-  const terminal=await load("../sites/_apex/assets/project-icons/terminal-scalars.v2.svg");
-  assert.ok(terminal.includes('M21 15.5V19a2 2 0 01-.5 1.303'));
+  const terminal=await load("../sites/_apex/assets/project-icons/terminal-scalars.v3.svg");
+  assert.ok(terminal.includes('M 19 3 A2 2 0 0 1 21 5'));
   const lightwork=await load("../sites/_apex/assets/project-icons/lightwork.v3.svg");
   assert.ok(lightwork.includes('M8 8h.5l2-3 2.5 6 1.5-3H16'));
   assert.ok(lightwork.includes('M18 8h1.5'));

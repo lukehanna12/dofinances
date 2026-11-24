@@ -39,12 +39,12 @@ export function sortProjectShowcase(projects){
 // Stable per-project choices. Unassigned items keep their current marker and wallpaper.
 // Existing published artwork remains linked to original sources; user-supplied Terminal Scalars art is a local optimized asset.
 export const PROJECT_CARD_ICONS=Object.freeze({
-  "colosseum":"colosseum-lucide",
+  "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
   "translucence-lab":"lightwork.v3",
   "github-readme-chrome-extension":"file-pen",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
-  "terminal-scalars":"terminal-scalars.v2",
+  "terminal-scalars":"terminal-scalars.v3",
   "unicode-plus":"unicode-plus.v2",
   "liquid-plexiglass-26":"lens",
   "3d-liquid-glass-26-swift-package":"move-3d",

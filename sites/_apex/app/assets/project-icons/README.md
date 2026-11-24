@@ -36,3 +36,5 @@ The supplied SVG paths are preserved verbatim in four versioned assets: `termina
 ## Project icon updates (2026-11-24)
 
 Unicode Plus and Protocol Monitor Pruner now select `unicode-plus.v2.svg` and `protocol-monitor-pruner.v2.svg` respectively, with the supplied SVG geometry preserved verbatim in the public and authenticated asset trees. The old square-radical and funnel-code files remain for compatibility. The shared public catalog also supplies the homepage mosaic; existing monochrome filters and icon sizes are unchanged.
+
+- Colosseum now selects `colosseum-lucide.v2.svg` and Terminal Scalars selects `terminal-scalars.v3.svg`. Both preserve the latest user-supplied SVGs verbatim, with matching public and authenticated assets. Earlier versions are retained. Existing icon dimensions, monochrome filters, artwork and reveal framing are unchanged.

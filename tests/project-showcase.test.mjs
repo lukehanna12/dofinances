@@ -176,12 +176,12 @@ test("Projects header replaces count with the collections-style plus control and
 
 test("Curated icon and art assignments remain bound to permanent project slugs",()=>{
  const iconNames={
- "colosseum": "colosseum-lucide",
+ "colosseum": "colosseum-lucide.v2",
  "bootscript": "paint-roller",
  "translucence-lab": "lightwork.v3",
  "github-readme-chrome-extension": "file-pen",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
- "terminal-scalars": "terminal-scalars.v2",
+ "terminal-scalars": "terminal-scalars.v3",
  "unicode-plus": "unicode-plus.v2",
  "liquid-plexiglass-26": "lens",
  "3d-liquid-glass-26-swift-package": "move-3d",
@@ -351,15 +351,12 @@ test("Apple worm v3 is outside the right side with no head or internal squiggle"
  assert.ok(!svg.includes("M16.5 11.3"),"No old S-shaped body");
 });
 
-test("Colosseum uses the approved white Lucide-style Coliseum SVG",()=>{
- const iconPath="sites/_apex/app/assets/project-icons/colosseum-lucide.svg";
- const svg=read(iconPath);
- assert.equal(PROJECT_CARD_ICONS.colosseum,"colosseum-lucide");
- assert.ok(svg.includes('viewBox="0 0 24 24"'));
- assert.ok(svg.includes('stroke="#ffffff" stroke-width="2"'));
- assert.ok(svg.includes('stroke-linecap="round" stroke-linejoin="round"'));
- assert.ok(svg.includes('M2 21V6.4C4.7 4.5 8.7 3 12 3l3.4 18H22'),"Original approved facade retained");
- assert.ok(svg.includes('M1.5 21h21'),"Original approved foundation retained");
+test("Colosseum and Terminal Scalars use the exact revised user-supplied SVG geometry",()=>{
+ for(const [slug,name,geometry] of [["colosseum","colosseum-lucide.v2","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M1.5 21h21\" />\n  <path d=\"m11 13-.2-2.4\" />\n  <path d=\"M11.8 20.5v-4\" />\n  <path d=\"M18 13.5v-.4\" />\n  <path d=\"M18 20.8v-3.7\" />\n  <path d=\"M2 10.2c3.5-1.6 6.8-2.8 10.5-2.7\" />\n  <path d=\"M2 15.2a33 33 0 0120-.2\" />\n  <path d=\"M2 21V6.4C4.7 4.5 8.7 3 12 3l3.4 18\" />\n  <path d=\"M21 21v-4.3\" />\n  <path d=\"M22 21v-9c-2.4-.9-5.1-1.5-8-1.5\" />\n  <path d=\"m5 14-.1-2.2\" />\n  <path d=\"M5.1 20.8v-3.4\" />\n  <path d=\"m8 13-.1-2.1\" />\n  <path d=\"M8.6 20.8v-3.9\" />\n</svg>\n"],["terminal-scalars","terminal-scalars.v3","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M 19 3 A2 2 0 0 1 21 5\" />\n  <path d=\"M 21 5 L 21 19\" />\n  <path d=\"M 3 5 A2 2 0 0 1 5 3\" />\n  <path d=\"M 5 3 L 19 3\" />\n  <path d=\"M10.6 21v-1.15\" />\n  <path d=\"M11 13h4\" />\n  <path d=\"M13.4 21v-2.2\" />\n  <path d=\"M16.2 21v-2\" />\n  <path d=\"M21 19 A2 2 0 0 1 19 21\" />\n  <path d=\"M3 19 L3 5\" />\n  <path d=\"M5 21 A2 2 0 0 1 3 19\" />\n  <path d=\"m7 11 2-2-2-2\" />\n  <path d=\"M7.8 21v-2.75\" />\n</svg>\n"]]){
+  assert.equal(PROJECT_CARD_ICONS[slug],name);
+  assert.equal(read("sites/_apex/app/assets/project-icons/"+name+".svg"),geometry);
+  assert.equal(read("sites/_apex/assets/project-icons/"+name+".svg"),geometry);
+ }
  assert.ok(PROJECT_CARD_IMAGES.colosseum.includes('Cole_Thomas_The_Course_of_Empire'),"Colosseum hover artwork preserved");
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
 });
