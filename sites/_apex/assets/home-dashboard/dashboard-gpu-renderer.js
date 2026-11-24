@@ -33,6 +33,7 @@ import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./das
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
+import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
 import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
@@ -618,6 +619,7 @@ async function initialize(){
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const sourcePainter=createGlassSourcePainter(device,format);
+  const nativeOcclusion=createNativeForegroundOcclusion(document);
   const silhouetteAtlas=createGlassSilhouetteAtlas(device,requestRender);
   let iconData=new Float32Array(0),iconBuffer=null;
   const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
@@ -919,9 +921,21 @@ async function initialize(){
   function syncRouteSources(){
     const views=sourceViews(),panes=authPaneElements();
     routeSourceEntries=authUsesCompositor()?[]:panes.map(p=>sourceNodesForPane(p).map(n=>sourcePainter.sync(n,"route",views)).filter(Boolean));
+    // The native HTML foreground is above the entire route canvas. Cut
+    // only the overlapping portion out at the same submitted pane opacity
+    // and geometry, never re-register it as a GPU paint source.
+    const covers=[];
+    if(!authUsesCompositor())for(let i=0;i<panes.length;i++){
+      if(!panes[i].hasAttribute("data-glass-dropdown")||!(routeLayerSlots[i]>0))continue;
+      const p=(tileCount+i)*TILE_FLOATS,alpha=tileData[p+18];
+      if(alpha<=.002||panes[i].hidden)continue;
+      covers.push({left:tileData[p]/dpr,top:tileData[p+1]/dpr+authOriginTop(),
+        width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,radius:tileData[p+4]/dpr,opacity:alpha});
+    }
+    const occluded=nativeOcclusion.sync(covers.length?document.querySelectorAll(".public-projects-root .project-showcase-content"):[],covers);
     sourcePainter.sweep();
     audit.sourceComposition={base:baseSourceEntries.length,mosaic:0,route:routeSourceEntries.flat().length,
-      routeLayers:[...routeActiveLayers],...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};
+      routeLayers:[...routeActiveLayers],nativeOccluded:occluded,...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};
   }
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!iconBuffer||!projectRegionSceneView)return;
@@ -1801,7 +1815,7 @@ async function initialize(){
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();
     glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
-    scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();
+    scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
   }

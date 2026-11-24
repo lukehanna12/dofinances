@@ -1507,8 +1507,19 @@ try{
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').click()");
   assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.sourceComposition?.nativeOccluded>0",80,40);
+    const native=await evaluate("(()=>{const a=[...document.querySelectorAll('.project-showcase-content[data-native-glass-occluded]')];"+
+      "return {masked:a.length,allNative:a.every(n=>!n.hasAttribute('data-glass-paint-owned')&&!n.hasAttribute('data-glass-paint')&&getComputedStyle(n).maskImage!=='none'),"+
+      "unmasked:document.querySelectorAll('.project-showcase-content:not([data-native-glass-occluded])').length,route:window.__dashboardWebGPU.sourceComposition.route};})()");
+    assert.ok(native.masked>0&&native.unmasked>0,"Only intersecting native content should be masked");
+    assert.equal(native.allNative,true,"The dropdown must not re-rasterize card foreground");
+    assert.equal(native.route,0);
+  }
   await evaluate("document.querySelector('.public-projects-filter-button').click()");
   await until("!document.querySelector('.public-projects-filter-wrap').classList.contains('is-open')",20);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
+    await until("document.querySelectorAll('[data-native-glass-occluded]').length===0",80,40);
   // Cancel reverses the expansion and restores the original search chip.
   await evaluate("document.querySelector('.public-projects-search-cancel').click()");
   await until("!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded')",20);

@@ -2,6 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {physicalSourceRect,registerGlassPaint,sourceNodesForPane} from "../sites/_apex/assets/home-dashboard/dashboard-glass-source-paint.js";
+import {nativeOcclusionHole} from "../sites/_apex/assets/home-dashboard/dashboard-glass-native-occlusion.js";
 const base="../sites/_apex/assets/home-dashboard/";
 const read=p=>readFileSync(new URL(p,import.meta.url),"utf8");
 test("authored source rect follows actual viewport and legacy scroll coordinates",()=>{
@@ -37,4 +38,21 @@ test("ordinary public card and toolbar foreground plus Home icons stay native",(
  assert.match(r,/--public-icon-spatial-alpha/);
  assert.match(r,/foreground\.style\.opacity=String\(tileDismissIconOpacity\(progress\)\)/);
  assert.match(r,/mosaic:0,route:routeSourceEntries/);
+});
+
+test("higher glass occludes only overlapping native foreground at live opacity",()=>{
+ const r={left:20,top:100,width:200,height:240};
+ const p={left:170,top:120,width:100,height:130,radius:12,opacity:.5};
+ assert.deepEqual(nativeOcclusionHole(r,200,240,p),{x:150,y:20,width:100,height:130,rx:12,ry:12,opacity:.5});
+ assert.deepEqual(nativeOcclusionHole(r,100,120,p),{x:75,y:10,width:50,height:65,rx:6,ry:6,opacity:.5});
+ assert.equal(nativeOcclusionHole(r,200,240,{...p,opacity:0}),null);
+ assert.equal(nativeOcclusionHole(r,200,240,{...p,left:220}),null);
+ assert.equal(nativeOcclusionHole(r,200,240,{...p,top:340}),null);
+ const renderer=read(base+"dashboard-gpu-renderer.js"),occlusion=read(base+"dashboard-glass-native-occlusion.js");
+ assert.match(renderer,/nativeOcclusion.sync\(covers.length\?document.querySelectorAll/);
+ assert.match(renderer,/radius:tileData\[p\+4\]\/dpr,opacity:alpha/);
+ assert.match(occlusion,/maskUnits:"userSpaceOnUse",maskContentUnits:"userSpaceOnUse"/);
+ assert.match(occlusion,/"fill-opacity":p.opacity/);
+ assert.doesNotMatch(occlusion,/getImageData|createTexture|drawImage|registerGlassPaint/);
+ assert.match(read("../sites/_apex/assets/public-projects.css"),/mask-image:var\(--native-glass-occlusion\)/);
 });

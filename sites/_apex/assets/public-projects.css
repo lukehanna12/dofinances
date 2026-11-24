@@ -495,3 +495,13 @@ body.public-home[data-auth-gpu-scene="ready"]
 /* Keep the SVG's layout box; suppress only the GPU-owned flat duplicate. */
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
  .public-projects-root [data-glass-icon-owned]{clip-path:inset(50%)!important}
+
+/* Native card foreground is above the route canvas, so higher glass needs
+ * an explicit presentation cutout. This is a local vector mask, not a
+ * texture or optical substitute; never alter layout or card hit targets. */
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root .project-showcase-content[data-native-glass-occluded]{
+  mask-image:var(--native-glass-occlusion);
+  mask-mode:luminance;
+  mask-repeat:no-repeat;
+}
