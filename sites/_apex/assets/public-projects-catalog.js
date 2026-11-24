@@ -39,18 +39,18 @@ export function sortProjectShowcase(projects){
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide",
   "bootscript":"paint-roller",
-  "translucence-lab":"lightbulb",
+  "translucence-lab":"lightwork.v2",
   "github-readme-chrome-extension":"file-pen",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
-  "terminal-scalars":"square-terminal",
+  "terminal-scalars":"terminal-scalars.v2",
   "unicode-plus":"square-radical",
   "liquid-plexiglass-26":"lens",
   "3d-liquid-glass-26-swift-package":"move-3d",
   "apple-hig-reader":"apple-higs-reader.v4",
-  "apple-adobe-fx":"blend",
+  "apple-adobe-fx":"apple-adobe-fx.v2",
   "protocol-monitor-pruner":"funnel-code",
   "app-caviar":"opacity",
-  "ozoning-board":"treehouse-ozoning.v3",
+  "ozoning-board":"treehouse-ozoning.v4",
   "hidden-functions":"hidden-functions",
   "latexcel":"latexcel"
 });

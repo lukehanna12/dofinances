@@ -178,18 +178,18 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  const iconNames={
  "colosseum": "colosseum-lucide",
  "bootscript": "paint-roller",
- "translucence-lab": "lightbulb",
+ "translucence-lab": "lightwork.v2",
  "github-readme-chrome-extension": "file-pen",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
- "terminal-scalars": "square-terminal",
+ "terminal-scalars": "terminal-scalars.v2",
  "unicode-plus": "square-radical",
  "liquid-plexiglass-26": "lens",
  "3d-liquid-glass-26-swift-package": "move-3d",
  "apple-hig-reader": "apple-higs-reader.v4",
- "apple-adobe-fx": "blend",
+ "apple-adobe-fx": "apple-adobe-fx.v2",
  "protocol-monitor-pruner": "funnel-code",
  "app-caviar": "opacity",
- "ozoning-board": "treehouse-ozoning.v3",
+ "ozoning-board": "treehouse-ozoning.v4",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
@@ -257,7 +257,7 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
 
 test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()=>{
  const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v3.svg");
- assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v3");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v4");
  assert.match(svg,/viewBox="0 0 24 24"/);
  assert.match(svg,/stroke-width="2"/);
  assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
@@ -294,10 +294,10 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(!v2.includes('M13 8.5H7v14'));
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
- assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v3"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v10"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v10"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v12"'));
+ assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v4"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v11"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v11"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v13"'));
 });
 
 test("Apple HIGs Reader uses the exact user-supplied v4 icon",()=>{
@@ -362,7 +362,7 @@ test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated ar
  assert.ok(!warhol.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens","Liquid Plexiglass now uses the requested Lucide lens icon");
- assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v3","Keep the existing Ozoning Board icon");
+ assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v4","Use the new user-supplied Ozoning Board icon");
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes("PROJECT_CARD_IMAGES[project.slug]"),"Keep per-project hover assignment");
 });
 

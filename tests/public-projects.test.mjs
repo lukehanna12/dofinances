@@ -42,6 +42,37 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
       "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg");
   assert.equal(publicProjectIconSource("__unknown__"),null);
 });
+test("four supplied project SVGs are identical across public and authenticated views",async()=>{
+  const assigned=[
+    ["terminal-scalars","terminal-scalars.v2",12],
+    ["translucence-lab","lightwork.v2",12],
+    ["apple-adobe-fx","apple-adobe-fx.v2",6],
+    ["ozoning-board","treehouse-ozoning.v4",6]
+  ];
+  for(const [slug,name,pathCount] of assigned){
+    assert.equal(PUBLIC_ICONS[slug],name);
+    assert.equal(PRIVATE_ICONS[slug],name);
+    assert.equal(publicProjectIconSource(slug),"/assets/project-icons/"+name+".svg");
+    const [publicSvg,privateSvg]=await Promise.all([
+      load("../sites/_apex/assets/project-icons/"+name+".svg"),
+      load("../sites/_apex/app/assets/project-icons/"+name+".svg")
+    ]);
+    assert.equal(publicSvg,privateSvg,"Public and private SVG geometry must match for "+slug);
+    assert.match(publicSvg,/viewBox="0 0 24 24"/);
+    assert.match(publicSvg,/stroke="currentColor"/);
+    assert.match(publicSvg,/stroke-width="2"/);
+    assert.equal((publicSvg.match(/<path d=/g)||[]).length,pathCount);
+  }
+  const terminal=await load("../sites/_apex/assets/project-icons/terminal-scalars.v2.svg");
+  assert.ok(terminal.includes('M21 15.5V19a2 2 0 01-.5 1.303'));
+  const lightwork=await load("../sites/_apex/assets/project-icons/lightwork.v2.svg");
+  assert.ok(lightwork.includes('M8 8h.5l2-3 2.5 6 1.5-3H16'));
+  const adobe=await load("../sites/_apex/assets/project-icons/apple-adobe-fx.v2.svg");
+  assert.ok(adobe.includes('M15 16a7 7 0 116.841-8.5'));
+  const ozoning=await load("../sites/_apex/assets/project-icons/treehouse-ozoning.v4.svg");
+  assert.ok(ozoning.includes('M8 16.5H4.75'));
+  assert.ok(ozoning.includes('M8 19.5H5'));
+});
 test("ReadMe GLP artwork is gently enlarged and shifted up on public Projects only",async()=>{
  const publicCSS=await load("../sites/_apex/assets/public-projects.css");
  const path='[data-project-slug="github-readme-chrome-extension"]';

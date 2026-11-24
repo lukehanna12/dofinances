@@ -26,3 +26,7 @@
 - Ozoning Board: Frederic Edwin Church, *El Khasné, Petra* (1874), original image on Wikimedia Commons; public domain.
 
 - Icon handoff: App Caviar now uses the original Lucide `opacity.svg` icon previously assigned to Liquid Plexiglass 26. Liquid Plexiglass 26 now uses the exact upstream Lucide `lens.svg` (ISC), while keeping its Warhol hover artwork unchanged.
+
+## Project icon updates (2026-11-23)
+
+The supplied SVG paths are preserved verbatim in four versioned assets: `terminal-scalars.v2.svg`, `lightwork.v2.svg`, `apple-adobe-fx.v2.svg`, and `treehouse-ozoning.v4.svg`. Public Home and Projects continue to resolve one slug-to-icon map in `sites/_apex/assets/public-projects-catalog.js`; the authenticated Projects catalog mirrors those assignments. Both asset trees contain identical SVG geometry. The Home filter displays black, and the Projects filter displays white. Older icons remain available for compatibility.
