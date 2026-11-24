@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BootScript — extension architecture",
+    "output": "bootscript.html",
+    "quality_profile": "showcase",
+    "locale": "en"
+  },
+  "components": [
+    {
+      "id": "ide",
+      "type": "external",
+      "label": "Apps Script IDE",
+      "sublabel": "Google's native editor",
+      "pos": [
+        312,
+        40
+      ],
+      "size": [
+        184,
+        72
+      ]
+    },
+    {
+      "id": "editor",
+      "type": "frontend",
+      "label": "Editor integration",
+      "sublabel": "Monaco · 57 themes",
+      "pos": [
+        312,
+        190
+      ],
+      "size": [
+        184,
+        72
+      ]
+    },
+    {
+      "id": "console",
+      "type": "frontend",
+      "label": "Project console",
+      "sublabel": "Search · export · review",
+      "pos": [
+        312,
+        350
+      ],
+      "size": [
+        184,
+        72
+      ]
+    },
+    {
+      "id": "types",
+      "type": "backend",
+      "label": "TypeScript worker",
+      "sublabel": "Cross-file intelligence",
+      "pos": [
+        40,
+        350
+      ],
+      "size": [
+        166,
+        72
+      ]
+    },
+    {
+      "id": "vault",
+      "type": "database",
+      "label": "Encrypted vault",
+      "sublabel": "Local source snapshots",
+      "pos": [
+        604,
+        350
+      ],
+      "size": [
+        166,
+        72
+      ]
+    },
+    {
+      "id": "peer",
+      "type": "backend",
+      "label": "Peer drafts",
+      "sublabel": "Yjs · WebRTC",
+      "pos": [
+        40,
+        520
+      ],
+      "size": [
+        166,
+        72
+      ]
+    },
+    {
+      "id": "clients",
+      "type": "security",
+      "label": "Authorized API clients",
+      "sublabel": "User-reviewed requests",
+      "pos": [
+        312,
+        520
+      ],
+      "size": [
+        184,
+        72
+      ]
+    },
+    {
+      "id": "services",
+      "type": "cloud",
+      "label": "External services",
+      "sublabel": "Google · GitHub · Gemini",
+      "pos": [
+        312,
+        700
+      ],
+      "size": [
+        184,
+        72
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "BootScript · Chrome MV3",
+      "wraps": [
+        "editor",
+        "console",
+        "types",
+        "vault",
+        "peer",
+        "clients"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "native",
+      "from": "ide",
+      "to": "editor",
+      "label": "Monaco bridge",
+      "variant": "emphasis"
+    },
+    {
+      "id": "open",
+      "from": "editor",
+      "to": "console",
+      "label": "Open workbench",
+      "variant": "emphasis"
+    },
+    {
+      "id": "check",
+      "from": "console",
+      "to": "types",
+      "label": "Analyze"
+    },
+    {
+      "id": "recover",
+      "from": "console",
+      "to": "vault",
+      "label": "Snapshot"
+    },
+    {
+      "id": "collab",
+      "from": "console",
+      "to": "peer",
+      "label": "Share drafts"
+    },
+    {
+      "id": "request",
+      "from": "console",
+      "to": "clients",
+      "label": "Review + authorize",
+      "variant": "security"
+    },
+    {
+      "id": "api",
+      "from": "clients",
+      "to": "services",
+      "label": "Scoped API calls",
+      "variant": "security"
+    }
+  ]
+}

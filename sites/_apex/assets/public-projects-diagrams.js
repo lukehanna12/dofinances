@@ -6,8 +6,8 @@ export const PROJECT_DIAGRAMS=Object.freeze({
   "bootscript": [
     {
       "title": "Development architecture",
-      "renderer": "d2",
-      "label": "Google Apps Script IDE; BootScript native editor integration, 57 themes, modal editing, cross-file search and inline diagnostics; extension-owned project console, TypeScript intelligence, project search and export, encrypted vault, GitHub review, collaborative drafts and HTML/CSS previews; authorized Apps Script, GitHub, Gemini and Sheets APIs.",
+      "renderer": "archify",
+      "label": "Google Apps Script IDE, native Monaco editor integration with 57 themes, project console for search, export and review, TypeScript worker, encrypted local source snapshots, Yjs and WebRTC peer drafts, authorized API clients and Google, GitHub and Gemini services.",
       "planned": false
     }
   ],
@@ -957,22 +957,22 @@ export function createProjectDiagrams(slug){
     const caption=document.createElement("span");
     caption.className="project-showcase-diagram-caption";
     caption.textContent=spec.title+(spec.planned?" (planned architecture)":"");
-    if(spec.renderer==="d2"){
+    if(spec.renderer==="archify"){
       const parsed=new DOMParser().parseFromString(BOOTSCRIPT_DIAGRAM_SVG,"image/svg+xml");
       const root=parsed.documentElement;
       if(root.namespaceURI!==NS||root.localName!=="svg"||parsed.querySelector("parsererror")){
         throw new Error("Invalid generated BootScript diagram");
       }
-      // Keep D2's embedded styles, fonts, marker IDs and SVG text in an
+      // Keep Archify's resolved styles, marker IDs and SVG text in an
       // isolated vector image document. The surrounding native button must
-      // not acquire D2's text nodes as possible paragraph selection targets.
+      // not acquire Archify's text nodes as possible paragraph selection targets.
       const viewBox=root.getAttribute("viewBox");
       const [, , width,height]=viewBox.split(/\s+/).map(Number);
       const svg=svgNode("svg",{viewBox,role:"img","aria-label":spec.label});
       svg.append(svgNode("title",{},spec.title));
       svg.append(svgNode("image",{x:0,y:0,width,height,
         href:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(BOOTSCRIPT_DIAGRAM_SVG)}));
-      figure.classList.add("project-showcase-diagram--d2");
+      figure.classList.add("project-showcase-diagram--archify");
       figure.append(caption,svg);group.append(figure);
       continue;
     }

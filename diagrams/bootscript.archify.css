@@ -1,0 +1,11 @@
+[data-theme="dark"][data-preset="classic"] {
+--frontend-fill:rgba(154,65,12,.40);--frontend-stroke:#fb923c;
+--backend-fill:rgba(112,78,9,.40);--backend-stroke:#facc15;
+--database-fill:rgba(82,82,82,.40);--database-stroke:#a3a3a3;
+--cloud-fill:rgba(120,83,15,.30);--cloud-stroke:#fbbf24;
+--security-fill:rgba(153,27,27,.40);--security-stroke:#f87171;
+--external-fill:rgba(64,64,64,.50);--external-stroke:#a3a3a3;
+--arrow:#a3a3a3;--arrow-emphasis:#fb923c;
+--bg:#111111;--grid:#292929;--canvas-dot:rgba(163,163,163,.16);--mask:#171717;
+--text-muted:#a3a3a3;--text-dim:#737373;--text-faint:#a3a3a3;
+}

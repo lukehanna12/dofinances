@@ -463,15 +463,15 @@ test("all 16 projects have readable, explicitly connected native architecture sc
   for(const [slug,specs] of Object.entries(PROJECT_DIAGRAMS)){
     assert.ok(specs.length>=1&&specs.length<=4,slug);
     for(const spec of specs){
-      if(spec.renderer==="d2"){
+      if(spec.renderer==="archify"){
         assert.equal(slug,"bootscript");
         assert.ok(spec.title&&spec.label&&!spec.planned);
-        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/data-d2-version="v0\.9\.0"/);
-        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/viewBox="0 0 511 539"/);
-        assert.equal((BOOTSCRIPT_DIAGRAM_SVG.match(/fill-opacity="0\.54"/g)||[]).length,13);
-        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/fill="transparent"/);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/viewBox="0 0 834 840"/);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/data-preset="classic"/);
         assert.doesNotMatch(BOOTSCRIPT_DIAGRAM_SVG,/<(?:script|foreignObject)\b/i);
-        for(const label of ["Native Apps Script IDE","Project console","TypeScript engine","Encrypted vault","Yjs / WebRTC","Gemini","Google Sheets"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(label),label);
+        for(const color of ["rgb(251, 146, 60)","rgb(250, 204, 21)","rgb(248, 113, 113)","rgb(163, 163, 163)"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(color),color);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/(?:rgba\([^"]+,\s*0\.[0-9]+\)|color\(srgb [^"]+ \/ 0\.[0-9]+\))/);
+        for(const label of ["Apps Script IDE","Editor integration","Project console","TypeScript worker","Encrypted vault","Peer drafts","Authorized API clients","External services","Gemini"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(label),label);
         continue;
       }
       const layout=projectDiagramLayout(spec,specs.length>1);
