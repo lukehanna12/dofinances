@@ -24,6 +24,8 @@ test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal((await serveProjectArtwork(request("/project-artwork/bogus"),"/project-artwork/bogus",mock)).status,404);
  assert.equal((await serveProjectArtwork(request("/project-artwork/colosseum?url=x"),"/project-artwork/colosseum",mock)).status,404);
  assert.equal(called,1);
+ const alias=await serveProjectArtwork(request("/project-artwork/bootscript"),"/project-artwork/bootscript",async()=>new Response("image",{headers:{"Content-Type":"image/jpg"}}));
+ assert.equal(alias.status,200);assert.equal(alias.headers.get("Content-Type"),"image/jpeg");
  const redirect=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",async()=>new Response(null,{status:302,headers:{Location:"https://example.com/unsafe"}}));
  assert.equal(redirect.status,502);
 });

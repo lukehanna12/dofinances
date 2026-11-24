@@ -1,7 +1,7 @@
 import {PROJECT_CARD_IMAGES} from "../sites/_apex/assets/public-projects-catalog.js";
 const SOURCES=new Map(Object.entries(PROJECT_CARD_IMAGES).filter(([,v])=>v.startsWith("https://")));
 const HOSTS=new Set([...SOURCES.values()].map(v=>new URL(v).hostname));
-const MIME=/^image\/(?:jpeg|png|webp|avif|gif)(?:;|$)/i;
+const MIME=/^image\/(?:jpeg|jpg|png|webp|avif|gif)(?:;|$)/i;
 const LIMIT=16*1024*1024;
 // No client URL, cookies, credentials, custom upstream headers or arbitrary
 // redirects are accepted. Limit both declared and streamed response size.
@@ -25,7 +25,8 @@ export async function serveProjectArtwork(request,pathname,fetcher=fetch){
   if(!res?.ok||!MIME.test(res.headers.get("Content-Type")||""))return fail(502);
   const size=Number(res.headers.get("Content-Length"));
   if(size>LIMIT)return fail(502);
-  const headers={"Content-Type":res.headers.get("Content-Type"),"Cache-Control":"public, max-age=86400","X-Content-Type-Options":"nosniff","Cross-Origin-Resource-Policy":"same-origin"};
+  const contentType=res.headers.get("Content-Type").replace(/^image\/jpg(?=;|$)/i,"image/jpeg");
+  const headers={"Content-Type":contentType,"Cache-Control":"public, max-age=86400","X-Content-Type-Options":"nosniff","Cross-Origin-Resource-Policy":"same-origin"};
   if(request.method==="HEAD")return new Response(null,{headers});
   if(!res.body)return fail(502);
   let total=0;
