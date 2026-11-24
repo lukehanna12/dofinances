@@ -262,6 +262,9 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-diagram > svg{
   display:block;width:100%;height:auto;overflow:visible
 }
+.public-projects-root .project-showcase-diagrams{
+  -webkit-user-select:none;user-select:none;pointer-events:none
+}
 .public-projects-root .project-diagram-node{
   fill:rgba(255,255,255,.075);stroke:rgba(255,255,255,.36);stroke-width:1
 }

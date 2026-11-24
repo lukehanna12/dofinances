@@ -963,9 +963,15 @@ export function createProjectDiagrams(slug){
       if(root.namespaceURI!==NS||root.localName!=="svg"||parsed.querySelector("parsererror")){
         throw new Error("Invalid generated BootScript diagram");
       }
-      const svg=document.importNode(root,true);
-      svg.setAttribute("role","img");
-      svg.setAttribute("aria-label",spec.label);
+      // Keep D2's embedded styles, fonts, marker IDs and SVG text in an
+      // isolated vector image document. The surrounding native button must
+      // not acquire D2's text nodes as possible paragraph selection targets.
+      const viewBox=root.getAttribute("viewBox");
+      const [, , width,height]=viewBox.split(/\s+/).map(Number);
+      const svg=svgNode("svg",{viewBox,role:"img","aria-label":spec.label});
+      svg.append(svgNode("title",{},spec.title));
+      svg.append(svgNode("image",{x:0,y:0,width,height,
+        href:"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(BOOTSCRIPT_DIAGRAM_SVG)}));
       figure.classList.add("project-showcase-diagram--d2");
       figure.append(caption,svg);group.append(figure);
       continue;
