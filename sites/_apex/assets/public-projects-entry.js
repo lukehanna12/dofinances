@@ -69,6 +69,7 @@ function makeCard(project,index){
   const regularBoundary=el("span","project-showcase-regular-boundary");
   regularBoundary.setAttribute("aria-hidden","true");
   const content=el("span","project-showcase-content");
+  content.dataset.glassPaint="foreground";
   const upper=el("span","project-showcase-upper");
   const top=el("span","project-showcase-top");
   const iconSource=publicProjectIconSource(project.slug);
@@ -121,6 +122,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   back.setAttribute("aria-label","Back to homepage");
   back.title="Back to homepage";
   back.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  back.querySelector("svg").dataset.glassPaint="foreground";
   const title=el("h1","public-projects-title","Projects");
   // The DOM heading remains semantic and supplies its computed font shape.
   // The shared WebGPU shader refracts through the GLYPHS, not a text box.

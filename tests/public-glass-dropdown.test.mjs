@@ -32,9 +32,10 @@ test("dropdown uses shared GPU material and prior-layer texture in both frame pa
  const r=read("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),s=read("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),c=read("sites/_apex/assets/public-projects-controls.js");
  assert.match(r,/querySelectorAll\("\[data-glass-dropdown\]"\)/);
  assert.match(c,/registerGlassDropdown\(filterPanel/);
- assert.match(r,/if\(underlay&&menu\)/);
+ assert.match(r,/if\(slotLayer!==layer\)/);
  assert.equal((r.match(/renderRouteDropdownBackdrop\(encoder\);/g)||[]).length,2);
  assert.match(r,/entries:entries\(authGlobalsBuffer,compositeSceneView\)/);
+ assert.match(r,/routeLayerSources\.set\(routeActiveLayers\[0\],source\(compositeSceneView\)\)/);
  assert.match(s,/let dropdown=profile\.optics\.x>1\.5/);
  assert.match(s,/color=mix\(color,mix\(soft,accent,0\.75\),rowCoverage\)/);
  assert.match(s,/split\|\|dropdown/);

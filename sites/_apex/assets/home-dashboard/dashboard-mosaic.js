@@ -40,6 +40,7 @@ if(root){
       tile.dataset.homeProjectIcon=project.slug;
       const icon=document.createElement("img");
       icon.className="cta6-icon";
+      icon.dataset.glassPaint="foreground";
       icon.src=iconSource;
       icon.alt="";
       icon.width=24;icon.height=24;

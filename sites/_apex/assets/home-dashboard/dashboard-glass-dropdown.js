@@ -62,6 +62,7 @@ export function registerGlassDropdown(panel,{options}={}){
  if(!panel?.setAttribute)throw new TypeError("Dropdown panel element required");
  panel.setAttribute("data-glass-dropdown","");
  panel.setAttribute("data-glass-material","dropdown");
+ panel.setAttribute("data-glass-backdrop-layer","2");
  for(const node of options??panel.querySelectorAll("button,[role=menuitem],[role=option]"))node.setAttribute("data-glass-dropdown-option","");
  const abort=new AbortController(),wake=()=>window.dispatchEvent(new Event("dofinances:glass-dropdown-change"));
  for(const type of ["pointerover","pointerout","focusin","focusout"])panel.addEventListener(type,wake,{signal:abort.signal});
@@ -74,5 +75,5 @@ export function registerGlassDropdown(panel,{options}={}){
    event.key==="ArrowDown"?(i+1)%rows.length:(i<0?rows.length-1:(i+rows.length-1)%rows.length);
   rows[next].focus({preventScroll:true});event.preventDefault();wake();
  },{signal:abort.signal});
- return ()=>{abort.abort();panel.removeAttribute("data-glass-dropdown");panel.removeAttribute("data-glass-material");wake()};
+ return ()=>{abort.abort();panel.removeAttribute("data-glass-dropdown");panel.removeAttribute("data-glass-material");panel.removeAttribute("data-glass-backdrop-layer");wake()};
 }

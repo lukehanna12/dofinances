@@ -11,9 +11,8 @@
  * Future freely moving tiles can update one GPU tile buffer (or vertex
  * shader motion formula) without changing the backdrop.
  *
- * GAP PUBLIC-SCENE: this GPU scene currently contains the original photograph
- * and overlay, not arbitrary external HTML/DOM. Future refractable content
- * must be added as a GPU scene layer; normal DOM above the canvas remains UI.
+ * Authored backdrop/foreground primitives are composed at their owner layer.
+ * Arbitrary unregistered external HTML remains DOM UI, not captured pixels.
  * GAP R-MIP-KERNEL: authored 2x2 explicit reduction awaits native proof.
  * GAP Q: browser presentation/color/EDR not Apple's output pipeline.
  */
@@ -33,6 +32,7 @@ import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OP
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
+import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
 // Layer zero is the live mosaic. Layer one samples its completed GPU
@@ -197,7 +197,7 @@ function authPaneTint(node,scheme){
 const audit={
   path:"webgpu",status:"initializing",oracleTarget:"25F80/M2/G14G",
   scene:"GPU-owned centered photograph + 12% authored veil",
-  sceneCapture:"No DOM screenshot/readback. Arbitrary external DOM is NOT included.",
+  sceneCapture:"Owned wallpaper + registered authored glyph/vector/image sources. No DOM/screen capture.",
   backend:"WebGPU",presentation:OFFSCREEN_CI?"offscreen-ci":"GPUCanvasContext",mipKernel:"explicit 2x2 RGBA16Float compute reduction",
   mipSampling:"WGSL manual bilinear + trilinear textureLoad",
   oracleMath:"AIR mode4/mode5 SDF, half-boundary refraction, distribution and LOD; finite scope",
@@ -342,7 +342,7 @@ function rgba16Texture(device,width,height){
     format:"rgba16float",
     usage:GPUTextureUsage.TEXTURE_BINDING|
           GPUTextureUsage.RENDER_ATTACHMENT|
-          GPUTextureUsage.STORAGE_BINDING
+          GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.COPY_SRC
   });
 }
 // Canvas-local scene: cover image begins at the visible global-bar bottom.
@@ -613,10 +613,14 @@ async function initialize(){
   const authGlobalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
+  const sourcePainter=createGlassSourcePainter(device,format);
   const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
   const routeCompositeDetailGroups=new Map();
   let dropdownSlots=[],dropdownCompositeFrames=0;
+  let routeSourceEntries=[],homeSourceEntries=[],baseSourceEntries=[],baseSourceKey="";
+  let routeLayerSlots=[],routeActiveLayers=[],routeLayerSources=new Map();
+  let secondRouteScene=null,secondRouteMips=[],secondRouteCopyGroup=null;
   let tileBuffer=null,tintTileBuffer=null,materialBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
     // Home-only background texture: same GPU-owned photograph + each
@@ -646,7 +650,7 @@ async function initialize(){
     mipmapFilter:"linear",addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"});
   const emptyDetail=device.createTexture({size:[1,1],format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
   const emptyDetailView=emptyDetail.createView();
-  let paneDetailViews=[],detailGroups=new Map(),authDetailEntries=null;
+  let paneDetailViews=[],detailGroups=new Map(),authDetailEntries=null,routeLayerEntries=null;
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
@@ -749,10 +753,14 @@ async function initialize(){
     const panes=authPaneElements(),nodes=[...trackTiles,...panes];
     const scheme=tint.state.scheme;
     let changed=false,regularCount=0;
-    const roles=[],dropdowns=[];dropdownSlots=[];
+    const roles=[],dropdowns=[];dropdownSlots=[];routeLayerSlots=[];
     for(let i=0;i<instanceCount;i++){
       const node=nodes[i],p=i*TILE_FLOATS,m=i*MATERIAL_FLOATS;
       const selectedMaterial=node&&glassMaterialFromElement(node);
+      if(i>=tileCount){
+        const requested=Number(node?.dataset.glassBackdropLayer||0);
+        routeLayerSlots[i-tileCount]=Number.isInteger(requested)&&requested>=0&&requested<=2?requested:0;
+      }
       const regular=selectedMaterial==="regular"&&tileData[p+2]>0&&tileData[p+3]>0;
       const dropdown=selectedMaterial==="dropdown"&&tileData[p+2]>0&&tileData[p+3]>0;
       if(dropdown){
@@ -796,6 +804,7 @@ async function initialize(){
     audit.materials={regular:regularCount,clear:nodes.length-regularCount-dropdownSlots.filter(Boolean).length,
       dropdown:dropdownSlots.filter(Boolean).length,scheme,roles,sharedPipeline:true};
     audit.dropdownGlass={visible:dropdowns,backdrop:"completed GPU route underlay",compositeFrames:dropdownCompositeFrames,sharedPipeline:true};
+    routeActiveLayers=[...new Set(routeLayerSlots.filter((layer,i)=>layer>0&&tileData[(tileCount+i)*TILE_FLOATS+18]>.002))].sort((a,b)=>a-b);
   }
   // A material partition belongs to the original card instance, not an
   // overlapping pane. Keep its outer silhouette, hit-test, z-order and
@@ -862,9 +871,30 @@ async function initialize(){
     }
     return animating;
   }
+  function sourceViews(){
+    return {scene:{width:physicalWidth,height:physicalHeight,top:sceneTop,dpr},
+      route:{width:physicalWidth,height:physicalAuthHeight,top:authOriginTop(),dpr}};
+  }
+  function syncBaseSources(){
+    const views=sourceViews();
+    baseSourceEntries=[...document.querySelectorAll('[data-glass-paint="scene"]')].map(n=>sourcePainter.sync(n,"scene",views)).filter(Boolean);
+    const key=JSON.stringify(baseSourceEntries.map(e=>[e.revision,e.rect,e.alpha]));
+    if(key!==baseSourceKey){baseSourceKey=key;scenePending=true;}
+  }
+  function syncHomeSources(){
+    const views=sourceViews();
+    homeSourceEntries=trackIcons.map(n=>n&&sourcePainter.sync(n,"mosaic",views)).filter(Boolean);
+  }
+  function syncRouteSources(){
+    const views=sourceViews(),panes=authPaneElements();
+    routeSourceEntries=authUsesCompositor()?[]:panes.map(p=>sourceNodesForPane(p).map(n=>sourcePainter.sync(n,"route",views)).filter(Boolean));
+    sourcePainter.sweep();
+    audit.sourceComposition={base:baseSourceEntries.length,mosaic:homeSourceEntries.length,route:routeSourceEntries.flat().length,
+      routeLayers:[...routeActiveLayers],...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};
+  }
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!projectRegionSceneView)return;
-    detailGroups.clear();routeCompositeDetailGroups.clear();
+    detailGroups.clear();routeCompositeDetailGroups.clear();routeLayerSources.clear();
     const entries=(buffer,source=sceneView,detail=emptyDetailView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
@@ -879,7 +909,8 @@ async function initialize(){
       {binding:9,resource:detail},{binding:10,resource:detailSampler}
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
-    routeCompositeEntries=detail=>entries(routeCompositeGlobalsBuffer,sceneView,detail);
+    routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
+    routeLayerEntries=(buffer,source,detail)=>entries(buffer,source,detail);
     projectRegionCaptureGroup=device.createBindGroup({layout:projectRegionCapturePipeline.getBindGroupLayout(0),entries:[
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer:authGlobalsBuffer}},
@@ -907,49 +938,86 @@ async function initialize(){
     routeMenuGroup=compositeSceneView?device.createBindGroup({layout:glassPipeline.getBindGroupLayout(0),
       entries:entries(authGlobalsBuffer,compositeSceneView)}):null;
   }
-  function drawRoutePanes(pass,underlay=false){
-    // Draw all lower surfaces in their real order. Menus never sample a
-    // texture they write; all active dropdowns sample the completed lower
-    // GPU surface composite. Artwork detail still binds per instance.
+  // Paint owner sources immediately after their surface. Upper glass
+  // samples completed lower attachments; final display repeats the same order.
+  function drawRouteLayer(pass,layer,underlay){
+    const pipeline=underlay?compositeGlassPipeline:glassPipeline;
+    const source=routeLayerSources.get(layer);
     let first=0;
     while(first<AUTH_PANE_CAPACITY){
-      const menu=Boolean(dropdownSlots[first]),view=paneDetailViews[first];
+      const menu=Boolean(dropdownSlots[first]),view=paneDetailViews[first],slotLayer=routeLayerSlots[first]||0;
+      if(slotLayer!==layer){first++;continue;}
+      const paint=routeSourceEntries[first]||[];
       let end=first+1;
-      while(end<AUTH_PANE_CAPACITY&&paneDetailViews[end]===view&&Boolean(dropdownSlots[end])===menu)end++;
-      if(underlay&&menu){first=end;continue;}
-      let group=underlay?routeCompositeBaseGroup:menu&&routeMenuGroup?routeMenuGroup:authGlassGroup;
-      if(view&&!menu){
+      while(!paint.length&&end<AUTH_PANE_CAPACITY&&(routeLayerSlots[end]||0)===layer&&
+        paneDetailViews[end]===view&&Boolean(dropdownSlots[end])===menu&&!routeSourceEntries[end]?.length)end++;
+      let group=underlay?routeCompositeBaseGroup:authGlassGroup;
+      if(source){
+        const maps=underlay?source.underlayGroups:source.displayGroups,key=view||emptyDetailView;
+        group=maps.get(key);
+        if(!group){
+          group=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),
+            entries:routeLayerEntries(underlay?routeCompositeGlobalsBuffer:authGlobalsBuffer,source.view,key)});
+          maps.set(key,group);
+        }
+      }else if(view){
         const groups=underlay?routeCompositeDetailGroups:detailGroups;
         group=groups.get(view);
         if(!group){
-          group=device.createBindGroup({layout:(underlay?compositeGlassPipeline:glassPipeline).getBindGroupLayout(0),
+          group=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),
             entries:(underlay?routeCompositeEntries:authDetailEntries)(view)});
           groups.set(view,group);
         }
       }
-      pass.setBindGroup(0,group);pass.draw(6,end-first,0,tileCount+first);
+      pass.setPipeline(pipeline);pass.setBindGroup(0,group);pass.draw(6,end-first,0,tileCount+first);
+      sourcePainter.draw(pass,paint,underlay?"scene":"route",underlay?"offscreen":"screen");
       first=end;
     }
   }
-  function renderRouteDropdownBackdrop(encoder){
-    if(!audit.dropdownGlass?.visible.length||!compositeScene||!routeMenuGroup)return;
-    // Render prior GPU panes into wallpaper-local coordinates even with a
-    // scroll-attached diagnostic canvas. This is a source render, not DOM capture.
-    const u=new Float32Array(authUniform);
-    u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=0;
-    device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
-    const pass=encoder.beginRenderPass({label:"Dropdown completed GPU underlay (no dropdown)",
-      colorAttachments:[{view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
-      loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
-    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,compositeBackdropGroup);pass.draw(3);
-    pass.setPipeline(compositeGlassPipeline);drawRoutePanes(pass,true);pass.end();
-    for(let level=1;level<compositeScene.mipLevelCount;level++){
-      const mip=encoder.beginComputePass({label:"Dropdown lower-layer mip "+level});
-      mip.setPipeline(mipPipeline);mip.setBindGroup(0,compositeMips[level-1]);
+  function drawRoutePanes(pass,underlay=false){
+    drawRouteLayer(pass,0,underlay);
+    if(!underlay)for(const layer of routeActiveLayers)drawRouteLayer(pass,layer,false);
+  }
+  function mipComposite(encoder,texture,groups){
+    for(let level=1;level<texture.mipLevelCount;level++){
+      const mip=encoder.beginComputePass({label:"Completed authored lower-layer mip "+level});
+      mip.setPipeline(mipPipeline);mip.setBindGroup(0,groups[level-1]);
       mip.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
         Math.ceil(Math.max(1,physicalHeight>>level)/8),1);mip.end();
     }
-    audit.dropdownGlass.compositeFrames=++dropdownCompositeFrames;
+  }
+  function renderRouteDropdownBackdrop(encoder){
+    routeLayerSources.clear();
+    if(!routeActiveLayers.length||!compositeScene||!routeMenuGroup)return;
+    const u=new Float32Array(authUniform);
+    u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=0;
+    device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
+    const pass=encoder.beginRenderPass({label:"Completed base route glass + authored foreground",
+      colorAttachments:[{view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
+      loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
+    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,compositeBackdropGroup);pass.draw(3);
+    drawRoutePanes(pass,true);pass.end();mipComposite(encoder,compositeScene,compositeMips);
+    const source=view=>({view,underlayGroups:new Map(),displayGroups:new Map()});
+    routeLayerSources.set(routeActiveLayers[0],source(compositeSceneView));
+    if(routeActiveLayers.length>1){
+      if(!secondRouteScene){
+        secondRouteScene=rgba16Texture(device,physicalWidth,physicalHeight);
+        secondRouteMips=[];
+        for(let level=1;level<secondRouteScene.mipLevelCount;level++)secondRouteMips.push(device.createBindGroup({layout:mipPipeline.getBindGroupLayout(0),entries:[
+          {binding:0,resource:secondRouteScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
+          {binding:1,resource:secondRouteScene.createView({baseMipLevel:level,mipLevelCount:1})}]}));
+        secondRouteCopyGroup=device.createBindGroup({layout:compositeBackdropPipeline.getBindGroupLayout(0),entries:[{binding:0,resource:compositeSceneView}]});
+      }
+      const upper=encoder.beginRenderPass({label:"Complete intermediate glass + foreground",
+        colorAttachments:[{view:secondRouteScene.createView({baseMipLevel:0,mipLevelCount:1}),loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
+      upper.setPipeline(compositeBackdropPipeline);upper.setBindGroup(0,secondRouteCopyGroup);upper.draw(3);
+      drawRouteLayer(upper,routeActiveLayers[0],true);upper.end();mipComposite(encoder,secondRouteScene,secondRouteMips);
+      routeLayerSources.set(routeActiveLayers[1],source(secondRouteScene.createView()));
+    }else if(secondRouteScene){
+      secondRouteScene.destroy();secondRouteScene=null;secondRouteMips=[];secondRouteCopyGroup=null;
+    }
+    if(audit.dropdownGlass?.visible.length)audit.dropdownGlass.compositeFrames=++dropdownCompositeFrames;
+    audit.sourceComposition.completedLayers=[...routeActiveLayers];
   }
   function syncProjectTitleMask(panes){
     const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
@@ -1239,6 +1307,7 @@ async function initialize(){
       // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
       compositeScene?.destroy();projectRegionScene?.destroy();
+      secondRouteScene?.destroy();secondRouteScene=null;secondRouteMips=[];secondRouteCopyGroup=null;
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -1388,6 +1457,7 @@ async function initialize(){
     pass.setPipeline(backdropPipeline);
     pass.setBindGroup(0,backgroundGroup);
     pass.draw(3);
+    sourcePainter.draw(pass,baseSourceEntries,"scene","offscreen");
     pass.end();
     for(let level=1;level<scene.mipLevelCount;level++){
       const next=encoder.beginComputePass({label:"mip level "+level});
@@ -1513,6 +1583,7 @@ async function initialize(){
     syncProjectScrollPresentation();
     syncAuthCanvasSize();
     writeUniform();
+    syncBaseSources();
     if(scenePending)buildScene();
     const now=performance.now();
     const dt=Math.max(0,(now-lastFrameTime)/1000);
@@ -1520,10 +1591,12 @@ async function initialize(){
     lastFrameTime=now;
     lastAuthFrameTime=now;
     if(tileCount)paintTrack(dt);
+    syncHomeSources();
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
     const artworkAnimating=syncGlassRegions();
+    syncRouteSources();
     if(artworkAnimating)requestRender();
     const animating=interaction.advance(dt,reducedMotion.matches);
     const authHoverAnimating=authHover.advance(authDt,reducedMotion.matches);
@@ -1561,6 +1634,7 @@ async function initialize(){
         underlay.setBindGroup(0,compositeGlassGroup);
         underlay.draw(6,tileCount);
       }
+      sourcePainter.draw(underlay,homeSourceEntries,"scene","offscreen");
       underlay.end();
       for(let level=1;level<compositeScene.mipLevelCount;level++){
         const mip=encoder.beginComputePass({label:"live square underlay mip "+level});
@@ -1584,6 +1658,8 @@ async function initialize(){
     if(tileCount){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
       pass.draw(6,tileCount);
+      sourcePainter.draw(pass,homeSourceEntries,"scene","screen");
+      pass.setPipeline(glassPipeline);
       // The three scaled capsules are separate instances of the same
       // shader on the HOMEPAGE canvas, under their real DOM text.
       if(audit.homeCtaGlass?.count){
@@ -1603,7 +1679,7 @@ async function initialize(){
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
       });
       authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,authGlassGroup);
-      if(audit.projectGlass||dropdownSlots.some(Boolean))drawRoutePanes(authPass);
+      if(audit.projectGlass||dropdownSlots.some(Boolean)||routeSourceEntries.some(a=>a.length))drawRoutePanes(authPass);
       else authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
       authPass.end();
     }
@@ -1640,11 +1716,13 @@ async function initialize(){
     syncProjectScrollPresentation();
     syncAuthCanvasSize();
     writeUniform();
+    syncBaseSources();
     if(scenePending)buildScene();
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
     const artworkAnimating=syncGlassRegions();
+    syncRouteSources();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
     device.queue.writeBuffer(tileBuffer,0,tileData);
@@ -1656,7 +1734,7 @@ async function initialize(){
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
     });
     pass.setPipeline(glassPipeline);pass.setBindGroup(0,authGlassGroup);
-    if(audit.projectGlass||dropdownSlots.some(Boolean))drawRoutePanes(pass);
+    if(audit.projectGlass||dropdownSlots.some(Boolean)||routeSourceEntries.some(a=>a.length))drawRoutePanes(pass);
     else pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
     pass.end();
     device.queue.submit([encoder.finish()]);
@@ -1676,7 +1754,7 @@ async function initialize(){
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();
     glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
-    scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();
+    scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
   }
@@ -1849,6 +1927,8 @@ async function initialize(){
   routeOutlet?.addEventListener("wheel",armElasticRefresh,{passive:true});
   routeOutlet?.addEventListener("touchmove",armElasticRefresh,{passive:true});
   window.addEventListener("dofinances:glass-dropdown-change",requestRender);
+  document.addEventListener("load",event=>{if(event.target?.localName==="img")requestRender();},true);
+  document.fonts?.ready.then(()=>{sourcePainter.invalidate();requestRender();});
   const materialObserver=new MutationObserver(()=>requestRender());
   materialObserver.observe(document.documentElement,{subtree:true,attributes:true,
     attributeFilter:["data-glass-material"]});
@@ -1895,7 +1975,21 @@ async function initialize(){
       if(!(element instanceof Element))throw new TypeError("Glass surface element required");
       element.setAttribute("data-glass-material",material);requestRender();
     },
-    invalidateBackdrop:()=>{if(!stopped){scenePending=true;requestRender()}}
+    invalidateBackdrop:()=>{if(!stopped){scenePending=true;requestRender()}},
+    ...(new URLSearchParams(location.search).has("glass-source-proof")?{async sourceRegionDigest(kind,rect){
+      const texture=kind==="base"?scene:kind==="underlay"?(routeActiveLayers.length>1?secondRouteScene:compositeScene):null;
+      if(!texture||!Array.isArray(rect)||rect.length!==4||!rect.every(Number.isFinite))throw TypeError("Owned source region required");
+      const x=Math.max(0,Math.floor(rect[0]*dpr)),y=Math.max(0,Math.floor((rect[1]-sceneTop)*dpr));
+      const w=Math.min(128,physicalWidth-x,Math.max(1,Math.ceil(rect[2]*dpr))),h=Math.min(128,physicalHeight-y,Math.max(1,Math.ceil(rect[3]*dpr)));
+      if(w<1||h<1)throw RangeError("Source region outside viewport");
+      const stride=Math.ceil(w*8/256)*256,b=device.createBuffer({size:stride*h,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
+      try{const enc=device.createCommandEncoder({label:"Owned internal source numeric digest (not display)"});
+        enc.copyTextureToBuffer({texture,origin:[x,y,0]},{buffer:b,bytesPerRow:stride,rowsPerImage:h},[w,h,1]);device.queue.submit([enc.finish()]);
+        await b.mapAsync(GPUMapMode.READ);const bytes=new Uint8Array(b.getMappedRange());
+        const digest=await crypto.subtle.digest("SHA-256",bytes.slice());
+        return Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,"0")).join("");
+      }finally{b.destroy();}
+    }}:{})
   });
   window.addEventListener("resize",onSize,{passive:true});
   const resizeObserver=new ResizeObserver(onSize);

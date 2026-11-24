@@ -558,3 +558,13 @@ body.public-home:has(> #workspace-shell .dashboard-home:not([hidden])) > .worksp
     bottom:calc(15px + env(safe-area-inset-bottom,0px))!important;
   }
 }
+
+ 
+/* Single paint ownership, not an optical mask. The registered authored
+ * source is presented by the GPU both normally and in upper glass backdrops.
+ * DOM layout, semantics and computed opacity are unchanged. Suppress only
+ * duplicate paint of non-interactive descendants with uploaded sources. */
+body.public-home[data-gpu-scene="ready"] :is([data-glass-paint-owned="scene"],[data-glass-paint-owned="mosaic"]),
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) [data-glass-paint-owned="route"]{
+ clip-path:inset(50%)!important;
+}

@@ -138,9 +138,11 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   closeButton.type="button";
   closeButton.className="project-showcase-expand-close";
   closeButton.dataset.publicProjectGlass="expand-close";
+  closeButton.dataset.glassBackdropLayer="1";
   closeButton.setAttribute("aria-label","Close expanded project");
   closeButton.title="Close expanded project";
   closeButton.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  closeButton.querySelector("svg").dataset.glassPaint="foreground";
   closeButton.hidden=true;
   grid.append(closeButton);
   const abort=new AbortController();
