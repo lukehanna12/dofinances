@@ -308,10 +308,10 @@ test("both retired Studio /login URLs return a scoped Pages Function 404", async
   const notFound = await load("../public/404.html");
   assert.match(notFound, /404 Not Found/);
   const routes = JSON.parse(await load("../public/_routes.json"));
-  assert.deepEqual(routes.include, ["/login", "/login/"]);
+  assert.deepEqual(routes.include, ["/login", "/login/", "/svg-editor", "/svg-editor/*"]);
   assert.deepEqual(routes.exclude, []);
   const { onRequest } = await import("../functions/login.js");
-  for (const path of routes.include) {
+  for (const path of ["/login", "/login/"]) {
     const response = await onRequest({request: new Request("https://stu.dofinances.com"+path)});
     assert.equal(response.status,404,path);
     assert.equal(response.headers.get("Cache-Control"),"no-store");
