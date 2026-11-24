@@ -1036,7 +1036,10 @@ async function initialize(){
     ensureCompositeScene();
     if(!routeMenuGroup)return;
     const u=new Float32Array(authUniform);
-    u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=0;
+    // All intermediate attachments are optical inputs, not display surfaces.
+    // Exclude icon contrast haze from their mip pyramids, even when a
+    // higher glass layer (such as a dropdown) samples this lower layer.
+    u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=-1;
     device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
     const pass=encoder.beginRenderPass({label:"Completed base route glass + authored foreground",
       colorAttachments:[{view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),

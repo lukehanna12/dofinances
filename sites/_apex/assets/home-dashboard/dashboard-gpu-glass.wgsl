@@ -23,7 +23,7 @@ struct Globals {
   fit: vec4<f32>,
   pointer: vec4<f32>,  // x,y,enabled,unused
   tint: vec4<f32>,     // matrix-projected RGB and native Float32 opacity lane
-  tintMeta: vec4<f32>, // tint branch enabled, dark scheme, native-backdrop optical overlay, reserved
+  tintMeta: vec4<f32>, // tint enabled, dark scheme, +1 diagnostic overlay / -1 optical-only underlay / 0 display, vertical offset
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
@@ -499,8 +499,8 @@ fn finalSilhouetteCoverage(icon:GlassSilhouette,local:vec2<f32>,fallback:f32)->f
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
   let brightness=smoothstep(0.25,0.90,luminance);
-  let x=max(0.0,distanceCSS-1.6)/5.4;
-  let tail=1.0-smoothstep(16.0,22.0,distanceCSS);
+  let x=max(0.0,distanceCSS-1.6)/10.8;
+  let tail=1.0-smoothstep(10.0,22.0,distanceCSS);
   return 0.16*hover*brightness*exp(-0.5*x*x)*tail;
 }
 fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
@@ -518,7 +518,9 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
   let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
   let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
   let hazeDistance=(hazeMask-0.5)*256.0*hazeScale/pointScale;
-  let haze=silhouetteHaze(luminance,hazeDistance,hover);
+  // Display-only exposure adjustment. The offscreen lower-layer
+  // attachments that become optical inputs never contain this haze.
+  let haze=select(0.0,silhouetteHaze(luminance,hazeDistance,hover),state.tintMeta.z>=0.0);
   var shaded=color*(1.0-haze);
   let glowDistance=max(hazeDistance,0.0)/1.8;
   shaded=clamp(shaded+vec3<f32>(0.018*hover*exp(-0.5*glowDistance*glowDistance)),
@@ -559,7 +561,9 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
   }
   let rim=exp(-abs(signed)*1.16);
   let edge=clamp(rim*0.28,0.0,0.28);
-  let base=clamp(source*(1.0-haze)+vec3<f32>(edge+hover*0.075),
+  // Optical source, refraction, LOD, face, tint and rim are independent
+  // of haze. Only the uncovered background receives display darkening.
+  let base=clamp(source+vec3<f32>(edge+hover*0.075),
     vec3<f32>(0.0),vec3<f32>(1.0));
   let glass=clearTint(clearFace(base,darkFace),icon.tint,0.25);
   return mix(shaded,glass,clamp(iconCoverage*icon.params.w,0.0,1.0));
