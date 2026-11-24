@@ -422,11 +422,13 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternatives/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
   assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is an Excel add-in and Google Sheets add-on project/);
-  assert.match(PROJECT_DESCRIPTIONS.bootscript,/most advanced extension ever built/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/benchmarked against eight competing extensions/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
-  assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/most lightweight live documentation editor/);
+  assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/lightweight live documentation editor/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
-  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/even more comprehensive than ChatGPT's official export/);
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/detailed preservation of individual conversations/);
   assert.match(PROJECT_DESCRIPTIONS.colosseum,/virtually any tool or reference/);
   assert.match(PROJECT_DESCRIPTIONS.colosseum,/Claude plugins/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/freely hosted reference architecture on Google Apps Script/);
@@ -439,13 +441,10 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["protocol-monitor-pruner"],/Few specialized tools exist/);
   assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/most versatile in-memory Vite and React application builder/);
-  assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/largest collection of hidden Google Sheets functions/);
-  // Current project descriptions must not convert the creator's stated
-  // assessments into future aspirations. Preserve attribution where
-  // independent comparative verification is not available.
-  for(const slug of ["bootscript","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","hidden-functions"]){
-    assert.match(PROJECT_DESCRIPTIONS[slug],/creator/);
-    assert.doesNotMatch(PROJECT_DESCRIPTIONS[slug],/aims to|designed to be the most/);
+  assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/extensive collection of hidden Google Sheets functions/);
+  // Direct project copy should not rely on owner or creator attribution.
+  for(const copy of Object.values(PROJECT_DESCRIPTIONS)){
+    assert.doesNotMatch(copy,/\b(?:creator|owner)\b/i);
   }
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/reported near-instant/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Google Apps Script's generous usage allowances/);
