@@ -1459,6 +1459,18 @@ try{
   assert.deepEqual(dropdown.names,["Applications","Extensions","Plugins","Add-ons","CLIs"]);
   assert.equal(dropdown.glass,"filter-dropdown");
   assert.equal(dropdown.expanded,"true");
+  // Internal state and actual DOM geometry, never screenshots.
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-panel').dataset.glassMaterial"),"dropdown");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-panel')).borderRadius"),"12px");
+  assert.equal(await evaluate("document.querySelector('.public-projects-filter-option').offsetHeight"),24);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.dropdownGlass?.visible?.length===1 && window.__dashboardWebGPU.dropdownGlass.compositeFrames>0",80,40);
+    const row=await evaluate("(()=>{const b=document.querySelector('.public-projects-filter-option').getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2}})()");
+    await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:row.x,y:row.y});
+    await until("window.__dashboardWebGPU?.dropdownGlass?.visible?.[0]?.activeRow?.[2]>0",80,40);
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.public-projects-filter-option')).backgroundColor"),"rgba(0, 0, 0, 0)");
+  }
+
   assert.notEqual(dropdown.leftTransform,"none");
   assert.notEqual(dropdown.rightTransform,"none");
   assert.equal(dropdown.tailOpacity,0,

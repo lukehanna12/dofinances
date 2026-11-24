@@ -7,7 +7,7 @@
  * Clear deliberately retains the established public rendering path.
  */
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
-export const GLASS_MATERIALS=Object.freeze(["clear","regular"]);
+export const GLASS_MATERIALS=Object.freeze(["clear","regular","dropdown"]);
 export const MATERIAL_FLOATS=16;
 export const NATIVE_REGULAR_FACE_HEX=Object.freeze({
  dark:Object.freeze({large:"893877b432a729304eadf03536a729304fad76b4fa382930",

@@ -4,6 +4,7 @@
  * search/filter state. All [data-public-project-glass] surfaces are drawn
  * by the existing homepage glassPipeline, never a CSS glass imitation.
  */
+import {registerGlassDropdown} from "./home-dashboard/dashboard-glass-dropdown.js";
 export const PROJECT_FILTER_CATEGORIES=Object.freeze([
   "Applications","Extensions","Plugins","Add-ons","CLIs"
 ]);
@@ -124,6 +125,7 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
     filterPanel.append(option);
     options.set(category,option);
   }
+  const disposeDropdown=registerGlassDropdown(filterPanel,{options:options.values()});
   filterWrap.append(filterButton,filterPanel);
 
   const github=el("a","public-projects-tool-button public-projects-github-button");
@@ -274,7 +276,7 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
       if(disposed)return;
       disposed=true;
       clearTimeout(searchTimer);
-      abort.abort();
+      abort.abort();disposeDropdown();
       empty.remove();toolbar.remove();
     }
   };

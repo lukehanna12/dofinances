@@ -32,6 +32,7 @@ import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularM
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
+import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
 // Layer zero is the live mosaic. Layer one samples its completed GPU
@@ -130,17 +131,20 @@ const PROJECT_HEADER_DISMISS_ROLES=new Set([
   "filter","filter-dropdown","github"
 ]);
 function authPaneElements(){
+  // Any future route in the persistent public shell may register a dropdown.
+  // Existing Projects role selectors are retained for their layout/animation.
+  const dropdowns=[...(routeMount?.querySelectorAll("[data-glass-dropdown]")??[])];
   const card=document.querySelector(".auth3-root [data-auth-glass-card]");
   if(card)return [card,...card.querySelectorAll(
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
-  )].slice(0,AUTH_PANE_CAPACITY);
+  ),...dropdowns].slice(0,AUTH_PANE_CAPACITY);
   const projects=document.querySelector(".public-projects-root");
-  if(!projects)return [...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
-  const all=[...projects.querySelectorAll("[data-public-project-glass]")];
+  if(!projects)return dropdowns.length?dropdowns.slice(0,AUTH_PANE_CAPACITY):[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
+  const all=[...new Set([...projects.querySelectorAll("[data-public-project-glass]"),...dropdowns])];
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
   const top=all.filter(node=>
-    ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass));
+    ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)||node.hasAttribute("data-glass-dropdown"));
   // The route's CSS z-order cannot reorder instances inside one WebGPU
   // draw call. Disappearing old-row silhouettes must be composited BEHIND
   // the widening selected pane, or their glass looks like it reappears
@@ -149,7 +153,7 @@ function authPaneElements(){
     node.classList.contains("project-showcase-dissolve-ghost"));
   const expanded=all.filter(node=>node.classList.contains("is-expanded"));
   const base=all.filter(node=>
-    !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)&&
+    !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)&&!node.hasAttribute("data-glass-dropdown")&&
     !node.classList.contains("project-showcase-dissolve-ghost")&&
     !node.classList.contains("is-expanded"));
   return [...ghosts,...base,...expanded,...top].slice(0,AUTH_PANE_CAPACITY);
@@ -172,6 +176,7 @@ function authPaneMaterialTag(node){
   return -2;
 }
 function authPaneTint(node,scheme){
+  if(node.hasAttribute("data-glass-dropdown"))return tintParameters("none",undefined,scheme);
   if(node.hasAttribute("data-home-cta-glass")){
     // The same computed CSS transition value drives tint and scale timing.
     const raw=Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"));
@@ -359,7 +364,7 @@ function makeLayoutData(tile,scale,sceneTop=0){
   // rectangles, circles and foreground content.
   const b=tile.getBoundingClientRect();
   const live=tile.hasAttribute("data-home-cta-glass")||
-    glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass);
+    glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass)||tile.hasAttribute("data-glass-dropdown");
   const layoutW=Math.max(1,tile.offsetWidth),layoutH=Math.max(1,tile.offsetHeight);
   const w=live?Math.max(1,b.width):layoutW;
   const h=live?Math.max(1,b.height):layoutH;
@@ -608,6 +613,10 @@ async function initialize(){
   const authGlobalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
+  const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
+  const routeCompositeDetailGroups=new Map();
+  let dropdownSlots=[],dropdownCompositeFrames=0;
   let tileBuffer=null,tintTileBuffer=null,materialBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
     // Home-only background texture: same GPU-owned photograph + each
@@ -740,12 +749,28 @@ async function initialize(){
     const panes=authPaneElements(),nodes=[...trackTiles,...panes];
     const scheme=tint.state.scheme;
     let changed=false,regularCount=0;
-    const roles=[];
+    const roles=[],dropdowns=[];dropdownSlots=[];
     for(let i=0;i<instanceCount;i++){
       const node=nodes[i],p=i*TILE_FLOATS,m=i*MATERIAL_FLOATS;
-      const regular=node&&glassMaterialFromElement(node)==="regular"&&
-        tileData[p+2]>0&&tileData[p+3]>0;
-      if(regular){
+      const selectedMaterial=node&&glassMaterialFromElement(node);
+      const regular=selectedMaterial==="regular"&&tileData[p+2]>0&&tileData[p+3]>0;
+      const dropdown=selectedMaterial==="dropdown"&&tileData[p+2]>0&&tileData[p+3]>0;
+      if(dropdown){
+        const profile=resolveDropdownMaterial({width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
+          scale:dpr,scheme:node.dataset.glassScheme||scheme,row:dropdownRowBounds(node)});
+        const lanes=dropdownMaterialLanes(profile);
+        for(let j=0;j<MATERIAL_FLOATS;j++){
+          const v=Math.fround(lanes[j]);
+          if(materialData[m+j]!==v){materialData[m+j]=v;changed=true;}
+        }
+        tileData[p+6]=profile.blurWord;
+        if(i>=tileCount){
+          dropdownSlots[i-tileCount]=true;
+          if(tileData[p+18]>.002&&!node.hidden)dropdowns.push({slot:i-tileCount,
+            width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,scheme:profile.scheme,
+            blurWord:profile.blurWord,activeRow:profile.row.map(v=>v/dpr),faceScope:profile.faceScope});
+        }
+      }else if(regular){
         const profile=resolveRegularMaterial({width:tileData[p+2]/dpr,
           height:tileData[p+3]/dpr,scale:dpr,scheme});
         const lanes=regularMaterialLanes(profile);
@@ -768,8 +793,9 @@ async function initialize(){
       }
     }
     if(changed)device.queue.writeBuffer(materialBuffer,0,materialData);
-    audit.materials={regular:regularCount,clear:nodes.length-regularCount,
-      scheme,roles,sharedPipeline:true};
+    audit.materials={regular:regularCount,clear:nodes.length-regularCount-dropdownSlots.filter(Boolean).length,
+      dropdown:dropdownSlots.filter(Boolean).length,scheme,roles,sharedPipeline:true};
+    audit.dropdownGlass={visible:dropdowns,backdrop:"completed GPU route underlay",compositeFrames:dropdownCompositeFrames,sharedPipeline:true};
   }
   // A material partition belongs to the original card instance, not an
   // overlapping pane. Keep its outer silhouette, hit-test, z-order and
@@ -823,7 +849,7 @@ async function initialize(){
       animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
     }
     // Evict only unused detail sources; the lower refraction atlas is retained.
-    for(const view of artworkAtlas.trimDetails(usedDetails))detailGroups.delete(view);
+    for(const view of artworkAtlas.trimDetails(usedDetails)){detailGroups.delete(view);routeCompositeDetailGroups.delete(view);}
     device.queue.writeBuffer(regionBuffer,0,regionData);
     if(audit.projectGlass){
       audit.projectGlass.regions=regions;
@@ -838,7 +864,7 @@ async function initialize(){
   }
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!projectRegionSceneView)return;
-    detailGroups.clear();
+    detailGroups.clear();routeCompositeDetailGroups.clear();
     const entries=(buffer,source=sceneView,detail=emptyDetailView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
@@ -853,6 +879,7 @@ async function initialize(){
       {binding:9,resource:detail},{binding:10,resource:detailSampler}
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
+    routeCompositeEntries=detail=>entries(routeCompositeGlobalsBuffer,sceneView,detail);
     projectRegionCaptureGroup=device.createBindGroup({layout:projectRegionCapturePipeline.getBindGroupLayout(0),entries:[
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer:authGlobalsBuffer}},
@@ -875,27 +902,54 @@ async function initialize(){
       layout:glassPipeline.getBindGroupLayout(0),
       entries:entries(globalsBuffer,compositeSceneView)
     }):null;
+    routeCompositeBaseGroup=device.createBindGroup({layout:compositeGlassPipeline.getBindGroupLayout(0),
+      entries:routeCompositeEntries(emptyDetailView)});
+    routeMenuGroup=compositeSceneView?device.createBindGroup({layout:glassPipeline.getBindGroupLayout(0),
+      entries:entries(authGlobalsBuffer,compositeSceneView)}):null;
   }
-  function drawRoutePanes(pass){
-    // Preserve pane z-order and batch consecutive non-artwork instances.
-    // Every exposed card binds its own original-aspect texture to the SAME
-    // glass pipeline. No extra art pass or separately rasterized clip.
+  function drawRoutePanes(pass,underlay=false){
+    // Draw all lower surfaces in their real order. Menus never sample a
+    // texture they write; all active dropdowns sample the completed lower
+    // GPU surface composite. Artwork detail still binds per instance.
     let first=0;
     while(first<AUTH_PANE_CAPACITY){
-      const view=paneDetailViews[first];
+      const menu=Boolean(dropdownSlots[first]),view=paneDetailViews[first];
       let end=first+1;
-      while(end<AUTH_PANE_CAPACITY&&paneDetailViews[end]===view)end++;
-      let group=authGlassGroup;
-      if(view){
-        group=detailGroups.get(view);
+      while(end<AUTH_PANE_CAPACITY&&paneDetailViews[end]===view&&Boolean(dropdownSlots[end])===menu)end++;
+      if(underlay&&menu){first=end;continue;}
+      let group=underlay?routeCompositeBaseGroup:menu&&routeMenuGroup?routeMenuGroup:authGlassGroup;
+      if(view&&!menu){
+        const groups=underlay?routeCompositeDetailGroups:detailGroups;
+        group=groups.get(view);
         if(!group){
-          group=device.createBindGroup({layout:glassPipeline.getBindGroupLayout(0),entries:authDetailEntries(view)});
-          detailGroups.set(view,group);
+          group=device.createBindGroup({layout:(underlay?compositeGlassPipeline:glassPipeline).getBindGroupLayout(0),
+            entries:(underlay?routeCompositeEntries:authDetailEntries)(view)});
+          groups.set(view,group);
         }
       }
       pass.setBindGroup(0,group);pass.draw(6,end-first,0,tileCount+first);
       first=end;
     }
+  }
+  function renderRouteDropdownBackdrop(encoder){
+    if(!audit.dropdownGlass?.visible.length||!compositeScene||!routeMenuGroup)return;
+    // Render prior GPU panes into wallpaper-local coordinates even with a
+    // scroll-attached diagnostic canvas. This is a source render, not DOM capture.
+    const u=new Float32Array(authUniform);
+    u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=0;
+    device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
+    const pass=encoder.beginRenderPass({label:"Dropdown completed GPU underlay (no dropdown)",
+      colorAttachments:[{view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
+      loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
+    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,compositeBackdropGroup);pass.draw(3);
+    pass.setPipeline(compositeGlassPipeline);drawRoutePanes(pass,true);pass.end();
+    for(let level=1;level<compositeScene.mipLevelCount;level++){
+      const mip=encoder.beginComputePass({label:"Dropdown lower-layer mip "+level});
+      mip.setPipeline(mipPipeline);mip.setBindGroup(0,compositeMips[level-1]);
+      mip.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
+        Math.ceil(Math.max(1,physicalHeight>>level)/8),1);mip.end();
+    }
+    audit.dropdownGlass.compositeFrames=++dropdownCompositeFrames;
   }
   function syncProjectTitleMask(panes){
     const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
@@ -1006,7 +1060,8 @@ async function initialize(){
       // Only the sign-in controls' neutral pigment film varies by role.
       // Every pane retains the exact shared square glass optics and hover.
       tileData[p+5]=authPaneMaterialTag(node);
-      const paneOpacity=homeCtas?
+      const paneOpacity=node.hasAttribute("data-glass-dropdown")?Math.max(0,Math.min(1,
+        Number.parseFloat(getComputedStyle(node).opacity)||0)):homeCtas?
         homeGroupOpacity*Math.max(0,Math.min(1,
           Number.parseFloat(getComputedStyle(node).opacity)||0)):
         projects?Math.max(0,Math.min(1,
@@ -1098,7 +1153,7 @@ async function initialize(){
     interaction.retargetRects(tileData,cornerInert);
     if(projects&&pointer.enabled)authHover.reproject(pointer.x*dpr,(pointer.y-authOriginTop())*dpr);
     authHover.retargetRects(tileData,tileCount,cornerInert,
-      projects||homeCtas?"independent":"nested");
+      projects||homeCtas||card?.hasAttribute("data-glass-dropdown")?"independent":"nested");
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
         materialTag:-9,face:"shared-per-surface-Clear",count:panes.length,roles,
@@ -1518,6 +1573,7 @@ async function initialize(){
       homeCompositeFrames++;
       audit.homeCtaGlass.compositeFrames=homeCompositeFrames;
     }
+    renderRouteDropdownBackdrop(encoder);
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:OFFSCREEN_CI?
           offscreenFrame.createView():context.getCurrentTexture().createView(),
@@ -1547,7 +1603,7 @@ async function initialize(){
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
       });
       authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,authGlassGroup);
-      if(audit.projectGlass)drawRoutePanes(authPass);
+      if(audit.projectGlass||dropdownSlots.some(Boolean))drawRoutePanes(authPass);
       else authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
       authPass.end();
     }
@@ -1594,12 +1650,13 @@ async function initialize(){
     device.queue.writeBuffer(tileBuffer,0,tileData);
     const encoder=device.createCommandEncoder({label:"Public-route-only glass frame"});
     renderProjectRegionCapture(encoder);
+    renderRouteDropdownBackdrop(encoder);
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:authContext.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
     });
     pass.setPipeline(glassPipeline);pass.setBindGroup(0,authGlassGroup);
-    if(audit.projectGlass)drawRoutePanes(pass);
+    if(audit.projectGlass||dropdownSlots.some(Boolean))drawRoutePanes(pass);
     else pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
     pass.end();
     device.queue.submit([encoder.finish()]);
@@ -1621,7 +1678,7 @@ async function initialize(){
     glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();
     offscreenFrame?.destroy();photo.destroy();
-    globalsBuffer.destroy();authGlobalsBuffer.destroy();
+    globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
   }
   await waitForVisibleHome();
   engine={rebuild,render,renderAuthOnly,dispose,device};
@@ -1791,6 +1848,7 @@ async function initialize(){
   routeOutlet?.addEventListener("scroll",onAuthScroll,{passive:true});
   routeOutlet?.addEventListener("wheel",armElasticRefresh,{passive:true});
   routeOutlet?.addEventListener("touchmove",armElasticRefresh,{passive:true});
+  window.addEventListener("dofinances:glass-dropdown-change",requestRender);
   const materialObserver=new MutationObserver(()=>requestRender());
   materialObserver.observe(document.documentElement,{subtree:true,attributes:true,
     attributeFilter:["data-glass-material"]});

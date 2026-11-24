@@ -1,0 +1,20 @@
+/* Native-measured dropdown geometry; only opaque accessibility fallback
+ * is CSS-painted. The full WebGPU path owns the panel and active-row optics. */
+[data-glass-dropdown]{
+ --glass-dropdown-radius:12px;--glass-dropdown-inset:5px;
+ --glass-dropdown-row-height:24px;--glass-dropdown-row-radius:7px;
+ box-sizing:border-box;border-radius:var(--glass-dropdown-radius);padding:var(--glass-dropdown-inset);
+ color:#fff;background:#242424;
+}
+[data-glass-dropdown-option]{
+ box-sizing:border-box;min-height:var(--glass-dropdown-row-height,24px);
+ border-radius:var(--glass-dropdown-row-radius,7px);background:transparent;
+}
+[data-glass-dropdown-option]:is(:hover,:focus-visible){background:#176ae6;color:white}
+body[data-auth-gpu-scene="ready"] [data-glass-dropdown]{
+ background:transparent!important;border-color:transparent!important;box-shadow:none!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+body[data-auth-gpu-scene="ready"] [data-glass-dropdown-option]{
+ background:transparent!important;
+}

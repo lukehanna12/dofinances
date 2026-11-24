@@ -230,7 +230,7 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
     "Hover spring must never erase the GPU sign-in material opacity or dismissal");
   assert.match(renderer,/pass\.setPipeline\(glassPipeline\);pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,tileCount\);/);
   assert.match(renderer,/authContext\.configure\(\{device,format,alphaMode:"premultiplied"\}\)/);
-  assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,authGlassGroup\);\s*if\(audit.projectGlass\)drawRoutePanes\(authPass\);\s*else authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
+  assert.match(renderer,/authPass\.setPipeline\(glassPipeline\);authPass\.setBindGroup\(0,authGlassGroup\);\s*if\(audit.projectGlass\|\|dropdownSlots.some\(Boolean\)\)drawRoutePanes\(authPass\);\s*else authPass\.draw\(6,AUTH_PANE_CAPACITY,0,tileCount\);/);
   assert.match(renderer,/document\.body\.dataset\.authGpuScene="ready"/);
   assert.match(homepageCss,/#public-route-content > #dashboard-auth-glass-scene\{/);
   assert.match(homepageCss,/z-index:0;[\s\S]*?pointer-events:none;/);
@@ -238,8 +238,8 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(shader,/let scale=select\(0\.85\+0\.15\*a,1\.0,authPane\);/);
   assert.match(shader,/if\(authPane&&dismiss<=0\.0\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/,
     "Sign-in still uses the unchanged route material; only explicit motion.w enables home-square dismissal");
-  assert.match(shader,/let hover=select\(clamp\(tile\.interaction\.x,0\.0,1\.0\),0\.0,split\)/);
-  assert.match(shader,/let pressed=select\(clamp\(tile\.interaction\.y,0\.0,1\.0\),0\.0,split\)/);
+  assert.match(shader,/let hover=select\(clamp\(tile\.interaction\.x,0\.0,1\.0\),0\.0,split\|\|dropdown\)/);
+  assert.match(shader,/let pressed=select\(clamp\(tile\.interaction\.y,0\.0,1\.0\),0\.0,split\|\|dropdown\)/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\) \.auth3-root \[data-auth-glass-card\]/);
 });
 test("Card is untinted; existing neutral presets tint controls in dark and light modes",async()=>{
@@ -586,13 +586,13 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
     load("../src/styles.css"),
     load("../sites/_apex/assets/public-home.css")
   ]);
-  assert.match(shader,/if\(authPane && state\.tintMeta\.z>0\.5\)/);
+  assert.match(shader,/if\(authPane && state\.tintMeta\.z>0\.5 && !dropdown\)/);
   assert.match(shader,/var tintStrength=select\(0\.25,0\.60,authPane\)/,
     "WGSL must use mutable var for per-role film strength, not let");
   assert.doesNotMatch(shader,/let tintStrength=select/,
     "Reassigning a WGSL let rejects the whole shader on real browsers");
   assert.match(shader,/let reflection=clamp\(\(edge\+pointerLight\)\*0\.75\*transmission,0\.0,0\.32\)/);
-  assert.ok(shader.indexOf("if(authPane && state.tintMeta.z>0.5)")<
+  assert.ok(shader.indexOf("if(authPane && state.tintMeta.z>0.5 && !dropdown)")<
     shader.indexOf("glass=mix(mipSample("));
   assert.match(renderer,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/);
   assert.match(renderer,/authHover\.advance\(dt,reducedMotion\.matches\)/);

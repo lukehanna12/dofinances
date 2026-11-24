@@ -37,9 +37,9 @@ test("region is independently profiled within same GPU instance, and follows eac
  assert.match(shader,/glass=mix\(projectRegionCaptureSample\(innerUV,innerLOD\),/);
  assert.match(shader,/if\(split\)\{[\s\S]*?profile.optics=vec4<f32>\(0.0\)/);
  assert.match(shader,/let darkFace=split \|\| state.tintMeta.y>0.5/);
- assert.match(shader,/let hover=select\(clamp\(tile.interaction.x,0.0,1.0\),0.0,split\)/);
- assert.match(shader,/let pressed=select\(clamp\(tile.interaction.y,0.0,1.0\),0.0,split\)/);
- assert.match(shader,/if\(localTint.w>0.0 && !split\)/);
+ assert.match(shader,/let hover=select\(clamp\(tile.interaction.x,0.0,1.0\),0.0,split\|\|dropdown\)/);
+ assert.match(shader,/let pressed=select\(clamp\(tile.interaction.y,0.0,1.0\),0.0,split\|\|dropdown\)/);
+ assert.match(shader,/if\(localTint.w>0.0 && !split && !dropdown\)/);
  const capture=render.slice(render.indexOf("function renderProjectRegionCapture("),render.indexOf("function paintTrack("));
  assert.match(capture,/pass.setPipeline\(compositeBackdropPipeline\);pass.setBindGroup\(0,projectRegionCopyGroup\)/);
  assert.match(capture,/pass.setPipeline\(projectRegionCapturePipeline\)/);
@@ -103,7 +103,7 @@ test("Artwork and lower glass have one fragment-owned material boundary",()=>{
  assert.match(shader,/color=mix\(color,paint.rgb,clamp\(paint.a\*region.params.w/);
  assert.match(css,/\.public-projects-root \.project-showcase-artwork\{\s*visibility:hidden/);
  assert.doesNotMatch(css,/clip-path:inset\(0 0 var\(--project-regular-height\)/);
- assert.match(render,/function drawRoutePanes\(pass\)/);
+ assert.match(render,/function drawRoutePanes\(pass,underlay=false\)/);
  assert.match(render,/artworkPresentation:"same-fragment"/);
  assert.deepEqual(artworkDetailSize(1600,1200),[1600,1200]);
  const [w,h]=artworkDetailSize(8000,4000);

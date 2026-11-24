@@ -111,7 +111,7 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   let bloom=dismiss*dismiss*(3.0-2.0*dismiss);
   let diffuseScale=vec2<f32>(1.0+0.085*bloom,1.0+0.065*bloom);
   let center=tile.rect.xy+tile.rect.zw*0.5;
-  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*diffuseScale;
+  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);
   var out:GlassOut;
   out.position=vec4<f32>(2.0*p.x/state.viewport.x-1.0,
     1.0-2.0*p.y/state.viewport.y,0.0,1.0);
@@ -415,6 +415,12 @@ fn projectRegionCaptureSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
 // AIR 464..500: opaque source RGB, half dot3 against the actual native
 // half4 row, then a separate half-rounded bias addition. G14G dot
 // instruction internal accumulation and final output Q remain open.
+// Menu-specific finite CAFilter face inputs. This is an explicit browser
+// endpoint/fill projection, NOT a recovered native half4 face matrix.
+fn dropdownFace(rgb:vec3<f32>,profile:MaterialProfile)->vec3<f32>{
+ let face=vec3<f32>(profile.face0.z)+rgb*(profile.face0.w-profile.face0.z);
+ return clamp(mix(face,vec3<f32>(profile.face1.x),profile.face1.y),vec3<f32>(0.0),vec3<f32>(1.0));
+}
 fn regularFace(rgb:vec3<f32>,profile:MaterialProfile)->vec3<f32>{
   let v=nativeHalf3(rgb);
   let r0=nativeHalf3(profile.face0.xyz);
@@ -480,7 +486,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // Explicit Clear overrides any inherited whole-surface Regular choice.
     profile.optics=vec4<f32>(0.0);
   }
-  let regular=profile.optics.x>0.5;
+  let regular=profile.optics.x>0.5 && profile.optics.x<1.5;
+  let dropdown=profile.optics.x>1.5;
+  // Evaluate row derivatives before divergent material/coverage branches.
+  // Non-dropdown profiles have no row; their value is never composited.
+  let rowRadius=max(0.0,profile.face1.z);
+  let rowQ=abs(in.local-profile.face2.xy-profile.face2.zw*0.5)-
+    max(profile.face2.zw*0.5-vec2<f32>(rowRadius),vec2<f32>(0.0));
+  let rowSD=length(max(rowQ,vec2<f32>(0.0)))+min(max(rowQ.x,rowQ.y),0.0)-rowRadius;
+  let rowCoverage=clamp(0.5-rowSD/max(fwidth(rowSD),0.0001),0.0,1.0);
   let authPane=tile.properties.y<0.0;
   let dimensions=tile.rect.zw;
   // Exact CPU predicate: mode4 iff four NORMALIZED private lanes compare
@@ -538,11 +552,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let clearD=d/pointScale;
   let clearInnerAmount=max(-60.0,-clearD)*pointScale;
   let clearInnerHeight=min(20.0,0.36*clearD)*pointScale;
-  let innerAmount=select(select(max(-60.0,-0.8*d),clearInnerAmount,authPane),profile.optics.y,regular);
+  let innerAmount=select(select(max(-60.0,-0.8*d),clearInnerAmount,authPane),profile.optics.y,regular||dropdown);
   let innerInvHeight=select(select(1.0/min(20.0,0.25*d),
-    1.0/max(clearInnerHeight,0.001),authPane),1.0/max(profile.optics.z,0.001),regular);
-  let outerAmount=select(0.2*d,0.0,authPane);
-  let outerInvHeight=select(1.0/(0.125*d),0.0,authPane);
+    1.0/max(clearInnerHeight,0.001),authPane),1.0/max(profile.optics.z,0.001),regular||dropdown);
+  let outerAmount=select(select(0.2*d,0.0,authPane),profile.face0.x,dropdown);
+  let outerInvHeight=select(select(1.0/(0.125*d),0.0,authPane),1.0/max(profile.face0.y,0.001),dropdown);
   let inner=refractionEnvelope(signed,innerAmount,innerInvHeight);
   let outer=refractionEnvelope(signed,select(outerAmount,0.0,regular),
     select(outerInvHeight,0.0,regular));
@@ -592,8 +606,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let proximity=exp(-dot(relative,relative));
   // Inactive band: no pointer displacement, hover lighting or press
   // lighting, even when its parent card is being hovered or clicked.
-  let hover=select(clamp(tile.interaction.x,0.0,1.0),0.0,split);
-  let pressed=select(clamp(tile.interaction.y,0.0,1.0),0.0,split);
+  let hover=select(clamp(tile.interaction.x,0.0,1.0),0.0,split||dropdown);
+  let pressed=select(clamp(tile.interaction.y,0.0,1.0),0.0,split||dropdown);
   let radial=relative;
   let shiftPx=proximity*(radial*(hover*0.55+pressed*1.1)+
     tile.motion.xy*(hover*0.42+pressed*0.65));
@@ -619,7 +633,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // of the stationary wallpaper into the next compositor scroll frame.
   // The unchanged full WebGPU refraction remains for the homepage squares
   // and the original full WebGPU sign-in default.
-  if(authPane && state.tintMeta.z>0.5){
+  if(authPane && state.tintMeta.z>0.5 && !dropdown){
     var tintStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){tintStrength=0.82;}
     else if(tile.properties.y == -5.0){tintStrength=0.62;}
@@ -634,9 +648,9 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // blur opacities are one; refraction mixing opacity is zero.
   // The Clear path retains its previous private-diagnostic ramp.
   let innerLOD=glassLOD(select(tile.properties.z,region.params.y,split),
-    select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
+    select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular||dropdown);
   let outerLOD=glassLOD(select(tile.properties.z,region.params.y,split),
-    blurDistribution(nativeHalf1(signed+outer),d));
+    blurDistribution(nativeHalf1(signed+outer),d))+select(0.0,profile.optics.w,dropdown);
   // Mutually exclusive material evaluation. The title band samples the
   // raw half-resolution capture, never a previously rendered glass surface.
   let darkFace=split || state.tintMeta.y>0.5;
@@ -665,11 +679,12 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     let faceBlack=select(0.20,0.05,darkFace);
     let faceWhite=select(0.95,0.80,darkFace);
     color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
+    if(dropdown){color=dropdownFace(baseColor,profile);}
   }
   // Back button, card and homepage squares all use this exact untinted
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
-  if(localTint.w>0.0 && !split){
+  if(localTint.w>0.0 && !split && !dropdown){
     // The shared square film is 0.25, including the tinted capsule (-9).
     // The dark green is a hue/opacity INPUT to the original tint mixer,
     // never a different film strength, transmission or color equation.
@@ -681,6 +696,21 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
+  }
+  // Menu row: the native selection uses a monochrome backdrop, soft-light
+  // accent tint and .75 accent fill. A GPU mip footprint projects the
+  // Gaussian input; exact native row filter/color-space execution is open.
+  if(dropdown && profile.face2.z>0.0 && profile.face2.w>0.0){
+    let blurred=dropdownFace(mipSample(baseUV,profile.face1.w).rgb,profile);
+    let luminance=dot(blurred,vec3<f32>(0.2126,0.7152,0.0722));
+    let accent=select(vec3<f32>(0.0902000145,0.4134742870,0.9011678930),
+      vec3<f32>(0.0392200053,0.5098000169,1.0),profile.face1.x>0.5);
+    let b=clamp(luminance,0.0,1.0);
+    let softD=select(((16.0*b-12.0)*b+4.0)*b,sqrt(b),b>0.25);
+    let low=vec3<f32>(b)-(1.0-2.0*accent)*b*(1.0-b);
+    let high=vec3<f32>(b)+(2.0*accent-1.0)*(softD-b);
+    let soft=select(low,high,accent>vec3<f32>(0.5));
+    color=mix(color,mix(soft,accent,0.75),rowCoverage);
   }
   // The DOM image is a decode/animation source, not a second visible layer.
   // Preserve its exact cover/zoom, opacity and black shade above the boundary.

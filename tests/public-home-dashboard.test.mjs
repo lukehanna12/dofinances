@@ -66,7 +66,7 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/entries:entries\(globalsBuffer,compositeSceneView\)/);
   assert.doesNotMatch(renderer,/homeCapsuleGroup=glassGroup/,
     "Capsule glass must not sample the static wallpaper alone");
-  assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
+  assert.match(renderer,/projects\|\|homeCtas\|\|card\?\.hasAttribute\("data-glass-dropdown"\)\?"independent":"nested"/);
   assert.match(shader,/let pointerLight=proximity\*\(hover\*0\.075\+pressed\*0\.06\)/);
   assert.doesNotMatch(shader,/pressEnergy|tile\.properties\.y == -9\.0\)\s*\{?[^}]*pressed/,
     "No CTA-specific interaction intensity");
@@ -83,8 +83,8 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(shader,/let clearD=d\/pointScale;/);
   assert.match(shader,/let clearInnerAmount=max\(-60\.0,-clearD\)\*pointScale;/);
   assert.match(shader,/let clearInnerHeight=min\(20\.0,0\.36\*clearD\)\*pointScale;/);
-  assert.match(shader,/let outerAmount=select\(0\.2\*d,0\.0,authPane\);/);
-  assert.match(shader,/let outerInvHeight=select\(1\.0\/\(0\.125\*d\),0\.0,authPane\);/);
+  assert.match(shader,/let outerAmount=select\(select\(0\.2\*d,0\.0,authPane\),profile.face0.x,dropdown\);/);
+  assert.match(shader,/let outerInvHeight=select\(select\(1\.0\/\(0\.125\*d\),0\.0,authPane\),1\.0\/max\(profile.face0.y,0.001\),dropdown\);/);
   assert.match(renderer,/projectFiniteNativeClearGlass\(/);
   assert.doesNotMatch(shader,/min\(tiles\[0\]\.rect\.z,tiles\[0\]\.rect\.w\)/);
   assert.doesNotMatch(renderer,/tileData\[p\+6\]=tileData\[6\]/);
