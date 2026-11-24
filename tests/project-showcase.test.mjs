@@ -178,7 +178,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  const iconNames={
  "colosseum": "colosseum-lucide",
  "bootscript": "paint-roller",
- "translucence-lab": "lightwork.v2",
+ "translucence-lab": "lightwork.v3",
  "github-readme-chrome-extension": "file-pen",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "terminal-scalars.v2",
@@ -295,9 +295,9 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v4"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v11"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v11"'));
- assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v13"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v12"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v12"'));
+ assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v14"'));
 });
 
 test("Apple HIGs Reader uses the exact user-supplied v4 icon",()=>{

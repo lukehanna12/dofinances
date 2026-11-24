@@ -39,7 +39,7 @@ export function sortProjectShowcase(projects){
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide",
   "bootscript":"paint-roller",
-  "translucence-lab":"lightwork.v2",
+  "translucence-lab":"lightwork.v3",
   "github-readme-chrome-extension":"file-pen",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"terminal-scalars.v2",
