@@ -421,4 +421,23 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternative projects/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
   assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is a planned Excel add-in/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/most advanced extension ever built/);
+  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
+  assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/most lightweight live documentation editor/);
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/surpass even the official export/);
+  assert.match(PROJECT_DESCRIPTIONS.colosseum,/virtually any tool or reference/);
+  assert.match(PROJECT_DESCRIPTIONS.colosseum,/Claude plugins/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/free Apps Script infrastructure/);
+  assert.match(PROJECT_DESCRIPTIONS["unicode-plus"],/LaTeXceL to the terminal and beyond/);
+  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/most accurate reconstruction ever developed/);
+  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/Rust and WebGPU/);
+  assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/Liquid Plexiglass 27/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/most faithful reconstruction/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/recently open-sourced Adobe Photoshop reconstruction/);
+  assert.match(PROJECT_DESCRIPTIONS["protocol-monitor-pruner"],/Few specialized tools exist/);
+  assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/most versatile in-memory Vite and React application builder/);
+  assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/largest collection of hidden Google Sheets functions/);
+
 });
