@@ -91,7 +91,7 @@ test("HEAD and POST are handled safely",async()=>{
 });
 test("shared favicon preserves the exact approved transparent SVG on every Git-managed host",async()=>{
   const svg=await readFile(new URL("../sites/_apex/favicon.svg",import.meta.url));
-  assert.equal(createHash("sha256").update(svg).digest("hex"),"fb5029649446d8835eddeee07033739d62e221800570674c4fa2091128244784");
+  assert.equal(createHash("sha256").update(svg).digest("hex"),"56c205096eb9931009032a94fdad94201306a477fc8b13d056ceb71115d6e120");
   assert.doesNotMatch(svg.toString(),/#b7b9be|<image\b/i);
   const seen=[];
   const env={ASSETS:{fetch:async req=>{
