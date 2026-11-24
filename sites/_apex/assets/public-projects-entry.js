@@ -4,7 +4,7 @@
  * Project controls intentionally do not navigate or call private APIs.
  */
 import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
-  projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
+  projectShowcaseStatus,sortProjectShowcase,publicProjectImage,publicProjectArtworkSource} from "./public-projects-catalog.js";
 import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {mountProjectExpansion} from "./public-projects-expand.js";
@@ -50,7 +50,7 @@ function makeCard(project,index){
   // No location changes, hrefs, or private /api/projects calls.
   const photo=el("img","project-showcase-photo");
   photo.alt="";photo.loading="lazy";photo.decoding="async";
-  const src=publicProjectImage(project,index);
+  const src=publicProjectArtworkSource(project,index);
   const preferred=PROJECT_CARD_IMAGES[project.slug];
   photo.addEventListener("error",()=>{
     if(preferred&&photo.getAttribute("src")===src){
@@ -63,6 +63,11 @@ function makeCard(project,index){
     card.addEventListener(name,reveal,{once:true});
   const shade=el("span","project-showcase-shade");
   shade.setAttribute("aria-hidden","true");
+  const artwork=el("span","project-showcase-artwork");
+  artwork.setAttribute("aria-hidden","true");
+  artwork.append(photo,shade);
+  const regularBoundary=el("span","project-showcase-regular-boundary");
+  regularBoundary.setAttribute("aria-hidden","true");
   const content=el("span","project-showcase-content");
   const upper=el("span","project-showcase-upper");
   const top=el("span","project-showcase-top");
@@ -72,7 +77,7 @@ function makeCard(project,index){
   if(iconSource){
     const icon=el("img","project-showcase-lucide");
     icon.src=iconSource;
-    icon.alt="";icon.width=28;icon.height=28;icon.decoding="async";
+    icon.alt="";icon.width=46;icon.height=46;icon.decoding="async";
     marker.append(icon);
   }
   const badge=el("span","project-showcase-badge "+badgeClass,status);
@@ -85,8 +90,8 @@ function makeCard(project,index){
     title.append(el("span","project-showcase-title-line",line));
   });
   title.style.setProperty("--project-title-max-size",120/lines.length/1.04+"px");
-  const action=el("span","project-showcase-action",active?"View project":"In development");
-  if(active){
+  const action=el("span","project-showcase-action","View project");
+  {
     const arrow=document.createElementNS("http://www.w3.org/2000/svg","svg");
     for(const [key,value] of Object.entries({
       viewBox:"0 0 24 24",width:"16",height:"16",fill:"none",
@@ -99,7 +104,7 @@ function makeCard(project,index){
   }
   upper.append(top,action,title);
   content.append(upper);
-  card.append(photo,shade,content);
+  card.append(artwork,regularBoundary,content);
   return card;
 }
 export function mountProjects(host,{onBack,onExitComplete}){

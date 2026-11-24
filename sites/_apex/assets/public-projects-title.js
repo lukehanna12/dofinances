@@ -57,6 +57,9 @@ export function mountProjectTitleSizing(root){
    if(widths.every(w=>w>0)){
     const ratio=projectTitleRatio(lines.map(line=>line.textContent),widths);
     title.style.setProperty("--project-title-ratio",String(ratio));
+    if(title.closest("[data-project-slug]")?.dataset.projectSlug==="terminal-scalars"){
+      root.style.setProperty("--project-terminal-title-ratio",String(ratio));
+    }
    }
   }
  };

@@ -20,6 +20,11 @@ const misses=[];
 const server=createServer((req,res)=>{
   const pathname=new URL(req.url||"/","http://localhost").pathname;
   let target;
+  // Deterministic same-origin artwork fixture for local browser tests.
+  if(pathname.startsWith("/project-artwork/")){
+    res.writeHead(200,{"Content-Type":"image/webp"});
+    res.end(readFileSync(join(apex,"assets/project-art/terminal-scalars-liquid-symmetry.v1.webp")));return;
+  }
   if(pathname==="/login"||pathname==="/login/"||pathname==="/projects"||pathname==="/projects/"||pathname==="/"){
     target=join(apex,"index.html");
   }else{
@@ -838,6 +843,26 @@ try{
     }
   };
   assertCardTitles(await readCardTitles());
+  const regionGeometry=await evaluate(`(()=>{
+    const cards=[...document.querySelectorAll(".public-projects-root .project-showcase-card")];
+    const ref=cards.find(c=>c.dataset.projectSlug==="terminal-scalars");
+    const rr=ref.getBoundingClientRect(),tr=ref.querySelector(".project-showcase-title").getBoundingClientRect();
+    const expected=tr.height+1.9*(rr.bottom-tr.bottom);
+    return {expected,cards:cards.map(c=>{
+      const r=c.getBoundingClientRect(),b=c.querySelector(".project-showcase-regular-boundary").getBoundingClientRect();
+      const a=c.querySelector(".project-showcase-action"),ar=a.getBoundingClientRect();
+      const ir=c.querySelector(".project-showcase-lucide").getBoundingClientRect();
+      return {height:b.height,actionGap:b.top-ar.bottom,icon:ir.width,iconTop:ir.top-r.top,
+       iconLeft:ir.left-r.left,label:a.textContent,arrow:!!a.querySelector("svg")};
+    })};
+  })()`);
+  for(const c of regionGeometry.cards){
+    assert.ok(Math.abs(c.height-regionGeometry.expected)<1.2,JSON.stringify(c));
+    assert.ok(Math.abs(c.actionGap-4)<1.1,JSON.stringify(c));
+    assert.ok(Math.abs(c.icon-45.5)<.6,JSON.stringify(c));
+    assert.ok(Math.abs(c.iconTop-c.iconLeft)<1.1,JSON.stringify(c));
+    assert.equal(c.label,"View project");assert.equal(c.arrow,true);
+  }
   // A late 500ms hitch can be the compositor retiring the animated
   // image layer. Keep the GPU-backed bitmap alive at its exact final scale.
   const photoComposite=await evaluate("(()=>"+

@@ -1,0 +1,41 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {artworkCoverTransform,REGION_FLOATS,ART_LAYERS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-artwork.js";
+import {serveProjectArtwork} from "../edge/project-artwork.mjs";
+import {publicProjectArtworkSource} from "../sites/_apex/assets/public-projects-catalog.js";
+const src=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+test("artwork cover and CSS transform map original image coordinates",()=>{
+ assert.deepEqual(artworkCoverTransform(200,100,100,100),[1,.5,0,.25]);
+ assert.deepEqual(artworkCoverTransform(100,200,100,100),[.5,1,.25,0]);
+ const uv=artworkCoverTransform(100,100,100,100,2,2,10,-10);
+ assert.ok(uv.every((v,i)=>Math.abs(v-[.5,.5,.2,.3][i])<1e-12));
+ assert.equal(REGION_FLOATS,16);assert.equal(ART_LAYERS,16);
+});
+test("same-origin remote source only accepts curated project slugs",async()=>{
+ assert.equal(publicProjectArtworkSource({slug:"colosseum"},0),"/project-artwork/colosseum");
+ assert.equal(publicProjectArtworkSource({slug:"terminal-scalars"},0),"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+ let called=0;
+ const mock=async(url,init)=>{called++;assert.match(url,/^https:\/\//);assert.equal(init.redirect,"manual");
+   return new Response("image",{headers:{"Content-Type":"image/jpeg"}})};
+ const request=path=>new Request("https://dofinances.com"+path);
+ const good=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",mock);
+ assert.equal(good.status,200);assert.equal(await good.text(),"image");
+ assert.equal((await serveProjectArtwork(request("/project-artwork/bogus"),"/project-artwork/bogus",mock)).status,404);
+ assert.equal((await serveProjectArtwork(request("/project-artwork/colosseum?url=x"),"/project-artwork/colosseum",mock)).status,404);
+ assert.equal(called,1);
+ const redirect=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",async()=>new Response(null,{status:302,headers:{Location:"https://example.com/unsafe"}}));
+ assert.equal(redirect.status,502);
+});
+test("region is independently profiled within same GPU instance, and follows Terminal and expansion",()=>{
+ const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-projects.css"),expand=src("sites/_apex/assets/public-projects-expand.js");
+ assert.match(shader,/let split=region.meta.x>0.0/);
+ assert.match(shader,/artSample\(uv,i32\(region.meta.z\)-1/);
+ assert.match(render,/resolveRegularMaterial\(\{width:w,height,scale:dpr/);
+ assert.match(render,/boundary.getBoundingClientRect\(\).height/);
+ assert.match(css,/1.9\*var\(--project-card-inset\)/);
+ assert.match(css,/var\(--project-terminal-title-ratio/);
+ assert.match(css,/var\(--project-regular-progress\)\*10%/);
+ assert.match(expand,/"--project-regular-progress":"1"/);
+ assert.match(css,/width:45.5px;height:45.5px/);
+});

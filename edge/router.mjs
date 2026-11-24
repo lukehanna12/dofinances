@@ -1,5 +1,6 @@
 import {WORKSPACE_WALLPAPERS} from "../sites/_apex/app/assets/workspace-wallpapers.js";
 import {projectApi} from "./project-api.mjs";
+import {serveProjectArtwork} from "./project-artwork.mjs";
 // Host-isolated static assets and D1-free, server-enforced session routing.
 import {parseCookie, sessionCookie, expireCookie, sha256} from "./auth-core.mjs";
 import {verifyColosseumOwnerJwt} from "./colosseum-owner.mjs";
@@ -592,6 +593,8 @@ export async function handleRequest(request,env={}) {
     asset.headers.set("Cache-Control","public, max-age=300, must-revalidate");
     return asset;
   }
+  if(folder==="_apex" && url.pathname.startsWith("/project-artwork/"))
+    return serveProjectArtwork(request,url.pathname);
   if(folder==="_apex" && url.pathname.startsWith("/wallpapers/"))
     return serveWallpaper(request,env,url.pathname);
   if(folder==="_apex" && /^\/(app|dashboard)(\/|$)/.test(url.pathname)) {

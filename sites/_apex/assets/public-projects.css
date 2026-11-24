@@ -58,9 +58,20 @@ body.public-home:has(#public-route-content .public-projects-root){
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);
   align-items:stretch;margin:0;
 }
+@property --project-regular-progress{
+  syntax:"<number>";inherits:true;initial-value:0
+}
 .public-projects-root .project-showcase-card{
   position:relative;isolation:isolate;overflow:hidden;min-width:0;
   container-type:inline-size;--project-card-inset:clamp(12px,1.2vw,16px);
+  --project-regular-progress:0;
+  /* Terminal Scalars: two 1.04em lines, its existing 8px top padding,
+   * the same 120px text-height cap, plus 190% of the card's bottom inset. */
+  --project-regular-normal-height:calc(8px + min(120px,
+    (var(--project-regular-reference-width,100cqw) - var(--project-card-inset))*var(--project-terminal-title-ratio,.13)*2.08)
+    + 1.9*var(--project-card-inset));
+  --project-regular-height:calc((1 - var(--project-regular-progress))*var(--project-regular-normal-height)
+    + var(--project-regular-progress)*10%);
   min-height:clamp(215px,18vw,250px);border:0;border-radius:10px;padding:0;
   display:flex;flex-direction:column;box-sizing:border-box;
   background:#242424;color:#f5f5f5;text-align:left;
@@ -69,6 +80,22 @@ body.public-home:has(#public-route-content .public-projects-root){
   animation-delay:calc(var(--project-first-card-enter-delay,330ms) + min(var(--project-index,0),15)*65ms);
 }
 .public-projects-root .project-showcase-card:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.public-projects-root .project-showcase-artwork,
+.public-projects-root .project-showcase-regular-boundary{
+  position:absolute;inset:0;pointer-events:none
+}
+.public-projects-root .project-showcase-regular-boundary{
+  top:auto;height:var(--project-regular-height);visibility:hidden
+}
+/* The GPU owns the lower optical region; only clip the original DOM art. */
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root .project-showcase-artwork{
+  clip-path:inset(0 0 var(--project-regular-height) 0)
+}
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-photo{
+  opacity:0!important
+}
 .public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
   position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none
 }
@@ -128,10 +155,10 @@ body.public-home:has(#public-route-content .public-projects-root){
   border-radius:50%;font-size:10px;font-weight:700;background:#fff;color:#171717
 }
 .public-projects-root .project-showcase-number--icon{
-  width:28px;height:28px;border-radius:0;background:transparent;color:#fff
+  width:45.5px;height:45.5px;border-radius:0;background:transparent;color:#fff
 }
 .public-projects-root .project-showcase-lucide{
-  display:block;flex:none;width:28px;height:28px;pointer-events:none;
+  display:block;flex:none;width:45.5px;height:45.5px;pointer-events:none;
   filter:brightness(0) invert(1)
 }
 .public-projects-root .project-showcase-badge{
@@ -160,12 +187,23 @@ body.public-home:has(#public-route-content .public-projects-root){
   letter-spacing:inherit
 }
 .public-projects-root .project-showcase-action{
-  display:inline-flex;align-items:center;gap:4px;color:#bdbdbd;
-  font-size:10px;font-weight:500;line-height:1.35;transition:color .3s ease
+  position:absolute;left:var(--project-card-inset);
+  bottom:calc(var(--project-regular-height) + 4px);
+  display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.9);
+  font-size:10px;font-weight:500;line-height:1.35;opacity:0;
+  transition:opacity .5s ease-out
 }
 .public-projects-root .project-showcase-action svg{width:12px;height:12px;transition:transform .2s ease}
-.public-projects-root .project-showcase-card.is-active:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(2px)}
-.public-projects-root .project-showcase-card:is(:hover,:focus-within) .project-showcase-action{color:rgba(255,255,255,.9)}
+.public-projects-root .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-action svg{transform:translateX(2px)}
+.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-action,
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-action{opacity:1}
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-action{opacity:0!important}
+/* Expanded title stays bottom-left; keep the action clear of it. */
+.public-projects-root .project-showcase-card.is-expanded .project-showcase-action{
+  left:auto;right:var(--project-card-inset)
+}
+.public-projects-root .project-showcase-card.is-expanded{--project-regular-progress:1}
 /* Only when the same original GPU pipeline has submitted a valid first frame
  * do we reveal the actual glass and remove the ordinary opaque fallback. */
 body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-projects-back,.project-showcase-card){

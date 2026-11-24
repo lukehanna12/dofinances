@@ -95,3 +95,10 @@ export function publicProjectImage(project,index){
  return PROJECT_CARD_IMAGES[project.slug]||
    "/wallpapers/"+PUBLIC_WALLPAPER_FALLBACKS[index%PUBLIC_WALLPAPER_FALLBACKS.length];
 }
+
+/* GPU image uploads require origin-clean decoded artwork. The remote
+ * entries use a narrow slug-only first-party route, not an arbitrary proxy. */
+export function publicProjectArtworkSource(project,index){
+ const source=publicProjectImage(project,index);
+ return source.startsWith("https://")?"/project-artwork/"+project.slug:source;
+}

@@ -155,6 +155,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.style.left="";
       card.style.width="";
       card.style.height="";
+      card.style.removeProperty("--project-regular-reference-width");
       card.classList.remove("is-expanded");
       card.removeAttribute("data-project-card-dismiss-at");
       card.removeAttribute("data-project-card-restore-at");
@@ -222,6 +223,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.style.left=cssPixels(expandedRect.left-gridRect.left);
     card.style.width=cssPixels(expandedRect.width);
     card.style.height=cssPixels(expandedRect.height);
+    card.style.setProperty("--project-regular-reference-width",cssPixels(selectedRect.width));
     card.classList.add("is-expanded");
     card.setAttribute("aria-expanded","true");
     root.classList.add("has-project-expansion","project-expansion-was-used");
@@ -278,9 +280,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     }
     const selectedAnimation=duration?animate(card,[
       {left:cssPixels(selectedRect.left-gridRect.left),
-       width:cssPixels(selectedRect.width)},
+       width:cssPixels(selectedRect.width),"--project-regular-progress":"0"},
       {left:cssPixels(expandedRect.left-gridRect.left),
-       width:cssPixels(expandedRect.width)}
+       width:cssPixels(expandedRect.width),"--project-regular-progress":"1"}
     ],{duration,easing:SELECTED_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
     // X stays attached to the growing card's actual right edge, then follows
@@ -379,14 +381,15 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const paneStyle=getComputedStyle(current.card);
     const startLeft=Number.parseFloat(paneStyle.left);
     const startWidth=Number.parseFloat(paneStyle.width);
+    const startRegularProgress=Number.parseFloat(paneStyle.getPropertyValue("--project-regular-progress"))||0;
     const xStyle=getComputedStyle(closeButton);
     const startButtonLeft=Number.parseFloat(xStyle.left);
     const startButtonOpacity=Number.parseFloat(xStyle.opacity);
     current.selectedAnimation?.cancel();
     current.buttonAnimation?.cancel();
     const contract=animate(current.card,[
-      {left:cssPixels(startLeft),width:cssPixels(startWidth)},
-      {left:cssPixels(current.initialLeft),width:cssPixels(current.initialWidth)}
+      {left:cssPixels(startLeft),width:cssPixels(startWidth),"--project-regular-progress":String(startRegularProgress)},
+      {left:cssPixels(current.initialLeft),width:cssPixels(current.initialWidth),"--project-regular-progress":"0"}
     ],{duration:EXPAND_MS,easing:SELECTED_EASING});
     const contractButton=animate(closeButton,[
       {left:cssPixels(startButtonLeft),

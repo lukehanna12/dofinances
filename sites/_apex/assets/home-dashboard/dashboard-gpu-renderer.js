@@ -26,6 +26,7 @@ import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
  planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass}
  from "./dashboard-glass-model.js";
+import {REGION_FLOATS,artworkCoverTransform,createGlassArtworkAtlas} from "./dashboard-glass-artwork.js";
 import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularMaterialLanes,validateGlassMaterial}
  from "./dashboard-glass-material.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
@@ -574,6 +575,8 @@ async function initialize(){
   let glyphMaskKey="",glyphMaskDimensions=[1,1];
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
+  let regionData=new Float32Array(0),regionBuffer=null;
+  const artworkAtlas=createGlassArtworkAtlas(device,mipPipeline,()=>requestRender());
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
@@ -707,15 +710,61 @@ async function initialize(){
     audit.materials={regular:regularCount,clear:nodes.length-regularCount,
       scheme,roles,sharedPipeline:true};
   }
+  // A material partition belongs to the original card instance, not an
+  // overlapping pane. Keep its outer silhouette, hit-test, z-order and
+  // dismissal. An independent Regular profile applies below its boundary.
+  function syncGlassRegions(){
+    regionData.fill(0);
+    const panes=authPaneElements(),regions=[];
+    let animating=false;
+    for(let i=0;i<panes.length;i++){
+      const node=panes[i];
+      if(node.dataset.publicProjectGlass!=="card"||node.hidden||!node.offsetWidth)continue;
+      const boundary=node.querySelector(".project-showcase-regular-boundary");
+      if(!boundary)continue;
+      const p=(tileCount+i)*TILE_FLOATS,b=(tileCount+i)*REGION_FLOATS;
+      const w=tileData[p+2]/dpr,h=tileData[p+3]/dpr;
+      const height=Math.min(h,Math.max(0,boundary.getBoundingClientRect().height));
+      if(!(height>0))continue;
+      const profile=resolveRegularMaterial({width:w,height,scale:dpr,scheme:tint.state.scheme});
+      const artwork=artworkAtlas.sync(node);
+      const photo=node.querySelector(".project-showcase-photo");
+      const shade=node.querySelector(".project-showcase-shade");
+      const shadeAlpha=.6*(Number.parseFloat(getComputedStyle(shade).opacity)||0);
+      let opacity=0,layer=0,uv=[1,1,0,0];
+      if(artwork){
+        const style=getComputedStyle(artwork.photo);
+        opacity=Number.parseFloat(style.opacity)||0;
+        layer=artwork.layer+1;
+        const matrix=style.transform==="none"?new DOMMatrixReadOnly():new DOMMatrixReadOnly(style.transform);
+        uv=artworkCoverTransform(w,h,photo.naturalWidth,photo.naturalHeight,
+          Math.abs(matrix.a)||1,Math.abs(matrix.d)||1,matrix.e,matrix.f);
+      }
+      regionData.set([height*dpr,profile.blurWord,layer,opacity,
+        ...regularMaterialLanes(profile),...uv],b);
+      // Region height selects Regular; use the otherwise redundant profile
+      // flag for the independently animated artwork shade alpha.
+      regionData[b+4]=shadeAlpha;
+      regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
+        regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
+        material:"regular",blurWord:profile.blurWord});
+      animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
+    }
+    device.queue.writeBuffer(regionBuffer,0,regionData);
+    if(audit.projectGlass)audit.projectGlass.regions=regions;
+    return animating;
+  }
   function rebindGlassGroups(){
-    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer)return;
+    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer)return;
     const entries=(buffer,source=sceneView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer}},
       {binding:3,resource:{buffer:tintTileBuffer}},
       {binding:4,resource:glyphMaskTexture.createView()},
-      {binding:5,resource:{buffer:materialBuffer}}
+      {binding:5,resource:{buffer:materialBuffer}},
+      {binding:6,resource:{buffer:regionBuffer}},
+      {binding:7,resource:artworkAtlas.view}
     ];
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
@@ -1114,6 +1163,7 @@ async function initialize(){
     tileData=data;
     tintData=new Float32Array(instanceCount*4);
     materialData=new Float32Array(instanceCount*MATERIAL_FLOATS);
+    regionData=new Float32Array(instanceCount*REGION_FLOATS);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -1138,6 +1188,9 @@ async function initialize(){
     materialBuffer=device.createBuffer({size:Math.max(32,materialData.byteLength),
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
     device.queue.writeBuffer(materialBuffer,0,materialData);
+    regionBuffer?.destroy();
+    regionBuffer=device.createBuffer({size:Math.max(64,regionData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(regionBuffer,0,regionData);
     lastTintKey="";
     syncTileTints(true);
     rebindGlassGroups();
@@ -1255,6 +1308,8 @@ async function initialize(){
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
+    const artworkAnimating=syncGlassRegions();
+    if(artworkAnimating)requestRender();
     const animating=interaction.advance(dt,reducedMotion.matches);
     const authHoverAnimating=authHover.advance(authDt,reducedMotion.matches);
     if(instanceCount){
@@ -1369,6 +1424,7 @@ async function initialize(){
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
+    const artworkAnimating=syncGlassRegions();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
     device.queue.writeBuffer(tileBuffer,0,tileData);
@@ -1392,10 +1448,10 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return authAnimating||hoverAnimating;
+    return authAnimating||hoverAnimating||artworkAnimating;
   }
   function dispose(){
-    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();
     glyphMaskTexture.destroy();
     scene?.destroy();compositeScene?.destroy();
     offscreenFrame?.destroy();photo.destroy();
@@ -1529,7 +1585,7 @@ async function initialize(){
   const authObserver=routeOutlet?new MutationObserver(()=>requestRender()):null;
   if(routeOutlet)authObserver.observe(routeOutlet,{
     childList:true,subtree:true,attributes:true,
-    attributeFilter:["style","class","disabled"]
+    attributeFilter:["style","class","disabled","data-project-art-gpu-ready"]
   });
   // Native scroll can be composited ahead of requestAnimationFrame. Submit
   // the glass-only GPU pass immediately inside the real scroll event, using

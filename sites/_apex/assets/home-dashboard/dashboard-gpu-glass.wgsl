@@ -42,6 +42,11 @@ struct Tile {
 // Independent material lanes, never overloaded with a route or delay tag.
 struct MaterialProfile { optics:vec4<f32>, face:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
+// Height, blur word, artwork layer+1, photo alpha; then optics
+// (shade alpha, inner amount, inner height, mip bias), face, UV map.
+struct GlassRegion { meta:vec4<f32>, optics:vec4<f32>, face:vec4<f32>, artUV:vec4<f32> };
+@group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
+@group(0) @binding(7) var artwork: texture_2d_array<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -318,6 +323,24 @@ fn mipSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
   return mix(levelBilinear(uv,lo),levelBilinear(uv,hi),fract(chosen));
 }
 
+// Same explicit bilinear/trilinear interpolation for original artwork.
+fn artLevel(uv:vec2<f32>,layer:i32,level:i32)->vec4<f32>{
+  let dims=vec2<i32>(textureDimensions(artwork,level));
+  let p=clamp(uv*vec2<f32>(dims)-vec2<f32>(0.5),vec2<f32>(0.0),vec2<f32>(dims-vec2<i32>(1)));
+  let o=vec2<i32>(floor(p));let n=min(o+vec2<i32>(1),dims-vec2<i32>(1));let t=fract(p);
+  let a=textureLoad(artwork,o,layer,level);
+  let b=textureLoad(artwork,vec2<i32>(n.x,o.y),layer,level);
+  let c=textureLoad(artwork,vec2<i32>(o.x,n.y),layer,level);
+  let d=textureLoad(artwork,n,layer,level);
+  return mix(mix(a,b,t.x),mix(c,d,t.x),t.y);
+}
+fn artSample(uv:vec2<f32>,layer:i32,lod:f32)->vec4<f32>{
+  let maxLevel=f32(textureNumLevels(artwork)-1u);
+  let chosen=clamp(lod,0.0,maxLevel);
+  let lo=i32(floor(chosen));let hi=min(lo+1,i32(maxLevel));
+  return mix(artLevel(uv,layer,lo),artLevel(uv,layer,hi),fract(chosen));
+}
+
 /* Procedural multi-scale opacity field for dismissal only. Continuous
    interpolation prevents pixel-grid breakup. No native shader is claimed. */
 fn dissolveHash(p:vec2<f32>)->f32{
@@ -367,7 +390,13 @@ fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
-  let profile=materialProfiles[in.tileIndex];
+  var profile=materialProfiles[in.tileIndex];
+  let region=regions[in.tileIndex];
+  let split=region.meta.x>0.0 && in.local.y>=tile.rect.w-region.meta.x;
+  if(split){
+    profile.optics=vec4<f32>(1.0,region.optics.yzw);
+    profile.face=region.face;
+  }
   let regular=profile.optics.x>0.5;
   let authPane=tile.properties.y<0.0;
   let dimensions=tile.rect.zw;
@@ -391,7 +420,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   }else{
     field=mode5SDF(in.local,dimensions,tile.cornerRadii);
   }
-  let signed=field.x;
+  var signed=field.x;
   // AIR lines 30-43: SDF is half, fwidth is half, the denominator is
   // max(fwidth,0xH068E), half division then Float32 +0.5/saturate and
   // final truncation to half. Derivatives' exact G14G rules remain open.
@@ -405,6 +434,12 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
   if(coverage<=0.0&&dismiss<=0.0){discard;}
+  // The Regular region has a straight upper refraction edge but retains
+  // the original outer card coverage, hit geometry and dismissal.
+  if(split){
+    let topDistance=tile.rect.w-region.meta.x-in.local.y;
+    if(topDistance>signed){signed=topDistance;field=vec3<f32>(signed,0.0,-1.0);}
+  }
   // The old geometry_331 family remains unchanged for mosaic squares.
   // Real target-native Clear (25F80/M2) CAFilter scalar inputs for a
   // 58.5pt capsule: innerAmount=-58.5pt, innerHeight=20pt, outer=0.
@@ -507,12 +542,24 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Regular's measured public blur distances are zero and all five
   // blur opacities are one; refraction mixing opacity is zero.
   // The Clear path retains its previous private-diagnostic ramp.
-  let innerLOD=glassLOD(tile.properties.z,
+  let innerLOD=glassLOD(select(tile.properties.z,region.meta.y,split),
     select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
   let outerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+outer),d));
-  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
+  var glass=mix(mipSample(interactiveInnerUV,innerLOD),
                 mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
+  if(split){
+    // Combine the original source and presented CSS photo transform with
+    // the wallpaper BEFORE applying the shared Regular material face.
+    if(region.meta.z>0.0 && region.meta.w>0.0){
+      let displacedLocal=(in.local+(interactiveInnerUV-baseUV)*backdropExtent)/tile.rect.zw;
+      let uv=displacedLocal*region.artUV.xy+region.artUV.zw;
+      let texelsPerPixel=max(region.artUV.x*512.0/tile.rect.z,region.artUV.y*512.0/tile.rect.w);
+      let paint=artSample(uv,i32(region.meta.z)-1,innerLOD+log2(max(texelsPerPixel,0.00001)));
+      glass=vec4<f32>(mix(glass.rgb,paint.rgb,clamp(region.meta.w*paint.a,0.0,1.0)),glass.a);
+    }
+    glass=vec4<f32>(glass.rgb*(1.0-clamp(region.optics.x,0.0,1.0)),glass.a);
+  }
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve source-backed sampled optics and the restrained browser rim.
