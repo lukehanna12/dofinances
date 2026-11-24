@@ -127,17 +127,18 @@ jobs:
           git -C "$RUNNER_TEMP/svgomg" checkout --quiet f925656d40a507c512bf95ee14ad16445a4ad3ed
           python3 - "$RUNNER_TEMP/svgomg" <<'PY'
           from pathlib import Path
-          import re,sys
+          import sys
           root=Path(sys.argv[1])
           html=root/'src/index.html'
           text=html.read_text()
-          text,n=re.subn(r'<script>\\s*if \\(\\(!location\\.port.*?google-analytics\\.com/analytics\\.js.*?</script>',
-            '<script src="config.js" defer></script>',text,flags=re.S)
-          if n!=1: raise SystemExit('SVGOMG analytics removal did not match upstream')
-          # Inline preloader analytics must not run under our strict CSP.
-          text,n=re.subn(r'<script>\\s*document\\.querySelector\\(\\x27\\.preloader\\x27\\).*?</script>',
-            '',text,flags=re.S)
-          if n!=1: raise SystemExit('SVGOMG preloader analytics removal did not match')
+          analytics='    <script>\n      if ((!location.port'
+          preloader="      <script>\n        document.querySelector('.preloader')"
+          if text.count(analytics)!=1 or text.count(preloader)!=1:
+              raise SystemExit('SVGOMG upstream HTML shape changed')
+          for marker,replacement in [(analytics,'<script src="config.js" defer></script>'),(preloader,'')]:
+              begin=text.index(marker)
+              finish=text.index('</script>',begin)+len('</script>')
+              text=text[:begin]+replacement+text[finish:]
           html.write_text(text)
           controller=root/'src/js/page/main-controller.js'
           code=controller.read_text()
@@ -150,7 +151,7 @@ jobs:
           mkdir -p dist/svg-editor
           cp -R "$RUNNER_TEMP/svgomg/build/." dist/svg-editor/
           rm -f dist/svg-editor/sw.js
-          printf 'window.version="1.17.0";window.ga=function(){};\\n' > dist/svg-editor/config.js
+          printf '%s\\n' 'window.version="1.17.0";window.ga=function(){};' > dist/svg-editor/config.js
           cp "$RUNNER_TEMP/svgomg/LICENSE.md" dist/svg-editor/LICENSE.md
           test -s dist/svg-editor/index.html
           test -s dist/svg-editor/js/svgo-worker.js
