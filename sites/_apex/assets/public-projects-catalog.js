@@ -65,20 +65,20 @@ export function publicProjectIconSource(slug){
  return icon?"/assets/project-icons/"+icon+".svg":null;
 }
 export const PROJECT_CARD_IMAGES=Object.freeze({
-  "bootscript":"https://uploads7.wikiart.org/images/frederic-remington/buying-polo-ponies-in-the-west-1905.jpg%21Large.jpg",
+  "bootscript":"/assets/project-art/bootscript-polo-ponies.v1.webp",
   "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
   "chatgpt-chat-save-chrome-extension":"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg",
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
   "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
-  "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
+  "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp",
   "app-caviar":"/assets/project-art/app-caviar-source.v2.webp",
-  "hidden-functions":"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg",
+  "hidden-functions":"/assets/project-art/hidden-functions-piranesi.v1.webp",
   "latexcel":"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg",
   "unicode-plus":"https://d3d00swyhr67nd.cloudfront.net/w1200h1200/collection/NTI/DYP/NTI_DYP_453771-001.jpg",
   "protocol-monitor-pruner":"https://most-famous-paintings.com/media-resize/960/artworks/images-full/76/18/76183ece8e74b1c3404d66a0bc2e70a6.jpg.webp",
   "liquid-plexiglass-26":"https://museum.bucknell.edu/files/2020/07/Warhol_Glasses-scaled.jpg",
-  "ozoning-board":"https://upload.wikimedia.org/wikipedia/commons/a/a9/El_Khasne%2C_Petra_Frederic_Edwin_Church.jpg"
+  "ozoning-board":"/assets/project-art/ozoning-board-el-khasne.v1.webp"
 });
 
 const PUBLIC_WALLPAPER_FALLBACKS=Object.freeze([

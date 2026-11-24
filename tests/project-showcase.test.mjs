@@ -204,9 +204,11 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  for(const [slug,url] of Object.entries(PROJECT_CARD_IMAGES)){
   assert.ok(slugs.has(slug),"Image references unknown project "+slug);
   if(slug==="terminal-scalars"){
-  assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+  assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
+ }else if(["bootscript","hidden-functions","ozoning-board"].includes(slug)){
+  assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".webp"));
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
  const script=read("sites/_apex/app/assets/project-showcase.js");
@@ -228,12 +230,12 @@ test("Assigned Lucide project icons display large, white, and without number cir
 });
 
 test("Terminal Scalars uses the supplied Manfred Mohr artwork as local WebP",()=>{
- const path="sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp";
+ const path="sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp";
  const bytes=readFileSync(new URL("../"+path,import.meta.url));
  assert.equal(bytes.toString("ascii",0,4),"RIFF");
  assert.equal(bytes.toString("ascii",8,12),"WEBP");
- assert.ok(bytes.byteLength>5000&&bytes.byteLength<40000);
- assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+ assert.ok(bytes.byteLength>5000&&bytes.byteLength<200000);
+ assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
 });
 
 test("App Caviar uses the attached local WebP and the requested artworks are assigned by slug",()=>{
@@ -254,7 +256,7 @@ test("App Caviar uses the attached local WebP and the requested artworks are ass
  assert.ok(height>=1750&&height<=1752,"Preserve the original portrait aspect ratio");
  assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v2.webp");
  assert.equal(PROJECT_CARD_IMAGES["latexcel"],"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
- assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg");
+ assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"/assets/project-art/hidden-functions-piranesi.v1.webp");
 });
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
  const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
@@ -368,7 +370,7 @@ test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated ar
  const warhol=PROJECT_CARD_IMAGES["liquid-plexiglass-26"];
  const church=PROJECT_CARD_IMAGES["ozoning-board"];
  assert.equal(warhol,"https://museum.bucknell.edu/files/2020/07/Warhol_Glasses-scaled.jpg");
- assert.equal(church,"https://upload.wikimedia.org/wikipedia/commons/a/a9/El_Khasne%2C_Petra_Frederic_Edwin_Church.jpg");
+ assert.equal(church,"/assets/project-art/ozoning-board-el-khasne.v1.webp");
  assert.ok(!warhol.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens","Liquid Plexiglass now uses the requested Lucide lens icon");
@@ -411,4 +413,20 @@ test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon hand
  assert.match(lens,/<circle cx="12" cy="12" r="10" \/>/);
  assert.match(lens,/<path d="M6 12a6 6 0 016-6" \/>/);
  assert.match(opacity,/<path d="M21 6v13a2 2 0 0 1-2 2H6" \/>/);
+});
+
+test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>{
+ for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",1500,1500,200000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000]]){
+  const url=PROJECT_CARD_IMAGES[slug],bytes=readFileSync(new URL("../sites/_apex"+url,import.meta.url));
+  assert.equal(bytes.toString("ascii",0,4),"RIFF");assert.equal(bytes.toString("ascii",8,12),"WEBP");
+  assert.ok(bytes.length<=maxBytes,slug+" asset budget");
+  let w=0,h=0;
+  for(let p=12;p+8<=bytes.length;){
+   const kind=bytes.toString("ascii",p,p+4),n=bytes.readUInt32LE(p+4),a=p+8;
+   if(kind==="VP8X"&&n>=10){w=bytes.readUIntLE(a+4,3)+1;h=bytes.readUIntLE(a+7,3)+1;break;}
+   if(kind==="VP8 "&&n>=10){w=bytes.readUInt16LE(a+6)&0x3fff;h=bytes.readUInt16LE(a+8)&0x3fff;break;}
+   p=a+n+(n&1);
+  }
+  assert.ok(w>=minW&&h>=minH,slug+" decoded dimensions "+w+"x"+h);
+ }
 });

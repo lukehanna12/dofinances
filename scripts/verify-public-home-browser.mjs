@@ -20,7 +20,7 @@ const server=createServer((req,res)=>{
  const pathname=new URL(req.url||"/","http://127.0.0.1").pathname;
  if(pathname.startsWith("/project-artwork/")){
   res.writeHead(200,{"Content-Type":"image/webp"});
-  res.end(readFileSync(resolve(root,"assets/project-art/terminal-scalars-liquid-symmetry.v1.webp")));return;
+  res.end(readFileSync(resolve(root,"assets/project-art/terminal-scalars-liquid-symmetry.v2.webp")));return;
  }
  // The prebuild Home probe uses a tiny on-demand route stub. The
  // production-built React card is verified separately after Vite runs.

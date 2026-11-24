@@ -15,7 +15,7 @@ test("artwork cover and CSS transform map original image coordinates",()=>{
 });
 test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal(publicProjectArtworkSource({slug:"colosseum"},0),"/project-artwork/colosseum");
- assert.equal(publicProjectArtworkSource({slug:"terminal-scalars"},0),"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
+ assert.equal(publicProjectArtworkSource({slug:"terminal-scalars"},0),"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
  let called=0;
  const mock=async(url,init)=>{called++;assert.match(url,/^https:\/\//);assert.equal(init.redirect,"manual");
    return new Response("image",{headers:{"Content-Type":"image/jpeg"}})};
@@ -25,7 +25,7 @@ test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal((await serveProjectArtwork(request("/project-artwork/bogus"),"/project-artwork/bogus",mock)).status,404);
  assert.equal((await serveProjectArtwork(request("/project-artwork/colosseum?url=x"),"/project-artwork/colosseum",mock)).status,404);
  assert.equal(called,1);
- const alias=await serveProjectArtwork(request("/project-artwork/bootscript"),"/project-artwork/bootscript",async()=>new Response("image",{headers:{"Content-Type":"image/jpg"}}));
+ const alias=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",async()=>new Response("image",{headers:{"Content-Type":"image/jpg"}}));
  assert.equal(alias.status,200);assert.equal(alias.headers.get("Content-Type"),"image/jpeg");
  const redirect=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",async()=>new Response(null,{status:302,headers:{Location:"https://example.com/unsafe"}}));
  assert.equal(redirect.status,502);
