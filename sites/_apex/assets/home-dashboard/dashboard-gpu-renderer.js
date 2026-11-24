@@ -837,6 +837,15 @@ async function initialize(){
         const cardDismissStart=Number.parseFloat(node.dataset.projectCardDismissAt);
         const cardRestoreStart=Number.parseFloat(node.dataset.projectCardRestoreAt);
         const cardRestoreFrom=Number.parseFloat(node.dataset.projectCardRestoreFrom);
+        const cardAppearStart=Number.parseFloat(node.dataset.projectCardAppearAt);
+        const cardDisappearStart=Number.parseFloat(node.dataset.projectCardDisappearAt);
+        const cardDisappearFrom=Number.parseFloat(node.dataset.projectCardDisappearFrom);
+        const opticalColumn=Number.parseInt(node.dataset.projectCardOpticalColumn,10);
+        // Paired outgoing and incoming panes MUST use the same slight
+        // per-column optical jitter; list-index jitter differs after ghosts
+        // are appended and otherwise causes visible reappearance asynchrony.
+        const col=Number.isInteger(opticalColumn)&&opticalColumn>=0&&
+          opticalColumn<=10?opticalColumn:i%11;
         const now=performance.now();
         // A pending restore remains optically invisible until its clock
         // starts; never expose a solid ghost before the X reversal reaches it.
@@ -844,7 +853,6 @@ async function initialize(){
         const dismissing=!restoring&&Number.isFinite(cardDismissStart)&&now>=cardDismissStart;
         const foreground=node.querySelector(".project-showcase-content");
         if(restoring||dismissing){
-          const col=i%11;
           const elapsed=now-(restoring?cardRestoreStart:cardDismissStart);
           const progress=reducedMotion.matches?(restoring?0:1):
             restoring?tileDismissProgress(Math.max(0,
@@ -862,6 +870,27 @@ async function initialize(){
             foreground.style.opacity=String(tileDismissIconOpacity(progress));
             foreground.style.filter=progress>0?
               "blur("+tileDismissBlur(progress).toFixed(3)+"px)":"";
+          }
+        }else if(Number.isFinite(cardAppearStart)||
+                 Number.isFinite(cardDisappearStart)){
+          // Old-row silhouette and next-row live pane are two placements of
+          // ONE card. Their common square-optics clock is complementary:
+          // incoming opacity is precisely 1 minus the outgoing glyph alpha.
+          // WAAPI's boundary clipping still multiplies this for entrance at
+          // the left edge, avoiding both duplicate cards and premature light.
+          const returning=Number.isFinite(cardDisappearStart);
+          const elapsed=now-(returning?cardDisappearStart:cardAppearStart);
+          const progress=reducedMotion.matches?(returning?0:1):
+            returning?tileDismissProgress(Math.max(0,
+              (Number.isFinite(cardDisappearFrom)?cardDisappearFrom:DISMISS_MS)-
+              Math.max(0,elapsed)),0,col):
+              tileDismissProgress(Math.max(0,elapsed),0,col);
+          const appearance=Math.max(0,Math.min(1,
+            1-tileDismissIconOpacity(progress)));
+          tileData[p+18]*=appearance;
+          if(foreground){
+            foreground.style.opacity=appearance.toFixed(5);
+            foreground.style.removeProperty("filter");
           }
         }else if(foreground){
           // The same DOM card is recycled after every cascade. No inline
