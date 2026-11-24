@@ -544,6 +544,13 @@ async function initialize(){
     label:"Explicit 2x2 real GPU mip level",
     layout:"auto",compute:{module:modules[1],entryPoint:"mip2x2"}
   });
+  // Detail textures preserve original aspect and available display detail;
+  // use the same deterministic 2x2 kernel in compact RGBA8 storage.
+  const detailMipModule=device.createShaderModule({label:"Artwork detail mip reduction",
+    code:sources[1].replace("rgba16float,write","rgba8unorm,write")});
+  await compileCheck(detailMipModule,"artwork detail mips");
+  const detailMipPipeline=device.createComputePipeline({layout:"auto",
+    compute:{module:detailMipModule,entryPoint:"mip2x2"}});
   const copyPipeline=device.createRenderPipeline({
     label:"Mip0 scene -> display canvas",
     layout:"auto",
@@ -625,7 +632,12 @@ async function initialize(){
   let regionData=new Float32Array(0),regionBuffer=null;
   let projectRegionScene=null,projectRegionSceneView=null,projectRegionCopyGroup=null,projectRegionCaptureGroup=null,
     projectRegionMips=[],projectRegionWidth=1,projectRegionHeight=1,projectRegionCaptureFrames=0,projectRegionCaptureKey=null;
-  const artworkAtlas=createGlassArtworkAtlas(device,mipPipeline,()=>requestRender());
+  const artworkAtlas=createGlassArtworkAtlas(device,mipPipeline,()=>requestRender(),detailMipPipeline);
+  const detailSampler=device.createSampler({magFilter:"linear",minFilter:"linear",
+    mipmapFilter:"linear",addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"});
+  const emptyDetail=device.createTexture({size:[1,1],format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
+  const emptyDetailView=emptyDetail.createView();
+  let paneDetailViews=[],detailGroups=new Map(),authDetailEntries=null;
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
@@ -763,8 +775,8 @@ async function initialize(){
   // overlapping pane. Keep its outer silhouette, hit-test, z-order and
   // dismissal. An independent Regular profile applies below its boundary.
   function syncGlassRegions(){
-    regionData.fill(0);
-    const panes=authPaneElements(),regions=[];
+    regionData.fill(0);paneDetailViews=[];
+    const panes=authPaneElements(),regions=[],usedDetails=new Set();
     let animating=false;
     for(let i=0;i<panes.length;i++){
       const node=panes[i];
@@ -777,8 +789,11 @@ async function initialize(){
       if(!(height>0))continue;
       // Independent dark, inactive Clear profile for the title-height band.
       const profile=resolveInactiveClearRegion({width:w,height});
-      const artwork=artworkAtlas.sync(node);
       const photo=node.querySelector(".project-showcase-photo");
+      const needsDetail=!authUsesCompositor()&&
+        (node.matches(":hover,:focus-visible,:focus-within,.is-expanded")||
+          Number.parseFloat(getComputedStyle(photo).opacity)>0);
+      const artwork=artworkAtlas.sync(node,needsDetail,!authUsesCompositor());
       const shade=node.querySelector(".project-showcase-shade");
       const shadeAlpha=.6*(Number.parseFloat(getComputedStyle(shade).opacity)||0);
       let opacity=0,layer=0,uv=[1,1,0,0];
@@ -786,6 +801,9 @@ async function initialize(){
         const style=getComputedStyle(artwork.photo);
         opacity=Number.parseFloat(style.opacity)||0;
         layer=artwork.layer+1;
+        if(artwork.detailView&&opacity>0){
+          paneDetailViews[i]=artwork.detailView;usedDetails.add(artwork.detailView);
+        }
         const matrix=style.transform==="none"?new DOMMatrixReadOnly():new DOMMatrixReadOnly(style.transform);
         uv=artworkCoverTransform(w,h,photo.naturalWidth,photo.naturalHeight,
           Math.abs(matrix.a)||1,Math.abs(matrix.d)||1,matrix.e,matrix.f);
@@ -796,6 +814,7 @@ async function initialize(){
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
+        artworkDetail:artwork?.detailSize??null,artworkPresentation:"same-fragment",
         canvasLocalTop:tileData[p+1]/dpr,canvasLocalLeft:tileData[p]/dpr,
         canvasLocalBandTop:(tileData[p+1]+tileData[p+3])/dpr-height,
         material:profile.material,scheme:profile.scheme,interactive:profile.interactive,
@@ -803,6 +822,8 @@ async function initialize(){
         backdrop:"raw-wallpaper-and-artwork-before-glass",clearUnderlay:false});
       animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
     }
+    // Evict only unused detail sources; the lower refraction atlas is retained.
+    for(const view of artworkAtlas.trimDetails(usedDetails))detailGroups.delete(view);
     device.queue.writeBuffer(regionBuffer,0,regionData);
     if(audit.projectGlass){
       audit.projectGlass.regions=regions;
@@ -817,7 +838,8 @@ async function initialize(){
   }
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!projectRegionSceneView)return;
-    const entries=(buffer,source=sceneView)=>[
+    detailGroups.clear();
+    const entries=(buffer,source=sceneView,detail=emptyDetailView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer}},
@@ -827,8 +849,10 @@ async function initialize(){
       {binding:6,resource:{buffer:regionBuffer}},
       // Source-only artwork binding 7 belongs exclusively to the capture
       // pipeline; the glass pipeline consumes only the composed capture.
-      {binding:8,resource:projectRegionSceneView}
+      {binding:8,resource:projectRegionSceneView},
+      {binding:9,resource:detail},{binding:10,resource:detailSampler}
     ];
+    authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     projectRegionCaptureGroup=device.createBindGroup({layout:projectRegionCapturePipeline.getBindGroupLayout(0),entries:[
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer:authGlobalsBuffer}},
@@ -851,6 +875,27 @@ async function initialize(){
       layout:glassPipeline.getBindGroupLayout(0),
       entries:entries(globalsBuffer,compositeSceneView)
     }):null;
+  }
+  function drawRoutePanes(pass){
+    // Preserve pane z-order and batch consecutive non-artwork instances.
+    // Every exposed card binds its own original-aspect texture to the SAME
+    // glass pipeline. No extra art pass or separately rasterized clip.
+    let first=0;
+    while(first<AUTH_PANE_CAPACITY){
+      const view=paneDetailViews[first];
+      let end=first+1;
+      while(end<AUTH_PANE_CAPACITY&&paneDetailViews[end]===view)end++;
+      let group=authGlassGroup;
+      if(view){
+        group=detailGroups.get(view);
+        if(!group){
+          group=device.createBindGroup({layout:glassPipeline.getBindGroupLayout(0),entries:authDetailEntries(view)});
+          detailGroups.set(view,group);
+        }
+      }
+      pass.setBindGroup(0,group);pass.draw(6,end-first,0,tileCount+first);
+      first=end;
+    }
   }
   function syncProjectTitleMask(panes){
     const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
@@ -1502,7 +1547,8 @@ async function initialize(){
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
       });
       authPass.setPipeline(glassPipeline);authPass.setBindGroup(0,authGlassGroup);
-      authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
+      if(audit.projectGlass)drawRoutePanes(authPass);
+      else authPass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
       authPass.end();
     }
     device.queue.submit([encoder.finish()]);
@@ -1553,7 +1599,8 @@ async function initialize(){
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
     });
     pass.setPipeline(glassPipeline);pass.setBindGroup(0,authGlassGroup);
-    pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
+    if(audit.projectGlass)drawRoutePanes(pass);
+    else pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);
     pass.end();
     device.queue.submit([encoder.finish()]);
     audit.frameCount++;
@@ -1571,7 +1618,7 @@ async function initialize(){
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();
-    glyphMaskTexture.destroy();
+    glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();

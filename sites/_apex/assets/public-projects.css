@@ -93,10 +93,12 @@ body.public-home:has(#public-route-content .public-projects-root){
 .public-projects-root .project-showcase-regular-boundary{
   top:auto;height:var(--project-regular-height);visibility:hidden
 }
-/* The GPU owns the lower optical region; only clip the original DOM art. */
+/* The GPU owns BOTH sides of the material boundary. The DOM artwork
+ * remains the original decode/animation source; never rasterize a second
+ * clip edge over the GPU's independently sampled animated geometry. */
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
  .public-projects-root .project-showcase-artwork{
-  clip-path:inset(0 0 var(--project-regular-height) 0)
+  visibility:hidden
 }
 .public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
   position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none

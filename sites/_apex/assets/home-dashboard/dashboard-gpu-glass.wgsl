@@ -50,6 +50,10 @@ struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:
 // Half-resolution raw project backdrop, built BEFORE any glass draw. It never
 // contains a Clear or Regular rendered surface.
 @group(0) @binding(8) var projectRegionBackdrop: texture_2d<f32>;
+// One native-aspect detail source per exposed pane. The upper artwork and
+// lower glass are resolved in the SAME fragment, never two clipped layers.
+@group(0) @binding(9) var projectArtworkDetail: texture_2d<f32>;
+@group(0) @binding(10) var projectArtworkSampler: sampler;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -677,6 +681,20 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
     color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
+  }
+  // The DOM image is a decode/animation source, not a second visible layer.
+  // Preserve its exact cover/zoom, opacity and black shade above the boundary.
+  // Below the boundary, the original raw-artwork refraction remains intact.
+  if(region.params.x>0.0 && !split){
+    let uv=(in.local/max(dimensions,vec2<f32>(1.0)))*region.artUV.xy+region.artUV.zw;
+    if(region.params.z>0.0 && region.params.w>0.0){
+      let texels=vec2<f32>(textureDimensions(projectArtworkDetail,0));
+      let footprint=abs(region.artUV.xy)*texels/max(dimensions,vec2<f32>(1.0));
+      let lod=log2(max(1.0,max(footprint.x,footprint.y)));
+      let paint=textureSampleLevel(projectArtworkDetail,projectArtworkSampler,uv,lod);
+      color=mix(color,paint.rgb,clamp(paint.a*region.params.w,0.0,1.0));
+    }
+    color*=1.0-clamp(region.optics.x,0.0,1.0);
   }
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.

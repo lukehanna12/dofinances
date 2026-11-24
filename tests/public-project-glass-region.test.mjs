@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {artworkCoverTransform,REGION_FLOATS,ART_LAYERS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-artwork.js";
+import {artworkCoverTransform,artworkDetailSize,REGION_FLOATS,ART_LAYERS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-artwork.js";
 import {resolveInactiveClearRegion} from "../sites/_apex/assets/home-dashboard/dashboard-glass-material.js";
 import {serveProjectArtwork} from "../edge/project-artwork.mjs";
 import {publicProjectArtworkSource} from "../sites/_apex/assets/public-projects-catalog.js";
@@ -92,4 +92,20 @@ test("Internal artwork partition refracts without a synthetic reflective rim",()
  assert.match(fragment,/let inner=refractionEnvelope\(signed,innerAmount,innerInvHeight\)/);
  assert.match(fragment,/let edge=clamp\(rim\*0\.28,0\.0,0\.28\)/);
  assert.match(fragment,/let signedRatio=nativeHalf1\(-signed\/nativeWidth\)/);
+});
+
+test("Artwork and lower glass have one fragment-owned material boundary",()=>{
+ const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
+ const render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js");
+ const css=src("sites/_apex/assets/public-projects.css");
+ assert.match(shader,/if\(region.params.x>0.0 && !split\)/);
+ assert.match(shader,/textureSampleLevel\(projectArtworkDetail,projectArtworkSampler,uv,lod\)/);
+ assert.match(shader,/color=mix\(color,paint.rgb,clamp\(paint.a\*region.params.w/);
+ assert.match(css,/\.public-projects-root \.project-showcase-artwork\{\s*visibility:hidden/);
+ assert.doesNotMatch(css,/clip-path:inset\(0 0 var\(--project-regular-height\)/);
+ assert.match(render,/function drawRoutePanes\(pass\)/);
+ assert.match(render,/artworkPresentation:"same-fragment"/);
+ assert.deepEqual(artworkDetailSize(1600,1200),[1600,1200]);
+ const [w,h]=artworkDetailSize(8000,4000);
+ assert.ok(w<=4096&&w*h<=8*1024*1024&&Math.abs(w/h-2)<.002);
 });
