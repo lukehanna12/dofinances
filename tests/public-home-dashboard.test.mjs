@@ -79,7 +79,7 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   // One instanced geometry shader and one shared SDF/LOD stage for all
   // tile shapes; only the actual DOM corner radii select the silhouette.
   assert.match(shader,/else if\(tile\.properties\.w==4\.0\)\{\s*field=mode4SDF\(/);
-  assert.match(shader,/let d=min\(dimensions\.x,dimensions\.y\)/);
+  assert.match(shader,/let d=min\(dimensions\.x,select\(dimensions\.y,region\.params\.x,split\)\)/);
   assert.match(shader,/let clearD=d\/pointScale;/);
   assert.match(shader,/let clearInnerAmount=max\(-60\.0,-clearD\)\*pointScale;/);
   assert.match(shader,/let clearInnerHeight=min\(20\.0,0\.36\*clearD\)\*pointScale;/);
