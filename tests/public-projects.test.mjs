@@ -42,12 +42,14 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
       "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg");
   assert.equal(publicProjectIconSource("__unknown__"),null);
 });
-test("four supplied project SVGs are identical across public and authenticated views",async()=>{
+test("six supplied project SVGs are identical across public and authenticated views",async()=>{
   const assigned=[
     ["terminal-scalars","terminal-scalars.v2",12],
     ["translucence-lab","lightwork.v3",6],
     ["apple-adobe-fx","apple-adobe-fx.v2",6],
-    ["ozoning-board","treehouse-ozoning.v4",6]
+    ["ozoning-board","treehouse-ozoning.v4",6],
+    ["unicode-plus","unicode-plus.v2",10],
+    ["protocol-monitor-pruner","protocol-monitor-pruner.v2",6]
   ];
   for(const [slug,name,pathCount] of assigned){
     assert.equal(PUBLIC_ICONS[slug],name);

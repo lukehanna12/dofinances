@@ -182,12 +182,12 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "github-readme-chrome-extension": "file-pen",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "terminal-scalars.v2",
- "unicode-plus": "square-radical",
+ "unicode-plus": "unicode-plus.v2",
  "liquid-plexiglass-26": "lens",
  "3d-liquid-glass-26-swift-package": "move-3d",
  "apple-hig-reader": "apple-higs-reader.v4",
  "apple-adobe-fx": "apple-adobe-fx.v2",
- "protocol-monitor-pruner": "funnel-code",
+ "protocol-monitor-pruner": "protocol-monitor-pruner.v2",
  "app-caviar": "opacity",
  "ozoning-board": "treehouse-ozoning.v4",
  "hidden-functions": "hidden-functions",
@@ -283,15 +283,13 @@ test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()
  assert.ok(js.includes('icon.width=28;icon.height=28'));
 });
 
-test("Protocol Monitor Pruner uses the approved white funnel-code icon with a genuine rim gap",()=>{
- assert.equal(PROJECT_CARD_ICONS["protocol-monitor-pruner"],"funnel-code");
- const svg=read("sites/_apex/app/assets/project-icons/funnel-code.svg");
- assert.match(svg,/viewBox="0 0 24 24"/);
- assert.match(svg,/stroke="#fff" stroke-width="2"/);
- assert.ok(svg.includes('M2.75 5.25h2.65m13.2 0h2.65'),"Funnel rim consists of two separated segments");
- assert.ok(svg.includes('m10.4 3.33-1.92 1.92 1.92 1.92m3.2-3.84 1.92 1.92-1.92 1.92'),"Code chevrons occupy the cutout");
- const css=read("sites/_apex/app/assets/project-showcase.css");
- assert.match(css,/filter:brightness\(0\) invert\(1\)/);
+test("Unicode Plus and Protocol Monitor Pruner use the exact supplied SVG geometry",()=>{
+ for(const [slug,name,geometry] of [["unicode-plus","unicode-plus.v2","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M10.667 5.5V9\" />\n  <path d=\"M15.5 12.5v6H19\" />\n  <path d=\"M18.5 5.5v10\" />\n  <path d=\"M2 4a2 2 0 012-2h16a2 2 0 012 2v16a2 2 0 01-2 2H4a2 2 0 01-1.936-1.5z\" />\n  <path d=\"M2.5 13H5\" />\n  <path d=\"M2.5 15.75H5\" />\n  <path d=\"M2.5 18.5H5\" />\n  <path d=\"M3.5 5.5H4a1 1 0 011 1V8a1 1 0 01-1 1h-.5\" />\n  <path d=\"M8 5.5v13\" />\n  <path d=\"m8.25 13 2 3 2-3v5.5\" />\n  <rect x=\"13.333\" y=\"5.5\" width=\"2.5\" height=\"3.5\" ry=\"1\" />\n</svg>\n"],["protocol-monitor-pruner","protocol-monitor-pruner.v2","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M1 13.5 3.5 17v3.015l1 .485V17L8 13.5z\" />\n  <path d=\"M15.5 12H11\" />\n  <path d=\"M15.5 8h-5\" />\n  <path d=\"M19.5 17V5a2 2 0 00-2-2h-13\" />\n  <path d=\"M6.5 11V5a2 2 0 10-4 0v2a1 1 0 001 1h3\" />\n  <path d=\"M9 21h12a2 2 0 002-2v-1a1 1 0 00-1-1H12a1 1 0 00-1 1v1a2 2 0 11-4 0\" />\n</svg>\n"]]){
+  assert.equal(PROJECT_CARD_ICONS[slug],name);
+  assert.equal(read("sites/_apex/app/assets/project-icons/"+name+".svg"),geometry);
+  assert.equal(read("sites/_apex/assets/project-icons/"+name+".svg"),geometry);
+ }
+ assert.match(read("sites/_apex/app/assets/project-showcase.css"),/filter:brightness\(0\) invert\(1\)/);
 });
 
 test("Ozoning treehouse release uses a new asset path and a refreshed module chain",()=>{

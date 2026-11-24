@@ -32,3 +32,7 @@
 The supplied SVG paths are preserved verbatim in four versioned assets: `terminal-scalars.v2.svg`, `lightwork.v2.svg`, `apple-adobe-fx.v2.svg`, and `treehouse-ozoning.v4.svg`. Public Home and Projects continue to resolve one slug-to-icon map in `sites/_apex/assets/public-projects-catalog.js`; the authenticated Projects catalog mirrors those assignments. Both asset trees contain identical SVG geometry. The Home filter displays black, and the Projects filter displays white. Older icons remain available for compatibility.
 
 - Lightwork's revised simplified icon is `lightwork.v3.svg`, preserving exactly the six user-supplied path elements. `lightwork.v2.svg` remains for backwards compatibility; both public surfaces and the authenticated Projects view select v3.
+
+## Project icon updates (2026-11-24)
+
+Unicode Plus and Protocol Monitor Pruner now select `unicode-plus.v2.svg` and `protocol-monitor-pruner.v2.svg` respectively, with the supplied SVG geometry preserved verbatim in the public and authenticated asset trees. The old square-radical and funnel-code files remain for compatibility. The shared public catalog also supplies the homepage mosaic; existing monochrome filters and icon sizes are unchanged.
