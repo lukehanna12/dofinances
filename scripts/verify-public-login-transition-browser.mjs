@@ -798,7 +798,7 @@ try{
     "headingTop:root.querySelector('.public-projects-title').getBoundingClientRect().top,"+
     "headingBottom:root.querySelector('.public-projects-title').getBoundingClientRect().bottom,"+
     "titleSize:parseFloat(getComputedStyle(root.querySelector('.public-projects-title')).fontSize),"+
-    "tools:[...root.querySelector('.public-projects-toolbar').children].map(node=>({x:node.getBoundingClientRect().x,w:node.getBoundingClientRect().width,h:node.getBoundingClientRect().height})),"+
+    "tools:[...root.querySelector('.public-projects-toolbar').children].map(node=>({x:node.getBoundingClientRect().x,top:node.getBoundingClientRect().top,w:node.getBoundingClientRect().width,h:node.getBoundingClientRect().height})),"+
     "github:(()=>{const a=root.querySelector('.public-projects-github-button');return {href:a.href,target:a.target,rel:a.rel}})(),"+
     "gridTop:root.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
     "shell:!!document.querySelector('#cta6-mosaic'),"+
@@ -947,11 +947,12 @@ try{
   assert.equal(projectState.allButtons,true);
   assert.equal(projectState.firstImageLazy,true);
   assert.equal(projectState.shell,true);
-  assert.ok(Math.abs(projectState.titleSize-42)<1,
-    "Projects title is 50% larger than its prior 28px desktop size");
+  assert.ok(Math.abs(projectState.titleSize-84)<1,
+    "Projects title doubles the previous 42px desktop size");
   assert.equal(projectState.tools.length,3,"Search, filter and GitHub are three equal chips");
   for(const tool of projectState.tools){
     assert.equal(tool.w,40);assert.equal(tool.h,40);
+    assert.ok(Math.abs(tool.top-projectState.headingTop)<1,"Projects title and toolbar share the same top edge");
   }
   assert.ok(Math.abs((projectState.tools[1].x-projectState.tools[0].x)-
     (projectState.tools[2].x-projectState.tools[1].x))<1,
