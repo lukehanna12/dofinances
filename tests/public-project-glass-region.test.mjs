@@ -56,7 +56,7 @@ test("region is independently profiled within same GPU instance, and follows eac
  assert.match(shader,/let darkFace=split \|\| state.tintMeta.y>0.5/);
  assert.match(shader,/let hover=select\(clamp\(tile.interaction.x,0.0,1.0\),0.0,split\|\|dropdown\)/);
  assert.match(shader,/let pressed=select\(clamp\(tile.interaction.y,0.0,1.0\),0.0,split\|\|dropdown\)/);
- assert.match(shader,/if\(localTint.w>0.0 && !split && !dropdown\)/);
+ assert.match(shader,/if\(localTint.w>0.0 && !split && !dropdown && !clockText\)/);
  const capture=render.slice(render.indexOf("function renderProjectRegionCapture("),render.indexOf("function paintTrack("));
  assert.match(capture,/pass.setPipeline\(compositeBackdropPipeline\);pass.setBindGroup\(0,projectRegionCopyGroup\)/);
  assert.match(capture,/pass.setPipeline\(projectRegionCapturePipeline\)/);

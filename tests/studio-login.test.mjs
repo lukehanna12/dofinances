@@ -587,7 +587,7 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
     load("../src/styles.css"),
     load("../sites/_apex/assets/public-home.css")
   ]);
-  assert.match(shader,/if\(authPane && state\.tintMeta\.z>0\.5 && !dropdown\)/);
+  assert.match(shader,/if\(authPane && state\.tintMeta\.z>0\.5 && !dropdown && !clockText\)/);
   assert.match(shader,/var tintStrength=select\(0\.25,0\.60,authPane\)/,
     "WGSL must use mutable var for per-role film strength, not let");
   assert.doesNotMatch(shader,/let tintStrength=select/,
