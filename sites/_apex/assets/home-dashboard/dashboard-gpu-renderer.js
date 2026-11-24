@@ -23,7 +23,7 @@ import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
 import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
- planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass}
+ planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass,glassEntrance}
  from "./dashboard-glass-model.js";
 import {REGION_FLOATS,artworkCoverTransform,artworkCSSAlignment,createGlassArtworkAtlas} from "./dashboard-glass-artwork.js";
 import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularMaterialLanes,validateGlassMaterial,resolveInactiveClearRegion}
@@ -207,7 +207,9 @@ const audit={
 Object.defineProperty(window,"__dashboardWebGPU",{
   configurable:true,get:()=>Object.freeze({...audit,errors:[...audit.errors]})
 });
-const start=performance.now();
+// Start the entrance only after the first GPU frame has actually completed.
+let introStart=null;
+const introActive=()=>introStart!==null&&!reducedMotion.matches&&performance.now()-introStart<900;
 const pointer={x:-1e6,y:-1e6,enabled:0};
 let stopped=false,raf=0,engine=null,scenePending=false;
 let pointerPressFramePending=false;
@@ -295,7 +297,7 @@ function requestRender(){
       (!authUsesCompositor()&&performance.now()<authScrollRefreshUntil)||
       (dismissStart!==null&&performance.now()-dismissStart<DISMISS_MS+90)||
       (restoreStart!==null&&performance.now()-restoreStart<DISMISS_MS+90)||
-      performance.now()-start<1250))
+      introActive()))
       requestRender();
   });
 }
@@ -325,7 +327,7 @@ async function fallback(reason){
   // The fallback is the EXISTING earlier SVG glass, not a fake GPU result.
   try{await import("./dashboard-optics.js")}catch(error){
     audit.errors.push("SVG fallback: "+String(error));
-  }
+  }finally{if(root)root.dataset.glassStartup="fallback";}
 }
 function compileCheck(module,label){
   return module.getCompilationInfo().then(info=>{
@@ -416,13 +418,36 @@ async function initialize(){
   if(!root)return;
   if(root)root.dataset.gpuPhase="request-adapter";
   if(!navigator.gpu)throw new Error("WebGPU API not available");
-  const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});
-  if(!adapter)throw new Error("No WebGPU adapter available");
-  if(root)root.dataset.gpuPhase="request-device";
-  const nativeF16=adapter.features.has("shader-f16");
-  const device=await adapter.requestDevice({
-    requiredFeatures:nativeF16?["shader-f16"]:[]
+  const base="/assets/home-dashboard/";
+  const url=base+"dashboard-cloud-veiled-colorful-fields.avif";
+  // Start independent cold-cache I/O and decoding before requesting the GPU.
+  const img=new Image();
+  img.decoding="async";
+  const ready=new Promise((resolve,reject)=>{
+    img.onload=resolve;
+    img.onerror=()=>reject(new Error("Backdrop image load failed"));
   });
+  img.src=url;
+  const sourcesReady=Promise.all([
+    "dashboard-gpu-scene.wgsl",
+    "dashboard-gpu-mipmap.wgsl",
+    "dashboard-gpu-glass.wgsl"
+  ].map(async name=>{
+    const r=await fetch(base+name);
+    if(!r.ok)throw new Error(name+" HTTP "+r.status);
+    return r.text();
+  }));
+  // Decode canonical SVGs before entry, so a late icon cannot pop in.
+  const iconsReady=Promise.allSettled([...root.querySelectorAll("img.cta6-icon")].map(icon=>icon.decode()));
+  const deviceReady=(async()=>{
+    const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"});
+    if(!adapter)throw new Error("No WebGPU adapter available");
+    root.dataset.gpuPhase="request-device";
+    const nativeF16=adapter.features.has("shader-f16");
+    const device=await adapter.requestDevice({requiredFeatures:nativeF16?["shader-f16"]:[]});
+    return {device,nativeF16};
+  })();
+  const [{device,nativeF16},,sources]=await Promise.all([deviceReady,ready,sourcesReady]);
   audit.nativeHalfConversion=nativeF16?"shader-f16 at selected AIR half arithmetic/conversion sites":
     "f32 fallback; native LPH half conversion not matched";
   if(root)root.dataset.gpuPhase="device-ready";
@@ -442,18 +467,6 @@ async function initialize(){
   authCanvas.id="dashboard-auth-glass-scene";
   authCanvas.setAttribute("aria-hidden","true");
   routeOutlet?.insertBefore(authCanvas,routeMount||routeOutlet.firstChild);
-  const url="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif";
-  // HTMLImageElement onload works without a CPU-side Blob/ImageBitmap
-  // re-encode. The GPU still owns all downstream scene/mip operations.
-  if(root)root.dataset.gpuPhase="load-scene-image";
-  const img=new Image();
-  img.decoding="sync";
-  const ready=new Promise((resolve,reject)=>{
-    img.onload=resolve;
-    img.onerror=()=>reject(new Error("Backdrop image load failed"));
-  });
-  img.src=url;
-  await ready;
   const photoWidth=img.naturalWidth,photoHeight=img.naturalHeight;
   if(!photoWidth||!photoHeight)throw new Error("Empty decoded backdrop");
   // The untouched Colosseum original is decoded at its intrinsic size.
@@ -516,16 +529,6 @@ async function initialize(){
     }
   }
 
-  const base="/assets/home-dashboard/";
-  const sources=await Promise.all([
-    "dashboard-gpu-scene.wgsl",
-    "dashboard-gpu-mipmap.wgsl",
-    "dashboard-gpu-glass.wgsl"
-  ].map(async name=>{
-    const r=await fetch(base+name);
-    if(!r.ok)throw new Error(name+" HTTP "+r.status);
-    return r.text();
-  }));
   if(root)root.dataset.gpuPhase="compile-wgsl";
   sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replaceAll(
     "__ORACLE_HALF_BODY__",
@@ -686,7 +689,8 @@ async function initialize(){
   function writeUniform(){
     uniform[0]=physicalWidth;
     uniform[1]=physicalHeight;
-    uniform[2]=(performance.now()-start)/1000;
+    // The same frame clock drives the GPU quad and authored icon.
+    uniform[2]=reducedMotion.matches?1:introStart===null?0:Math.min(1,(performance.now()-introStart)/1000);
     uniform[3]=dpr;
     const fit=coverUVScale(physicalWidth,physicalHeight,photoWidth,photoHeight);
     uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=0;
@@ -909,12 +913,7 @@ async function initialize(){
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
     routeLayerEntries=(buffer,source,detail)=>entries(buffer,source,detail);
-    projectRegionCaptureGroup=device.createBindGroup({layout:projectRegionCapturePipeline.getBindGroupLayout(0),entries:[
-      {binding:1,resource:{buffer:tileBuffer}},
-      {binding:2,resource:{buffer:authGlobalsBuffer}},
-      {binding:6,resource:{buffer:regionBuffer}},
-      {binding:7,resource:artworkAtlas.view}
-    ]});
+    projectRegionCaptureGroup=null; // bind only when a region actually renders
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
     });
@@ -976,6 +975,18 @@ async function initialize(){
     drawRouteLayer(pass,0,underlay);
     if(!underlay)for(const layer of routeActiveLayers)drawRouteLayer(pass,layer,false);
   }
+  function ensureCompositeScene(){
+    if(compositeScene)return;
+    compositeScene=rgba16Texture(device,physicalWidth,physicalHeight);
+    compositeSceneView=compositeScene.createView();
+    compositeMips=[];
+    for(let level=1;level<compositeScene.mipLevelCount;level++)compositeMips.push(device.createBindGroup({
+      layout:mipPipeline.getBindGroupLayout(0),entries:[
+        {binding:0,resource:compositeScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
+        {binding:1,resource:compositeScene.createView({baseMipLevel:level,mipLevelCount:1})}
+      ]}));
+    rebindGlassGroups();
+  }
   function mipComposite(encoder,texture,groups){
     for(let level=1;level<texture.mipLevelCount;level++){
       const mip=encoder.beginComputePass({label:"Completed authored lower-layer mip "+level});
@@ -986,7 +997,9 @@ async function initialize(){
   }
   function renderRouteDropdownBackdrop(encoder){
     routeLayerSources.clear();
-    if(!routeActiveLayers.length||!compositeScene||!routeMenuGroup)return;
+    if(!routeActiveLayers.length)return;
+    ensureCompositeScene();
+    if(!routeMenuGroup)return;
     const u=new Float32Array(authUniform);
     u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=0;
     device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
@@ -1319,10 +1332,9 @@ async function initialize(){
       }
       scene=rgba16Texture(device,w,h);
       sceneView=scene.createView();
-      // Maintain a distinct, true GPU mip chain for the live mosaic
-      // backdrop. Its source is built only when a capsule exposes glass.
-      compositeScene=rgba16Texture(device,w,h);
-      compositeSceneView=compositeScene.createView();
+      // Allocate the full-resolution secondary scene only when an upper
+      // glass layer actually samples it. Preserve its format and every mip.
+      compositeScene=null;compositeSceneView=null;homeCapsuleGroup=null;routeMenuGroup=null;
       // Clear uses a half-resolution raw base and its own mip chain.
       // Never sample the glass-composited Home scene.
       const halfBase=Math.min(1,scene.mipLevelCount-1);
@@ -1355,15 +1367,6 @@ async function initialize(){
             {binding:0,resource:scene.createView({
               baseMipLevel:level-1,mipLevelCount:1})},
             {binding:1,resource:scene.createView({
-              baseMipLevel:level,mipLevelCount:1})}
-          ]
-        }));
-        compositeMips.push(device.createBindGroup({
-          layout:mipPipeline.getBindGroupLayout(0),
-          entries:[
-            {binding:0,resource:compositeScene.createView({
-              baseMipLevel:level-1,mipLevelCount:1})},
-            {binding:1,resource:compositeScene.createView({
               baseMipLevel:level,mipLevelCount:1})}
           ]
         }));
@@ -1470,7 +1473,13 @@ async function initialize(){
     audit.sceneBuilds++;
   }
   function renderProjectRegionCapture(encoder){
-    if(!audit.projectGlass?.regions?.length||!projectRegionScene||!projectRegionCaptureGroup)return;
+    if(!audit.projectGlass?.regions?.length||!projectRegionScene)return;
+    if(!projectRegionCaptureGroup)projectRegionCaptureGroup=device.createBindGroup({layout:projectRegionCapturePipeline.getBindGroupLayout(0),entries:[
+      {binding:1,resource:{buffer:tileBuffer}},
+      {binding:2,resource:{buffer:authGlobalsBuffer}},
+      {binding:6,resource:{buffer:regionBuffer}},
+      {binding:7,resource:artworkAtlas.view}
+    ]});
     // Static wallpaper with no exposed art is identical across all scroll
     // positions. Rebuild only when source geometry/opacity actually changes.
     const visibleSources=[];
@@ -1517,6 +1526,7 @@ async function initialize(){
       const dissolving=elapsedDismiss<0?0:
         tileDismissProgress(elapsedDismiss,trackRows[i],trackColumns[i]);
       const p=i*TILE_FLOATS;
+      const intro=glassEntrance(uniform[2],tileData[p+5]);
       const drift=tileDismissDrift(dissolving,trackRows[i],trackColumns[i],
         baseTileX[i],tileData[p+2],physicalWidth,dpr);
       const shrink=tileDismissScale(dissolving);
@@ -1537,7 +1547,7 @@ async function initialize(){
       // side-edge + oval alpha, evaluated at its current scene position.
       trackTiles[i].style.transform="translate3d("+drift.x.toFixed(3)+"px,"+
         (dy+drift.y).toFixed(3)+"px,0) scale("+
-        shrink.x.toFixed(5)+","+shrink.y.toFixed(5)+")";
+        (shrink.x*intro.scale).toFixed(5)+","+(shrink.y*intro.scale).toFixed(5)+")";
       trackTiles[i].style.opacity=(combinedOpacity*
         tileDismissIconOpacity(dissolving)).toFixed(5);
       // The DOM icon follows its own refracting square's brief local
@@ -1552,7 +1562,7 @@ async function initialize(){
           tileData[p+1]+tileData[p+3]*0.5,
           tileData[p+2],physicalWidth,physicalHeight,dpr);
         trackTiles[i].style.setProperty("--public-icon-spatial-alpha",
-          glyphAlpha.toFixed(5));
+          (glyphAlpha*intro.alpha).toFixed(5));
       }
       if(combinedOpacity<.9999)fading++;
     }
@@ -1564,6 +1574,7 @@ async function initialize(){
       fadeContours:"upper convex, lower concave; permanent outward-bowed left/right",
       dismissal:"X-close local optical decoherence, provisional; no smoke or swipe",
       dismissElapsed:elapsedDismiss,dismissed:elapsedDismiss>=DISMISS_MS,
+      introSeconds:uniform[2],introComplete:uniform[2]>=.85,
       fadedTiles:fading
     };
   }
@@ -1619,6 +1630,7 @@ async function initialize(){
     // toward/away from transparent green glass, avoiding idle GPU overhead.
     const homeCompositeActive=Boolean(audit.homeCtaGlass?.count)&&
       audit.homeCtaGlass.capsules.some(c=>c.opacity>.002&&c.tint>.002);
+    if(homeCompositeActive)ensureCompositeScene();
     if(homeCompositeActive&&compositeScene&&homeCapsuleGroup){
       const underlay=encoder.beginRenderPass({colorAttachments:[{
         view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
@@ -1671,7 +1683,7 @@ async function initialize(){
     // Draw only the route panes above the persistent homepage DOM. This is
     // the very same glassPipeline, bind group, per-pane tint and spring data
     // as the mosaic squares, not a second approximation or CSS overlay.
-    if(authContext){
+    if(authContext&&!routeOutlet?.hidden){
       const authPass=encoder.beginRenderPass({
         colorAttachments:[{view:authContext.getCurrentTexture().createView(),
           loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
@@ -1756,6 +1768,7 @@ async function initialize(){
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
   }
+  await iconsReady;
   await waitForVisibleHome();
   engine={rebuild,render,renderAuthOnly,dispose,device};
   if(root)root.dataset.gpuPhase="submit-first-gpu-frame";
@@ -1787,6 +1800,9 @@ async function initialize(){
     if(rgba[3]!==255)throw Error("GPU offscreen output alpha proof failed: "+rgba);
     audit.offscreenPixelProof=rgba;
   }
+  // Reveal only a completed backdrop/zero-progress frame, then start entry.
+  introStart=performance.now();
+  root.dataset.glassStartup=OFFSCREEN_CI?"fallback":"ready";
   document.body.dataset.gpuScene=OFFSCREEN_CI?"offscreen-proof":"ready";
   if(authContext)document.body.dataset.authGpuScene="ready";
   audit.authPresentation=authUsesCompositor()?

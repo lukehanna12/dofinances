@@ -11,6 +11,11 @@
   <link rel="stylesheet" href="/assets/home-dashboard/dashboard-home.css">
   <link rel="stylesheet" href="/assets/home-dashboard/dashboard-glass-dropdown.css">
   <link rel="stylesheet" href="/assets/public-home.css">
+  <link rel="preload" as="image" type="image/avif" href="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif" fetchpriority="high">
+  <link rel="modulepreload" href="/assets/home-dashboard/dashboard-gpu-renderer.js">
+  <link rel="preload" as="fetch" href="/assets/home-dashboard/dashboard-gpu-scene.wgsl" crossorigin="anonymous">
+  <link rel="preload" as="fetch" href="/assets/home-dashboard/dashboard-gpu-mipmap.wgsl" crossorigin="anonymous">
+  <link rel="preload" as="fetch" href="/assets/home-dashboard/dashboard-gpu-glass.wgsl" crossorigin="anonymous">
   <script type="module" src="/assets/home-dashboard/dashboard-home-loader.js"></script>
   <script type="module" src="/assets/public-home-menu.js"></script>
   <script type="module" src="/assets/public-home-transition.js"></script>
@@ -52,7 +57,7 @@
         <main id="main-content" class="content">
           <section class="view dashboard-home" data-view="dashboard" aria-labelledby="dashboard-title">
             <div class="cta6" aria-label="DoFinances">
-              <div id="cta6-mosaic" class="cta6-mosaic" aria-hidden="true"></div>
+              <div id="cta6-mosaic" class="cta6-mosaic" data-glass-startup="pending" aria-hidden="true"></div>
               <div class="cta6-center"><h1 id="dashboard-title">doof</h1></div>
             </div>
             <div class="cta6-bottom-action" role="group" aria-label="Explore DoFinances">

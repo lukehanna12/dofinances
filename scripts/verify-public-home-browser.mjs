@@ -94,6 +94,35 @@ try{
  await send("Runtime.enable");
  await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
  const origin="http://127.0.0.1:"+server.address().port;
+ // Hold adapter acquisition on an uncached navigation. This is deterministic
+ // even on headless hosts without hardware WebGPU. Inspect actual CSS/DOM
+ // while initialization is pending, not after a warm reload.
+ const held=await send("Page.addScriptToEvaluateOnNewDocument",{source:
+   "Object.defineProperty(navigator,'gpu',{configurable:true,value:{requestAdapter:()=>new Promise(resolve=>{window.__releaseColdAdapter=()=>resolve(null)})}})"});
+ await send("Network.enable");
+ await send("Network.setCacheDisabled",{cacheDisabled:true});
+ await send("Page.navigate",{url:origin+"/"});
+ let pendingBoot=false;
+ for(let i=0;i<120;i++){
+  try{pendingBoot=await evaluate('typeof window.__releaseColdAdapter==="function" && document.querySelectorAll("#cta6-mosaic>.cta6-tile").length===66');}catch{}
+  if(pendingBoot)break;
+  await sleep(80);
+ }
+ assert.ok(pendingBoot,"Cold-start probe never reached the deliberately delayed GPU adapter");
+ const boot=await evaluate('(()=>{const m=document.querySelector("#cta6-mosaic"),t=m.querySelector(".cta6-tile--icon"),i=t.querySelector("img");return {state:m.dataset.glassStartup,clip:getComputedStyle(m).clipPath,animation:getComputedStyle(t).animationName,icon:getComputedStyle(i).opacity,width:t.offsetWidth};})()');
+ assert.equal(boot.state,"pending");
+ assert.equal(boot.clip,"inset(50%)","Dark provisional tiles cannot paint before GPU readiness");
+ assert.equal(boot.animation,"none","CSS animation cannot outrun GPU initialization");
+ assert.equal(boot.icon,"0","Icons cannot appear before their glass");
+ assert.ok(boot.width>0,"Startup gate must preserve measurable layout");
+ await evaluate("window.__releaseColdAdapter()");
+ let fallbackBoot=false;
+ for(let i=0;i<120;i++){
+  if(await evaluate('document.querySelector("#cta6-mosaic")?.dataset.glassStartup==="fallback"')){fallbackBoot=true;break;}
+  await sleep(80);
+ }
+ assert.ok(fallbackBoot,"Unsupported GPU must release the startup gate");
+ await send("Page.removeScriptToEvaluateOnNewDocument",{identifier:held.identifier});
  await send("Page.navigate",{url:origin+"/"});
  let ready=false;
  for(let i=0;i<120;i++){

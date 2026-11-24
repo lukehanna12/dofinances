@@ -233,3 +233,10 @@ export function planGlassLayers(layers){
 export function glassPaneNeedsLiveTransform(role){
   return role==="search-field"||role==="filter-dropdown";
 }
+
+// Presentation timing only: match WGSL vsGlass smoothstep and scale.
+export function glassEntrance(seconds,delay=0){
+  const t=clamp((seconds-delay)/.4,0,1);
+  const alpha=t*t*(3-2*t);
+  return {alpha,scale:.85+.15*alpha};
+}

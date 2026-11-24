@@ -568,3 +568,16 @@ body.public-home[data-gpu-scene="ready"] :is([data-glass-paint-owned="scene"],[d
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"]) [data-glass-paint-owned="route"]{
  clip-path:inset(50%)!important;
 }
+
+/* Cold-start gate: retain measurable layout without provisional dark faces.
+ * Clip rather than hiding ancestors, so authored glyphs remain measurable. */
+body.public-home #cta6-mosaic[data-glass-startup="pending"]{
+  clip-path:inset(50%);
+}
+body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-tile{
+  animation:none!important;
+  transition:none!important;
+}
+body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-icon{
+  opacity:var(--public-icon-spatial-alpha,0);
+}

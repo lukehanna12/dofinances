@@ -37,11 +37,15 @@ export function artworkDetailSize(width,height,limit=4096){
 }
 export function createGlassArtworkAtlas(device,mipPipeline,wake,detailMipPipeline){
  const levels=Math.log2(ART_SIZE)+1;
- const texture=device.createTexture({label:"Public artwork source layers (lazy upload)",
+ let texture=null,view=null;
+ function ensureAtlas(){
+ if(texture)return;
+ texture=device.createTexture({label:"Public artwork source layers (lazy upload)",
   size:[ART_SIZE,ART_SIZE,ART_LAYERS],mipLevelCount:levels,format:"rgba16float",
   usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|
     GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.RENDER_ATTACHMENT});
- const view=texture.createView({dimension:"2d-array"});
+ view=texture.createView({dimension:"2d-array"});
+ }
  const slots=new Map();
  let disposed=false,clock=0;
  const DETAIL_BUDGET=96*1024*1024;
@@ -94,6 +98,7 @@ export function createGlassArtworkAtlas(device,mipPipeline,wake,detailMipPipelin
   if(layer===undefined||!photo)return null;
   const source=photo.currentSrc||photo.getAttribute("src");
   if(!source||!photo.complete||!photo.naturalWidth)return null;
+  ensureAtlas();
   let record=slots.get(layer);
   if(record?.source!==source){
    if(record)releaseDetail(record);
@@ -141,7 +146,7 @@ export function createGlassArtworkAtlas(device,mipPipeline,wake,detailMipPipelin
   }
   return released;
  }
- return {view,sync,trimDetails,dispose(){
-  disposed=true;for(const r of slots.values())releaseDetail(r);texture.destroy();slots.clear();
+ return {get view(){ensureAtlas();return view;},sync,trimDetails,dispose(){
+  disposed=true;for(const r of slots.values())releaseDetail(r);texture?.destroy();slots.clear();
  }};
 }

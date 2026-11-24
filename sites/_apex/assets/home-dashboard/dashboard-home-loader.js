@@ -12,6 +12,7 @@ function activateDashboard(){
     console.warn("Dashboard WebGPU unavailable; retaining browser fallback",error);
     try{await import("./dashboard-optics.js");}
     catch(fallbackError){console.warn("Dashboard fallback unavailable",fallbackError);}
+    finally{const root=document.getElementById("cta6-mosaic");if(root)root.dataset.glassStartup="fallback";}
   });
 }
 activateDashboard();
