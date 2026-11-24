@@ -910,7 +910,7 @@ async function initialize(){
         if(!icon)continue;
         iconData.set(icon.lanes,slot*GLASS_ICON_FLOATS);
         animating ||= icon.animating;
-        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,hover:icon.hover,
+        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,strokeCSS:icon.strokeCSS,hover:icon.hover,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed});
       }
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
