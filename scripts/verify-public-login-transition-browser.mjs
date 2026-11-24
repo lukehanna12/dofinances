@@ -1133,17 +1133,24 @@ try{
     assert.equal(clock.frames[0].offset,0);
     assert.equal(clock.frames.at(-1).offset,1);
   }
-  const closeProgressInitial=await evaluate("(()=>{"+
+  // Headless Chromium can leave the document timeline paused at time 0
+  // while the CDP harness sleeps. Seek the actual WAAPI effect to 130ms and
+  // read its COMPOSITED matrix, then restore its previous clock. This checks
+  // interpolated motion, not merely keyframe metadata or wall-clock timing.
+  const earlyReturn=await evaluate("(()=>{"+
     "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[5];"+
-    "return getComputedStyle(card).transform;})()");
-  await sleep(130);
-  const closeProgressAfter=await evaluate("(()=>{"+
-    "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[5];"+
-    "return getComputedStyle(card).transform;})()");
-  assert.notEqual(closeProgressInitial,closeProgressAfter,
-    "Lower-row panels must visibly begin returning before closure ends: "+
-    JSON.stringify({before:closeProgressInitial,after:closeProgressAfter,
-      shift:closeClocks[2],wrap:closeClocks[3]}));
+    "const animation=[...card.getAnimations()].find(a=>"+
+      "a.effect?.getTiming().duration===620&&a.playbackRate===1);"+
+    "const initial=getComputedStyle(card).transform;"+
+    "const previous=animation.currentTime;"+
+    "animation.currentTime=130;"+
+    "const sampled=getComputedStyle(card).transform;"+
+    "animation.currentTime=previous;"+
+    "return {initial,sampled,keyframes:animation.effect.getKeyframes().map(f=>"+
+      "({offset:f.computedOffset,transform:f.transform}))};})()");
+  assert.notEqual(earlyReturn.initial,earlyReturn.sampled,
+    "Lower-row panes must physically move by 130ms of their forward closure: "+
+    JSON.stringify(earlyReturn));
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
