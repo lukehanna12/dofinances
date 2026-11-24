@@ -29,8 +29,8 @@ test("same-origin remote source only accepts curated project slugs",async()=>{
 });
 test("region is independently profiled within same GPU instance, and follows Terminal and expansion",()=>{
  const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-projects.css"),expand=src("sites/_apex/assets/public-projects-expand.js");
- assert.match(shader,/let split=region.meta.x>0.0/);
- assert.match(shader,/artSample\(uv,i32\(region.meta.z\)-1/);
+ assert.match(shader,/let split=region.params.x>0.0/);
+ assert.match(shader,/artSample\(uv,i32\(region.params.z\)-1/);
  assert.match(render,/resolveRegularMaterial\(\{width:w,height,scale:dpr/);
  assert.match(render,/boundary.getBoundingClientRect\(\).height/);
  assert.match(css,/1.9\*var\(--project-card-inset\)/);

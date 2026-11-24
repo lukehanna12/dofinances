@@ -44,7 +44,7 @@ struct MaterialProfile { optics:vec4<f32>, face:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 // Height, blur word, artwork layer+1, photo alpha; then optics
 // (shade alpha, inner amount, inner height, mip bias), face, UV map.
-struct GlassRegion { meta:vec4<f32>, optics:vec4<f32>, face:vec4<f32>, artUV:vec4<f32> };
+struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face:vec4<f32>, artUV:vec4<f32> };
 @group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
 @group(0) @binding(7) var artwork: texture_2d_array<f32>;
 
@@ -392,7 +392,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   var profile=materialProfiles[in.tileIndex];
   let region=regions[in.tileIndex];
-  let split=region.meta.x>0.0 && in.local.y>=tile.rect.w-region.meta.x;
+  let split=region.params.x>0.0 && in.local.y>=tile.rect.w-region.params.x;
   if(split){
     profile.optics=vec4<f32>(1.0,region.optics.yzw);
     profile.face=region.face;
@@ -437,7 +437,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // The Regular region has a straight upper refraction edge but retains
   // the original outer card coverage, hit geometry and dismissal.
   if(split){
-    let topDistance=tile.rect.w-region.meta.x-in.local.y;
+    let topDistance=tile.rect.w-region.params.x-in.local.y;
     if(topDistance>signed){signed=topDistance;field=vec3<f32>(signed,0.0,-1.0);}
   }
   // The old geometry_331 family remains unchanged for mosaic squares.
@@ -542,28 +542,29 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Regular's measured public blur distances are zero and all five
   // blur opacities are one; refraction mixing opacity is zero.
   // The Clear path retains its previous private-diagnostic ramp.
-  let innerLOD=glassLOD(select(tile.properties.z,region.meta.y,split),
+  let innerLOD=glassLOD(select(tile.properties.z,region.params.y,split),
     select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
   let outerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+outer),d));
-  var glass=mix(mipSample(interactiveInnerUV,innerLOD),
+  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
                 mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
+  var sourceGlass=glass;
   if(split){
     // Combine the original source and presented CSS photo transform with
     // the wallpaper BEFORE applying the shared Regular material face.
-    if(region.meta.z>0.0 && region.meta.w>0.0){
+    if(region.params.z>0.0 && region.params.w>0.0){
       let displacedLocal=(in.local+(interactiveInnerUV-baseUV)*backdropExtent)/tile.rect.zw;
       let uv=displacedLocal*region.artUV.xy+region.artUV.zw;
       let texelsPerPixel=max(region.artUV.x*512.0/tile.rect.z,region.artUV.y*512.0/tile.rect.w);
-      let paint=artSample(uv,i32(region.meta.z)-1,innerLOD+log2(max(texelsPerPixel,0.00001)));
-      glass=vec4<f32>(mix(glass.rgb,paint.rgb,clamp(region.meta.w*paint.a,0.0,1.0)),glass.a);
+      let paint=artSample(uv,i32(region.params.z)-1,innerLOD+log2(max(texelsPerPixel,0.00001)));
+      sourceGlass=vec4<f32>(mix(sourceGlass.rgb,paint.rgb,clamp(region.params.w*paint.a,0.0,1.0)),glass.a);
     }
-    glass=vec4<f32>(glass.rgb*(1.0-clamp(region.optics.x,0.0,1.0)),glass.a);
+    sourceGlass=vec4<f32>(sourceGlass.rgb*(1.0-clamp(region.optics.x,0.0,1.0)),sourceGlass.a);
   }
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve source-backed sampled optics and the restrained browser rim.
-  let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
+  let baseColor=clamp(sourceGlass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
   // GAP CLEAR-FACE-OUTPUT: 25F80 Clear face matrix input endpoints are
   // measured, but their executed native equation is NOT recovered. The
   // browser applies a linear interpolation between recorded endpoint

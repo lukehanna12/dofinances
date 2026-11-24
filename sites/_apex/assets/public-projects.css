@@ -92,10 +92,6 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
  .public-projects-root .project-showcase-artwork{
   clip-path:inset(0 0 var(--project-regular-height) 0)
 }
-body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
- .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-photo{
-  opacity:0!important
-}
 .public-projects-root .project-showcase-photo,.public-projects-root .project-showcase-shade{
   position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none
 }
@@ -107,6 +103,10 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   transform-origin:center center;
   -webkit-backface-visibility:hidden;backface-visibility:hidden;
   transition:opacity .5s ease-out,transform .5s ease-out
+}
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-photo{
+  opacity:0!important
 }
 .public-projects-root .project-showcase-shade{
   background:rgba(0,0,0,.6);opacity:0;transition:opacity .4s ease-out
