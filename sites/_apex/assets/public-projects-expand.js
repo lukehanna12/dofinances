@@ -93,6 +93,44 @@ const animate=(element,frames,options)=>{
   if(!element.animate)return null;
   return element.animate(frames,{fill:"both",...options});
 };
+/* Closing is spatially the inverse of opening, but must NOT be a time
+ * reversal: reverse() converts the original ease-out to an ease-in.
+ * Retain every intermediate edge-wrap/fade breakpoint and play those
+ * spatial states forward with a NEW ease-out clock instead.
+ *
+ * If X is pressed before expansion finishes, the first keyframe is the
+ * element's currently presented transform/opacity. Only already-reached
+ * milestones are retained, so contraction doesn't jump ahead to a
+ * keyframe that the forward animation never reached. */
+export function projectForwardCloseFrames(forwardFrames,progress,current){
+  if(!Array.isArray(forwardFrames)||forwardFrames.length<2||
+     !Number.isFinite(progress)||progress<0||progress>1||
+     !current||typeof current.transform!=="string"||
+     !Number.isFinite(Number(current.opacity)))
+    throw new RangeError("Invalid project close motion");
+  const values=forwardFrames.map((frame,index)=>({
+    offset:Number(frame.computedOffset??frame.offset??
+      (index/(forwardFrames.length-1))),
+    transform:frame.transform,
+    opacity:frame.opacity
+  }));
+  const at=Math.max(0,Math.min(1,progress));
+  const result=[{offset:0,transform:current.transform,
+    opacity:String(current.opacity)}];
+  if(at>0){
+    for(let index=values.length-1;index>=0;index--){
+      const frame=values[index];
+      if(frame.offset>=at-1e-8)continue;
+      const offset=Math.max(0,Math.min(1,(at-frame.offset)/at));
+      if(offset<=1e-8)continue;
+      result.push({offset,transform:frame.transform,opacity:frame.opacity});
+    }
+  }
+  if(result.length===1||result[result.length-1].offset<1-1e-8)
+    result.push({offset:1,transform:values[0].transform,
+      opacity:values[0].opacity});
+  return result;
+}
 
 export function mountProjectExpansion({root,grid,animateGlass}){
   const cards=[...grid.querySelectorAll(".project-showcase-card")];
@@ -359,19 +397,28 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     ],{duration:EXPAND_MS,easing:SELECTED_EASING});
     if(contract)animations.push(contract);
     if(contractButton)animations.push(contractButton);
-    // All neighbors use the same easing and retime from their CURRENT
-    // position to their initial slot over the SAME 620ms as the card.
-    // Reducing the playback magnitude when interrupted avoids racing
-    // through the remainder while the selected card contracts.
-    const remaining=Math.max(.001,elapsed/EXPAND_MS);
-    for(const animation of animations){
-      if(animation===contract||animation===contractButton||
-         animation===current.selectedAnimation||
-         animation===current.buttonAnimation)continue;
-      try{
-        animation.reverse();
-        animation.updatePlaybackRate(-remaining);
-      }catch{animation.cancel()}
+    // Neighbors follow the identical route BACK to their old slots, but
+    // with the same FORWARD ease-out as the widening pane and X close.
+    // Reversing their WAAPI playback was the remaining ease-IN regression.
+    const openingNeighbors=animations.filter(animation=>
+      animation!==contract&&animation!==contractButton&&
+      animation!==current.selectedAnimation&&
+      animation!==current.buttonAnimation);
+    for(const opening of openingNeighbors){
+      const node=opening.effect?.target;
+      if(!node)continue;
+      const computed=getComputedStyle(node);
+      const frames=projectForwardCloseFrames(
+        opening.effect.getKeyframes(),
+        Math.max(0,Math.min(1,
+          Number(opening.effect.getComputedTiming().progress??1))),
+        {transform:computed.transform,opacity:computed.opacity}
+      );
+      opening.cancel();
+      const returning=animate(node,frames,{
+        duration:EXPAND_MS,easing:CONVEYOR_EASING
+      });
+      if(returning)animations.push(returning);
     }
     // The original-row dissipating ghosts cohere at the end of closure,
     // with native GPU material. No duplicate CSS glass shader.
