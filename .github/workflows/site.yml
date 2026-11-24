@@ -303,6 +303,12 @@ jobs:
           test -s public/assets/project-icons/apple-higs-reader.v4.svg
           cmp sites/_apex/assets/project-icons/apple-higs-reader.v4.svg public/assets/project-icons/apple-higs-reader.v4.svg
           test -s dist/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp
+          test -s dist/assets/project-art/bootscript-polo-ponies.v1.webp
+          cmp sites/_apex/assets/project-art/bootscript-polo-ponies.v1.webp public/assets/project-art/bootscript-polo-ponies.v1.webp
+          test -s dist/assets/project-art/hidden-functions-piranesi.v1.webp
+          cmp sites/_apex/assets/project-art/hidden-functions-piranesi.v1.webp public/assets/project-art/hidden-functions-piranesi.v1.webp
+          test -s dist/assets/project-art/ozoning-board-el-khasne.v1.webp
+          cmp sites/_apex/assets/project-art/ozoning-board-el-khasne.v1.webp public/assets/project-art/ozoning-board-el-khasne.v1.webp
           test -s sites/_apex/app/assets/project-icons/hidden-functions.svg
           test -s sites/_apex/app/assets/project-icons/latexcel.svg
           cmp sites/_apex/assets/project-icons/hidden-functions.svg sites/_apex/app/assets/project-icons/hidden-functions.svg
