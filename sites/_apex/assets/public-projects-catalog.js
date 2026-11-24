@@ -1,6 +1,7 @@
 /* Public, read-only curated snapshot of the private Projects card metadata.
  * No account-owned records or private APIs are queried on the public route.
  * The source test enforces parity with the canonical private catalog. */
+import {validateProjectTitle} from "./public-projects-title.js";
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
@@ -19,6 +20,8 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},
  {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"coming-soon"}
 ]);
+// Fail at catalog import/build, not after an overlong title has rendered.
+PROJECT_SHOWCASE.forEach(project=>validateProjectTitle(project.name));
 const PHOTO_ROUTES=Object.freeze([
  "projects","colosseum/readme","colosseum/utilities","colosseum/collections",
  "colosseum/providers","colosseum/permissions","colosseum/diagnostics","settings"

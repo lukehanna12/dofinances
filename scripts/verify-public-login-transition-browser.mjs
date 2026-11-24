@@ -802,6 +802,42 @@ try{
   assert.equal(projectState.route,"/projects");
   assert.equal(projectState.count,16);
   assert.equal(projectState.icons,16);
+  // Read real layout and glyph advances at settled desktop and mobile
+  // widths. No screenshots and no font-size estimates from viewport alone.
+  const readCardTitles=()=>evaluate(`(()=>{
+    return [...document.querySelectorAll(".public-projects-root .project-showcase-card")].map(card=>{
+      const title=card.querySelector(".project-showcase-title");
+      const cr=card.getBoundingClientRect(),tr=title.getBoundingClientRect();
+      const lines=[...title.querySelectorAll(".project-showcase-title-line")];
+      const widths=lines.map(line=>line.getBoundingClientRect().width);
+      const left=tr.left-cr.left;
+      return {name:title.textContent,weight:Number(getComputedStyle(title).fontWeight),
+        left,bottom:cr.bottom-tr.bottom,width:cr.width,
+        fraction:Math.max(...widths)/(cr.width-left),
+        lineNames:lines.map(x=>x.textContent),
+        fontSizes:lines.map(x=>getComputedStyle(x).fontSize),
+        overflow:lines.some(x=>x.getBoundingClientRect().right>cr.right+.5),
+        oldRows:card.querySelectorAll(".project-showcase-details,.project-showcase-row").length};
+    });
+  })()`);
+  const assertCardTitles=rows=>{
+    assert.equal(rows.length,16);
+    for(const row of rows){
+      assert.equal(row.oldRows,0);
+      assert.equal(row.weight,700);
+      assert.ok(Math.abs(row.left-row.bottom)<1.1,JSON.stringify(row));
+      assert.equal(row.lineNames.join(" "),row.name);
+      assert.ok(row.lineNames.every(x=>Array.from(x).length<=15));
+      assert.ok(row.name.length<=15||row.lineNames.length>1);
+      assert.equal(new Set(row.fontSizes).size,1);
+      assert.equal(row.overflow,false,JSON.stringify(row));
+    }
+    for(const [name,fraction] of [["Colosseum",.55],["3D Liquid Glass",.8]]){
+      const row=rows.find(x=>x.name===name);
+      assert.ok(Math.abs(row.fraction-fraction)<.035,JSON.stringify(row));
+    }
+  };
+  assertCardTitles(await readCardTitles());
   // A late 500ms hitch can be the compositor retiring the animated
   // image layer. Keep the GPU-backed bitmap alive at its exact final scale.
   const photoComposite=await evaluate("(()=>"+

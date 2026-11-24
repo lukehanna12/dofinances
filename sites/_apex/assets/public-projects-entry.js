@@ -5,6 +5,7 @@
  */
 import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
+import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {mountProjectExpansion} from "./public-projects-expand.js";
 import {mountProjectArtworkReveal} from "./project-artwork-reveal.js";
@@ -34,11 +35,6 @@ const el=(tag,className,text)=>{
   if(text!==undefined)node.textContent=text;
   return node;
 };
-function row(text){
-  const item=el("span","project-showcase-row");
-  item.append(el("span","",text));
-  return item;
-}
 function makeCard(project,index){
   const status=projectShowcaseStatus(project);
   const active=Boolean(project.repository||project.docs===true);
@@ -81,7 +77,14 @@ function makeCard(project,index){
   }
   const badge=el("span","project-showcase-badge "+badgeClass,status);
   top.append(marker,badge);
-  const title=el("span","project-showcase-title",project.name);
+  const title=el("span","project-showcase-title");
+  const lines=projectTitleLines(project.name);
+  // Preserve original accessible text; all lines inherit one font size.
+  lines.forEach((line,i)=>{
+    if(i)title.append(document.createTextNode(" "));
+    title.append(el("span","project-showcase-title-line",line));
+  });
+  title.style.setProperty("--project-title-max-size",120/lines.length/1.04+"px");
   const action=el("span","project-showcase-action",active?"View project":"In development");
   if(active){
     const arrow=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -94,11 +97,8 @@ function makeCard(project,index){
     path.setAttribute("d","M5 12h14m-6-6 6 6-6 6");
     arrow.append(path);action.append(arrow);
   }
-  upper.append(top,title,action);
-  const details=el("span","project-showcase-details");
-  details.append(row(project.kind),row(project.repository?"GitHub · "+project.repository:
-    project.docs?"Local Docs · Editable":"Repository not yet available"));
-  content.append(upper,details);
+  upper.append(top,action,title);
+  content.append(upper);
   card.append(photo,shade,content);
   return card;
 }
@@ -127,6 +127,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   projects.forEach((project,index)=>grid.append(makeCard(project,index)));
   root.append(head,grid);
   host.replaceChildren(root);
+  mountProjectTitleSizing(root);
   // The logo remains the original DOM h1, not a duplicated text or image.
   // Projects pins it to body to escape the home's centered, transformed
   // mosaic containing block. Unmount puts it back before Home resumes.
