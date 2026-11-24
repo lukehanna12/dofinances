@@ -624,7 +624,7 @@ async function initialize(){
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
   const routeCompositeDetailGroups=new Map();
   let dropdownSlots=[],dropdownCompositeFrames=0;
-  let routeSourceEntries=[],homeSourceEntries=[],baseSourceEntries=[],baseSourceKey="";
+  let routeSourceEntries=[],baseSourceEntries=[],baseSourceKey="";
   let routeLayerSlots=[],routeActiveLayers=[],routeLayerSources=new Map();
   let secondRouteScene=null,secondRouteMips=[],secondRouteCopyGroup=null;
   let tileBuffer=null,tintTileBuffer=null,materialBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
@@ -886,10 +886,6 @@ async function initialize(){
     const key=JSON.stringify(baseSourceEntries.map(e=>[e.revision,e.rect,e.alpha]));
     if(key!==baseSourceKey){baseSourceKey=key;scenePending=true;}
   }
-  function syncHomeSources(){
-    const views=sourceViews();
-    homeSourceEntries=trackIcons.map(n=>n&&sourcePainter.sync(n,"mosaic",views)).filter(Boolean);
-  }
   // The route supplies hover policy; the shared atlas owns alpha and distance.
   function syncGlassIcons(dt){
     iconData.fill(0);silhouetteAtlas.begin();
@@ -924,7 +920,7 @@ async function initialize(){
     const views=sourceViews(),panes=authPaneElements();
     routeSourceEntries=authUsesCompositor()?[]:panes.map(p=>sourceNodesForPane(p).map(n=>sourcePainter.sync(n,"route",views)).filter(Boolean));
     sourcePainter.sweep();
-    audit.sourceComposition={base:baseSourceEntries.length,mosaic:homeSourceEntries.length,route:routeSourceEntries.flat().length,
+    audit.sourceComposition={base:baseSourceEntries.length,mosaic:0,route:routeSourceEntries.flat().length,
       routeLayers:[...routeActiveLayers],...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};
   }
   function rebindGlassGroups(){
@@ -1642,7 +1638,6 @@ async function initialize(){
     lastFrameTime=now;
     lastAuthFrameTime=now;
     if(tileCount)paintTrack(dt);
-    syncHomeSources();
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
@@ -1669,6 +1664,7 @@ async function initialize(){
     // No CSS/DOM capture: directly re-render the CURRENT GPU square tiles
     // into a separate RGBA16F surface atop the original GPU photo. Build
     // its real mip levels in this same submission before the capsule draw.
+    // Native SVG mosaic icons are not optical inputs or duplicated sprites.
     // The backdrop is dynamic ONLY while any black capsule is transitioning
     // toward/away from transparent green glass, avoiding idle GPU overhead.
     const homeCompositeActive=Boolean(audit.homeCtaGlass?.count)&&
@@ -1687,7 +1683,6 @@ async function initialize(){
         underlay.setBindGroup(0,compositeGlassGroup);
         underlay.draw(6,tileCount);
       }
-      sourcePainter.draw(underlay,homeSourceEntries,"scene","offscreen");
       underlay.end();
       for(let level=1;level<compositeScene.mipLevelCount;level++){
         const mip=encoder.beginComputePass({label:"live square underlay mip "+level});
@@ -1711,8 +1706,6 @@ async function initialize(){
     if(tileCount){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
       pass.draw(6,tileCount);
-      sourcePainter.draw(pass,homeSourceEntries,"scene","screen");
-      pass.setPipeline(glassPipeline);
       // The three scaled capsules are separate instances of the same
       // shader on the HOMEPAGE canvas, under their real DOM text.
       if(audit.homeCtaGlass?.count){

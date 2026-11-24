@@ -15,7 +15,7 @@ test("authored source rect follows actual viewport and legacy scroll coordinates
 test("authored sources enter the actual GPU attachment before higher glass samples its mips",()=>{
  const r=read(base+"dashboard-gpu-renderer.js"),p=read(base+"dashboard-glass-source-paint.js");
  assert.match(r,/sourcePainter.draw\(pass,baseSourceEntries,"scene","offscreen"\);\s*pass.end\(\);\s*for\(let level=1/);
- assert.match(r,/sourcePainter.draw\(underlay,homeSourceEntries,"scene","offscreen"\);\s*underlay.end\(\)/);
+ assert.doesNotMatch(r,/homeSourceEntries|syncHomeSources/);
  assert.match(r,/pass.draw\(6,end-first,0,tileCount\+first\);\s*sourcePainter.draw\(pass,paint/);
  assert.match(r,/drawRoutePanes\(pass,true\);pass.end\(\);mipComposite/);
  assert.match(r,/drawRouteLayer\(upper,routeActiveLayers\[0\],true\);upper.end\(\);mipComposite/);
@@ -23,4 +23,18 @@ test("authored sources enter the actual GPU attachment before higher glass sampl
  assert.match(p,/srcFactor:"one",dstFactor:"one-minus-src-alpha"/);
  assert.match(read("../sites/_apex/assets/public-home.css"),/\[data-glass-paint-owned="route"\]/);
  assert.doesNotMatch(p,/getDisplayMedia|captureStream|html2canvas|drawWindow/);
+});
+
+test("ordinary public card and toolbar foreground plus Home icons stay native",()=>{
+ const entry=read("../sites/_apex/assets/public-projects-entry.js");
+ const controls=read("../sites/_apex/assets/public-projects-controls.js");
+ const mosaic=read(base+"dashboard-mosaic.js"),r=read(base+"dashboard-gpu-renderer.js");
+ for(const source of [entry,controls,mosaic])assert.doesNotMatch(source,/\.dataset\.glassPaint\s*=|registerGlassPaint\(/);
+ assert.match(entry,/registerGlassSilhouette\(icon,\{tint:"white",opacity:\.20\}\)/);
+ assert.match(entry,/title\.dataset\.publicProjectGlass="title"/);
+ assert.match(r,/function syncProjectScrollPresentation\(/);
+ assert.match(r,/trackTiles\[i\]\.style\.transform="translate3d\("/);
+ assert.match(r,/--public-icon-spatial-alpha/);
+ assert.match(r,/foreground\.style\.opacity=String\(tileDismissIconOpacity\(progress\)\)/);
+ assert.match(r,/mosaic:0,route:routeSourceEntries/);
 });

@@ -135,9 +135,7 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
   github.setAttribute("aria-label","Open GitHub profile in a new tab");
   github.title="GitHub";
   github.innerHTML=GITHUB_ICON;
-  for(const pane of [searchButton,searchField,cancel,filterButton,github]){
-    const icon=pane.querySelector("svg");if(icon)icon.dataset.glassPaint="foreground";
-  }
+  // Toolbar glyphs are native SVG foreground over their WebGPU glass.
   toolbar.append(searchWrap,filterWrap,github);
   headingRow.append(toolbar);
 
