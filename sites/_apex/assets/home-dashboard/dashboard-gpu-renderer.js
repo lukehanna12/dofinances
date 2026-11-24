@@ -848,7 +848,8 @@ async function initialize(){
           const elapsed=now-(restoring?cardRestoreStart:cardDismissStart);
           const progress=reducedMotion.matches?(restoring?0:1):
             restoring?tileDismissProgress(Math.max(0,
-              (Number.isFinite(cardRestoreFrom)?cardRestoreFrom:DISMISS_MS)-elapsed),0,col):
+              (Number.isFinite(cardRestoreFrom)?cardRestoreFrom:DISMISS_MS)-
+              Math.max(0,elapsed)),0,col):
               tileDismissProgress(elapsed,0,col);
           // Project cards use precisely the square's WGSL decoherence and
           // tile.motion.w, with no copied shader or CSS optical layer.
