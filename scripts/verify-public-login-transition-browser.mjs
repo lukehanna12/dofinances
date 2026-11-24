@@ -639,7 +639,7 @@ try{
   // Full original WebGPU material remains, but its canvas is fixed to
   // the wallpaper by DEFAULT. No capture and no shader/mipmap substitution.
   await send("Page.navigate",{url:origin+"/login"});
-  await until("document.body.dataset.authScrollMode==='fixed'&&"+
+  await until("document.body?.dataset.authScrollMode==='fixed'&&"+
     "!!document.querySelector('[data-auth-glass-card]')",170);
   assert.equal(await evaluate("document.body.dataset.authGlassMode"),"webgpu");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
