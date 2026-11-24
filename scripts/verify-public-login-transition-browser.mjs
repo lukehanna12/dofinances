@@ -21,7 +21,20 @@ const server=createServer((req,res)=>{
   const pathname=new URL(req.url||"/","http://localhost").pathname;
   let target;
   // Deterministic same-origin artwork fixture for local browser tests.
-  if(pathname.startsWith("/project-artwork/")){
+  // Wallpaper fallbacks are served by the production library Worker, not
+  // files in the site repository. Only the known allowlisted artwork
+  // paths are emulated here, exactly like the remote project-artwork proxy.
+  const fixtureWallpapers=new Set([
+    "/wallpapers/302138334c5973c7fed71a26037e19a8b94fce8433fecce8bad1454474c36a08.webp",
+    "/wallpapers/ade03e6d5958ddb9e1e5098ad67d46b7f4c801057aa77c85510d846ef8f75091.png",
+    "/wallpapers/c49181be2b93fe24a44774a7c6f4253f23ec3bf0cfc369a318e420d7418f9eb2.jpg",
+    "/wallpapers/dcb3d4f1e42bf3aebab2186768a598d17a8aad76e9620a150e268938eee01441.jpg",
+    "/wallpapers/65dbc89fe23cd47bbcdb76d419fde8168f93e4b6af9f70c533732cf7ee6015c7.jpg",
+    "/wallpapers/8f54a531db0e7382a7a18c27e0daf5283bfaa8e655fae9da460f21242a3a1ec6.jpg",
+    "/wallpapers/3203fcc740876cc48c489699ee3f00e5c069fa9a3825cc7afaf2680b836c22cd.jpg",
+    "/wallpapers/ca6bf0317dcb6806a536f5d41b8c54cf34446a196e8a5f7265dc5f10c7f3b957.avif"
+  ]);
+  if(pathname.startsWith("/project-artwork/")||fixtureWallpapers.has(pathname)){
     res.writeHead(200,{"Content-Type":"image/webp"});
     res.end(readFileSync(join(apex,"assets/project-art/terminal-scalars-liquid-symmetry.v2.webp")));return;
   }
