@@ -964,8 +964,8 @@ try{
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links"); 
   // The clicked panel and its attached glass X use the ORIGINAL 620ms
-  // curve, while every displaced card starts at once and travels at the
-  // exact same horizontal velocity under a shared linear timebase.
+  // curve, while every displaced card starts at once and travels on
+  // the same ease-in-out spatial clock, keeping the row spacing cohesive.
   const expansionClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
@@ -981,8 +981,8 @@ try{
     assert.equal(clock.duration,620,"All moving panels share one 620ms timeline");
     assert.equal(clock.delay,0,"No row or panel waits before moving");
     assert.equal(clock.easing,index===0||index===4?
-      "cubic-bezier(0.22, 0.72, 0.24, 1)":"linear",
-      "Only selected card and attached X keep the original expansion curve");
+      "cubic-bezier(0.22, 0.72, 0.24, 1)":"cubic-bezier(0.77, 0, 0.175, 1)",
+      "Selected and X retain 620ms ease-out; all siblings share Emil ease-in-out");
     assert.equal(clock.rate,1);
   }
   assert.ok(Math.max(...expansionClocks.map(x=>x.time))-
@@ -1035,15 +1035,16 @@ try{
   assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
     "Displaced panels must enter at the left side of the next row");
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
-  // WAAPI applies the pending reversed playback rate at its next timeline
-  // sample. Wait for that sample rather than inspecting the stale forward
-  // rate in the very same JavaScript turn as the click.
+  // The X must start a NEW forward ease-out for selected width, left and
+  // close glyph; reversing old keyframes would instead produce ease-IN.
+  // Siblings may run backward along their symmetric ease-in-out path.
   await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
     "const c=[...g.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
-    "return [c[0],c[1],c[6],c[7],g.querySelector('.project-showcase-expand-close')]"+
-      ".every(node=>[...node.getAnimations()].some(a=>"+
-      "a.effect?.getTiming().duration===620&&a.playbackRate===-1));})()",30,20);
-  const reverseClocks=await evaluate("(()=>{"+
+    "const p=[c[0],c[1],c[6],c[7],g.querySelector('.project-showcase-expand-close')];"+
+    "return p.every((node,index)=>[...node.getAnimations()].some(a=>"+
+      "a.effect?.getTiming().duration===620&&"+
+      "(index===0||index===4?a.playbackRate===1:a.playbackRate<0)));})()",30,20);
+  const closeClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
     "const panes=[cards[0],cards[1],cards[6],cards[7],"+
@@ -1052,15 +1053,17 @@ try{
       "x.effect?.getTiming().duration===620);"+
       "return {rate:a?.playbackRate,time:a?.currentTime,"+
         "easing:a?.effect?.getTiming()?.easing};});})()");
-  assert.ok(reverseClocks.every(clock=>clock.rate===-1),
-    "X must reverse every animation at its original playback speed");
-  assert.equal(reverseClocks[0].easing,"cubic-bezier(0.22, 0.72, 0.24, 1)",
-    "Clicked card contraction uses the EXACT reversed expansion easing");
-  assert.equal(reverseClocks[4].easing,reverseClocks[0].easing,
-    "Glass X follows the same mirrored curve as the selected card");
-  assert.ok(Math.max(...reverseClocks.map(x=>x.time))-
-    Math.min(...reverseClocks.map(x=>x.time))<35,
-    "Every return motion must begin together");
+  assert.equal(closeClocks[0].rate,1,"Selected panel closes with forward easing");
+  assert.equal(closeClocks[4].rate,1,"X closes with forward easing");
+  assert.ok(closeClocks.slice(1,4).every(clock=>clock.rate<0),
+    "Displaced cards return along their original spatial paths");
+  assert.equal(closeClocks[0].easing,"cubic-bezier(0.22, 0.72, 0.24, 1)",
+    "Contraction must use the SAME entry ease-out curve, not time inversion");
+  assert.equal(closeClocks[4].easing,closeClocks[0].easing);
+  const elapsedClose=closeClocks.map(c=>c.rate>=0?c.time:
+    620-c.time);
+  assert.ok(Math.max(...elapsedClose)-Math.min(...elapsedClose)<55,
+    "X, selected pane and all returned cards must start their clocks together");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
