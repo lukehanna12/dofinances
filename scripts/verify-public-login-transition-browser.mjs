@@ -860,7 +860,7 @@ try{
   })()`);
   const assertRegionGeometry=regionGeometry=>{
   assert.equal(regionGeometry.cards.length,16);
-  assert.ok(new Set(regionGeometry.cards.map(c=>Math.round(c.height))).size>1,"Title-specific Regular heights must differ");
+  assert.ok(new Set(regionGeometry.cards.map(c=>Math.round(c.height))).size>1,"Title-specific inactive Clear heights must differ");
   for(const c of regionGeometry.cards){
     assert.ok(Math.abs(c.height-c.expected)<1.2,JSON.stringify(c));
     assert.ok(Math.abs(c.upperGap-regionGeometry.upperGap)<1.2,JSON.stringify(c));
@@ -1299,8 +1299,8 @@ try{
     const gpu=await evaluate("window.__dashboardWebGPU.projectGlass");
     assert.equal(gpu.renderer,"shared-webgpu-glassPipeline");
     assert.equal(gpu.tint,"none");
-    assert.ok(gpu.regions?.length===16&&gpu.regions.every(r=>r.scheme==="light"&&r.clearUnderlay===false),
-      "Only the bottom region uses light Regular; no Clear underlay");
+    assert.ok(gpu.regions?.length===16&&gpu.regions.every(r=>r.material==="clear"&&r.scheme==="dark"&&r.interactive===false&&r.clearUnderlay===false),
+      "Only the bottom region is inactive dark Clear; no glass underlay");
     assert.equal(gpu.titleGlyphGlass,true,
       "Projects heading must share the actual WebGPU glassPipeline as a glyph pane");
     assert.ok(gpu.roles.includes("title"));

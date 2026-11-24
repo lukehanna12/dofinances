@@ -1,6 +1,6 @@
 /* GPU-resident original image sources for shared glass regions, never
  * screen/DOM capture. A bounded 512² source grid with real GPU mip levels
- * projects the quarter-scale Regular optics into the browser transport. */
+ * projects the raw artwork into the browser backdrop transport. */
 import {PROJECT_SHOWCASE} from "../public-projects-catalog.js";
 export const ART_SIZE=512;
 export const ART_LAYERS=PROJECT_SHOWCASE.length;

@@ -43,13 +43,13 @@ struct Tile {
 struct MaterialProfile { optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 // Height, blur word, artwork layer+1, photo alpha; then optics
-// (shade alpha, inner amount, inner height, mip bias), native half4 rows, UV map.
+// (shade alpha, reserved lanes), reserved face rows, UV map.
 struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32>, artUV:vec4<f32> };
 @group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
 @group(0) @binding(7) var artwork: texture_2d_array<f32>;
-// Quarter-resolution raw backdrop, built BEFORE any glass draw. It never
+// Half-resolution raw project backdrop, built BEFORE any glass draw. It never
 // contains a Clear or Regular rendered surface.
-@group(0) @binding(8) var regularBackdrop: texture_2d<f32>;
+@group(0) @binding(8) var projectRegionBackdrop: texture_2d<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -344,11 +344,11 @@ fn artSample(uv:vec2<f32>,layer:i32,lod:f32)->vec4<f32>{
   return mix(artLevel(uv,layer,lo),artLevel(uv,layer,hi),fract(chosen));
 }
 
-// A source-only draw into the quarter-resolution native-style capture.
+// A source-only draw into the half-resolution native-style capture.
 // The same live card rect, original artwork UV and DOM opacity are used,
 // but NO glass face, refraction, tint, hover light or previous glass draw.
 @vertex
-fn vsRegularCapture(@builtin(vertex_index) vertex:u32,
+fn vsProjectRegionCapture(@builtin(vertex_index) vertex:u32,
                     @builtin(instance_index) instance:u32)->GlassOut{
   var corners=array<vec2<f32>,6>(
     vec2<f32>(0.0,0.0),vec2<f32>(1.0,0.0),vec2<f32>(0.0,1.0),
@@ -364,7 +364,7 @@ fn vsRegularCapture(@builtin(vertex_index) vertex:u32,
   return out;
 }
 @fragment
-fn fsRegularCapture(in:GlassOut)->@location(0) vec4<f32>{
+fn fsProjectRegionCapture(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   let region=regions[in.tileIndex];
   let shade=clamp(region.optics.x,0.0,1.0);
@@ -381,7 +381,7 @@ fn fsRegularCapture(in:GlassOut)->@location(0) vec4<f32>{
   if((region.params.z<=0.0||opacity<=0.0)&&shade<=0.0){discard;}
   var paint=vec4<f32>(0.0);
   if(region.params.z>0.0&&opacity>0.0){
-    // UV derivatives are evaluated on the actual quarter-resolution
+    // UV derivatives are evaluated on the actual half-resolution
     // source attachment; do not use the final glass's additional LOD.
     paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
   }
@@ -392,21 +392,21 @@ fn fsRegularCapture(in:GlassOut)->@location(0) vec4<f32>{
   let rgb=paint.rgb*(a*(1.0-shade))/max(alpha,0.000001);
   return vec4<f32>(rgb,alpha*coverage);
 }
-fn regularCaptureLevel(uvIn:vec2<f32>,level:i32)->vec4<f32>{
-  let dims=vec2<i32>(textureDimensions(regularBackdrop,level));
+fn projectRegionCaptureLevel(uvIn:vec2<f32>,level:i32)->vec4<f32>{
+  let dims=vec2<i32>(textureDimensions(projectRegionBackdrop,level));
   let maxCoord=vec2<f32>(dims-vec2<i32>(1));
   let p=clamp(uvIn*vec2<f32>(dims)-vec2<f32>(0.5),vec2<f32>(0.0),maxCoord);
   let o=vec2<i32>(floor(p));let n=min(o+vec2<i32>(1),dims-vec2<i32>(1));let t=fract(p);
-  return mix(mix(textureLoad(regularBackdrop,o,level),
-    textureLoad(regularBackdrop,vec2<i32>(n.x,o.y),level),t.x),
-    mix(textureLoad(regularBackdrop,vec2<i32>(o.x,n.y),level),
-    textureLoad(regularBackdrop,n,level),t.x),t.y);
+  return mix(mix(textureLoad(projectRegionBackdrop,o,level),
+    textureLoad(projectRegionBackdrop,vec2<i32>(n.x,o.y),level),t.x),
+    mix(textureLoad(projectRegionBackdrop,vec2<i32>(o.x,n.y),level),
+    textureLoad(projectRegionBackdrop,n,level),t.x),t.y);
 }
-fn regularCaptureSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
-  let maximum=f32(textureNumLevels(regularBackdrop)-1u);
+fn projectRegionCaptureSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
+  let maximum=f32(textureNumLevels(projectRegionBackdrop)-1u);
   let chosen=clamp(lod,0.0,maximum);
   let lo=i32(floor(chosen));let hi=min(lo+1,i32(maximum));
-  return mix(regularCaptureLevel(uv,lo),regularCaptureLevel(uv,hi),fract(chosen));
+  return mix(projectRegionCaptureLevel(uv,lo),projectRegionCaptureLevel(uv,hi),fract(chosen));
 }
 // AIR 464..500: opaque source RGB, half dot3 against the actual native
 // half4 row, then a separate half-rounded bias addition. G14G dot
@@ -473,8 +473,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let region=regions[in.tileIndex];
   let split=region.params.x>0.0 && in.local.y>=tile.rect.w-region.params.x;
   if(split){
-    profile.optics=vec4<f32>(1.0,region.optics.yzw);
-    profile.face0=region.face0;profile.face1=region.face1;profile.face2=region.face2;
+    // Explicit Clear overrides any inherited whole-surface Regular choice.
+    profile.optics=vec4<f32>(0.0);
   }
   let regular=profile.optics.x>0.5;
   let authPane=tile.properties.y<0.0;
@@ -513,7 +513,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
   if(coverage<=0.0&&dismiss<=0.0){discard;}
-  // The Regular region has a straight upper refraction edge but retains
+  // The inactive Clear region has a straight upper refraction edge but retains
   // the original outer card coverage, hit geometry and dismissal.
   if(split){
     let topDistance=tile.rect.w-region.params.x-in.local.y;
@@ -526,7 +526,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Native POINT values must be converted to SDF DEVICE PIXELS; the
   // previous model mistook points for pixels on 2x Retina backing.
   // Filter inputs do NOT establish final native GPU binding/Q numerics.
-  let d=min(dimensions.x,dimensions.y);
+  let d=min(dimensions.x,select(dimensions.y,region.params.x,split));
   let pointScale=max(state.viewport.w,1.0);
   let clearD=d/pointScale;
   let clearInnerAmount=max(-60.0,-clearD)*pointScale;
@@ -583,8 +583,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     vec2<f32>(1.0),vec2<f32>(2.4));
   let relative=delta/max(reach,vec2<f32>(1.0));
   let proximity=exp(-dot(relative,relative));
-  let hover=clamp(tile.interaction.x,0.0,1.0);
-  let pressed=clamp(tile.interaction.y,0.0,1.0);
+  // Inactive band: no pointer displacement, hover lighting or press
+  // lighting, even when its parent card is being hovered or clicked.
+  let hover=select(clamp(tile.interaction.x,0.0,1.0),0.0,split);
+  let pressed=select(clamp(tile.interaction.y,0.0,1.0),0.0,split);
   let radial=relative;
   let shiftPx=proximity*(radial*(hover*0.55+pressed*1.1)+
     tile.motion.xy*(hover*0.42+pressed*0.65));
@@ -623,22 +625,14 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // The Clear path retains its previous private-diagnostic ramp.
   let innerLOD=glassLOD(select(tile.properties.z,region.params.y,split),
     select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
-  let outerLOD=glassLOD(tile.properties.z,
+  let outerLOD=glassLOD(select(tile.properties.z,region.params.y,split),
     blurDistribution(nativeHalf1(signed+outer),d));
-  // Mutually exclusive material evaluation. No Clear fragment is evaluated
-  // or stored beneath a Regular fragment. The split source is the raw
-  // quarter-resolution capture, not this render target or the Home glass.
-  let darkFace=state.tintMeta.y>0.5;
+  // Mutually exclusive material evaluation. The title band samples the
+  // raw half-resolution capture, never a previously rendered glass surface.
+  let darkFace=split || state.tintMeta.y>0.5;
   var color:vec3<f32>;
   if(regular){
-    var source:vec4<f32>;
-    if(split){
-      // The capture already starts at quarter resolution; do not add the
-      // full-resolution pyramid's two-level origin a second time.
-      source=regularCaptureSample(interactiveInnerUV,max(0.0,innerLOD-profile.optics.w));
-    }else{
-      source=mipSample(interactiveInnerUV,innerLOD);
-    }
+    let source=mipSample(interactiveInnerUV,innerLOD);
     // Source is opaque. No extra fill blend or endpoint color ramp:
     // both are already represented by the captured native matrix.
     let face=regularFace(source.rgb,profile);
@@ -646,8 +640,16 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     // after the face, independent of the captured static matrix.
     color=clamp(face+vec3<f32>((edge+pointerLight)*0.75),vec3<f32>(0.0),vec3<f32>(1.0));
   }else{
-    let glass=mix(mipSample(interactiveInnerUV,innerLOD),
-      mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
+    var glass:vec4<f32>;
+    if(split){
+      // No interactive UV perturbation. The capture has Clear's half-scale
+      // base, so no additional mip origin bias is applied.
+      glass=mix(projectRegionCaptureSample(innerUV,innerLOD),
+        projectRegionCaptureSample(outerUV,outerLOD),thresholdMix(signed));
+    }else{
+      glass=mix(mipSample(interactiveInnerUV,innerLOD),
+        mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
+    }
     // Preserve the established Clear appearance byte-for-byte in its path.
     let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
     let faceBlack=select(0.20,0.05,darkFace);
@@ -657,7 +659,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Back button, card and homepage squares all use this exact untinted
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
-  if(localTint.w>0.0){
+  if(localTint.w>0.0 && !split){
     // The shared square film is 0.25, including the tinted capsule (-9).
     // The dark green is a hue/opacity INPUT to the original tint mixer,
     // never a different film strength, transmission or color equation.

@@ -72,3 +72,13 @@ export function resolveRegularMaterial({width,height,scale=1,scheme="dark"}){
 export function regularMaterialLanes(profile){
  return [1,profile.innerAmount,profile.innerHeight,profile.lodBias,...profile.faceRows];
 }
+
+// Public project title band: the established dark Clear optical profile,
+// independently non-interactive. Native public Clear input scale .5 and
+// observed finite encoder blur multiplier .4; other Clear surfaces unchanged.
+export function resolveInactiveClearRegion({width,height}){
+ if(![width,height].every(v=>Number.isFinite(v)&&v>0))throw new RangeError("Positive finite material geometry required");
+ const radius=nativePublicBlurRadius("clear",width,height);
+ return Object.freeze({material:"clear",scheme:"dark",interactive:false,
+  nativeInputLayerScale:.5,nativeInputBlurRadius:radius,blurWord:observedBlurWord(radius,1,.25)});
+}
