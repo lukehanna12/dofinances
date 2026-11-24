@@ -259,7 +259,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   font-size:11px;line-height:1.4;font-weight:600;
   color:#eee;text-align:center;letter-spacing:.015em
 }
-.public-projects-root .project-showcase-diagram svg{
+.public-projects-root .project-showcase-diagram > svg{
   display:block;width:100%;height:auto;overflow:visible
 }
 .public-projects-root .project-diagram-node{

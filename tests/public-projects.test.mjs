@@ -20,6 +20,7 @@ import {
 } from "../sites/_apex/assets/home-dashboard/dashboard-glass-geometry.js";
 import {TILE_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-interaction.js";
 import {PROJECT_DIAGRAMS,projectDiagramLayout} from "../sites/_apex/assets/public-projects-diagrams.js";
+import {BOOTSCRIPT_DIAGRAM_SVG} from "../sites/_apex/assets/public-projects-bootscript-diagram.js";
 const load=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("public Projects is a curated snapshot, not an authenticated API leak",()=>{
@@ -422,8 +423,8 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternatives/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
   assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is an Excel add-in and Google Sheets add-on project/);
-  assert.match(PROJECT_DESCRIPTIONS.bootscript,/most broadly capable Google Apps Script Chrome extension.*comparison against eight competitors.*ten assessed capability domains/);
-  assert.match(PROJECT_DESCRIPTIONS.bootscript,/documented breadth, not independently tested live performance/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/built to be the most capable Google Apps Script Chrome extension.*97-criterion documented-feature comparison against 21 competing extensions.*66 capabilities/);
+  assert.match(PROJECT_DESCRIPTIONS.bootscript,/2\.44 times the highest competing count and 8\.25 times the competitor median/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
@@ -462,6 +463,17 @@ test("all 16 projects have readable, explicitly connected native architecture sc
   for(const [slug,specs] of Object.entries(PROJECT_DIAGRAMS)){
     assert.ok(specs.length>=1&&specs.length<=4,slug);
     for(const spec of specs){
+      if(spec.renderer==="d2"){
+        assert.equal(slug,"bootscript");
+        assert.ok(spec.title&&spec.label&&!spec.planned);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/data-d2-version="v0\.9\.0"/);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/viewBox="0 0 467 889"/);
+        assert.equal((BOOTSCRIPT_DIAGRAM_SVG.match(/fill-opacity="0\.54"/g)||[]).length,14);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/fill="transparent"/);
+        assert.doesNotMatch(BOOTSCRIPT_DIAGRAM_SVG,/<(?:script|foreignObject)\b/i);
+        for(const label of ["Native editor","Project console","TypeScript engine","Encrypted vault","Yjs / WebRTC","Gemini","Google Sheets"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(label),label);
+        continue;
+      }
       const layout=projectDiagramLayout(spec,specs.length>1);
       assert.ok(spec.title&&spec.rows.length>=2&&spec.edges.length>0,slug);
       for(const row of layout.rows)for(const n of row){

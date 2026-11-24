@@ -1,58 +1,13 @@
+import {BOOTSCRIPT_DIAGRAM_SVG} from "./public-projects-bootscript-diagram.js";
 /* Source-authored public architecture schematics. All artwork here is
  * native SVG foreground, never a texture or part of the optical backdrop.
  * Future architecture is explicitly marked as planned. */
 export const PROJECT_DIAGRAMS=Object.freeze({
   "bootscript": [
     {
-      "title": "Inside Google's editor",
-      "rows": [
-        [
-          "Google Apps Script"
-        ],
-        [
-          "BootScript extension"
-        ],
-        [
-          "Themes",
-          "Editing controls",
-          "Focus mode"
-        ],
-        [
-          "Google runs and deploys"
-        ]
-      ],
-      "edges": [
-        [
-          0,
-          0,
-          1,
-          0
-        ],
-        [
-          1,
-          0,
-          2,
-          0
-        ],
-        [
-          1,
-          0,
-          2,
-          1
-        ],
-        [
-          1,
-          0,
-          2,
-          2
-        ],
-        [
-          2,
-          1,
-          3,
-          0
-        ]
-      ],
+      "title": "Development architecture",
+      "renderer": "d2",
+      "label": "Google Apps Script IDE; BootScript native editor integration, 57 themes, modal editing, cross-file search and inline diagnostics; extension-owned project console, TypeScript intelligence, project search and export, encrypted vault, GitHub review, collaborative drafts and HTML/CSS previews; authorized Apps Script, GitHub, Gemini and Sheets APIs.",
       "planned": false
     }
   ],
@@ -1002,6 +957,19 @@ export function createProjectDiagrams(slug){
     const caption=document.createElement("span");
     caption.className="project-showcase-diagram-caption";
     caption.textContent=spec.title+(spec.planned?" (planned architecture)":"");
+    if(spec.renderer==="d2"){
+      const parsed=new DOMParser().parseFromString(BOOTSCRIPT_DIAGRAM_SVG,"image/svg+xml");
+      const root=parsed.documentElement;
+      if(root.namespaceURI!==NS||root.localName!=="svg"||parsed.querySelector("parsererror")){
+        throw new Error("Invalid generated BootScript diagram");
+      }
+      const svg=document.importNode(root,true);
+      svg.setAttribute("role","img");
+      svg.setAttribute("aria-label",spec.label);
+      figure.classList.add("project-showcase-diagram--d2");
+      figure.append(caption,svg);group.append(figure);
+      continue;
+    }
     const {width,height,rows}=projectDiagramLayout(spec,specs.length>1);
     const svg=svgNode("svg",{viewBox:"0 0 "+width+" "+height,role:"img",
       "aria-label":spec.title+(spec.planned?", planned architecture":"")+": "+spec.rows.map(r=>r.join(", ")).join("; ")});

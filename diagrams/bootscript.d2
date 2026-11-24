@@ -1,0 +1,34 @@
+direction: down
+style.fill: transparent
+
+host: Google Apps Script IDE
+
+extension: BootScript | Chrome MV3 {
+  grid-columns: 2
+  grid-gap: 12
+  native: Native editor {
+    grid-columns: 1
+    grid-gap: 8
+    editing: "57 themes\nModal editing"
+    navigation: "Cross-file search\nInline diagnostics"
+  }
+  console: Project console {
+    grid-columns: 1
+    grid-gap: 8
+    intelligence: "TypeScript engine\nProject search & export"
+    recovery: "Encrypted vault\nGitHub review"
+    teamwork: "Yjs / WebRTC\nHTML / CSS preview"
+  }
+}
+
+services: Authorized APIs {
+  grid-columns: 2
+  grid-gap: 8
+  apps: Apps Script
+  github: GitHub
+  gemini: Gemini
+  sheets: Google Sheets
+}
+
+host -> extension: Native integration
+extension -> services: Reviewed requests
