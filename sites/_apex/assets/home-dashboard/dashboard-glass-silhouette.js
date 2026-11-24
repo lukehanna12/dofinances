@@ -8,7 +8,9 @@ export const GLASS_ICON_FLOATS=20;
 // Double the vector raster resolution, NOT the optical quantization.
  // 128 high-resolution distance texels equal the old 64 in icon space.
 export const MASK_SIZE=544,MASK_INNER=512,MASK_PAD=16,MASK_RANGE=128;
-export const HAZE_SIZE=512,HAZE_INNER=256,HAZE_PAD=128,HAZE_RANGE=128;
+// Half-width support permits cropping unused padding, without changing
+// original SVG raster resolution or any stored distance quantization.
+export const HAZE_SIZE=384,HAZE_INNER=256,HAZE_PAD=64,HAZE_RANGE=128;
 const INITIAL_MASKS=16,MAX_MASKS=32;
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 export function registerGlassSilhouette(image,{tint="white",opacity=.2}={}){
@@ -64,7 +66,8 @@ export function silhouetteMask(alpha,w,h,range=MASK_RANGE){
  return encodedDistance(alpha,w,h,range,true);
 }
 // Preserve the exact old low-resolution haze channel, including its
-// original SVG raster dimensions, padding, threshold and distance encoding.
+// original SVG content raster dimensions, threshold and distance encoding.
+// Only the unused outer padding has been cropped.
 export function silhouetteHazeMask(alpha,w,h){
  return encodedDistance(alpha,w,h,HAZE_RANGE,false);
 }
@@ -74,7 +77,7 @@ export function silhouetteAtlasBytes(capacity=INITIAL_MASKS){
 // Reference for the authored shader contrast profile, not native evidence.
 export function silhouetteHazeStrength(luminance,distanceCSS,hover=1){
  const t=clamp((luminance-.25)/.65),brightness=t*t*(3-2*t);
- const x=Math.max(0,distanceCSS-1.6)/10.8,tail=clamp((distanceCSS-10)/12);
+ const x=Math.max(0,distanceCSS-.8)/5.4,tail=clamp((distanceCSS-5)/6);
  return .16*clamp(hover)*brightness*Math.exp(-.5*x*x)*(1-tail*tail*(3-2*tail));
 }
 export function createGlassSilhouetteAtlas(device,wake=()=>{}){

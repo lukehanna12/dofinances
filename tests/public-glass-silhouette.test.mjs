@@ -22,10 +22,10 @@ test("silhouette preserves authored alpha, signed contour and holes",()=>{
 });
 test("double spatial resolution, original quantization and physical optical sampling",()=>{
  assert.equal(MASK_INNER,512);assert.equal(MASK_SIZE,544);
- assert.equal(HAZE_INNER,256);assert.equal(HAZE_SIZE,512);
+ assert.equal(HAZE_INNER,256);assert.equal(HAZE_SIZE,384);
  assert.equal(MASK_RANGE/MASK_INNER,64/256);
  assert.equal(HAZE_RANGE/HAZE_INNER,128/256);
- assert.ok(silhouetteAtlasBytes(16)<16*1024*1024);
+ assert.equal(silhouetteAtlasBytes(16),16*(544*544*2+384*384));
  assert.equal(silhouetteAtlasBytes(32),2*silhouetteAtlasBytes(16));
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js"),atlas=asset("dashboard-glass-silhouette.js");
  assert.match(shader,/let signed=\(mask\.g-0\.5\)\*256\.0\*scale/);
@@ -41,14 +41,13 @@ test("adaptive haze is zero in dark pixels, restrained and very soft",()=>{
  assert.ok(silhouetteHazeStrength(.4,0)<.04);
  assert.ok(silhouetteHazeStrength(.95,0)<=.16);
  assert.ok(silhouetteHazeStrength(.95,4)<silhouetteHazeStrength(.95,1));
- assert.ok(silhouetteHazeStrength(.95,11)>0);
- assert.equal(silhouetteHazeStrength(.95,22),0);
+ assert.ok(silhouetteHazeStrength(.95,5.5)>0);
+ assert.equal(silhouetteHazeStrength(.95,11),0);
  assert.equal(silhouetteHazeStrength(.95,0),.16);
- // Twice the Gaussian falloff width and twice the terminal feather,
- // with identical outer support and unchanged maximum attenuation.
- assert.ok(Math.abs(silhouetteHazeStrength(.95,7)-.16*Math.exp(-.5*(5.4/10.8)**2))<1e-12);
- assert.ok(silhouetteHazeStrength(.95,21)<.001);
- assert.equal(silhouetteHazeStrength(.95,23),0);
+ // Half of every spatial parameter, exactly the old profile at 2*d.
+ assert.ok(Math.abs(silhouetteHazeStrength(.95,3.5)-.16*Math.exp(-.5*(2.7/5.4)**2))<1e-12);
+ assert.ok(silhouetteHazeStrength(.95,10.5)<.001);
+ assert.equal(silhouetteHazeStrength(.95,11.5),0);
 });
 test("shared silhouette registration uses Clear tint and same owner fragment",()=>{
  const img={dataset:{}};
@@ -92,8 +91,8 @@ test("native SVG final coverage is independent of 512px optical mask and haze",(
 
 test("haze is display-only and never enters glass optical inputs",()=>{
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js");
- assert.match(shader,/distanceCSS-1\.6\)\/10\.8/);
- assert.match(shader,/1\.0-smoothstep\(10\.0,22\.0,distanceCSS\)/);
+ assert.match(shader,/distanceCSS-0\.8\)\/5\.4/);
+ assert.match(shader,/1\.0-smoothstep\(5\.0,11\.0,distanceCSS\)/);
  assert.match(shader,/let haze=select\(0\.0,silhouetteHaze\(luminance,hazeDistance,hover\),state\.tintMeta\.z>=0\.0\)/);
  const optical=shader.slice(shader.indexOf("let signed=(mask.g-0.5)"),shader.indexOf("return mix(shaded,glass"));
  assert.ok(optical.length>1000);
@@ -101,4 +100,19 @@ test("haze is display-only and never enters glass optical inputs",()=>{
  assert.match(optical,/let base=clamp\(source\+vec3<f32>\(edge\+hover\*0\.075\)/);
  assert.match(r,/u\[19\]=authUniform\[11\];u\[11\]=0;u\[18\]=-1;/);
  assert.match(r,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/);
+});
+
+test("haze atlas crop preserves all retained distance texels exactly",()=>{
+ // Same centered authored alpha, different empty gutters. Crop the full
+ // old field and compare every retained byte, including interior and holes.
+ const big=32,small=24,offset=(big-small)/2;
+ const a=new Uint8Array(big*big),b=new Uint8Array(small*small);
+ for(let y=9;y<23;y++)for(let x=9;x<23;x++)if((x-15)**2+(y-15)**2<=49&&(x-15)**2+(y-15)**2>=9)a[y*big+x]=255;
+ for(let y=0;y<small;y++)b.set(a.subarray((y+offset)*big+offset,(y+offset)*big+offset+small),y*small);
+ const full=silhouetteHazeMask(a,big,big),cropped=silhouetteHazeMask(b,small,small);
+ for(let y=0;y<small;y++)assert.deepEqual(cropped.subarray(y*small,(y+1)*small),full.subarray((y+offset)*big+offset,(y+offset)*big+offset+small));
+ const shader=asset("dashboard-gpu-glass.wgsl");
+ assert.match(shader,/hazeUV=iconUV\*\(256\.0\/384\.0\)\+vec2<f32>\(64\.0\/384\.0\)/);
+ assert.match(shader,/let hazeOutside=length/);
+ assert.ok(64*45.5/256>11);
 });

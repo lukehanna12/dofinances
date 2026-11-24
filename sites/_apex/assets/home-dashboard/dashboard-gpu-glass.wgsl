@@ -499,25 +499,31 @@ fn finalSilhouetteCoverage(icon:GlassSilhouette,local:vec2<f32>,fallback:f32)->f
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
   let brightness=smoothstep(0.25,0.90,luminance);
-  let x=max(0.0,distanceCSS-1.6)/10.8;
-  let tail=1.0-smoothstep(10.0,22.0,distanceCSS);
+  let x=max(0.0,distanceCSS-0.8)/5.4;
+  let tail=1.0-smoothstep(5.0,11.0,distanceCSS);
   return 0.16*hover*brightness*exp(-0.5*x*x)*tail;
 }
 fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
     dimensions:vec2<f32>,region:GlassRegion,parentInnerUV:vec2<f32>,
     parentLOD:f32,backdropExtent:vec2<f32>,darkFace:bool,split:bool,pointScale:f32)->vec3<f32>{
   if(icon.params.x<=0.0||icon.params.w<=0.0||any(icon.rect.zw<=vec2<f32>(0.0))){return color;}
-  // Keep haze and glow on the original 256-content/512-padded
-  // coordinates, while alpha and optical distance use 512 content texels.
+  // Same 256-content texels and encoded distances, with only redundant
+  // outer padding removed. The narrower 11px haze fits the 64px gutter
+  // on the fixed 45.5 CSS-pixel icon. Keep optics independent of this crop.
   let iconUV=(local-icon.rect.xy)/icon.rect.zw;
-  let hazeUV=iconUV*0.5+vec2<f32>(0.25);
-  if(any(hazeUV<vec2<f32>(0.0))||any(hazeUV>vec2<f32>(1.0))){return color;}
+  let hazeUV=iconUV*(256.0/384.0)+vec2<f32>(64.0/384.0);
   let layer=i32(icon.params.x)-1;
-  let hazeMask=silhouetteHazeMask(hazeUV,layer);
+  // Outside the smaller stored domain, distance can only increase.
+  // Clamp to texel centers and add the distance beyond the sampled edge.
+  // The normal fixed-size icon reaches zero haze well before that edge;
+  // this also avoids a hard clip during unusual scaled layouts.
+  let hazeSampleUV=clamp(hazeUV,vec2<f32>(0.5/384.0),vec2<f32>(383.5/384.0));
+  let hazeMask=silhouetteHazeMask(hazeSampleUV,layer);
   let hazeScale=min(icon.rect.z,icon.rect.w)/256.0;
   let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
   let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
-  let hazeDistance=(hazeMask-0.5)*256.0*hazeScale/pointScale;
+  let hazeOutside=length((hazeUV-hazeSampleUV)*384.0);
+  let hazeDistance=(hazeMask-0.5)*256.0*hazeScale/pointScale+hazeOutside*hazeScale/pointScale;
   // Display-only exposure adjustment. The offscreen lower-layer
   // attachments that become optical inputs never contain this haze.
   let haze=select(0.0,silhouetteHaze(luminance,hazeDistance,hover),state.tintMeta.z>=0.0);
