@@ -266,56 +266,7 @@ export function initColosseumProviders(){
   link.addEventListener("click",()=>{state.selected[mode]=uid;});
   return link;
  }
- function renderRealFavicon(d){
-  const credentials=state.mode==="credentials";
-  const saved=["pending","connected"].includes(d.status)&&d.kind==="api_key";
-  header(detail,credentials?"SECURE ACCOUNT CREDENTIALS":"EXTERNAL / INTERACTIVE SERVICE",
-   d.name,"R","Generate favicon assets in the official RealFaviconGenerator editor. This is an interactive web API, not an MCP tool server.");
-  const tags=e("div","pv-detail-state");
-  tags.append(marker(saved?"Key saved · verification pending":"No key connected",saved?"":"unavailable"));
-  detail.append(tags);
-  pairs(detail,[["Source UID",d.uid],["Connection","API key"],["Service","Interactive web API"]]);
-  const section=e("section","pv-detail-section");
-  if(credentials){
-   append(section,"h4","","One-time API key setup");
-   append(section,"p","","Create a free RealFaviconGenerator account and register an API key. Colosseum stores it encrypted; it is never returned to this screen. Saving does not verify the key.");
-   const signup=e("a","pv-detail-action secondary","Get API key");
-   signup.href="https://realfavicongenerator.net/dashboard";signup.target="_blank";signup.rel="noopener noreferrer";
-   section.append(signup);
-   const form=e("form","pv-provider-form"),keyField=field("RealFaviconGenerator API key","",{password:true,placeholder:"Paste API key",maxLength:256});
-   keyField.control.required=true;keyField.control.autocomplete="off";
-   form.append(keyField.wrap);
-   const submit=e("button","pv-detail-action",saved?"Replace saved key":"Save API key");submit.type="submit";form.append(submit);
-   form.addEventListener("submit",event=>{event.preventDefault();
-    const key=keyField.control.value.trim();
-    if(!/^[\x21-\x7e]{8,256}$/.test(key)){setStatus("Enter a valid API key.","error");return;}
-    if(saved&&!confirm("Replace the saved RealFaviconGenerator key?"))return;
-    keyField.control.value="";
-    void reloadAfter({action:"key",uid:d.uid,api_key:key});
-   });
-   section.append(form);
-   if(saved)section.append(action("Disconnect & remove saved key",()=>{
-    if(confirm("Remove the saved RealFaviconGenerator API key?"))
-     void reloadAfter({action:"disconnect",uid:d.uid});
-   },{secondary:true}));
-  }else{
-   append(section,"h4","","Generate favicon");
-   append(section,"p","","The server opens an official editor session using your saved key. Select an image, customize icons and download the generated package on RealFaviconGenerator. No automatic site deployment occurs.");
-   section.append(routeLink("Manage API key","credentials",d.uid));
-   if(saved)section.append(action("Open favicon editor",()=>void busy(async()=>{
-    const result=await request({action:"launch",uid:d.uid});
-    if(result.status!=="editor_session_created"||typeof result.editor_url!=="string")throw Error("The external editor session could not be created.");
-    const u=new URL(result.editor_url);
-    if(u.origin!=="https://realfavicongenerator.net"||u.username||u.password||u.search||u.hash||
-      !/^\/+favicon-editor\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/?$/i.test(u.pathname))
-     throw Error("Unexpected RealFaviconGenerator editor URL.");
-    window.location.assign(u.href);
-   })));
-  }
-  detail.append(section);
- }
  function remoteDetail(d){
-  if(d.uid==="0001d3"&&d.route_mode==="direct"){renderRealFavicon(d);return;}
   const linkedinOAuth=d.route_mode==="local"&&d.local_provider_id==="linkedin";
   header(detail,state.mode==="credentials"?"SECURE ACCOUNT CREDENTIALS":"EXTERNAL / CONNECTED CAPABILITIES",
    d.name,(d.name||"?")[0],
