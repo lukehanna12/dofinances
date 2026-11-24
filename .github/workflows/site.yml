@@ -452,6 +452,28 @@ jobs:
             test "$code" = 404
           done
 
+      - name: Verify private SVGOMG gate and protected SVGO assets on Studio
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin=https://stu.dofinances.com
+          for route in /svg-editor/ /svg-editor/index.html; do
+            headers="$(mktemp)"
+            code="$(curl -sS --max-time 20 -D "$headers" -o /dev/null -w '%{http_code}' "$origin$route")"
+            echo "$route -> HTTP $code (expected 303 owner authorization)"
+            test "$code" = 303
+            grep -Fiq 'location: https://dofinances.com/api/studio/start' "$headers"
+            rm "$headers"
+          done
+          for route in /svg-editor/js/page.js /svg-editor/js/svgo-worker.js /svg-editor/all.css /svg-editor/LICENSE.md; do
+            code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$origin$route")"
+            echo "$route -> HTTP $code (expected 404 without a Studio grant)"
+            test "$code" = 404
+          done
+          code="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' https://dofinances.com/api/studio/exchange)"
+          test "$code" = 405
+          echo 'SVGOMG remains private to the signed-in owner, including its JS and SVG optimization worker'
+
       - name: Verify Git-hosted Home wallpaper, library-iii images and shared stylesheet
         shell: bash
         run: |
