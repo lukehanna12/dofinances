@@ -261,8 +261,8 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/\.public-projects-root/);
   assert.match(renderer,/projects\|\|homeCtas\|\|card\?\.hasAttribute\("data-glass-dropdown"\)\?"independent":"nested"/);
   assert.match(renderer,/\["filter-dropdown","expand-close"\]\.includes\(node\.dataset\.publicProjectGlass\)/);
-  assert.match(renderer,/node\.dataset\.publicProjectGlass==="title"\)return -8;/);
-  assert.match(renderer,/syncProjectTitleMask\(panes\)/);
+  assert.match(renderer,/node\.hasAttribute\("data-glass-text"\)\)return -8;/);
+  assert.match(renderer,/syncGlassTextMask\(panes\)/);
   assert.match(renderer,/normalizeGlassCornerRadii\(\[/);
   assert.match(renderer,/const live=tile\.hasAttribute\("data-home-cta-glass"\)\|\|\s*glassPaneNeedsLiveTransform\(tile\.dataset\?\.publicProjectGlass\)/);
   assert.match(renderer,/const layoutW=Math\.max\(1,tile\.offsetWidth\),layoutH=Math\.max\(1,tile\.offsetHeight\)/);
@@ -311,10 +311,10 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(css,/font-size:clamp\(51\.75px,4\.5vw,69\.75px\)/);
   assert.match(css,/\.public-projects-heading-row\{\s*display:flex;align-items:flex-start;justify-content:space-between;/);
   assert.match(css,/\.public-projects-title\{[\s\S]*?-webkit-user-select:none;user-select:none/);
-  assert.match(css,/\.public-projects-root \.public-projects-title\{\s*color:transparent!important;/);
+  assert.match(await load("../sites/_apex/assets/public-home.css"),/\[data-glass-text-ready\]\{\s*color:transparent!important;/);
   assert.match(shader,/@group\(0\) @binding\(4\) var titleGlyphAlpha: texture_2d<f32>;/);
   assert.match(shader,/fn titleGlyphField\(local:vec2<f32>\)/);
-  assert.match(shader,/let glassTitle=tile\.properties\.y == -8\.0;/);
+  assert.match(shader,/let glassTitle=tile\.properties\.y == -8\.0 && clockText;/);
   assert.match(shader,/glyphCoverage,glassTitle/);
   assert.match(shader,/let dismiss=clamp\(tile\.motion\.w,0\.0,1\.0\);/);
   assert.match(shader,/if\(authPane&&dismiss<=0\.0\)\{/);

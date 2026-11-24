@@ -455,23 +455,68 @@ fn dissolveField(p:vec2<f32>)->f32{
  * Normalized r8 input is from locally rasterizing the heading's font
  * (not a DOM screenshot, image capture, or mipmap).
  */
+// Clock glyph field: exact 10-bit code stored as half, normal, independent AA.
 fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
-  let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
-  let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);
-  let a=textureLoad(titleGlyphAlpha,p,0).r;
-  let left=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(-1,0),vec2<i32>(0),limit),0).r;
-  let right=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(1,0),vec2<i32>(0),limit),0).r;
-  let above=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(0,-1),vec2<i32>(0),limit),0).r;
-  let below=textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(0,1),vec2<i32>(0),limit),0).r;
-  let gradient=vec2<f32>(right-left,below-above)*0.5;
-  let magnitude=length(gradient);
-  // alpha increases *inward*, so the outward contour normal is -gradient.
-  let outward=select(vec2<f32>(0.0),-gradient/max(magnitude,0.00001),
-    magnitude>0.00001);
-  // Approximate a local signed contour distance in physical pixels.
-  // The true antialiased glyph alpha is kept independently as coverage.
-  let distance=clamp((0.5-a)/max(magnitude,0.08),-6.0,6.0);
-  return vec4<f32>(distance,outward,a);
+ let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
+ let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);
+ let glyph=textureLoad(titleGlyphAlpha,p,0);
+ let signed=nativeHalf1(1.0-glyph.r*(25.0/1023.0));
+ return vec4<f32>(signed*max(state.viewport.w,1.0),glyph.gb,glyph.a);
+}
+// 25F80 finite clock binding, not the generic Clear blur or face.
+fn clockBlurDistribution(d:f32)->f32{
+ let near=nativeHalf1(ramp(d,-24.0,-1.0));
+ let edge=nativeHalf1(ramp(d,-1.0,0.0));
+ let far=nativeHalf1(ramp(d,0.0,0.0));
+ return nativeHalf1(0.5-nativeHalf1(nativeHalf1(nativeHalf1(-0.5*near)+nativeHalf1(0.5*edge))+nativeHalf1(-0.5*far)));
+}
+fn clockTextBase(signed:f32,normal:vec2<f32>,baseUV:vec2<f32>,extent:vec2<f32>,pointScale:f32,profile:MaterialProfile)->vec3<f32>{
+ let d=nativeHalf1(signed/pointScale);
+ let inner=refractionEnvelope(d,profile.optics.y,1.0/profile.optics.z);
+ let uv=nativeHalf2(baseUV+nativeHalf2(normal*inner*pointScale/extent));
+ let lod=glassLOD(1.2000000476837158,clockBlurDistribution(nativeHalf1(d+inner)))+profile.optics.w;
+ let source=nativeHalf3(mipSample(uv,lod).rgb);
+ let bleed=refractionEnvelope(d,64.0,0.125);
+ let buv=nativeHalf2(baseUV+nativeHalf2(normal*bleed*pointScale/extent));
+ let raw=nativeHalf3(mipSample(buv,glassLOD(8.0,1.0)+profile.optics.w).rgb);
+ let bc=nativeHalf3(vec3<f32>(dot(raw,profile.face0.xyz)+profile.face0.w,dot(raw,profile.face1.xyz)+profile.face1.w,dot(raw,profile.face2.xyz)+profile.face2.w));
+ let l=nativeHalf1(clamp(dot(source,vec3<f32>(0.2125244140625,0.71533203125,0.07208251953125)),0.0,1.0));
+ let dark=nativeHalf1(1.0-l);
+ let weighted=nativeHalf1(nativeHalf1(dark*dark)*nativeHalf1(ramp(d,1.0,0.0)));
+ let color=nativeHalf3(mix(source,bc,nativeHalf1(weighted*weighted)));
+ let hold=nativeHalf1(1.0-ramp(d,-1.0,-0.5));
+ return nativeHalf3(clamp(mix(color,nativeHalf3(color*0.97021484375),hold),vec3<f32>(-0.75),vec3<f32>(1.0)));
+}
+// Static AIR sdf_key_fill_highlight structure. Native CA scalar inputs;
+// private angle/amount uniform packing remains a browser projection.
+fn clockHighlightLobe(distance:f32,aa:f32,normal:vec2<f32>,direction:vec2<f32>)->f32{
+ let height=0.75;
+ let t=clamp(distance/height,0.0,1.0);
+ let curve=mix(select(0.0,1.0,t<1.0),1.0-t,0.7);
+ let band=clamp(0.5+distance/aa,0.0,1.0)*curve*clamp(0.5+(height-distance)/aa,0.0,1.0);
+ let spread=nativeHalf1(cos(0.8726646259971648));
+ let angular=clamp((nativeHalf1(dot(normal,direction))-spread)/max(1.0-spread,0.0001),0.0,1.0);
+ let a=nativeHalf1(band*angular);
+ return nativeHalf1(a/max(nativeHalf1(1.0+(1.0-a)*1.0),0.0001));
+}
+fn clockTextVibrancy(base:vec3<f32>,signed:f32,normal:vec2<f32>,pointScale:f32,edgeWidth:f32)->vec3<f32>{
+ // CASDFGradientEffect: opaque white from -1 to 0, then transparent;
+ // backdrop-aware vibrant matrix identity with RGB bias +.25.
+ let gradient=nativeHalf3(base+vec3<f32>(0.25));
+ let len=max(length(normal),0.0001);
+ let dist=-signed/pointScale/len;
+ let aa=max(edgeWidth/pointScale/len,0.0001);
+ let n=normal/len;
+ let k=clockHighlightLobe(dist,aa,n,vec2<f32>(0.7071067811865476,-0.7071067811865476));
+ let f=clockHighlightLobe(dist,aa,n,vec2<f32>(-0.7071067811865476,0.7071067811865476));
+ let highlight=clamp(nativeHalf1(k+f),0.0,1.0);
+ let c=nativeHalf3(gradient);
+ let v=nativeHalf3(vec3<f32>(
+ dot(c,nativeHalf3(vec3<f32>(1.6030999422073364,-1.3351999521255493,-0.13459999859333038)))+nativeHalf1(1.1999999284744263),
+ dot(c,nativeHalf3(vec3<f32>(-0.3967999815940857,0.6649999618530273,-0.1348000019788742)))+nativeHalf1(1.1999999284744263),
+ dot(c,nativeHalf3(vec3<f32>(-0.3969999849796295,-1.3349000215530396,1.8651999235153198)))+nativeHalf1(1.1999999284744263)));
+ // Opaque destination specialization of vibrant_color_matrix_sover.
+ return nativeHalf3(mix(c,clamp(v,vec3<f32>(-0.75),vec3<f32>(nativeHalf1(1.2))),highlight));
 }
 // Shared Clear face and pigment stages, also used by authored silhouettes.
 fn clearFace(baseColor:vec3<f32>,darkFace:bool)->vec3<f32>{
@@ -587,7 +632,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     profile.optics=vec4<f32>(0.0);
   }
   let regular=profile.optics.x>0.5 && profile.optics.x<1.5;
-  let dropdown=profile.optics.x>1.5;
+  let dropdown=profile.optics.x>1.5 && profile.optics.x<2.5;
+  let clockText=profile.optics.x>2.5;
   // Evaluate row derivatives before divergent material/coverage branches.
   // Non-dropdown profiles have no row; their value is never composited.
   let rowRadius=max(0.0,profile.face1.z);
@@ -603,7 +649,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // AIR branches rather than evaluating both branches under eager select:
   // native compute_sdf_with_mode uses an i32 mode gate, so only the selected
   // path participates in arithmetic and its half-return rounding.
-  let glassTitle=tile.properties.y == -8.0;
+  let glassTitle=tile.properties.y == -8.0 && clockText;
   var field:vec3<f32>;
   var glyphCoverage:f32=1.0;
   if(glassTitle){
@@ -633,7 +679,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let dismiss=clamp(tile.motion.w,0.0,1.0);
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
-  if(coverage<=0.0&&dismiss<=0.0){discard;}
+  if((coverage<=0.0&&dismiss<=0.0)||(tile.properties.y == -8.0&&!clockText)){discard;}
   // The inactive Clear region has a straight upper refraction edge but retains
   // the original outer card coverage, hit geometry and dismissal.
   if(split){
@@ -733,7 +779,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // of the stationary wallpaper into the next compositor scroll frame.
   // The unchanged full WebGPU refraction remains for the homepage squares
   // and the original full WebGPU sign-in default.
-  if(authPane && state.tintMeta.z>0.5 && !dropdown){
+  if(authPane && state.tintMeta.z>0.5 && !dropdown && !clockText){
     var tintStrength=select(0.25,0.60,authPane);
     if(tile.properties.y == -4.0){tintStrength=0.82;}
     else if(tile.properties.y == -5.0){tintStrength=0.62;}
@@ -755,7 +801,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // raw half-resolution capture, never a previously rendered glass surface.
   let darkFace=split || state.tintMeta.y>0.5;
   var color:vec3<f32>;
-  if(regular){
+  if(clockText){
+    let base=clockTextBase(signed,field.yz,baseUV,backdropExtent,pointScale,profile);
+    color=clockTextVibrancy(base,signed,field.yz,pointScale,nativeWidth);
+  }else if(regular){
     let source=mipSample(interactiveInnerUV,innerLOD);
     // Source is opaque. No extra fill blend or endpoint color ramp:
     // both are already represented by the captured native matrix.
@@ -782,7 +831,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Back button, card and homepage squares all use this exact untinted
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
-  if(localTint.w>0.0 && !split && !dropdown){
+  if(localTint.w>0.0 && !split && !dropdown && !clockText){
     // The shared square film is 0.25, including the tinted capsule (-9).
     // The dark green is a hue/opacity INPUT to the original tint mixer,
     // never a different film strength, transmission or color equation.
@@ -824,8 +873,9 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     }
   }
   // Silhouette after live artwork, before owner coverage/dismissal.
-  color=composeGlassSilhouette(color,silhouettes[in.tileIndex],in.local,dimensions,region,
-    interactiveInnerUV,innerLOD,backdropExtent,darkFace,split,pointScale);
+  if(!clockText){  color=composeGlassSilhouette(color,silhouettes[in.tileIndex],in.local,dimensions,region,
+    interactiveInnerUV,innerLOD,backdropExtent,darkFace,split,pointScale);}
+
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.
   // Sign-in and normal Projects panes preserve their original appearance.

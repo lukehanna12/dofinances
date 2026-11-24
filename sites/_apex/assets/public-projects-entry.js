@@ -1,4 +1,5 @@
 import {registerGlassSilhouette} from "./home-dashboard/dashboard-glass-silhouette.js";
+import {registerGlassText} from "./home-dashboard/dashboard-glass-text.js";
 /* Public /projects route: owns card markup, artwork reveal, staggered entry
  * and exact reversed exit. The persistent '/' shell alone owns wallpaper,
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
@@ -126,6 +127,7 @@ export function mountProjects(host,{onBack,onExitComplete}){
   // The DOM heading remains semantic and supplies its computed font shape.
   // The shared WebGPU shader refracts through the GLYPHS, not a text box.
   title.dataset.publicProjectGlass="title";
+  registerGlassText(title);
   const headingRow=el("div","public-projects-heading-row");
   headingRow.append(title);
   head.append(back,headingRow);

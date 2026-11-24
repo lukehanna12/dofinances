@@ -581,3 +581,9 @@ body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-tile{
 body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-icon{
   opacity:var(--public-icon-spatial-alpha,0);
 }
+
+/* Authored semantic text remains visible until its shared GPU field is ready. */
+body.public-home[data-auth-gpu-scene="ready"] [data-glass-text-ready]{
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important
+}

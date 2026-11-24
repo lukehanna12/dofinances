@@ -35,6 +35,7 @@ import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from ".
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
 import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
+import {CLOCK_TEXT_PROFILE,clockTextMaterialLanes,rasterClockText} from "./dashboard-glass-text.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
 // Layer zero is the live mosaic. Layer one samples its completed GPU
@@ -136,13 +137,14 @@ function authPaneElements(){
   // Any future route in the persistent public shell may register a dropdown.
   // Existing Projects role selectors are retained for their layout/animation.
   const dropdowns=[...(routeMount?.querySelectorAll("[data-glass-dropdown]")??[])];
+  const texts=[...(routeMount?.querySelectorAll("[data-glass-text]")??[])].filter(n=>!n.hidden).slice(0,1);
   const card=document.querySelector(".auth3-root [data-auth-glass-card]");
   if(card)return [card,...card.querySelectorAll(
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
-  ),...dropdowns].slice(0,AUTH_PANE_CAPACITY);
+  ),...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY);
   const projects=document.querySelector(".public-projects-root");
-  if(!projects)return dropdowns.length?dropdowns.slice(0,AUTH_PANE_CAPACITY):[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
-  const all=[...new Set([...projects.querySelectorAll("[data-public-project-glass]"),...dropdowns])];
+  if(!projects)return texts.length||dropdowns.length?[...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY):[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
+  const all=[...new Set([...projects.querySelectorAll("[data-public-project-glass]"),...texts,...dropdowns])];
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
   const top=all.filter(node=>
@@ -167,7 +169,7 @@ const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
 // -4 primary, -5 social sign-in and -6 text input. Squares are unchanged.
 function authPaneMaterialTag(node){
   if(node.hasAttribute("data-home-cta-glass"))return -9;
-  if(node.dataset.publicProjectGlass==="title")return -8;
+  if(node.hasAttribute("data-glass-text"))return -8;
   if(node.classList.contains("auth3-back-link")||
      node.dataset.publicProjectGlass==="back"||
      node.dataset.publicProjectGlass==="expand-close")return -7;
@@ -178,7 +180,7 @@ function authPaneMaterialTag(node){
   return -2;
 }
 function authPaneTint(node,scheme){
-  if(node.hasAttribute("data-glass-dropdown"))return tintParameters("none",undefined,scheme);
+  if(node.hasAttribute("data-glass-dropdown")||node.hasAttribute("data-glass-text"))return tintParameters("none",undefined,scheme);
   if(node.hasAttribute("data-home-cta-glass")){
     // The same computed CSS transition value drives tint and scale timing.
     const raw=Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"));
@@ -651,9 +653,9 @@ async function initialize(){
   const glyphUsage=GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST;
   let glyphMaskTexture=device.createTexture({
     label:"Placeholder alpha for glyph-shaped WebGPU glass",
-    size:[1,1,1],format:"r8unorm",usage:glyphUsage
+    size:[1,1,1],format:"rgba16float",usage:glyphUsage
   });
-  let glyphMaskKey="",glyphMaskDimensions=[1,1];
+  let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null;
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
   let regionData=new Float32Array(0),regionBuffer=null;
@@ -777,7 +779,7 @@ async function initialize(){
   function syncMaterialProfiles(){
     const panes=authPaneElements(),nodes=[...trackTiles,...panes];
     const scheme=tint.state.scheme;
-    let changed=false,regularCount=0;
+    let changed=false,regularCount=0,clockTextCount=0;
     const roles=[],dropdowns=[];dropdownSlots=[];routeLayerSlots=[];
     for(let i=0;i<instanceCount;i++){
       const node=nodes[i],p=i*TILE_FLOATS,m=i*MATERIAL_FLOATS;
@@ -788,7 +790,15 @@ async function initialize(){
       }
       const regular=selectedMaterial==="regular"&&tileData[p+2]>0&&tileData[p+3]>0;
       const dropdown=selectedMaterial==="dropdown"&&tileData[p+2]>0&&tileData[p+3]>0;
-      if(dropdown){
+      if(selectedMaterial==="clock-text"&&node===glyphMaskOwner){
+        const lanes=clockTextMaterialLanes();
+        for(let j=0;j<MATERIAL_FLOATS;j++){
+          const v=Math.fround(lanes[j]);
+          if(materialData[m+j]!==v){materialData[m+j]=v;changed=true;}
+        }
+        tileData[p+6]=CLOCK_TEXT_PROFILE.blurWord;
+        clockTextCount++;
+      }else if(dropdown){
         const profile=resolveDropdownMaterial({width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
           scale:dpr,scheme:node.dataset.glassScheme||scheme,row:dropdownRowBounds(node)});
         const lanes=dropdownMaterialLanes(profile);
@@ -826,7 +836,7 @@ async function initialize(){
       }
     }
     if(changed)device.queue.writeBuffer(materialBuffer,0,materialData);
-    audit.materials={regular:regularCount,clear:nodes.length-regularCount-dropdownSlots.filter(Boolean).length,
+    audit.materials={regular:regularCount,clockText:clockTextCount,clear:nodes.length-regularCount-clockTextCount-dropdownSlots.filter(Boolean).length,
       dropdown:dropdownSlots.filter(Boolean).length,scheme,roles,sharedPipeline:true};
     audit.dropdownGlass={visible:dropdowns,backdrop:"completed GPU route underlay",compositeFrames:dropdownCompositeFrames,sharedPipeline:true};
     routeActiveLayers=[...new Set(routeLayerSlots.filter((layer,i)=>layer>0&&tileData[(tileCount+i)*TILE_FLOATS+18]>.002))].sort((a,b)=>a-b);
@@ -1099,75 +1109,35 @@ async function initialize(){
     if(audit.dropdownGlass?.visible.length)audit.dropdownGlass.compositeFrames=++dropdownCompositeFrames;
     audit.sourceComposition.completedLayers=[...routeActiveLayers];
   }
-  function syncProjectTitleMask(panes){
-    const title=panes.find(node=>node.dataset.publicProjectGlass==="title");
-    if(!title)return;
+  function syncGlassTextMask(panes){
+    const title=panes.find(node=>node.hasAttribute("data-glass-text"));
+    if(glyphMaskOwner&&glyphMaskOwner!==title)glyphMaskOwner.removeAttribute("data-glass-text-ready");
+    glyphMaskOwner=null;if(!title)return;
     const style=getComputedStyle(title),rect=title.getBoundingClientRect();
-    const width=Math.max(1,Math.ceil(rect.width*dpr));
-    const height=Math.max(1,Math.ceil(rect.height*dpr));
-    const text=title.textContent||"";
-    const signature=[text,width,height,dpr,style.fontFamily,style.fontSize,
-      style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight].join("|");
-    if(signature===glyphMaskKey)return;
-    if(width>device.limits.maxTextureDimension2D||
-       height>device.limits.maxTextureDimension2D)
-      throw Error("Project title glyph mask exceeds GPU texture dimensions");
-    const scratch=document.createElement("canvas");
-    scratch.width=width;scratch.height=height;
-    const ctx=scratch.getContext("2d",{willReadFrequently:true});
-    if(!ctx)throw Error("Project title font mask context unavailable");
-    ctx.scale(dpr,dpr);
-    ctx.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
-    ctx.fillStyle="#fff";
-    ctx.textBaseline="alphabetic";
-    // Use the DOM's computed font, letter spacing and line box. This draws
-    // only authored glyph geometry into an ephemeral alpha mask, not any
-    // underlying page pixels. The actual glass still comes from WGSL.
-    const letterSpacing=Number.parseFloat(style.letterSpacing)||0;
-    const supportsLetterSpacing="letterSpacing" in ctx;
-    if(supportsLetterSpacing)ctx.letterSpacing=style.letterSpacing;
-    const metrics=ctx.measureText(text);
-    const ascent=metrics.fontBoundingBoxAscent||metrics.actualBoundingBoxAscent||0;
-    const descent=metrics.fontBoundingBoxDescent||metrics.actualBoundingBoxDescent||0;
-    const baseline=(rect.height-ascent-descent)*0.5+ascent;
-    if(supportsLetterSpacing){
-      ctx.fillText(text,0,baseline);
-    }else{
-      let cursor=0;
-      for(const char of text){
-        ctx.fillText(char,cursor,baseline);
-        cursor+=ctx.measureText(char).width+letterSpacing;
-      }
+    const width=Math.max(1,Math.ceil(rect.width*dpr)),height=Math.max(1,Math.ceil(rect.height*dpr)),text=title.textContent||"";
+    const signature=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,
+      style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
+    if(signature===glyphMaskKey){
+      glyphMaskOwner=title;if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";return;
     }
-    const rgba=ctx.getImageData(0,0,width,height).data;
-    const rowBytes=Math.ceil(width/256)*256;
-    const pixels=new Uint8Array(rowBytes*height);
-    let filled=0;
-    for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-      const alpha=rgba[(y*width+x)*4+3];
-      pixels[y*rowBytes+x]=alpha;
-      if(alpha>0)filled++;
+    if(width>device.limits.maxTextureDimension2D||height>device.limits.maxTextureDimension2D){
+      title.removeAttribute("data-glass-text-ready");return;
     }
-    scratch.width=0;scratch.height=0;
-    if(!filled)throw Error("Project title glyph raster is empty");
-    const texture=device.createTexture({
-      label:"Projects font alpha, shape-only, original Liquid Glass shader",
-      size:[width,height,1],format:"r8unorm",usage:glyphUsage
-    });
-    device.queue.writeTexture({texture},pixels,
-      {offset:0,bytesPerRow:rowBytes,rowsPerImage:height},
-      {width,height,depthOrArrayLayers:1});
-    const previous=glyphMaskTexture;
-    glyphMaskTexture=texture;
-    glyphMaskKey=signature;
-    glyphMaskDimensions=[width,height];
-    rebindGlassGroups();
-    previous.destroy();
-    audit.projectTitleMask={
-      source:"computed-font alpha silhouette, no DOM or wallpaper capture",
-      width,height,nonzeroPixels:filled,shaderTag:-8,
-      pipeline:"shared-webgpu-glassPipeline"
-    };
+    try{
+      const raster=rasterClockText(text,style,width,height,dpr);
+      if(!raster){title.removeAttribute("data-glass-text-ready");return;}
+      const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1],previous=glyphMaskTexture;
+      const texture=resized?device.createTexture({label:"Native clock text: 10-bit SDF, normals and full-pixel glyph coverage",
+        size:[width,height,1],format:"rgba16float",usage:glyphUsage}):previous;
+      const pixels=raster.pixels;
+      device.queue.writeTexture({texture},pixels,{offset:0,bytesPerRow:width*8,rowsPerImage:height},{width,height,depthOrArrayLayers:1});
+      glyphMaskTexture=texture;glyphMaskKey=signature;glyphMaskDimensions=[width,height];glyphMaskOwner=title;
+      if(resized){rebindGlassGroups();previous.destroy();}
+      if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
+      audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
+        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:10,distanceRange:[-24,1],
+        pipeline:"shared-webgpu-glassPipeline",nativeEvidence:"2f4217b4530654e6e9fd432c9834528c0fdd2e89"};
+    }catch(error){title.removeAttribute("data-glass-text-ready");console.warn("Glass heading contour:",String(error));}
   }
   function paintAuthPanes(){
     const panes=authPaneElements(),scheme=authGlassScheme();
@@ -1176,7 +1146,7 @@ async function initialize(){
     const homeCtas=panes[0]?.hasAttribute("data-home-cta-glass")===true;
     const homeGroupOpacity=homeCtas?Math.max(0,Math.min(1,
       Number.parseFloat(getComputedStyle(panes[0].parentElement).opacity)||0)):1;
-    if(projects)syncProjectTitleMask(panes);
+    syncGlassTextMask(panes);
     const dismissAt=Number.parseFloat(projectRoot?.dataset.projectHeaderDismissAt);
     const projectDismissElapsed=Number.isFinite(dismissAt)?
       Math.max(0,performance.now()-dismissAt):-1;
@@ -1208,7 +1178,7 @@ async function initialize(){
       // Only the sign-in controls' neutral pigment film varies by role.
       // Every pane retains the exact shared square glass optics and hover.
       tileData[p+5]=authPaneMaterialTag(node);
-      const paneOpacity=node.hasAttribute("data-glass-dropdown")?Math.max(0,Math.min(1,
+      const paneOpacity=node.hasAttribute("data-glass-text")&&node!==glyphMaskOwner?0:(node.hasAttribute("data-glass-dropdown")||node.hasAttribute("data-glass-text"))?Math.max(0,Math.min(1,
         Number.parseFloat(getComputedStyle(node).opacity)||0)):homeCtas?
         homeGroupOpacity*Math.max(0,Math.min(1,
           Number.parseFloat(getComputedStyle(node).opacity)||0)):
@@ -1291,7 +1261,7 @@ async function initialize(){
           foreground.style.removeProperty("filter");
         }
       }
-      cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1?1:0;
+      cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1||node.hasAttribute("data-glass-text")?1:0;
       roles.push(homeCtas?"home-cta-"+i:
         projects?node.dataset.publicProjectGlass:
         node.hasAttribute("data-auth-glass-card")?"card":
@@ -1837,7 +1807,7 @@ async function initialize(){
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();
-    glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
+    glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
