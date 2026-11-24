@@ -1453,6 +1453,26 @@ try{
   assert.equal(await evaluate("document.body.dataset.directLogin"),"true");
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
+  // Material switches must reach the actual shared GPU instance buffer on
+  // all public surfaces, without a new shader or a change to default Clear.
+  if(await evaluate("document.body.dataset.gpuScene==='ready'")){
+    await evaluate("document.documentElement.setAttribute('data-glass-material','regular')");
+    await until("window.__dashboardWebGPU?.materials?.regular>3",80,40);
+    assert.ok(await evaluate("window.__dashboardWebGPU.materials.roles.some(x=>x.role==='mosaic')"));
+    assert.ok(await evaluate("window.__dashboardWebGPU.materials.roles.some(x=>x.role==='home-cta')"));
+    await evaluate("document.querySelector('.cta6-bottom-action a').click()");
+    await until("window.__dofPublicRouter?.state==='login'&&window.__dashboardWebGPU?.materials?.roles.some(x=>x.role==='card')",190);
+    assert.ok(await evaluate("window.__dashboardWebGPU.materials.roles.some(x=>x.role==='input')"));
+    assert.ok(await evaluate("window.__dashboardWebGPU.materials.roles.some(x=>x.role==='submit')"));
+    await evaluate("document.querySelector('.auth3-back-link').click()");
+    await until("window.__dofPublicRouter?.state==='home'",190);
+    await evaluate("document.querySelector('[data-public-target=\"/projects\"]').click()");
+    await until("window.__dofPublicRouter?.state==='projects'&&window.__dashboardWebGPU?.materials?.roles.some(x=>x.role==='title')",190);
+    assert.ok(await evaluate("window.__dashboardWebGPU.materials.roles.some(x=>x.role==='card')"));
+    await evaluate("document.documentElement.removeAttribute('data-glass-material')");
+    await until("window.__dashboardWebGPU?.materials?.regular===0",80,40);
+    assert.equal(await evaluate("document.body.dataset.authGpuScene"),"ready");
+  }
   assert.deepEqual(misses,[],"No missing shell or lazy login assets");
   process.stdout.write("Persistent shell, lazy login card, reverse exit, browser history and direct entry verified.\\n");
 }finally{

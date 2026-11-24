@@ -26,6 +26,8 @@ import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
  planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass}
  from "./dashboard-glass-model.js";
+import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularMaterialLanes,validateGlassMaterial}
+ from "./dashboard-glass-material.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
@@ -332,7 +334,7 @@ function makeLayoutData(tile,scale,sceneTop=0){
   ],layoutW,layoutH).map(v=>v*s);
   const surface=resolveGlassSurface({
     width:w,height:h,scale,radii:corners,
-    content:surfaceContentFromElement(tile)
+    content:surfaceContentFromElement(tile),material:glassMaterialFromElement(tile)
   });
   const delay=Number.parseFloat(style.getPropertyValue("--cta6-delay"))||0;
   const radius=nativePublicBlurRadius("clear",w,h);
@@ -551,7 +553,7 @@ async function initialize(){
   const authGlobalsBuffer=device.createBuffer({
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
-  let tileBuffer=null,tintTileBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
+  let tileBuffer=null,tintTileBuffer=null,materialBuffer=null,scene=null,sceneView=null,mipGroups=[],copyGroup=null,
     glassGroup=null,authGlassGroup=null,backgroundGroup=null,offscreenFrame=null,
     // Home-only background texture: same GPU-owned photograph + each
     // PRESENTED moving square, composited in the current frame before
@@ -571,6 +573,7 @@ async function initialize(){
   });
   let glyphMaskKey="",glyphMaskDimensions=[1,1];
   let tintData=new Float32Array(0),lastTintKey="";
+  let materialData=new Float32Array(0);
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
@@ -667,14 +670,52 @@ async function initialize(){
     audit.tintShowcase=value.name==="showcase"?
       {hues:[...SHOWCASE_TINTS],opacityTiers:[...SHOWCASE_OPACITIES]}:null;
   }
+  // The material buffer is deliberately independent of route tags and tile
+  // animation. Both full-scene and pane-only submissions use it.
+  function syncMaterialProfiles(){
+    const panes=authPaneElements(),nodes=[...trackTiles,...panes];
+    const scheme=tint.state.scheme;
+    let changed=false,regularCount=0;
+    const roles=[];
+    for(let i=0;i<instanceCount;i++){
+      const node=nodes[i],p=i*TILE_FLOATS,m=i*MATERIAL_FLOATS;
+      const regular=node&&glassMaterialFromElement(node)==="regular"&&
+        tileData[p+2]>0&&tileData[p+3]>0;
+      if(regular){
+        const profile=resolveRegularMaterial({width:tileData[p+2]/dpr,
+          height:tileData[p+3]/dpr,scale:dpr,scheme});
+        const lanes=regularMaterialLanes(profile);
+        for(let j=0;j<MATERIAL_FLOATS;j++){
+          const v=Math.fround(lanes[j]);
+          if(materialData[m+j]!==v){materialData[m+j]=v;changed=true;}
+        }
+        tileData[p+6]=profile.blurWord;
+        regularCount++;
+        roles.push({index:i,role:i<tileCount?"mosaic":node.dataset.publicProjectGlass||
+          (node.hasAttribute("data-home-cta-glass")?"home-cta":
+          node.hasAttribute("data-auth-glass-card")?"card":
+          node.hasAttribute("data-auth-glass-input")?"input":
+          node.hasAttribute("data-auth-glass-submit")?"submit":"provider-or-back"),
+          mode:tileData[p+7],blurWord:tileData[p+6],faceScope:profile.faceScope});
+      }else if(materialData[m]!==0){
+        materialData.fill(0,m,m+MATERIAL_FLOATS);changed=true;
+        if(node)tileData[p+6]=observedBlurWord(nativePublicBlurRadius("clear",
+          tileData[p+2]/dpr,tileData[p+3]/dpr),1,.25);
+      }
+    }
+    if(changed)device.queue.writeBuffer(materialBuffer,0,materialData);
+    audit.materials={regular:regularCount,clear:nodes.length-regularCount,
+      scheme,roles,sharedPipeline:true};
+  }
   function rebindGlassGroups(){
-    if(!sceneView||!tileBuffer||!tintTileBuffer)return;
+    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer)return;
     const entries=(buffer,source=sceneView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer}},
       {binding:3,resource:{buffer:tintTileBuffer}},
-      {binding:4,resource:glyphMaskTexture.createView()}
+      {binding:4,resource:glyphMaskTexture.createView()},
+      {binding:5,resource:{buffer:materialBuffer}}
     ];
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
@@ -1072,6 +1113,7 @@ async function initialize(){
     interaction.writeTo(data);
     tileData=data;
     tintData=new Float32Array(instanceCount*4);
+    materialData=new Float32Array(instanceCount*MATERIAL_FLOATS);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -1092,6 +1134,10 @@ async function initialize(){
       size:Math.max(16,tintData.byteLength),
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
     });
+    materialBuffer?.destroy();
+    materialBuffer=device.createBuffer({size:Math.max(32,materialData.byteLength),
+      usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(materialBuffer,0,materialData);
     lastTintKey="";
     syncTileTints(true);
     rebindGlassGroups();
@@ -1208,6 +1254,7 @@ async function initialize(){
     if(tileCount)paintTrack(dt);
     const authAnimating=paintAuthPanes();
     syncTileTints();
+    syncMaterialProfiles();
     const animating=interaction.advance(dt,reducedMotion.matches);
     const authHoverAnimating=authHover.advance(authDt,reducedMotion.matches);
     if(instanceCount){
@@ -1321,6 +1368,7 @@ async function initialize(){
     writeUniform();
     const authAnimating=paintAuthPanes();
     syncTileTints();
+    syncMaterialProfiles();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
     device.queue.writeBuffer(tileBuffer,0,tileData);
@@ -1347,7 +1395,7 @@ async function initialize(){
     return authAnimating||hoverAnimating;
   }
   function dispose(){
-    tileBuffer?.destroy();tintTileBuffer?.destroy();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();
     glyphMaskTexture.destroy();
     scene?.destroy();compositeScene?.destroy();
     offscreenFrame?.destroy();photo.destroy();
@@ -1509,6 +1557,9 @@ async function initialize(){
   routeOutlet?.addEventListener("scroll",onAuthScroll,{passive:true});
   routeOutlet?.addEventListener("wheel",armElasticRefresh,{passive:true});
   routeOutlet?.addEventListener("touchmove",armElasticRefresh,{passive:true});
+  const materialObserver=new MutationObserver(()=>requestRender());
+  materialObserver.observe(document.documentElement,{subtree:true,attributes:true,
+    attributeFilter:["data-glass-material"]});
   const authSizeObserver=routeMount?new ResizeObserver(()=>requestRender()):null;
   if(routeMount)authSizeObserver.observe(routeMount);
   let resizeGeneration=0;
@@ -1547,13 +1598,18 @@ async function initialize(){
   // the scene+mip rebuild. Neither action reads rendered DOM pixels.
   window.__dashboardGpuControls=Object.freeze({
     reflowTiles:()=>{if(!stopped){engine.rebuild();requestRender()}},
+    setMaterial:(element,material)=>{
+      validateGlassMaterial(material);
+      if(!(element instanceof Element))throw new TypeError("Glass surface element required");
+      element.setAttribute("data-glass-material",material);requestRender();
+    },
     invalidateBackdrop:()=>{if(!stopped){scenePending=true;requestRender()}}
   });
   window.addEventListener("resize",onSize,{passive:true});
   const resizeObserver=new ResizeObserver(onSize);
   resizeObserver.observe(root);
   device.lost.then(reason=>{
-    authObserver?.disconnect();authSizeObserver?.disconnect();
+    authObserver?.disconnect();authSizeObserver?.disconnect();materialObserver.disconnect();
     resizeObserver.disconnect();
     fallback("GPU device lost: "+reason.message);
   });

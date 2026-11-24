@@ -16,6 +16,7 @@
  * circles and pills. Elliptical CSS radii are intentionally rejected:
  * mode4/5 cannot silently model two independent corner axes.
  */
+import {validateGlassMaterial} from "./dashboard-glass-material.js";
 export const GLASS_GEOMETRY_SOURCE="geometry_331_compact/finite-10";
 export const GLASS_SDF_FLOOR=0.009999999776482582;
 export const GLASS_SHAPES=Object.freeze([
@@ -98,11 +99,12 @@ export function classifyGlassShape(width,height,radii){
 }
 export function resolveGlassSurface({
   width,height,shape="auto",radii=[0,0,0,0],scale=1,
-  layer=0,backdrop="scene",content="none"
+  layer=0,backdrop="scene",content="none",material="clear"
 }={}){
   finitePositive(width,"width");finitePositive(height,"height");
   finitePositive(scale,"scale");
   if(!GLASS_SHAPES.includes(shape))throw new RangeError("Unknown glass shape");
+  validateGlassMaterial(material);
   if(!GLASS_CONTENT_MODES.includes(content))throw new RangeError("Unknown content composition");
   if(!Number.isSafeInteger(layer)||layer<0)throw new RangeError("Invalid glass layer");
   if(!["scene","previous-layer"].includes(backdrop))
@@ -133,7 +135,7 @@ export function resolveGlassSurface({
     renderMode:["capsule","circle"].includes(shape==="auto"?inferred:shape)?6:nativeMode,
     cornerLanes:Object.freeze(radiiPx.map(r=>
       -Math.max(GLASS_SDF_FLOOR,r))),
-    layer,backdrop,content,source:GLASS_GEOMETRY_SOURCE,
+    layer,backdrop,content,material,source:GLASS_GEOMETRY_SOURCE,
     geometryScope:"finite native geometric relation + browser CSS normalization"
   });
 }

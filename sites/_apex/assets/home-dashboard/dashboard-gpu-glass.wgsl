@@ -39,6 +39,9 @@ struct Tile {
 // A one-channel, DOM-font-rasterized GLYPH SHAPE only, never a sampled
 // wallpaper or pre-rendered glass image. All optical work stays in fsGlass.
 @group(0) @binding(4) var titleGlyphAlpha: texture_2d<f32>;
+// Independent material lanes, never overloaded with a route or delay tag.
+struct MaterialProfile { optics:vec4<f32>, face:vec4<f32> };
+@group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -364,6 +367,8 @@ fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
+  let profile=materialProfiles[in.tileIndex];
+  let regular=profile.optics.x>0.5;
   let authPane=tile.properties.y<0.0;
   let dimensions=tile.rect.zw;
   // Exact CPU predicate: mode4 iff four NORMALIZED private lanes compare
@@ -412,11 +417,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let clearD=d/pointScale;
   let clearInnerAmount=max(-60.0,-clearD)*pointScale;
   let clearInnerHeight=min(20.0,0.36*clearD)*pointScale;
-  let innerAmount=select(max(-60.0,-0.8*d),clearInnerAmount,authPane);
-  let innerInvHeight=select(1.0/min(20.0,0.25*d),
-    1.0/max(clearInnerHeight,0.001),authPane);
-  let outerAmount=select(0.2*d,0.0,authPane);
-  let outerInvHeight=select(1.0/(0.125*d),0.0,authPane);
+  let innerAmount=select(select(max(-60.0,-0.8*d),clearInnerAmount,authPane),profile.optics.y,regular);
+  let innerInvHeight=select(select(1.0/min(20.0,0.25*d),
+    1.0/max(clearInnerHeight,0.001),authPane),1.0/max(profile.optics.z,0.001),regular);
+  let outerAmount=select(select(0.2*d,0.0,authPane),0.0,regular);
+  let outerInvHeight=select(select(1.0/(0.125*d),0.0,authPane),0.0,regular);
   let inner=refractionEnvelope(signed,innerAmount,innerInvHeight);
   let outer=refractionEnvelope(signed,outerAmount,outerInvHeight);
   // GAP NATIVE-UV-TO-CSS: normalized native displacement matrix
@@ -498,12 +503,15 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     return vec4<f32>(vec3<f32>(1.0),
       coverage*clamp(tile.motion.z,0.0,1.0)*reflection);
   }
+  // Regular's measured public blur distances are zero and all five
+  // blur opacities are one; refraction mixing opacity is zero.
+  // The Clear path retains its previous private-diagnostic ramp.
   let innerLOD=glassLOD(tile.properties.z,
-    blurDistribution(nativeHalf1(signed+inner),d));
+    select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
   let outerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+outer),d));
   let glass=mix(mipSample(interactiveInnerUV,innerLOD),
-                mipSample(interactiveOuterUV,outerLOD),thresholdMix(signed));
+                mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
   // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
   // specular brightness or native display color transfer.
   // Preserve source-backed sampled optics and the restrained browser rim.
@@ -520,6 +528,13 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let faceBlack=select(0.20,0.05,darkFace);
   let faceWhite=select(0.95,0.80,darkFace);
   var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
+  if(regular){
+    // The same browser face-endpoint interpolation as Clear, with the
+    // native Regular fill input composed as an explicit browser projection.
+    // Exact CAFilter matrix execution and output Q remain unproved.
+    color=mix(vec3<f32>(profile.face.x)+baseColor*(profile.face.y-profile.face.x),
+      vec3<f32>(profile.face.w),profile.face.z);
+  }
   // Back button, card and homepage squares all use this exact untinted
   // material face. No extra back-arrow brightening is applied.
   let localTint=tintTiles[in.tileIndex];
