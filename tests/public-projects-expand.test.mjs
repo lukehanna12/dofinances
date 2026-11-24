@@ -100,21 +100,26 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(controls,/public-projects:before-filter/);
   assert.match(controller,/tileDismissProgress|projectCardDismissAt/);
   assert.match(controller,/animation\.reverse\(\)/);
-  // The selected panel restores the original 620ms easing and the X
-  // reverses exactly that WAAPI animation. Every row uses a common
-  // 620ms linear conveyor, independent of traveled/remaining distance.
+  assert.match(controller,/const contract=animate\(current\.card,/);
+  assert.match(controller,/const contractButton=animate\(closeButton,/);
+  assert.match(controller,/duration:EXPAND_MS,easing:SELECTED_EASING/);
+  assert.match(controller,/animation\.updatePlaybackRate\(-remaining\)/);
+  // The selected card's X-close is a NEW forward 620ms ease-out, not
+  // WAAPI.reverse() of its easing. All siblings share one spatial
+  // 620ms ease-in-out without stagger or different per-row velocities.
   assert.match(controller,/const EXPAND_MS=620;/);
   assert.match(controller,/const SELECTED_EASING="cubic-bezier\(\.22,\.72,\.24,1\)";/);
-  assert.match(controller,/const CONVEYOR_EASING="linear";/);
+  assert.match(controller,/const CONVEYOR_EASING="cubic-bezier\(\.77,0,\.175,1\)";/);
   assert.match(controller,/duration:EXPAND_MS,easing:CONVEYOR_EASING/);
   assert.match(controller,/const travel=shift\*pitch;/);
   assert.match(controller,/projectConveyorEdge\(col,columns,shift\)/);
   assert.match(controller,/const ghost=node\.cloneNode\(true\)/);
   assert.match(controller,/ghost\.dataset\.projectCardDismissAt/);
-  assert.match(controller,/const restoreFrom=Math\.min\(DISMISS_MS,elapsed\);/);
+  assert.match(controller,/const restoreFrom=Math\.min\(DISMISS_MS,/);
   assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
   assert.match(renderer,/cardRestoreFrom/);
-  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\)-elapsed/);
+  assert.match(renderer,/cardRestoreFrom:DISMISS_MS\)-/);
+  assert.match(renderer,/Math\.max\(0,elapsed\)/);
   assert.match(renderer,/const AUTH_PANE_CAPACITY=32;/);
   assert.match(css,/project-showcase-dissolve-ghost/);
 
