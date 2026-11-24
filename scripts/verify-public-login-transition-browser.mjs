@@ -77,7 +77,10 @@ try{
   let port;
   for(let i=0;i<120;i++){
     const path=join(profile,"DevToolsActivePort");
-    if(existsSync(path)){port=+readFileSync(path,"utf8").split("\n")[0];break;}
+    if(existsSync(path)){
+      const candidate=Number(readFileSync(path,"utf8").split("\n")[0]);
+      if(Number.isInteger(candidate)&&candidate>0&&candidate<=65535){port=candidate;break;}
+    }
     if(chrome.exitCode!==null)throw Error("Chrome exited early");
     await sleep(100);
   }
