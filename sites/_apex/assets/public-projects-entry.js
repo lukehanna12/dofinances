@@ -10,6 +10,7 @@ import {PROJECT_SHOWCASE,PROJECT_DESCRIPTIONS,PROJECT_CARD_IMAGES,publicProjectI
 import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {mountProjectExpansion} from "./public-projects-expand.js";
+import {createProjectDiagrams} from "./public-projects-diagrams.js";
 import {mountProjectArtworkReveal} from "./project-artwork-reveal.js";
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
@@ -110,7 +111,9 @@ function makeCard(project,index){
   description.id="project-description-"+project.slug;
   description.setAttribute("role","paragraph");
   description.setAttribute("aria-hidden","true");
-  content.append(upper,description);
+  const details=el("span","project-showcase-details");
+  details.append(description,createProjectDiagrams(project.slug));
+  content.append(upper,details);
   card.append(artwork,regularBoundary,content);
   return card;
 }

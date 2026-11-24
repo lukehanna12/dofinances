@@ -214,19 +214,55 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-action{opacity:1}
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
  .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-action{opacity:0!important}
-/* Native foreground only. A measured paragraph fits in the new portion
- * of the lower material band, while the original title retains its baseline.
- * Keeping the text measurable even when hidden avoids a layout jump. */
-.public-projects-root .project-showcase-description{
+/* A single measured, native foreground block owns both the paragraph
+ * and the vector schematics. Narrow cards stack the two columns. */
+.public-projects-root .project-showcase-details{
   position:absolute;left:var(--project-card-inset);right:var(--project-card-inset);
-  bottom:calc(var(--project-card-inset) + 8px);max-width:980px;
-  font:400 clamp(14px,1.15vw,16px)/1.55 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  color:#f8f8f8;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;
-  visibility:hidden;opacity:0;pointer-events:none
+  bottom:calc(var(--project-card-inset) + 8px);
+  display:grid;grid-template-columns:minmax(0,1fr);gap:20px;
+  align-items:start;visibility:hidden;opacity:0;pointer-events:none
 }
-.public-projects-root .project-showcase-card:is(.is-expanded,.is-contracting) .project-showcase-description{
+.public-projects-root .project-showcase-description{
+  display:block;min-width:0;max-width:980px;
+  font:400 clamp(14px,1.15vw,16px)/1.55 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:#f8f8f8;letter-spacing:0;white-space:normal;overflow-wrap:anywhere
+}
+.public-projects-root .project-showcase-card:is(.is-expanded,.is-contracting) .project-showcase-details{
   visibility:visible;
   opacity:clamp(0,calc((var(--project-regular-progress) - .72)/.28),1)
+}
+.public-projects-root .project-showcase-diagrams{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0;
+  width:100%;max-width:460px;justify-self:center
+}
+.public-projects-root .project-showcase-diagram{
+  display:grid;gap:5px;min-width:0;
+  border:1px solid rgba(255,255,255,.16);border-radius:9px;
+  background:rgba(0,0,0,.32);padding:9px 7px;
+  box-sizing:border-box
+}
+.public-projects-root .project-showcase-diagram-caption{
+  font-size:11px;line-height:1.4;font-weight:600;
+  color:#eee;text-align:center;letter-spacing:.015em
+}
+.public-projects-root .project-showcase-diagram svg{
+  display:block;width:100%;height:auto;overflow:visible
+}
+.public-projects-root .project-diagram-node{
+  fill:rgba(255,255,255,.075);stroke:rgba(255,255,255,.36);stroke-width:1
+}
+.public-projects-root .project-diagram-link{
+  fill:none;stroke:rgba(255,255,255,.65);stroke-width:1.1;
+  stroke-linecap:round;stroke-linejoin:round
+}
+.public-projects-root .project-diagram-label{
+  fill:#f5f5f5;font:500 11.7px ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+@container (min-width:760px){
+  .public-projects-root .project-showcase-details{
+    grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(20px,3cqw,40px);
+    align-items:center
+  }
 }
 /* Non-GPU artwork fallback only. The real WebGPU path shades the RAW
  * backdrop in its capture pass, never the glass surface or foreground. */

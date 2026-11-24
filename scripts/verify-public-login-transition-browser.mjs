@@ -1259,8 +1259,10 @@ try{
     const other=[...document.querySelectorAll('.project-showcase-card:not(.is-expanded) .project-showcase-description')];
     return {height:r.height,bandHeight:band.height,bandTop:band.top,descTop:desc.getBoundingClientRect().top,
       descBottom:desc.getBoundingClientRect().bottom,bottom:r.bottom,titleBottom:title.bottom,
-      opacity:+style.opacity,visible:style.visibility,described:card.getAttribute('aria-describedby')===desc.id,
-      otherHidden:other.every(n=>getComputedStyle(n).visibility==='hidden'),text:desc.textContent};
+      opacity:+style.opacity,visible:style.visibility,described:card.getAttribute('aria-describedby').split(" ").includes(desc.id),
+      otherHidden:other.every(n=>getComputedStyle(n).visibility==='hidden'),text:desc.textContent,
+      diagrams:[...card.querySelectorAll(".project-showcase-diagram svg")].map(svg=>{const s=svg.getBoundingClientRect();return {x:s.left,y:s.top,right:s.right,bottom:s.bottom,width:s.width,height:s.height};}),
+      left:r.left,right:r.right,descRight:desc.getBoundingClientRect().right};
   })()`);
   assert.ok(descriptionGeometry.height>=originalProjectRects[0].height+150,JSON.stringify(descriptionGeometry));
   assert.ok(descriptionGeometry.bandHeight>=150);
@@ -1272,6 +1274,9 @@ try{
   assert.equal(descriptionGeometry.described,true);
   assert.equal(descriptionGeometry.otherHidden,true);
   assert.ok(descriptionGeometry.text.length>250);
+  assert.ok(descriptionGeometry.diagrams.length>=1&&descriptionGeometry.diagrams.length<=4);
+  assert.ok(descriptionGeometry.diagrams.every(d=>d.width>100&&d.height>40&&d.x>=descriptionGeometry.left&&d.right<=descriptionGeometry.right&&d.y>=descriptionGeometry.bandTop&&d.bottom<=descriptionGeometry.bottom));
+  assert.ok(descriptionGeometry.diagrams.every(d=>d.x>=descriptionGeometry.descRight-1),"Desktop diagram column must sit beside the paragraph");
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     await until("window.__dashboardWebGPU?.projectGlass?.regions?.some(r=>r.shadeAlpha>.999&&r.regularHeight>=150)",80);
     assert.ok(await evaluate("window.__dashboardWebGPU.projectGlass.projectRegionBackdrop.glassDrawsInCapture===0"));
@@ -1722,9 +1727,11 @@ try{
     const desc=card.querySelector('.project-showcase-description'),d=desc.getBoundingClientRect();
     const band=card.querySelector('.project-showcase-regular-boundary').getBoundingClientRect();
     return {fits:d.top>=band.top-1&&d.bottom<r.bottom&&d.left>=r.left&&d.right<=r.right,
-      opacity:+getComputedStyle(desc).opacity,descHeight:d.height,bandHeight:band.height};
+      opacity:+getComputedStyle(desc).opacity,descHeight:d.height,bandHeight:band.height,
+      diagrams:[...card.querySelectorAll(".project-showcase-diagram svg")].map(svg=>{const s=svg.getBoundingClientRect();return s.top>=d.bottom&&s.bottom<=r.bottom&&s.left>=r.left&&s.right<=r.right;})};
   })()`);
   assert.ok(narrowDescription.fits&&narrowDescription.opacity===1&&narrowDescription.bandHeight>narrowDescription.descHeight,JSON.stringify(narrowDescription));
+  assert.ok(narrowDescription.diagrams.length>=1&&narrowDescription.diagrams.every(Boolean),JSON.stringify(narrowDescription));
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   await send("Emulation.setDeviceMetricsOverride",{...descriptionViewport,deviceScaleFactor:1,mobile:false});

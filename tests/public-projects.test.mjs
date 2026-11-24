@@ -19,6 +19,7 @@ import {
   normalizeGlassCornerRadii,glassPaneNeedsLiveTransform
 } from "../sites/_apex/assets/home-dashboard/dashboard-glass-geometry.js";
 import {TILE_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-interaction.js";
+import {PROJECT_DIAGRAMS,projectDiagramLayout} from "../sites/_apex/assets/public-projects-diagrams.js";
 const load=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("public Projects is a curated snapshot, not an authenticated API leak",()=>{
@@ -447,11 +448,34 @@ test("every public project has a single substantive, source-conscious paragraph"
     assert.doesNotMatch(PROJECT_DESCRIPTIONS[slug],/aims to|designed to be the most/);
   }
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/reported near-instant/);
-  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Google Apps Script's generous but finite usage allowances/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Google Apps Script's generous usage allowances/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/restrictive free-tier limits/);
   assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/reported exceptionally high fidelity/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/keep request volume low/);
   assert.match(PROJECT_DESCRIPTIONS["latexcel"],/In Excel/);
 
 
+});
+
+test("all 16 projects have readable, explicitly connected native architecture schematics",()=>{
+  assert.deepEqual(Object.keys(PROJECT_DIAGRAMS).sort(),PUBLIC_PROJECTS.map(p=>p.slug).sort());
+  for(const [slug,specs] of Object.entries(PROJECT_DIAGRAMS)){
+    assert.ok(specs.length>=1&&specs.length<=4,slug);
+    for(const spec of specs){
+      const layout=projectDiagramLayout(spec,specs.length>1);
+      assert.ok(spec.title&&spec.rows.length>=2&&spec.edges.length>0,slug);
+      for(const row of layout.rows)for(const n of row){
+        assert.ok(n.x>=0&&n.x+n.w<=layout.width&&n.y+n.h<=layout.height,slug);
+        assert.ok(n.label.split("\n").every(line=>line.length<=40),n.label);
+      }
+      for(const [ar,ac,br,bc] of spec.edges){
+        assert.ok(layout.rows[ar]?.[ac]&&layout.rows[br]?.[bc],slug);
+        assert.ok(br===ar+1||(ar===br&&bc===ac+1),slug);
+      }
+    }
+  }
+  assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/framework.*command-line interfaces.*terminal user interfaces/);
+  assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Model Context Protocol \(MCP\).*Agent2Agent \(A2A\)/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form.*\/mcp endpoint/);
 });

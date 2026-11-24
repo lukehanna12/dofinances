@@ -183,6 +183,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.style.removeProperty("--project-expanded-band-height");
       card.removeAttribute("aria-describedby");
       card.querySelector(".project-showcase-description")?.setAttribute("aria-hidden","true");
+      card.querySelector(".project-showcase-diagrams")?.setAttribute("aria-hidden","true");
       card.classList.remove("is-expanded","is-contracting");
       card.style.removeProperty("--project-regular-progress");
       card.removeAttribute("data-project-card-dismiss-at");
@@ -237,7 +238,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const baseRect=box(card);
     const description=card.querySelector(".project-showcase-description");
     const inset=Number.parseFloat(getComputedStyle(card.querySelector(".project-showcase-content")).paddingLeft)||16;
-    const extra=projectDescriptionExtension(description.getBoundingClientRect().height,inset);
+    const details=card.querySelector(".project-showcase-details");
+    const diagrams=card.querySelector(".project-showcase-diagrams");
+    const extra=projectDescriptionExtension(details.getBoundingClientRect().height,inset);
     card.style.setProperty("--project-description-space",cssPixels(extra));
     card.style.setProperty("--project-expanded-band-height",cssPixels(baseRect.height*.1+extra));
     // Set the real expanded grid row height before measuring every final
@@ -264,8 +267,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.style.setProperty("--project-regular-reference-width",cssPixels(selectedRect.width));
     card.classList.add("is-expanded");
     card.setAttribute("aria-expanded","true");
-    card.setAttribute("aria-describedby",description.id);
+    card.setAttribute("aria-describedby",description.id+" "+diagrams.id);
     description.setAttribute("aria-hidden","false");
+    diagrams.setAttribute("aria-hidden","false");
     root.classList.add("has-project-expansion","project-expansion-was-used");
     // Preserve the same actual WebGPU glass for the X, drawn last on top.
     closeButton.hidden=false;
@@ -294,6 +298,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         ghost.classList.add("project-showcase-dissolve-ghost");
         ghost.setAttribute("aria-hidden","true");
         ghost.querySelector(".project-showcase-description")?.removeAttribute("id");
+        ghost.querySelector(".project-showcase-diagrams")?.removeAttribute("id");
         ghost.tabIndex=-1;
         ghost.inert=true;
         ghost.style.position="absolute";
