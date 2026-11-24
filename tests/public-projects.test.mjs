@@ -204,7 +204,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/const AUTH_PANE_CAPACITY=32;/);
   assert.match(renderer,/\.public-projects-root/);
   assert.match(renderer,/projects\|\|homeCtas\?"independent":"nested"/);
-  assert.match(renderer,/node\.dataset\.publicProjectGlass==="filter-dropdown"/);
+  assert.match(renderer,/\["filter-dropdown","expand-close"\]\.includes\(node\.dataset\.publicProjectGlass\)/);
   assert.match(renderer,/node\.dataset\.publicProjectGlass==="title"\)return -8;/);
   assert.match(renderer,/syncProjectTitleMask\(panes\)/);
   assert.match(renderer,/normalizeGlassCornerRadii\(\[/);
