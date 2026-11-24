@@ -99,9 +99,18 @@ function authPaneElements(){
   // very same glass pane LAST so the GPU material obeys that stacking order.
   const top=all.filter(node=>
     ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass));
-  return [...all.filter(node=>
-    !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)),
-    ...top].slice(0,AUTH_PANE_CAPACITY);
+  // The route's CSS z-order cannot reorder instances inside one WebGPU
+  // draw call. Disappearing old-row silhouettes must be composited BEHIND
+  // the widening selected pane, or their glass looks like it reappears
+  // above that pane while the real DOM is already behind it.
+  const ghosts=all.filter(node=>
+    node.classList.contains("project-showcase-dissolve-ghost"));
+  const expanded=all.filter(node=>node.classList.contains("is-expanded"));
+  const base=all.filter(node=>
+    !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)&&
+    !node.classList.contains("project-showcase-dissolve-ghost")&&
+    !node.classList.contains("is-expanded"));
+  return [...ghosts,...base,...expanded,...top].slice(0,AUTH_PANE_CAPACITY);
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
