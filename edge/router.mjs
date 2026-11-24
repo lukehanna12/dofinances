@@ -512,9 +512,23 @@ async function serveAsset(request,env,folder,path,privatePage=false) {
       headers.set("Vary","Cookie");
       headers.set("X-Frame-Options","DENY");
     }
-    return new Response(request.method==="HEAD"?null:asset.body,{
+    const response=new Response(request.method==="HEAD"?null:asset.body,{
       status:asset.status,statusText:asset.statusText,headers
     });
+    // All Git-managed hosts use one same-origin favicon. Studio is not routed here.
+    if(request.method==="GET" && /^text\/html(?:;|$)/i.test(headers.get("Content-Type")||"") &&
+       typeof HTMLRewriter!=="undefined"){
+      response.headers.delete("ETag");
+      return new HTMLRewriter()
+        .on("head link[rel]",{element(link){
+          if((link.getAttribute("rel")||"").toLowerCase().split(/\s+/).includes("icon"))link.remove();
+        }})
+        .on("head",{element(head){
+          head.append('<link rel="icon" type="image/svg+xml" href="/favicon.svg">',{html:true});
+        }})
+        .transform(response);
+    }
+    return response;
   }
   return null;
 }
@@ -569,6 +583,15 @@ export async function handleRequest(request,env={}) {
   }
   if(request.method!=="GET" && request.method!=="HEAD")
     return new Response("Method not allowed",{status:405,headers:{...NO_STORE,Allow:"GET, HEAD"}});
+  // One canonical asset, public even on a signed-out or wildcard host.
+  if(url.pathname==="/favicon.ico")return redirect("/favicon.svg",302);
+  if(url.pathname==="/favicon.svg"){
+    const asset=await serveAsset(request,env,"_apex","/favicon.svg");
+    if(!asset||!asset.ok)return new Response("Not found",{status:404,headers:NO_STORE});
+    asset.headers.set("Content-Type","image/svg+xml");
+    asset.headers.set("Cache-Control","public, max-age=300, must-revalidate");
+    return asset;
+  }
   if(folder==="_apex" && url.pathname.startsWith("/wallpapers/"))
     return serveWallpaper(request,env,url.pathname);
   if(folder==="_apex" && /^\/(app|dashboard)(\/|$)/.test(url.pathname)) {

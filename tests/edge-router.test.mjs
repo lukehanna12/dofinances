@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import {createHash} from "node:crypto";
 import {assetCandidates, handleRequest, siteFolder} from "../edge/router.mjs";
 
 const mock = {
@@ -87,6 +88,35 @@ test("HEAD and POST are handled safely",async()=>{
   assert.equal(head.status,200);
   assert.equal(await head.text(),"");
   assert.equal((await handleRequest(new Request("https://dofinances.com/",{method:"POST"}),mock)).status,405);
+});
+test("shared favicon preserves the exact approved transparent SVG on every Git-managed host",async()=>{
+  const svg=await readFile(new URL("../sites/_apex/favicon.svg",import.meta.url));
+  assert.equal(createHash("sha256").update(svg).digest("hex"),"fb5029649446d8835eddeee07033739d62e221800570674c4fa2091128244784");
+  assert.doesNotMatch(svg.toString(),/#b7b9be|<image\b/i);
+  const seen=[];
+  const env={ASSETS:{fetch:async req=>{
+    seen.push(new URL(req.url).pathname);
+    return new Response(svg,{headers:{"Content-Type":"image/svg+xml"}});
+  }}};
+  for(const host of ["dofinances.com","www.dofinances.com","ci-probe.dofinances.com"]){
+    const url="https://"+host+"/favicon.svg";
+    const res=await handleRequest(new Request(url),env);
+    assert.equal(res.status,200);
+    assert.equal(res.headers.get("Content-Type"),"image/svg+xml");
+    assert.deepEqual(Buffer.from(await res.arrayBuffer()),svg);
+    const head=await handleRequest(new Request(url,{method:"HEAD"}),env);
+    assert.equal(head.status,200);
+    assert.equal(await head.text(),"");
+    const legacy=await handleRequest(new Request("https://"+host+"/favicon.ico"),env);
+    assert.equal(legacy.status,302);
+    assert.equal(legacy.headers.get("Location"),"/favicon.svg");
+  }
+  assert.equal(seen.length,6);
+  assert.ok(seen.every(x=>x==="/_apex/favicon.svg"));
+  for(const host of ["stu.dofinances.com","pay.dofinances.com","evil.com"]){
+    assert.equal((await handleRequest(new Request("https://"+host+"/favicon.svg"),env)).status,404);
+  }
+  assert.equal(seen.length,6);
 });
 test("repository includes initial Git-owned homepage files",async()=>{
   const html=await readFile(new URL("../sites/_apex/index.html",import.meta.url),"utf8");

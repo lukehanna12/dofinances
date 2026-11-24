@@ -351,6 +351,27 @@ jobs:
           test "$passed" = true
           echo 'Git-managed apex, www, studio and wildcard checks passed'
 
+      - name: Verify shared transparent SVG favicon and Studio exclusion
+        shell: bash
+        run: |
+          set -euo pipefail
+          icon="$(mktemp)"
+          page="$(mktemp)"
+          trap 'rm -f "$icon" "$page"' EXIT
+          for host in dofinances.com www.dofinances.com ci-probe.dofinances.com; do
+            curl --retry 3 --retry-delay 2 -fsSL --max-time 20 "https://$host/favicon.svg" -o "$icon"
+            cmp sites/_apex/favicon.svg "$icon"
+            curl -fsSI --max-time 20 "https://$host/favicon.svg" | grep -i '^content-type: image/svg+xml'
+          done
+          for path in / /login /projects /reset/ /verify/; do
+            curl -fsSL --max-time 20 "https://dofinances.com$path" -o "$page"
+            grep -Fq 'href="/favicon.svg"' "$page"
+          done
+          for path in / /app/; do
+            curl -fsSL --max-time 20 "https://stu.dofinances.com$path" -o "$page"
+            ! grep -Fq 'href="/favicon.svg"' "$page"
+          done
+
       - name: Verify public homepage, Sign in link, and isolated rendering assets
         shell: bash
         run: |
