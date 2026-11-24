@@ -116,7 +116,7 @@ export function projectForwardCloseFrames(forwardFrames,progress,current){
   }));
   const at=Math.max(0,Math.min(1,progress));
   const result=[{offset:0,transform:current.transform,
-    opacity:String(current.opacity)}];
+    opacity:String(Number(current.opacity))}];
   if(at>0){
     for(let index=values.length-1;index>=0;index--){
       const frame=values[index];
