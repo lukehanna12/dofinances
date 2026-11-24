@@ -79,3 +79,17 @@ test("Project foreground is presented with the fixed wallpaper glass frame",()=>
  assert.match(css,/transform:translateY\(calc\(-1 \* var\(--project-presented-scroll,0px\)\)\)/);
  assert.match(renderer,/if\(key===projectRegionCaptureKey\)return/);
 });
+
+test("Internal artwork partition refracts without a synthetic reflective rim",()=>{
+ const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
+ const fragment=shader.slice(shader.indexOf("fn fsGlass("));
+ const outer=fragment.indexOf("let silhouetteSigned=signed;");
+ const partition=fragment.indexOf("if(topDistance>signed){signed=topDistance;");
+ assert.ok(outer>=0&&partition>outer);
+ assert.match(fragment,/let rim=exp\(-abs\(silhouetteSigned\)\*1\.16\)/);
+ assert.doesNotMatch(fragment,/let rim=exp\(-abs\(signed\)/);
+ // Refraction and the actual outer silhouette keep their original paths.
+ assert.match(fragment,/let inner=refractionEnvelope\(signed,innerAmount,innerInvHeight\)/);
+ assert.match(fragment,/let edge=clamp\(rim\*0\.28,0\.0,0\.28\)/);
+ assert.match(fragment,/let signedRatio=nativeHalf1\(-signed\/nativeWidth\)/);
+});

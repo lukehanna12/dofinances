@@ -500,6 +500,9 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     field=mode5SDF(in.local,dimensions,tile.cornerRadii);
   }
   var signed=field.x;
+  // The material partition is an internal refraction boundary, not a new
+  // exposed glass silhouette. Preserve the outer SDF for rim lighting.
+  let silhouetteSigned=signed;
   // AIR lines 30-43: SDF is half, fwidth is half, the denominator is
   // max(fwidth,0xH068E), half division then Float32 +0.5/saturate and
   // final truncation to half. Derivatives' exact G14G rules remain open.
@@ -593,7 +596,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let shiftUV=shiftPx/backdropExtent;
   let interactiveInnerUV=innerUV+shiftUV;
   let interactiveOuterUV=outerUV+shiftUV;
-  let rim=exp(-abs(signed)*1.16);
+  // Only the real card perimeter reflects this authored edge highlight.
+  // The split's straight top plane still controls refraction and LOD,
+  // but must not introduce a second bright horizontal rim over artwork.
+  let rim=exp(-abs(silhouetteSigned)*1.16);
   let edge=clamp(rim*0.28,0.0,0.28);
   // Explicitly provisional; not derived from Apple event-dependent light.
   // Only the hovered/pressed square changes, and lighting follows local
