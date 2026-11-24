@@ -238,8 +238,8 @@ test("Sign-in preserves the opt-in exact WebGPU shader and supports native scrol
   assert.match(shader,/let scale=select\(0\.85\+0\.15\*a,1\.0,authPane\);/);
   assert.match(shader,/if\(authPane&&dismiss<=0\.0\)\{\s*return vec4<f32>\(color,coverage\*clamp\(tile\.motion\.z,0\.0,1\.0\)\);/,
     "Sign-in still uses the unchanged route material; only explicit motion.w enables home-square dismissal");
-  assert.match(shader,/let hover=clamp\(tile\.interaction\.x,0\.0,1\.0\)/);
-  assert.match(shader,/let pressed=clamp\(tile\.interaction\.y,0\.0,1\.0\)/);
+  assert.match(shader,/let hover=select\(clamp\(tile\.interaction\.x,0\.0,1\.0\),0\.0,split\)/);
+  assert.match(shader,/let pressed=select\(clamp\(tile\.interaction\.y,0\.0,1\.0\),0\.0,split\)/);
   assert.match(css,/body\[data-auth-gpu-scene="ready"\]:not\(\[data-auth-glass-mode="compositor"\]\) \.auth3-root \[data-auth-glass-card\]/);
 });
 test("Card is untinted; existing neutral presets tint controls in dark and light modes",async()=>{
@@ -255,12 +255,12 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
   assert.match(renderer,/return tintParameters\(name,\.99,scheme\)/);
   assert.match(renderer,/scheme==="dark"\?"white":"black"/);
   assert.match(renderer,/scheme==="dark"\?"black":"white"/);
-  assert.match(shader,/let darkFace=state\.tintMeta\.y>0\.5;/,
-    "Card and squares use one material face, not independent UI-mode tones");
+  assert.match(shader,/let darkFace=split \|\| state\.tintMeta\.y>0\.5;/,
+    "Card and squares use the common scheme; only the explicit project title band overrides it");
   assert.doesNotMatch(shader,/let darkFace=select\(/);
   assert.doesNotMatch(renderer,/tileData\[p\+6\]=tileData\[6\]/,
     "Public sign-in card/controls use their own geometry-derived blur input");
-  assert.match(shader,/let d=min\(dimensions\.x,dimensions\.y\);/,
+  assert.match(shader,/let d=min\(dimensions\.x,select\(dimensions\.y,region\.params\.x,split\)\);/,
     "Public sign-in must no longer inherit the first square's optical size");
   assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
@@ -572,7 +572,7 @@ test("Original full WebGPU glass is the default; the scroll-composited hybrid re
   assert.match(renderer,/audit\.authPresentation=authUsesCompositor\(\)\?/);
   assert.match(renderer,/pass\.draw\(6,tileCount\)/,"Homepage square WebGPU rendering remains unchanged");
   const shader=await load("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
-  assert.match(shader,/let glass=mix\(mipSample\(interactiveInnerUV,innerLOD\),/,
+  assert.match(shader,/\}else\{\s*glass=mix\(mipSample\(interactiveInnerUV,innerLOD\),/,
     "The original sign-in shader must still sample the full refractive GPU backdrop");
   assert.match(renderer,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/,
     "Only explicit compositor mode selects the optical-highlight-only branch");
@@ -593,7 +593,7 @@ test("hybrid compositor keeps original WebGPU SDF and hover while never sampling
     "Reassigning a WGSL let rejects the whole shader on real browsers");
   assert.match(shader,/let reflection=clamp\(\(edge\+pointerLight\)\*0\.75\*transmission,0\.0,0\.32\)/);
   assert.ok(shader.indexOf("if(authPane && state.tintMeta.z>0.5)")<
-    shader.indexOf("let glass=mix(mipSample("));
+    shader.indexOf("glass=mix(mipSample("));
   assert.match(renderer,/authUniform\[18\]=authUsesCompositor\(\)\?1:0/);
   assert.match(renderer,/authHover\.advance\(dt,reducedMotion\.matches\)/);
   assert.match(renderer,/authPresentation=authUsesCompositor\(\)\?/);

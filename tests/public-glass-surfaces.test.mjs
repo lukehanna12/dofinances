@@ -134,7 +134,7 @@ test("layered glass planner rejects cyclic and missing underlays",()=>{
 test("public shader reuses native modes, with CSS capsule extension on shared optics",()=>{
  const shader=asset("dashboard-gpu-glass.wgsl");
  const renderer=asset("dashboard-gpu-renderer.js");
- assert.match(shader,/let d=min\(dimensions\.x,dimensions\.y\);/);
+ assert.match(shader,/let d=min\(dimensions\.x,select\(dimensions\.y,region\.params\.x,split\)\);/);
  assert.match(shader,/fn cssCapsuleSDF\(/);
  assert.match(shader,/field=cssCapsuleSDF\(in\.local,dimensions\)/);
  assert.match(shader,/fn mode4SDF\(/);
