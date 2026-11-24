@@ -56,10 +56,9 @@ export function mountProjectTitleSizing(root){
    title.style.removeProperty("font-size");
    if(widths.every(w=>w>0)){
     const ratio=projectTitleRatio(lines.map(line=>line.textContent),widths);
-    title.style.setProperty("--project-title-ratio",String(ratio));
-    if(title.closest("[data-project-slug]")?.dataset.projectSlug==="terminal-scalars"){
-      root.style.setProperty("--project-terminal-title-ratio",String(ratio));
-    }
+    // The card owns the measured ratio, so its title and material
+    // boundary inherit exactly the same typography, including ghost copies.
+    title.closest(".project-showcase-card")?.style.setProperty("--project-title-ratio",String(ratio));
    }
   }
  };

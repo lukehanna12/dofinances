@@ -29,7 +29,7 @@ test("same-origin remote source only accepts curated project slugs",async()=>{
  const redirect=await serveProjectArtwork(request("/project-artwork/colosseum"),"/project-artwork/colosseum",async()=>new Response(null,{status:302,headers:{Location:"https://example.com/unsafe"}}));
  assert.equal(redirect.status,502);
 });
-test("region is independently profiled within same GPU instance, and follows Terminal and expansion",()=>{
+test("region is independently profiled within same GPU instance, and follows each title, Terminal clearance and expansion",()=>{
  const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-projects.css"),expand=src("sites/_apex/assets/public-projects-expand.js");
  assert.match(shader,/let split=region.params.x>0.0/);
  assert.match(shader,/artSample\(uv,i32\(region.params.z\)-1/);
@@ -45,7 +45,10 @@ test("region is independently profiled within same GPU instance, and follows Ter
  assert.match(render,/resolveRegularMaterial\(\{width:w,height,scale:dpr/);
  assert.match(render,/boundary.getBoundingClientRect\(\).height/);
  assert.match(css,/1.9\*var\(--project-card-inset\)/);
- assert.match(css,/var\(--project-terminal-title-ratio/);
+ assert.match(css,/var\(--project-title-ratio/);
+ assert.match(css,/1\.04\*var\(--project-title-lines,1\)/);
+ assert.doesNotMatch(css,/--project-terminal-title-ratio/);
+ assert.match(render,/resolveRegularMaterial\(\{width:w,height,scale:dpr,scheme:"light"\}\)/);
  assert.match(css,/var\(--project-regular-progress\)\*10%/);
  assert.match(expand,/"--project-regular-progress":"1"/);
  assert.match(css,/width:45.5px;height:45.5px/);

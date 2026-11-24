@@ -84,6 +84,7 @@ function makeCard(project,index){
   top.append(marker,badge);
   const title=el("span","project-showcase-title");
   const lines=projectTitleLines(project.name);
+  card.style.setProperty("--project-title-lines",String(lines.length));
   // Preserve original accessible text; all lines inherit one font size.
   lines.forEach((line,i)=>{
     if(i)title.append(document.createTextNode(" "));

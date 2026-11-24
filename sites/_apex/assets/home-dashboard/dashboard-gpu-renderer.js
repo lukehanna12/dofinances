@@ -735,7 +735,9 @@ async function initialize(){
       const w=tileData[p+2]/dpr,h=tileData[p+3]/dpr;
       const height=Math.min(h,Math.max(0,boundary.getBoundingClientRect().height));
       if(!(height>0))continue;
-      const profile=resolveRegularMaterial({width:w,height,scale:dpr,scheme:tint.state.scheme});
+      // Only the card's bottom material is light; the global scheme
+      // and the Clear portion retain their existing appearance.
+      const profile=resolveRegularMaterial({width:w,height,scale:dpr,scheme:"light"});
       const artwork=artworkAtlas.sync(node);
       const photo=node.querySelector(".project-showcase-photo");
       const shade=node.querySelector(".project-showcase-shade");
@@ -756,7 +758,7 @@ async function initialize(){
       regionData[b+4]=shadeAlpha;
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
-        material:"regular",blurWord:profile.blurWord,faceScope:profile.faceScope,
+        material:"regular",scheme:"light",blurWord:profile.blurWord,faceScope:profile.faceScope,
         backdrop:"raw-wallpaper-and-artwork-before-glass",clearUnderlay:false});
       animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
     }
