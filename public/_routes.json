@@ -1,5 +1,10 @@
 {
   "version": 1,
-  "include": ["/login", "/login/"],
+  "include": [
+    "/login",
+    "/login/",
+    "/svg-editor",
+    "/svg-editor/*"
+  ],
   "exclude": []
 }

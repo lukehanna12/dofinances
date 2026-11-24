@@ -1,4 +1,5 @@
 import {AuthStore as BaseAuthStore} from "./auth-store.mjs";
+import {initStudioGrants,studioBegin,studioExchange,studioVerify} from "./studio-grants.mjs";
 import {validPassword,normalizedEmail,randomToken,randomSalt,passwordHash,sha256,constantTimeEqual,PASSWORD_ITERATIONS} from "./auth-core.mjs";
 import {newTotpSecret,totpAt,matchTotp,sealTotp,openTotp,makeRecoveryCodes,recoveryHash,authenticatorUri} from "./auth-mfa.mjs";
 
@@ -40,7 +41,11 @@ export class AuthStore extends BaseAuthStore {
       singleton TEXT PRIMARY KEY CHECK(singleton='colosseum'),
       user_id TEXT NOT NULL, access_subject TEXT NOT NULL, created_at INTEGER NOT NULL
     )`);
+    initStudioGrants(this.sql);
   }
+  studioBegin(token){return studioBegin(this,token);}
+  studioExchange(ticket){return studioExchange(this,ticket);}
+  studioVerify(token){return studioVerify(this,token);}
   colosseumOwnerStatus({userId,accessSubject}){
     const owner=this.sql.exec("SELECT user_id,access_subject FROM colosseum_owner WHERE singleton='colosseum'").toArray()[0];
     return {linked:!!owner,owner:!!owner&&owner.user_id===userId&&owner.access_subject===accessSubject};

@@ -373,6 +373,38 @@ ${state.owner?'<p>This account is already connected.</p><a href="/app/#settings"
 }
 
 
+// The Pages editor uses independent, host-only grants. Only an already-bound
+// Colosseum owner profile with a live apex login can mint one.
+async function studioApi(request,env,pathname){
+  const stub=store(env);
+  if(!stub)return json({error:"Account store unavailable."},503);
+  if(pathname==="/api/studio/start"){
+    if(request.method!=="GET")return json({error:"Method not allowed."},405);
+    const token=parseCookie(request.headers.get("Cookie"));
+    if(!token)return redirect("/login",302);
+    const result=await stub.studioBegin(token);
+    if(result.status!==200)return json({error:"Owner profile required."},result.status);
+    return redirect("https://stu.dofinances.com/svg-editor/accept?grant="+encodeURIComponent(result.ticket),303);
+  }
+  if(!["/api/studio/exchange","/api/studio/verify"].includes(pathname))return json({error:"Not found."},404);
+  if(request.method!=="POST")return json({error:"Method not allowed."},405);
+  if(request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase()!=="application/json")
+    return json({error:"Expected JSON."},415);
+  let raw,payload;
+  try{
+    raw=await request.text();
+    if(raw.length>200)throw Error("too large");
+    payload=JSON.parse(raw);
+    if(!payload||typeof payload!=="object"||Object.keys(payload).length!==1)throw Error("invalid");
+  }catch{return json({error:"Invalid payload."},400);}
+  const field=pathname.endsWith("/exchange")?"grant":"session";
+  if(typeof payload[field]!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(payload[field]))
+    return json({error:"Invalid credential."},401);
+  const result=field==="grant"?await stub.studioExchange(payload.grant):await stub.studioVerify(payload.session);
+  if(result.status!==200)return json({error:"Not authorized."},401);
+  return field==="grant"?json({session:result.session,expiresIn:result.expiresIn}):json({ok:true});
+}
+
 // Account-level Cloudflare access is distinct from project authorization.
 // Cloudflare Access validates the owner identity, the DoFinances session binds
 // the immutable user ID, and the stored user-issued token is encrypted in DO SQLite.
@@ -505,6 +537,10 @@ export async function handleRequest(request,env={}) {
   if(folder==="_www" && (/^\/(login|projects|app|dashboard|verify|reset)(\/|$)/.test(url.pathname)||(url.pathname.startsWith("/api/auth/")||url.pathname.startsWith("/api/colosseum/")||url.pathname.startsWith("/api/cloudflare/")||url.pathname.startsWith("/api/projects")||url.pathname.startsWith("/api/github/")))) {
     url.hostname=ROOT;
     return redirect(url.href,301);
+  }
+  if(folder==="_apex" && url.pathname.startsWith("/api/studio/")) {
+    try{return await studioApi(request,env,url.pathname);}
+    catch{return json({error:"Studio authorization unavailable."},503);}
   }
   if(folder==="_apex" && url.pathname.startsWith("/api/auth/")) {
     try{

@@ -120,6 +120,43 @@ jobs:
           # Only this Pages deployment's dist/ copy becomes the standalone
           # Studio preview. No auth JS or test-branch dependency is included.
           mkdir -p dist/app/assets dist/assets dist/gallery/assets
+          # Build the unmodified MIT-licensed SVGOMG frontend from a pinned upstream
+          # revision, then disable analytics and offline caching before publishing it.
+          # Every SVGOMG page, worker and asset is gated by the Pages Function.
+          git clone --quiet https://github.com/jakearchibald/svgomg.git "$RUNNER_TEMP/svgomg"
+          git -C "$RUNNER_TEMP/svgomg" checkout --quiet f925656d40a507c512bf95ee14ad16445a4ad3ed
+          python3 - "$RUNNER_TEMP/svgomg" <<'PY'
+          from pathlib import Path
+          import re,sys
+          root=Path(sys.argv[1])
+          html=root/'src/index.html'
+          text=html.read_text()
+          text,n=re.subn(r'<script>\\s*if \\(\\(!location\\.port.*?google-analytics\\.com/analytics\\.js.*?</script>',
+            '<script src="config.js" defer></script>',text,flags=re.S)
+          if n!=1: raise SystemExit('SVGOMG analytics removal did not match upstream')
+          # Inline preloader analytics must not run under our strict CSP.
+          text,n=re.subn(r'<script>\\s*document\\.querySelector\\(\\x27\\.preloader\\x27\\).*?</script>',
+            '',text,flags=re.S)
+          if n!=1: raise SystemExit('SVGOMG preloader analytics removal did not match')
+          html.write_text(text)
+          controller=root/'src/js/page/main-controller.js'
+          code=controller.read_text()
+          marker="if ('serviceWorker' in navigator) {"
+          if marker not in code: raise SystemExit('SVGOMG service-worker guard changed')
+          controller.write_text(code.replace(marker,"if (false) {"))
+          PY
+          npm ci --prefix "$RUNNER_TEMP/svgomg" --no-audit --no-fund
+          npm run build --prefix "$RUNNER_TEMP/svgomg"
+          mkdir -p dist/svg-editor
+          cp -R "$RUNNER_TEMP/svgomg/build/." dist/svg-editor/
+          rm -f dist/svg-editor/sw.js
+          printf 'window.version="1.17.0";window.ga=function(){};\\n' > dist/svg-editor/config.js
+          cp "$RUNNER_TEMP/svgomg/LICENSE.md" dist/svg-editor/LICENSE.md
+          test -s dist/svg-editor/index.html
+          test -s dist/svg-editor/js/svgo-worker.js
+          test -s dist/svg-editor/js/page.js
+          ! grep -q 'google-analytics.com' dist/svg-editor/index.html
+          test ! -e dist/svg-editor/sw.js
           cp studio/gallery/index.html dist/index.html
           cp studio/sidebar/index.html dist/app/index.html
           cp studio/gallery/gallery.css dist/gallery/assets/gallery.css
