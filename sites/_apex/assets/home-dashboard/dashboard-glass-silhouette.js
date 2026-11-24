@@ -35,7 +35,7 @@ function distanceLine(f,n,out,v,z){
  k=0;
  for(let q=0;q<n;q++){while(z[k+1]<q)k++;const p=v[k];out[q]=(q-p)**2+f[p];}
 }
-function distanceTo(alpha,w,h,inside){
+export function distanceTo(alpha,w,h,inside){
  const work=new Float32Array(w*h),out=new Float32Array(w*h);
  const n=Math.max(w,h),f=new Float64Array(n),line=new Float64Array(n),v=new Int32Array(n),z=new Float64Array(n+1);
  for(let y=0;y<h;y++){
