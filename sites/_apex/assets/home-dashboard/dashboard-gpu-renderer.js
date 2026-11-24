@@ -541,6 +541,13 @@ async function initialize(){
       format:"rgba16float",blend:glassBlend
     }]},primitive:{topology:"triangle-list"}
   });
+  const regularCapturePipeline=device.createRenderPipeline({
+    label:"Raw project artwork -> quarter-resolution Regular backdrop (no glass)",
+    layout:"auto",vertex:{module:modules[2],entryPoint:"vsRegularCapture"},
+    fragment:{module:modules[2],entryPoint:"fsRegularCapture",
+      targets:[{format:"rgba16float",blend:glassBlend}]},
+    primitive:{topology:"triangle-list"}
+  });
   if(root)root.dataset.gpuPhase="validate-pipelines";
   const pipelineError=await device.popErrorScope();
   if(pipelineError)throw Error("GPU pipeline validation: "+pipelineError.message);
@@ -576,6 +583,8 @@ async function initialize(){
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
   let regionData=new Float32Array(0),regionBuffer=null;
+  let regularScene=null,regularSceneView=null,regularCopyGroup=null,regularCaptureGroup=null,
+    regularMips=[],regularWidth=1,regularHeight=1,regularCaptureFrames=0;
   const artworkAtlas=createGlassArtworkAtlas(device,mipPipeline,()=>requestRender());
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
@@ -747,15 +756,21 @@ async function initialize(){
       regionData[b+4]=shadeAlpha;
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
-        material:"regular",blurWord:profile.blurWord});
+        material:"regular",blurWord:profile.blurWord,faceScope:profile.faceScope,
+        backdrop:"raw-wallpaper-and-artwork-before-glass",clearUnderlay:false});
       animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
     }
     device.queue.writeBuffer(regionBuffer,0,regionData);
-    if(audit.projectGlass)audit.projectGlass.regions=regions;
+    if(audit.projectGlass){
+      audit.projectGlass.regions=regions;
+      audit.projectGlass.regularBackdrop={source:"raw-wallpaper-and-artwork",quarterScale:true,
+        glassDrawsInCapture:0,mutuallyExclusiveMaterials:true,dimensions:[regularWidth,regularHeight],
+        frames:regularCaptureFrames};
+    }
     return animating;
   }
   function rebindGlassGroups(){
-    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer)return;
+    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!regularSceneView)return;
     const entries=(buffer,source=sceneView)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
@@ -764,8 +779,15 @@ async function initialize(){
       {binding:4,resource:glyphMaskTexture.createView()},
       {binding:5,resource:{buffer:materialBuffer}},
       {binding:6,resource:{buffer:regionBuffer}},
-      {binding:7,resource:artworkAtlas.view}
+      {binding:7,resource:artworkAtlas.view},
+      {binding:8,resource:regularSceneView}
     ];
+    regularCaptureGroup=device.createBindGroup({layout:regularCapturePipeline.getBindGroupLayout(0),entries:[
+      {binding:1,resource:{buffer:tileBuffer}},
+      {binding:2,resource:{buffer:authGlobalsBuffer}},
+      {binding:6,resource:{buffer:regionBuffer}},
+      {binding:7,resource:artworkAtlas.view}
+    ]});
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
     });
@@ -1068,7 +1090,7 @@ async function initialize(){
       canvas.width=w;canvas.height=h;
       // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
-      compositeScene?.destroy();
+      compositeScene?.destroy();regularScene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -1086,6 +1108,20 @@ async function initialize(){
       // backdrop. Its source is built only when a capsule exposes glass.
       compositeScene=rgba16Texture(device,w,h);
       compositeSceneView=compositeScene.createView();
+      // Real quarter-resolution base, with its own real mip chain. Use
+      // the raw scene's mip2 as base, never the glass-composited Home scene.
+      const quarterBase=Math.min(2,scene.mipLevelCount-1);
+      regularWidth=Math.max(1,w>>quarterBase);regularHeight=Math.max(1,h>>quarterBase);
+      regularScene=rgba16Texture(device,regularWidth,regularHeight);
+      regularSceneView=regularScene.createView();
+      regularCopyGroup=device.createBindGroup({layout:compositeBackdropPipeline.getBindGroupLayout(0),
+        entries:[{binding:0,resource:scene.createView({baseMipLevel:quarterBase,mipLevelCount:1})}]});
+      regularMips=[];
+      for(let level=1;level<regularScene.mipLevelCount;level++)regularMips.push(device.createBindGroup({
+        layout:mipPipeline.getBindGroupLayout(0),entries:[
+          {binding:0,resource:regularScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
+          {binding:1,resource:regularScene.createView({baseMipLevel:level,mipLevelCount:1})}
+        ]}));
       audit.mipCount=scene.mipLevelCount;
       backgroundGroup=device.createBindGroup({
         layout:backdropPipeline.getBindGroupLayout(0),
@@ -1185,11 +1221,11 @@ async function initialize(){
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
     });
     materialBuffer?.destroy();
-    materialBuffer=device.createBuffer({size:Math.max(32,materialData.byteLength),
+    materialBuffer=device.createBuffer({size:Math.max(MATERIAL_FLOATS*4,materialData.byteLength),
       usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
     device.queue.writeBuffer(materialBuffer,0,materialData);
     regionBuffer?.destroy();
-    regionBuffer=device.createBuffer({size:Math.max(64,regionData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    regionBuffer=device.createBuffer({size:Math.max(REGION_FLOATS*4,regionData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
     device.queue.writeBuffer(regionBuffer,0,regionData);
     lastTintKey="";
     syncTileTints(true);
@@ -1216,6 +1252,23 @@ async function initialize(){
     device.queue.submit([encoder.finish()]);
     scenePending=false;
     audit.sceneBuilds++;
+  }
+  function renderRegularCapture(encoder){
+    if(!audit.projectGlass?.regions?.length||!regularScene||!regularCaptureGroup)return;
+    const pass=encoder.beginRenderPass({label:"Raw wallpaper + original project artwork (no glass)",
+      colorAttachments:[{view:regularScene.createView({baseMipLevel:0,mipLevelCount:1}),
+        loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
+    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,regularCopyGroup);pass.draw(3);
+    pass.setPipeline(regularCapturePipeline);pass.setBindGroup(0,regularCaptureGroup);
+    pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);pass.end();
+    for(let level=1;level<regularScene.mipLevelCount;level++){
+      const mip=encoder.beginComputePass({label:"Raw Regular backdrop mip "+level});
+      mip.setPipeline(mipPipeline);mip.setBindGroup(0,regularMips[level-1]);
+      mip.dispatchWorkgroups(Math.ceil(Math.max(1,regularWidth>>level)/8),
+        Math.ceil(Math.max(1,regularHeight>>level)/8),1);mip.end();
+    }
+    regularCaptureFrames++;
+    audit.projectGlass.regularBackdrop.frames=regularCaptureFrames;
   }
   function paintTrack(deltaSeconds){
     if(trackRunning)
@@ -1325,6 +1378,7 @@ async function initialize(){
       device.queue.writeBuffer(tileBuffer,0,tileData);
     }
     const encoder=device.createCommandEncoder({label:"Glass only frame"});
+    renderRegularCapture(encoder);
     // No CSS/DOM capture: directly re-render the CURRENT GPU square tiles
     // into a separate RGBA16F surface atop the original GPU photo. Build
     // its real mip levels in this same submission before the capsule draw.
@@ -1429,6 +1483,7 @@ async function initialize(){
     authHover.writeTo(tileData,tileCount);
     device.queue.writeBuffer(tileBuffer,0,tileData);
     const encoder=device.createCommandEncoder({label:"Public-route-only glass frame"});
+    renderRegularCapture(encoder);
     const pass=encoder.beginRenderPass({
       colorAttachments:[{view:authContext.getCurrentTexture().createView(),
         loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]
@@ -1453,7 +1508,7 @@ async function initialize(){
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();
     glyphMaskTexture.destroy();
-    scene?.destroy();compositeScene?.destroy();
+    scene?.destroy();compositeScene?.destroy();regularScene?.destroy();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();
   }

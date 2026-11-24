@@ -5,7 +5,7 @@ import {PROJECT_SHOWCASE} from "../public-projects-catalog.js";
 export const ART_SIZE=512;
 export const ART_LAYERS=PROJECT_SHOWCASE.length;
 const LAYERS=new Map(PROJECT_SHOWCASE.map((p,i)=>[p.slug,i]));
-export const REGION_FLOATS=16;
+export const REGION_FLOATS=24;
 export function artworkCoverTransform(width,height,iw,ih,sx=1,sy=1,tx=0,ty=0){
  const fit=Math.max(width/iw,height/ih);
  const x=width/(iw*fit*sx),y=height/(ih*fit*sy);

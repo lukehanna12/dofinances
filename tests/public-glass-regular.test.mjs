@@ -2,7 +2,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {resolveRegularMaterial,regularMaterialLanes,glassMaterialFromElement,
- validateGlassMaterial,MATERIAL_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-material.js";
+ validateGlassMaterial,MATERIAL_FLOATS,decodeFaceHalfRows,NATIVE_REGULAR_FACE_HEX} from "../sites/_apex/assets/home-dashboard/dashboard-glass-material.js";
 import {resolveGlassSurface} from "../sites/_apex/assets/home-dashboard/dashboard-glass-model.js";
 const assets=name=>readFileSync(new URL("../sites/_apex/assets/home-dashboard/"+name,import.meta.url),"utf8");
 test("Regular uses the native finite per-surface geometry and scalar relation",()=>{
@@ -22,8 +22,16 @@ test("Regular uses the native finite per-surface geometry and scalar relation",(
 test("Regular face inputs have explicit finite scheme and small-size scope",()=>{
  const a=resolveRegularMaterial({width:150,height:84,scheme:"light"});
  const b=resolveRegularMaterial({width:150,height:84,scheme:"dark"});
- assert.deepEqual(regularMaterialLanes(a).slice(4),[.5,.95,.35,1]);
- assert.deepEqual(regularMaterialLanes(b).slice(4),[.2,.6,.35,0]);
+ assert.deepEqual(regularMaterialLanes(a).slice(4),decodeFaceHalfRows(NATIVE_REGULAR_FACE_HEX.light.large));
+ assert.deepEqual(regularMaterialLanes(b).slice(4),decodeFaceHalfRows(NATIVE_REGULAR_FACE_HEX.dark.large));
+ assert.equal(MATERIAL_FLOATS,16);
+ assert.deepEqual(b.faceRows.slice(0,4),[.56689453125,-.279052734375,-.028106689453125,.1300048828125]);
+ const small=resolveRegularMaterial({width:700,height:22,scheme:"dark"});
+ assert.deepEqual(small.faceRows,decodeFaceHalfRows(NATIVE_REGULAR_FACE_HEX.dark.small));
+ assert.deepEqual(resolveRegularMaterial({width:220,height:60,scheme:"dark"}).faceRows,small.faceRows);
+ const mid=resolveRegularMaterial({width:220,height:62.5,scheme:"dark"}).faceRows;
+ assert.ok(mid.every((v,i)=>v===(small.faceRows[i]+b.faceRows[i])/2));
+ assert.throws(()=>decodeFaceHalfRows("00"),RangeError);
  assert.match(resolveRegularMaterial({width:150,height:58.5}).faceScope,/adaptive face producer unproved/);
 });
 test("Material is independent of geometry and role; Clear remains default",()=>{
@@ -40,6 +48,9 @@ test("Regular uses one shared GPU shader, material buffer and both frame paths",
  assert.match(s,/@binding\(5\).*materialProfiles/);
  assert.match(s,/let regular=profile\.optics\.x>0\.5/);
  assert.match(s,/select\(thresholdMix\(signed\),0\.0,regular\)/);
+ assert.match(s,/let face=regularFace\(source\.rgb,profile\)/);
+ assert.match(s,/dot\(v,r0\),dot\(v,r1\),dot\(v,r2\)/);
+ assert.doesNotMatch(s,/color=mix\(vec3<f32>\(profile\.face/);
  assert.match(s,/let routePane=authPane && !homeCapsule/);
  assert.match(r,/binding:5,resource:\{buffer:materialBuffer\}/);
  assert.equal((r.match(/syncMaterialProfiles\(\);/g)||[]).length,2);

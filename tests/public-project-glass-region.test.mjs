@@ -10,7 +10,7 @@ test("artwork cover and CSS transform map original image coordinates",()=>{
  assert.deepEqual(artworkCoverTransform(100,200,100,100),[.5,1,.25,0]);
  const uv=artworkCoverTransform(100,100,100,100,2,2,10,-10);
  assert.ok(uv.every((v,i)=>Math.abs(v-[.5,.5,.2,.3][i])<1e-12));
- assert.equal(REGION_FLOATS,16);assert.equal(ART_LAYERS,16);
+ assert.equal(REGION_FLOATS,24);assert.equal(ART_LAYERS,16);
 });
 test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal(publicProjectArtworkSource({slug:"colosseum"},0),"/project-artwork/colosseum");
@@ -33,6 +33,15 @@ test("region is independently profiled within same GPU instance, and follows Ter
  const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-projects.css"),expand=src("sites/_apex/assets/public-projects-expand.js");
  assert.match(shader,/let split=region.params.x>0.0/);
  assert.match(shader,/artSample\(uv,i32\(region.params.z\)-1/);
+ assert.match(shader,/source=regularCaptureSample\(interactiveInnerUV,max\(0.0,innerLOD-profile.optics.w\)\)/);
+ assert.match(shader,/if\(regular\)\{[\s\S]*?regularFace\(source\.rgb,profile\)[\s\S]*?\}else\{\s*let glass=mix/);
+ const capture=render.slice(render.indexOf("function renderRegularCapture("),render.indexOf("function paintTrack("));
+ assert.match(capture,/pass.setPipeline\(compositeBackdropPipeline\);pass.setBindGroup\(0,regularCopyGroup\)/);
+ assert.match(capture,/pass.setPipeline\(regularCapturePipeline\)/);
+ assert.doesNotMatch(capture,/setPipeline\((glassPipeline|compositeGlassPipeline)\)/);
+ assert.match(render,/regularCopyGroup=device.createBindGroup\([\s\S]*?resource:scene.createView\(\{baseMipLevel:quarterBase,mipLevelCount:1\}\)/);
+ assert.equal((render.match(/renderRegularCapture\(encoder\);/g)||[]).length,2);
+ assert.match(render,/glassDrawsInCapture:0,mutuallyExclusiveMaterials:true/);
  assert.match(render,/resolveRegularMaterial\(\{width:w,height,scale:dpr/);
  assert.match(render,/boundary.getBoundingClientRect\(\).height/);
  assert.match(css,/1.9\*var\(--project-card-inset\)/);

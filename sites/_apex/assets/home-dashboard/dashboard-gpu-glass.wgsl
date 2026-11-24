@@ -40,13 +40,16 @@ struct Tile {
 // wallpaper or pre-rendered glass image. All optical work stays in fsGlass.
 @group(0) @binding(4) var titleGlyphAlpha: texture_2d<f32>;
 // Independent material lanes, never overloaded with a route or delay tag.
-struct MaterialProfile { optics:vec4<f32>, face:vec4<f32> };
+struct MaterialProfile { optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 // Height, blur word, artwork layer+1, photo alpha; then optics
-// (shade alpha, inner amount, inner height, mip bias), face, UV map.
-struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face:vec4<f32>, artUV:vec4<f32> };
+// (shade alpha, inner amount, inner height, mip bias), native half4 rows, UV map.
+struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32>, artUV:vec4<f32> };
 @group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
 @group(0) @binding(7) var artwork: texture_2d_array<f32>;
+// Quarter-resolution raw backdrop, built BEFORE any glass draw. It never
+// contains a Clear or Regular rendered surface.
+@group(0) @binding(8) var regularBackdrop: texture_2d<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -341,6 +344,82 @@ fn artSample(uv:vec2<f32>,layer:i32,lod:f32)->vec4<f32>{
   return mix(artLevel(uv,layer,lo),artLevel(uv,layer,hi),fract(chosen));
 }
 
+// A source-only draw into the quarter-resolution native-style capture.
+// The same live card rect, original artwork UV and DOM opacity are used,
+// but NO glass face, refraction, tint, hover light or previous glass draw.
+@vertex
+fn vsRegularCapture(@builtin(vertex_index) vertex:u32,
+                    @builtin(instance_index) instance:u32)->GlassOut{
+  var corners=array<vec2<f32>,6>(
+    vec2<f32>(0.0,0.0),vec2<f32>(1.0,0.0),vec2<f32>(0.0,1.0),
+    vec2<f32>(0.0,1.0),vec2<f32>(1.0,0.0),vec2<f32>(1.0,1.0)
+  );
+  let tile=tiles[instance];
+  let local=corners[vertex]*tile.rect.zw;
+  let p=tile.rect.xy+local-vec2<f32>(0.0,state.pointer.w);
+  let extent=vec2<f32>(state.viewport.x,max(1.0,state.fit.w));
+  var out:GlassOut;
+  out.position=vec4<f32>(2.0*p.x/extent.x-1.0,1.0-2.0*p.y/extent.y,0.0,1.0);
+  out.local=local;out.tileIndex=instance;out.introAlpha=1.0;
+  return out;
+}
+@fragment
+fn fsRegularCapture(in:GlassOut)->@location(0) vec4<f32>{
+  let tile=tiles[in.tileIndex];
+  let region=regions[in.tileIndex];
+  if(region.params.x<=0.0){discard;}
+  let shade=clamp(region.optics.x,0.0,1.0);
+  let opacity=clamp(region.params.w,0.0,1.0);
+  if((region.params.z<=0.0||opacity<=0.0)&&shade<=0.0){discard;}
+  var field:vec3<f32>;
+  if(tile.properties.w==4.0){field=mode4SDF(in.local,tile.rect.zw,tile.properties.x);}
+  else{field=mode5SDF(in.local,tile.rect.zw,tile.cornerRadii);}
+  let coverage=clamp(0.5-field.x/max(fwidth(field.x),0.0001),0.0,1.0);
+  if(coverage<=0.0){discard;}
+  var paint=vec4<f32>(0.0);
+  if(region.params.z>0.0&&opacity>0.0){
+    let uv=(in.local/tile.rect.zw)*region.artUV.xy+region.artUV.zw;
+    // UV derivatives are evaluated on this actual quarter-resolution
+    // source attachment; do not use the final glass's additional LOD.
+    let dx=length(dpdx(uv)*512.0);
+    let dy=length(dpdy(uv)*512.0);
+    paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
+  }
+  // Composite original photo then its existing black shade. Return
+  // straight alpha for the shared GPU source-over blend.
+  let a=clamp(paint.a*opacity,0.0,1.0);
+  let alpha=a*(1.0-shade)+shade;
+  let rgb=paint.rgb*(a*(1.0-shade))/max(alpha,0.000001);
+  return vec4<f32>(rgb,alpha*coverage);
+}
+fn regularCaptureLevel(uvIn:vec2<f32>,level:i32)->vec4<f32>{
+  let dims=vec2<i32>(textureDimensions(regularBackdrop,level));
+  let maxCoord=vec2<f32>(dims-vec2<i32>(1));
+  let p=clamp(uvIn*vec2<f32>(dims)-vec2<f32>(0.5),vec2<f32>(0.0),maxCoord);
+  let o=vec2<i32>(floor(p));let n=min(o+vec2<i32>(1),dims-vec2<i32>(1));let t=fract(p);
+  return mix(mix(textureLoad(regularBackdrop,o,level),
+    textureLoad(regularBackdrop,vec2<i32>(n.x,o.y),level),t.x),
+    mix(textureLoad(regularBackdrop,vec2<i32>(o.x,n.y),level),
+    textureLoad(regularBackdrop,n,level),t.x),t.y);
+}
+fn regularCaptureSample(uv:vec2<f32>,lod:f32)->vec4<f32>{
+  let maximum=f32(textureNumLevels(regularBackdrop)-1u);
+  let chosen=clamp(lod,0.0,maximum);
+  let lo=i32(floor(chosen));let hi=min(lo+1,i32(maximum));
+  return mix(regularCaptureLevel(uv,lo),regularCaptureLevel(uv,hi),fract(chosen));
+}
+// AIR 464..500: opaque source RGB, half dot3 against the actual native
+// half4 row, then a separate half-rounded bias addition. G14G dot
+// instruction internal accumulation and final output Q remain open.
+fn regularFace(rgb:vec3<f32>,profile:MaterialProfile)->vec3<f32>{
+  let v=nativeHalf3(rgb);
+  let r0=nativeHalf3(profile.face0.xyz);
+  let r1=nativeHalf3(profile.face1.xyz);
+  let r2=nativeHalf3(profile.face2.xyz);
+  let dots=nativeHalf3(vec3<f32>(dot(v,r0),dot(v,r1),dot(v,r2)));
+  return nativeHalf3(dots+nativeHalf3(vec3<f32>(profile.face0.w,profile.face1.w,profile.face2.w)));
+}
+
 /* Procedural multi-scale opacity field for dismissal only. Continuous
    interpolation prevents pixel-grid breakup. No native shader is claimed. */
 fn dissolveHash(p:vec2<f32>)->f32{
@@ -395,7 +474,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let split=region.params.x>0.0 && in.local.y>=tile.rect.w-region.params.x;
   if(split){
     profile.optics=vec4<f32>(1.0,region.optics.yzw);
-    profile.face=region.face;
+    profile.face0=region.face0;profile.face1=region.face1;profile.face2=region.face2;
   }
   let regular=profile.optics.x>0.5;
   let authPane=tile.properties.y<0.0;
@@ -546,43 +625,34 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     select(blurDistribution(nativeHalf1(signed+inner),d),1.0,regular))+select(0.0,profile.optics.w,regular);
   let outerLOD=glassLOD(tile.properties.z,
     blurDistribution(nativeHalf1(signed+outer),d));
-  let glass=mix(mipSample(interactiveInnerUV,innerLOD),
-                mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
-  var sourceGlass=glass;
-  if(split){
-    // Combine the original source and presented CSS photo transform with
-    // the wallpaper BEFORE applying the shared Regular material face.
-    if(region.params.z>0.0 && region.params.w>0.0){
-      let displacedLocal=(in.local+(interactiveInnerUV-baseUV)*backdropExtent)/tile.rect.zw;
-      let uv=displacedLocal*region.artUV.xy+region.artUV.zw;
-      let texelsPerPixel=max(region.artUV.x*512.0/tile.rect.z,region.artUV.y*512.0/tile.rect.w);
-      let paint=artSample(uv,i32(region.params.z)-1,innerLOD+log2(max(texelsPerPixel,0.00001)));
-      sourceGlass=vec4<f32>(mix(sourceGlass.rgb,paint.rgb,clamp(region.params.w*paint.a,0.0,1.0)),glass.a);
-    }
-    sourceGlass=vec4<f32>(sourceGlass.rgb*(1.0-clamp(region.optics.x,0.0,1.0)),sourceGlass.a);
-  }
-  // GAP PUBLIC-CLEAR-COLOR/OUTPUT Q: no proof for face color, Fresnel,
-  // specular brightness or native display color transfer.
-  // Preserve source-backed sampled optics and the restrained browser rim.
-  let baseColor=clamp(sourceGlass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
-  // GAP CLEAR-FACE-OUTPUT: 25F80 Clear face matrix input endpoints are
-  // measured, but their executed native equation is NOT recovered. The
-  // browser applies a linear interpolation between recorded endpoint
-  // inputs: light black/white = 0.20/0.95, dark = 0.05/0.80.
-  // Both face endpoints are lower in dark; tint hue stays independent.
-  // One material face for EVERY glass instance, including the card and
-  // controls. The separate site light/dark UI switch chooses the form's
-  // neutral pigment but cannot silently change the untinted face.
+  // Mutually exclusive material evaluation. No Clear fragment is evaluated
+  // or stored beneath a Regular fragment. The split source is the raw
+  // quarter-resolution capture, not this render target or the Home glass.
   let darkFace=state.tintMeta.y>0.5;
-  let faceBlack=select(0.20,0.05,darkFace);
-  let faceWhite=select(0.95,0.80,darkFace);
-  var color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
+  var color:vec3<f32>;
   if(regular){
-    // The same browser face-endpoint interpolation as Clear, with the
-    // native Regular fill input composed as an explicit browser projection.
-    // Exact CAFilter matrix execution and output Q remain unproved.
-    color=mix(vec3<f32>(profile.face.x)+baseColor*(profile.face.y-profile.face.x),
-      vec3<f32>(profile.face.w),profile.face.z);
+    var source:vec4<f32>;
+    if(split){
+      // The capture already starts at quarter resolution; do not add the
+      // full-resolution pyramid's two-level origin a second time.
+      source=regularCaptureSample(interactiveInnerUV,max(0.0,innerLOD-profile.optics.w));
+    }else{
+      source=mipSample(interactiveInnerUV,innerLOD);
+    }
+    // Source is opaque. No extra fill blend or endpoint color ramp:
+    // both are already represented by the captured native matrix.
+    let face=regularFace(source.rgb,profile);
+    // Retain the established shared browser interaction/edge-light stage
+    // after the face, independent of the captured static matrix.
+    color=clamp(face+vec3<f32>((edge+pointerLight)*0.75),vec3<f32>(0.0),vec3<f32>(1.0));
+  }else{
+    let glass=mix(mipSample(interactiveInnerUV,innerLOD),
+      mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));
+    // Preserve the established Clear appearance byte-for-byte in its path.
+    let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
+    let faceBlack=select(0.20,0.05,darkFace);
+    let faceWhite=select(0.95,0.80,darkFace);
+    color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
   }
   // Back button, card and homepage squares all use this exact untinted
   // material face. No extra back-arrow brightening is applied.
