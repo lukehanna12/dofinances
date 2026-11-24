@@ -219,7 +219,7 @@ test("Cloudflare onboarding separates Access verification from an actual API gra
   assert.match(html,/Authorize API access/);
   assert.match(html,/Create a user API token in Cloudflare/);
   assert.match(html,/id="cf-connect-button" disabled/);
-  assert.match(js,/Identity verified · token required/);
+  assert.match(js,/Identity verified - token required/);
   assert.match(js,/state\.authenticated!==true/);
   assert.match(js,/API access is not connected yet/);
   assert.match(router,/authenticated:true,verifiedEmail:ownerEmail/);

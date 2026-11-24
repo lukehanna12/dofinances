@@ -58,7 +58,7 @@ test("Docs canvas blends the screenshot-measured top wallpaper with the document
 });
 test("Docs footer text screen-blends to a modest brighter tone without changing the wallpaper",()=>{
  const css=asset("workspace-wallpapers.css");
- assert.ok(html.includes('<span class="workspace-footer-text">© DoFinances · 2026</span>'));
+ assert.ok(html.includes('<span class="workspace-footer-text">© 2026 DoFinances</span>'));
  assert.ok(css.includes('body[data-wallpaper-route$="/readme"] > .workspace-footer .workspace-footer-text{'));
  assert.ok(css.includes('color:#546478;opacity:.58;mix-blend-mode:screen;text-shadow:none'));
  assert.ok(css.includes('body[data-wallpaper-route="dashboard"] > .workspace-footer'));

@@ -362,7 +362,7 @@ body:has(> #workspace-shell .dashboard-home:not([hidden])){
 
 
 /* =====================================================================
- * Oracle-constrained clear Liquid Glass — isolated Dashboard experiment.
+ * Oracle-constrained clear Liquid Glass - isolated Dashboard experiment.
  * Source: lukehanna12/liquid-plexiglass-oracle @ 3fd32ed3 (25F80/M2/G14G).
  * The mathematical SDF/refraction field comes from dashboard-optics.js.
  * SVG/CSS backdrop-filter samples LIVE composited DOM per pane. Texture maps

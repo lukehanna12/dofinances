@@ -50,7 +50,7 @@ test("unfinished Colosseum screens keep compact headings; Collections and Permis
       const name=slug[0].toUpperCase()+slug.slice(1);
       assert.ok(html.includes('<div class="page-heading"><h1 id="project-'+slug+'-title">'+name+'</h1></div>'),
         slug+" must retain only its heading on "+path);
-      assert.ok(!html.includes('<p class="lead">Colosseum · '+name+'</p>'),
+      assert.ok(!html.includes('<p class="lead">Colosseum - '+name+'</p>'),
         slug+" subtitle must be fully removed on "+path);
     }
     if(!path.includes("studio"))for(const child of ["local","external","credentials"])

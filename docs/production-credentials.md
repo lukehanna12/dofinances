@@ -6,7 +6,7 @@ _Public-safe deployment guidance, checked 2026-11-11. Never publish personal ide
 
 GitHub Actions uses protected repository/environment credentials to deploy the site through Wrangler to Cloudflare Workers and Pages. The deployment workflow builds and tests changes, publishes when its production gate is enabled, and validates the live sites. Pull requests do not deploy to production.
 
-See [the source workflow](../.github/workflows/site.yml) for the executable configuration. Review protected GitHub and Cloudflare settings—not public documentation—for account details, actual credential names, scopes, values, and rotation procedures. Apply least privilege and test both deployment targets after credential changes.
+See [the source workflow](../.github/workflows/site.yml) for the executable configuration. Review protected GitHub and Cloudflare settings (not public documentation) for account details, actual credential names, scopes, values, and rotation procedures. Apply least privilege and test both deployment targets after credential changes.
 
 ## Runtime credentials
 

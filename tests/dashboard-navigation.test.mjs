@@ -705,7 +705,7 @@ test("Apple HIG Reader opens as an independent project without activating Coloss
   assert.equal(m.elements["apple-hig-navigation"].hidden,false);
   assert.equal(m.views.find(x=>x.dataset.view==="apple-hig-reader/overview").hidden,false);
   assert.equal(target.getAttribute("aria-current"),"page");
-  assert.match(m.doc.title,/Apple HIG Reader · DoFinances/);
+  assert.match(m.doc.title,/Apple HIG Reader - DoFinances/);
   m.win.location.hash="#colosseum/utilities";m.fire("hashchange");
   assert.equal(m.elements["project-navigation"].hidden,false);
   assert.equal(m.elements["apple-hig-navigation"].hidden,true);
@@ -737,7 +737,7 @@ test("Apple HIG Reader showcases its Google Apps Script API rather than presenti
     assert.doesNotMatch(page,/OFFICIAL DOCUMENTATION|Colosseum cloud reader<\/h2>/,
       "the project page must not revert to the earlier generic references layout");
     if(path.includes("studio/sidebar")){
-      assert.match(html,/Apple HIG Reader<\/strong><span>Google Apps Script · Live documentation reader/);
+      assert.match(html,/Apple HIG Reader<\/strong><span>Google Apps Script - Live documentation reader/);
     }else{
       const showcase=await read("../sites/_apex/app/assets/project-showcase.js");
       assert.match(showcase,/name:"Apple HIGs Reader"/);

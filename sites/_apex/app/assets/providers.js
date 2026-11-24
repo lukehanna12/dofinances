@@ -71,7 +71,7 @@ function header(target,label,name,symbol,description){
 }
 function pairs(target,rows){
  const dl=e("dl","pv-detail-grid");
- for(const [key,value] of rows){const r=e("div");append(r,"dt","",key);append(r,"dd","",value??"—");dl.append(r);}
+ for(const [key,value] of rows){const r=e("div");append(r,"dt","",key);append(r,"dd","",value??"-");dl.append(r);}
  target.append(dl);
 }
 export function initColosseumProviders(){
@@ -132,8 +132,8 @@ export function initColosseumProviders(){
    const copy=e("span","pv-provider-copy");
    append(copy,"strong","",x.name||title(id));
    append(copy,"small","",dataMode()==="federated"?
-    (x.status==="connected"?"Connected":x.status==="pending"?"Pending verification":x.status==="disconnected"?"Not connected":"Registered")+" · "+x.uid:
-    (x.available?"Available":"Unavailable")+" · "+x.tool_count+" tools");
+    (x.status==="connected"?"Connected":x.status==="pending"?"Pending verification":x.status==="disconnected"?"Not connected":"Registered")+" - "+x.uid:
+    (x.available?"Available":"Unavailable")+" - "+x.tool_count+" tools");
    const chevron=e("span","pv-chevron","›");chevron.setAttribute("aria-hidden","true");
    button.append(dot,copy,chevron);
    button.addEventListener("click",()=>{
@@ -150,7 +150,7 @@ export function initColosseumProviders(){
   root.dataset.mode=mode;
   const rows=items(),ready=local?rows.filter(x=>x.available).length:rows.filter(x=>x.status==="connected").length;
   const credentials=mode==="credentials";
-  summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+" ·";
+  summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+":";
   summaryRegistered.textContent=String(credentials?ready:rows.length);
   summaryRegisteredLabel.textContent=credentials?"CONNECTED":"REGISTERED";
   summaryDivider.hidden=credentials;
@@ -158,7 +158,7 @@ export function initColosseumProviders(){
   summaryConnected.textContent=String(ready);
   summaryState.textContent="READY";
   const updated=state.refreshedAt[dataMode()];
-  summaryUpdatedTime.textContent=updated?formatWorkspaceTime(updated,{hour12:true}):"—";
+  summaryUpdatedTime.textContent=updated?formatWorkspaceTime(updated,{hour12:true}):"-";
   renderList();renderDetails();
  }
  function showSkeleton(){

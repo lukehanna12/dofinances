@@ -154,7 +154,7 @@ test("Document location shows only the containing directory with contiguous repo
  assert.ok(ui.includes('folder.textContent="/"+directory'));
  assert.ok(ui.includes('location.replaceChildren(...children)'),
   "No whitespace or filename is inserted between repository and directory");
- assert.ok(ui.includes('location.textContent="Local README · No linked GitHub repository"'));
+ assert.ok(ui.includes('location.textContent="Local README - No linked GitHub repository"'));
  assert.ok(ui.includes('paintDocumentHeader();paintControls();'));
  assert.ok(css.includes('.rm-repository-label .rm-repository-name{color:#697889;font-weight:600}'));
  assert.ok(css.includes('.rm-repository-label .rm-repository-directory{color:inherit;font-weight:400}'));

@@ -74,7 +74,7 @@ Colosseum administrative routes support owner enrollment, collections, permissio
 
 ## Detailed documentation
 
-- [README](../README.md) — contributor entrypoint, hosting and site files.
+- [README](../README.md) - contributor entrypoint, hosting and site files.
 - [DNS, routes and CI/CD](domain-setup.md), [Worker routing](../edge/README.md), [production credentials](production-credentials.md).
 - [Account security](account-security.md), [identity-only federation](federated-auth.md), [Cloudflare API connection](cloudflare-account-connection.md), [Colosseum owner authorization](colosseum-owner-auth.md).
 - [Transactional email readiness](mailtrap-activation.md).

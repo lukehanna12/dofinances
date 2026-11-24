@@ -40,7 +40,7 @@ test("Provider static prefixes survive loading; ring geometry follows registered
   assert.ok(providers.includes('#pv-root .pv-summary-group{position:relative;display:inline-block'));
   assert.ok(providers.includes('left:50%;margin:-.5em 0 0 -.5em'));
   const js=read("sites/_apex/app/assets/providers.js");
-  assert.ok(js.includes('summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+" ·"'));
+  assert.ok(js.includes('summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+":"'));
   assert.ok(js.includes('summaryReadyGroup.hidden=credentials'));
 });
 test("Only tooltips intersecting the sidebar use the native browser top layer",()=>{

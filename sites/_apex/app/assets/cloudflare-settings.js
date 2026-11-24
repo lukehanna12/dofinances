@@ -34,10 +34,10 @@ export function initCloudflareConnection(){
   function show(next){
     state=next;
     const verified=next.authenticated===true;
-    status.textContent=next.connected?"API connected":verified?"Identity verified · token required":"Verification required";
+    status.textContent=next.connected?"API connected":verified?"Identity verified - token required":"Verification required";
     status.dataset.state=next.connected?"connected":verified?"verified":"disconnected";
     email.textContent=verified?(next.email||next.verifiedEmail||"Verified owner"):"Not verified";
-    activeScope.textContent=next.connected?(next.policy?.mode==="full"?"Full · subject to token grants":"Read-only"):"API token required";
+    activeScope.textContent=next.connected?(next.policy?.mode==="full"?"Full - subject to token grants":"Read-only"):"API token required";
     expiry.textContent=next.connected?fmtTime(next.expiresOn):"No token installed";
     connectTitle.textContent=next.connected?"Replace connection token":"Authorize API access";
     connectButton.textContent=next.connected?"Replace token":"Authorize API connection";

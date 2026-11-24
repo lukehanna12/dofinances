@@ -352,7 +352,7 @@ test("Collections remaining primary content typography scales continuously with 
 });
 
 test("Collections does not duplicate the live count and refresh time below the header",()=>{
- assert.ok(!js.includes('announce("Live Colosseum · "'));
+ assert.ok(!js.includes('announce("Live Colosseum - "'));
  assert.ok(js.includes('summaryValue.textContent=formatCollectionSummary(refreshedAt,state.collections.length)'));
  assert.ok(js.includes('announce("");'));
  assert.ok(css.includes("#cs-root .cs-source:empty{display:none}"));
@@ -423,7 +423,7 @@ test("Collections legacy live-status skeleton occupies no space, while failures 
  assert.ok(html.includes('<p id="cs-status" class="cs-source" role="status" aria-live="polite"></p>'));
  assert.ok(css.includes('#cs-root .cs-source:not([data-visible="true"]){position:absolute;width:1px;height:1px;min-height:0;margin:0;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}'));
  assert.ok(js.includes('status.dataset.visible=error||visible?"true":"false"'));
- assert.ok(!js.includes('announce("Live Colosseum · "'));
+ assert.ok(!js.includes('announce("Live Colosseum - "'));
  assert.ok(js.includes('setSummaryLoading(false); // Preserve last successful values if this refresh failed.'));
 });
 
@@ -472,7 +472,7 @@ test("Collection pagination captions contain only their dynamic range and total"
   assert.match(js,/const total=matchingCollections\(\)\.length/);
   assert.match(js,/textContent=state\.loaded\?[\s\S]*?first\+'–'\+Math\.min\(first\+state\.pageSize-1,total\)\+' of '\+total:'0 of 0'/);
   assert.match(js,/if\(pages===1\)\{pagination\.innerHTML='';return;\}/);
-  assert.doesNotMatch(js,/collections · directly from Colosseum/);
+  assert.doesNotMatch(js,/collections - directly from Colosseum/);
   for(const [total,page,expected] of [[12,1,"1–10 of 12"],[12,2,"11–12 of 12"],[10,1,"1–10 of 10"],[1,1,"1–1 of 1"],[0,1,"0 of 0"]]){
     const first=(page-1)*10+1;
     const label=total?first+"–"+Math.min(first+10-1,total)+" of "+total:"0 of 0";
@@ -1061,7 +1061,7 @@ test("Collections anchors its top and bottom photo strips under the moving black
     /content:"";\s*position:absolute;\s*inset:var\(--workspace-banner-height\) 0 0;\s*z-index:-1;\s*pointer-events:none;\s*background:var\(--ui-canvas,#0a0a0a\)/);
   assert.match(get("body:has(> #workspace-shell) > .workspace-footer"),
     /position:fixed;\s*inset:auto 0 0;\s*z-index:0/);
-  assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*><span class="workspace-footer-text">© DoFinances · 2026<\/span><\/footer>/);
+  assert.match(html,/<footer class="workspace-footer" id="workspace-footer"[^>]*><span class="workspace-footer-text">© 2026 DoFinances<\/span><\/footer>/);
 });
 
 test("Rating half-star toggling follows 3/4/5-star examples and collapses zero into unrated",async()=>{

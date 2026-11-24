@@ -25,12 +25,12 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
   '<p class="ut-annotation-overline">UTILITY PROFILE</p>'+
   '<h2 id="ut-annotation-title">Description, notes &amp; rating</h2>'+
   '<p class="ut-annotation-target" data-annotation-target></p>'+
-  '<label for="ut-annotation-description">Description <small>Required · 250 characters</small></label>'+
+  '<label for="ut-annotation-description">Description <small>Required - 250 characters</small></label>'+
   '<textarea id="ut-annotation-description" rows="4" maxlength="250" required spellcheck="true" aria-describedby="ut-annotation-description-count"></textarea>'+
   '<p id="ut-annotation-description-count" class="ut-annotation-count" aria-live="polite">0 / 250</p>'+
-  '<label for="ut-annotation-notes">Notes <small>Optional · 100 characters</small></label>'+
+  '<label for="ut-annotation-notes">Notes <small>Optional - 100 characters</small></label>'+
   '<textarea id="ut-annotation-notes" rows="3" maxlength="100" spellcheck="true" placeholder="Add a note about this utility"></textarea>'+
-  '<label for="ut-annotation-rating">Rating <small>Optional · half-star steps</small></label>'+
+  '<label for="ut-annotation-rating">Rating <small>Optional - half-star steps</small></label>'+
   '<select id="ut-annotation-rating"><option value="">Unrated</option>'+
   Array.from({length:10},(_,i)=>'<option value="'+((i+1)/2)+'">'+((i+1)/2).toFixed(1)+' / 5</option>').join("")+
   '</select><p class="ut-annotation-error" data-annotation-error role="alert" aria-live="assertive"></p>'+
@@ -57,7 +57,7 @@ export function createUtilityAnnotationEditor({root,api,getItem,updated,report})
   updateDescriptionCount();
   note.value=typeof item.notes==="string"?item.notes:"";
   rating.value=item.rating==null?"":String(item.rating);
-  dialog.querySelector("[data-annotation-target]").textContent=item.name+" · "+uid;
+  dialog.querySelector("[data-annotation-target]").textContent=item.name+" - "+uid;
   error.textContent="";
   dialog.showModal();
   description.focus();

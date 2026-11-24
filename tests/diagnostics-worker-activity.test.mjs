@@ -39,7 +39,7 @@ const sample={
 };
 test("Two full-width Worker usage bars replace the table, with period totals and correct titles",()=>{
  const host=render(sample),{usage,legend,comparison}=sections(host);
- assert.equal(host.children.length,3,"Usage bars, one legend, two charts—no footnote");
+ assert.equal(host.children.length,3,"Usage bars, one legend, two charts, no footnote");
  assert.equal(usage.className,"dg-activity-usage");
  assert.equal(usage.children.length,2);
  assert.equal(header(row(host,0)).children[0].textContent,"Request Usage");
@@ -139,15 +139,15 @@ test("Unavailable measurements remain unknown; zeros and partially reported tota
  assert.equal(pct(track(row(host,0)).children[0]),100);
  assert.match(track(row(host,0)).attributes["aria-label"],/1 unavailable/);
  const [p90,p99]=charts(host);
- assert.equal(columns(p90)[0].children[0].children[0].textContent,"—");
+ assert.equal(columns(p90)[0].children[0].children[0].textContent,"-");
  assert.equal(columns(p90)[1].children[0].children[0].textContent,"0 ms");
- assert.equal(columns(p99)[0].children[0].children[0].textContent,"—");
- assert.equal(columns(p99)[2].children[0].children[0].textContent,"—");
+ assert.equal(columns(p99)[0].children[0].children[0].textContent,"-");
+ assert.equal(columns(p99)[2].children[0].children[0].textContent,"-");
  assert.ok(columns(p90)[0].children[0].children[1].className.includes("dg-cpu-unavailable"));
  assert.equal(height(columns(p90)[0]),0);
  assert.match(columns(p90)[0].attributes["aria-label"],/unavailable/);
  const absent=render({alpha:{requests:null,subrequests:null,cpu_time_p90_us:null}});
- assert.equal(header(row(absent,0)).children[1].textContent,"—");
+ assert.equal(header(row(absent,0)).children[1].textContent,"-");
  assert.equal(track(row(absent,0)).children.length,0);
  assert.equal(charts(absent)[0].children[0].children[1].textContent,"No CPU readings");
  const zero=render({zero:{requests:0,subrequests:0,cpu_time_p90_us:0,cpu_time_p99_us:0}});

@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#171717">
   <meta name="description" content="Your private DoFinances workspace">
-  <title>Workspace · DoFinances</title>
+  <title>Workspace - DoFinances</title>
   <link rel="stylesheet" href="/app/assets/dashboard.css">
   <link rel="stylesheet" href="/assets/site-foundation.css">
   <link rel="stylesheet" href="/app/assets/workspace-theme.css">
@@ -328,8 +328,8 @@
           </div>
           <div class="cf-status-summary">
             <div><span>Verified Cloudflare identity</span><strong id="cf-owner-email">Checking…</strong></div>
-            <div><span>Effective API permissions</span><strong id="cf-active-scope">—</strong></div>
-            <div><span>API token expiry</span><strong id="cf-expiry">—</strong></div>
+            <div><span>Effective API permissions</span><strong id="cf-active-scope">-</strong></div>
+            <div><span>API token expiry</span><strong id="cf-expiry">-</strong></div>
           </div>
           <div class="cf-actions"><a class="secondary" href="/api/cloudflare/connect" id="cf-authenticate">Verify Cloudflare identity</a>
             <button type="button" class="secondary" id="cf-refresh">Refresh status</button></div>
@@ -349,7 +349,7 @@
             <div class="cf-form-heading"><h3>Effective permissions</h3><p class="note">These settings can only restrict your token, never expand the privileges Cloudflare grants it. An asterisk permits all resources within that token's permissions; IDs restrict access to specific resources.</p></div>
             <div class="cf-form-grid">
               <label for="cf-mode">Allowed operations
-                <select id="cf-mode"><option value="read">Read-only · GET</option><option value="full">Full · GET, POST, PUT, PATCH, DELETE</option></select>
+                <select id="cf-mode"><option value="read">Read-only - GET</option><option value="full">Full - GET, POST, PUT, PATCH, DELETE</option></select>
               </label>
               <label for="cf-accounts">Account IDs
                 <input id="cf-accounts" spellcheck="false" autocomplete="off" value="*" placeholder="* or comma-separated 32-character IDs">
@@ -416,7 +416,7 @@
               <div class="hig-showcase-story">
                 <div class="hig-overline"><span class="hig-overline-dot" aria-hidden="true"></span> INDEPENDENT SOFTWARE PROJECT <span aria-hidden="true">/</span> GOOGLE APPS SCRIPT</div>
                 <h2>Design documentation, made programmatically readable.</h2>
-                <p class="hig-showcase-summary">A read-only API I built with Google Apps Script that turns Apple's live Human Interface Guidelines into discoverable topics, searchable results, and paginated Markdown—ready for developer tools and automated workflows.</p>
+                <p class="hig-showcase-summary">A read-only API I built with Google Apps Script that turns Apple's live Human Interface Guidelines into discoverable topics, searchable results, and paginated Markdown, ready for developer tools and automated workflows.</p>
                 <div class="hig-showcase-links">
                   <a class="hig-main-link" href="https://github.com/lukehanna12/colosseum/blob/main/cloudflare/worker/APPLE-HIG-READER.md" target="_blank" rel="noopener noreferrer">Explore the integration <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
                   <a class="hig-quiet-link" href="https://developer.apple.com/design/human-interface-guidelines/" target="_blank" rel="noopener noreferrer">Original documentation <svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#icon-arrow"></use></svg></a>
@@ -439,7 +439,7 @@
             <div class="hig-showcase-specs" aria-label="Project specifications">
               <div><span>PLATFORM</span><strong>Google Apps Script</strong></div>
               <div><span>RELEASE</span><strong>v1.1.0</strong></div>
-              <div><span>INTERFACE</span><strong>HTTPS · JSON</strong></div>
+              <div><span>INTERFACE</span><strong>HTTPS - JSON</strong></div>
               <div><span>OPERATIONS</span><strong>3 read-only</strong></div>
             </div>
             <section class="hig-showcase-section" aria-labelledby="hig-operations-title">
@@ -475,7 +475,7 @@
               </div>
             </section>
             <footer class="hig-project-footer">
-              <span>Built with Google Apps Script <span aria-hidden="true">·</span> Integrated with Colosseum as catalog item <code>0001cd</code></span>
+              <span>Built with Google Apps Script and integrated with Colosseum as catalog item <code>0001cd</code></span>
               <span>Cloud integration is read-only; live token-authenticated availability is not asserted here.</span>
             </footer>
           </div>
@@ -514,7 +514,7 @@
         <section class="view project-view" data-view="colosseum/utilities" hidden aria-labelledby="project-utilities-title">
           <div class="page-heading"><h1 id="project-utilities-title">Utilities</h1></div>
           <div id="ut-root" class="ut-screen">
-            <span class="ut-summary ut-summary-loading" id="ut-summary" aria-live="polite" aria-busy="true"><span class="ut-summary-value">TOTAL — / UPDATED —</span><span class="ut-summary-skeleton" aria-hidden="true"><span class="ut-summary-dot"></span><span class="ut-summary-divider">/</span><span class="ut-summary-dot"></span></span></span>
+            <span class="ut-summary ut-summary-loading" id="ut-summary" aria-live="polite" aria-busy="true"><span class="ut-summary-value">TOTAL - / UPDATED -</span><span class="ut-summary-skeleton" aria-hidden="true"><span class="ut-summary-dot"></span><span class="ut-summary-divider">/</span><span class="ut-summary-dot"></span></span></span>
             <p class="ut-status" id="ut-status" role="status" aria-live="polite"></p>
             <div class="ut-layout" id="ut-layout">
               <div class="ut-list-column">
@@ -537,7 +537,7 @@
                   <span class="ut-refresh-control ut-tooltip-wrap"><button class="ut-refresh" id="ut-refresh" type="button" aria-label="Refresh utilities and check for updates" aria-keyshortcuts="Control+Shift+R" aria-describedby="ut-refresh-tooltip"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button><span class="ut-tooltip ut-shortcut-tooltip" id="ut-refresh-tooltip" role="tooltip"><span>Refresh utilities and check for updates</span><span class="ut-shortcut-keys" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span></span>
                 </div>
                 <form class="ut-filter-panel" id="ut-filters" hidden data-mode="include" aria-label="Include and exclude utility categories">
-                  <div class="ut-filter-heading"><span>Filter catalog</span><span class="ut-overline">AND across fields · OR within values</span></div>
+                  <div class="ut-filter-heading"><span>Filter catalog</span><span class="ut-overline">AND across fields - OR within values</span></div>
                   <div class="ut-filter-mode" role="group" aria-label="Filter direction">
                     <button type="button" data-ut-filter-tab="include" aria-pressed="true">Include</button>
                     <button type="button" data-ut-filter-tab="exclude" aria-pressed="false">Exclude</button>
@@ -597,7 +597,7 @@
             <div class="cs-wrap">
               <header class="cs-head">
                 <div class="cs-head-copy">
-                  <span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true"><span class="cs-summary-value">TOTAL — / UPDATED —</span><span class="cs-summary-skeleton" aria-hidden="true"><span class="cs-summary-dot"></span><span class="cs-summary-divider">/</span><span class="cs-summary-dot"></span></span></span>
+                  <span class="cs-eyebrow cs-summary-loading" id="cs-summary" aria-live="polite" aria-busy="true"><span class="cs-summary-value">TOTAL - / UPDATED -</span><span class="cs-summary-skeleton" aria-hidden="true"><span class="cs-summary-dot"></span><span class="cs-summary-divider">/</span><span class="cs-summary-dot"></span></span></span>
                   <div class="cs-control-center" role="group" aria-label="Collection controls">
                   <span class="cs-create-control">
                     <button class="cs-create-icon-button" id="cs-create" type="button" aria-label="Add collection" aria-keyshortcuts="Meta+Shift+N" aria-describedby="cs-create-tooltip"><img class="cs-create-plus-icon" width="32" height="32" src="/app/assets/add-collection.v3.svg" alt="" aria-hidden="true" decoding="async"></button>
@@ -710,8 +710,8 @@
           <div class="page-heading"><h1 id="project-providers-local-title">Local</h1></div>
           <div class="pv-workbench pv-loading" id="pv-root">
             <div class="pv-overview">
-              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span class="pv-summary-value" id="pv-summary-value"><span class="pv-summary-prefix" id="pv-summary-mode">PROVIDERS ·</span> <span class="pv-summary-group"><span class="pv-summary-count"><span id="pv-summary-registered">—</span></span> <span id="pv-summary-registered-label">REGISTERED</span></span><span class="pv-summary-divider" id="pv-summary-divider"> / </span><span class="pv-summary-group" id="pv-summary-ready-group"><span class="pv-summary-count"><span id="pv-summary-connected">—</span></span> <span id="pv-summary-state">READY</span></span></span></span>
-              <span class="pv-summary pv-summary-updated" id="pv-summary-updated" aria-live="polite" aria-busy="true"><span class="pv-summary-group"><span class="pv-summary-updated-value">UPDATED <span id="pv-summary-updated-time">—</span></span></span></span>
+              <span class="pv-summary" id="pv-summary" aria-live="polite" aria-busy="true"><span class="pv-summary-value" id="pv-summary-value"><span class="pv-summary-prefix" id="pv-summary-mode">PROVIDERS:</span> <span class="pv-summary-group"><span class="pv-summary-count"><span id="pv-summary-registered">-</span></span> <span id="pv-summary-registered-label">REGISTERED</span></span><span class="pv-summary-divider" id="pv-summary-divider"> / </span><span class="pv-summary-group" id="pv-summary-ready-group"><span class="pv-summary-count"><span id="pv-summary-connected">-</span></span> <span id="pv-summary-state">READY</span></span></span></span>
+              <span class="pv-summary pv-summary-updated" id="pv-summary-updated" aria-live="polite" aria-busy="true"><span class="pv-summary-group"><span class="pv-summary-updated-value">UPDATED <span id="pv-summary-updated-time">-</span></span></span></span>
             </div>
             <p id="pv-status" class="pv-status" role="status" aria-live="polite"></p>
             <div class="pv-browser" id="pv-browser">
@@ -745,7 +745,7 @@
             <section class="pm-section pm-rules-section" aria-labelledby="pm-rules-heading">
             <div class="pm-overview" aria-label="Local policy authority">
               <span id="pm-count" class="pm-eyebrow pm-count-loading" aria-live="polite" aria-busy="true">
-                <span class="pm-count-value">— RULES / — ENABLED</span>
+                <span class="pm-count-value">- RULES / - ENABLED</span>
                 <span class="pm-count-skeleton" aria-hidden="true"><span class="pm-count-ring"></span><span class="pm-count-divider">/</span><span class="pm-count-ring"></span></span>
               </span>
               <div class="pm-section-header pm-first-section-header">
@@ -876,14 +876,14 @@
     <span class="dg-status" id="dg-health" role="status" aria-live="polite" data-checking="true"><span class="dg-dot" aria-hidden="true"></span><span id="dg-health-text" class="shimmer">Checking...</span></span>
     <div class="dg-actions"><span class="dg-refresh-control"><button class="dg-refresh" id="dg-refresh" type="button" aria-label="Refresh diagnostics" aria-keyshortcuts="Control+Shift+R" aria-describedby="dg-refresh-tooltip" aria-busy="false"><svg class="dg-refresh-icon lucide lucide-rotate-cw" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button><span class="dg-refresh-tooltip" id="dg-refresh-tooltip" role="tooltip"><span>Refresh</span><span class="dg-refresh-tooltip-shortcut" aria-label="Control Shift R"><kbd>⌃</kbd><kbd>⇧</kbd><kbd>R</kbd></span></span></span></div>
   </div>
-  <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window · On demand</span></div>
+  <div class="dg-meta"><span id="dg-updated">No snapshot collected</span><span id="dg-window">UTC daily reporting window - On demand</span></div>
   <p id="dg-notice" class="dg-notice" role="status">Loading your first read-only diagnostics report…</p>
   
   
-  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">Quota overview</h2><p>Selected account-wide usage · UTC daily window</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-overview-title"><div class="dg-section-head"><h2 id="dg-overview-title">Quota overview</h2><p>Selected account-wide usage - UTC daily window</p></div><div class="dg-top" id="dg-top"><div class="dg-empty">Awaiting measurements…</div></div></section>
   
-  <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance · account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
-  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Worker usage · CPU p90 / p99</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-quotas-title"><div class="dg-section-head"><h2 id="dg-quotas-title">Consumption & capacity</h2><p>Used / allowance - account-wide</p></div><div class="dg-grid" id="dg-quotas"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
+  <section class="dg-section" aria-labelledby="dg-workers-title"><div class="dg-section-head"><h2 id="dg-workers-title">Worker activity</h2><p>Worker usage - CPU p90 / p99</p></div><div id="dg-workers" class="dg-panel"><div class="dg-empty">Awaiting measurements…</div></div></section>
   <section class="dg-section" aria-labelledby="dg-local-title"><div class="dg-section-head"><h2 id="dg-local-title">Local Mac &amp; gateway</h2><p>Battery charge, storage, and gateway performance</p></div><div class="dg-grid" id="dg-local"><div class="dg-panel dg-empty">Awaiting measurements…</div></div></section>
   
   
@@ -895,6 +895,6 @@
       </div>
     </div>
   </div>
-  <footer class="workspace-footer" id="workspace-footer" aria-label="Copyright"><span class="workspace-footer-text">© DoFinances · 2026</span></footer>
+  <footer class="workspace-footer" id="workspace-footer" aria-label="Copyright"><span class="workspace-footer-text">© 2026 DoFinances</span></footer>
 </body>
 </html>

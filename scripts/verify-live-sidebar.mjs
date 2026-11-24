@@ -393,9 +393,9 @@ try{
   })()`);
   const assertLowerBarAnchor=(frame,description)=>{
     assert.ok(Math.abs(frame.left-90)<1.6,
-      description+" — lower bar drifted from 16px gutter + 74px rail: "+JSON.stringify(frame));
+      description+" - lower bar drifted from 16px gutter + 74px rail: "+JSON.stringify(frame));
     assert.ok(Math.abs(frame.right-frame.viewport)<1.6,
-      description+" — lower bar no longer ends at viewport edge: "+JSON.stringify(frame));
+      description+" - lower bar no longer ends at viewport edge: "+JSON.stringify(frame));
   };
   const beforeExpansion=await lowerBarFrame();
   assertLowerBarAnchor(beforeExpansion,"collapsed tablet rail");

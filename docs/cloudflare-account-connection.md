@@ -1,4 +1,4 @@
-# Cloudflare account connection — DoFinances Settings
+# Cloudflare account connection - DoFinances Settings
 
 _Architecture reviewed 2026-11-11. Public documentation omits private owner identifiers, account IDs, token identifiers, signing secrets and live session durations._
 
@@ -31,7 +31,7 @@ Automated tests cover encryption, path and scope denial, verification, owner rou
 
 ## Two distinct connections (important)
 
-Cloudflare Access authentication confirms the owner's identity for a short session. It does **not** mint, expose, or grant a Cloudflare management API token. Settings shows "Identity verified · token required" until the owner creates a user API token and connects it in the second step. The effective Cloudflare management connection is marked "API connected" only after the token passes Cloudflare verification and its encrypted record is saved. The account owner can then update its effective scope or disconnect it from Settings. Cloudflare API token issuance is an explicit owner action in the Cloudflare dashboard; self-hosted Access sign-in cannot silently authorize it.
+Cloudflare Access authentication confirms the owner's identity for a short session. It does **not** mint, expose, or grant a Cloudflare management API token. Settings shows "Identity verified - token required" until the owner creates a user API token and connects it in the second step. The effective Cloudflare management connection is marked "API connected" only after the token passes Cloudflare verification and its encrypted record is saved. The account owner can then update its effective scope or disconnect it from Settings. Cloudflare API token issuance is an explicit owner action in the Cloudflare dashboard; self-hosted Access sign-in cannot silently authorize it.
 
 ## Session lifecycle
 

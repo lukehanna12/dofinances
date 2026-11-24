@@ -14,7 +14,7 @@ test("Provider routes use left and right aligned Collections-style loading rings
  assert.ok(html.includes('class="pv-workbench pv-loading" id="pv-root"'));
  assert.equal((block.match(/class="pv-summary-group"/g)||[]).length,3);
  assert.ok(block.includes('class="pv-summary-divider" id="pv-summary-divider"> / </span>'));
- assert.ok(block.includes('UPDATED <span id="pv-summary-updated-time">—</span>'));
+ assert.ok(block.includes('UPDATED <span id="pv-summary-updated-time">-</span>'));
  assert.doesNotMatch(block,/pv-list-meta|pv-index-title|pv-index-total/);
  assert.ok(css.includes('#pv-root.pv-loading .pv-summary-group{visibility:hidden}'));
  assert.ok(css.includes('#pv-root.pv-loading .pv-summary-group::after{'));
@@ -23,7 +23,7 @@ test("Provider routes use left and right aligned Collections-style loading rings
  assert.ok(css.includes('min-height:var(--workspace-summary-row-height)'));
  assert.ok(css.includes('#pv-root .pv-summary-updated{flex:none;margin-left:auto;text-align:right;'));
  assert.ok(collections.includes('.cs-summary-loading .cs-summary-value{visibility:hidden}'));
- assert.ok(js.includes('summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+" ·"'));
+ assert.ok(js.includes('summaryMode.textContent=(credentials?"CREDENTIALS":"PROVIDERS")+":"'));
  assert.ok(js.includes('summaryRegistered.textContent=String(credentials?ready:rows.length)'));
  assert.ok(js.includes('summaryRegisteredLabel.textContent=credentials?"CONNECTED":"REGISTERED"'));
  assert.ok(js.includes('summaryDivider.hidden=credentials'));

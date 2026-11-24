@@ -28,7 +28,7 @@ export function mountGhidraLifecycle({id,data,container,request,notify,onChanged
   if(!live){add(root,"p","pv-provision-error","Ghidra lifecycle controls require the updated local gateway.");return;}
   const stats=add(root,"div","pv-provision-stats");
   const rows=[
-    ["Instance",live.running?"Running · owned":live.mode==="attach"?"Attach-only":"Stopped"],
+    ["Instance",live.running?"Running - owned":live.mode==="attach"?"Attach-only":"Stopped"],
     ["Active leases",live.active_leases],
     ["Effective idle",live.effective_idle_seconds+" sec"],
     ["Permissions ceiling",live.hard_max_idle_seconds+" sec"]
@@ -40,8 +40,8 @@ export function mountGhidraLifecycle({id,data,container,request,notify,onChanged
   if(live.last_error)add(root,"p","pv-provision-warning",live.last_error);
   if(live.versions)add(root,"p","pv-provision-muted",
     "Installed Ghidra "+live.versions.ghidra.version+
-    " · Extension "+live.versions.extension.version+
-    " · MCP bridge "+live.versions.bridge.version);
+    " - Extension "+live.versions.extension.version+
+    " - MCP bridge "+live.versions.bridge.version);
   if(live.idle_deadline)add(root,"p","pv-provision-muted",
     "Idle deadline: "+new Date(live.idle_deadline).toLocaleString());
   const buttons=add(root,"div","pv-provision-actions");
@@ -75,7 +75,7 @@ export function mountGhidraLifecycle({id,data,container,request,notify,onChanged
     const opt=add(mode,"option","",title);opt.value=v;
   }
   mode.value=live.config.mode;
-  const idle=field("Requested idle duration · seconds","number",live.config.idle_seconds,60,43200,60);
+  const idle=field("Requested idle duration - seconds","number",live.config.idle_seconds,60,43200,60);
   const scripts=field("Enable upstream Ghidra script endpoints","checkbox",live.config.allow_scripts);
   add(root,"p","pv-provision-muted",
     "Scripts remain subject to tool-specific approval and general Permissions gates. Mode and script startup changes require stopping the running instance first. The managed server uses a protected local Unix socket, not a TCP listener.");

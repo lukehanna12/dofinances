@@ -74,10 +74,10 @@ jobs:
           test -s sites/_apex/app/assets/dashboard.js
           test -s sites/_apex/app/assets/workspace-scroll.js
           grep -Fq 'id="workspace-scroll"' sites/_apex/app/index.html
-          grep -Fq '© DoFinances · 2026' sites/_apex/app/index.html
+          grep -Fq '© 2026 DoFinances' sites/_apex/app/index.html
           grep -Fq 'https://send.api.mailtrap.io/api/send' edge/auth-mail.mjs
           ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs
-          grep -Fq 'Sign in · Dofinances' dist/index.html
+          grep -Fq 'Sign in - Dofinances' dist/index.html
           test -d dist/assets
           test -s dist/assets/public-login-manifest.json
       - name: Save built site for deployment
@@ -457,7 +457,7 @@ jobs:
           curl -fsSL --max-time 20 https://stu.dofinances.com/app/ > "$studio_app"
           grep -Fq 'id="workspace-sidebar"' "$studio_app"
           grep -Fq 'id="workspace-scroll"' "$studio_app"
-          grep -Fq '© DoFinances · 2026' "$studio_app"
+          grep -Fq '© 2026 DoFinances' "$studio_app"
           grep -Fq 'global-menu' "$studio_app"
           grep -Fq 'Manage Account' "$studio_app"
           grep -Fq 'preview-bootstrap.js' "$studio_app"

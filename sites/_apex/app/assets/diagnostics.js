@@ -1,9 +1,9 @@
 // Read-only Colosseum observability. No sample telemetry and no background polling.
 const byId=(id)=>document.getElementById(id);
-const integer=(n)=>typeof n==="number"&&Number.isFinite(n)?Math.round(n).toLocaleString():"—";
-const quantity=(n,d=1)=>typeof n==="number"&&Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d}):"—";
-const compact=(n)=>typeof n==="number"&&Number.isFinite(n)?Intl.NumberFormat(undefined,{notation:"compact",maximumFractionDigits:1}).format(n):"—";
-const bytes=(n)=>typeof n==="number"&&Number.isFinite(n)?(n>=1073741824?quantity(n/1073741824,2)+" GiB":n>=1048576?quantity(n/1048576,1)+" MiB":n>=1024?quantity(n/1024,1)+" KiB":integer(n)+" B"):"—";
+const integer=(n)=>typeof n==="number"&&Number.isFinite(n)?Math.round(n).toLocaleString():"-";
+const quantity=(n,d=1)=>typeof n==="number"&&Number.isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:d}):"-";
+const compact=(n)=>typeof n==="number"&&Number.isFinite(n)?Intl.NumberFormat(undefined,{notation:"compact",maximumFractionDigits:1}).format(n):"-";
+const bytes=(n)=>typeof n==="number"&&Number.isFinite(n)?(n>=1073741824?quantity(n/1073741824,2)+" GiB":n>=1048576?quantity(n/1048576,1)+" MiB":n>=1024?quantity(n/1024,1)+" KiB":integer(n)+" B"):"-";
 const statusText=(s)=>s==="healthy"?"Healthy":s==="degraded"?"Degraded":s==="unhealthy"?"Unhealthy":s==="unavailable"?"Unavailable":"Not checked";
 function make(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el;}
 function clear(id){const el=typeof id==="string"?byId(id):id;el?.replaceChildren();return el;}
@@ -11,7 +11,7 @@ function placeholder(host,text){clear(host).append(make("div","dg-empty",text));
 function pair(label,value,detail){const el=make("div");el.append(make("span","dg-pair-label",label),make("strong","dg-pair-value",value));if(detail)el.append(make("span","dg-pair-detail",detail));return el;}
 function pairs(rows){const el=make("div","dg-pairs");rows.forEach(([k,v,sub])=>el.append(pair(k,v,sub)));return el;}
 function panel(title,right){const outer=make("div","dg-panel"),head=make("div","dg-panel-head"),label=make("span","",title);head.append(label);if(right)head.append(make("span","dg-small",right));outer.append(head);return outer;}
-// A missing observation is unknown—not zero. Never paint an empty bar as a
+// A missing observation is unknown, not zero. Never paint an empty bar as a
 // reassuring zero-consumption measurement.
 function usage(q){
  const used=q?.used,limit=q?.limit;
@@ -51,7 +51,7 @@ function metricCard(label,q){
   ring.style.setProperty("--dg-ring-percent",String(Math.min(100,pct)));
   ring.style.setProperty("--dg-ring-target",String(Math.min(100,pct)));
  }
- reading.append(ring,make("strong","dg-card-percent",pct===null?"—":quantity(pct,1)+"%"));
+ reading.append(ring,make("strong","dg-card-percent",pct===null?"-":quantity(pct,1)+"%"));
  c.append(make("span","dg-card-label",label),reading,
   make("div","dg-card-note",pct===null?"Measurement unavailable":integer(q.used)+" of "+integer(q.limit)+" consumed"));
  return c;
@@ -197,7 +197,7 @@ function activityUsageRow(name,metric,workers){
  const readings=workers.map(w=>({worker:w,value:workerReading(w.metrics?.[metric])}));
  const known=readings.filter(r=>r.value!==null),sum=known.reduce((total,r)=>total+r.value,0);
  const missing=readings.length-known.length,reported=known.length>0;
- const totalText=!reported?"—":integer(sum)+(missing?" reported":"")+" "+(metric==="requests"?"requests":"subrequests");
+ const totalText=!reported?"-":integer(sum)+(missing?" reported":"")+" "+(metric==="requests"?"requests":"subrequests");
  head.append(make("h3","dg-usage-title",name),make("strong","dg-usage-total",totalText));
  const track=make("div","dg-usage-track");
  track.setAttribute("role","img");
@@ -211,7 +211,7 @@ function activityUsageRow(name,metric,workers){
    segment.style.setProperty("--dg-worker-share",(100*value/sum)+"%");
    segment.dataset.worker=worker.name;
    segment.setAttribute("aria-hidden","true");
-   segment.title=worker.name+" · "+integer(value)+" "+(metric==="requests"?"requests":"subrequests");
+   segment.title=worker.name+" - "+integer(value)+" "+(metric==="requests"?"requests":"subrequests");
    track.append(segment);
   });
  }
@@ -242,13 +242,13 @@ function cpuComparisonChart(percentile,workers,maxCpu){
   const us=workerReading(worker.metrics?.["cpu_time_"+percentile+"_us"]);
   const ms=us===null?null:us/1000;
   const column=make("div","dg-cpu-column"),slot=make("div","dg-cpu-column-slot");
-  const label=ms===null?"—":quantity(ms,2)+" ms";
+  const label=ms===null?"-":quantity(ms,2)+" ms";
   const value=make("span","dg-cpu-value",label);
   column.style.setProperty("--dg-cpu-height",(ms===null||maxCpu===null?0:100*ms/maxCpu)+"%");
   column.style.setProperty("--dg-worker-color",worker.color);
   column.setAttribute("role","img");
   column.setAttribute("aria-label",worker.name+": CPU "+percentile+" "+(ms===null?"unavailable":label));
-  column.title=worker.name+" · CPU "+percentile+" · "+label;
+  column.title=worker.name+" - CPU "+percentile+" - "+label;
   const fill=make("span","dg-cpu-fill"+(ms===null?" dg-cpu-unavailable":""));
   fill.setAttribute("aria-hidden","true");
   slot.append(value,fill);column.append(slot);plot.append(column);
@@ -331,27 +331,27 @@ function renderLocal(report){
   mac.append(legend);
  }
  host.append(mac);
- const gateway=panel("Local gateway",local?.check?local.check+" · "+(local.depth||"quick"):"No reading");
+ const gateway=panel("Local gateway",local?.check?local.check+" - "+(local.depth||"quick"):"No reading");
  gateway.classList.add("dg-gateway-panel");
  if(!local||local.status==="unavailable"){
   gateway.append(make("p","dg-small",missing("local")));host.append(gateway);return;
  }
  const latency=make("div","dg-latency");
  const p50=m?.request_p50_ms,p95=m?.request_p95_ms;
- latency.append(pair("Request p50",typeof p50==="number"?quantity(p50,1)+" ms":"—"),
-  pair("Request p95",typeof p95==="number"?quantity(p95,1)+" ms":"—"));
+ latency.append(pair("Request p50",typeof p50==="number"?quantity(p50,1)+" ms":"-"),
+  pair("Request p95",typeof p95==="number"?quantity(p95,1)+" ms":"-"));
  gateway.append(latency);
  gateway.append(pairs([
   ["Health",statusText(local.status)],
-  ["Diagnostic latency",typeof local.duration_ms==="number"?quantity(local.duration_ms,1)+" ms":"—"],
-  ["Uptime",typeof m?.uptime_seconds==="number"?quantity(m.uptime_seconds/3600,1)+" h":"—"],
+  ["Diagnostic latency",typeof local.duration_ms==="number"?quantity(local.duration_ms,1)+" ms":"-"],
+  ["Uptime",typeof m?.uptime_seconds==="number"?quantity(m.uptime_seconds/3600,1)+" h":"-"],
   ["Memory (RSS)",bytes(m?.rss_bytes)],
-  ["Event-loop lag",typeof m?.event_loop_lag_ms==="number"?quantity(m.event_loop_lag_ms,2)+" ms":"—"],
+  ["Event-loop lag",typeof m?.event_loop_lag_ms==="number"?quantity(m.event_loop_lag_ms,2)+" ms":"-"],
   ["Active / queued",integer(m?.active_requests)+" / "+integer(m?.queued_requests)],
-  ["Error rate",typeof m?.error_rate==="number"?quantity(m.error_rate*100,2)+"%":"—"]
+  ["Error rate",typeof m?.error_rate==="number"?quantity(m.error_rate*100,2)+"%":"-"]
  ]));
  if(Array.isArray(local.layers)&&local.layers.length>1)
-  gateway.append(make("p","dg-footnote",local.layers.map(x=>x.layer+": "+statusText(x.status)).join(" · ")));
+  gateway.append(make("p","dg-footnote",local.layers.map(x=>x.layer+": "+statusText(x.status)).join(" - ")));
  host.append(gateway);
 }
 function renderReport(report){
@@ -361,7 +361,7 @@ function renderReport(report){
  const stamp=Date.parse(report.collected_at);
  byId("dg-updated").textContent=Number.isFinite(stamp)?"Collected "+new Date(stamp).toLocaleString():"Collection time unavailable";
  const reset=Date.parse(report.usage_window?.reset_utc);
- byId("dg-window").textContent="UTC daily window · "+(Number.isFinite(reset)?"Resets "+new Date(reset).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC":"Reset time unavailable");
+ byId("dg-window").textContent="UTC daily window - "+(Number.isFinite(reset)?"Resets "+new Date(reset).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit",timeZone:"UTC"})+" UTC":"Reset time unavailable");
  const notice=byId("dg-notice");
  if(report.status==="healthy"&&!report.issues?.length){notice.hidden=true;}
  else {notice.hidden=false;notice.dataset.tone=report.status==="unhealthy"?"error":"info";notice.textContent=report.issues?.length?"Some measurements were unavailable or partially reported.":"Report status: "+statusText(report.status);}
@@ -397,7 +397,7 @@ export function initColosseumDiagnostics(){
   notice.append(document.createTextNode(message+" "));
   const link=make("a","","Verify Colosseum owner access");
   link.href="/api/colosseum/status";link.target="_blank";link.rel="noopener noreferrer";notice.append(link);
-  if(previous)byId("dg-updated").textContent="Last successful snapshot · "+new Date(previous.collected_at).toLocaleString()+" · stale";
+  if(previous)byId("dg-updated").textContent="Last successful snapshot - "+new Date(previous.collected_at).toLocaleString()+" - stale";
  }
  async function collect(){
   if(busy)return;

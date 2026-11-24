@@ -1,6 +1,6 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
 import {createUtilityAnnotationEditor} from "./utility-editorial-ui.js?profile=v2";
-/* Live Colosseum Utilities — Collections-compatible layout, explicit network I/O.
+/* Live Colosseum Utilities - Collections-compatible layout, explicit network I/O.
  * Only the authenticated /api/colosseum/utilities owner bridge can read data.
  * No timers, polling, simulated inventory, or background update checks.
  */
@@ -22,8 +22,8 @@ const parseTags=value=>{
  try{const a=JSON.parse(value);return Array.isArray(a)?a.filter(x=>typeof x==="string"):[];}catch{return [];}
 };
 const renderTags=value=>parseTags(value).map(x=>'<span class="ut-tag">'+esc(x)+'</span>').join("");
-const displayDate=date=>{const time=new Date(date);return Number.isNaN(time.valueOf())?"—":time.toLocaleString();};
-const plain=value=>value==null||value===""?"—":String(value);
+const displayDate=date=>{const time=new Date(date);return Number.isNaN(time.valueOf())?"-":time.toLocaleString();};
+const plain=value=>value==null||value===""?"-":String(value);
 const FILTER_GROUPS=[
  ["routes","Route",["cloud","direct","local","ported"]],
  ["classes","Class",null],
@@ -157,8 +157,8 @@ export function initColosseumUtilities(){
   elements.refresh.setAttribute("aria-busy",String(value));
  }
  function summary(){
-  elements.summaryValue.textContent="TOTAL "+(s.total??"—")+" / UPDATED "+
-   (s.updatedAt?formatWorkspaceTime(s.updatedAt,{hour12:true}):"—");
+  elements.summaryValue.textContent="TOTAL "+(s.total??"-")+" / UPDATED "+
+   (s.updatedAt?formatWorkspaceTime(s.updatedAt,{hour12:true}):"-");
   measureSummaryDivider();
  }
  function skeletons(){
@@ -167,7 +167,7 @@ export function initColosseumUtilities(){
    '<span class="ut-skeleton-number">'+String(s.page*s.pageSize+i+1).padStart(2,"0")+'</span>'+
    '<span class="ut-skeleton-copy"><span class="ut-skeleton-bar site-skeleton" data-slot="skeleton"></span>'+
    '<span class="ut-skeleton-sub"><span class="ut-skeleton-uid site-skeleton" data-slot="skeleton"></span>'+
-   '<span class="ut-skeleton-separator"> · </span>'+
+   '<span class="ut-skeleton-separator"> - </span>'+
    '<span class="ut-skeleton-class site-skeleton" data-slot="skeleton"></span></span></span></div></article>').join("");
  }
  function rowsMarkup(){
@@ -187,7 +187,7 @@ export function initColosseumUtilities(){
     '<span class="ut-title-measure" aria-hidden="true">'+title+'</span>'+
     '<span class="ut-title-compact" aria-hidden="true">'+title+'</span>'+
     '<span class="ut-title-expanded">'+title+'</span></span>'+
-    '<span class="ut-row-sub"><span class="ut-row-uid">'+uid+'</span><span class="ut-row-separator"> · </span><span class="ut-row-class">'+esc(plain(item.class))+'</span></span></span>'+
+    '<span class="ut-row-sub"><span class="ut-row-uid">'+uid+'</span><span class="ut-row-separator"> - </span><span class="ut-row-class">'+esc(plain(item.class))+'</span></span></span>'+
     '<span class="ut-chevron">'+ICON_DOWN+'</span></button>'+
     '<button type="button" class="ut-row-pick" data-ut-pick="'+uid+'" aria-label="'+(selected?'Deselect ':'Select ')+title+'" aria-pressed="'+String(selected)+'"'+pickInactive+'><span class="ut-select-bubble" aria-hidden="true">'+PICK_CHECK+'</span></button>'+
     '<span class="ut-name-field" data-ut-name-field="'+uid+'">'+
@@ -402,9 +402,9 @@ export function initColosseumUtilities(){
   const editorialSection='<section class="ut-card-section ut-editorial-section"><h3>Description</h3>'+
    '<p class="ut-verified-description'+(description?'':' ut-editorial-pending')+'">'+
     esc(description||"Pending direct source review; no unverified summary has been assigned.")+'</p>'+
-   '<h3>Notes <span class="ut-editorial-optional">optional · 100 characters</span></h3>'+
+   '<h3>Notes <span class="ut-editorial-optional">optional - 100 characters</span></h3>'+
    '<p class="ut-editorial-note">'+esc(notes||"No notes yet.")+'</p>'+
-   '<h3>Rating <span class="ut-editorial-optional">optional · 0.5–5 stars</span></h3>'+
+   '<h3>Rating <span class="ut-editorial-optional">optional - 0.5–5 stars</span></h3>'+
    '<p class="ut-editorial-rating">'+esc(rating===null?"Not rated":rating.toFixed(1)+" / 5")+'</p>'+
    '<button type="button" class="ut-small-button" data-ut-edit-annotation="'+esc(item.uid)+'">Edit description, notes &amp; rating</button>'+
    '</section>';
@@ -426,7 +426,7 @@ export function initColosseumUtilities(){
    (url?'<p><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(url)+'</a></p>':
       '<p>'+esc(plain(item.reference))+'</p>')+
    '<p>'+esc(plain(item.dependencies))+'</p></section>'+
-   '<section class="ut-card-section"><h3>Static assets · '+Number(s.detail.asset_count||0)+'</h3>'+
+   '<section class="ut-card-section"><h3>Static assets - '+Number(s.detail.asset_count||0)+'</h3>'+
    (files||'<p>No linked static assets.</p>')+
    (s.detail.files_has_more?'<button type="button" class="ut-small-button" data-ut-more-files>Load more assets</button>':"")+
    '</section>'+
@@ -456,7 +456,7 @@ export function initColosseumUtilities(){
   const current=s.page+1,first=s.page*s.pageSize+1;
   elements.count.textContent=unfiltered&&Number.isSafeInteger(s.total)?
    (s.total?first+"–"+Math.min(first+s.items.length-1,s.total)+" of "+s.total:"0 of 0"):
-   (s.items.length?first+"–"+(first+s.items.length-1)+(s.nextCursor?" matching · more available":" matching"):"0 matching utilities");
+   (s.items.length?first+"–"+(first+s.items.length-1)+(s.nextCursor?" matching - more available":" matching"):"0 matching utilities");
   if(pages===1)elements.pages.replaceChildren();
   else{
    const from=Math.max(1,Math.min(current-2,pages-4)),to=Math.min(pages,from+4);
@@ -487,7 +487,7 @@ export function initColosseumUtilities(){
    s.items=result.items.filter(x=>UID.test(x?.uid));s.detailCache.clear();s.page=index;
    s.query=query;s.sort=args.sort;s.nextCursor=result.next_cursor||null;
    if(Number.isSafeInteger(result.total_items)&&result.total_items>=0)s.total=result.total_items;
-   s.updatedAt=new Date();s.revision=result.catalog_revision||"—";s.loaded=true;
+   s.updatedAt=new Date();s.revision=result.catalog_revision||"-";s.loaded=true;
    s.activeUid=null;s.detail=null;s.detailError=null;s.detailSeq++;
    // Preserve transient selections and rename drafts when changing pages.
    // Neither is persisted until the owner confirms the operation.
@@ -693,8 +693,8 @@ export function initColosseumUtilities(){
    const result=await mutation(kind,body);
    if(!result?.manifest_digest)throw Error("Colosseum did not supply a reviewable catalog mutation plan.");
    s.planned={kind,body,result};
-   elements.editorCopy.textContent="Reviewed "+kind+" plan · "+(result.manifest?.added_files?.length||0)+
-    " files added · "+(result.manifest?.removed_files?.length||0)+" removed. Confirm to commit the GitHub-first catalog update.";
+   elements.editorCopy.textContent="Reviewed "+kind+" plan - "+(result.manifest?.added_files?.length||0)+
+    " files added - "+(result.manifest?.removed_files?.length||0)+" removed. Confirm to commit the GitHub-first catalog update.";
    elements.editorError.textContent="";
    elements.plan.hidden=true;elements.publish.hidden=false;
    editorInputsLocked(true);
@@ -770,7 +770,7 @@ export function initColosseumUtilities(){
     Array.isArray(data?.updates)?data.updates:Array.isArray(data?.results)?data.results:[];
    elements.updateResults.textContent=results.length?
     results.map(x=>plain(x.name||x.inventory_uid)+": "+plain(x.status||"indeterminate")+
-     (x.observed_revision&&x.observed_revision!==x.saved_revision?" · revision differs (unverified)":"")).join(" · "):
+     (x.observed_revision&&x.observed_revision!==x.saved_revision?" - revision differs (unverified)":"")).join(" - "):
     "No update candidates were returned. No changes were installed or published.";
   }catch(error){elements.updateResults.textContent=error.message||String(error);}
   finally{busy(false);}

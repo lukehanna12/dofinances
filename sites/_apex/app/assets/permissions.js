@@ -174,7 +174,7 @@ export function initColosseumPermissions(){
   editingRow=row;
   const values=item?rowValues(item):[true,"","",false,false,false,false,false];
   $("pm-rule-title").textContent=item?"Edit filesystem rule":"Add filesystem rule";
-  $("pm-rule-subtitle").textContent=item?"Rule "+row+" · policy revision "+state.revision:"New rule · policy revision "+state.revision;
+  $("pm-rule-subtitle").textContent=item?"Rule "+row+" - policy revision "+state.revision:"New rule - policy revision "+state.revision;
   $("pm-rule-path").value=values[2]||"";
   $("pm-rule-alias").value=values[1]||"";
   $("pm-rule-enabled").checked=!!values[0];

@@ -97,7 +97,7 @@ function makeCard(project,index,slugRoute){
  const card=element(active?"a":"article","project-showcase-card "+(active?"is-active":"is-coming-soon"));
  card.dataset.projectSlug=project.slug;
  card.style.setProperty("--project-index",String(index));
- card.setAttribute("aria-label",project.name+" · "+status);
+ card.setAttribute("aria-label",project.name+" - "+status);
  if(active)card.href="#"+slugRoute(project.slug);
  else card.tabIndex=0;
 
@@ -143,8 +143,8 @@ function makeCard(project,index,slugRoute){
  }
  upper.append(top,title,action);
  const bottom=element("span","project-showcase-details");
- bottom.append(row(project.kind),row(project.repository?"GitHub · "+project.repository:
-  project.docs?"Local Docs · Editable":"Repository not yet available"));
+ bottom.append(row(project.kind),row(project.repository?"GitHub - "+project.repository:
+  project.docs?"Local Docs - Editable":"Repository not yet available"));
  content.append(upper,bottom);
  card.append(photo,shade,content);
  return card;

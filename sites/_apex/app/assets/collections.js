@@ -1,7 +1,7 @@
 import {formatWorkspaceTime} from "./workspace-nav.js";
 import {initCollectionsAdmission} from "./collections-admit.js";
 import {normalizeCollectionConfiguration,orderedCollectionTree,collectionDescendsFrom,moveCollectionInConfiguration} from "./collections-organization.js";
-/* Live Colosseum Collections — no cached collection records, demo data, or polling.
+/* Live Colosseum Collections - no cached collection records, demo data, or polling.
  * The only write surface is /api/colosseum/collections behind the existing
  * DoFinances session + Cloudflare Access + bound owner + HMAC Router bridge.
  * Owner-only admission adds existing catalog items to collections.
@@ -428,7 +428,7 @@ export function initColosseumCollections(){
  function syncActions(){
    // Count lives in the footer; update mounted desktop/mobile cards in place.
    const count=Array.isArray(state.detail?.item_uids)?state.detail.item_uids.filter(isUid).length:null;
-   const label=count===null?"— utilities":count+" "+(count===1?"utility":"utilities");
+   const label=count===null?"Unknown utility count":count+" "+(count===1?"utility":"utilities");
    for(const badge of root.querySelectorAll(".cs-summary .cs-inline-utility-count"))
      if(badge.textContent!==label)badge.textContent=label;
  }
@@ -485,7 +485,7 @@ export function initColosseumCollections(){
      '<div class="cs-utility-list" role="group" aria-label="Utilities in '+esc(col.name)+'">'+
        (names||'<p class="cs-utility-empty">This collection has no utilities yet.</p>')+
        '<p class="cs-utility-empty cs-utility-no-results" hidden>No utilities match your search.</p>'+
-     '</div>'+(subcollections.length?'<div class="cs-subcollections"><span class="cs-subcollections-label">Subcollections · '+subcollections.length+'</span>'+subcollections.map(child=>
+     '</div>'+(subcollections.length?'<div class="cs-subcollections"><span class="cs-subcollections-label">Subcollections - '+subcollections.length+'</span>'+subcollections.map(child=>
        '<button type="button" class="cs-subcollection-link" data-cs-jump-child="'+esc(child.collection_id)+'">'+esc(child.name)+'</button>').join("")+'</div>':'')+
      '<div class="cs-summary" aria-label="Collection revision and total utilities">'+
      '<span class="cs-card-badge cs-revision-badge" aria-label="Collection revision">Revision '+esc(current.revision)+'</span>'+

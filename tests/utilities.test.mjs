@@ -150,7 +150,7 @@ test("Collection filter choices are loaded only when opened and never polled",()
 test("Utilities summary shows exact total and app-configured local refresh time",()=>{
  const view=html.slice(html.indexOf('data-view="colosseum/utilities"'),html.indexOf('data-view="colosseum/collections"'));
  assert.match(view,/class="ut-summary ut-summary-loading"/);
- assert.match(view,/class="ut-summary-value">TOTAL — \/ UPDATED —/);
+ assert.match(view,/class="ut-summary-value">TOTAL - \/ UPDATED -/);
  assert.match(view,/class="ut-summary-skeleton"/);
  assert.equal((view.match(/class="ut-summary-dot"/g)||[]).length,2);
  assert.match(js,/Number\.isSafeInteger\(result\.total_items\)/);
@@ -239,7 +239,7 @@ test("Default footer and numbered pagination match Collections",()=>{
  assert.match(js,/PAGE_RIGHT/);
  assert.match(css,/#ut-root \.ut-pages \.ut-page\{/);
  assert.match(css,/\.ut-page\[aria-current="page"\]/);
- assert.doesNotMatch(js,/more available"\)\+" · live Colosseum/);
+ assert.doesNotMatch(js,/more available"\)\+" - live Colosseum/);
 });
 test("Edit Utilities dock enters inline rename mode while detailed metadata editor remains",()=>{
  assert.match(js,/elements\.edit\.addEventListener\("click",toggleEditMode\)/);

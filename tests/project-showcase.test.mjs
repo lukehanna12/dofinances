@@ -95,7 +95,7 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(source,/addEventListener\("focusin",reveal/);
  assert.match(source,/if\(active\)card\.href/);
  assert.match(source,/project\.docs===true/);
- assert.match(source,/Local Docs · Editable/);
+ assert.match(source,/Local Docs - Editable/);
  assert.match(source,/else card\.tabIndex=0/);
 });
 test("Projects uses native static catalog without exposing private data in Studio",()=>{

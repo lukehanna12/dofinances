@@ -68,7 +68,7 @@
 
 
 /* Exact font environment measured in the original iframe (386 × 800).
- * The original renders platform UI sans-serif—not an IBM Plex Sans, Inter,
+ * The original renders platform UI sans-serif, not an IBM Plex Sans, Inter,
  * Geist or Google Fonts override. Keep the browser's native variable-font
  * optical sizing and weight synthesis; avoid substitute weights.
  *

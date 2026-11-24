@@ -46,7 +46,7 @@ test("Local, External and Credentials reuse one Provider workbench with the comm
 });
 test("Permissions puts RULES / ENABLED above its lower refresh track",()=>{
  const css=asset("permissions.css");
- assert.ok(html.includes("— RULES / — ENABLED"));
+ assert.ok(html.includes("- RULES / - ENABLED"));
  assert.ok(css.includes("grid-template-rows:var(--workspace-summary-row-height) minmax(var(--workspace-control-size),auto)"));
  assert.ok(css.includes("row-gap:var(--workspace-summary-controls-gap)"));
  assert.ok(css.includes("#pm-root #pm-count{grid-column:1;grid-row:1;align-self:start}"));

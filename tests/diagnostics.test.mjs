@@ -17,7 +17,7 @@ test("Diagnostics is a real navigation view with one screen shared by apex and S
     assert.ok(diagnostics.includes('aria-labelledby="dg-local-title"'),"Local measurements remain");
     for(const retired of ['Query options','id="dg-query"','id="dg-run"','id="dg-check"','id="dg-depth"','data-dg-section'])
       assert.ok(!diagnostics.includes(retired),"Query options UI must be removed: "+retired);
-    for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks ·","Source: Colosseum"])
+    for(const removed of ["Platform configuration","Static asset libraries","Request controls","Management API","Report integrity","Live clocks -","Source: Colosseum"])
       assert.ok(!diagnostics.includes(removed),"Diagnostics must not show "+removed);
 
     for(const id of ["dg-refresh","dg-quotas","dg-workers","dg-local","global-clock-time","global-clock-seconds","global-clock-zone","clock-zone-select","clock-custom-zone"])
@@ -57,7 +57,7 @@ test("Quota overview uses circular gauges beside true percentages, never treatin
   [{used:25,limit:100},"normal","25","25%"],
   [{used:91,limit:100},"critical","91","91%"],
   [{used:120,limit:100},"critical","100","120%"],
-  [null,"unknown",undefined,"—"]
+  [null,"unknown",undefined,"-"]
  ]){
   const card=metricCard("Test quota",q);
   assert.equal(card.dataset.level,expectedLevel);
@@ -75,7 +75,7 @@ test("Mac diagnostics combines storage and native battery into one responsive pa
  const css=await read("../sites/_apex/app/assets/diagnostics.css");
  const local=js.slice(js.indexOf("function renderLocal(report){"),js.indexOf(" const gateway=panel(",js.indexOf("function renderLocal(report){")));
  assert.match(local,/const mac=panel\("Mac"\)/);
- assert.doesNotMatch(local,/panel\("Mac · battery"|panel\("Mac · storage"/);
+ assert.doesNotMatch(local,/panel\("Mac - battery"|panel\("Mac - storage"/);
  assert.match(local,/summary\.append\(storageReading,batteryGraphic\(m\)\.glyph\)/);
  assert.match(local,/mac\.append\(summary\)/);
  assert.match(local,/host\.append\(mac\)/);

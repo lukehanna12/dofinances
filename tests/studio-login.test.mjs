@@ -73,7 +73,7 @@ test("Studio's independent Vite root is retained for development, but not deploy
   const [root,workflow,vite]=await Promise.all([
     load("../index.html"),load("../.github/workflows/site.yml"),load("../vite.config.mjs")
   ]);
-  assert.match(root,/<title>Sign in · Dofinances<\/title>/);
+  assert.match(root,/<title>Sign in - Dofinances<\/title>/);
   assert.match(vite,/home: resolve\(root, "index\.html"\)/);
   assert.match(vite,/loginRoute: resolve/);
   assert.match(workflow,/sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
@@ -89,7 +89,7 @@ test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /logi
     load("../sites/_apex/app/assets/sidebar-glass-oracle.js"),
     load("../.github/workflows/site.yml")
   ]);
-  assert.match(page, /<title>Studio · DoFinances<\/title>/);
+  assert.match(page, /<title>Studio - DoFinances<\/title>/);
   assert.match(page, /id="workspace-sidebar"/);
   assert.match(page, /sidebar-glass\.css/);
   assert.match(page, /src="\/app\/assets\/preview-bootstrap\.js"/);

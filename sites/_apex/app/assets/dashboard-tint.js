@@ -169,7 +169,7 @@ export function createTintControls(onChange){
       // Do not replace any existing semantic icon title/tooltip.
       if(!tile.title||tile.dataset.dashboardTintTitle==="true"){
         tile.title=material.name==="none"?"Untinted clear glass":
-          (TINT_COLORS[material.name]?.label||material.name)+" · "+
+          (TINT_COLORS[material.name]?.label||material.name)+" - "+
             (material.opacity*100).toFixed(1)+"% tint (browser approximation)";
         tile.dataset.dashboardTintTitle="true";
       }
@@ -178,8 +178,8 @@ export function createTintControls(onChange){
   function renderUI(){
     fallbackStyle();
     if(!toggle)return;
-    toggle.textContent=state.name==="showcase"?"Tint · Mixed showcase":
-      "Tint · "+(TINT_COLORS[state.name]?.label||state.name);
+    toggle.textContent=state.name==="showcase"?"Tint - Mixed showcase":
+      "Tint - "+(TINT_COLORS[state.name]?.label||state.name);
     toggle.setAttribute("aria-expanded",String(!panel.hidden));
     showcaseButton?.setAttribute("aria-pressed",String(state.name==="showcase"));
     for(const [key,button] of choices){
@@ -229,7 +229,7 @@ export function createTintControls(onChange){
     showcaseButton=document.createElement("button");
     showcaseButton.type="button";
     showcaseButton.className="dashboard-tint-showcase";
-    showcaseButton.textContent="Mixed showcase · compare all tiles";
+    showcaseButton.textContent="Mixed showcase - compare all tiles";
     showcaseButton.addEventListener("click",()=>apply("showcase",1,state.scheme));
     panel.append(showcaseButton);
     const explanation=document.createElement("p");

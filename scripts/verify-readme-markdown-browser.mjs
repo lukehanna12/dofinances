@@ -52,7 +52,7 @@ const canvasFixture=[
  '<div class="shell" id="workspace-shell"><div class="main"><div class="workspace-scroll"><main class="content">',
  '<section class="view" data-view="projects" hidden></section>',
  docsFixture,
- '</main></div></div></div><footer class="workspace-footer">© DoFinances · 2026</footer>',
+ '</main></div></div></div><footer class="workspace-footer">© 2026 DoFinances</footer>',
  '</body></html>'
 ].join("\n");
 const server=createServer((request,response)=>{

@@ -46,7 +46,7 @@ function makeCard(project,index){
   card.type="button";
   card.dataset.publicProjectGlass="card";
   card.dataset.projectSlug=project.slug;
-  card.setAttribute("aria-label",project.name+" · "+status+" · Preview only");
+  card.setAttribute("aria-label",project.name+" - "+status+" - Preview only");
   card.style.setProperty("--project-index",String(index));
   card.style.setProperty("--project-reverse-index",String(Math.min(PROJECT_SHOWCASE.length-1-index,15)));
   // No location changes, hrefs, or private /api/projects calls.

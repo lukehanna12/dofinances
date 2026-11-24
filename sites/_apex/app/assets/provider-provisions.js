@@ -85,8 +85,8 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
     if(tool.description)add(card,"p","pv-provision-tool-description",tool.description);
     const meta=add(card,"p","pv-provision-tool-meta");
     meta.textContent="Effective: "+(tool.effective_policy?.kind||"unclassified")+
-     (tool.override?" · owner override":" · provider baseline")+
-     " · "+Object.keys(tool.input_schema?.properties||{}).length+" schema fields";
+     (tool.override?" - owner override":" - provider baseline")+
+     " - "+Object.keys(tool.input_schema?.properties||{}).length+" schema fields";
     if(editors.get(id)===tool.name)drawEditor(card,tool,s);
     if(pending.get(id)?.tool_name===tool.name)drawConfirmation(card,tool,s);
    }
@@ -97,7 +97,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
    const group=s[key]||{};
    const panel=add(region,"section","pv-provision-mcp");
    panel.dataset.kind=key;
-   add(panel,"h5","",title+" · "+(group.items?.length||0));
+   add(panel,"h5","",title+" - "+(group.items?.length||0));
    if(group.error)add(panel,"p","pv-provision-muted","Upstream discovery: "+group.error);
    else if(!group.items?.length)add(panel,"p","pv-provision-muted","No "+title.toLowerCase()+" advertised.");
    for(const item of group.items||[]){
@@ -106,7 +106,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
     if(item.uri||item.uriTemplate||item.relative_path)
      add(row,"code","",item.uri||item.uriTemplate||item.relative_path);
     if(item.description)add(row,"p","",item.description);
-    if(key==="skill_files")add(row,"p","pv-provision-muted",String(item.size_bytes||0)+" bytes · "+String(item.mime_type||"application/octet-stream")+" · Parent: "+String(item.skill_relative_path||"unknown"));
+    if(key==="skill_files")add(row,"p","pv-provision-muted",String(item.size_bytes||0)+" bytes - "+String(item.mime_type||"application/octet-stream")+" - Parent: "+String(item.skill_relative_path||"unknown"));
     add(row,"p","pv-provision-tool-state",item.disabled?"Excluded by provider regulation":"Available from upstream");
     const actions=add(row,"div","pv-provision-actions");
     actions.append(button(item.disabled?"Allow":"Exclude",
@@ -261,7 +261,7 @@ export function mountLocalProviderProvisions({provider,container,request,notify}
   const item=pending.get(id);
   const panel=add(card,"div","pv-provision-confirm");
   add(panel,"strong","","Confirm live tool regulation");
-  add(panel,"p","","Provider: "+id+" · Upstream tool: "+tool.name);
+  add(panel,"p","","Provider: "+id+" - Upstream tool: "+tool.name);
   add(panel,"pre","",JSON.stringify({requested_rule:item.rule,effects:item.effects},null,2));
   const actions=add(panel,"div","pv-provision-actions");
   actions.append(button("Apply to running gateway",()=>void commitTool(item,tool,s)));

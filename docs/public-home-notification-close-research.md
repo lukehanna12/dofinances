@@ -1,4 +1,4 @@
-# Public Home — temporary macOS notification X-close reference
+# Public Home - temporary macOS notification X-close reference
 
 ## Exact action being adapted
 
@@ -84,7 +84,7 @@ instead of adding conjectural smoke or particles.
 
 ## Reference links
 
-- [OS X 10.8 review — notification smoke](https://arstechnica.com/gadgets/2012/07/os-x-10-8/)
+- [OS X 10.8 review - notification smoke](https://arstechnica.com/gadgets/2012/07/os-x-10-8/)
 - [AppKit NSAnimationEffect.poof](https://developer.apple.com/documentation/appkit/nsanimationeffect)
 - [Historic Notification private poof flag](https://github.com/indragiek/NSUserNotificationPrivate)
 - [2016 X-click description](https://apple.stackexchange.com/questions/254657/how-can-i-speed-up-dismissal-animation-of-os-x-notification-dialog-boxes)

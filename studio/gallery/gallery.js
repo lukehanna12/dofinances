@@ -325,7 +325,7 @@ function setupToggle(){
     const on=toggle.getAttribute("aria-checked")!=="true";
     toggle.setAttribute("aria-checked",String(on));
     doc.body.dataset.clarity=on?"on":"off";
-    description.textContent=on?"On · brighter edges":"Off · softer contrast";
+    description.textContent=on?"On - brighter edges":"Off - softer contrast";
   });
 }
 

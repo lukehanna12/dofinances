@@ -337,7 +337,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     }
-    doc.title=meta.label+" · "+(meta.projectKey==="colosseum"?"Colosseum · ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader · ":"")+"DoFinances";
+    doc.title=meta.label+" - "+(meta.projectKey==="colosseum"?"Colosseum - ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader - ":"")+"DoFinances";
     // A provider child is a real route; the parent is a disclosure, never a fourth screen.
     if(route.startsWith("colosseum/providers/"))providersExpanded=true;
     syncProviderNav();
@@ -698,7 +698,7 @@ export function initWorkspaceClock(doc=document,win=window){
         .formatToParts(now).find(p=>p.type==="timeZoneName")?.value||name;
       suffix.textContent=preference.mode==="utc"?"UTC":abbreviation;
       clock.setAttribute("datetime",now.toISOString());
-      clock.setAttribute("aria-label",name+" · "+new Intl.DateTimeFormat("en-US",{
+      clock.setAttribute("aria-label",name+" - "+new Intl.DateTimeFormat("en-US",{
         timeZone:name,weekday:"long",month:"short",day:"numeric",year:"numeric"
       }).format(now));
     }catch{
@@ -716,7 +716,7 @@ export function initWorkspaceClock(doc=document,win=window){
     // The timezone label/control belongs only to the clock, not the doof wordmark.
     if(zoneTrigger)zoneTrigger.hidden=display.doof;
     displayTrigger?.setAttribute("aria-label",display.doof?
-      "doof · Clock display options":"Clock display options");
+      "doof - Clock display options":"Clock display options");
     zoneTrigger?.setAttribute("aria-label","Time zone: "+suffix.textContent+". Change time zone");
   };
   const syncDisplay=()=>{

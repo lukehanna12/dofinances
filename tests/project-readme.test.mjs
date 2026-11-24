@@ -161,7 +161,7 @@ test("Docs metadata, Projects-inspired visibility badge and actions appear in th
  assert.ok(css.includes('.rm-repository-label{margin:0;font-size:12px;color:#3d444d'));
  assert.ok(docs.includes('id="rm-visibility-badge" class="rm-visibility-badge" hidden>Private</span>'));
  assert.ok(ui.includes('$("rm-visibility-badge").hidden=!(repository&&data.private)'));
- assert.ok(!ui.includes('data.private?" · Private"'));
+ assert.ok(!ui.includes('data.private?" - Private"'));
  assert.ok(css.includes('.rm-visibility-badge{font-size:9px;font-weight:500;line-height:12px;padding:1px 5px;border-radius:4px;'));
  assert.ok(projects.includes('.project-showcase-badge{'));
  // Docs retains its established rectangular visibility badge; the Projects

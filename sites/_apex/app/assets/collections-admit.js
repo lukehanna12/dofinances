@@ -50,7 +50,7 @@ export function initCollectionsAdmission({root,getSnapshot,admit,onSaved}){
        (current.query?"No catalog utilities match this search.":"Search by utility name or UID to find an existing catalog entry.")+"</p>");
     status.textContent=current.loading?"Searching live Colosseum catalog…":
       current.items.length?current.items.length+" result"+(current.items.length===1?"":"s")+
-        (current.cursor?" · more available":""):"";
+        (current.cursor?" - more available":""):"";
   }
   async function load(append=false){
     const s=session;

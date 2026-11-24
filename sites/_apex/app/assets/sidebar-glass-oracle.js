@@ -76,7 +76,7 @@ export function nativePublicBlurRadius(style,width,height){
 }
 
 /*
- * SIDEBAR-ONLY FINITE PROJECTION — not a new native Metal observation.
+ * SIDEBAR-ONLY FINITE PROJECTION - not a new native Metal observation.
  * 52 independent public radius readbacks + 25 finite native renderer
  * factor=0x3ecccccd/override=0 witnesses + eight separate exact encoder
  * joins. The 74/260/274px cross-product has NOT been replayed in native

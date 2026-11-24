@@ -69,7 +69,7 @@ export function mountProviderAdapterControl({id,data,container,request,notify,on
   },true));
   const status=append(outer,"div","pv-adapter-state");
   append(status,"strong","",active==="original"?"Original registered adapter":modes.find(x=>x[0]===active)?.[1]||active);
-  append(status,"small","",current?"Owner-selected source · live connection: "+(cfg.active_type||"unknown"):"No adapter override · "+(cfg.active_type||"unknown"));
+  append(status,"small","",current?"Owner-selected source - live connection: "+(cfg.active_type||"unknown"):"No adapter override - "+(cfg.active_type||"unknown"));
   if(!expanded.has(id))return;
   append(outer,"p","pv-provision-warning","Changing an adapter can replace its entire upstream tool list. The local Permissions authority must permit its executable and script. Changes use gateway review, confirmation, live reconnection, verification, and automatic restoration if the new MCP cannot connect.");
   const form=append(outer,"form","pv-adapter-form");
@@ -99,7 +99,7 @@ export function mountProviderAdapterControl({id,data,container,request,notify,on
     browse.append(query,makeButton("Search installations",()=>void discoverSources(query.value),true));
     if(saved){
      const candidates=saved.installations.filter(x=>x.installed);
-     const sel=row(fields,"Verified installation",{options:[["","Choose a registered installation"],...candidates.map((x,i)=>[String(i),x.component+" · "+x.version+" · "+x.variant])],
+     const sel=row(fields,"Verified installation",{options:[["","Choose a registered installation"],...candidates.map((x,i)=>[String(i),x.component+" - "+x.version+" - "+x.variant])],
        hint:saved.truncated?"Inventory is truncated; narrow the search.":candidates.length+" verified candidates"});
      sel.addEventListener("change",()=>{
       if(sel.value==="")return;const x=candidates[Number(sel.value)];if(!x)return;

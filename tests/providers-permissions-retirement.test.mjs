@@ -14,6 +14,6 @@ test("both provider interfaces describe independent local Permissions rather tha
 });
 test("independent HIG Reader Apps Script references are retained",async()=>{
  const preview=await read("studio/sidebar/index.html");
- assert.match(preview,/Google Apps Script · HIG API/);
- assert.match(preview,/Google Apps Script · Live documentation reader/);
+ assert.match(preview,/Google Apps Script - HIG API/);
+ assert.match(preview,/Google Apps Script - Live documentation reader/);
 });

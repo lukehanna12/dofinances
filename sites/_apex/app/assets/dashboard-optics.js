@@ -22,7 +22,7 @@
  * backdrop: changing/moving underlying DOM or moving a tile changes the
  * sampled appearance without a regenerated scene image.
  *
- * OPEN ORACLE GAPS — explicitly not native-equivalent:
+ * OPEN ORACLE GAPS - explicitly not native-equivalent:
  * GAP(PUBLIC-STATE): public "clear" style writer of all material parameters,
  *      face/bleed/shadow matrix, opacity, tint, four-corner SDF and geometry
  *      selection is not structurally closed. Public geometry and CAFilter
@@ -79,7 +79,7 @@ const reduced=()=>window.matchMedia("(prefers-reduced-transparency: reduce)").ma
   window.matchMedia("(prefers-contrast: more)").matches;
 const SDF_MODE=5;
 const LIVE_INPUT="CSS backdrop-filter SourceGraphic / actual painted DOM";
-const TARGET="25F80 / Apple M2 / G14G — finite evidence only";
+const TARGET="25F80 / Apple M2 / G14G - finite evidence only";
 
 function svgElement(name,attributes={}){
   const node=document.createElementNS(NS,name);

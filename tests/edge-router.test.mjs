@@ -9,9 +9,9 @@ const mock = {
     const path = new URL(request.url).pathname;
     const contents = {
       "/_apex/index.html":"<h1>Dofinances</h1>",
-      "/_apex/app/index.html":"<h1>Dashboard · Dofinances</h1>",
+      "/_apex/app/index.html":"<h1>Dashboard - Dofinances</h1>",
       "/_apex/app/assets/dashboard.js":"dashboard-script",
-      "/_apex/login/index.html":"<h1>Sign in · Dofinances</h1>",
+      "/_apex/login/index.html":"<h1>Sign in - Dofinances</h1>",
       "/_apex/assets/app-compiled.js":"compiled-preview",
       "/_apex/assets/site-foundation.css":"--ui-canvas: #000000",
       "/_apex/assets/account-security.css":".panel{background:var(--ui-elevated)}",
@@ -53,7 +53,7 @@ test("apex /login resolves the built preview without changing hostname",async()=
   for(const path of ["/login","/login/"]){
     const response=await handleRequest(new Request("https://dofinances.com"+path),mock);
     assert.equal(response.status,200,path);
-    assert.match(await response.text(),/Sign in · Dofinances/);
+    assert.match(await response.text(),/Sign in - Dofinances/);
   }
   const asset=await handleRequest(new Request("https://dofinances.com/assets/app-compiled.js"),mock);
   assert.equal(asset.status,200);

@@ -1,4 +1,4 @@
-/* Colosseum utility 0001c4: How It Works 2 — compact Projects adaptation.
+/* Colosseum utility 0001c4: How It Works 2 - compact Projects adaptation.
    Roughly half-size dimensions / quarter-size area, retaining numbered markers,
    hover image crossfade, black 60% overlay, and fine divider rows. */
 .view[data-view="projects"]{position:relative}

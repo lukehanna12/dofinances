@@ -69,7 +69,7 @@ test("Docs tooltips expose Collections-style label-only and separated shortcut-k
  assert.ok(docs.includes("gap:2px;margin-left:14px;"));
  assert.ok(docs.includes(".rm-tooltip-shortcut kbd{"));
  assert.ok(controller.includes('querySelector?.(".rm-tooltip-label")'));
- assert.ok(!controller.includes("Edit README · ⇧⌘E"));
+ assert.ok(!controller.includes("Edit README - ⇧⌘E"));
 });
 test("Utilities, Providers, Permissions and Diagnostics follow Collections tooltip metrics and keyboard focus rules",()=>{
  const cs=css("collections.css"),ut=css("utilities.css"),pv=css("providers.css"),pm=css("permissions.css"),dg=css("diagnostics.css");

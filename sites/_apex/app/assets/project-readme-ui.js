@@ -280,7 +280,7 @@ export function initProjectReadme(){
     children.push(folder);
    }
    location.replaceChildren(...children);
-  }else location.textContent="Local README · No linked GitHub repository";
+  }else location.textContent="Local README - No linked GitHub repository";
   $("rm-visibility-badge").hidden=!(repository&&data.private);
   reading.setAttribute("aria-label",path+" document");
  };
@@ -513,7 +513,7 @@ export function initProjectReadme(){
    if(state.source.path)documentsBySlug.set(slug,state.source.path);
    exitEdit(false);
    await renderMarkup(content,reading,slug);
-   say("Document saved"+(res.commit?" to GitHub · "+res.commit.slice(0,8):" locally")+".",false,true);
+   say("Document saved"+(res.commit?" to GitHub - "+res.commit.slice(0,8):" locally")+".",false,true);
   }catch(error){say("Document not saved: "+error.message,true);}
   finally{setBusy(false);}
  });

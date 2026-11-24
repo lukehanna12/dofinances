@@ -1,4 +1,4 @@
-# Dofinances Auth-3 sign-in — current architecture and historical fidelity notes
+# Dofinances Auth-3 sign-in - current architecture and historical fidelity notes
 
 _Updated 2026-11-11. The Auth-3 React/Vite build is **only** the apex `/login` experience. The current `stu.dofinances.com` Pages deployment is an independent static workspace preview assembled from `studio/sidebar/`._
 
@@ -6,9 +6,9 @@ _Updated 2026-11-11. The Auth-3 React/Vite build is **only** the apex `/login` e
 
 Email verification and one-use password recovery links are implemented under `/verify` and `/reset`, with TOTP authenticator MFA and single-use recovery codes configured from `/app`. Sender activation uses Mailtrap transactional Email API with a domain-scoped API token and verified sender; without these, new registration and email delivery are disabled. See [Account security](account-security.md). Google and GitHub identity-only OAuth are also implemented, subject to configured client credentials. See [federated authentication](federated-auth.md). Earlier notes below describe the original visual design and the chronological rollout; they are not current feature-status statements.
 
-# Dofinances Studio — Auth-3 source-fidelity implementation
+# Dofinances Studio - Auth-3 source-fidelity implementation
 
-## Historical rollout: November 6, 2026 — First live account authentication
+## Historical rollout: November 6, 2026 - First live account authentication
 
 The apex `/login` form now submits real email/password sign-in and sign-up requests to same-origin Worker endpoints. Successful authentication issues a secure HTTP-only cookie and sends the browser to the server-protected `/app` dashboard. Account and session records are held in an independent SQLite-backed Durable Object, **not D1**. Authenticated account deletion is available.
 
@@ -16,9 +16,9 @@ Cloudflare's native PBKDF2 implementation is capped at 100,000 iterations; this 
 
 ## Live routes and scope
 
-- `https://stu.dofinances.com/` and `/app/` — the standalone, non-authenticated Liquid Glass workspace preview. Its login/account operations are disabled.
-- `https://dofinances.com/login` and `https://dofinances.com/login/` — the functional Auth-3 sign-in/registration UI, published through the apex Worker.
-- `https://stu.dofinances.com/login` and `https://stu.dofinances.com/login/` — removed (HTTP 404).
+- `https://stu.dofinances.com/` and `/app/` - the standalone, non-authenticated Liquid Glass workspace preview. Its login/account operations are disabled.
+- `https://dofinances.com/login` and `https://dofinances.com/login/` - the functional Auth-3 sign-in/registration UI, published through the apex Worker.
+- `https://stu.dofinances.com/login` and `https://stu.dofinances.com/login/` - removed (HTTP 404).
 
 The React source remains `src/components/Auth3.jsx` with the same Tailwind 4 stylesheet. GitHub Actions builds the Auth-3 Vite entrypoint once, packages `dist/index.html` and `dist/assets/` into apex Worker assets for `/login`, and **separately overwrites its Pages job's copy** of `dist` with the static Studio workspace. No compiled assets are committed to the repository. A top-level `public/404.html` provides generic missing-page behavior; Pages still served the retired `/login/` URL with HTTP 200 after the first rollout, so `functions/login.js` explicitly returns HTTP 404 for both `/login` forms. The Pages deployment checks out `functions/`, and `public/_routes.json` includes only the two retired paths to avoid Functions execution on the Studio homepage or other static resources. No DNS, GoDaddy, D1, or host-routing changes are required.
 
@@ -58,7 +58,7 @@ Automated tests enforce exact matching of source class strings and structural be
 
 For very short mobile viewports (up to 640px wide and 700px high), the additional theme toggle is placed after the card rather than overlapping the original help text. This is a user-toggle-only responsive exception; all 28 original source classes remain unchanged.
 
-## 2026-11-06 — 386 × 800 original iframe computed-style reference
+## 2026-11-06 - 386 × 800 original iframe computed-style reference
 
 The user supplied a matching-state iframe HTML document and a 29-node computed-style/geometry capture measured on a Mac in Chrome (device pixel ratio 2), with the original `html.dark.disable-transitions` frame. Comparison against the locally built Studio version at the same CSS viewport found:
 
