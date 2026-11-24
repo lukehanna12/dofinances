@@ -120,8 +120,8 @@ jobs:
           # Only this Pages deployment's dist/ copy becomes the standalone
           # Studio preview. No auth JS or test-branch dependency is included.
           mkdir -p dist/app/assets dist/assets dist/gallery/assets
-          # Build the unmodified MIT-licensed SVGOMG frontend from a pinned upstream
-          # revision, then disable analytics and offline caching before publishing it.
+          # Build the MIT-licensed SVGOMG frontend from a pinned upstream revision.
+          # Normalize the tab separator and disable analytics and offline caching.
           # Every SVGOMG page, worker and asset is gated by the Pages Function.
           git clone --quiet https://github.com/jakearchibald/svgomg.git "$RUNNER_TEMP/svgomg"
           git -C "$RUNNER_TEMP/svgomg" checkout --quiet f925656d40a507c512bf95ee14ad16445a4ad3ed
@@ -140,6 +140,12 @@ jobs:
               finish=text.index('</script>',begin)+len('</script>')
               text=text[:begin]+replacement+text[finish:]
           html.write_text(text)
+          gulp=root/'gulpfile.js'
+          build=gulp.read_text()
+          title="SVGOMG - SVGO's Missing GUI for minifying SVGs"
+          if build.count(title)!=1:
+              raise SystemExit('SVGOMG upstream tab title changed')
+          gulp.write_text(build.replace(title,title.replace(' - ',' | ')))
           controller=root/'src/js/page/main-controller.js'
           code=controller.read_text()
           marker="if ('serviceWorker' in navigator) {"
@@ -154,6 +160,7 @@ jobs:
           printf '%s\\n' 'window.version="1.17.0";window.ga=function(){};' > dist/svg-editor/config.js
           cp "$RUNNER_TEMP/svgomg/LICENSE.md" dist/svg-editor/LICENSE.md
           test -s dist/svg-editor/index.html
+          grep -Fq "SVGOMG | SVGO" dist/svg-editor/index.html
           test -s dist/svg-editor/js/svgo-worker.js
           test -s dist/svg-editor/js/page.js
           ! grep -q 'google-analytics.com' dist/svg-editor/index.html
