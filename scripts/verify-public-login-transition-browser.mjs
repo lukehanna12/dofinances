@@ -947,8 +947,8 @@ try{
   assert.equal(projectState.allButtons,true);
   assert.equal(projectState.firstImageLazy,true);
   assert.equal(projectState.shell,true);
-  assert.ok(Math.abs(projectState.titleSize-84)<1,
-    "Projects title doubles the previous 42px desktop size");
+  assert.ok(Math.abs(projectState.titleSize-63)<1,
+    "Projects title is 75% of the previous 84px desktop size");
   assert.equal(projectState.tools.length,3,"Search, filter and GitHub are three equal chips");
   for(const tool of projectState.tools){
     assert.equal(tool.w,40);assert.equal(tool.h,40);

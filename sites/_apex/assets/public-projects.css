@@ -31,7 +31,7 @@ body.public-home:has(#public-route-content .public-projects-root){
   gap:16px;width:100%;min-width:0
 }
 .public-projects-title{
-  margin:0;color:#fff;font-size:clamp(69px,6vw,93px);
+  margin:0;color:#fff;font-size:clamp(51.75px,4.5vw,69.75px);
   font-weight:550;line-height:1.12;letter-spacing:-.035em;
   -webkit-user-select:none;user-select:none
 }
