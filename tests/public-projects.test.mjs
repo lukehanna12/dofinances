@@ -467,11 +467,11 @@ test("all 16 projects have readable, explicitly connected native architecture sc
         assert.equal(slug,"bootscript");
         assert.ok(spec.title&&spec.label&&!spec.planned);
         assert.match(BOOTSCRIPT_DIAGRAM_SVG,/data-d2-version="v0\.9\.0"/);
-        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/viewBox="0 0 467 889"/);
-        assert.equal((BOOTSCRIPT_DIAGRAM_SVG.match(/fill-opacity="0\.54"/g)||[]).length,14);
+        assert.match(BOOTSCRIPT_DIAGRAM_SVG,/viewBox="0 0 511 539"/);
+        assert.equal((BOOTSCRIPT_DIAGRAM_SVG.match(/fill-opacity="0\.54"/g)||[]).length,13);
         assert.match(BOOTSCRIPT_DIAGRAM_SVG,/fill="transparent"/);
         assert.doesNotMatch(BOOTSCRIPT_DIAGRAM_SVG,/<(?:script|foreignObject)\b/i);
-        for(const label of ["Native editor","Project console","TypeScript engine","Encrypted vault","Yjs / WebRTC","Gemini","Google Sheets"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(label),label);
+        for(const label of ["Native Apps Script IDE","Project console","TypeScript engine","Encrypted vault","Yjs / WebRTC","Gemini","Google Sheets"])assert.ok(BOOTSCRIPT_DIAGRAM_SVG.includes(label),label);
         continue;
       }
       const layout=projectDiagramLayout(spec,specs.length>1);

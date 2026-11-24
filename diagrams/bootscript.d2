@@ -1,12 +1,11 @@
-direction: down
+grid-columns: 1
+grid-gap: 36
 style.fill: transparent
-
-host: Google Apps Script IDE
 
 extension: BootScript | Chrome MV3 {
   grid-columns: 2
-  grid-gap: 12
-  native: Native editor {
+  grid-gap: 10
+  native: Native Apps Script IDE {
     grid-columns: 1
     grid-gap: 8
     editing: "57 themes\nModal editing"
@@ -20,15 +19,12 @@ extension: BootScript | Chrome MV3 {
     teamwork: "Yjs / WebRTC\nHTML / CSS preview"
   }
 }
-
-services: Authorized APIs {
-  grid-columns: 2
-  grid-gap: 8
+services: Authorized external APIs {
+  grid-columns: 4
+  grid-gap: 6
   apps: Apps Script
   github: GitHub
   gemini: Gemini
   sheets: Google Sheets
 }
-
-host -> extension: Native integration
-extension -> services: Reviewed requests
+extension -> services

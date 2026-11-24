@@ -18,7 +18,7 @@ try{
   svg=svg.replace(/<(?:rect|path|ellipse|polygon)\b[^>]*>/g,tag=>
     /class="[^"]*\bstroke-\w+[^"]*\bfill-\w+/.test(tag)&&!tag.includes("connection")
       ?tag.replace(" />",' fill-opacity="0.54" />'):tag);
-  if((svg.match(/fill-opacity="0\.54"/g)||[]).length!==14||/<(?:script|foreignObject)\b/i.test(svg))throw new Error("Unexpected D2 output");
+  if((svg.match(/fill-opacity="0\.54"/g)||[]).length!==13||/<(?:script|foreignObject)\b/i.test(svg))throw new Error("Unexpected D2 output");
   const output="// Generated with D2 v0.9.0, Dark Flagship (201), Dagre; see diagrams/bootscript.d2.\nexport const BOOTSCRIPT_DIAGRAM_SVG = "+JSON.stringify(svg)+";\n";
   writeFileSync(join(root,"sites/_apex/assets/public-projects-bootscript-diagram.js"),output);
 }finally{rmSync(work,{recursive:true,force:true});}
