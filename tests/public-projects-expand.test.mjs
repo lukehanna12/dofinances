@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {planProjectExpansion,projectExpansionMovement,
-  projectConveyorPosition,projectConveyorEdge,projectRowWrapPhases}
+  projectConveyorPosition,projectConveyorEdge,projectRowWrapPhases,
+  projectForwardCloseFrames}
   from "../sites/_apex/assets/public-projects-expand.js";
 
 test("conveyor preserves a full pitch of separation at every animation sample",()=>{
@@ -107,6 +108,40 @@ test("all responsive layouts, last-row selections and filtering preserve cards",
   assert.throws(()=>planProjectExpansion(16,0,0),RangeError);
   assert.throws(()=>planProjectExpansion(16,6,16),RangeError);
 });
+test("lower-row closures use forward ease-out on precisely reversed spatial paths",()=>{
+  const opening=[
+    {computedOffset:0,transform:"translate3d(20px,240px,0)",opacity:"1"},
+    {computedOffset:0.25,transform:"translate3d(120px,240px,0)",opacity:"1"},
+    {computedOffset:0.5,transform:"translate3d(170px,240px,0)",opacity:"0"},
+    {computedOffset:0.5001,transform:"translate3d(-290px,0,0)",opacity:"0"},
+    {computedOffset:0.75,transform:"translate3d(-110px,0,0)",opacity:"1"},
+    {computedOffset:1,transform:"translate3d(0,0,0)",opacity:"1"}
+  ];
+  const full=projectForwardCloseFrames(opening,1,
+    {transform:"matrix(1, 0, 0, 1, 0, 0)",opacity:"1"});
+  assert.equal(full.length,opening.length);
+  assert.equal(full[0].offset,0);
+  assert.equal(full[0].transform,"matrix(1, 0, 0, 1, 0, 0)");
+  assert.deepEqual(full.slice(1).map(frame=>frame.offset),
+    [.25,.4999,.5,.75,1]);
+  assert.equal(full[full.length-1].transform,opening[0].transform);
+  assert.equal(full[full.length-1].opacity,"1");
+  assert.equal(full[1].transform,opening[4].transform);
+  assert.equal(full[3].opacity,"0");
+  // An interruption midway through entry must start at the visually
+  // presented state; later (unreached) wrap milestones are discarded.
+  const partial=projectForwardCloseFrames(opening,.45,
+    {transform:"matrix(1, 0, 0, 1, 140, 240)",opacity:".6"});
+  assert.equal(partial[0].offset,0);
+  assert.equal(partial[0].opacity,"0.6");
+  assert.equal(partial.length,3);
+  assert.ok(partial[1].offset>0&&partial[1].offset<1);
+  assert.equal(partial[1].transform,opening[1].transform);
+  assert.equal(partial[partial.length-1].offset,1);
+  assert.equal(partial[partial.length-1].transform,opening[0].transform);
+  assert.throws(()=>projectForwardCloseFrames(opening,-.01,
+    {transform:"none",opacity:"1"}),RangeError);
+});
 test("expanded project cards retain GPU-owned material and route-local lifecycle",async()=>{
   const asset=name=>readFile(new URL("../sites/_apex/assets/"+name,import.meta.url),"utf8");
   const [controller,entry,controls,renderer,css]=await Promise.all([
@@ -121,14 +156,17 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(entry,/expansion\.unmount\(\)/);
   assert.match(controls,/public-projects:before-filter/);
   assert.match(controller,/tileDismissProgress|projectCardDismissAt/);
-  assert.match(controller,/animation\.reverse\(\)/);
+  // Neither the clicked pane nor any lower row may reverse WAAPI's
+  // ease-out playback. Close paths instead run forward on a fresh clock.
+  assert.doesNotMatch(controller,/animation\.reverse\(\)|animation\.updatePlaybackRate\(/);
   assert.match(controller,/const contract=animate\(current\.card,/);
   assert.match(controller,/const contractButton=animate\(closeButton,/);
   assert.match(controller,/duration:EXPAND_MS,easing:SELECTED_EASING/);
-  assert.match(controller,/animation\.updatePlaybackRate\(-remaining\)/);
+  assert.match(controller,/const frames=projectForwardCloseFrames\(/);
+  assert.match(controller,/const returning=animate\(node,frames,/);
   // The selected card's X-close is a NEW forward 620ms ease-out, not
   // WAAPI.reverse() of its easing. All siblings share one spatial
-  // 620ms ease-in-out without stagger or different per-row velocities.
+  // 620ms ease-out without stagger or different per-row velocities.
   assert.match(controller,/const EXPAND_MS=620;/);
   assert.match(controller,/const SELECTED_EASING="cubic-bezier\(\.22,\.72,\.24,1\)";/);
   assert.match(controller,/const CONVEYOR_EASING=SELECTED_EASING;/);
