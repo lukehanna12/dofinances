@@ -367,22 +367,22 @@ fn vsRegularCapture(@builtin(vertex_index) vertex:u32,
 fn fsRegularCapture(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   let region=regions[in.tileIndex];
-  if(region.params.x<=0.0){discard;}
   let shade=clamp(region.optics.x,0.0,1.0);
   let opacity=clamp(region.params.w,0.0,1.0);
-  if((region.params.z<=0.0||opacity<=0.0)&&shade<=0.0){discard;}
+  let uv=(in.local/max(tile.rect.zw,vec2<f32>(1.0)))*region.artUV.xy+region.artUV.zw;
+  // Evaluate derivatives before any divergent discard or branch.
+  let dx=length(dpdx(uv)*512.0);
+  let dy=length(dpdy(uv)*512.0);
   var field:vec3<f32>;
   if(tile.properties.w==4.0){field=mode4SDF(in.local,tile.rect.zw,tile.properties.x);}
   else{field=mode5SDF(in.local,tile.rect.zw,tile.cornerRadii);}
   let coverage=clamp(0.5-field.x/max(fwidth(field.x),0.0001),0.0,1.0);
-  if(coverage<=0.0){discard;}
+  if(region.params.x<=0.0||coverage<=0.0){discard;}
+  if((region.params.z<=0.0||opacity<=0.0)&&shade<=0.0){discard;}
   var paint=vec4<f32>(0.0);
   if(region.params.z>0.0&&opacity>0.0){
-    let uv=(in.local/tile.rect.zw)*region.artUV.xy+region.artUV.zw;
-    // UV derivatives are evaluated on this actual quarter-resolution
+    // UV derivatives are evaluated on the actual quarter-resolution
     // source attachment; do not use the final glass's additional LOD.
-    let dx=length(dpdx(uv)*512.0);
-    let dy=length(dpdy(uv)*512.0);
     paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
   }
   // Composite original photo then its existing black shade. Return

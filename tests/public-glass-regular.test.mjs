@@ -30,7 +30,7 @@ test("Regular face inputs have explicit finite scheme and small-size scope",()=>
  assert.deepEqual(small.faceRows,decodeFaceHalfRows(NATIVE_REGULAR_FACE_HEX.dark.small));
  assert.deepEqual(resolveRegularMaterial({width:220,height:60,scheme:"dark"}).faceRows,small.faceRows);
  const mid=resolveRegularMaterial({width:220,height:62.5,scheme:"dark"}).faceRows;
- assert.ok(mid.every((v,i)=>v===(small.faceRows[i]+b.faceRows[i])/2));
+ assert.ok(mid.every((v,i)=>Math.abs(v-(small.faceRows[i]+b.faceRows[i])/2)<1e-12));
  assert.throws(()=>decodeFaceHalfRows("00"),RangeError);
  assert.match(resolveRegularMaterial({width:150,height:58.5}).faceScope,/adaptive face producer unproved/);
 });

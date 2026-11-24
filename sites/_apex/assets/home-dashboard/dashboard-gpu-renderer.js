@@ -779,7 +779,8 @@ async function initialize(){
       {binding:4,resource:glyphMaskTexture.createView()},
       {binding:5,resource:{buffer:materialBuffer}},
       {binding:6,resource:{buffer:regionBuffer}},
-      {binding:7,resource:artworkAtlas.view},
+      // Source-only artwork binding 7 belongs exclusively to the capture
+      // pipeline; the glass pipeline consumes only the composed capture.
       {binding:8,resource:regularSceneView}
     ];
     regularCaptureGroup=device.createBindGroup({layout:regularCapturePipeline.getBindGroupLayout(0),entries:[
