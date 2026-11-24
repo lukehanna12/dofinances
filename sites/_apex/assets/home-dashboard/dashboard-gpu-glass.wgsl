@@ -54,6 +54,10 @@ struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:
 // lower glass are resolved in the SAME fragment, never two clipped layers.
 @group(0) @binding(9) var projectArtworkDetail: texture_2d<f32>;
 @group(0) @binding(10) var projectArtworkSampler: sampler;
+// Optional authored arbitrary silhouette per owner; no route tags.
+struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32> };
+@group(0) @binding(11) var<storage,read> silhouettes:array<GlassSilhouette>;
+@group(0) @binding(12) var silhouetteMaskTexture:texture_2d_array<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -467,6 +471,75 @@ fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
   let distance=clamp((0.5-a)/max(magnitude,0.08),-6.0,6.0);
   return vec4<f32>(distance,outward,a);
 }
+// Shared Clear face and pigment stages, also used by authored silhouettes.
+fn clearFace(baseColor:vec3<f32>,darkFace:bool)->vec3<f32>{
+  let faceBlack=select(0.20,0.05,darkFace);
+  let faceWhite=select(0.95,0.80,darkFace);
+  return vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
+}
+fn clearTint(color:vec3<f32>,pigment:vec4<f32>,filmStrength:f32)->vec3<f32>{
+  return mix(color,pigment.rgb,clamp(pigment.w,0.0,1.0)*filmStrength);
+}
+fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec2<f32>{
+  return textureSampleLevel(silhouetteMaskTexture,projectArtworkSampler,uv,layer,0.0).rg;
+}
+// Actual current composited pixel, including live artwork opacity and zoom.
+fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
+  let brightness=smoothstep(0.25,0.90,luminance);
+  let x=max(0.0,distanceCSS-0.8)/2.7;
+  let tail=1.0-smoothstep(8.0,11.0,distanceCSS);
+  return 0.20*hover*brightness*exp(-0.5*x*x)*tail;
+}
+fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
+    dimensions:vec2<f32>,region:GlassRegion,parentInnerUV:vec2<f32>,
+    parentLOD:f32,backdropExtent:vec2<f32>,darkFace:bool,split:bool,pointScale:f32)->vec3<f32>{
+  if(icon.params.x<=0.0||icon.params.w<=0.0||any(icon.rect.zw<=vec2<f32>(0.0))){return color;}
+  // 256 content texels inside a 384 mask; 64 transparent texels per side.
+  let uv=((local-icon.rect.xy)/icon.rect.zw)*(256.0/384.0)+vec2<f32>(64.0/384.0);
+  if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){return color;}
+  let layer=i32(icon.params.x)-1;
+  let mask=silhouetteMask(uv,layer);
+  let scale=min(icon.rect.z,icon.rect.w)/256.0;
+  let signed=(mask.g-0.5)*128.0*scale;
+  let distanceCSS=signed/pointScale;
+  let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
+  let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
+  let haze=silhouetteHaze(luminance,distanceCSS,hover);
+  var shaded=color*(1.0-haze);
+  let glowDistance=max(distanceCSS,0.0)/1.8;
+  shaded=clamp(shaded+vec3<f32>(0.018*hover*exp(-0.5*glowDistance*glowDistance)),
+    vec3<f32>(0.0),vec3<f32>(1.0));
+  if(mask.r<=0.001){return shaded;}
+  let texelStep=1.0/384.0;
+  let gx=silhouetteMask(uv+vec2<f32>(texelStep,0.0),layer).g-silhouetteMask(uv-vec2<f32>(texelStep,0.0),layer).g;
+  let gy=silhouetteMask(uv+vec2<f32>(0.0,texelStep),layer).g-silhouetteMask(uv-vec2<f32>(0.0,texelStep),layer).g;
+  let grad=vec2<f32>(gx,gy);
+  let normal=grad/max(length(grad),0.00001);
+  let d=min(icon.rect.z,icon.rect.w);
+  let clearD=d/pointScale;
+  let inner=refractionEnvelope(signed,max(-60.0,-clearD)*pointScale,
+    1.0/max(min(20.0,0.36*clearD)*pointScale,0.001));
+  let displacement=normal*inner;
+  let lod=glassLOD(icon.params.z,blurDistribution(nativeHalf1(signed+inner),d));
+  let sampleUV=nativeHalf2(parentInnerUV+nativeHalf2(displacement/backdropExtent));
+  // Refract the parent's scene source with the shared Clear face/LOD.
+  // Revealed art uses original detail mip levels and live cover transform.
+  var source=clearFace(mipSample(sampleUV,max(parentLOD,lod)).rgb,darkFace);
+  if(region.params.x>0.0&&!split&&region.params.z>0.0&&region.params.w>0.0){
+    let artUV=((local+displacement)/max(dimensions,vec2<f32>(1.0)))*region.artUV.xy+region.artUV.zw;
+    let texels=vec2<f32>(textureDimensions(projectArtworkDetail,0));
+    let footprint=abs(region.artUV.xy)*texels/max(dimensions,vec2<f32>(1.0));
+    let artLOD=log2(max(1.0,max(footprint.x,footprint.y)))+max(0.0,lod);
+    let paint=textureSampleLevel(projectArtworkDetail,projectArtworkSampler,artUV,artLOD);
+    source=mix(source,paint.rgb,clamp(paint.a*region.params.w,0.0,1.0));
+  }
+  let rim=exp(-abs(signed)*1.16);
+  let edge=clamp(rim*0.28,0.0,0.28);
+  let base=clamp(source*(1.0-haze)+vec3<f32>(edge+hover*0.075),
+    vec3<f32>(0.0),vec3<f32>(1.0));
+  let glass=clearTint(clearFace(base,darkFace),icon.tint,0.25);
+  return mix(shaded,glass,clamp(mask.r*icon.params.w,0.0,1.0));
+}
 @fragment
 fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
@@ -667,9 +740,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     }
     // Preserve the established Clear appearance byte-for-byte in its path.
     let baseColor=clamp(glass.rgb+vec3<f32>(edge+pointerLight),vec3<f32>(0.0),vec3<f32>(1.0));
-    let faceBlack=select(0.20,0.05,darkFace);
-    let faceWhite=select(0.95,0.80,darkFace);
-    color=vec3<f32>(faceBlack)+baseColor*(faceWhite-faceBlack);
+    color=clearFace(baseColor,darkFace);
     if(dropdown){color=dropdownFace(baseColor,profile);}
   }
   // Back button, card and homepage squares all use this exact untinted
@@ -686,7 +757,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     else if(tile.properties.y == -4.0){filmStrength=0.82;}
     else if(tile.properties.y == -5.0){filmStrength=0.62;}
     else if(tile.properties.y == -6.0){filmStrength=0.40;}
-    color=mix(color,localTint.rgb,clamp(localTint.w,0.0,1.0)*filmStrength);
+    color=clearTint(color,localTint,filmStrength);
   }
   // Menu row: the native selection uses a monochrome backdrop, soft-light
   // accent tint and .75 accent fill. A GPU mip footprint projects the
@@ -716,6 +787,9 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
       color=mix(color,paint.rgb,clamp(paint.a*region.params.w,0.0,1.0));
     }
   }
+  // Silhouette after live artwork, before owner coverage/dismissal.
+  color=composeGlassSilhouette(color,silhouettes[in.tileIndex],in.local,dimensions,region,
+    interactiveInnerUV,innerLOD,backdropExtent,darkFace,split,pointScale);
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.
   // Sign-in and normal Projects panes preserve their original appearance.

@@ -33,6 +33,7 @@ import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./das
 import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
+import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
 // Layer zero is the live mosaic. Layer one samples its completed GPU
@@ -617,6 +618,8 @@ async function initialize(){
     size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const sourcePainter=createGlassSourcePainter(device,format);
+  const silhouetteAtlas=createGlassSilhouetteAtlas(device);
+  let iconData=new Float32Array(0),iconBuffer=null;
   const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
   const routeCompositeDetailGroups=new Map();
@@ -887,6 +890,35 @@ async function initialize(){
     const views=sourceViews();
     homeSourceEntries=trackIcons.map(n=>n&&sourcePainter.sync(n,"mosaic",views)).filter(Boolean);
   }
+  // The route supplies hover policy; the shared atlas owns alpha and distance.
+  function syncGlassIcons(dt){
+    iconData.fill(0);silhouetteAtlas.begin();
+    const before=silhouetteAtlas.view,icons=[];
+    let animating=false;
+    if(!authUsesCompositor()){
+      const panes=authPaneElements(),scheme=authGlassScheme();
+      for(let i=0;i<panes.length;i++){
+        const owner=panes[i],img=owner.querySelector("[data-glass-silhouette-source]");
+        if(!img)continue;
+        const slot=tileCount+i,p=slot*TILE_FLOATS;
+        if(owner.hidden||tileData[p+18]<=.001){img.removeAttribute("data-glass-icon-owned");continue;}
+        const suppressed=owner.matches(".is-expanded,.project-showcase-dissolve-ghost")||
+          Boolean(owner.closest(".has-project-expansion"))||tileData[p+19]>0;
+        const icon=silhouetteAtlas.sync(owner,img,{width:tileData[p+2],height:tileData[p+3],dpr,scheme,
+          hover:owner.matches(":hover"),suppressHover:suppressed,dt,reduced:reducedMotion.matches,
+          opacity:tileDismissIconOpacity(tileData[p+19])});
+        if(!icon)continue;
+        iconData.set(icon.lanes,slot*GLASS_ICON_FLOATS);
+        animating ||= icon.animating;
+        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,hover:icon.hover,
+          tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed});
+      }
+    }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
+    device.queue.writeBuffer(iconBuffer,0,iconData);
+    if(before!==silhouetteAtlas.view)rebindGlassGroups();
+    audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),backdrop:"current fragment color + original GPU sources"};
+    return animating;
+  }
   function syncRouteSources(){
     const views=sourceViews(),panes=authPaneElements();
     routeSourceEntries=authUsesCompositor()?[]:panes.map(p=>sourceNodesForPane(p).map(n=>sourcePainter.sync(n,"route",views)).filter(Boolean));
@@ -895,7 +927,7 @@ async function initialize(){
       routeLayers:[...routeActiveLayers],...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};
   }
   function rebindGlassGroups(){
-    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!projectRegionSceneView)return;
+    if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!iconBuffer||!projectRegionSceneView)return;
     detailGroups.clear();routeCompositeDetailGroups.clear();routeLayerSources.clear();
     const entries=(buffer,source=sceneView,detail=emptyDetailView)=>[
       {binding:0,resource:source},
@@ -908,7 +940,8 @@ async function initialize(){
       // Source-only artwork binding 7 belongs exclusively to the capture
       // pipeline; the glass pipeline consumes only the composed capture.
       {binding:8,resource:projectRegionSceneView},
-      {binding:9,resource:detail},{binding:10,resource:detailSampler}
+      {binding:9,resource:detail},{binding:10,resource:detailSampler},
+      {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view}
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
@@ -1418,6 +1451,7 @@ async function initialize(){
     tintData=new Float32Array(instanceCount*4);
     materialData=new Float32Array(instanceCount*MATERIAL_FLOATS);
     regionData=new Float32Array(instanceCount*REGION_FLOATS);
+    iconData=new Float32Array(instanceCount*GLASS_ICON_FLOATS);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -1445,6 +1479,9 @@ async function initialize(){
     regionBuffer?.destroy();
     regionBuffer=device.createBuffer({size:Math.max(REGION_FLOATS*4,regionData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
     device.queue.writeBuffer(regionBuffer,0,regionData);
+    iconBuffer?.destroy();
+    iconBuffer=device.createBuffer({size:Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(iconBuffer,0,iconData);
     lastTintKey="";
     syncTileTints(true);
     rebindGlassGroups();
@@ -1605,8 +1642,9 @@ async function initialize(){
     syncTileTints();
     syncMaterialProfiles();
     const artworkAnimating=syncGlassRegions();
+    const iconAnimating=syncGlassIcons(authDt);
     syncRouteSources();
-    if(artworkAnimating)requestRender();
+    if(artworkAnimating||iconAnimating)requestRender();
     const animating=interaction.advance(dt,reducedMotion.matches);
     const authHoverAnimating=authHover.advance(authDt,reducedMotion.matches);
     if(instanceCount){
@@ -1713,7 +1751,7 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return animating||authHoverAnimating||authAnimating||artworkAnimating;
+    return animating||authHoverAnimating||authAnimating||artworkAnimating||iconAnimating;
   }
   // Auth-only submission for the card's exit Motion and native scroll.
   // Every route pane shares the unchanged homepage WebGPU shader
@@ -1732,6 +1770,7 @@ async function initialize(){
     syncTileTints();
     syncMaterialProfiles();
     const artworkAnimating=syncGlassRegions();
+    const iconAnimating=syncGlassIcons(dt);
     syncRouteSources();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);
@@ -1759,10 +1798,10 @@ async function initialize(){
       audit.authGlass.controlHover=authHover.activeControl>=1?
         authHover.snapshot(authHover.activeControl):null;
     }
-    return authAnimating||hoverAnimating||artworkAnimating;
+    return authAnimating||hoverAnimating||artworkAnimating||iconAnimating;
   }
   function dispose(){
-    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();
     glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();
     offscreenFrame?.destroy();photo.destroy();

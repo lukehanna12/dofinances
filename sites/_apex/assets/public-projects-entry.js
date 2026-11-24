@@ -1,3 +1,4 @@
+import {registerGlassSilhouette} from "./home-dashboard/dashboard-glass-silhouette.js";
 /* Public /projects route: owns card markup, artwork reveal, staggered entry
  * and exact reversed exit. The persistent '/' shell alone owns wallpaper,
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
@@ -77,6 +78,7 @@ function makeCard(project,index){
     const icon=el("img","project-showcase-lucide");
     icon.src=iconSource;
     icon.alt="";icon.width=46;icon.height=46;icon.decoding="async";
+    registerGlassSilhouette(icon,{tint:"white",opacity:.20});
     marker.append(icon);
   }
   const badge=el("span","project-showcase-badge "+badgeClass,status);

@@ -264,7 +264,8 @@ test("Card is untinted; existing neutral presets tint controls in dark and light
     "Public sign-in must no longer inherit the first square's optical size");
   assert.doesNotMatch(renderer,/tileData\[p\+5\]=scheme==="dark"/);
   assert.match(shader,/let localTint=tintTiles\[in\.tileIndex\]/);
-  assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
+  assert.match(shader,/color=clearTint\(color,localTint,filmStrength\)/);
+  assert.match(shader,/return mix\(color,pigment\.rgb,clamp\(pigment\.w,0\.0,1\.0\)\*filmStrength\)/);
   assert.match(renderer,/faceScheme:tint\.state\.scheme/);
   assert.match(css,/--auth-control-tint:rgba\(0,0,0,\.60\)/);
   assert.match(css,/--auth-control-tint:rgba\(255,255,255,\.60\)/);

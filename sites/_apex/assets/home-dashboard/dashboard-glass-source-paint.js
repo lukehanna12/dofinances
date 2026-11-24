@@ -90,6 +90,8 @@ function snapshot(node){
  const local=b=>[q((b.left-r.left)/sx),q((b.top-r.top)/sy),q(b.width/sx),q(b.height/sy)];
  const ops=[],images=[];
  function walk(el,inherited){
+  // A valid GPU silhouette is painted inside its owner glass fragment.
+  if(el.hasAttribute("data-glass-icon-owned"))return;
   const s=getComputedStyle(el);
   if(el.hidden||s.display==="none"||s.visibility==="hidden"||s.visibility==="collapse")return;
   const alpha=el===node?inherited:inherited*clamp(num(s.opacity,1));

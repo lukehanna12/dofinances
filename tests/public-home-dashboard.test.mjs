@@ -73,7 +73,8 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(shader,/let squareFilmStrength=0\.25;/);
   assert.match(shader,/var filmStrength=select\(0\.25,0\.60,authPane\)/);
   assert.match(shader,/if\(tile\.properties\.y == -9\.0\)\{filmStrength=squareFilmStrength;\}/);
-  assert.match(shader,/color=mix\(color,localTint\.rgb,clamp\(localTint\.w,0\.0,1\.0\)\*filmStrength\)/);
+  assert.match(shader,/color=clearTint\(color,localTint,filmStrength\)/);
+  assert.match(shader,/return mix\(color,pigment\.rgb,clamp\(pigment\.w,0\.0,1\.0\)\*filmStrength\)/);
   assert.doesNotMatch(shader,/greenTransmission|tintProgress|filmStrength=0\.88|pressEnergy/,
     "No alternative capsule-only tint or lighting formula");
   // One instanced geometry shader and one shared SDF/LOD stage for all

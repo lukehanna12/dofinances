@@ -491,3 +491,7 @@ body.public-home[data-auth-gpu-scene="ready"]
 @media(prefers-reduced-motion:reduce){
   .public-projects-root .project-showcase-expand-close{transition:none!important}
 }
+
+/* Keep the SVG's layout box; suppress only the GPU-owned flat duplicate. */
+body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
+ .public-projects-root [data-glass-icon-owned]{clip-path:inset(50%)!important}
