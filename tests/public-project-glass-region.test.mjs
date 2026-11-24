@@ -109,3 +109,15 @@ test("Artwork and lower glass have one fragment-owned material boundary",()=>{
  const [w,h]=artworkDetailSize(8000,4000);
  assert.ok(w<=4096&&w*h<=8*1024*1024&&Math.abs(w/h-2)<.002);
 });
+
+test("Project artwork preserves original source color in both display and raw glass capture",()=>{
+ const css=src("sites/_apex/assets/public-projects.css");
+ const entry=src("sites/_apex/assets/public-projects-entry.js");
+ const renderer=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js");
+ const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
+ assert.doesNotMatch(css+entry+renderer,/project-showcase-shade/);
+ assert.match(renderer,/regionData.set\(\[height\*dpr,profile.blurWord,layer,opacity\],b\)/);
+ assert.match(renderer,/shadeAlpha:0/);
+ assert.match(shader,/return vec4<f32>\(paint.rgb,clamp\(paint.a\*opacity,0.0,1.0\)\*coverage\)/);
+ assert.doesNotMatch(shader,/color\*=1.0-clamp\(region.optics.x/);
+});

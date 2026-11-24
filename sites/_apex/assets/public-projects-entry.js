@@ -61,11 +61,9 @@ function makeCard(project,index){
   const reveal=()=>{if(!photo.hasAttribute("src"))photo.src=src;};
   for(const name of ["pointerenter","focusin","pointerdown"])
     card.addEventListener(name,reveal,{once:true});
-  const shade=el("span","project-showcase-shade");
-  shade.setAttribute("aria-hidden","true");
   const artwork=el("span","project-showcase-artwork");
   artwork.setAttribute("aria-hidden","true");
-  artwork.append(photo,shade);
+  artwork.append(photo);
   const regularBoundary=el("span","project-showcase-regular-boundary");
   regularBoundary.setAttribute("aria-hidden","true");
   const content=el("span","project-showcase-content");

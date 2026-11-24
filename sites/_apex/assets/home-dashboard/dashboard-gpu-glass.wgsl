@@ -43,7 +43,7 @@ struct Tile {
 struct MaterialProfile { optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 // Height, blur word, artwork layer+1, photo alpha; then optics
-// (shade alpha, reserved lanes), reserved face rows, UV map.
+// (reserved lanes), reserved face rows, UV map.
 struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32>, artUV:vec4<f32> };
 @group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
 @group(0) @binding(7) var artwork: texture_2d_array<f32>;
@@ -371,7 +371,6 @@ fn vsProjectRegionCapture(@builtin(vertex_index) vertex:u32,
 fn fsProjectRegionCapture(in:GlassOut)->@location(0) vec4<f32>{
   let tile=tiles[in.tileIndex];
   let region=regions[in.tileIndex];
-  let shade=clamp(region.optics.x,0.0,1.0);
   let opacity=clamp(region.params.w,0.0,1.0);
   let uv=(in.local/max(tile.rect.zw,vec2<f32>(1.0)))*region.artUV.xy+region.artUV.zw;
   // Evaluate derivatives before any divergent discard or branch.
@@ -382,19 +381,11 @@ fn fsProjectRegionCapture(in:GlassOut)->@location(0) vec4<f32>{
   else{field=mode5SDF(in.local,tile.rect.zw,tile.cornerRadii);}
   let coverage=clamp(0.5-field.x/max(fwidth(field.x),0.0001),0.0,1.0);
   if(region.params.x<=0.0||coverage<=0.0){discard;}
-  if((region.params.z<=0.0||opacity<=0.0)&&shade<=0.0){discard;}
-  var paint=vec4<f32>(0.0);
-  if(region.params.z>0.0&&opacity>0.0){
-    // UV derivatives are evaluated on the actual half-resolution
-    // source attachment; do not use the final glass's additional LOD.
-    paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
-  }
-  // Composite original photo then its existing black shade. Return
-  // straight alpha for the shared GPU source-over blend.
-  let a=clamp(paint.a*opacity,0.0,1.0);
-  let alpha=a*(1.0-shade)+shade;
-  let rgb=paint.rgb*(a*(1.0-shade))/max(alpha,0.000001);
-  return vec4<f32>(rgb,alpha*coverage);
+  if(region.params.z<=0.0||opacity<=0.0){discard;}
+  // Use the unmodified decoded artwork in the raw refraction source.
+  // UV derivatives are evaluated on the actual half-resolution attachment.
+  let paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
+  return vec4<f32>(paint.rgb,clamp(paint.a*opacity,0.0,1.0)*coverage);
 }
 fn projectRegionCaptureLevel(uvIn:vec2<f32>,level:i32)->vec4<f32>{
   let dims=vec2<i32>(textureDimensions(projectRegionBackdrop,level));
@@ -713,7 +704,7 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     color=mix(color,mix(soft,accent,0.75),rowCoverage);
   }
   // The DOM image is a decode/animation source, not a second visible layer.
-  // Preserve its exact cover/zoom, opacity and black shade above the boundary.
+  // Preserve its exact cover/zoom, source color and reveal opacity above the boundary.
   // Below the boundary, the original raw-artwork refraction remains intact.
   if(region.params.x>0.0 && !split){
     let uv=(in.local/max(dimensions,vec2<f32>(1.0)))*region.artUV.xy+region.artUV.zw;
@@ -724,7 +715,6 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
       let paint=textureSampleLevel(projectArtworkDetail,projectArtworkSampler,uv,lod);
       color=mix(color,paint.rgb,clamp(paint.a*region.params.w,0.0,1.0));
     }
-    color*=1.0-clamp(region.optics.x,0.0,1.0);
   }
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.

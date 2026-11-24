@@ -829,8 +829,6 @@ async function initialize(){
         (node.matches(":hover,:focus-visible,:focus-within,.is-expanded")||
           Number.parseFloat(getComputedStyle(photo).opacity)>0);
       const artwork=artworkAtlas.sync(node,needsDetail,!authUsesCompositor());
-      const shade=node.querySelector(".project-showcase-shade");
-      const shadeAlpha=.6*(Number.parseFloat(getComputedStyle(shade).opacity)||0);
       let opacity=0,layer=0,uv=[1,1,0,0];
       if(artwork){
         const style=getComputedStyle(artwork.photo);
@@ -845,17 +843,17 @@ async function initialize(){
       }
       // Keep the 24-float region ABI. No Regular optical or face lanes
       // are populated; the shader uses the shared Clear optical path.
-      regionData.set([height*dpr,profile.blurWord,layer,opacity,shadeAlpha],b);
+      regionData.set([height*dpr,profile.blurWord,layer,opacity],b);
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
-        regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
+        regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha:0,
         artworkDetail:artwork?.detailSize??null,artworkPresentation:"same-fragment",
         canvasLocalTop:tileData[p+1]/dpr,canvasLocalLeft:tileData[p]/dpr,
         canvasLocalBandTop:(tileData[p+1]+tileData[p+3])/dpr-height,
         material:profile.material,scheme:profile.scheme,interactive:profile.interactive,
         blurWord:profile.blurWord,nativeInputLayerScale:profile.nativeInputLayerScale,
         backdrop:"raw-wallpaper-and-artwork-before-glass",clearUnderlay:false});
-      animating ||= [photo,shade].some(el=>el?.getAnimations().some(a=>a.playState==="running"));
+      animating ||= Boolean(photo?.getAnimations().some(a=>a.playState==="running"));
     }
     // Evict only unused detail sources; the lower refraction atlas is retained.
     for(const view of artworkAtlas.trimDetails(usedDetails)){detailGroups.delete(view);routeCompositeDetailGroups.delete(view);}
