@@ -418,18 +418,18 @@ test("every public project has a single substantive, source-conscious paragraph"
     assert.doesNotMatch(copy,/\n/);
     assert.doesNotMatch(copy,new RegExp("[\u00b7\u2014]"));
   }
-  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternative projects/);
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternatives/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
-  assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is a planned Excel add-in/);
+  assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is an Excel add-in and Google Sheets add-on project/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/most advanced extension ever built/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/most lightweight live documentation editor/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
-  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/surpass even the official export/);
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/even more comprehensive than ChatGPT's official export/);
   assert.match(PROJECT_DESCRIPTIONS.colosseum,/virtually any tool or reference/);
   assert.match(PROJECT_DESCRIPTIONS.colosseum,/Claude plugins/);
-  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/free Apps Script infrastructure/);
-  assert.match(PROJECT_DESCRIPTIONS["unicode-plus"],/LaTeXceL to the terminal and beyond/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/freely hosted reference architecture on Google Apps Script/);
+  assert.match(PROJECT_DESCRIPTIONS["unicode-plus"],/terminal counterpart to LaTeXceL/);
   assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/most accurate reconstruction ever developed/);
   assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/Rust and WebGPU/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/Liquid Plexiglass 27/);
@@ -439,5 +439,19 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/most versatile in-memory Vite and React application builder/);
   assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/largest collection of hidden Google Sheets functions/);
+  // Current project descriptions must not convert the creator's stated
+  // assessments into future aspirations. Preserve attribution where
+  // independent comparative verification is not available.
+  for(const slug of ["bootscript","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","hidden-functions"]){
+    assert.match(PROJECT_DESCRIPTIONS[slug],/creator/);
+    assert.doesNotMatch(PROJECT_DESCRIPTIONS[slug],/aims to|designed to be the most/);
+  }
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/reported near-instant/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Google Apps Script's generous but finite usage allowances/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/restrictive free-tier limits/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/reported exceptionally high fidelity/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/keep request volume low/);
+  assert.match(PROJECT_DESCRIPTIONS["latexcel"],/In Excel/);
+
 
 });
