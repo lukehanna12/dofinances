@@ -1007,7 +1007,50 @@ try{
     assert.equal(collision,null,
       "Uniform-speed row conveyor must never overlap live panels: "+
       JSON.stringify(collision));
+    const pairState=await evaluate("(()=>{"+
+      "const grid=document.querySelector('.project-showcase-grid');"+
+      "const ghosts=[...grid.querySelectorAll('.project-showcase-dissolve-ghost')];"+
+      "const live=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
+      "return ghosts.map(ghost=>{const card=live.find(c=>"+
+        "c.dataset.projectSlug===ghost.dataset.projectSlug);"+
+        "const fg=ghost.querySelector('.project-showcase-content');"+
+        "const liveFg=card?.querySelector('.project-showcase-content');"+
+        "return {paired:!!card,"+
+          "sameOpticalColumn:ghost.dataset.projectCardOpticalColumn==="+
+            "card?.dataset.projectCardOpticalColumn,"+
+          "ghostAlpha:parseFloat(fg?.style.opacity),"+
+          "liveAlpha:parseFloat(liveFg?.style.opacity),"+
+          "appearanceClock:!!card?.dataset.projectCardAppearAt};});})()");
+    assert.equal(pairState.length,5,
+      "Original selected row must retain exactly five dissolving silhouettes");
+    assert.ok(pairState.every(pair=>pair.paired&&pair.sameOpticalColumn&&
+      pair.appearanceClock),"Every outgoing pane has one clock-matched replacement");
+    if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
+      for(const pair of pairState)
+        assert.ok(Math.abs(pair.ghostAlpha+pair.liveAlpha-1)<.075,
+          "Outgoing and incoming pane glyph opacity must be complementary: "+
+          JSON.stringify(pair));
+
   }
+
+  // The rightmost card must exit the right EDGE, not disappear from
+  // its still-fully-visible final grid slot. Its real WAAPI frames carry
+  // a half-pitch invisible seam and then an entrance from the left edge.
+  const wrapProof=await evaluate("(()=>{"+
+    "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[11];"+
+    "const animation=[...card.getAnimations()].find(a=>"+
+      "a.effect?.getTiming().duration===620);"+
+    "return animation?.effect?.getKeyframes().map(f=>"+
+      "({offset:f.offset,opacity:f.opacity,transform:f.transform}));})()");
+  assert.ok(wrapProof?.length>=6,"Right-edge wrap must have a complete seam");
+  assert.equal(wrapProof[0].opacity,"1",
+    "Rightmost pane must start visibly in its original position");
+  assert.equal(wrapProof[2].opacity,"0",
+    "Exit fade must finish at the actual right viewport seam");
+  assert.equal(wrapProof[3].opacity,"0",
+    "Teleport to left must stay fully invisible");
+  assert.equal(wrapProof[4].opacity,"1",
+    "Pane must fade in across the left edge of the following row");
 
   // Actual non-screenshot browser proof: the real button expands both
   // directions across its ORIGINAL row, pushing all its peers to the next.
@@ -1100,7 +1143,7 @@ try{
   await sleep(160);
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
-  assert.equal(await evaluate("document.querySelectorAll('[data-project-card-dismiss-at],[data-project-card-restore-at],[data-project-card-restore-from]').length"),0,
+  assert.equal(await evaluate("document.querySelectorAll('[data-project-card-dismiss-at],[data-project-card-restore-at],[data-project-card-restore-from],[data-project-card-appear-at],[data-project-card-disappear-at],[data-project-card-optical-column]').length"),0,
     "Mid-motion reverse must clean all square-dissolve optical timestamps");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
