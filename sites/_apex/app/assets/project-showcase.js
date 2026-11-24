@@ -1,6 +1,7 @@
 // Native adaptation of Colosseum utility 0001c4, How It Works 2 (Recovered).
 // Numbered image-reveal cards, divided details, no React dependency.
 import {WORKSPACE_WALLPAPERS} from "./workspace-wallpapers.js";
+import {mountProjectArtworkReveal} from "../../assets/project-artwork-reveal.js";
 
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
@@ -110,7 +111,7 @@ function makeCard(project,index,slugRoute){
  photo.addEventListener("error",()=>{
   if(preferred&&photo.getAttribute("src")===src)photo.src=fallbackImagePath(index);
  },{once:true});
- photo.addEventListener("load",()=>card.classList.add("is-photo-ready"),{once:true});
+ mountProjectArtworkReveal(photo,card);
  const reveal=()=>{if(!photo.hasAttribute("src"))photo.src=src;};
  card.addEventListener("pointerenter",reveal,{once:true});
  card.addEventListener("focusin",reveal,{once:true});

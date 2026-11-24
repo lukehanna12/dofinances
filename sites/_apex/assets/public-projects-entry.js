@@ -7,6 +7,7 @@ import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage} from "./public-projects-catalog.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {mountProjectExpansion} from "./public-projects-expand.js";
+import {mountProjectArtworkReveal} from "./project-artwork-reveal.js";
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 const reduced=matchMedia("(prefers-reduced-motion: reduce)");
 // One staggered arrival timeline: back chip at 0ms, both heading and three
@@ -60,7 +61,7 @@ function makeCard(project,index){
       photo.src=publicProjectImage({...project,slug:"__fallback__"},index);
     }
   },{once:true});
-  photo.addEventListener("load",()=>card.classList.add("is-photo-ready"),{once:true});
+  mountProjectArtworkReveal(photo,card);
   const reveal=()=>{if(!photo.hasAttribute("src"))photo.src=src;};
   for(const name of ["pointerenter","focusin","pointerdown"])
     card.addEventListener(name,reveal,{once:true});
