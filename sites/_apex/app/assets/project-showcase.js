@@ -64,7 +64,7 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
   "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
   "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
-  "app-caviar":"/assets/project-art/app-caviar-source.v1.webp",
+  "app-caviar":"/assets/project-art/app-caviar-source.v2.webp",
   "hidden-functions":"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg",
   "latexcel":"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg",
   "unicode-plus":"https://d3d00swyhr67nd.cloudfront.net/w1200h1200/collection/NTI/DYP/NTI_DYP_453771-001.jpg",

@@ -30,7 +30,7 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.equal(publicProjectImage({slug:"terminal-scalars"},6),
     "/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp",
     "The attached Manfred Mohr artwork is served locally on the public site");
-  assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v1.webp");
+  assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v2.webp");
   assert.equal(publicProjectImage({slug:"hidden-functions"},14),"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg");
   assert.equal(publicProjectImage({slug:"latexcel"},15),"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
   const fallback=publicProjectImage({slug:"__unassigned__"},12);

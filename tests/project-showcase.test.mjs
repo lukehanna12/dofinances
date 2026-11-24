@@ -206,7 +206,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   if(slug==="terminal-scalars"){
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v1.webp");
  }else if(slug==="app-caviar"){
-  assert.equal(url,"/assets/project-art/app-caviar-source.v1.webp");
+  assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
  const script=read("sites/_apex/app/assets/project-showcase.js");
@@ -237,12 +237,22 @@ test("Terminal Scalars uses the supplied Manfred Mohr artwork as local WebP",()=
 });
 
 test("App Caviar uses the attached local WebP and the requested artworks are assigned by slug",()=>{
- const path="sites/_apex/assets/project-art/app-caviar-source.v1.webp";
+ const path="sites/_apex/assets/project-art/app-caviar-source.v2.webp";
  const bytes=readFileSync(new URL("../"+path,import.meta.url));
  assert.equal(bytes.toString("ascii",0,4),"RIFF");
  assert.equal(bytes.toString("ascii",8,12),"WEBP");
- assert.ok(bytes.byteLength>2000&&bytes.byteLength<20000);
- assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v1.webp");
+ assert.ok(bytes.byteLength>100000&&bytes.byteLength<200000,"Retina-quality artwork within a 200 KB budget");
+ // WebP VP8X or VP8 frame dimensions; no image decoder dependency.
+ let width=0,height=0;
+ for(let offset=12;offset+8<=bytes.length;){
+  const chunk=bytes.toString("ascii",offset,offset+4),size=bytes.readUInt32LE(offset+4),at=offset+8;
+  if(chunk==="VP8X"&&size>=10){width=bytes.readUIntLE(at+4,3)+1;height=bytes.readUIntLE(at+7,3)+1;break;}
+  if(chunk==="VP8 "&&size>=10){width=bytes.readUInt16LE(at+6)&0x3fff;height=bytes.readUInt16LE(at+8)&0x3fff;break;}
+  offset=at+size+(size&1);
+ }
+ assert.equal(width,1400);
+ assert.ok(height>=1750&&height<=1752,"Preserve the original portrait aspect ratio");
+ assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v2.webp");
  assert.equal(PROJECT_CARD_IMAGES["latexcel"],"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
  assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"https://api.nga.gov/iiif/5fcee9f7-9c78-4432-96c2-4228fc697aa7/full/!800,800/0/default.jpg");
 });
