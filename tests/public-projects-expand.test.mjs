@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {planProjectExpansion,projectExpansionMovement,
-  projectConveyorPosition,projectConveyorEdge}
+  projectConveyorPosition,projectConveyorEdge,projectRowWrapPhases}
   from "../sites/_apex/assets/public-projects-expand.js";
 
 test("conveyor preserves a full pitch of separation at every animation sample",()=>{
@@ -28,6 +28,27 @@ test("conveyor preserves a full pitch of separation at every animation sample",(
           column+shift>=columns-1?1:0);
       }
     }
+});
+test("each wrapped card fades at the viewport seam, not in the rightmost slot",()=>{
+  for(let columns=2;columns<=6;columns++)
+    for(let shift=1;shift<columns;shift++)
+      for(let column=columns-shift;column<columns;column++){
+        const {fadeOutStart,seam,fadeInEnd}=
+          projectRowWrapPhases(column,columns,shift);
+        assert.ok(fadeOutStart>=0&&fadeOutStart<seam);
+        assert.ok(seam<fadeInEnd&&fadeInEnd<=1);
+        assert.ok(Math.abs((column+shift*seam)-(columns-.5))<1e-9,
+          "disappear when the card is half outside the right edge");
+        assert.ok(Math.abs((-0.5+shift*(fadeInEnd-seam)))<1e-9,
+          "reappear when the card has crossed the left edge");
+        const before=projectConveyorPosition(column,columns,shift,
+          Math.max(0,seam-1e-4));
+        const after=projectConveyorPosition(column,columns,shift,
+          Math.min(1,seam+1e-4));
+        assert.equal(before.rowOffset,0);
+        assert.equal(after.rowOffset,1);
+        assert.ok(Math.abs((before.x-after.x)-columns)<0.001);
+      }
 });
 test("six-column expansion consumes the selected card's original FULL row",()=>{
   const positions=planProjectExpansion(16,6,8);
@@ -112,9 +133,16 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(controller,/const CONVEYOR_EASING="cubic-bezier\(\.77,0,\.175,1\)";/);
   assert.match(controller,/duration:EXPAND_MS,easing:CONVEYOR_EASING/);
   assert.match(controller,/const travel=shift\*pitch;/);
-  assert.match(controller,/projectConveyorEdge\(col,columns,shift\)/);
+  assert.match(controller,/projectRowWrapPhases\(col,columns,shift\)/);
+  assert.match(controller,/projectConveyorEdge\(column,columns,shift\)/);
   assert.match(controller,/const ghost=node\.cloneNode\(true\)/);
   assert.match(controller,/ghost\.dataset\.projectCardDismissAt/);
+  assert.match(controller,/ghost\.dataset\.projectCardOpticalColumn/);
+  assert.match(controller,/node\.dataset\.projectCardAppearAt/);
+  assert.match(controller,/node\.dataset\.projectCardDisappearAt/);
+  assert.match(renderer,/const appearance=Math\.max\(0,Math\.min\(1,/);
+  assert.match(renderer,/1-tileDismissIconOpacity\(progress\)/);
+  assert.match(renderer,/tileData\[p\+18\]\*=appearance/);
   assert.match(controller,/const restoreFrom=Math\.min\(DISMISS_MS,/);
   assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
   assert.match(renderer,/cardRestoreFrom/);
