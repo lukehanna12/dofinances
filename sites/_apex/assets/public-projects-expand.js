@@ -623,6 +623,12 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   for(const card of cards){
     card.setAttribute("aria-expanded","false");
     card.addEventListener("click",event=>{
+      // A native text drag or click inside the expanded paragraph is not
+      // an activation of the surrounding card button.
+      if(event.target.closest?.(".project-showcase-description")&&
+         card.classList.contains("is-expanded")){
+        event.preventDefault();return;
+      }
       const keyboard=event.detail===0;
       if(!keyboard)releasePointerFocus();
       if(!state)open(card,{keyboard});

@@ -1279,7 +1279,41 @@ try{
   assert.ok(descriptionGeometry.text.length>250);
   assert.ok(descriptionGeometry.diagrams.length>=1&&descriptionGeometry.diagrams.length<=4);
   assert.ok(descriptionGeometry.diagrams.every(d=>d.width>100&&d.height>40&&d.x>=descriptionGeometry.left&&d.right<=descriptionGeometry.right&&d.y>=descriptionGeometry.bandTop&&d.bottom<=descriptionGeometry.bottom));
-  assert.ok(descriptionGeometry.diagrams.every(d=>d.x>=descriptionGeometry.descRight-1),"Desktop diagram column must sit beside the paragraph");
+  assert.ok(descriptionGeometry.diagrams.every(d=>d.x>=descriptionGeometry.descRight-1),"Diagram column must sit to the right of the paragraph");
+  // Exercise real pointer selection, not a synthetic Selection API range.
+  // Save and restore route scroll position so existing close geometry
+  // assertions retain their original coordinate space.
+  const beforeSelectionScroll=await evaluate("document.querySelector('#public-route-content').scrollTop");
+  await evaluate(`(()=>{
+    const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description');
+    desc.scrollIntoView({block:"center",inline:"nearest"});
+  })()`);
+  await until(`(()=>{
+    const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description');
+    const r=desc.getBoundingClientRect();
+    return getComputedStyle(desc).pointerEvents==="auto"&&getComputedStyle(desc).userSelect==="text"&&r.top>=0&&r.top+25<innerHeight;
+  })()`,100,30);
+  const selectionPoints=await evaluate(`(()=>{
+    const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description');
+    const range=document.createRange(),node=desc.firstChild;
+    range.setStart(node,0);range.setEnd(node,Math.min(12,node.length));
+    const r=range.getClientRects()[0];
+    return {x1:r.left+.2,x2:r.right-.2,y:r.top+r.height/2};
+  })()`);
+  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:selectionPoints.x1,y:selectionPoints.y});
+  await send("Input.dispatchMouseEvent",{type:"mousePressed",button:"left",buttons:1,clickCount:1,x:selectionPoints.x1,y:selectionPoints.y});
+  for(let i=1;i<=8;i++)await send("Input.dispatchMouseEvent",{type:"mouseMoved",button:"left",buttons:1,x:selectionPoints.x1+(selectionPoints.x2-selectionPoints.x1)*i/8,y:selectionPoints.y});
+  await send("Input.dispatchMouseEvent",{type:"mouseReleased",button:"left",buttons:0,clickCount:1,x:selectionPoints.x2,y:selectionPoints.y});
+  const selectionProof=await evaluate(`(()=>{
+    const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description'),selection=getSelection();
+    return {text:selection.toString(),anchor:desc.contains(selection.anchorNode),
+      focus:desc.contains(selection.focusNode),expanded:desc.closest('.project-showcase-card').getAttribute("aria-expanded")};
+  })()`);
+  assert.ok(selectionProof.text.length>=5&&descriptionGeometry.text.includes(selectionProof.text)&&selectionProof.anchor&&selectionProof.focus,JSON.stringify(selectionProof));
+  assert.equal(selectionProof.expanded,"true");
+  await evaluate("getSelection().removeAllRanges();document.querySelector('#public-route-content').scrollTop="+beforeSelectionScroll);
+  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:5,y:5});
+  await until("Math.abs(document.querySelector('#public-route-content').scrollTop-"+beforeSelectionScroll+")<1",60,30);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     await until("window.__dashboardWebGPU?.projectGlass?.regions?.some(r=>r.shadeAlpha>.999&&r.regularHeight>=150)",80);
     assert.ok(await evaluate("window.__dashboardWebGPU.projectGlass.projectRegionBackdrop.glassDrawsInCapture===0"));
@@ -1731,7 +1765,7 @@ try{
     const band=card.querySelector('.project-showcase-regular-boundary').getBoundingClientRect();
     return {fits:d.top>=band.top-1&&d.bottom<r.bottom&&d.left>=r.left&&d.right<=r.right,
       opacity:+getComputedStyle(desc).opacity,descHeight:d.height,bandHeight:band.height,
-      diagrams:[...card.querySelectorAll(".project-showcase-diagram svg")].map(svg=>{const s=svg.getBoundingClientRect();return s.top>=d.bottom&&s.bottom<=r.bottom&&s.left>=r.left&&s.right<=r.right;})};
+      diagrams:[...card.querySelectorAll(".project-showcase-diagram svg")].map(svg=>{const s=svg.getBoundingClientRect();return s.left>=d.right-1&&s.top>=band.top-1&&s.bottom<=r.bottom&&s.right<=r.right;})};
   })()`);
   assert.ok(narrowDescription.fits&&narrowDescription.opacity===1&&narrowDescription.bandHeight>narrowDescription.descHeight,JSON.stringify(narrowDescription));
   assert.ok(narrowDescription.diagrams.length>=1&&narrowDescription.diagrams.every(Boolean),JSON.stringify(narrowDescription));
