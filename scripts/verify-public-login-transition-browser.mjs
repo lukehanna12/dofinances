@@ -1431,7 +1431,7 @@ try{
     "document.activeElement===document.querySelector('.public-projects-search-input')",50);
   // The JS ready timer and the compositor's last animation sample are
   // independent. Wait for the actual rounded geometry, not merely the timer.
-  await until("Math.abs(parseFloat(getComputedStyle(document.querySelector('.public-projects-search-cancel')).borderTopLeftRadius)-20)<.001",30,20);
+  await until("getComputedStyle(document.querySelector('.public-projects-search-cancel')).borderTopLeftRadius==='20px'",30,20);
   const searchState=await evaluate("(()=>{"+
     "const pill=document.querySelector('.public-projects-search-field').getBoundingClientRect(),"+
     "cancel=document.querySelector('.public-projects-search-cancel'),"+
