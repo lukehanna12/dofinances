@@ -131,7 +131,7 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   // 620ms ease-in-out without stagger or different per-row velocities.
   assert.match(controller,/const EXPAND_MS=620;/);
   assert.match(controller,/const SELECTED_EASING="cubic-bezier\(\.22,\.72,\.24,1\)";/);
-  assert.match(controller,/const CONVEYOR_EASING="cubic-bezier\(\.77,0,\.175,1\)";/);
+  assert.match(controller,/const CONVEYOR_EASING=SELECTED_EASING;/);
   assert.match(controller,/duration:EXPAND_MS,easing:CONVEYOR_EASING/);
   assert.match(controller,/const travel=shift\*pitch;/);
   assert.match(controller,/projectRowWrapPhases\(col,columns,shift\)/);
@@ -139,11 +139,18 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(controller,/const ghost=node\.cloneNode\(true\)/);
   assert.match(controller,/ghost\.dataset\.projectCardDismissAt/);
   assert.match(controller,/ghost\.dataset\.projectCardOpticalColumn/);
-  assert.match(controller,/node\.dataset\.projectCardAppearAt/);
-  assert.match(controller,/node\.dataset\.projectCardDisappearAt/);
-  assert.match(renderer,/const appearance=Math\.max\(0,Math\.min\(1,/);
-  assert.match(renderer,/1-tileDismissIconOpacity\(progress\)/);
-  assert.match(renderer,/tileData\[p\+18\]\*=appearance/);
+  // Reset clone tracks: an absolutely-positioned grid child with an
+  // explicit gridRow otherwise takes the NEXT row as its containing block.
+  assert.match(controller,/ghost\.style\.gridArea="auto"/);
+  assert.match(controller,/ghost\.style\.gridRow="auto"/);
+  assert.match(controller,/ghost\.style\.gridColumn="auto"/);
+  assert.match(controller,/ghost\.dataset\.projectCardDismissAt/);
+  // The old 440ms optical opacity multiplier delayed the destination pane
+  // on top of WAAPI's entrance fade. Only the original silhouette dissolves.
+  assert.doesNotMatch(controller,/node\.dataset\.projectCardAppearAt=|node\.dataset\.projectCardDisappearAt=/);
+  assert.doesNotMatch(renderer,/cardAppearStart|cardDisappearStart|tileData\[p\+18\]\*=appearance/);
+  assert.match(controller,/\{offset:0,transform:translate\(-travel,0\),opacity:0\}/);
+  assert.match(controller,/\{offset:fadeEnd,transform:translate\(-travel\*\(1-fadeEnd\),0\),opacity:1\}/);
   assert.match(controller,/const restoreFrom=Math\.min\(DISMISS_MS,/);
   assert.doesNotMatch(controller,/ROW_CASCADE_MS|delay:380|delay=dissolving|animation\.playbackRate=/);
   assert.match(renderer,/cardRestoreFrom/);
