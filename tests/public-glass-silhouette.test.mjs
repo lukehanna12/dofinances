@@ -42,12 +42,14 @@ test("adaptive haze is zero in dark pixels, restrained and very soft",()=>{
  assert.ok(silhouetteHazeStrength(.95,0)<=.16);
  assert.ok(silhouetteHazeStrength(.95,4)<silhouetteHazeStrength(.95,1));
  assert.ok(silhouetteHazeStrength(.95,5.5)>0);
- assert.equal(silhouetteHazeStrength(.95,11),0);
+ assert.equal(silhouetteHazeStrength(.95,5/6+6),0);
  assert.equal(silhouetteHazeStrength(.95,0),.16);
- // Half of every spatial parameter, exactly the old profile at 2*d.
- assert.ok(Math.abs(silhouetteHazeStrength(.95,3.5)-.16*Math.exp(-.5*(2.7/5.4)**2))<1e-12);
- assert.ok(silhouetteHazeStrength(.95,10.5)<.001);
- assert.equal(silhouetteHazeStrength(.95,11.5),0);
+ // Only margins shrink. The Gaussian sigma and terminal feather stay fixed.
+ assert.equal(silhouetteHazeStrength(.95,.8/6),.16);
+ const probe=5/6+3;
+ assert.ok(Math.abs(silhouetteHazeStrength(.95,probe)-.08*Math.exp(-.5*((probe-.8/6)/5.4)**2))<1e-12);
+ assert.ok(silhouetteHazeStrength(.95,6.5)<.001);
+ assert.equal(silhouetteHazeStrength(.95,7),0);
 });
 test("shared silhouette registration uses Clear tint and same owner fragment",()=>{
  const img={dataset:{}};
@@ -91,8 +93,8 @@ test("native SVG final coverage is independent of 512px optical mask and haze",(
 
 test("haze is display-only and never enters glass optical inputs",()=>{
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js");
- assert.match(shader,/distanceCSS-0\.8\)\/5\.4/);
- assert.match(shader,/1\.0-smoothstep\(5\.0,11\.0,distanceCSS\)/);
+ assert.match(shader,/distanceCSS-0\.8\/6\.0\)\/5\.4/);
+ assert.match(shader,/1\.0-smoothstep\(5\.0\/6\.0,5\.0\/6\.0\+6\.0,distanceCSS\)/);
  assert.match(shader,/let haze=select\(0\.0,silhouetteHaze\(luminance,hazeDistance,hover\),state\.tintMeta\.z>=0\.0\)/);
  const optical=shader.slice(shader.indexOf("let signed=(mask.g-0.5)"),shader.indexOf("return mix(shaded,glass"));
  assert.ok(optical.length>1000);

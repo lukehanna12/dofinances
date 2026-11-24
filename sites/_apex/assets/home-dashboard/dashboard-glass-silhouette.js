@@ -77,7 +77,7 @@ export function silhouetteAtlasBytes(capacity=INITIAL_MASKS){
 // Reference for the authored shader contrast profile, not native evidence.
 export function silhouetteHazeStrength(luminance,distanceCSS,hover=1){
  const t=clamp((luminance-.25)/.65),brightness=t*t*(3-2*t);
- const x=Math.max(0,distanceCSS-.8)/5.4,tail=clamp((distanceCSS-5)/6);
+ const x=Math.max(0,distanceCSS-.8/6)/5.4,tail=clamp((distanceCSS-5/6)/6);
  return .16*clamp(hover)*brightness*Math.exp(-.5*x*x)*(1-tail*tail*(3-2*tail));
 }
 export function createGlassSilhouetteAtlas(device,wake=()=>{}){

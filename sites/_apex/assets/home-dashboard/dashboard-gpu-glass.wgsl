@@ -499,8 +499,10 @@ fn finalSilhouetteCoverage(icon:GlassSilhouette,local:vec2<f32>,fallback:f32)->f
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
   let brightness=smoothstep(0.25,0.90,luminance);
-  let x=max(0.0,distanceCSS-0.8)/5.4;
-  let tail=1.0-smoothstep(5.0,11.0,distanceCSS);
+  // Shrink both unfeathered margins to 1/6, preserving the 6px
+  // terminal feather and 5.4px Gaussian sigma.
+  let x=max(0.0,distanceCSS-0.8/6.0)/5.4;
+  let tail=1.0-smoothstep(5.0/6.0,5.0/6.0+6.0,distanceCSS);
   return 0.16*hover*brightness*exp(-0.5*x*x)*tail;
 }
 fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
