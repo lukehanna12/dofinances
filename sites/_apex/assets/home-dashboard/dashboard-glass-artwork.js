@@ -6,10 +6,28 @@ export const ART_SIZE=512;
 export const ART_LAYERS=PROJECT_SHOWCASE.length;
 const LAYERS=new Map(PROJECT_SHOWCASE.map((p,i)=>[p.slug,i]));
 export const REGION_FLOATS=24;
-export function artworkCoverTransform(width,height,iw,ih,sx=1,sy=1,tx=0,ty=0){
+export function artworkCoverTransform(width,height,iw,ih,sx=1,sy=1,tx=0,ty=0,
+ positionX=.5,positionY=.5,originX=.5,originY=.5){
  const fit=Math.max(width/iw,height/ih);
  const x=width/(iw*fit*sx),y=height/(ih*fit*sy);
- return [x,y,.5-x*.5-tx/width*x,.5-y*.5-ty/height*y];
+ // Preserve object-fit:cover's layout crop before applying the CSS
+ // transform about its chosen origin. Both GPU art passes use this UV.
+ return [x,y,
+   positionX*(1-x*sx)+(sx-1)*originX*x-tx/width*x,
+   positionY*(1-y*sy)+(sy-1)*originY*y-ty/height*y];
+}
+// Computed object-position is a percentage pair for these authored
+// cards; computed transform-origin is a pixel pair in the photo box.
+// Keep the original centered default for all other cards.
+export function artworkCSSAlignment(style){
+ const position=String(style.objectPosition||"50% 50%").split(/\s+/);
+ const origin=String(style.transformOrigin||"").split(/\s+/);
+ const percent=value=>/^[-+.\d]+%$/.test(value||"")?Number.parseFloat(value)/100:.5;
+ const ratio=(value,extent)=>{
+   const n=Number.parseFloat(value),size=Number.parseFloat(extent);
+   return Number.isFinite(n)&&size>0?n/size:.5;
+ };
+ return [percent(position[0]),percent(position[1]),ratio(origin[0],style.width),ratio(origin[1],style.height)];
 }
 // Preserve source aspect and detail up to a bounded 8 MP / 4096px texture.
 // Unlike the 512² optical input, this is a display source, never a blur.

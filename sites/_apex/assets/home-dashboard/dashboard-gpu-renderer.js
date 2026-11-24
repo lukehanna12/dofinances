@@ -25,7 +25,7 @@ import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
  planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass}
  from "./dashboard-glass-model.js";
-import {REGION_FLOATS,artworkCoverTransform,createGlassArtworkAtlas} from "./dashboard-glass-artwork.js";
+import {REGION_FLOATS,artworkCoverTransform,artworkCSSAlignment,createGlassArtworkAtlas} from "./dashboard-glass-artwork.js";
 import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularMaterialLanes,validateGlassMaterial,resolveInactiveClearRegion}
  from "./dashboard-glass-material.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
@@ -839,7 +839,7 @@ async function initialize(){
         }
         const matrix=style.transform==="none"?new DOMMatrixReadOnly():new DOMMatrixReadOnly(style.transform);
         uv=artworkCoverTransform(w,h,photo.naturalWidth,photo.naturalHeight,
-          Math.abs(matrix.a)||1,Math.abs(matrix.d)||1,matrix.e,matrix.f);
+          Math.abs(matrix.a)||1,Math.abs(matrix.d)||1,matrix.e,matrix.f,...artworkCSSAlignment(style));
       }
       // Keep the 24-float region ABI. No Regular optical or face lanes
       // are populated; the shader uses the shared Clear optical path.
@@ -847,7 +847,7 @@ async function initialize(){
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha:0,
-        artworkDetail:artwork?.detailSize??null,artworkPresentation:"same-fragment",
+        artworkDetail:artwork?.detailSize??null,artworkPresentation:"same-fragment",artworkUV:uv,
         canvasLocalTop:tileData[p+1]/dpr,canvasLocalLeft:tileData[p]/dpr,
         canvasLocalBandTop:(tileData[p+1]+tileData[p+3])/dpr-height,
         material:profile.material,scheme:profile.scheme,interactive:profile.interactive,

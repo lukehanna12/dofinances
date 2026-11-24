@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {artworkCoverTransform,artworkDetailSize,REGION_FLOATS,ART_LAYERS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-artwork.js";
+import {artworkCoverTransform,artworkCSSAlignment,artworkDetailSize,REGION_FLOATS,ART_LAYERS} from "../sites/_apex/assets/home-dashboard/dashboard-glass-artwork.js";
 import {resolveInactiveClearRegion} from "../sites/_apex/assets/home-dashboard/dashboard-glass-material.js";
 import {serveProjectArtwork} from "../edge/project-artwork.mjs";
 import {publicProjectArtworkSource} from "../sites/_apex/assets/public-projects-catalog.js";
@@ -12,6 +12,22 @@ test("artwork cover and CSS transform map original image coordinates",()=>{
  const uv=artworkCoverTransform(100,100,100,100,2,2,10,-10);
  assert.ok(uv.every((v,i)=>Math.abs(v-[.5,.5,.2,.3][i])<1e-12));
  assert.equal(REGION_FLOATS,24);assert.equal(ART_LAYERS,16);
+});
+test("BootScript cover framing keeps the top edge and exposes exactly 75 percent of the original left crop",()=>{
+ const align=artworkCSSAlignment({objectPosition:"12.5% 0%",transformOrigin:"0px 0px",width:"261px",height:"250px"});
+ assert.deepEqual(align,[.125,0,0,0]);
+ for(const [w,h] of [[261,250],[165,220],[350,250],[1300,250]]){
+  const original=artworkCoverTransform(w,h,1012,701);
+  for(const scale of [1.05,1.1,1.155]){
+   const uv=artworkCoverTransform(w,h,1012,701,scale,scale,0,0,...align);
+   assert.ok(Math.abs(uv[2]-original[2]*.25)<1e-12);
+   assert.equal(uv[3],0);
+   assert.ok(Math.abs(uv[0]-original[0]/scale)<1e-12);
+   assert.ok(uv[2]>=0&&uv[2]+uv[0]<=1&&uv[3]+uv[1]<=1);
+  }
+ }
+ const centered=artworkCSSAlignment({objectPosition:"50% 50%",transformOrigin:"130.5px 125px",width:"261px",height:"250px"});
+ assert.deepEqual(centered,[.5,.5,.5,.5]);
 });
 test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal(publicProjectArtworkSource({slug:"colosseum"},0),"/project-artwork/colosseum");
