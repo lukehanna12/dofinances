@@ -177,7 +177,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const duration=immediate||hasReduce()?0:EXPAND_MS;
     const initialTime=performance.now();
     const firstRow=Math.floor(selectedIndex/columns);
-    const shift=columns-1;
+    // A short final row only displaces the cards it actually contains.
+    const shift=Math.min(columns,visible.length-firstRow*columns)-1;
     const columnGap=Number.parseFloat(getComputedStyle(grid).columnGap)||0;
     const pitch=(gridRect.width+columnGap)/columns;
     const travel=shift*pitch;
@@ -233,9 +234,17 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         // simultaneously undergoing the native-square optical dismissal.
         // Every incoming card moves by the SAME number of pixels at the
         // SAME speed as the established cards in that destination row.
-        const fadeEnd=Math.min(.3,Math.max(.08,1/Math.max(1,shift)));
+        // The rowmate starts outside the grid to the left. Its opacity
+        // only grows while its true rect enters the NEXT row. The previous
+        // version was opaque four card widths outside the grid.
+        const destinationColumn=plan[index].column-1;
+        const fadeStart=shift?
+          Math.max(0,(shift-destinationColumn-1)/shift):0;
+        const fadeEnd=shift?
+          Math.min(1,(shift-destinationColumn)/shift):1;
         frames=[
           {offset:0,transform:translate(-travel,0),opacity:0},
+          {offset:fadeStart,transform:translate(-travel*(1-fadeStart),0),opacity:0},
           {offset:fadeEnd,transform:translate(-travel*(1-fadeEnd),0),opacity:1},
           {offset:1,transform:translate(0,0),opacity:1}
         ];
@@ -262,8 +271,10 @@ export function mountProjectExpansion({root,grid,animateGlass}){
             {offset:1,transform:translate(0,0),opacity:1}
           ];
         }else{
+          // Entering becomes fully visible once the LEFT edge is in
+          // the row, not while the pane is still in the outer gutter.
           const fadeOut=Math.max(0,edge-EDGE_FADE_FRACTION);
-          const fadeIn=Math.min(1,edge+EDGE_FADE_FRACTION);
+          const fadeIn=Math.min(1,edge+1/Math.max(1,shift));
           frames=[
             {offset:0,transform:translate(before.left-after.left,oldY),opacity:1},
             {offset:fadeOut,
