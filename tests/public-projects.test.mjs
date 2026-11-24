@@ -78,6 +78,23 @@ test("four supplied project SVGs are identical across public and authenticated v
   assert.ok(ozoning.includes('M8 16.5H4.75'));
   assert.ok(ozoning.includes('M8 19.5H5'));
 });
+test("artwork zoom retains its compositor layer at the final hover frame across both routes",async()=>{
+  const csses=await Promise.all([
+    load("../sites/_apex/assets/public-projects.css"),
+    load("../sites/_apex/app/assets/project-showcase.css")
+  ]);
+  for(const css of csses){
+    const baseline=css.match(/\.project-showcase-photo\{([\s\S]*?)\n\s*\}/)?.[1]||"";
+    assert.match(baseline,/will-change:transform,opacity/,
+      "Always retain the artwork bitmap compositing layer, including at scale(1)");
+    assert.match(baseline,/transform-origin:center center/);
+    assert.match(baseline,/-webkit-backface-visibility:hidden;backface-visibility:hidden/);
+    assert.match(baseline,/transition:opacity \.5s ease-out,transform \.5s ease-out/,
+      "Do not change the approved 500ms zoom speed");
+    assert.match(css,/opacity:1;transform:scale\(1\)/,
+      "Preserve the exact final size and composition");
+  }
+});
 test("ReadMe GLP artwork is gently enlarged and shifted up on public Projects only",async()=>{
  const publicCSS=await load("../sites/_apex/assets/public-projects.css");
  const path='[data-project-slug="github-readme-chrome-extension"]';

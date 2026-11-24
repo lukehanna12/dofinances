@@ -802,6 +802,23 @@ try{
   assert.equal(projectState.route,"/projects");
   assert.equal(projectState.count,16);
   assert.equal(projectState.icons,16);
+  // A late 500ms hitch can be the compositor retiring the animated
+  // image layer. Keep the GPU-backed bitmap alive at its exact final scale.
+  const photoComposite=await evaluate("(()=>"+
+    "[...document.querySelectorAll('.public-projects-root .project-showcase-photo')]"+
+    ".map(photo=>{const css=getComputedStyle(photo);return {willChange:css.willChange,"+
+    "backface:css.backfaceVisibility,origin:css.transformOrigin,"+
+    "transition:css.transitionDuration};}))()");
+  assert.equal(photoComposite.length,16);
+  for(const item of photoComposite){
+    assert.ok(item.willChange.includes("transform")&&
+      item.willChange.includes("opacity"),
+      "Artwork bitmap must retain GPU layer at the hover zoom endpoint");
+    assert.equal(item.backface,"hidden");
+    assert.ok(item.transition.split(",").every(t=>t.trim()==="0.5s"),
+      "Both artwork transitions must remain exactly 500ms");
+  }
+
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
     "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
     "const icon=card?.querySelector('.project-showcase-lucide');"+

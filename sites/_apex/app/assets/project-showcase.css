@@ -91,6 +91,11 @@
 }
 .view[data-view="projects"] .project-showcase-photo{
  object-fit:cover;object-position:center;opacity:0;transform:scale(1.1);
+ /* Keep the same compositor-backed bitmap throughout the 500ms zoom;
+    otherwise the final repaint can snap the object-fit pixel grid. */
+ will-change:transform,opacity;
+ transform-origin:center center;
+ -webkit-backface-visibility:hidden;backface-visibility:hidden;
  transition:opacity .5s ease-out,transform .5s ease-out
 }
 .view[data-view="projects"] .project-showcase-shade{
