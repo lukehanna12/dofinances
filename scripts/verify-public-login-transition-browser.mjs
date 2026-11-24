@@ -1100,35 +1100,48 @@ try{
   assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
     "Displaced panels must enter at the left side of the next row");
   await evaluate("document.querySelector('.project-showcase-expand-close').click()");
-  // The X must start a NEW forward ease-out for selected width, left and
-  // close glyph; reversing old keyframes would instead produce ease-IN.
-  // Siblings may run backward along their symmetric ease-in-out path.
+  // X, selected pane AND each downstream row must all use the forward
+  // entry ease-out, not WAAPI.reverse() (which makes closure ease IN).
+  // Preserve the exact spatial return path and all intermediate wrap/fades.
   await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
     "const c=[...g.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
-    "const p=[c[0],c[1],c[6],c[7],g.querySelector('.project-showcase-expand-close')];"+
-    "return p.every((node,index)=>[...node.getAnimations()].some(a=>"+
-      "a.effect?.getTiming().duration===620&&"+
-      "(index===0||index===4?a.playbackRate===1:a.playbackRate<0)));})()",30,20);
+    "const p=[c[0],c[1],c[5],c[6],c[7],g.querySelector('.project-showcase-expand-close')];"+
+    "return p.every(node=>[...node.getAnimations()].some(a=>"+
+      "a.effect?.getTiming().duration===620&&a.playbackRate===1));})()",30,20);
   const closeClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
-    "const panes=[cards[0],cards[1],cards[6],cards[7],"+
+    "const panes=[cards[0],cards[1],cards[5],cards[6],cards[7],"+
       "grid.querySelector('.project-showcase-expand-close')];"+
     "return panes.map(node=>{const a=[...node.getAnimations()].find(x=>"+
-      "x.effect?.getTiming().duration===620);"+
+      "x.effect?.getTiming().duration===620&&x.playbackRate===1);"+
       "return {rate:a?.playbackRate,time:a?.currentTime,"+
+        "frames:a?.effect?.getKeyframes().map(f=>({offset:f.computedOffset,"+
+          "transform:f.transform,opacity:f.opacity})),"+
         "easing:a?.effect?.getTiming()?.easing};});})()");
-  assert.equal(closeClocks[0].rate,1,"Selected panel closes with forward easing");
-  assert.equal(closeClocks[4].rate,1,"X closes with forward easing");
-  assert.ok(closeClocks.slice(1,4).every(clock=>clock.rate<0),
-    "Displaced cards return along their original spatial paths");
-  assert.equal(closeClocks[0].easing,"cubic-bezier(0.22, 0.72, 0.24, 1)",
-    "Contraction must use the SAME entry ease-out curve, not time inversion");
-  assert.equal(closeClocks[4].easing,closeClocks[0].easing);
-  const elapsedClose=closeClocks.map(c=>c.rate>=0?c.time:
-    620-c.time);
-  assert.ok(Math.max(...elapsedClose)-Math.min(...elapsedClose)<55,
-    "X, selected pane and all returned cards must start their clocks together");
+  assert.ok(closeClocks.every(clock=>clock.rate===1),
+    "Every displaced row must close with FORWARD 620ms playback");
+  assert.ok(closeClocks.every(clock=>
+    clock.easing==="cubic-bezier(0.22, 0.72, 0.24, 1)"),
+    "All rows, selected panel, and X must share forward ease-out");
+  assert.ok(Math.max(...closeClocks.map(x=>x.time))-
+    Math.min(...closeClocks.map(x=>x.time))<35,
+    "All returning cards must start together on one clock");
+  for(const clock of closeClocks.slice(1,5)){
+    assert.ok(clock.frames.length>=2,
+      "Each returning row must preserve its complete spatial path");
+    assert.equal(clock.frames[0].offset,0);
+    assert.equal(clock.frames.at(-1).offset,1);
+  }
+  const closeProgressInitial=await evaluate("(()=>{"+
+    "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[5];"+
+    "return getComputedStyle(card).transform;})()");
+  await sleep(130);
+  const closeProgressAfter=await evaluate("(()=>{"+
+    "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[5];"+
+    "return getComputedStyle(card).transform;})()");
+  assert.notEqual(closeProgressInitial,closeProgressAfter,
+    "Lower-row panels must visibly begin returning before closure ends");
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
