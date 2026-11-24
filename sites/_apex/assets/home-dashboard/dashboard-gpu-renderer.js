@@ -956,15 +956,22 @@ async function initialize(){
     // The native HTML foreground is above the entire route canvas. Cut
     // only the overlapping portion out at the same submitted pane opacity
     // and geometry, never re-register it as a GPU paint source.
-    const covers=[];
+    const covers=[],retargeting=Boolean(document.querySelector(".public-projects-root.is-project-retargeting"));
+    const paneOrder=retargeting?new Map(panes.map((node,i)=>[node,i])):null;
     if(!authUsesCompositor())for(let i=0;i<panes.length;i++){
-      if(!panes[i].hasAttribute("data-glass-dropdown")||!(routeLayerSlots[i]>0))continue;
+      const node=panes[i],role=node.dataset.publicProjectGlass;
+      const dropdown=node.hasAttribute("data-glass-dropdown")&&routeLayerSlots[i]>0;
+      if(!dropdown&&!(retargeting&&(role==="card"||role==="expand-close")))continue;
       const p=(tileCount+i)*TILE_FLOATS,alpha=tileData[p+18];
-      if(alpha<=.002||panes[i].hidden)continue;
+      if(alpha<=.002||node.hidden)continue;
       covers.push({left:tileData[p]/dpr,top:tileData[p+1]/dpr+authOriginTop(),
-        width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,radius:tileData[p+4]/dpr,opacity:alpha});
+        width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,radius:tileData[p+4]/dpr,opacity:alpha,
+        order:i,dropdown});
     }
-    const occluded=nativeOcclusion.sync(covers.length?document.querySelectorAll(".public-projects-root .project-showcase-content"):[],covers);
+    // During direct switches, only higher submitted panes occlude lower
+    // native foreground; the selected pane never masks its own text.
+    const occluded=nativeOcclusion.sync(covers.length?document.querySelectorAll(".public-projects-root .project-showcase-content"):[],covers,
+      (cover,node)=>cover.dropdown||cover.order>(paneOrder?.get(node.closest(".project-showcase-card"))??Infinity));
     sourcePainter.sweep();
     audit.sourceComposition={base:baseSourceEntries.length,mosaic:0,route:routeSourceEntries.flat().length,
       routeLayers:[...routeActiveLayers],nativeOccluded:occluded,...sourcePainter.stats(),source:"authored primitives; no captured page pixels"};

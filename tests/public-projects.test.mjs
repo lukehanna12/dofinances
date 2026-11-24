@@ -371,7 +371,7 @@ test("BootScript framing uses the same top-left cover alignment and 10.25 percen
  ]);
  for(const css of csses){
   assert.match(css,/\[data-project-slug="bootscript"\] \.project-showcase-photo\{\s*object-position:0% 0%;transform-origin:0% 0%;transform:scale\(1\.21275\)/);
-  assert.match(css,/\[data-project-slug="bootscript"\]\.is-photo-ready:is\(:hover,:focus-visible\) \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
+  assert.match(css,/\[data-project-slug="bootscript"\]\.is-photo-ready:is\(:hover,:focus-visible(?:,:focus-within)?\) \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
  }
  assert.match(csses[0],/\.is-expanded\[data-project-slug="bootscript"\]\.is-photo-ready \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
 });

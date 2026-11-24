@@ -33,15 +33,16 @@ export function createNativeForegroundOcclusion(doc){
   host.style.cssText="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none";
   defs=svg(doc,"defs");host.append(defs);doc.body.append(host);
  }
- function sync(nodes,panels){
+ function sync(nodes,panels,applies=()=>true){
   if(!panels.length){clear();return 0;}
   const seen=new Set();
   for(const node of nodes){
    if(!node.isConnected||node.closest("[hidden]"))continue;
    const r=node.getBoundingClientRect();
-   if(!panels.some(p=>p.opacity>.002&&p.left<r.right&&p.top<r.bottom&&p.left+p.width>r.left&&p.top+p.height>r.top))continue;
+   const relevant=panels.filter(p=>applies(p,node)&&p.opacity>.002&&p.left<r.right&&p.top<r.bottom&&p.left+p.width>r.left&&p.top+p.height>r.top);
+   if(!relevant.length)continue;
    const style=getComputedStyle(node),w=parseFloat(style.width)||node.offsetWidth,h=parseFloat(style.height)||node.offsetHeight;
-   const holes=panels.map(p=>nativeOcclusionHole(r,w,h,p)).filter(Boolean);
+   const holes=relevant.map(p=>nativeOcclusionHole(r,w,h,p)).filter(Boolean);
    if(!holes.length)continue;
    seen.add(node);
    let e=records.get(node);

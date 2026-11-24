@@ -1351,7 +1351,8 @@ try{
     const result={before,clickable,mid,elapsed:performance.now()-start,selected:third.classList.contains('is-expanded'),
       selectedCount:root.querySelectorAll('.is-expanded').length,contracting:root.querySelectorAll('.is-contracting').length};
     click(root.querySelector('.project-showcase-expand-close'));
-    while(root.classList.contains('is-project-reflowing'))await new Promise(requestAnimationFrame);
+    const closeStart=performance.now();
+    while(root.classList.contains('is-project-reflowing')&&performance.now()-closeStart<1050)await new Promise(requestAnimationFrame);
     result.closed=!root.classList.contains('has-project-expansion');
     result.focusedCard=cards.includes(document.activeElement);
     result.contractingAfter=root.querySelectorAll('.is-contracting').length;

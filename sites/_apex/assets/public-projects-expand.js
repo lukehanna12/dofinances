@@ -148,6 +148,10 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   const abort=new AbortController();
   let state=null,disposed=false,resizeScheduled=false;
   const rectSnapshot=nodes=>new Map(nodes.map(node=>[node,box(node)]));
+  function releasePointerFocus(){
+    const active=document.activeElement;
+    if(active===closeButton||cards.includes(active))active.blur();
+  }
   const clearInline=()=>{
     for(const card of cards){
       card.style.gridColumn="";
@@ -174,7 +178,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       }
       card.setAttribute("aria-expanded","false");
     }
-    root.classList.remove("has-project-expansion","is-project-reflowing");
+    root.classList.remove("has-project-expansion","is-project-reflowing","is-project-retargeting");
     closeButton.hidden=true;
     closeButton.style.top="";
     closeButton.style.left="";
@@ -404,7 +408,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       else if(keyboard)closeButton.focus({preventScroll:true});
       animateGlass(90);return;
     }
-    root.classList.add("is-project-reflowing");
+    root.classList.add("is-project-reflowing","is-project-retargeting");
     for(const node of visible){
       const from=presented.get(node),to=destinations.get(node);
       const dx=from.left-to.left,dy=from.top-to.top;
@@ -436,15 +440,23 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     // One close button transfers to the new pane. Its alpha recedes
     // during the handoff and returns along the incoming right edge.
     const endpoint=destinations.get(card??old),incoming=presented.get(card??old);
+    const outgoing=presented.get(old),outgoingEnd=destinations.get(old);
+    const anchor=(from,to,t)=>({
+      left:cssPixels(from.left+from.width+(to.left+to.width-from.left-from.width)*t-53),
+      top:cssPixels(from.top+(to.top-from.top)*t+13)
+    });
     closeButton.hidden=false;
     closeButton.style.top=cssPixels(endpoint.top+13);
     closeButton.style.left=cssPixels(endpoint.left+endpoint.width-53);
-    const buttonMotion=animate(closeButton,[
+    const buttonFrames=[
       {left:cssPixels(xStart.left),top:cssPixels(xStart.top),opacity:String(xStart.opacity)},
-      {offset:.24,left:cssPixels(incoming.left+incoming.width-53+(endpoint.left+endpoint.width-incoming.left-incoming.width)*.24),
-       top:cssPixels(incoming.top+13+(endpoint.top-incoming.top)*.24),opacity:"0"},
+      {offset:.20,...anchor(outgoing,outgoingEnd,.20),opacity:"0"},
+      // The transfer occurs only at zero opacity, while both panel edges
+      // keep moving. The incoming button thereafter follows its own edge.
+      {offset:.2001,...anchor(incoming,endpoint,.2001),opacity:"0"},
       {left:closeButton.style.left,top:closeButton.style.top,opacity:card?"1":"0"}
-    ],{duration:EXPAND_MS,easing:SELECTED_EASING});
+    ];
+    const buttonMotion=animate(closeButton,buttonFrames,{duration:EXPAND_MS,easing:SELECTED_EASING});
     if(buttonMotion)current.animations.push(buttonMotion);
     if(keyboard&&card)closeButton.focus({preventScroll:true});
     else if(focused)closeButton.blur();
@@ -457,7 +469,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         node.classList.remove("is-contracting");
         if(node!==card)node.style.removeProperty("--project-regular-reference-width");
       }
-      root.classList.remove("is-project-reflowing");
+      root.classList.remove("is-project-reflowing","is-project-retargeting");
       animateGlass(90);
     },EXPAND_MS+16));
     animateGlass(EXPAND_MS+90);
@@ -553,13 +565,14 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.setAttribute("aria-expanded","false");
     card.addEventListener("click",event=>{
       const keyboard=event.detail===0;
+      if(!keyboard)releasePointerFocus();
       if(!state)open(card,{keyboard});
       else if(state.card!==card||state.phase==="closing")retarget(card,{keyboard});
     },{signal:abort.signal});
   }
   closeButton.addEventListener("click",event=>{
     const keyboard=event.detail===0;
-    if(!keyboard)closeButton.blur();
+    if(!keyboard)releasePointerFocus();
     close({restoreFocus:keyboard});
   },{signal:abort.signal});
   document.addEventListener("keydown",event=>{
