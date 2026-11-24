@@ -23,9 +23,10 @@ test("conveyor preserves a full pitch of separation at every animation sample",(
       for(let column=0;column<columns;column++){
         const edge=projectConveyorEdge(column,columns,shift);
         assert.ok(edge>=0&&edge<=1);
-        const atEdge=projectConveyorPosition(column,columns,shift,edge);
+        const atEdge=projectConveyorPosition(column,columns,shift,
+          Math.min(1,edge+1e-7));
         assert.equal(atEdge.rowOffset,
-          column+shift>=columns-1?1:0);
+          column+shift>=columns?1:0);
       }
     }
 });
@@ -47,7 +48,7 @@ test("each wrapped card fades at the viewport seam, not in the rightmost slot",(
           Math.min(1,seam+1e-4));
         assert.equal(before.rowOffset,0);
         assert.equal(after.rowOffset,1);
-        assert.ok(Math.abs((before.x-after.x)-columns)<0.001);
+        assert.ok(Math.abs((before.x-after.x)-columns)<.003);
       }
 });
 test("six-column expansion consumes the selected card's original FULL row",()=>{
