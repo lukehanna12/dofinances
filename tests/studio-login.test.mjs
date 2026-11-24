@@ -612,7 +612,7 @@ test("default fixed-viewport WebGPU preserves the original full mipmapped materi
   assert.match(router,/body\.dataset\.authScrollMode=new URLSearchParams\(location\.search\)\.get\("auth-scroll"\)==="native"/);
   assert.match(router,/"native":"fixed"/);
   assert.match(homeCss,/body\.public-home\[data-auth-scroll-mode="fixed"\][\s\S]*?#public-route-content > #dashboard-auth-glass-scene\{\s*position:fixed;/);
-  assert.match(renderer,/const authCanvasFixed=\(\)=>document\.body\.dataset\.authScrollMode==="fixed"&&!projectScrollAttached\(\)/);
+  assert.match(renderer,/const authCanvasFixed=\(\)=>document\.body\.dataset\.authScrollMode==="fixed"/);
   assert.match(renderer,/authCanvasFixed\(\)\s*\?\s*Math\.max\(1,routeOutlet\?\.clientHeight\|\|0\)/);
   assert.match(renderer,/authScrollPresentation:authCanvasFixed\(\)\?"fixed-viewport":"native-content"/);
   assert.match(renderer,/const desiredTop=authCanvasFixed\(\)\?sceneTop\+"px":"0px"/);

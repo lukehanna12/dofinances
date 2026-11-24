@@ -186,6 +186,8 @@ export function mountProjects(host,{onBack,onExitComplete}){
   // opacity, and no viewport-resize handler should reposition the logo.
   routeScroll?.addEventListener("scroll",syncLogoWithScroll,
     {passive:true,signal:logoScrollAbort.signal});
+  routeScroll?.addEventListener("project-scroll-presented",syncLogoWithScroll,
+    {signal:logoScrollAbort.signal});
   syncLogoWithScroll();
   back.addEventListener("click",event=>{
     if(closed||exiting)return;

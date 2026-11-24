@@ -47,16 +47,56 @@ if(root)root.dataset.gpuStatus="module-loaded";
 const canvas=document.createElement("canvas");
 const authCanvas=document.createElement("canvas");
 const authUsesCompositor=()=>document.body.dataset.authGlassMode==="compositor";
+const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed";
 const routeOutlet=document.getElementById("public-route-content");
 const routeMount=document.getElementById("public-route-stage");
-const projectScrollAttached=()=>!authUsesCompositor()&&!!routeMount?.querySelector(".public-projects-root");
-const authCanvasFixed=()=>document.body.dataset.authScrollMode==="fixed"&&!projectScrollAttached();
-// Login retains its viewport-fixed default. Projects has separate DOM
-// artwork and glass partitions, so both must share the native scroll node.
-// Canvas-local geometry stays invariant under scroll even before a new
-// GPU frame; wallpaper UVs are still projected using its actual position.
-const authOriginTop=()=>authCanvas.isConnected?authCanvas.getBoundingClientRect().top:
-  (authCanvasFixed()?44:routeMount?.getBoundingClientRect().top??44);
+// Projects uses the SAME fixed glass framebuffer as Sign in. The native
+// scrollport remains real; its foreground is held in a sticky viewport and
+// presented at the exact scroll offset of the submitted GPU frame.
+let projectScrollSpacer=null,projectPresentedRoot=null,projectPresentedScroll=0;
+const fixedProjectRoot=()=>authCanvasFixed()&&!authUsesCompositor()&&
+  document.body.dataset.authGpuScene==="ready"?
+    routeMount?.querySelector(".public-projects-root"):null;
+function resetProjectScrollPresentation(){
+  projectPresentedRoot?.style.removeProperty("--project-presented-scroll");
+  projectPresentedRoot=null;projectPresentedScroll=0;
+  routeOutlet?.removeAttribute("data-project-scroll-sync");
+  projectScrollSpacer?.remove();projectScrollSpacer=null;
+}
+function syncProjectScrollPresentation(){
+  const project=fixedProjectRoot();
+  if(!project||!routeOutlet){
+    if(projectPresentedRoot)resetProjectScrollPresentation();
+    return;
+  }
+  if(projectPresentedRoot!==project){
+    resetProjectScrollPresentation();
+    projectPresentedRoot=project;
+    projectScrollSpacer=document.createElement("div");
+    projectScrollSpacer.className="project-scroll-spacer";
+    projectScrollSpacer.setAttribute("aria-hidden","true");
+    routeOutlet.append(projectScrollSpacer);
+    projectScrollSpacer.style.height=Math.max(0,project.offsetHeight-routeOutlet.clientHeight)+"px";
+    routeOutlet.dataset.projectScrollSync="true";
+  }
+  const extent=Math.max(0,project.offsetHeight-routeOutlet.clientHeight);
+  const height=extent+"px";
+  if(projectScrollSpacer.style.height!==height)projectScrollSpacer.style.height=height;
+  const y=Math.min(extent,Math.max(0,routeOutlet.scrollTop));
+  const offset=y+"px";
+  const changed=project.style.getPropertyValue("--project-presented-scroll")!==offset;
+  if(changed)project.style.setProperty("--project-presented-scroll",offset);
+  projectPresentedScroll=y;
+  if(changed)routeOutlet.dispatchEvent(new Event("project-scroll-presented"));
+}
+// Native (legacy rollback): the canvas scrolls with the document-sized card.
+// Fixed (default): the very same WebGPU surface stays fixed to the
+// wallpaper; only the live pane rectangles follow the native scroll. This
+// prevents a compositor-scrolled stale photo. Pane geometry continues to
+// update using native scrolling positions when each WebGPU frame is submitted.
+const authOriginTop=()=>authCanvasFixed()
+  ? (authCanvas.isConnected?authCanvas.getBoundingClientRect().top:44)
+  : (routeMount?.getBoundingClientRect().top ?? 44);
 const homeActive=()=>!!root&&!root.closest(".dashboard-home")?.hidden;
 // A user may navigate away while the AVIF decodes or WGSL compiles.
 // Defer first layout measurement until Home is visible again, rather than
@@ -240,7 +280,7 @@ function requestRender(){
       // scroll frames; render only the original local optical response.
       if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"&&
-         (authUsesCompositor()||projectScrollAttached()||performance.now()<authScrollRefreshUntil)){
+         (authUsesCompositor()||fixedProjectRoot()||performance.now()<authScrollRefreshUntil)){
         animating=engine.renderAuthOnly();
       }else{
         animating=engine.render();
@@ -271,6 +311,7 @@ async function fallback(reason){
   }
   document.body.dataset.gpuScene="fallback";
   document.body.dataset.authGpuScene="fallback";
+  resetProjectScrollPresentation();
   authCanvas.remove();
   canvas.remove();
   try{engine?.dispose()}catch{}
@@ -540,12 +581,6 @@ async function initialize(){
       format:"rgba16float",blend:glassBlend
     }]},primitive:{topology:"triangle-list"}
   });
-  const projectRegionCopyPipeline=device.createRenderPipeline({
-    label:"Fixed wallpaper -> scroll-content half-resolution raw backdrop",
-    layout:"auto",vertex:{module:modules[2],entryPoint:"vsCopy"},
-    fragment:{module:modules[2],entryPoint:"fsProjectRegionCopy",targets:[{format:"rgba16float"}]},
-    primitive:{topology:"triangle-list"}
-  });
   const projectRegionCapturePipeline=device.createRenderPipeline({
     label:"Raw project artwork -> half-resolution Clear backdrop (no glass)",
     layout:"auto",vertex:{module:modules[2],entryPoint:"vsProjectRegionCapture"},
@@ -589,7 +624,7 @@ async function initialize(){
   let materialData=new Float32Array(0);
   let regionData=new Float32Array(0),regionBuffer=null;
   let projectRegionScene=null,projectRegionSceneView=null,projectRegionCopyGroup=null,projectRegionCaptureGroup=null,
-    projectRegionMips=[],projectRegionWidth=1,projectRegionHeight=1,projectRegionCaptureFrames=0;
+    projectRegionMips=[],projectRegionWidth=1,projectRegionHeight=1,projectRegionCaptureFrames=0,projectRegionCaptureKey=null;
   const artworkAtlas=createGlassArtworkAtlas(device,mipPipeline,()=>requestRender());
   let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
@@ -608,7 +643,7 @@ async function initialize(){
       : Math.max(1,routeMount?.scrollHeight||0,routeOutlet?.clientHeight||0);
     const height=Math.max(1,Math.ceil(cssHeight*dpr));
     if(height>device.limits.maxTextureDimension2D)
-      throw Error("Public route glass scroll height exceeds GPU limit");
+      throw Error("Sign-in glass scroll height exceeds GPU limit");
     const desiredTop=authCanvasFixed()?sceneTop+"px":"0px";
     if(authCanvas.style.top!==desiredTop)authCanvas.style.top=desiredTop;
     const cssWidth=window.innerWidth+"px",cssH=cssHeight+"px";
@@ -622,31 +657,6 @@ async function initialize(){
     audit.authPresentationPixelArea=physicalWidth*physicalAuthHeight;
     audit.authScrollPresentation=authCanvasFixed()
       ?"fixed-viewport":"native-content";
-  }
-  // The source-only capture shares the canvas's content extent. Its
-  // original artwork remains valid above/below the visible viewport.
-  // Reallocate only on a real size/route change, never on scroll.
-  function syncProjectRegionScene(){
-    if(!scene)return;
-    const active=projectScrollAttached()||!!routeMount?.querySelector(".public-projects-root");
-    const halfBase=Math.min(1,scene.mipLevelCount-1);
-    const w=active?Math.max(1,physicalWidth>>halfBase):1;
-    const h=active?Math.max(1,physicalAuthHeight>>halfBase):1;
-    if(projectRegionScene&&w===projectRegionWidth&&h===projectRegionHeight)return;
-    projectRegionScene?.destroy();
-    projectRegionWidth=w;projectRegionHeight=h;
-    projectRegionScene=rgba16Texture(device,w,h);
-    projectRegionSceneView=projectRegionScene.createView();
-    projectRegionCopyGroup=device.createBindGroup({layout:projectRegionCopyPipeline.getBindGroupLayout(0),
-      entries:[{binding:0,resource:scene.createView({baseMipLevel:halfBase,mipLevelCount:1})},
-        {binding:2,resource:{buffer:authGlobalsBuffer}}]});
-    projectRegionMips=[];
-    for(let level=1;level<projectRegionScene.mipLevelCount;level++)projectRegionMips.push(device.createBindGroup({
-      layout:mipPipeline.getBindGroupLayout(0),entries:[
-        {binding:0,resource:projectRegionScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
-        {binding:1,resource:projectRegionScene.createView({baseMipLevel:level,mipLevelCount:1})}
-      ]}));
-    rebindGlassGroups();
   }
   function writeUniform(){
     uniform[0]=physicalWidth;
@@ -796,10 +806,10 @@ async function initialize(){
     device.queue.writeBuffer(regionBuffer,0,regionData);
     if(audit.projectGlass){
       audit.projectGlass.regions=regions;
-      audit.projectGlass.scrollGeometry={presentation:projectScrollAttached()?"shared-native-scroll":"viewport-fixed",
-        canvasTop:authOriginTop(),stageTop:routeMount?.getBoundingClientRect().top,
-        canvasHeight:physicalAuthHeight/dpr,submittedScrollTop:routeOutlet?.scrollTop||0};
-      audit.projectGlass.projectRegionBackdrop={source:"raw-wallpaper-and-artwork",halfScale:true,coordinateSpace:"canvas-content",
+      audit.projectGlass.scrollGeometry={presentation:fixedProjectRoot()?"fixed-viewport-synchronized":"native-content",
+        canvasTop:authOriginTop(),canvasHeight:physicalAuthHeight/dpr,
+        requestedScroll:routeOutlet?.scrollTop||0,presentedScroll:projectPresentedScroll};
+      audit.projectGlass.projectRegionBackdrop={source:"raw-wallpaper-and-artwork",halfScale:true,coordinateSpace:"fixed-wallpaper",
         glassDrawsInCapture:0,mutuallyExclusiveMaterials:true,dimensions:[projectRegionWidth,projectRegionHeight],
         frames:projectRegionCaptureFrames};
     }
@@ -1041,8 +1051,6 @@ async function initialize(){
         node.hasAttribute("data-auth-glass-submit")?"submit":"control");
     }
     interaction.retargetRects(tileData,cornerInert);
-    // Reproject the stationary pointer as content scrolls under it. Do not
-    // feed scroll delta into the pointer velocity/refraction spring.
     if(projects&&pointer.enabled)authHover.reproject(pointer.x*dpr,(pointer.y-authOriginTop())*dpr);
     authHover.retargetRects(tileData,tileCount,cornerInert,
       projects||homeCtas?"independent":"nested");
@@ -1130,7 +1138,7 @@ async function initialize(){
       canvas.width=w;canvas.height=h;
       // The scroll-anchored auth canvas has a separate, content-sized height.
       scene?.destroy();
-      compositeScene?.destroy();projectRegionScene?.destroy();projectRegionScene=null;projectRegionSceneView=null;
+      compositeScene?.destroy();projectRegionScene?.destroy();
       offscreenFrame?.destroy();
       if(OFFSCREEN_CI){
         // CI-only: Linux SwiftShader GPU can compute/render correctly yet
@@ -1148,6 +1156,20 @@ async function initialize(){
       // backdrop. Its source is built only when a capsule exposes glass.
       compositeScene=rgba16Texture(device,w,h);
       compositeSceneView=compositeScene.createView();
+      // Clear uses a half-resolution raw base and its own mip chain.
+      // Never sample the glass-composited Home scene.
+      const halfBase=Math.min(1,scene.mipLevelCount-1);
+      projectRegionWidth=Math.max(1,w>>halfBase);projectRegionHeight=Math.max(1,h>>halfBase);
+      projectRegionScene=rgba16Texture(device,projectRegionWidth,projectRegionHeight);
+      projectRegionSceneView=projectRegionScene.createView();
+      projectRegionCopyGroup=device.createBindGroup({layout:compositeBackdropPipeline.getBindGroupLayout(0),
+        entries:[{binding:0,resource:scene.createView({baseMipLevel:halfBase,mipLevelCount:1})}]});
+      projectRegionMips=[];projectRegionCaptureKey=null;
+      for(let level=1;level<projectRegionScene.mipLevelCount;level++)projectRegionMips.push(device.createBindGroup({
+        layout:mipPipeline.getBindGroupLayout(0),entries:[
+          {binding:0,resource:projectRegionScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
+          {binding:1,resource:projectRegionScene.createView({baseMipLevel:level,mipLevelCount:1})}
+        ]}));
       audit.mipCount=scene.mipLevelCount;
       backgroundGroup=device.createBindGroup({
         layout:backdropPipeline.getBindGroupLayout(0),
@@ -1189,7 +1211,6 @@ async function initialize(){
       });
       scenePending=true;
     }
-    syncProjectRegionScene();
     // Reset only compositor transforms for truthful baseline grid metrics.
     // A resize synchronously reapplies track motion in the same GPU frame.
     const all=activeTiles();
@@ -1282,10 +1303,23 @@ async function initialize(){
   }
   function renderProjectRegionCapture(encoder){
     if(!audit.projectGlass?.regions?.length||!projectRegionScene||!projectRegionCaptureGroup)return;
+    // Static wallpaper with no exposed art is identical across all scroll
+    // positions. Rebuild only when source geometry/opacity actually changes.
+    const visibleSources=[];
+    for(let i=tileCount;i<instanceCount;i++){
+      const b=i*REGION_FLOATS,p=i*TILE_FLOATS;
+      if(regionData[b]<=0||(regionData[b+3]<=0&&regionData[b+4]<=0))continue;
+      const y=tileData[p+1]-authUniform[11],bottom=y+tileData[p+3];
+      if(bottom<0||y>physicalHeight)continue;
+      visibleSources.push(...tileData.subarray(p,p+12),...regionData.subarray(b,b+REGION_FLOATS));
+    }
+    const key=[audit.sceneBuilds,authUniform[11],...visibleSources].join(",");
+    if(key===projectRegionCaptureKey)return;
+    projectRegionCaptureKey=key;
     const pass=encoder.beginRenderPass({label:"Raw wallpaper + original project artwork (no glass)",
       colorAttachments:[{view:projectRegionScene.createView({baseMipLevel:0,mipLevelCount:1}),
         loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"}]});
-    pass.setPipeline(projectRegionCopyPipeline);pass.setBindGroup(0,projectRegionCopyGroup);pass.draw(3);
+    pass.setPipeline(compositeBackdropPipeline);pass.setBindGroup(0,projectRegionCopyGroup);pass.draw(3);
     pass.setPipeline(projectRegionCapturePipeline);pass.setBindGroup(0,projectRegionCaptureGroup);
     pass.draw(6,AUTH_PANE_CAPACITY,0,tileCount);pass.end();
     for(let level=1;level<projectRegionScene.mipLevelCount;level++){
@@ -1376,8 +1410,8 @@ async function initialize(){
       trackRunning=allowTrack;
       if(!allowTrack&&dismissStart===null&&restoreStart===null)trackSeconds=0;
     }
+    syncProjectScrollPresentation();
     syncAuthCanvasSize();
-    syncProjectRegionScene();
     writeUniform();
     if(scenePending)buildScene();
     const now=performance.now();
@@ -1501,9 +1535,10 @@ async function initialize(){
     const now=performance.now();
     const dt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastAuthFrameTime=now;
+    syncProjectScrollPresentation();
     syncAuthCanvasSize();
-    syncProjectRegionScene();
     writeUniform();
+    if(scenePending)buildScene();
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
@@ -1676,11 +1711,19 @@ async function initialize(){
   // the canvas's actual viewport rect, not a predictive scrollTop value.
   const onAuthScroll=()=>{
     if(authUsesCompositor()||stopped||!engine||!homeActive())return;
+    if(fixedProjectRoot()){
+      // Commit foreground translation and matching fixed-wallpaper GPU
+      // frame within the same main-thread rendering turn. No old sampled
+      // wallpaper is carried by a compositor-scrollable canvas.
+      if(raf){cancelAnimationFrame(raf);raf=0;}
+      try{
+        const animating=engine.renderAuthOnly();
+        audit.projectScrollSynchronousFrames=(audit.projectScrollSynchronousFrames||0)+1;
+        if(animating)requestRender();
+      }catch(error){void fallback(error);}
+      return;
+    }
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
-    // Projects geometry is already compositor-attached. Do not enqueue a
-    // second expensive full-content capture inside every scroll event;
-    // coalesce wallpaper re-projection with the next presentation RAF.
-    if(projectScrollAttached()){requestRender();return;}
     if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
        document.body.dataset.authGpuScene==="ready"){
       try{
@@ -1694,7 +1737,7 @@ async function initialize(){
   // Wheel/touch can initiate native elastic motion before (or even without)
   // scrollTop changing. Keep checking the observed compositor displacement.
   const armElasticRefresh=()=>{
-    if(authUsesCompositor()||!["login","projects"].includes(window.__dofPublicRouter?.state))return;
+    if(authUsesCompositor()||fixedProjectRoot()||!["login","projects"].includes(window.__dofPublicRouter?.state))return;
     authScrollRefreshUntil=performance.now()+AUTH_ELASTIC_SETTLE_MS;
     requestRender();
   };

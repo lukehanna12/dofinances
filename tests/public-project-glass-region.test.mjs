@@ -34,17 +34,14 @@ test("region is independently profiled within same GPU instance, and follows eac
  const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl"),render=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-projects.css"),expand=src("sites/_apex/assets/public-projects-expand.js");
  assert.match(shader,/let split=region.params.x>0.0/);
  assert.match(shader,/artSample\(uv,i32\(region.params.z\)-1/);
- assert.match(shader,/glass=mix\(projectRegionCaptureSample\(innerContentUV,innerLOD\),/);
- assert.match(shader,/let innerContentUV=\(innerUV\*backdropExtent\+contentOffset\)\/state.viewport.xy/);
- assert.match(shader,/fn fsProjectRegionCopy/);
- assert.match(shader,/let p=tile.rect.xy\+local;\s*let extent=state.viewport.xy/);
+ assert.match(shader,/glass=mix\(projectRegionCaptureSample\(innerUV,innerLOD\),/);
  assert.match(shader,/if\(split\)\{[\s\S]*?profile.optics=vec4<f32>\(0.0\)/);
  assert.match(shader,/let darkFace=split \|\| state.tintMeta.y>0.5/);
  assert.match(shader,/let hover=select\(clamp\(tile.interaction.x,0.0,1.0\),0.0,split\)/);
  assert.match(shader,/let pressed=select\(clamp\(tile.interaction.y,0.0,1.0\),0.0,split\)/);
  assert.match(shader,/if\(localTint.w>0.0 && !split\)/);
  const capture=render.slice(render.indexOf("function renderProjectRegionCapture("),render.indexOf("function paintTrack("));
- assert.match(capture,/pass.setPipeline\(projectRegionCopyPipeline\);pass.setBindGroup\(0,projectRegionCopyGroup\)/);
+ assert.match(capture,/pass.setPipeline\(compositeBackdropPipeline\);pass.setBindGroup\(0,projectRegionCopyGroup\)/);
  assert.match(capture,/pass.setPipeline\(projectRegionCapturePipeline\)/);
  assert.doesNotMatch(capture,/setPipeline\((glassPipeline|compositeGlassPipeline)\)/);
  assert.match(render,/projectRegionCopyGroup=device.createBindGroup\([\s\S]*?resource:scene.createView\(\{baseMipLevel:halfBase,mipLevelCount:1\}\)/);
@@ -70,4 +67,15 @@ test("Inactive Clear region has its own dark scheme and native Clear blur",()=>{
  assert.equal(p.nativeInputBlurRadius,5+(95-48)/72*5);
  assert.equal(p.blurWord,Math.fround(Math.fround(p.nativeInputBlurRadius)*Math.fround(.4)));
  assert.equal(resolveInactiveClearRegion({width:700,height:22}).nativeInputBlurRadius,5);
+});
+
+test("Project foreground is presented with the fixed wallpaper glass frame",()=>{
+ const renderer=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js"),css=src("sites/_apex/assets/public-home.css");
+ assert.match(renderer,/function syncProjectScrollPresentation\(\)/);
+ assert.equal((renderer.match(/syncProjectScrollPresentation\(\);/g)||[]).length,2);
+ assert.match(renderer,/project\.style\.setProperty\("--project-presented-scroll",offset\)/);
+ assert.match(renderer,/if\(fixedProjectRoot\(\)\)\{[\s\S]*?engine\.renderAuthOnly\(\)/);
+ assert.match(css,/position:sticky;top:0;height:100%;min-height:0;overflow:clip/);
+ assert.match(css,/transform:translateY\(calc\(-1 \* var\(--project-presented-scroll,0px\)\)\)/);
+ assert.match(renderer,/if\(key===projectRegionCaptureKey\)return/);
 });

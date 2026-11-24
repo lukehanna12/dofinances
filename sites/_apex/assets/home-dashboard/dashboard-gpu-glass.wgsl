@@ -344,17 +344,6 @@ fn artSample(uv:vec2<f32>,layer:i32,lod:f32)->vec4<f32>{
   return mix(artLevel(uv,layer,lo),artLevel(uv,layer,hi),fract(chosen));
 }
 
-// Reproject the fixed wallpaper into the current scroll-content capture.
-// The one-level view of wallpaper mip1 retains the original half-scale
-// input and real mip producer. Offscreen wallpaper clamps; original artwork
-// is drawn throughout the full content extent, not clipped to viewport.
-@fragment
-fn fsProjectRegionCopy(input:Full)->@location(0) vec4<f32>{
-  let viewportPos=input.uv*state.viewport.xy-vec2<f32>(0.0,state.pointer.w);
-  let wallpaperUV=viewportPos/vec2<f32>(state.viewport.x,max(1.0,state.fit.w));
-  return levelBilinear(wallpaperUV,0);
-}
-
 // A source-only draw into the half-resolution native-style capture.
 // The same live card rect, original artwork UV and DOM opacity are used,
 // but NO glass face, refraction, tint, hover light or previous glass draw.
@@ -367,8 +356,8 @@ fn vsProjectRegionCapture(@builtin(vertex_index) vertex:u32,
   );
   let tile=tiles[instance];
   let local=corners[vertex]*tile.rect.zw;
-  let p=tile.rect.xy+local;
-  let extent=state.viewport.xy;
+  let p=tile.rect.xy+local-vec2<f32>(0.0,state.pointer.w);
+  let extent=vec2<f32>(state.viewport.x,max(1.0,state.fit.w));
   var out:GlassOut;
   out.position=vec4<f32>(2.0*p.x/extent.x-1.0,1.0-2.0*p.y/extent.y,0.0,1.0);
   out.local=local;out.tileIndex=instance;out.introAlpha=1.0;
@@ -655,14 +644,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     if(split){
       // No interactive UV perturbation. The capture has Clear's half-scale
       // base, so no additional mip origin bias is applied.
-      // Convert the existing displaced wallpaper UV back to the same
-      // content coordinate space used by the source-only capture. This
-      // retains the established optical displacement and mip LOD.
-      let contentOffset=vec2<f32>(0.0,state.pointer.w);
-      let innerContentUV=(innerUV*backdropExtent+contentOffset)/state.viewport.xy;
-      let outerContentUV=(outerUV*backdropExtent+contentOffset)/state.viewport.xy;
-      glass=mix(projectRegionCaptureSample(innerContentUV,innerLOD),
-        projectRegionCaptureSample(outerContentUV,outerLOD),thresholdMix(signed));
+      glass=mix(projectRegionCaptureSample(innerUV,innerLOD),
+        projectRegionCaptureSample(outerUV,outerLOD),thresholdMix(signed));
     }else{
       glass=mix(mipSample(interactiveInnerUV,innerLOD),
         mipSample(interactiveOuterUV,outerLOD),select(thresholdMix(signed),0.0,regular));

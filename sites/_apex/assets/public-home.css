@@ -479,14 +479,6 @@ body.public-home[data-auth-scroll-mode="fixed"]
   position:fixed;
   top:var(--dashboard-scene-top,44px);
 }
-/* Projects artwork, material split and DOM foreground must translate as
-   one native-scroll subtree. The renderer uses a content-sized attachment
-   and reprojects the fixed wallpaper without changing the glass shader.
-   Login's fixed-viewport default and opt-in compositor remain untouched. */
-body.public-home:not([data-auth-glass-mode="compositor"])
-  #public-route-content:has(.public-projects-root) > #dashboard-auth-glass-scene{
-  position:absolute;top:0;
-}
 /* Native scroll/rubberband directly samples the fixed wallpaper, while
    the separate GPU layer emits ONLY the original SDF rim/hover response,
    never stale photograph pixels. Every homepage square remains full WebGPU;
@@ -513,6 +505,25 @@ body.public-home > #public-route-content > #public-route-stage{
 }
 body.public-home[data-direct-login="true"]:not([data-public-ready="true"]) .cta6-center h1{visibility:hidden;}
 body.public-home[data-direct-login="true"] .cta6-center h1{transition:none!important;}
+/* Native scroll controls the extent and momentum. A sticky presentation
+   viewport prevents async compositor scrolling from moving the foreground
+   ahead of the fixed WebGPU frame. Translate only the route's content, not
+   the GPU canvas or wallpaper; the renderer owns the presented offset. */
+body.public-home > #public-route-content[data-project-scroll-sync="true"]{
+  overflow-anchor:none;
+}
+body.public-home > #public-route-content[data-project-scroll-sync="true"] > #public-route-stage{
+  position:sticky;top:0;height:100%;min-height:0;overflow:clip;
+}
+body.public-home > #public-route-content[data-project-scroll-sync="true"] .public-projects-root{
+  transform:translateY(calc(-1 * var(--project-presented-scroll,0px)));
+}
+body.public-home > #public-route-content > .project-scroll-spacer{
+  display:none;pointer-events:none;width:1px;
+}
+body.public-home > #public-route-content[data-project-scroll-sync="true"] > .project-scroll-spacer{
+  display:block;
+}
 /* Direct /projects loads still fade on scroll, while keeping their compact
  * logo's initial position immediate (only its opacity may animate). */
 body.public-home[data-direct-login="true"]:has(.public-projects-root)
