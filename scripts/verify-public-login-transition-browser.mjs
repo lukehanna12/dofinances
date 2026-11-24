@@ -1048,10 +1048,26 @@ try{
     }
     // At half the shared clock, the eased-in next-row cards should already
     // have visibly entered. The prior double fade delayed them to the end.
-    if(sample===2)
-      assert.ok(pairState.every(pair=>pair.incomingOpacity>.60),
-        "Rowmates should reappear with the clicked pane, not lag behind: "+
-        JSON.stringify(pairState));
+    if(sample===2){
+      // CDP wall-clock sleeps can drift from Chromium's WAAPI document
+      // timeline. Sample the SAME 315ms effect position for each incoming
+      // pane, then restore its running clock; do not weaken the opacity
+      // threshold or alter real animation timing.
+      const atHalf=await evaluate("(()=>{"+
+        "const grid=document.querySelector('.project-showcase-grid');"+
+        "const ghosts=[...grid.querySelectorAll('.project-showcase-dissolve-ghost')];"+
+        "const live=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
+        "return ghosts.map(ghost=>{"+
+        "const card=live.find(c=>c.dataset.projectSlug===ghost.dataset.projectSlug);"+
+        "const animation=[...card.getAnimations()].find(a=>a.effect?.getTiming().duration===620);"+
+        "const previous=animation.currentTime;animation.currentTime=315;"+
+        "const opacity=parseFloat(getComputedStyle(card).opacity);"+
+        "animation.currentTime=previous;"+
+        "return {slug:ghost.dataset.projectSlug,opacity};});})()");
+      assert.ok(atHalf.every(pair=>pair.opacity>.60),
+        "Rowmates must be visibly reappearing at 315ms of THEIR real WAAPI clock: "+
+        JSON.stringify(atHalf));
+    }
 
   }
 
