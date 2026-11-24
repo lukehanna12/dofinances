@@ -332,8 +332,10 @@ test("Public rendering uses explicitly copied shader and AVIF assets, not privat
   // The public optics/interaction intentionally diverge from /app to
   // consume the new shared public geometry contract. The authenticated
   // assets are UNCHANGED, not mirrored from the public renderer.
-  for(const name of ["dashboard-home-loader.js",
-    "dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
+  // Public boot additionally releases its pre-paint gate on module-load failure.
+  assert.match(asset("assets/home-dashboard/dashboard-home-loader.js"),/glassStartup="fallback"/);
+  assert.doesNotMatch(asset("app/assets/dashboard-home-loader.js"),/glassStartup/);
+  for(const name of ["dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
     assert.equal(asset("assets/home-dashboard/"+name),asset("app/assets/"+name),name+" stays in parity");
   assert.match(asset("assets/home-dashboard/dashboard-mosaic.js"),
     /import \{PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource\}/);
