@@ -420,10 +420,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let innerAmount=select(select(max(-60.0,-0.8*d),clearInnerAmount,authPane),profile.optics.y,regular);
   let innerInvHeight=select(select(1.0/min(20.0,0.25*d),
     1.0/max(clearInnerHeight,0.001),authPane),1.0/max(profile.optics.z,0.001),regular);
-  let outerAmount=select(select(0.2*d,0.0,authPane),0.0,regular);
-  let outerInvHeight=select(select(1.0/(0.125*d),0.0,authPane),0.0,regular);
+  let outerAmount=select(0.2*d,0.0,authPane);
+  let outerInvHeight=select(1.0/(0.125*d),0.0,authPane);
   let inner=refractionEnvelope(signed,innerAmount,innerInvHeight);
-  let outer=refractionEnvelope(signed,outerAmount,outerInvHeight);
+  let outer=refractionEnvelope(signed,select(outerAmount,0.0,regular),
+    select(outerInvHeight,0.0,regular));
   // GAP NATIVE-UV-TO-CSS: normalized native displacement matrix
   // (+1/(4*texW),0,0,-1/(4*texH)) with selected input surfaceScale=.25
   // projects to 1 CSS px per material amount for equal-sized extents.
