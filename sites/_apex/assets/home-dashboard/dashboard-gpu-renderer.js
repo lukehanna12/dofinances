@@ -941,7 +941,8 @@ async function initialize(){
       // pipeline; the glass pipeline consumes only the composed capture.
       {binding:8,resource:projectRegionSceneView},
       {binding:9,resource:detail},{binding:10,resource:detailSampler},
-      {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view}
+      {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view},
+      {binding:13,resource:silhouetteAtlas.hazeView}
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);

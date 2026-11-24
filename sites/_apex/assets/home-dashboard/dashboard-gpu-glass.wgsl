@@ -58,6 +58,7 @@ struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:
 struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32> };
 @group(0) @binding(11) var<storage,read> silhouettes:array<GlassSilhouette>;
 @group(0) @binding(12) var silhouetteMaskTexture:texture_2d_array<f32>;
+@group(0) @binding(13) var silhouetteHazeTexture:texture_2d_array<f32>;
 
 struct Full {
   @builtin(position) position: vec4<f32>,
@@ -480,8 +481,11 @@ fn clearFace(baseColor:vec3<f32>,darkFace:bool)->vec3<f32>{
 fn clearTint(color:vec3<f32>,pigment:vec4<f32>,filmStrength:f32)->vec3<f32>{
   return mix(color,pigment.rgb,clamp(pigment.w,0.0,1.0)*filmStrength);
 }
-fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec3<f32>{
-  return textureSampleLevel(silhouetteMaskTexture,projectArtworkSampler,uv,layer,0.0).rgb;
+fn silhouetteMask(uv:vec2<f32>,layer:i32)->vec2<f32>{
+  return textureSampleLevel(silhouetteMaskTexture,projectArtworkSampler,uv,layer,0.0).rg;
+}
+fn silhouetteHazeMask(uv:vec2<f32>,layer:i32)->f32{
+  return textureSampleLevel(silhouetteHazeTexture,projectArtworkSampler,uv,layer,0.0).r;
 }
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
@@ -494,25 +498,33 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
     dimensions:vec2<f32>,region:GlassRegion,parentInnerUV:vec2<f32>,
     parentLOD:f32,backdropExtent:vec2<f32>,darkFace:bool,split:bool,pointScale:f32)->vec3<f32>{
   if(icon.params.x<=0.0||icon.params.w<=0.0||any(icon.rect.zw<=vec2<f32>(0.0))){return color;}
-  // Original 256 content texels and optical distance encoding. Extra
-  // transparent padding and separate extended distance only for the haze.
-  let uv=((local-icon.rect.xy)/icon.rect.zw)*0.5+vec2<f32>(0.25);
-  if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){return color;}
+  // Keep haze and glow on the original 256-content/512-padded
+  // coordinates, while alpha and optical distance use 512 content texels.
+  let iconUV=(local-icon.rect.xy)/icon.rect.zw;
+  let hazeUV=iconUV*0.5+vec2<f32>(0.25);
+  if(any(hazeUV<vec2<f32>(0.0))||any(hazeUV>vec2<f32>(1.0))){return color;}
   let layer=i32(icon.params.x)-1;
-  let mask=silhouetteMask(uv,layer);
-  let scale=min(icon.rect.z,icon.rect.w)/256.0;
-  let signed=(mask.g-0.5)*128.0*scale;
-  let distanceCSS=signed/pointScale;
+  let hazeMask=silhouetteHazeMask(hazeUV,layer);
+  let hazeScale=min(icon.rect.z,icon.rect.w)/256.0;
   let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
   let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
-  let hazeDistance=(mask.b-0.5)*256.0*scale/pointScale;
+  let hazeDistance=(hazeMask-0.5)*256.0*hazeScale/pointScale;
   let haze=silhouetteHaze(luminance,hazeDistance,hover);
   var shaded=color*(1.0-haze);
   let glowDistance=max(hazeDistance,0.0)/1.8;
   shaded=clamp(shaded+vec3<f32>(0.018*hover*exp(-0.5*glowDistance*glowDistance)),
     vec3<f32>(0.0),vec3<f32>(1.0));
+  let uv=iconUV*(512.0/544.0)+vec2<f32>(16.0/544.0);
+  if(any(uv<vec2<f32>(0.0))||any(uv>vec2<f32>(1.0))){return shaded;}
+  let mask=silhouetteMask(uv,layer);
   if(mask.r<=0.001){return shaded;}
-  let texelStep=1.0/512.0;
+  // The doubled encoded range cancels the halved texel scale exactly:
+  // original 128*size/256 == new 256*size/512, still 8-bit.
+  let scale=min(icon.rect.z,icon.rect.w)/512.0;
+  let signed=(mask.g-0.5)*256.0*scale;
+  // Preserve the old physical central-difference footprint (one old
+  // content texel = two new texels), not a new normal/optical model.
+  let texelStep=2.0/544.0;
   let gx=silhouetteMask(uv+vec2<f32>(texelStep,0.0),layer).g-silhouetteMask(uv-vec2<f32>(texelStep,0.0),layer).g;
   let gy=silhouetteMask(uv+vec2<f32>(0.0,texelStep),layer).g-silhouetteMask(uv-vec2<f32>(0.0,texelStep),layer).g;
   let grad=vec2<f32>(gx,gy);

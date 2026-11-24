@@ -1,18 +1,38 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {silhouetteMask,silhouetteHazeStrength,registerGlassSilhouette} from "../sites/_apex/assets/home-dashboard/dashboard-glass-silhouette.js";
+import {silhouetteMask,silhouetteHazeMask,silhouetteHazeStrength,registerGlassSilhouette,silhouetteAtlasBytes,MASK_SIZE,MASK_INNER,MASK_RANGE,HAZE_SIZE,HAZE_INNER,HAZE_RANGE} from "../sites/_apex/assets/home-dashboard/dashboard-glass-silhouette.js";
 const asset=name=>readFileSync(new URL("../sites/_apex/assets/home-dashboard/"+name,import.meta.url),"utf8");
 test("silhouette preserves authored alpha, signed contour and holes",()=>{
  const a=new Uint8Array(9*9);
  for(let y=2;y<7;y++)for(let x=2;x<7;x++)a[y*9+x]=255;
  a[4*9+4]=0;a[2*9+2]=127;
  const m=silhouetteMask(a,9,9,8);
- for(let i=0;i<a.length;i++)assert.equal(m[4*i],a[i]);
- assert.ok(m[(4*9+4)*4+1]>127,"hole remains outside");
- assert.ok(m[(3*9+3)*4+1]<128,"ink remains inside");
- assert.ok(m[1]>m[(2*9+1)*4+1],"distant background is farther from contour");
- assert.ok(m[(4*9+4)*4+2]>=128,"extended haze distance independent of optical lane");
+ assert.equal(m.length,a.length*2);
+ for(let i=0;i<a.length;i++)assert.equal(m[2*i],a[i]);
+ assert.ok(m[(4*9+4)*2+1]>127,"hole remains outside");
+ assert.ok(m[(3*9+3)*2+1]<128,"ink remains inside");
+ assert.ok(m[1]>m[(2*9+1)*2+1],"distant background is farther from contour");
+ const haze=silhouetteHazeMask(a,9,9);
+ assert.equal(haze.length,a.length);
+ // Byte-for-byte equivalent to the old third RGBA lane for the same alpha.
+ const old= silhouetteMask(a,9,9,HAZE_RANGE);
+ for(let i=0;i<a.length;i++)assert.equal(haze[i],old[2*i+1]);
+});
+test("double spatial resolution, original quantization and physical optical sampling",()=>{
+ assert.equal(MASK_INNER,512);assert.equal(MASK_SIZE,544);
+ assert.equal(HAZE_INNER,256);assert.equal(HAZE_SIZE,512);
+ assert.equal(MASK_RANGE/MASK_INNER,64/256);
+ assert.equal(HAZE_RANGE/HAZE_INNER,128/256);
+ assert.ok(silhouetteAtlasBytes(16)<16*1024*1024);
+ assert.equal(silhouetteAtlasBytes(32),2*silhouetteAtlasBytes(16));
+ const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js"),atlas=asset("dashboard-glass-silhouette.js");
+ assert.match(shader,/let signed=\(mask\.g-0\.5\)\*256\.0\*scale/);
+ assert.match(shader,/let texelStep=2\.0\/544\.0/);
+ assert.match(atlas,/format:"rg8unorm"/);
+ assert.match(atlas,/format:"r8unorm"/);
+ assert.match(atlas,/rasterAlpha\(img,HAZE_SIZE,HAZE_INNER\)/);
+ assert.match(r,/binding:13,resource:silhouetteAtlas\.hazeView/);
 });
 test("adaptive haze is zero in dark pixels, restrained and very soft",()=>{
  assert.equal(silhouetteHazeStrength(.2,0),0);
@@ -31,7 +51,7 @@ test("shared silhouette registration uses Clear tint and same owner fragment",()
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js");
  assert.match(shader,/let luminance=dot\(color,vec3<f32>\(0\.2126,0\.7152,0\.0722\)\)/);
  assert.match(shader,/var shaded=color\*\(1\.0-haze\)/);
- assert.match(shader,/let hazeDistance=\(mask\.b-0\.5\)\*256\.0\*scale\/pointScale/);
+ assert.match(shader,/let hazeDistance=\(hazeMask-0\.5\)\*256\.0\*hazeScale\/pointScale/);
  assert.match(shader,/0\.018\*hover/);
  assert.match(shader,/hover\*0\.075/);
  assert.match(shader,/let d=min\(icon\.rect\.z,icon\.rect\.w\)/);

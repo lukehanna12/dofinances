@@ -4,8 +4,11 @@ import {glassSpring} from "./dashboard-glass-model.js";
 import {tintParameters} from "./dashboard-tint.js";
 import {nativePublicBlurRadius,observedBlurWord} from "./sidebar-glass-oracle.js";
 export const GLASS_ICON_FLOATS=12;
-export const MASK_SIZE=512,MASK_INNER=256,MASK_PAD=128,MASK_RANGE=64,HAZE_RANGE=128;
-const MAX_MASKS=32;
+// Double the vector raster resolution, NOT the optical quantization.
+ // 128 high-resolution distance texels equal the old 64 in icon space.
+export const MASK_SIZE=544,MASK_INNER=512,MASK_PAD=16,MASK_RANGE=128;
+export const HAZE_SIZE=512,HAZE_INNER=256,HAZE_PAD=128,HAZE_RANGE=128;
+const INITIAL_MASKS=16,MAX_MASKS=32;
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 export function registerGlassSilhouette(image,{tint="white",opacity=.2}={}){
  const material=tintParameters(tint,opacity);
@@ -44,16 +47,28 @@ function distanceTo(alpha,w,h,inside){
  }
  return out;
 }
-export function silhouetteMask(alpha,w,h,range=MASK_RANGE){
+function encodedDistance(alpha,w,h,range,withCoverage){
  if(alpha.length!==w*h||!Number.isInteger(w)||!Number.isInteger(h)||w<1||h<1||!(range>0))throw new RangeError("Invalid alpha mask");
  const inside=distanceTo(alpha,w,h,true),outside=distanceTo(alpha,w,h,false);
- const data=new Uint8Array(w*h*4);
+ const channels=withCoverage?2:1,data=new Uint8Array(w*h*channels);
  for(let i=0;i<alpha.length;i++){
   const signed=alpha[i]>=128?-(Math.sqrt(outside[i])-.5):Math.sqrt(inside[i])-.5;
-  data[i*4]=alpha[i];data[i*4+1]=Math.round(clamp(.5+signed/(2*range))*255);
-  data[i*4+2]=Math.round(clamp(.5+signed/(2*HAZE_RANGE))*255);data[i*4+3]=255;
+  const encoded=Math.round(clamp(.5+signed/(2*range))*255);
+  if(withCoverage){data[2*i]=alpha[i];data[2*i+1]=encoded;}
+  else data[i]=encoded;
  }
  return data;
+}
+export function silhouetteMask(alpha,w,h,range=MASK_RANGE){
+ return encodedDistance(alpha,w,h,range,true);
+}
+// Preserve the exact old low-resolution haze channel, including its
+// original SVG raster dimensions, padding, threshold and distance encoding.
+export function silhouetteHazeMask(alpha,w,h){
+ return encodedDistance(alpha,w,h,HAZE_RANGE,false);
+}
+export function silhouetteAtlasBytes(capacity=INITIAL_MASKS){
+ return capacity*(MASK_SIZE*MASK_SIZE*2+HAZE_SIZE*HAZE_SIZE);
 }
 // Reference for the authored shader contrast profile, not native evidence.
 export function silhouetteHazeStrength(luminance,distanceCSS,hover=1){
@@ -62,35 +77,58 @@ export function silhouetteHazeStrength(luminance,distanceCSS,hover=1){
  return .16*clamp(hover)*brightness*Math.exp(-.5*x*x)*(1-tail*tail*(3-2*tail));
 }
 export function createGlassSilhouetteAtlas(device){
- const placeholder=device.createTexture({size:[1,1,1],format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
- let texture=null,view=placeholder.createView({dimension:"2d-array"});
+ const usage=GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.COPY_SRC;
+ const placeholder=device.createTexture({size:[1,1,1],format:"rg8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
+ const hazePlaceholder=device.createTexture({size:[1,1,1],format:"r8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
+ let texture=null,hazeTexture=null,capacity=0;
+ let view=placeholder.createView({dimension:"2d-array"}),hazeView=hazePlaceholder.createView({dimension:"2d-array"});
  const slots=new Map(),springs=new WeakMap(),owned=new Set();
  let uploads=0;
  function ensure(){
-  if(texture)return;
-  texture=device.createTexture({label:"Authored alpha and signed distance silhouettes",size:[MASK_SIZE,MASK_SIZE,MAX_MASKS],format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
+  if(texture&&slots.size<capacity)return;
+  const previous=texture,previousHaze=hazeTexture,oldCapacity=capacity;
+  capacity=previous?Math.min(MAX_MASKS,capacity*2):INITIAL_MASKS;
+  texture=device.createTexture({label:"512px authored silhouette alpha and optical distance (8-bit each)",size:[MASK_SIZE,MASK_SIZE,capacity],format:"rg8unorm",usage});
+  hazeTexture=device.createTexture({label:"Original resolution authored haze distance (8-bit)",size:[HAZE_SIZE,HAZE_SIZE,capacity],format:"r8unorm",usage});
+  if(previous){
+   const encoder=device.createCommandEncoder({label:"Grow split silhouette atlases"});
+   encoder.copyTextureToTexture({texture:previous},{texture},[MASK_SIZE,MASK_SIZE,oldCapacity]);
+   encoder.copyTextureToTexture({texture:previousHaze},{texture:hazeTexture},[HAZE_SIZE,HAZE_SIZE,oldCapacity]);
+   device.queue.submit([encoder.finish()]);
+   previous.destroy();previousHaze.destroy();
+  }
   view=texture.createView({dimension:"2d-array"});
+  hazeView=hazeTexture.createView({dimension:"2d-array"});
+ }
+ function rasterAlpha(img,size,inner){
+  const canvas=document.createElement("canvas");canvas.width=canvas.height=size;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  if(!ctx)return null;
+  try{
+   const fit=inner/Math.max(img.naturalWidth,img.naturalHeight),w=img.naturalWidth*fit,h=img.naturalHeight*fit;
+   ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);
+   const rgba=ctx.getImageData(0,0,size,size).data;
+   const alpha=new Uint8Array(size*size);
+   for(let i=0;i<alpha.length;i++)alpha[i]=rgba[i*4+3];
+   return alpha;
+  }finally{canvas.width=canvas.height=0;}
  }
  function layerFor(img){
   if(!img.complete||!img.naturalWidth)return null;
   const src=img.currentSrc||img.src;
   if(slots.has(src))return slots.get(src);
   if(slots.size>=MAX_MASKS)return null;
-  const canvas=document.createElement("canvas");canvas.width=canvas.height=MASK_SIZE;
-  const ctx=canvas.getContext("2d",{willReadFrequently:true});if(!ctx)return null;
   try{
-   const fit=MASK_INNER/Math.max(img.naturalWidth,img.naturalHeight),w=img.naturalWidth*fit,h=img.naturalHeight*fit;
-   ctx.drawImage(img,(MASK_SIZE-w)/2,(MASK_SIZE-h)/2,w,h);
-   const rgba=ctx.getImageData(0,0,MASK_SIZE,MASK_SIZE).data;
-   const alpha=new Uint8Array(MASK_SIZE*MASK_SIZE);
-   for(let i=0;i<alpha.length;i++)alpha[i]=rgba[i*4+3];
-   if(!alpha.some(v=>v>=128))return null;
+   const alpha=rasterAlpha(img,MASK_SIZE,MASK_INNER);
+   const hazeAlpha=rasterAlpha(img,HAZE_SIZE,HAZE_INNER);
+   if(!alpha||!hazeAlpha||!alpha.some(v=>v>=128))return null;
    const mask=silhouetteMask(alpha,MASK_SIZE,MASK_SIZE);
+   const hazeMask=silhouetteHazeMask(hazeAlpha,HAZE_SIZE,HAZE_SIZE);
    ensure();const layer=slots.size;
-   device.queue.writeTexture({texture,origin:[0,0,layer]},mask,{bytesPerRow:MASK_SIZE*4,rowsPerImage:MASK_SIZE},[MASK_SIZE,MASK_SIZE,1]);
+   device.queue.writeTexture({texture,origin:[0,0,layer]},mask,{bytesPerRow:MASK_SIZE*2,rowsPerImage:MASK_SIZE},[MASK_SIZE,MASK_SIZE,1]);
+   device.queue.writeTexture({texture:hazeTexture,origin:[0,0,layer]},hazeMask,{bytesPerRow:HAZE_SIZE,rowsPerImage:HAZE_SIZE},[HAZE_SIZE,HAZE_SIZE,1]);
    slots.set(src,layer);uploads++;return layer;
   }catch(error){console.warn("Authored glass silhouette:",String(error));return null;}
-  finally{canvas.width=canvas.height=0;}
  }
  function begin(){for(const img of owned)if(!img.isConnected)owned.delete(img);}
  function sync(owner,img,{width,height,dpr,scheme,hover=false,suppressHover=false,dt=0,reduced=false,opacity=1}){
@@ -111,6 +149,8 @@ export function createGlassSilhouetteAtlas(device){
   return {lanes:[...bounds,layer+1,clamp(next[0]),word,clamp(opacity),...material.rgb,material.opacity],
    animating:next[0]!==target||next[1]!==0,bounds,hover:clamp(next[0]),tint:material.name,tintOpacity:material.opacity};
  }
- return {get view(){return view;},begin,sync,stats(){return {uploads,layers:slots.size};},
-  dispose(){for(const img of owned)img.removeAttribute("data-glass-icon-owned");owned.clear();texture?.destroy();placeholder.destroy();slots.clear();}};
+ return {get view(){return view;},get hazeView(){return hazeView;},begin,sync,
+  stats(){return {uploads,layers:slots.size,capacity,maskContent:MASK_INNER,maskSize:MASK_SIZE,format:"rg8unorm",
+   hazeContent:HAZE_INNER,hazeSize:HAZE_SIZE,hazeFormat:"r8unorm",atlasBytes:silhouetteAtlasBytes(capacity)};},
+  dispose(){for(const img of owned)img.removeAttribute("data-glass-icon-owned");owned.clear();texture?.destroy();hazeTexture?.destroy();placeholder.destroy();hazePlaceholder.destroy();slots.clear();}};
 }
