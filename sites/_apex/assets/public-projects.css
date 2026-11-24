@@ -114,7 +114,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
  .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-photo{
   opacity:0!important
 }
-.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   opacity:1;transform:scale(1)
 }
 /* BootScript: show the full left edge of the original artwork, align the
@@ -122,13 +122,13 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{
   object-position:0% 0%;transform-origin:0% 0%;transform:scale(1.21275)
 }
-.public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+.public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:scale(1.1025)
 }
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
   transform:translateY(1.5%) scale(1.232)
 }
-.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:translateY(1.5%) scale(1.12)
 }
 /* ReadMe GLP / Monet: crop the hairline edges at the top and bottom
@@ -137,7 +137,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"] .project-showcase-photo{
   transform:translateY(-.6%) scale(1.144)
 }
-.public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+.public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:translateY(-.6%) scale(1.04)
 }
 /* Piranesi NGA print: enlarge past the complete paper/etched-plate border
@@ -146,7 +146,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="hidden-functions"] .project-showcase-photo{
   transform:scale(1.221)
 }
-.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:scale(1.11)
 }
 .public-projects-root .project-showcase-content{
@@ -204,13 +204,13 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   transition:opacity .5s ease-out
 }
 .public-projects-root .project-showcase-action svg{width:12px;height:12px;transition:transform .2s ease}
-.public-projects-root .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-action svg{transform:translateX(2px)}
-.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-action,
+.public-projects-root .project-showcase-card:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(2px)}
+.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible) .project-showcase-action,
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-action{opacity:1}
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
  .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-action{opacity:0!important}
 /* Expanded title stays bottom-left; keep the action clear of it. */
-.public-projects-root .project-showcase-card.is-expanded .project-showcase-action{
+.public-projects-root .project-showcase-card:is(.is-expanded,.is-contracting) .project-showcase-action{
   left:auto;right:var(--project-card-inset)
 }
 .public-projects-root .project-showcase-card.is-expanded{--project-regular-progress:1}
@@ -436,10 +436,14 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded{
   z-index:3;will-change:left,width
 }
-.public-projects-root.has-project-expansion .project-showcase-card:not(.is-expanded){
-  /* Moving cards may cross the pointer: do not reveal artwork or accept
-   * hover/click state changes during a shared row-layout transaction. */
-  pointer-events:none!important;will-change:transform,opacity
+.public-projects-root.is-project-reflowing .project-showcase-card{
+  will-change:transform,opacity
+}
+.public-projects-root .project-showcase-card.is-contracting{
+  z-index:2;pointer-events:none!important;will-change:width,height,transform,opacity
+}
+.public-projects-root.is-project-reflowing .project-showcase-card.is-expanded{
+  will-change:width,height,transform,opacity
 }
 /* The dismissed original-row silhouette remains a separate, inert pane
  * while its live counterpart joins the next row's collision-free conveyor.

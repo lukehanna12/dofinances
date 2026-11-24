@@ -8,7 +8,7 @@ import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 // Preserve the original selected-card expansion and forward-eased X close.
 // All displaced cards share the exact same temporal progress as the
 // widening panel, so the next row does not arrive after expansion ends.
-const EXPAND_MS=620;
+export const EXPAND_MS=620;
 const SELECTED_EASING="cubic-bezier(.22,.72,.24,1)";
 // Match selected-pane progress while retaining a shared conveyor pitch.
 const CONVEYOR_EASING=SELECTED_EASING;
@@ -158,7 +158,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.style.width="";
       card.style.height="";
       card.style.removeProperty("--project-regular-reference-width");
-      card.classList.remove("is-expanded");
+      card.classList.remove("is-expanded","is-contracting");
+      card.style.removeProperty("--project-regular-progress");
       card.removeAttribute("data-project-card-dismiss-at");
       card.removeAttribute("data-project-card-restore-at");
       card.removeAttribute("data-project-card-restore-from");
@@ -173,7 +174,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       }
       card.setAttribute("aria-expanded","false");
     }
-    root.classList.remove("has-project-expansion");
+    root.classList.remove("has-project-expansion","is-project-reflowing");
     closeButton.hidden=true;
     closeButton.style.top="";
     closeButton.style.left="";
@@ -190,7 +191,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     if(focus&&!disposed&&root.isConnected&&!previous.card.hidden)
       previous.card.focus({preventScroll:true});
   }
-  function open(card,{immediate=false}={}){
+  function open(card,{immediate=false,keyboard=false}={}){
     if(disposed||state||card.hidden||root.classList.contains("is-exiting"))return;
     const visible=cards.filter(item=>!item.hidden);
     const selectedIndex=visible.indexOf(card);
@@ -358,11 +359,110 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       initialButtonLeft:selectedRect.right-gridRect.left-53};
     animateGlass(EXPAND_MS+90);
     if(duration){
-      closeButton.tabIndex=0;
-      closeButton.focus({preventScroll:true});
+      const current=state;
+      root.classList.add("is-project-reflowing");
+      current.timers.push(setTimeout(()=>{
+        if(state===current&&current.phase==="open"){
+          root.classList.remove("is-project-reflowing");
+          animateGlass(90);
+        }
+      },EXPAND_MS));
     }
+    closeButton.tabIndex=0;
+    if(keyboard)closeButton.focus({preventScroll:true});
   }
-  function close({immediate=false,restoreFocus=true}={}){
+  // Retarget directly from live presentation into a single destination
+  // layout. No collapsed frame, queued close/open, scaling, or duplicate
+  // artwork. The old and new panels share one forward 620ms easing clock.
+  function retarget(card,{keyboard=false,restoreFocus=false}={}){
+    if(disposed||!state||card?.hidden||root.classList.contains("is-exiting"))return;
+    const previous=state,old=previous.card;
+    if(card===old&&previous.phase!=="closing")return;
+    const visible=cards.filter(node=>!node.hidden);
+    const origin=box(grid);
+    const presented=new Map(visible.map(node=>{
+      const r=box(node),style=getComputedStyle(node);
+      return [node,{left:r.left-origin.left,top:r.top-origin.top,width:r.width,height:r.height,
+        opacity:Number(style.opacity),regular:Number(style.getPropertyValue("--project-regular-progress"))||0}];
+    }));
+    const x=box(closeButton),xOpacity=Number(getComputedStyle(closeButton).opacity)||0;
+    const xStart={left:x.left-origin.left,top:x.top-origin.top,opacity:xOpacity};
+    const focused=document.activeElement===closeButton;
+    discard();
+    if(card)open(card,{immediate:true,keyboard:false});
+    const destinationOrigin=box(grid);
+    const destinations=new Map(visible.map(node=>{
+      const r=box(node);
+      return [node,{left:r.left-destinationOrigin.left,top:r.top-destinationOrigin.top,width:r.width,height:r.height}];
+    }));
+    if(!card)state={card:old,placeholder:document.createElement("div"),animations:[],timers:[],ghosts:[],phase:"closing",direct:true,immediate:false};
+    const current=state;
+    current.direct=true;current.immediate=false;
+    current.phase=card?"open":"closing";
+    if(hasReduce()){
+      if(!card)discard({focus:restoreFocus});
+      else if(keyboard)closeButton.focus({preventScroll:true});
+      animateGlass(90);return;
+    }
+    root.classList.add("is-project-reflowing");
+    for(const node of visible){
+      const from=presented.get(node),to=destinations.get(node);
+      const dx=from.left-to.left,dy=from.top-to.top;
+      const changesSize=Math.abs(from.width-to.width)>.5||Math.abs(from.height-to.height)>.5;
+      const contracts=node!==card&&(from.regular>.001||changesSize);
+      if(contracts){
+        node.classList.add("is-contracting");
+        node.style.setProperty("--project-regular-reference-width",cssPixels(to.width));
+      }
+      const frames=[
+        {transform:translate(dx,dy),opacity:String(from.opacity)},
+        {transform:translate(0,0),opacity:"1"}
+      ];
+      if(changesSize||node===card||contracts){
+        frames[0].width=cssPixels(from.width);frames[0].height=cssPixels(from.height);
+        frames[1].width=cssPixels(to.width);frames[1].height=cssPixels(to.height);
+        frames[0]["--project-regular-progress"]=String(from.regular);
+        frames[1]["--project-regular-progress"]=node===card?"1":"0";
+      }
+      // Row-crossing siblings recede through the crossing, then return
+      // on the same eased-position clock. Stationary cards do not fade.
+      if(node!==card&&!contracts&&Math.abs(dy)>from.height*.5&&Math.abs(dx)>from.width*.5)
+        frames.splice(1,0,{transform:translate(dx*.5,dy*.5),opacity:"0",offset:.5});
+      if(changesSize||Math.abs(dx)>.5||Math.abs(dy)>.5||from.opacity<.999||contracts){
+        const motion=animate(node,frames,{duration:EXPAND_MS,easing:SELECTED_EASING});
+        if(motion)current.animations.push(motion);
+      }
+    }
+    // One close button transfers to the new pane. Its alpha recedes
+    // during the handoff and returns along the incoming right edge.
+    const endpoint=destinations.get(card??old),incoming=presented.get(card??old);
+    closeButton.hidden=false;
+    closeButton.style.top=cssPixels(endpoint.top+13);
+    closeButton.style.left=cssPixels(endpoint.left+endpoint.width-53);
+    const buttonMotion=animate(closeButton,[
+      {left:cssPixels(xStart.left),top:cssPixels(xStart.top),opacity:String(xStart.opacity)},
+      {offset:.24,left:cssPixels(incoming.left+incoming.width-53+(endpoint.left+endpoint.width-incoming.left-incoming.width)*.24),
+       top:cssPixels(incoming.top+13+(endpoint.top-incoming.top)*.24),opacity:"0"},
+      {left:closeButton.style.left,top:closeButton.style.top,opacity:card?"1":"0"}
+    ],{duration:EXPAND_MS,easing:SELECTED_EASING});
+    if(buttonMotion)current.animations.push(buttonMotion);
+    if(keyboard&&card)closeButton.focus({preventScroll:true});
+    else if(focused)closeButton.blur();
+    current.timers.push(setTimeout(()=>{
+      if(state!==current)return;
+      if(!card){discard({focus:restoreFocus});animateGlass(90);return;}
+      for(const motion of current.animations)motion.cancel();
+      current.animations.length=0;
+      for(const node of visible){
+        node.classList.remove("is-contracting");
+        if(node!==card)node.style.removeProperty("--project-regular-reference-width");
+      }
+      root.classList.remove("is-project-reflowing");
+      animateGlass(90);
+    },EXPAND_MS+16));
+    animateGlass(EXPAND_MS+90);
+  }
+  function close({immediate=false,restoreFocus=false}={}){
     if(!state||disposed)return;
     if(immediate||hasReduce()||state.immediate){
       discard({focus:restoreFocus});
@@ -370,7 +470,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       return;
     }
     if(state.phase!=="open")return;
+    if(state.direct){retarget(null,{restoreFocus});return;}
     state.phase="closing";
+    root.classList.add("is-project-reflowing");
     const current=state;
     const now=performance.now();
     const animations=current.animations;
@@ -449,14 +551,20 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   }
   for(const card of cards){
     card.setAttribute("aria-expanded","false");
-    card.addEventListener("click",()=>{
-      if(!state)open(card);
+    card.addEventListener("click",event=>{
+      const keyboard=event.detail===0;
+      if(!state)open(card,{keyboard});
+      else if(state.card!==card||state.phase==="closing")retarget(card,{keyboard});
     },{signal:abort.signal});
   }
-  closeButton.addEventListener("click",()=>close(),{signal:abort.signal});
+  closeButton.addEventListener("click",event=>{
+    const keyboard=event.detail===0;
+    if(!keyboard)closeButton.blur();
+    close({restoreFocus:keyboard});
+  },{signal:abort.signal});
   document.addEventListener("keydown",event=>{
     if(event.key==="Escape"&&state&&state.phase==="open"){
-      close();event.preventDefault();
+      close({restoreFocus:true});event.preventDefault();
     }
   },{signal:abort.signal});
   root.addEventListener("public-projects:before-filter",()=>{
@@ -468,9 +576,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     requestAnimationFrame(()=>{
       resizeScheduled=false;
       if(!state||disposed)return;
-      const card=state.card;
+      const card=state.card,closing=state.phase==="closing";
       close({immediate:true,restoreFocus:false});
-      if(!card.hidden)open(card,{immediate:true});
+      if(!closing&&!card.hidden){open(card,{immediate:true});state.immediate=false;state.direct=true;}
     });
   },{signal:abort.signal});
   return {

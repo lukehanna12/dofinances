@@ -1331,6 +1331,39 @@ try{
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelectorAll('[data-project-card-dismiss-at],[data-project-card-restore-at],[data-project-card-restore-from],[data-project-card-appear-at],[data-project-card-disappear-at],[data-project-card-optical-column]').length"),0,
     "Mid-motion reverse must clean all square-dissolve optical timestamps");
+  // Direct switch, including retarget during an unfinished switch. No
+  // intermediate collapsed frame or serial 1240ms transition.
+  const switched=await evaluate(`(async()=>{
+    const root=document.querySelector('.public-projects-root'),cards=[...root.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];
+    const click=n=>n.dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}));
+    click(cards[1]);
+    await new Promise(r=>setTimeout(r,680));
+    const first=cards[1],next=cards[7],third=cards[10],before=first.getBoundingClientRect().width;
+    const clickable=getComputedStyle(next).pointerEvents!=='none';
+    click(next);
+    await new Promise(r=>setTimeout(r,90));
+    const mid={old:first.getBoundingClientRect().width,next:next.getBoundingClientRect().width,
+      selected:next.classList.contains('is-expanded'),expanded:root.classList.contains('has-project-expansion')};
+    click(third);
+    const start=performance.now();
+    while(root.classList.contains('is-project-reflowing')&&performance.now()-start<1050)
+      await new Promise(requestAnimationFrame);
+    const result={before,clickable,mid,elapsed:performance.now()-start,selected:third.classList.contains('is-expanded'),
+      selectedCount:root.querySelectorAll('.is-expanded').length,contracting:root.querySelectorAll('.is-contracting').length};
+    click(root.querySelector('.project-showcase-expand-close'));
+    while(root.classList.contains('is-project-reflowing'))await new Promise(requestAnimationFrame);
+    result.closed=!root.classList.contains('has-project-expansion');
+    result.focusedCard=cards.includes(document.activeElement);
+    result.contractingAfter=root.querySelectorAll('.is-contracting').length;
+    return result;
+  })()`);
+  assert.equal(switched.clickable,true);
+  assert.equal(switched.mid.selected,true);assert.equal(switched.mid.expanded,true);
+  assert.ok(switched.mid.old<switched.before,JSON.stringify(switched));
+  assert.equal(switched.selected,true);assert.equal(switched.selectedCount,1);
+  assert.equal(switched.contracting,0);assert.ok(switched.elapsed<1000,JSON.stringify(switched));
+  assert.equal(switched.closed,true);assert.equal(switched.focusedCard,false);
+  assert.equal(switched.contractingAfter,0);
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
     "Hover begins loading the exact curated project artwork");

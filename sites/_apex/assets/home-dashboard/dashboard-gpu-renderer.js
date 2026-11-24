@@ -156,11 +156,12 @@ function authPaneElements(){
   const ghosts=all.filter(node=>
     node.classList.contains("project-showcase-dissolve-ghost"));
   const expanded=all.filter(node=>node.classList.contains("is-expanded"));
+  const contracting=all.filter(node=>node.classList.contains("is-contracting"));
   const base=all.filter(node=>
     !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)&&!node.hasAttribute("data-glass-dropdown")&&
     !node.classList.contains("project-showcase-dissolve-ghost")&&
-    !node.classList.contains("is-expanded"));
-  return [...ghosts,...base,...expanded,...top].slice(0,AUTH_PANE_CAPACITY);
+    !node.classList.contains("is-expanded")&&!node.classList.contains("is-contracting"));
+  return [...ghosts,...base,...contracting,...expanded,...top].slice(0,AUTH_PANE_CAPACITY);
 }
 const authGlassScheme=()=>document.documentElement.dataset.dofTheme==="light"?
   "light":"dark";
@@ -861,7 +862,7 @@ async function initialize(){
       const profile=resolveInactiveClearRegion({width:w,height});
       const photo=node.querySelector(".project-showcase-photo");
       const needsDetail=!authUsesCompositor()&&
-        (node.matches(":hover,:focus-visible,:focus-within,.is-expanded")||
+        (node.matches(":hover,:focus-visible,.is-expanded")||
           Number.parseFloat(getComputedStyle(photo).opacity)>0);
       const artwork=artworkAtlas.sync(node,needsDetail,!authUsesCompositor());
       let opacity=0,layer=0,uv=[1,1,0,0];
@@ -932,7 +933,7 @@ async function initialize(){
         if(!glassPaneIntersectsViewport(Array.from(tileData.subarray(p,p+4)),
           physicalWidth,physicalAuthHeight,authUniform[11],physicalHeight,tileData[p+19]))continue;
         const suppressed=owner.matches(".is-expanded,.project-showcase-dissolve-ghost")||
-          Boolean(owner.closest(".has-project-expansion"))||tileData[p+19]>0;
+          owner.classList.contains("is-contracting")||tileData[p+19]>0;
         const icon=silhouetteAtlas.sync(owner,img,{width:tileData[p+2],height:tileData[p+3],dpr,scheme,
           hover:owner.matches(":hover"),suppressHover:suppressed,dt,reduced:reducedMotion.matches,
           opacity:tileDismissIconOpacity(tileData[p+19]),slot:i,
@@ -1261,7 +1262,8 @@ async function initialize(){
           foreground.style.removeProperty("filter");
         }
       }
-      cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1||node.hasAttribute("data-glass-text")?1:0;
+      cornerInert[slot]=paneOpacity<.025||tileData[p+19]>=1||node.hasAttribute("data-glass-text")||
+        (projects&&(node.matches(".project-showcase-dissolve-ghost,.is-contracting")||getComputedStyle(node).pointerEvents==="none"))?1:0;
       roles.push(homeCtas?"home-cta-"+i:
         projects?node.dataset.publicProjectGlass:
         node.hasAttribute("data-auth-glass-card")?"card":
@@ -1271,7 +1273,7 @@ async function initialize(){
     interaction.retargetRects(tileData,cornerInert);
     if(projects&&pointer.enabled)authHover.reproject(pointer.x*dpr,(pointer.y-authOriginTop())*dpr);
     authHover.retargetRects(tileData,tileCount,cornerInert,
-      projects||homeCtas||card?.hasAttribute("data-glass-dropdown")?"independent":"nested");
+      projects||homeCtas||card?.hasAttribute("data-glass-dropdown")?"independent":"nested",projects?panes:null);
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
         materialTag:-9,face:"shared-per-surface-Clear",count:panes.length,roles,

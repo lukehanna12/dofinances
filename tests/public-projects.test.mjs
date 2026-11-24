@@ -102,7 +102,7 @@ test("ReadMe GLP artwork is gently enlarged and shifted up on public Projects on
  const publicCSS=await load("../sites/_apex/assets/public-projects.css");
  const path='[data-project-slug="github-readme-chrome-extension"]';
  assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\] \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.144\)/);
- assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.04\)/);
+ assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\]\.is-photo-ready:is\(:hover,:focus-visible\) \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.04\)/);
  assert.ok(path.length>0);
 });
 test("Named art sources and all-sided Piranesi crop are the same on both routes",async()=>{
@@ -371,7 +371,7 @@ test("BootScript framing uses the same top-left cover alignment and 10.25 percen
  ]);
  for(const css of csses){
   assert.match(css,/\[data-project-slug="bootscript"\] \.project-showcase-photo\{\s*object-position:0% 0%;transform-origin:0% 0%;transform:scale\(1\.21275\)/);
-  assert.match(css,/\[data-project-slug="bootscript"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
+  assert.match(css,/\[data-project-slug="bootscript"\]\.is-photo-ready:is\(:hover,:focus-visible\) \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
  }
  assert.match(csses[0],/\.is-expanded\[data-project-slug="bootscript"\]\.is-photo-ready \.project-showcase-photo\{\s*transform:scale\(1\.1025\)/);
 });
@@ -388,4 +388,17 @@ test("search has one persistent native morphing button and a continuously expand
  assert.match(css,/\.public-projects-search-wrap\.is-expanded \.public-projects-search-morph-ring\{\s*d:path\(/);
  assert.doesNotMatch(css,/\.is-ready \.public-projects-search-(?:button|cancel)/);
  assert.match(css,/\.public-projects-empty\{[^}]*color:#ad414e/);
+});
+
+test("project switching retargets the live rectangles on one expansion clock",async()=>{
+ const [exp,css,renderer]=await Promise.all([load("../sites/_apex/assets/public-projects-expand.js"),load("../sites/_apex/assets/public-projects.css"),load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")]);
+ assert.match(exp,/export const EXPAND_MS=620/);
+ assert.match(exp,/function retarget\(card,/);
+ assert.match(exp,/const presented=new Map\(visible\.map/);
+ assert.match(exp,/else if\(state\.card!==card\|\|state\.phase==="closing"\)retarget\(card,/);
+ assert.match(exp,/close\(\{restoreFocus:keyboard\}\)/);
+ assert.doesNotMatch(css,/\.has-project-expansion \.project-showcase-card:not\(\.is-expanded\)/);
+ assert.doesNotMatch(css,/:focus-within/);
+ assert.match(renderer,/projects\?panes:null/);
+ assert.match(renderer,/node\.matches\("\.project-showcase-dissolve-ghost,\.is-contracting"\)/);
 });

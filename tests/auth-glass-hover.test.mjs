@@ -143,3 +143,24 @@ test("auth-only hover respects masked/unmounted elements and pointer cancellatio
   assert.throws(()=>s.writeTo(new Float32Array(5),BASE),TypeError);
   assert.throws(()=>s.retargetRects(data,BASE,new Uint8Array(0)),TypeError);
 });
+
+test("independent hover state follows pane identity through reorder and ghost removal",()=>{
+ const ctl=createAuthGlassHoverController(3);
+ const data=new Float32Array(3*20),mask=new Uint8Array(3);
+ for(let i=0;i<3;i++){data.set([i*100,0,90,90],i*20);}
+ const a={},b={},ghost={};
+ ctl.retargetRects(data,0,mask,"independent",[a,b,ghost]);
+ ctl.move(25,25);for(let i=0;i<50;i++)ctl.advance(.016);
+ assert.ok(ctl.snapshot(0).hover>.99);
+ // A moves to index one, B into the pointer's original slot.
+ ctl.retargetRects(data,0,mask,"independent",[b,a,ghost]);
+ assert.equal(ctl.snapshot(0).hover,0);
+ assert.ok(ctl.snapshot(1).hover>.99);
+ assert.equal(ctl.snapshot(1).active,false);
+ for(let i=0;i<90;i++)ctl.advance(.016);
+ assert.ok(ctl.snapshot(1).hover<.001);
+ assert.ok(ctl.snapshot(0).hover>.99);
+ ctl.retargetRects(data,0,mask,"independent",[b,{},null]);
+ assert.equal(ctl.snapshot(1).hover,0);
+ assert.equal(ctl.snapshot(2).hover,0);
+});

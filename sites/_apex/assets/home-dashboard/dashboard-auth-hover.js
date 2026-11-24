@@ -25,10 +25,10 @@ function contains(slot,x,y){
 export function createAuthGlassHoverController(capacity){
   if(!Number.isSafeInteger(capacity)||capacity<2)
     throw new RangeError("Card and at least one control required");
-  const slots=Array.from({length:capacity},makeSlot);
+  let slots=Array.from({length:capacity},makeSlot),owners=null;
   let px=-1,py=-1,hasPointer=false,pressed=false,controlIndex=-1;
   let independent=false;
-  function retargetRects(data,base,mask,mode="nested"){
+  function retargetRects(data,base,mask,mode="nested",identities=null){
     if(!(data instanceof Float32Array)||!Number.isSafeInteger(base)||
        base<0||data.length<(base+capacity)*TILE_FLOATS||
        !(mask instanceof Uint8Array)||mask.length<base+capacity)
@@ -36,6 +36,17 @@ export function createAuthGlassHoverController(capacity){
     if(mode!=="nested"&&mode!=="independent")throw new TypeError("Unknown pane layout");
     if(independent!==(mode==="independent"))clear();
     independent=mode==="independent";
+    // Expanded panes and ghosts reorder GPU instances. A spring belongs
+    // to its actual DOM owner, never to the transient draw-array index.
+    if(identities||owners){
+      const next=Array.from({length:capacity},(_,i)=>identities?.[i]??null);
+      const prior=owners?new Map(owners.flatMap((key,i)=>key==null?[]:[[key,slots[i]]])):new Map();
+      const activeOwner=owners?.[controlIndex];
+      slots=next.map(key=>key==null?makeSlot():prior.get(key)??makeSlot());
+      controlIndex=activeOwner==null?-1:next.indexOf(activeOwner);
+      if(controlIndex<0)pressed=false;
+      owners=identities?next:null;
+    }
     slots.forEach((slot,i)=>{
       const p=(base+i)*TILE_FLOATS;
       slot.rect=[data[p],data[p+1],data[p+2],data[p+3]];
