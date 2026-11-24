@@ -961,11 +961,20 @@ try{
   await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
     "r.style.height="+JSON.stringify(logoThreshold.oldHeight)+";})()");
   const pathBefore=await evaluate("location.pathname");
+  // Record physical ORIGINAL-row rectangles before the grid transaction.
+  // This catches CSS absolute grid children accidentally inheriting the
+  // destination row as their containing block (an earlier real regression).
+  const originalProjectRects=await evaluate("(()=>"+
+    "[...document.querySelectorAll('.project-showcase-card')].map(card=>{"+
+    "const r=card.getBoundingClientRect();"+
+    "return {slug:card.dataset.projectSlug,top:r.top,left:r.left,"+
+      "width:r.width,height:r.height};})"+
+    ")()");
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links"); 
   // The clicked panel and its attached glass X use the ORIGINAL 620ms
-  // curve, while every displaced card starts at once and travels on
-  // the same ease-in-out spatial clock, keeping the row spacing cohesive.
+  // curve, while every displaced card uses that SAME ease-out progress
+  // so re-entry does not linger after the clicked pane has nearly landed.
   const expansionClocks=await evaluate("(()=>{"+
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
@@ -980,9 +989,8 @@ try{
   for(const [index,clock] of expansionClocks.entries()){
     assert.equal(clock.duration,620,"All moving panels share one 620ms timeline");
     assert.equal(clock.delay,0,"No row or panel waits before moving");
-    assert.equal(clock.easing,index===0||index===4?
-      "cubic-bezier(0.22, 0.72, 0.24, 1)":"cubic-bezier(0.77, 0, 0.175, 1)",
-      "Selected and X retain 620ms ease-out; all siblings share Emil ease-in-out");
+    assert.equal(clock.easing,"cubic-bezier(0.22, 0.72, 0.24, 1)",
+      "All cards must match the selected pane's original eased arrival");
     assert.equal(clock.rate,1);
   }
   assert.ok(Math.max(...expansionClocks.map(x=>x.time))-
@@ -1013,24 +1021,37 @@ try{
       "const live=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
       "return ghosts.map(ghost=>{const card=live.find(c=>"+
         "c.dataset.projectSlug===ghost.dataset.projectSlug);"+
-        "const fg=ghost.querySelector('.project-showcase-content');"+
-        "const liveFg=card?.querySelector('.project-showcase-content');"+
-        "return {paired:!!card,"+
-          "sameOpticalColumn:ghost.dataset.projectCardOpticalColumn==="+
-            "card?.dataset.projectCardOpticalColumn,"+
-          "ghostAlpha:parseFloat(fg?.style.opacity),"+
-          "liveAlpha:parseFloat(liveFg?.style.opacity),"+
-          "appearanceClock:!!card?.dataset.projectCardAppearAt};});})()");
+        "const gr=ghost.getBoundingClientRect();"+
+        "return {slug:ghost.dataset.projectSlug,paired:!!card,"+
+          "ghostTop:gr.top,ghostLeft:gr.left,ghostWidth:gr.width,"+
+          "gridRow:getComputedStyle(ghost).gridRowStart,"+
+          "incomingOpacity:Number.parseFloat(getComputedStyle(card).opacity),"+
+          "secondaryOpacity:card.querySelector('.project-showcase-content').style.opacity,"+
+          "ghostAlpha:Number.parseFloat(ghost.querySelector('.project-showcase-content').style.opacity)};"+
+      "});})()");
     const visibleColumns=await evaluate("getComputedStyle(document.querySelector('.project-showcase-grid')).gridTemplateColumns.trim().split(/\\s+/).length");
     assert.equal(pairState.length,visibleColumns-1,
-      "Original selected row must retain exactly one silhouette per displaced card");
-    assert.ok(pairState.every(pair=>pair.paired&&pair.sameOpticalColumn&&
-      pair.appearanceClock),"Every outgoing pane has one clock-matched replacement");
-    if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
-      for(const pair of pairState)
-        assert.ok(Math.abs(pair.ghostAlpha+pair.liveAlpha-1)<.075,
-          "Outgoing and incoming pane glyph opacity must be complementary: "+
-          JSON.stringify(pair));
+      "Original row has one dissolving silhouette for each displaced pane");
+    for(const pair of pairState){
+      const original=originalProjectRects.find(r=>r.slug===pair.slug);
+      assert.ok(pair.paired&&original,
+        "Every silhouette must correspond to its real original-row card");
+      assert.equal(pair.gridRow,"auto",
+        "Dissolving ghost cannot keep the incoming row's grid track");
+      assert.ok(Math.abs(pair.ghostTop-original.top)<2&&
+        Math.abs(pair.ghostLeft-original.left)<2&&
+        Math.abs(pair.ghostWidth-original.width)<2,
+        "Dissolution MUST start at ORIGINAL card position, not destination row: "+
+        JSON.stringify({pair,original}));
+      assert.equal(pair.secondaryOpacity,"",
+        "Incoming card must not have a second GPU optical opacity gate");
+    }
+    // At half the shared clock, the eased-in next-row cards should already
+    // have visibly entered. The prior double fade delayed them to the end.
+    if(sample===2)
+      assert.ok(pairState.every(pair=>pair.incomingOpacity>.60),
+        "Rowmates should reappear with the clicked pane, not lag behind: "+
+        JSON.stringify(pairState));
 
   }
 
