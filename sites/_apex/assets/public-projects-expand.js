@@ -46,7 +46,9 @@ export function projectConveyorPosition(column,columns,shift,progress){
      shift>=columns||!Number.isFinite(progress)||progress<0||progress>1)
     throw new RangeError("Invalid conveyor parameters");
   const advance=column+shift*progress;
-  return advance>=columns-1&&shift>0?
+  // Wrap only when the panel's center passes the viewport seam: the
+  // rightmost panel must not teleport while still fully inside its slot.
+  return advance>=columns-.5&&shift>0?
     {rowOffset:1,x:advance-columns}:
     {rowOffset:0,x:advance};
 }
@@ -54,7 +56,21 @@ export function projectConveyorEdge(column,columns,shift){
   if(!Number.isInteger(column)||!Number.isInteger(columns)||columns<1||
      column<0||column>=columns||!Number.isInteger(shift)||shift<1||shift>=columns)
     throw new RangeError("Invalid conveyor edge");
-  return Math.max(0,Math.min(1,(columns-1-column)/shift));
+  return Math.max(0,Math.min(1,(columns-.5-column)/shift));
+}
+/* One position clock for all rows. A wrap has a half-pitch exit and
+ * entrance window, so the old card fades OUT at the right boundary and
+ * fades IN from the left edge, instead of disappearing in its last slot.
+ * Phase offsets are in the shared eased-position domain. */
+export function projectRowWrapPhases(column,columns,shift){
+  const seam=projectConveyorEdge(column,columns,shift);
+  if(column<columns-shift)
+    throw new RangeError("This card does not cross a row boundary");
+  return {
+    fadeOutStart:Math.max(0,(columns-1-column)/shift),
+    seam,
+    fadeInEnd:Math.min(1,(columns-column)/shift)
+  };
 }
 export function projectExpansionMovement(index,columns,selectedIndex,position){
   const fromRow=Math.floor(index/columns);
@@ -106,6 +122,10 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.removeAttribute("data-project-card-dismiss-at");
       card.removeAttribute("data-project-card-restore-at");
       card.removeAttribute("data-project-card-restore-from");
+      card.removeAttribute("data-project-card-appear-at");
+      card.removeAttribute("data-project-card-disappear-at");
+      card.removeAttribute("data-project-card-disappear-from");
+      card.removeAttribute("data-project-card-optical-column");
       const foreground=card.querySelector(".project-showcase-content");
       if(foreground){
         foreground.style.removeProperty("opacity");
@@ -201,7 +221,14 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         ghost.style.left=cssPixels(before.left-gridRect.left);
         ghost.style.width=cssPixels(before.width);
         ghost.style.height=cssPixels(before.height);
+        // Pair each old-row silhouette with its incoming live pane.
+        // The renderer complements ONE native-square decoherence clock
+        // across both surfaces instead of showing two opaque copies.
+        const opticalColumn=index-firstRow*columns;
+        ghost.dataset.projectCardOpticalColumn=String(opticalColumn);
         ghost.dataset.projectCardDismissAt=String(initialTime);
+        node.dataset.projectCardOpticalColumn=String(opticalColumn);
+        node.dataset.projectCardAppearAt=String(initialTime);
         grid.append(ghost);
         ghosts.push(ghost);
       }
@@ -256,36 +283,27 @@ export function mountProjectExpansion({root,grid,animateGlass}){
           {transform:translate(0,0),opacity:1}
         ];
       }else{
-        // Wrap when THIS card reaches the rightmost position, rather
-        // than sending every card in the row to the edge at once.
+        // All downstream cards use ONE virtual row conveyor. A card
+        // travels at the same spatial rate as its rowmates; at the
+        // half-pitch viewport seam it is fully invisible for the
+        // row switch. The first/last half-pitches are edge fades.
         const col=index%columns;
-        const edge=projectConveyorEdge(col,columns,shift);
-        const exitX=(gridRect.right-before.width)-after.left;
-        const entryX=(gridRect.left-pitch)-after.left;
+        const {fadeOutStart,seam,fadeInEnd}=
+          projectRowWrapPhases(col,columns,shift);
+        const exitX=gridRect.right-before.width+pitch*.5-after.left;
+        const entryX=gridRect.left-pitch*.5-after.left;
         const oldY=before.top-after.top;
-        if(edge===0){
-          frames=[
-            {offset:0,transform:translate(entryX,0),opacity:0},
-            {offset:EDGE_FADE_FRACTION,
-              transform:translate(entryX+travel*EDGE_FADE_FRACTION,0),opacity:1},
-            {offset:1,transform:translate(0,0),opacity:1}
-          ];
-        }else{
-          // Entering becomes fully visible once the LEFT edge is in
-          // the row, not while the pane is still in the outer gutter.
-          const fadeOut=Math.max(0,edge-EDGE_FADE_FRACTION);
-          const fadeIn=Math.min(1,edge+1/Math.max(1,shift));
-          frames=[
-            {offset:0,transform:translate(before.left-after.left,oldY),opacity:1},
-            {offset:fadeOut,
-              transform:translate(before.left-after.left+travel*fadeOut,oldY),opacity:1},
-            {offset:edge,transform:translate(exitX,oldY),opacity:0},
-            {offset:Math.min(1,edge+.0001),transform:translate(entryX,0),opacity:0},
-            {offset:fadeIn,
-              transform:translate(entryX+travel*(fadeIn-edge),0),opacity:1},
-            {offset:1,transform:translate(0,0),opacity:1}
-          ];
-        }
+        frames=[
+          {offset:0,transform:translate(before.left-after.left,oldY),opacity:1},
+          {offset:fadeOutStart,
+            transform:translate(before.left-after.left+travel*fadeOutStart,oldY),
+            opacity:1},
+          {offset:seam,transform:translate(exitX,oldY),opacity:0},
+          {offset:Math.min(1,seam+.0001),transform:translate(entryX,0),opacity:0},
+          {offset:fadeInEnd,
+            transform:translate(entryX+travel*(fadeInEnd-seam),0),opacity:1},
+          {offset:1,transform:translate(0,0),opacity:1}
+        ];
       }
       const animation=animate(node,frames,{
         duration:EXPAND_MS,easing:CONVEYOR_EASING
@@ -365,6 +383,12 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       ghost.removeAttribute("data-project-card-dismiss-at");
       ghost.dataset.projectCardRestoreAt=String(now+restoreDelay);
       ghost.dataset.projectCardRestoreFrom=String(restoreFrom);
+    }
+    for(const node of cards){
+      if(!node.dataset.projectCardAppearAt)continue;
+      node.removeAttribute("data-project-card-appear-at");
+      node.dataset.projectCardDisappearAt=String(now+restoreDelay);
+      node.dataset.projectCardDisappearFrom=String(restoreFrom);
     }
     animateGlass(EXPAND_MS+90);
     // The old .finished promise may already be resolved; clean up only
