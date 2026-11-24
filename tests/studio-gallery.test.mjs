@@ -8,7 +8,7 @@ const load=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("Studio root is exactly five accessible, genuinely interactive Glass components",async()=>{
   const html=await load("../studio/gallery/index.html");
-  assert.match(html,/<title>Liquid Glass Gallery - DoFinances Studio<\/title>/);
+  assert.match(html,/<title>Liquid Glass Gallery \| DoFinances Studio<\/title>/);
   assert.equal((html.match(/data-oracle-surface\b/g)||[]).length,5);
   for(const id of ["specimen-panel","specimen-button","specimen-segments",
     "specimen-slider","specimen-toggle","panel-control","action-button",

@@ -1,4 +1,4 @@
-# Dofinances
+# DoFinances
 
 _Architecture reconciled against repository `main` and deployed Cloudflare configuration on 2026-11-11._
 
@@ -104,7 +104,7 @@ remain 404. The legacy `/dashboard` prefix remains supported.
 
 ## Federated sign-in and account linking
 
-Dofinances supports identity-only Google and GitHub sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google and 3 GitHub**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
+DoFinances supports identity-only Google and GitHub sign-in when the corresponding provider application credentials are configured. Users can create accounts with a verified external identity or link additional identities from /app. Limits per account: **5 Google and 3 GitHub**. A provider identity cannot be linked to multiple users; email similarity alone cannot merge accounts. The last linked provider cannot be removed unless the user also has a password. Unlinking revokes active sessions.
 
 Provider configuration is documented in [Federated authentication](docs/federated-auth.md). Existing email/password accounts, MFA, email verification and Durable Object storage remain supported. Disabled provider buttons signal missing OAuth client credentials, rather than presenting nonfunctional links.
 

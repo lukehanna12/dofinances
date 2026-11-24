@@ -14,7 +14,7 @@ const LABEL=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const NO_STORE={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin"};
 // A deliberately small public allowlist: the website only exposes the eight
 // wallpaper images selected from private Colosseum library-iii (0001b9).
-// All other private library objects remain inaccessible through Dofinances.
+// All other private library objects remain inaccessible through DoFinances.
 const WALLPAPER_ALLOWLIST=new Map(Object.values(WORKSPACE_WALLPAPERS).map(w=>[
   w.sha+"."+w.ext,w
 ]));

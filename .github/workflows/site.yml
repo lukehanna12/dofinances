@@ -1,4 +1,4 @@
-name: Build and deploy Dofinances
+name: Build and deploy DoFinances
 
 on:
   pull_request:
@@ -77,7 +77,7 @@ jobs:
           grep -Fq '© 2026 DoFinances' sites/_apex/app/index.html
           grep -Fq 'https://send.api.mailtrap.io/api/send' edge/auth-mail.mjs
           ! grep -Fq 'api.sendgrid.com' edge/auth-mail.mjs
-          grep -Fq 'Sign in - Dofinances' dist/index.html
+          grep -Fq 'Sign in | DoFinances' dist/index.html
           test -d dist/assets
           test -s dist/assets/public-login-manifest.json
       - name: Save built site for deployment
@@ -284,8 +284,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p sites/_apex/login sites/_apex/projects sites/_apex/assets
-          sed 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' sites/_apex/index.html > sites/_apex/login/index.html
-          sed 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' sites/_apex/index.html > sites/_apex/projects/index.html
+          sed -e 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' -e 's/<title>DoFinances<\/title>/<title>Sign in | DoFinances<\/title>/' sites/_apex/index.html > sites/_apex/login/index.html
+          sed -e 's/<body class="public-home">/<body class="public-home" data-public-route="leaving" data-direct-login="true">/' -e 's/<title>DoFinances<\/title>/<title>Projects | DoFinances<\/title>/' sites/_apex/index.html > sites/_apex/projects/index.html
           cp -R dist/assets/. sites/_apex/assets/
           test -s sites/_apex/login/index.html
           test -s sites/_apex/projects/index.html
@@ -318,6 +318,8 @@ jobs:
           test -s sites/_apex/assets/public-projects.css
           grep -Fq 'dofinances-app-shell' sites/_apex/login/index.html
           grep -Fq 'dofinances-app-shell' sites/_apex/projects/index.html
+          grep -Fq '<title>Sign in | DoFinances</title>' sites/_apex/login/index.html
+          grep -Fq '<title>Projects | DoFinances</title>' sites/_apex/projects/index.html
           ! grep -Fq 'auth3-studio-preview-v1' sites/_apex/login/index.html
       - name: Publish Git-managed Worker (routes managed separately)
         uses: cloudflare/wrangler-action@v4
@@ -412,6 +414,7 @@ jobs:
           done
           projects_page="$(mktemp)"
           curl -fsSL --max-time 20 https://dofinances.com/projects > "$projects_page"
+          grep -Fq '<title>Projects | DoFinances</title>' "$projects_page"
           grep -Fq 'data-direct-login="true"' "$projects_page"
           grep -Fq 'dofinances-app-shell' "$projects_page"
           rm "$projects_page"
@@ -467,6 +470,7 @@ jobs:
             code="$(curl --retry 3 --retry-delay 2 -fsSL --max-time 20 -w '%{http_code}' -o "$body" "$url")"
             echo "$url -> HTTP $code ($(wc -c < "$body") bytes)"
             test "$code" = 200
+            grep -Fq '<title>Sign in | DoFinances</title>' "$body"
             grep -Fq 'dofinances-app-shell' "$body"
             grep -Fq 'id="cta6-mosaic"' "$body"
             grep -Fq 'id="public-route-content"' "$body"

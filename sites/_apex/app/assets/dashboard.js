@@ -137,7 +137,7 @@ document.getElementById("mfa-disable-form").addEventListener("submit",async(e)=>
 const PROVIDER_NAMES={google:"Google",github:"GitHub"};
 const FLOWED_ERRORS={
   link_required:"Sign in using your existing method, then link this account here.",
-  identity_used:"That external account belongs to another Dofinances user.",
+  identity_used:"That external account belongs to another DoFinances user.",
   limit:"You have reached the maximum number of accounts for that provider.",
   email_required:"This provider did not return an email address.",
   invalid:"The external sign-in request expired. Please try again.",
@@ -147,7 +147,7 @@ const FLOWED_ERRORS={
   oauth_token_rejected:"The provider rejected the authorization code exchange.",
   oauth_callback_mismatch:"GitHub rejected the callback address. Confirm the OAuth application's callback URL exactly matches https://dofinances.com/api/auth/oauth/callback/github.",
   oauth_github_email_unverified:"GitHub requires a verified primary email on your GitHub account.",
-  oauth_grant_rejected:"GitHub rejected the OAuth grant parameters. The Dofinances integration needs adjustment.",
+  oauth_grant_rejected:"GitHub rejected the OAuth grant parameters. The DoFinances integration needs adjustment.",
   oauth_request_rejected:"GitHub rejected the OAuth request parameters. Review the registered OAuth application.",
   oauth_provider_forbidden:"GitHub blocked the token exchange (HTTP 403). The account was not linked.",
   oauth_provider_redirected:"GitHub unexpectedly redirected the token exchange.",
@@ -159,8 +159,8 @@ const FLOWED_ERRORS={
   oauth_jwks_unavailable:"The provider signing keys were unavailable.",
   oauth_profile_unavailable:"The provider could not return the profile.",
   photo_account_mismatch:"Please choose the same Google account that is already connected.",
-  oauth_provider_network_error:"Dofinances could not complete its secure connection to the provider.",
-  oauth_account_store_failed:"The Google/GitHub identity was verified, but Dofinances could not save the account link.",
+  oauth_provider_network_error:"DoFinances could not complete its secure connection to the provider.",
+  oauth_account_store_failed:"The Google/GitHub identity was verified, but DoFinances could not save the account link.",
   oauth_mail_unavailable:"The account verification email could not be sent.",
   unavailable:"External sign-in could not be completed. Please try again."
 };

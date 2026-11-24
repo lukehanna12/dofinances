@@ -18,9 +18,9 @@ test("only configured Mailtrap production token and dofinances.com sender enable
 });
 test("verification and reset emails are unbranded, single-recipient and use URL fragments",()=>{
   const verify=accountEmailPayload(env,mail);
-  assert.deepEqual(verify.from,{email:"noreply@dofinances.com",name:"Dofinances"});
+  assert.deepEqual(verify.from,{email:"noreply@dofinances.com",name:"DoFinances"});
   assert.deepEqual(verify.to,[{email:"member@example.net"}]);
-  assert.match(verify.subject,/Verify your Dofinances/);
+  assert.match(verify.subject,/Verify your DoFinances/);
   assert.ok(verify.text.includes("https://dofinances.com/verify#token="+TOKEN));
   assert.match(verify.html,/<a href="https:\/\/dofinances\.com\/verify#token=/);
   assert.equal(verify.category,"account-verification");
@@ -28,7 +28,7 @@ test("verification and reset emails are unbranded, single-recipient and use URL 
   const reset=accountEmailPayload({...env,AUTH_EMAIL_REPLY_TO:"support@dofinances.com"},{...mail,kind:"reset"});
   assert.match(reset.text,/https:\/\/dofinances\.com\/reset#token=/);
   assert.equal(reset.category,"password-recovery");
-  assert.deepEqual(reset.reply_to,{email:"support@dofinances.com",name:"Dofinances Support"});
+  assert.deepEqual(reset.reply_to,{email:"support@dofinances.com",name:"DoFinances Support"});
   assert.throws(()=>accountEmailPayload(env,{...mail,token:"invalid"}),/Invalid delivery token/);
   assert.throws(()=>accountEmailPayload(env,{...mail,kind:"marketing"}),/Invalid email type/);
 });

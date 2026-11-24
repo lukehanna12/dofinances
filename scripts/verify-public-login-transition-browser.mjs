@@ -581,6 +581,7 @@ try{
       "Track phase must advance continuously while the card exits, without pointer events");
   }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",85);
+  assert.equal(await evaluate("document.title"),"DoFinances");
   // CSS transition completion depends on presented animation frames, not
   // just elapsed time. Assert the fully restored state after it actually
   // settles; a late frame must not turn 99.8% opacity into a false failure.
@@ -618,6 +619,7 @@ try{
   // Browser Forward also uses the persistent route registry.
   await evaluate("history.forward()");
   await until("location.pathname==='/login'&&window.__dofPublicRouter.state==='login'",170);
+  assert.equal(await evaluate("document.title"),"Sign in | DoFinances");
   assert.equal(await evaluate("document.querySelector('#cta6-mosaic')===window.__persistedShell.mosaic"),true);
   // A cold direct visit serves the same shell, initially in compact state.
   await send("Page.navigate",{url:origin+"/login"});
@@ -692,6 +694,7 @@ try{
   await evaluate("document.querySelector('.cta6-bottom-action [data-public-target]').click()");
   await until("location.pathname==='/projects'&&"+
     "document.querySelectorAll('.public-projects-root .project-showcase-card').length===16",190);
+  assert.equal(await evaluate("document.title"),"Projects | DoFinances");
   // The glass back arrow enters at 0ms, then the glyph-shaped title and
   // all three right-hand glass chips together at 165ms, before any card
   // enters at 330ms. Check each pane's OWN animation, not a parent fade

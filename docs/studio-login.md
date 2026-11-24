@@ -1,4 +1,4 @@
-# Dofinances Auth-3 sign-in - current architecture and historical fidelity notes
+# DoFinances Auth-3 sign-in - current architecture and historical fidelity notes
 
 _Updated 2026-11-11. The Auth-3 React/Vite build is **only** the apex `/login` experience. The current `stu.dofinances.com` Pages deployment is an independent static workspace preview assembled from `studio/sidebar/`._
 
@@ -6,7 +6,7 @@ _Updated 2026-11-11. The Auth-3 React/Vite build is **only** the apex `/login` e
 
 Email verification and one-use password recovery links are implemented under `/verify` and `/reset`, with TOTP authenticator MFA and single-use recovery codes configured from `/app`. Sender activation uses Mailtrap transactional Email API with a domain-scoped API token and verified sender; without these, new registration and email delivery are disabled. See [Account security](account-security.md). Google and GitHub identity-only OAuth are also implemented, subject to configured client credentials. See [federated authentication](federated-auth.md). Earlier notes below describe the original visual design and the chronological rollout; they are not current feature-status statements.
 
-# Dofinances Studio - Auth-3 source-fidelity implementation
+# DoFinances Studio - Auth-3 source-fidelity implementation
 
 ## Historical rollout: November 6, 2026 - First live account authentication
 
@@ -46,7 +46,7 @@ The Webpack source contains `dark:hover:bg-neutral-750`, but the accessible site
 The source has functional email control state, an email form that prevents default navigation, inert social-provider and View more buttons, and links to `#`. Those visible semantics are retained. The source's diagnostic logging of entered emails is intentionally suppressed to protect user privacy. That paragraph described the **previous visual preview**. The current apex form sends credentials only to the same-origin Worker authentication service; the new durable object stores the email address with a salted derived password hash (never plaintext), and revocable hashed session tokens.
 
 The user-requested customizations are:
-- Dofinances name and caption instead of React Bits Pro marketing copy.
+- DoFinances name and caption instead of React Bits Pro marketing copy.
 - Default dark mode plus a fixed bottom-right light/dark toggle, toggled in React state without persistence.
 - Standalone Studio deployment with a React/Vite entrypoint.
 

@@ -1,4 +1,4 @@
-// Dofinances transactional email via Mailtrap Email Sending (not Sandbox/Bulk).
+// DoFinances transactional email via Mailtrap Email Sending (not Sandbox/Bulk).
 // API credentials remain in Cloudflare Worker secrets; no D1, R2 or new dependencies.
 export const MAILTRAP_SEND_ENDPOINT = "https://send.api.mailtrap.io/api/send";
 
@@ -31,7 +31,7 @@ export function accountEmailPayload(env, {to,kind,token}) {
   // Using the fragment prevents tokens in normal HTTP request logs and Referer.
   const link = "https://dofinances.com/" + (verify ? "verify" : "reset") +
     "#token=" + encodeURIComponent(token);
-  const title = verify ? "Verify your Dofinances email" : "Reset your Dofinances password";
+  const title = verify ? "Verify your DoFinances email" : "Reset your DoFinances password";
   const interval = verify ? "24 hours" : "30 minutes";
   const action = verify ? "Confirm your email address" : "Choose a new password";
   const text = title + "\n\n" + action + ": " + link +
@@ -42,7 +42,7 @@ export function accountEmailPayload(env, {to,kind,token}) {
     "</a></p><p>Link expires in " + interval +
     ". If this was not you, ignore this message.</p>";
   const payload = {
-    from: {email:env.AUTH_EMAIL_FROM, name:"Dofinances"},
+    from: {email:env.AUTH_EMAIL_FROM, name:"DoFinances"},
     to: [{email:to}],
     subject:title,
     text,
@@ -51,7 +51,7 @@ export function accountEmailPayload(env, {to,kind,token}) {
   };
   // Optional Reply-To: set only after support@ forwarding has been verified.
   if (validAddress(env.AUTH_EMAIL_REPLY_TO))
-    payload.reply_to = {email:env.AUTH_EMAIL_REPLY_TO, name:"Dofinances Support"};
+    payload.reply_to = {email:env.AUTH_EMAIL_REPLY_TO, name:"DoFinances Support"};
   return payload;
 }
 

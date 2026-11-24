@@ -132,7 +132,7 @@ async function openRoute(path,{push=false,direct=false}={}){
       onExitComplete:finishClose});
     activeRoute=path;
     state=path.slice(1);
-    document.title=(path==="/login"?"Sign in":"Projects")+" - Dofinances";
+    document.title=(path==="/login"?"Sign in":"Projects")+" | DoFinances";
   }catch(error){
     await settle;
     if(token!==revision)return;

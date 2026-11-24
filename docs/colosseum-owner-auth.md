@@ -4,12 +4,12 @@ _Architecture reviewed 2026-11-11. This public document omits owner identities, 
 
 ## Two independent authentication requirements
 
-1. A secure Dofinances account session identifies the authenticated user through the server-side account store.
+1. A secure DoFinances account session identifies the authenticated user through the server-side account store.
 2. The shared owner-restricted Cloudflare Access application validates signed administrative identity assertions for both `/api/colosseum/*` and `/api/cloudflare/*`. Exact identities and credentials remain private.
 
 Both verified identities must match the application's single-owner binding; enrollment is restricted and protected against cross-site requests.
 
-Cloudflare Access protects **both owner API prefixes within a single 30-day Access application**, not all Dofinances pages. The Colosseum and Cloudflare account management APIs retain distinct owner-binding records and permissions. An Access login does not authorize another Dofinances account.
+Cloudflare Access protects **both owner API prefixes within a single 30-day Access application**, not all DoFinances pages. The Colosseum and Cloudflare account management APIs retain distinct owner-binding records and permissions. An Access login does not authorize another DoFinances account.
 
 ## Implemented management endpoints
 
@@ -25,7 +25,7 @@ Cloudflare Access protects **both owner API prefixes within a single 30-day Acce
 | `/api/colosseum/catalog/add`, `update`, `remove` | POST | `catalog.add`, `catalog.update`, `catalog.remove` |
 | `/api/colosseum/diagnostics` | POST | `system.status` (read-only, allowlisted checks and sections) |
 
-All operations first pass Dofinances session, Cloudflare Access, and owner-record checks. POST requests require the canonical Origin; provider, collection and permission writes additionally reject cross-site fetch metadata. The backend validates method, JSON content type, payload size, and permitted operation names. Only the allowlisted forwarding operations are exposed; arbitrary Colosseum router calls cannot be submitted.
+All operations first pass DoFinances session, Cloudflare Access, and owner-record checks. POST requests require the canonical Origin; provider, collection and permission writes additionally reject cross-site fetch metadata. The backend validates method, JSON content type, payload size, and permitted operation names. Only the allowlisted forwarding operations are exposed; arbitrary Colosseum router calls cannot be submitted.
 
 The Worker signs and forwards approved internal operations with protected server-side credentials, avoiding an unrestricted public proxy.
 
@@ -33,11 +33,11 @@ The Worker signs and forwards approved internal operations with protected server
 
 - **Collections:** live Colosseum collection listing/details and revision-aware collection edits; the interface currently lists ten per page, and the utility-admission button remains disabled.
 - **Utilities:** 10-row live, keyset-paginated D1 registry with indexed name/time sort, FTS5 search, validated include/exclude filters, and per-entry static asset metadata. Collection filters read the existing per-owner `ColosseumCollectionCoordinator` once per filtered request; membership UID sets are passed as SQL JSON parameters before pagination, and details obtain direct membership names with a single coordinator read. Disabled catalog entries remain visible and read-only. Cloud/direct catalog and asset mutations use GitHub-first plan/publish; upstream update checks require explicit clicks. No application timers, polling, or periodic synchronization are introduced.
-- **Providers:** federated vault credentials and tool grants, plus independently governed local provider registry profiles and dynamically discovered upstream MCP tools, resources, prompts, skills, and adapters. The Dofinances Worker does not store those provider secrets.
+- **Providers:** federated vault credentials and tool grants, plus independently governed local provider registry profiles and dynamically discovered upstream MCP tools, resources, prompts, skills, and adapters. The DoFinances Worker does not store those provider secrets.
 - **Permissions:** effective local filesystem and execution policy obtained from Colosseum's local gateway; changes use an upstream prepare/confirm mechanism and hazard PIN where required. The previous Google Sheets permission manager is retired.
 - **Diagnostics:** on-demand status and health queries; no periodic polling is required.
 
-These operational authorities live in Colosseum, not the Dofinances web page. Their upstream service availability must be checked before claiming an action succeeded. Related guides: [architecture](architecture.md), [account security](account-security.md), and [Cloudflare account connection](cloudflare-account-connection.md).
+These operational authorities live in Colosseum, not the DoFinances web page. Their upstream service availability must be checked before claiming an action succeeded. Related guides: [architecture](architecture.md), [account security](account-security.md), and [Cloudflare account connection](cloudflare-account-connection.md).
 
 ## Verification and safety
 

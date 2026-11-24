@@ -1,4 +1,4 @@
-# Dofinances DNS, hosting and CI/CD
+# DoFinances DNS, hosting and CI/CD
 
 Verified November 11, 2026 against Cloudflare DNS, Worker routes, Pages and repository configuration. **The website's code and pages are managed in GitHub.** GoDaddy remains the **domain registrar only**; the domain's January 2028 registration and renewal are unaffected.
 

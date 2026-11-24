@@ -72,6 +72,6 @@ export async function recoveryHash(value,userId){
   return canonical?sha256("mfa-recovery:"+userId+":"+canonical):null;
 }
 export function authenticatorUri(secret,email){
-  return "otpauth://totp/"+encodeURIComponent("Dofinances:"+email)+
-    "?secret="+secret+"&issuer="+encodeURIComponent("Dofinances")+"&algorithm=SHA1&digits=6&period=30";
+  return "otpauth://totp/"+encodeURIComponent("DoFinances:"+email)+
+    "?secret="+secret+"&issuer="+encodeURIComponent("DoFinances")+"&algorithm=SHA1&digits=6&period=30";
 }

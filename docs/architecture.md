@@ -1,4 +1,4 @@
-# Dofinances: current production architecture
+# DoFinances: current production architecture
 
 _Architecture checked 2026-11-11 against the public source and live deployment. Personal identifiers, private authentication configuration, and secret values are intentionally omitted._
 
@@ -45,7 +45,7 @@ The inspected production run succeeded in all four jobs. DNS and Worker routes a
 
 ## Two distinct user interfaces
 
-**Private apex workspace (`https://dofinances.com/app`):** the Worker validates the host-only Secure/HttpOnly Dofinances session before serving the HTML shell or protected assets. Navigation primarily uses native JS and hash routes, with specific nested `/app/...` and legacy `/dashboard/...` paths allowlisted by `WORKSPACE_VIEW_PATHS`. Main views: Home, Projects, Settings. Colosseum views: Utilities, Collections, Providers, Permissions, Diagnostics and Settings. Apple HIG Reader is a separate project. Source-of-truth CSS begins at `sites/_apex/assets/site-foundation.css`; workspace layering is in `dashboard.css`, `workspace-theme.css`, `workspace-enhancements.css`, `workspace-wallpapers.css` and screen-specific styles.
+**Private apex workspace (`https://dofinances.com/app`):** the Worker validates the host-only Secure/HttpOnly DoFinances session before serving the HTML shell or protected assets. Navigation primarily uses native JS and hash routes, with specific nested `/app/...` and legacy `/dashboard/...` paths allowlisted by `WORKSPACE_VIEW_PATHS`. Main views: Home, Projects, Settings. Colosseum views: Utilities, Collections, Providers, Permissions, Diagnostics and Settings. Apple HIG Reader is a separate project. Source-of-truth CSS begins at `sites/_apex/assets/site-foundation.css`; workspace layering is in `dashboard.css`, `workspace-theme.css`, `workspace-enhancements.css`, `workspace-wallpapers.css` and screen-specific styles.
 
 **Public Studio:** `https://stu.dofinances.com/` hosts a five-component interactive Glass gallery with flat, designed, and photographic backgrounds; the original standalone Liquid Glass navigation/wallpaper demo remains at `/app/`. Both intentionally exclude private `dashboard.js`, authenticated account operations, and live Colosseum controllers. The apex Auth-3 login is a separate React/Vite bundle; Studio `/login` and `/login/` are forced to 404 by a narrowly scoped Pages Function.
 
@@ -55,14 +55,14 @@ The sidebar's Oracle glass module derives SVG-filter optical/displacement fields
 
 | Authority | Owner and persistence | What it authorizes |
 | --- | --- | --- |
-| Dofinances authentication | `AUTH_STORE` SQLite Durable Object, Worker `dofinances-host-router` | Accounts, hashed sessions, MFA/TOTP, account verification/reset, linked Google/GitHub sign-in identities |
+| DoFinances authentication | `AUTH_STORE` SQLite Durable Object, Worker `dofinances-host-router` | Accounts, hashed sessions, MFA/TOTP, account verification/reset, linked Google/GitHub sign-in identities |
 | Cloudflare account connection | Separate authenticated account access and encrypted server-side credential | Scoped management operations |
 | Colosseum administration | Independent owner authorization and authenticated internal forwarding | Restricted operations in upstream control plane |
 | Colosseum local permissions | Independent local gateway / local policy authority | Filesystem read/write/add/delete, script/execution limits, hazard confirmation/PIN, effective-access evaluation |
 | Colosseum provider registry/vault | Upstream Colosseum services | Federated host connections, provider credentials, MCP tools/resources/prompts/skills, independent local profiles and invocation grants |
-| Wallpaper library | Separate `library-iii` Worker, content-addressed objects | Only the small public allowlist is proxied by Dofinances |
+| Wallpaper library | Separate `library-iii` Worker, content-addressed objects | Only the small public allowlist is proxied by DoFinances |
 
-**Do not conflate these authorities.** Dofinances OAuth with Google/GitHub is identity-only and does not retain provider API tokens. Colosseum's Providers screen is a client for upstream registry/vault/permission interfaces, not the credential or access authority itself. Permissions is the current operator-facing authority for local-work policy, enforced independently by the local gateway; the former Google Sheets manager is retired. Collections and Diagnostics also request live upstream records; no fabricated data or background status polling is required.
+**Do not conflate these authorities.** DoFinances OAuth with Google/GitHub is identity-only and does not retain provider API tokens. Colosseum's Providers screen is a client for upstream registry/vault/permission interfaces, not the credential or access authority itself. Permissions is the current operator-facing authority for local-work policy, enforced independently by the local gateway; the former Google Sheets manager is retired. Collections and Diagnostics also request live upstream records; no fabricated data or background status polling is required.
 
 Colosseum administrative routes support owner enrollment, collections, permissions, providers, catalog maintenance and diagnostics with server-enforced identity and request authorization. The client uses upstream prepare/commit/verification receipts for regulated operations, rather than treating a button click as proof of a policy change. The current Collections frontend lists **ten** per page; utility-admission `+` is intentionally disabled.
 

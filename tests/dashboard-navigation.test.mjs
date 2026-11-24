@@ -705,7 +705,7 @@ test("Apple HIG Reader opens as an independent project without activating Coloss
   assert.equal(m.elements["apple-hig-navigation"].hidden,false);
   assert.equal(m.views.find(x=>x.dataset.view==="apple-hig-reader/overview").hidden,false);
   assert.equal(target.getAttribute("aria-current"),"page");
-  assert.match(m.doc.title,/Apple HIG Reader - DoFinances/);
+  assert.match(m.doc.title,/Apple HIG Reader \| DoFinances/);
   m.win.location.hash="#colosseum/utilities";m.fire("hashchange");
   assert.equal(m.elements["project-navigation"].hidden,false);
   assert.equal(m.elements["apple-hig-navigation"].hidden,true);

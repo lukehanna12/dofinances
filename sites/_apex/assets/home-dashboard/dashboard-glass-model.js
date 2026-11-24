@@ -1,5 +1,5 @@
 /*
- * Dofinances shared glass surface contract.
+ * DoFinances shared glass surface contract.
  *
  * Oracle basis (locked target 25F80 / M2 / G14G):
  *  - geometry_331_compact: d=min(resolved backdrop width,height);

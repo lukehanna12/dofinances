@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Dofinances website - GitHub Actions builds and Cloudflare Pages deployments",
+  "description": "DoFinances website - GitHub Actions builds and Cloudflare Pages deployments",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

@@ -1,4 +1,4 @@
-name: Verify Git-managed Dofinances sites
+name: Verify Git-managed DoFinances sites
 on: workflow_dispatch
 permissions:
   contents: read

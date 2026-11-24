@@ -1,4 +1,4 @@
-# Dofinances account security
+# DoFinances account security
 
 _Implementation status checked 2026-11-11 against the Worker source and deployed Cloudflare bindings._
 

@@ -337,7 +337,7 @@ export function initWorkspaceNavigation(doc=document,win=window){
       if(selected)link.setAttribute("aria-current","page");
       else link.removeAttribute("aria-current");
     }
-    doc.title=meta.label+" - "+(meta.projectKey==="colosseum"?"Colosseum - ":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader - ":"")+"DoFinances";
+    doc.title=[meta.label,meta.projectKey==="colosseum"?"Colosseum":meta.projectKey==="apple-hig-reader"?"Apple HIG Reader":null,"DoFinances"].filter(Boolean).join(" | ");
     // A provider child is a real route; the parent is a disclosure, never a fourth screen.
     if(route.startsWith("colosseum/providers/"))providersExpanded=true;
     syncProviderNav();

@@ -1,6 +1,6 @@
 # Liquid Glass Gallery - stu.dofinances.com/
 
-A separate public, non-authenticated gallery of five interactive browser Glass studies. The earlier Studio sidebar/navigation demo remains at /app/; the protected Dofinances dashboard remains on the apex host.
+A separate public, non-authenticated gallery of five interactive browser Glass studies. The earlier Studio sidebar/navigation demo remains at /app/; the protected DoFinances dashboard remains on the apex host.
 
 ## Five interactive studies
 
@@ -31,4 +31,4 @@ Browsers without SVG backdrop-filter, OffscreenCanvas, or an adequate Worker ret
 - .github/workflows/site.yml - packages the gallery only into the Pages job; the apex Auth-3 login retains the original Vite build.
 - tests/studio-gallery.test.mjs and scripts/verify-live-gallery.mjs - static and live browser checks.
 
-Deployment continues solely through gated GitHub Actions. No Colosseum catalog, account store, permissions, DNS or private Dofinances app source is changed.
+Deployment continues solely through gated GitHub Actions. No Colosseum catalog, account store, permissions, DNS or private DoFinances app source is changed.

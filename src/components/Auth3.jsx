@@ -2,7 +2,7 @@
  * Auth-3 reconstruction: faithfully transcribed Tailwind utilities and Motion
  * parameters from the recovered React Bits Pro Webpack module 55010.
  *
- * Dofinances branding uses a fixed dark palette. Credentials now use a server-side Cloudflare Durable Object.
+ * DoFinances branding uses a fixed dark palette. Credentials now use a server-side Cloudflare Durable Object.
  */
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
@@ -30,7 +30,7 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
       oauth_client_rejected:"The provider rejected the OAuth client credentials. Please contact the website administrator.",
       oauth_code_rejected:"The provider rejected the authorization code. Start the sign-in again.",
       oauth_token_rejected:"The provider rejected the sign-in exchange.",
-      oauth_callback_mismatch:"The provider rejected Dofinances' configured callback address.",
+      oauth_callback_mismatch:"The provider rejected DoFinances' configured callback address.",
       oauth_github_email_unverified:"Verify the primary email address on your GitHub account.",
       oauth_grant_rejected:"The provider rejected the OAuth grant parameters.",
       oauth_request_rejected:"The provider rejected the OAuth request parameters.",
@@ -44,9 +44,9 @@ export function Auth3({exiting=false,onBack=()=>{},onExitComplete=()=>{}}) {
       oauth_jwks_unavailable:"The provider's signing keys were unavailable.",
       oauth_profile_unavailable:"The provider profile could not be obtained.",
       oauth_provider_network_error:"The provider connection failed.",
-      oauth_account_store_failed:"The external identity was verified, but Dofinances could not save it.",
+      oauth_account_store_failed:"The external identity was verified, but DoFinances could not save it.",
       oauth_mail_unavailable:"The verification email could not be sent.",
-      link_required:"An account with this email already exists. Sign in first and link this provider in Account settings.",identity_used:"That provider account is linked to another Dofinances user.",limit:"You have reached the limit for that provider.",email_required:"This provider did not supply an email address.",email_unverified:"Verify your email address before signing in.",invalid:"The sign-in request expired or could not be verified.",cancelled:"Provider sign-in was cancelled.",unavailable:"Provider sign-in could not be completed. Please try again."};
+      link_required:"An account with this email already exists. Sign in first and link this provider in Account settings.",identity_used:"That provider account is linked to another DoFinances user.",limit:"You have reached the limit for that provider.",email_required:"This provider did not supply an email address.",email_unverified:"Verify your email address before signing in.",invalid:"The sign-in request expired or could not be verified.",cancelled:"Provider sign-in was cancelled.",unavailable:"Provider sign-in could not be completed. Please try again."};
     return errors[new URLSearchParams(window.location.search).get("federation_error")] || "";
   });
   const [federation,setFederation]=useState({});

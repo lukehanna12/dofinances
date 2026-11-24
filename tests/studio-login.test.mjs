@@ -30,7 +30,7 @@ test("the public shell persists across / and /login; no login document recreates
   assert.match(styles, /body\.public-home > #public-route-content\{/);
   assert.match(vite,/loginRoute: resolve\(root, "src\/routes\/login-entry\.jsx"\)/);
   assert.match(packageScript,/public-login-manifest\.json/);
-  assert.match(workflow,/sed 's\/<body class="public-home">/);
+  assert.match(workflow,/sed -e 's\/<body class="public-home">/);
   assert.match(workflow,/cp -R dist\/assets\/\. sites\/_apex\/assets\//);
   assert.doesNotMatch(source,/data-auth-scene|data-auth-scene="photo"|auth3-doof-mark/);
   assert.doesNotMatch(source,/className="doof-theme-toggle"/);
@@ -73,7 +73,7 @@ test("Studio's independent Vite root is retained for development, but not deploy
   const [root,workflow,vite]=await Promise.all([
     load("../index.html"),load("../.github/workflows/site.yml"),load("../vite.config.mjs")
   ]);
-  assert.match(root,/<title>Sign in - Dofinances<\/title>/);
+  assert.match(root,/<title>Sign in \| DoFinances<\/title>/);
   assert.match(vite,/home: resolve\(root, "index\.html"\)/);
   assert.match(vite,/loginRoute: resolve/);
   assert.match(workflow,/sites\/_apex\/index\.html > sites\/_apex\/login\/index\.html/);
@@ -89,7 +89,7 @@ test("Studio preserves isolated Liquid Glass workspace at /app/ while apex /logi
     load("../sites/_apex/app/assets/sidebar-glass-oracle.js"),
     load("../.github/workflows/site.yml")
   ]);
-  assert.match(page, /<title>Studio - DoFinances<\/title>/);
+  assert.match(page, /<title>Studio \| DoFinances<\/title>/);
   assert.match(page, /id="workspace-sidebar"/);
   assert.match(page, /sidebar-glass\.css/);
   assert.match(page, /src="\/app\/assets\/preview-bootstrap\.js"/);
@@ -167,7 +167,7 @@ test("Google and GitHub sign-in providers preserve the Auth-3 backdrop and theme
   assert.doesNotMatch(source,/key:"chatgpt"/);
   assert.match(source,/key:"github"/);
   assert.match(source,/federation\[provider\.key\]\?\.enabled/);
-  assert.match(source,/Dofinances/);
+  assert.match(source,/DoFinances/);
 });
 
 test("Tailwind 4 reuses captured radius and color scale, rather than approximated BEM CSS", async () => {

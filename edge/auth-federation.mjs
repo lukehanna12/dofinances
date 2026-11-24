@@ -1,4 +1,4 @@
-// Identity-only federation for Dofinances. No provider OAuth tokens are persisted.
+// Identity-only federation for DoFinances. No provider OAuth tokens are persisted.
 // Fixed upstream endpoints prevent an OAuth configuration from becoming an SSRF proxy.
 // Cloudflare Workers rejects the fetch redirect mode "error"; use "manual" and
 // reject all non-2xx responses, including 3xx, before reading provider data.

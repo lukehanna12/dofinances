@@ -1,4 +1,4 @@
-# Dofinances Git-managed host routing
+# DoFinances Git-managed host routing
 
 _Current Worker source and Cloudflare routing checked 2026-11-11._
 

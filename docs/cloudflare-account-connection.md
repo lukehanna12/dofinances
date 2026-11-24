@@ -35,7 +35,7 @@ Cloudflare Access authentication confirms the owner's identity for a short sessi
 
 ## Session lifecycle
 
-The Access session and Dofinances login expire according to independent protected policies. A saved API credential may persist until revoked, disconnected or expired. Consult protected account settings for exact lifetimes.
+The Access session and DoFinances login expire according to independent protected policies. A saved API credential may persist until revoked, disconnected or expired. Consult protected account settings for exact lifetimes.
 
 ## Runtime authority and operational boundaries
 

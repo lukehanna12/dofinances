@@ -48,7 +48,7 @@
    * .dark ::selection {color:#0a0a0a;background-color:oklch(100% 0 0)}
    *
    * Scope the two states to the standalone Auth-3 root instead of affecting
-   * other Dofinances pages. Include the root itself for completeness. */
+   * other DoFinances pages. Include the root itself for completeness. */
   .auth3-root::selection,
   .auth3-root *::selection {
     color: oklch(100% 0 0);
