@@ -43,7 +43,7 @@ struct Tile {
 struct MaterialProfile { optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32> };
 @group(0) @binding(5) var<storage,read> materialProfiles:array<MaterialProfile>;
 // Height, blur word, artwork layer+1, photo alpha; then optics
-// (reserved lanes), reserved face rows, UV map.
+// (optics.x: expanded artwork fade strength; other lanes reserved), reserved face rows, UV map.
 struct GlassRegion { params:vec4<f32>, optics:vec4<f32>, face0:vec4<f32>, face1:vec4<f32>, face2:vec4<f32>, artUV:vec4<f32> };
 @group(0) @binding(6) var<storage,read> regions:array<GlassRegion>;
 @group(0) @binding(7) var artwork: texture_2d_array<f32>;
@@ -387,11 +387,22 @@ fn fsProjectRegionCapture(in:GlassOut)->@location(0) vec4<f32>{
   else{field=mode5SDF(in.local,tile.rect.zw,tile.cornerRadii);}
   let coverage=clamp(0.5-field.x/max(fwidth(field.x),0.0001),0.0,1.0);
   if(region.params.x<=0.0||coverage<=0.0){discard;}
-  if(region.params.z<=0.0||opacity<=0.0){discard;}
-  // Use the unmodified decoded artwork in the raw refraction source.
-  // UV derivatives are evaluated on the actual half-resolution attachment.
-  let paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
-  return vec4<f32>(paint.rgb,clamp(paint.a*opacity,0.0,1.0)*coverage);
+  // Keep the original decoded artwork unmodified above the partition.
+  // Below it, black is composited into the RAW backdrop before the glass
+  // samples its mip chain. Nothing is painted on top of the glass.
+  let bandTop=tile.rect.w-region.params.x;
+  let fade=clamp(region.optics.x,0.0,1.0)*
+    smoothstep(0.0,1.0,clamp((in.local.y-bandTop)/max(region.params.x,1.0),0.0,1.0));
+  if((region.params.z<=0.0||opacity<=0.0)&&fade<=0.0){discard;}
+  var paint=vec4<f32>(0.0);
+  if(region.params.z>0.0&&opacity>0.0){
+    paint=artSample(uv,i32(region.params.z)-1,log2(max(max(dx,dy),1.0)));
+  }
+  let alpha=clamp(paint.a*opacity,0.0,1.0);
+  if(fade<=0.0){return vec4<f32>(paint.rgb,alpha*coverage);}
+  let combined=alpha*(1.0-fade)+fade;
+  let rgb=paint.rgb*(alpha*(1.0-fade)/max(combined,0.00001));
+  return vec4<f32>(rgb,combined*coverage);
 }
 fn projectRegionCaptureLevel(uvIn:vec2<f32>,level:i32)->vec4<f32>{
   let dims=vec2<i32>(textureDimensions(projectRegionBackdrop,level));

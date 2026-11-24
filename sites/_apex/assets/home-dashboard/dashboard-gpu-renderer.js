@@ -879,10 +879,12 @@ async function initialize(){
       }
       // Keep the 24-float region ABI. No Regular optical or face lanes
       // are populated; the shader uses the shared Clear optical path.
+      const shadeAlpha=Math.max(0,Math.min(1,Number.parseFloat(getComputedStyle(node).getPropertyValue("--project-regular-progress"))||0));
       regionData.set([height*dpr,profile.blurWord,layer,opacity],b);
+      regionData[b+4]=shadeAlpha;
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
-        regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha:0,
+        regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,
         artworkDetail:artwork?.detailSize??null,artworkPresentation:"same-fragment",artworkUV:uv,
         canvasLocalTop:tileData[p+1]/dpr,canvasLocalLeft:tileData[p]/dpr,
         canvasLocalBandTop:(tileData[p+1]+tileData[p+3])/dpr-height,

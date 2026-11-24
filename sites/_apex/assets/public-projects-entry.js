@@ -5,7 +5,7 @@ import {registerGlassText} from "./home-dashboard/dashboard-glass-text.js";
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
  * Project controls intentionally do not navigate or call private APIs.
  */
-import {PROJECT_SHOWCASE,PROJECT_CARD_IMAGES,publicProjectIconSource,
+import {PROJECT_SHOWCASE,PROJECT_DESCRIPTIONS,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage,publicProjectArtworkSource} from "./public-projects-catalog.js";
 import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
@@ -61,7 +61,7 @@ function makeCard(project,index){
   },{once:true});
   mountProjectArtworkReveal(photo,card);
   const reveal=()=>{if(!photo.hasAttribute("src"))photo.src=src;};
-  for(const name of ["pointerenter","focusin","pointerdown"])
+  for(const name of ["pointerenter","focusin","pointerdown","click"])
     card.addEventListener(name,reveal,{once:true});
   const artwork=el("span","project-showcase-artwork");
   artwork.setAttribute("aria-hidden","true");
@@ -106,7 +106,11 @@ function makeCard(project,index){
     arrow.append(path);action.append(arrow);
   }
   upper.append(top,action,title);
-  content.append(upper);
+  const description=el("span","project-showcase-description",PROJECT_DESCRIPTIONS[project.slug]);
+  description.id="project-description-"+project.slug;
+  description.setAttribute("role","paragraph");
+  description.setAttribute("aria-hidden","true");
+  content.append(upper,description);
   card.append(artwork,regularBoundary,content);
   return card;
 }

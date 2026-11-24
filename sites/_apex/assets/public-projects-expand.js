@@ -89,6 +89,23 @@ const columnsFor=grid=>{
   const value=getComputedStyle(grid).gridTemplateColumns;
   return Math.max(1,value.trim().split(/\s+/).filter(Boolean).length);
 };
+// The new description space is measured at the full destination width.
+// Its minimum leaves enough artwork beneath the material's upper edge.
+export function projectDescriptionExtension(textHeight,inset){
+  if(!Number.isFinite(textHeight)||textHeight<0||!Number.isFinite(inset)||inset<0)
+    throw new RangeError("Invalid description dimensions");
+  return Math.max(152,Math.ceil(textHeight+2*inset+44));
+}
+// Apply the same eased vertical progress to every lower row, including
+// the two sides of a zero-opacity horizontal conveyor seam.
+export function projectVerticalExpansionFrames(frames,extra){
+  return frames.map((frame,index)=>{
+    const progress=frame.offset??index/(frames.length-1);
+    const match=/^translate3d\(([-\d.e+]+)px,([-\d.e+]+)px,0\)$/.exec(frame.transform);
+    if(!match)throw new Error("Expected an unscaled conveyor translation");
+    return {...frame,transform:translate(Number(match[1]),Number(match[2])-extra*(1-progress))};
+  });
+}
 const animate=(element,frames,options)=>{
   if(!element.animate)return null;
   return element.animate(frames,{fill:"both",...options});
@@ -162,6 +179,10 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       card.style.width="";
       card.style.height="";
       card.style.removeProperty("--project-regular-reference-width");
+      card.style.removeProperty("--project-description-space");
+      card.style.removeProperty("--project-expanded-band-height");
+      card.removeAttribute("aria-describedby");
+      card.querySelector(".project-showcase-description")?.setAttribute("aria-hidden","true");
       card.classList.remove("is-expanded","is-contracting");
       card.style.removeProperty("--project-regular-progress");
       card.removeAttribute("data-project-card-dismiss-at");
@@ -213,6 +234,16 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       node.style.gridColumn=position.span===columns&&node===card?
         "1 / -1":String(position.column);
     });
+    const baseRect=box(card);
+    const description=card.querySelector(".project-showcase-description");
+    const inset=Number.parseFloat(getComputedStyle(card.querySelector(".project-showcase-content")).paddingLeft)||16;
+    const extra=projectDescriptionExtension(description.getBoundingClientRect().height,inset);
+    card.style.setProperty("--project-description-space",cssPixels(extra));
+    card.style.setProperty("--project-expanded-band-height",cssPixels(baseRect.height*.1+extra));
+    // Set the real expanded grid row height before measuring every final
+    // destination. The spacer takes exactly that height when the pane
+    // becomes absolute; no independently animated layout is introduced.
+    card.style.height=cssPixels(baseRect.height+extra);
     const expandedRect=box(card);
     const destinations=rectSnapshot(visible);
     const placeholder=document.createElement("div");
@@ -233,6 +264,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.style.setProperty("--project-regular-reference-width",cssPixels(selectedRect.width));
     card.classList.add("is-expanded");
     card.setAttribute("aria-expanded","true");
+    card.setAttribute("aria-describedby",description.id);
+    description.setAttribute("aria-hidden","false");
     root.classList.add("has-project-expansion","project-expansion-was-used");
     // Preserve the same actual WebGPU glass for the X, drawn last on top.
     closeButton.hidden=false;
@@ -260,6 +293,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         const ghost=node.cloneNode(true);
         ghost.classList.add("project-showcase-dissolve-ghost");
         ghost.setAttribute("aria-hidden","true");
+        ghost.querySelector(".project-showcase-description")?.removeAttribute("id");
         ghost.tabIndex=-1;
         ghost.inert=true;
         ghost.style.position="absolute";
@@ -287,9 +321,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     }
     const selectedAnimation=duration?animate(card,[
       {left:cssPixels(selectedRect.left-gridRect.left),
-       width:cssPixels(selectedRect.width),"--project-regular-progress":"0"},
+       width:cssPixels(selectedRect.width),height:cssPixels(selectedRect.height),"--project-regular-progress":"0"},
       {left:cssPixels(expandedRect.left-gridRect.left),
-       width:cssPixels(expandedRect.width),"--project-regular-progress":"1"}
+       width:cssPixels(expandedRect.width),height:cssPixels(expandedRect.height),"--project-regular-progress":"1"}
     ],{duration,easing:SELECTED_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
     // X stays attached to the growing card's actual right edge, then follows
@@ -338,7 +372,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
           projectRowWrapPhases(col,columns,shift);
         const exitX=gridRect.right-before.width+pitch*.5-after.left;
         const entryX=gridRect.left-pitch*.5-after.left;
-        const oldY=before.top-after.top;
+        const oldY=before.top-after.top+extra;
         frames=[
           {offset:0,transform:translate(before.left-after.left,oldY),opacity:1},
           {offset:fadeOutStart,
@@ -351,15 +385,18 @@ export function mountProjectExpansion({root,grid,animateGlass}){
           {offset:1,transform:translate(0,0),opacity:1}
         ];
       }
+      frames=projectVerticalExpansionFrames(frames,extra);
       const animation=animate(node,frames,{
         duration:EXPAND_MS,easing:CONVEYOR_EASING
       });
       if(animation)animations.push(animation);
     }
+    const sharedStart=document.timeline?.currentTime;
+    if(Number.isFinite(sharedStart))for(const motion of animations)motion.startTime=sharedStart;
     state={card,placeholder,animations,timers,ghosts,phase:"open",immediate,
       initialTime,selectedAnimation,buttonAnimation,
       initialLeft:selectedRect.left-gridRect.left,
-      initialWidth:selectedRect.width,
+      initialWidth:selectedRect.width,initialHeight:selectedRect.height,
       initialButtonLeft:selectedRect.right-gridRect.left-53};
     animateGlass(EXPAND_MS+90);
     if(duration){
@@ -387,7 +424,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const presented=new Map(visible.map(node=>{
       const r=box(node),style=getComputedStyle(node);
       return [node,{left:r.left-origin.left,top:r.top-origin.top,width:r.width,height:r.height,
-        opacity:Number(style.opacity),regular:Number(style.getPropertyValue("--project-regular-progress"))||0}];
+        opacity:Number(style.opacity),regular:Number(style.getPropertyValue("--project-regular-progress"))||0,
+        descriptionSpace:style.getPropertyValue("--project-description-space"),
+        expandedBand:style.getPropertyValue("--project-expanded-band-height")}];
     }));
     const x=box(closeButton),xOpacity=Number(getComputedStyle(closeButton).opacity)||0;
     const xStart={left:x.left-origin.left,top:x.top-origin.top,opacity:xOpacity};
@@ -423,6 +462,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       if(contracts){
         node.classList.add("is-contracting");
         node.style.setProperty("--project-regular-reference-width",cssPixels(to.width));
+        if(from.descriptionSpace)node.style.setProperty("--project-description-space",from.descriptionSpace);
+        if(from.expandedBand)node.style.setProperty("--project-expanded-band-height",from.expandedBand);
       }
       const frames=[
         {transform:translate(dx,dy),opacity:String(from.opacity)},
@@ -475,7 +516,11 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       current.animations.length=0;
       for(const node of visible){
         node.classList.remove("is-contracting");
-        if(node!==card)node.style.removeProperty("--project-regular-reference-width");
+        if(node!==card){
+          node.style.removeProperty("--project-regular-reference-width");
+          node.style.removeProperty("--project-description-space");
+          node.style.removeProperty("--project-expanded-band-height");
+        }
       }
       root.classList.remove("is-project-reflowing","is-project-retargeting");
       animateGlass(90);
@@ -505,6 +550,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const paneStyle=getComputedStyle(current.card);
     const startLeft=Number.parseFloat(paneStyle.left);
     const startWidth=Number.parseFloat(paneStyle.width);
+    const startHeight=Number.parseFloat(paneStyle.height);
     const startRegularProgress=Number.parseFloat(paneStyle.getPropertyValue("--project-regular-progress"))||0;
     const xStyle=getComputedStyle(closeButton);
     const startButtonLeft=Number.parseFloat(xStyle.left);
@@ -512,8 +558,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     current.selectedAnimation?.cancel();
     current.buttonAnimation?.cancel();
     const contract=animate(current.card,[
-      {left:cssPixels(startLeft),width:cssPixels(startWidth),"--project-regular-progress":String(startRegularProgress)},
-      {left:cssPixels(current.initialLeft),width:cssPixels(current.initialWidth),"--project-regular-progress":"0"}
+      {left:cssPixels(startLeft),width:cssPixels(startWidth),height:cssPixels(startHeight),"--project-regular-progress":String(startRegularProgress)},
+      {left:cssPixels(current.initialLeft),width:cssPixels(current.initialWidth),height:cssPixels(current.initialHeight),"--project-regular-progress":"0"}
     ],{duration:EXPAND_MS,easing:SELECTED_EASING});
     const contractButton=animate(closeButton,[
       {left:cssPixels(startButtonLeft),

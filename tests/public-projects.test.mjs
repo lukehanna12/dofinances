@@ -7,7 +7,7 @@ import {
   projectShowcaseStatus as privateStatus
 } from "../sites/_apex/app/assets/project-showcase.js";
 import {
-  PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
+  PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_DESCRIPTIONS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
   PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,publicProjectIconSource,sortProjectShowcase,
   projectShowcaseStatus as publicStatus
 } from "../sites/_apex/assets/public-projects-catalog.js";
@@ -409,4 +409,16 @@ test("project title-band, action, badge clearance and switch geometry share expa
  assert.match(css,/translateX\(calc\(-100%\*var\(--project-regular-progress\)\)\)/);
  assert.match(exp,/motion\.startTime=sharedStart/);
  assert.match(exp,/rect\.left\+=originDX;rect\.top\+=originDY/);
+});
+
+test("every public project has a single substantive, source-conscious paragraph",()=>{
+  assert.deepEqual(Object.keys(PROJECT_DESCRIPTIONS).sort(),PUBLIC_PROJECTS.map(p=>p.slug).sort());
+  for(const [slug,copy] of Object.entries(PROJECT_DESCRIPTIONS)){
+    assert.ok(copy.length>=250&&copy.length<750,slug);
+    assert.doesNotMatch(copy,/\n/);
+    assert.doesNotMatch(copy,new RegExp("[\u00b7\u2014]"));
+  }
+  assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/26 alternative projects/);
+  assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/shed light/);
+  assert.match(PROJECT_DESCRIPTIONS.latexcel,/^LaTeXceL is a planned Excel add-in/);
 });

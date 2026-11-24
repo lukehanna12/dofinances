@@ -72,7 +72,7 @@ test("region is independently profiled within same GPU instance, and follows eac
  assert.match(css,/var\(--project-terminal-title-ratio/);
  assert.match(css,/var\(--project-resting-title-height\)\/var\(--project-terminal-title-height\)/);
  assert.match(render,/halfBase=Math.min\(1,scene.mipLevelCount-1\)/);
- assert.match(css,/var\(--project-regular-progress\)\*10%/);
+ assert.match(css,/var\(--project-regular-progress\)\*var\(--project-expanded-band-height,10%\)/);
  assert.match(expand,/"--project-regular-progress":"1"/);
  assert.match(css,/width:45.5px;height:45.5px/);
 });
@@ -127,14 +127,17 @@ test("Artwork and lower glass have one fragment-owned material boundary",()=>{
  assert.ok(w<=4096&&w*h<=8*1024*1024&&Math.abs(w/h-2)<.002);
 });
 
-test("Project artwork preserves original source color in both display and raw glass capture",()=>{
+test("Project artwork stays original except the expanded raw backdrop fade",()=>{
  const css=src("sites/_apex/assets/public-projects.css");
  const entry=src("sites/_apex/assets/public-projects-entry.js");
  const renderer=src("sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js");
  const shader=src("sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl");
  assert.doesNotMatch(css+entry+renderer,/project-showcase-shade/);
  assert.match(renderer,/regionData.set\(\[height\*dpr,profile.blurWord,layer,opacity\],b\)/);
- assert.match(renderer,/shadeAlpha:0/);
- assert.match(shader,/return vec4<f32>\(paint.rgb,clamp\(paint.a\*opacity,0.0,1.0\)\*coverage\)/);
+ assert.match(renderer,/regionData\[b\+4\]=shadeAlpha/);
+ assert.match(shader,/if\(fade<=0.0\)\{return vec4<f32>\(paint.rgb,alpha\*coverage\);\}/);
+ assert.match(shader,/let fade=clamp\(region.optics.x,0.0,1.0\)\*/);
+ assert.match(shader,/let combined=alpha\*\(1.0-fade\)\+fade/);
+ assert.match(shader,/return vec4<f32>\(rgb,combined\*coverage\)/);
  assert.doesNotMatch(shader,/color\*=1.0-clamp\(region.optics.x/);
 });

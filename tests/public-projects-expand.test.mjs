@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {planProjectExpansion,projectExpansionMovement,
   projectConveyorPosition,projectConveyorEdge,projectRowWrapPhases,
-  projectForwardCloseFrames}
+  projectForwardCloseFrames,projectDescriptionExtension,projectVerticalExpansionFrames}
   from "../sites/_apex/assets/public-projects-expand.js";
 
 test("conveyor preserves a full pitch of separation at every animation sample",()=>{
@@ -207,4 +207,18 @@ test("expanded project cards retain GPU-owned material and route-local lifecycle
   assert.match(css,/data-auth-gpu-scene="ready"/);
   assert.doesNotMatch(css,/\.has-project-expansion[^{]*\{[^}]*backdrop-filter:[^n]/);
   assert.doesNotMatch(controller,/\bfetch\s*\(|\bnavigate\s*\(/);
+});
+
+test("description row adds enough space for measured copy and displaces lower rows on the same clock",()=>{
+  assert.equal(projectDescriptionExtension(60,16),152);
+  assert.equal(projectDescriptionExtension(220,12),288);
+  assert.throws(()=>projectDescriptionExtension(-1,12),RangeError);
+  const frames=projectVerticalExpansionFrames([
+    {offset:0,transform:"translate3d(-100px,0px,0)",opacity:1},
+    {offset:.5,transform:"translate3d(20px,0px,0)",opacity:0},
+    {offset:1,transform:"translate3d(0px,0px,0)",opacity:1}
+  ],180);
+  assert.deepEqual(frames.map(f=>f.transform),[
+    "translate3d(-100px,-180px,0)","translate3d(20px,-90px,0)","translate3d(0px,0px,0)"
+  ]);
 });

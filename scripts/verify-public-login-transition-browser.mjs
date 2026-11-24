@@ -1237,6 +1237,32 @@ try{
       "pushedTop:firstPushed.top,pushedLeft:firstPushed.left,"+
       "gridLeft:grid.getBoundingClientRect().left,closeGlass:close.dataset.publicProjectGlass,"+
       "closeVisible:!close.hidden,expanded:cards[0].getAttribute('aria-expanded')};})()");
+  const descriptionGeometry=await evaluate(`(()=>{
+    const card=document.querySelector('.project-showcase-card.is-expanded');
+    const desc=card.querySelector('.project-showcase-description');
+    const band=card.querySelector('.project-showcase-regular-boundary').getBoundingClientRect();
+    const title=card.querySelector('.project-showcase-title').getBoundingClientRect();
+    const r=card.getBoundingClientRect(),style=getComputedStyle(desc);
+    const other=[...document.querySelectorAll('.project-showcase-card:not(.is-expanded) .project-showcase-description')];
+    return {height:r.height,bandHeight:band.height,bandTop:band.top,descTop:desc.getBoundingClientRect().top,
+      descBottom:desc.getBoundingClientRect().bottom,bottom:r.bottom,titleBottom:title.bottom,
+      opacity:+style.opacity,visible:style.visibility,described:card.getAttribute('aria-describedby')===desc.id,
+      otherHidden:other.every(n=>getComputedStyle(n).visibility==='hidden'),text:desc.textContent};
+  })()`);
+  assert.ok(descriptionGeometry.height>=originalProjectRects[0].height+150,JSON.stringify(descriptionGeometry));
+  assert.ok(descriptionGeometry.bandHeight>=150);
+  assert.ok(descriptionGeometry.descTop>=descriptionGeometry.bandTop-1);
+  assert.ok(descriptionGeometry.descBottom<descriptionGeometry.bottom-5);
+  assert.ok(descriptionGeometry.descTop>descriptionGeometry.titleBottom+8);
+  assert.equal(descriptionGeometry.opacity,1);
+  assert.equal(descriptionGeometry.visible,"visible");
+  assert.equal(descriptionGeometry.described,true);
+  assert.equal(descriptionGeometry.otherHidden,true);
+  assert.ok(descriptionGeometry.text.length>250);
+  if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
+    await until("window.__dashboardWebGPU?.projectGlass?.regions?.some(r=>r.shadeAlpha>.999&&r.regularHeight>=150)",80);
+    assert.ok(await evaluate("window.__dashboardWebGPU.projectGlass.projectRegionBackdrop.glassDrawsInCapture===0"));
+  }
   assert.equal(expandedFirst.expanded,"true");
   assert.equal(expandedFirst.closeVisible,true);
   assert.equal(expandedFirst.closeGlass,"expand-close");
@@ -1309,6 +1335,12 @@ try{
   assert.equal(resetFirst.oneRow,true,"Reversal restores the original row");
   assert.ok(Math.abs(resetFirst.firstWidth-resetFirst.secondWidth)<2);
   assert.equal(resetFirst.hasOverlay,false,"Reversal removes the spacer");
+  assert.ok(await evaluate("[...document.querySelectorAll('.project-showcase-card')].every(c=>!c.hasAttribute('aria-describedby')&&getComputedStyle(c.querySelector('.project-showcase-description')).visibility==='hidden')"));
+  const restoredRows=await evaluate("[...document.querySelectorAll('.project-showcase-card')].map(c=>({top:c.getBoundingClientRect().top,height:c.getBoundingClientRect().height}))");
+  for(let i=0;i<restoredRows.length;i++){
+    assert.ok(Math.abs(restoredRows[i].height-originalProjectRects[i].height)<2);
+    assert.ok(Math.abs((restoredRows[i].top-restoredRows[0].top)-(originalProjectRects[i].top-originalProjectRects[0].top))<2);
+  }
   // A middle-row click must take BOTH its left and right neighbors with it.
   await evaluate("document.querySelectorAll('.project-showcase-card')[2].click()");
   await until("(()=>{const g=document.querySelector('.project-showcase-grid');"+
@@ -1357,6 +1389,7 @@ try{
     const closeStart=performance.now();
     while(root.classList.contains('is-project-reflowing')&&performance.now()-closeStart<1050)await new Promise(requestAnimationFrame);
     result.closed=!root.classList.contains('has-project-expansion');
+    result.hiddenDescriptions=cards.every(c=>getComputedStyle(c.querySelector('.project-showcase-description')).visibility==='hidden');
     result.focusedCard=cards.includes(document.activeElement);
     result.contractingAfter=root.querySelectorAll('.is-contracting').length;
     return result;
@@ -1367,6 +1400,7 @@ try{
   assert.equal(switched.selected,true);assert.equal(switched.selectedCount,1);
   assert.equal(switched.contracting,0);assert.ok(switched.elapsed<1000,JSON.stringify(switched));
   assert.equal(switched.closed,true);assert.equal(switched.focusedCard,false);
+  assert.equal(switched.hiddenDescriptions,true);
   assert.equal(switched.contractingAfter,0);
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').dispatchEvent(new Event('pointerenter'))");
   assert.equal(await evaluate("document.querySelector('.public-projects-root .project-showcase-photo').hasAttribute('src')"),true,
@@ -1664,6 +1698,24 @@ try{
   await until("location.pathname==='/projects'&&"+
     "document.querySelectorAll('.public-projects-root .project-showcase-card').length===16",190);
   assert.equal(await evaluate("document.body.dataset.directLogin"),"true");
+  const descriptionViewport=await evaluate("({width:innerWidth,height:innerHeight})");
+  await send("Emulation.setDeviceMetricsOverride",{width:390,height:740,deviceScaleFactor:1,mobile:false});
+  await until("innerWidth===390",60,30);
+  await sleep(180);
+  await evaluate("document.querySelector('.project-showcase-card[data-project-slug=chatgpt-chat-save-chrome-extension]').click()");
+  await until("document.querySelector('.project-showcase-card.is-expanded')&& !document.querySelector('.public-projects-root').classList.contains('is-project-reflowing')",100,30);
+  const narrowDescription=await evaluate(`(()=>{
+    const card=document.querySelector('.project-showcase-card.is-expanded'),r=card.getBoundingClientRect();
+    const desc=card.querySelector('.project-showcase-description'),d=desc.getBoundingClientRect();
+    const band=card.querySelector('.project-showcase-regular-boundary').getBoundingClientRect();
+    return {fits:d.top>=band.top-1&&d.bottom<r.bottom&&d.left>=r.left&&d.right<=r.right,
+      opacity:+getComputedStyle(desc).opacity,descHeight:d.height,bandHeight:band.height};
+  })()`);
+  assert.ok(narrowDescription.fits&&narrowDescription.opacity===1&&narrowDescription.bandHeight>narrowDescription.descHeight,JSON.stringify(narrowDescription));
+  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
+  await send("Emulation.setDeviceMetricsOverride",{...descriptionViewport,deviceScaleFactor:1,mobile:false});
+  await until("innerWidth==="+descriptionViewport.width,60,30);
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   // Material switches must reach the actual shared GPU instance buffer on
