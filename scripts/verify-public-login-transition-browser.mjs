@@ -1348,6 +1348,10 @@ try{
       "Font-shape texture must cover the title's native glyph bounds");
     const textMask=await evaluate("window.__dashboardWebGPU.projectTitleMask");
     assert.equal(textMask.pipeline,"shared-webgpu-glassPipeline");
+    assert.equal(textMask.material,"clock-text");
+    assert.equal(textMask.sdfBits,10);
+    assert.deepEqual(textMask.distanceRange,[-24,1]);
+    assert.equal(textMask.nativeEvidence,"2f4217b4530654e6e9fd432c9834528c0fdd2e89");
     assert.ok(textMask.nonzeroPixels>300,"Text alpha mask must contain visible glyph pixels");
     const titlePaint=await evaluate("(()=>{const t=document.querySelector('.public-projects-title');"+
       "return {text:t.textContent,role:t.dataset.publicProjectGlass,"+
