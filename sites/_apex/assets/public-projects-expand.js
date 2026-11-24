@@ -5,14 +5,13 @@
  */
 import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
 
-// Restore the clicked card's ORIGINAL speed and easing, with an exact
-// playback reversal. Neighboring rows use a uniform spatial conveyor.
+// Preserve the original selected-card expansion and forward-eased X close.
+// All displaced cards share the exact same temporal progress as the
+// widening panel, so the next row does not arrive after expansion ends.
 const EXPAND_MS=620;
 const SELECTED_EASING="cubic-bezier(.22,.72,.24,1)";
-// Emil Kowalski: spatial rearrangement is ease-in-out, not a perpetual
-// linear marquee. Every card uses this ONE progress curve, preserving pitch.
-const CONVEYOR_EASING="cubic-bezier(.77,0,.175,1)";
-const EDGE_FADE_FRACTION=.055;
+// Match selected-pane progress while retaining a shared conveyor pitch.
+const CONVEYOR_EASING=SELECTED_EASING;
 const clampInt=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 
 /* Pure stable row packing. The clicked card occupies its ENTIRE original row,
@@ -217,18 +216,24 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         ghost.tabIndex=-1;
         ghost.inert=true;
         ghost.style.position="absolute";
+        // The node was cloned AFTER grid relayout, so it inherits the
+        // destination row/column inline styles. An absolutely-positioned
+        // CSS grid child with explicit tracks uses THAT grid area as its
+        // containing block, offsetting this "original-row" silhouette
+        // DOWN into the next row. Reset placement before top/left.
+        ghost.style.gridArea="auto";
+        ghost.style.gridRow="auto";
+        ghost.style.gridColumn="auto";
         ghost.style.top=cssPixels(before.top-gridRect.top);
         ghost.style.left=cssPixels(before.left-gridRect.left);
         ghost.style.width=cssPixels(before.width);
         ghost.style.height=cssPixels(before.height);
-        // Pair each old-row silhouette with its incoming live pane.
-        // The renderer complements ONE native-square decoherence clock
-        // across both surfaces instead of showing two opaque copies.
+        // Only the original-row silhouette undergoes the square shader's
+        // 440ms dissolve. The live card fades in as it actually enters
+        // the destination row; a second optical alpha clock delayed it.
         const opticalColumn=index-firstRow*columns;
         ghost.dataset.projectCardOpticalColumn=String(opticalColumn);
         ghost.dataset.projectCardDismissAt=String(initialTime);
-        node.dataset.projectCardOpticalColumn=String(opticalColumn);
-        node.dataset.projectCardAppearAt=String(initialTime);
         grid.append(ghost);
         ghosts.push(ghost);
       }
@@ -257,21 +262,15 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       if(role==="still"||!duration)continue;
       let frames;
       if(role==="dissolve"){
-        // The card's real destination is the next row. Its ghost above is
-        // simultaneously undergoing the native-square optical dismissal.
-        // Every incoming card moves by the SAME number of pixels at the
-        // SAME speed as the established cards in that destination row.
-        // The rowmate starts outside the grid to the left. Its opacity
-        // only grows while its true rect enters the NEXT row. The previous
-        // version was opaque four card widths outside the grid.
+        // The incoming real card moves with every other pane, already
+        // fading as it crosses the LEFT edge. The easing is exactly the
+        // selected pane's expansion easing, so entry completes together.
+        // No independent 440ms optical fade multiplies its WAAPI alpha.
         const destinationColumn=plan[index].column-1;
-        const fadeStart=shift?
-          Math.max(0,(shift-destinationColumn-1)/shift):0;
         const fadeEnd=shift?
           Math.min(1,(shift-destinationColumn)/shift):1;
         frames=[
           {offset:0,transform:translate(-travel,0),opacity:0},
-          {offset:fadeStart,transform:translate(-travel*(1-fadeStart),0),opacity:0},
           {offset:fadeEnd,transform:translate(-travel*(1-fadeEnd),0),opacity:1},
           {offset:1,transform:translate(0,0),opacity:1}
         ];
@@ -383,12 +382,6 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       ghost.removeAttribute("data-project-card-dismiss-at");
       ghost.dataset.projectCardRestoreAt=String(now+restoreDelay);
       ghost.dataset.projectCardRestoreFrom=String(restoreFrom);
-    }
-    for(const node of cards){
-      if(!node.dataset.projectCardAppearAt)continue;
-      node.removeAttribute("data-project-card-appear-at");
-      node.dataset.projectCardDisappearAt=String(now+restoreDelay);
-      node.dataset.projectCardDisappearFrom=String(restoreFrom);
     }
     animateGlass(EXPAND_MS+90);
     // The old .finished promise may already be resolved; clean up only
