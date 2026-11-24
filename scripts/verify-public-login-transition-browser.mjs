@@ -1021,8 +1021,9 @@ try{
           "ghostAlpha:parseFloat(fg?.style.opacity),"+
           "liveAlpha:parseFloat(liveFg?.style.opacity),"+
           "appearanceClock:!!card?.dataset.projectCardAppearAt};});})()");
-    assert.equal(pairState.length,5,
-      "Original selected row must retain exactly five dissolving silhouettes");
+    const visibleColumns=await evaluate("getComputedStyle(document.querySelector('.project-showcase-grid')).gridTemplateColumns.trim().split(/\\s+/).length");
+    assert.equal(pairState.length,visibleColumns-1,
+      "Original selected row must retain exactly one silhouette per displaced card");
     assert.ok(pairState.every(pair=>pair.paired&&pair.sameOpticalColumn&&
       pair.appearanceClock),"Every outgoing pane has one clock-matched replacement");
     if(await evaluate("document.body.dataset.authGpuScene==='ready'"))
