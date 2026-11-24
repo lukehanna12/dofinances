@@ -108,12 +108,12 @@
 /* Warhol's After the Party: center crop with 1.5% downward image offset.
    Keep the 10% entrance-to-rest zoom animation: 1.232 -> 1.12. */
 /* BootScript: show the full left edge of the original artwork, align the
- * source to the top, and retain the 10% reveal zoom above the new 1.05 endpoint. */
+ * source to the top, and retain the 10% reveal zoom above the new 1.1025 endpoint. */
 .view[data-view="projects"] .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{
- object-position:0% 0%;transform-origin:0% 0%;transform:scale(1.155)
+ object-position:0% 0%;transform-origin:0% 0%;transform:scale(1.21275)
 }
 .view[data-view="projects"] .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
- transform:scale(1.05)
+ transform:scale(1.1025)
 }
 .view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
  transform:translateY(1.5%) scale(1.232)

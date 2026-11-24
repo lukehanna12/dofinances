@@ -18,11 +18,12 @@ test("BootScript cover framing keeps the top edge and exposes the entire origina
  assert.deepEqual(align,[0,0,0,0]);
  for(const [w,h] of [[261,250],[165,220],[350,250],[1300,250]]){
   const original=artworkCoverTransform(w,h,1012,701);
-  for(const scale of [1.05,1.1,1.155]){
+  for(const scale of [1.1025,1.15,1.21275]){
    const uv=artworkCoverTransform(w,h,1012,701,scale,scale,0,0,...align);
    assert.equal(uv[2],0);
    assert.equal(uv[3],0);
    assert.ok(Math.abs(uv[0]-original[0]/scale)<1e-12);
+   assert.ok(Math.abs(uv[1]-original[1]/scale)<1e-12);
    assert.ok(uv[2]>=0&&uv[2]+uv[0]<=1+1e-12&&uv[3]+uv[1]<=1);
   }
  }

@@ -118,12 +118,12 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   opacity:1;transform:scale(1)
 }
 /* BootScript: show the full left edge of the original artwork, align the
- * source to the top, and retain the 10% reveal zoom above the new 1.05 endpoint. */
+ * source to the top, and retain the 10% reveal zoom above the new 1.1025 endpoint. */
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{
-  object-position:0% 0%;transform-origin:0% 0%;transform:scale(1.155)
+  object-position:0% 0%;transform-origin:0% 0%;transform:scale(1.21275)
 }
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
-  transform:scale(1.05)
+  transform:scale(1.1025)
 }
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
   transform:translateY(1.5%) scale(1.232)
@@ -454,7 +454,7 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
   opacity:1;transform:scale(1)
 }
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="bootscript"].is-photo-ready .project-showcase-photo{
-  transform:scale(1.05)
+  transform:scale(1.1025)
 }
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="liquid-plexiglass-26"].is-photo-ready .project-showcase-photo{
   transform:translateY(1.5%) scale(1.12)
