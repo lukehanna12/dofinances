@@ -117,10 +117,10 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
   opacity:1;transform:scale(1)
 }
-/* BootScript: show 75% of the original hidden left margin, align the
+/* BootScript: show 75% of the original hidden right margin, align the
  * source to the top, and retain the 10% reveal zoom above the new 1.05 endpoint. */
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{
-  object-position:12.5% 0%;transform-origin:0% 0%;transform:scale(1.155)
+  object-position:87.5% 0%;transform-origin:100% 0%;transform:scale(1.155)
 }
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
   transform:scale(1.05)

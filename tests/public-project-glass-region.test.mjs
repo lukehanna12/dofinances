@@ -13,17 +13,17 @@ test("artwork cover and CSS transform map original image coordinates",()=>{
  assert.ok(uv.every((v,i)=>Math.abs(v-[.5,.5,.2,.3][i])<1e-12));
  assert.equal(REGION_FLOATS,24);assert.equal(ART_LAYERS,16);
 });
-test("BootScript cover framing keeps the top edge and exposes exactly 75 percent of the original left crop",()=>{
- const align=artworkCSSAlignment({objectPosition:"12.5% 0%",transformOrigin:"0px 0px",width:"261px",height:"250px"});
- assert.deepEqual(align,[.125,0,0,0]);
+test("BootScript cover framing keeps the top edge and exposes exactly 75 percent of the original right crop",()=>{
+ const align=artworkCSSAlignment({objectPosition:"87.5% 0%",transformOrigin:"261px 0px",width:"261px",height:"250px"});
+ assert.deepEqual(align,[.875,0,1,0]);
  for(const [w,h] of [[261,250],[165,220],[350,250],[1300,250]]){
   const original=artworkCoverTransform(w,h,1012,701);
   for(const scale of [1.05,1.1,1.155]){
    const uv=artworkCoverTransform(w,h,1012,701,scale,scale,0,0,...align);
-   assert.ok(Math.abs(uv[2]-original[2]*.25)<1e-12);
+   assert.ok(Math.abs(1-uv[2]-uv[0]-original[2]*.25)<1e-12);
    assert.equal(uv[3],0);
    assert.ok(Math.abs(uv[0]-original[0]/scale)<1e-12);
-   assert.ok(uv[2]>=0&&uv[2]+uv[0]<=1&&uv[3]+uv[1]<=1);
+   assert.ok(uv[2]>=0&&uv[2]+uv[0]<=1+1e-12&&uv[3]+uv[1]<=1);
   }
  }
  const centered=artworkCSSAlignment({objectPosition:"50% 50%",transformOrigin:"130.5px 125px",width:"261px",height:"250px"});
