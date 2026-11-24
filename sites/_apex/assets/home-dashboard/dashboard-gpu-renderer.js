@@ -23,7 +23,7 @@ import {createAuthGlassHoverController} from "./dashboard-auth-hover.js";
 import {authBackdropOffsetCSS} from "./dashboard-scroll-optics.js";
 import {normalizeGlassCornerRadii,glassPaneNeedsLiveTransform,
  resolveGlassSurface,selectGlassSdfMode,surfaceContentFromElement,
- planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass,glassEntrance}
+ planGlassLayers,GLASS_INTERACTION,projectFiniteNativeClearGlass,glassEntrance,glassPaneIntersectsViewport}
  from "./dashboard-glass-model.js";
 import {REGION_FLOATS,artworkCoverTransform,artworkCSSAlignment,createGlassArtworkAtlas} from "./dashboard-glass-artwork.js";
 import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularMaterialLanes,validateGlassMaterial,resolveInactiveClearRegion}
@@ -266,7 +266,8 @@ function requestRender(){
   if(!homeActive()||!engine||stopped||raf)return;
   raf=requestAnimationFrame(()=>{
     raf=0;
-    if(trackRunning&&!pointerPressFramePending&&
+    const resizing=audit.resizePending===true;
+    if(!resizing&&trackRunning&&!pointerPressFramePending&&
        performance.now()-lastMotionSubmission<TRACK_FRAME_INTERVAL&&
        performance.now()>=authScrollRefreshUntil){
       // Maintain the original 30fps square track clock, while allowing the
@@ -287,7 +288,12 @@ function requestRender(){
     try{
       // The native backdrop remains synchronized independently of GPU
       // scroll frames; render only the original local optical response.
-      if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
+      // Resize is a full-resolution, pre-paint submission, not a second
+      // independent render loop. A same-size notification can be a no-op.
+      const resized=resizing?engine.flushResize():null;
+      if(resized!==null){
+        animating=resized;
+      }else if(["login","projects"].includes(window.__dofPublicRouter?.state)&&
          document.body.dataset.authGpuScene==="ready"&&
          (authUsesCompositor()||fixedProjectRoot()||performance.now()<authScrollRefreshUntil)){
         animating=engine.renderAuthOnly();
@@ -665,7 +671,17 @@ async function initialize(){
     dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
   const uniform=new Float32Array(20);
   const authUniform=new Float32Array(20);
-  let tileData=new Float32Array(0);
+  let tileData=new Float32Array(0),mosaicLayoutDirty=false;
+  const mosaicCanDefer=()=>Boolean(audit.track?.dismissed)&&dismissStart!==null&&
+    restoreStart===null&&!trackResumeRequested&&["login","projects"].includes(window.__dofPublicRouter?.state);
+  function storageBuffer(previous,size){
+    // Geometry changes do not change the storage ABI or instance count.
+    // Keep buffers and their capacity until the actual byte size changes.
+    if(previous?.size===size)return previous;
+    previous?.destroy();
+    audit.storageBufferAllocations=(audit.storageBufferAllocations||0)+1;
+    return device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+  }
   function syncAuthCanvasSize(){
     if(!authContext)return;
     // The GLASS framebuffer spans the form's full scrollable height. Its
@@ -900,6 +916,11 @@ async function initialize(){
         if(!img)continue;
         const slot=tileCount+i,p=slot*TILE_FLOATS;
         if(owner.hidden||tileData[p+18]<=.001){img.removeAttribute("data-glass-icon-owned");continue;}
+        // Final SVG coverage is exact at the physical pixel phase. Only
+        // request it for a pane that can contribute to a visible attachment.
+        // Include the optical underlay's offset and the full dismissal bloom.
+        if(!glassPaneIntersectsViewport(Array.from(tileData.subarray(p,p+4)),
+          physicalWidth,physicalAuthHeight,authUniform[11],physicalHeight,tileData[p+19]))continue;
         const suppressed=owner.matches(".is-expanded,.project-showcase-dissolve-ghost")||
           Boolean(owner.closest(".has-project-expansion"))||tileData[p+19]>0;
         const icon=silhouetteAtlas.sync(owner,img,{width:tileData[p+2],height:tileData[p+3],dpr,scheme,
@@ -1343,7 +1364,7 @@ async function initialize(){
       activeControl:authHover.activeControl,opacity};
     return Boolean(card&&opacity<.999);
   }
-  function rebuild(){
+  function rebuild({deferDismissedMosaic=false}={}){
     if(stopped)return;
     const viewport=actualSceneViewport();
     sceneTop=viewport.top;
@@ -1429,6 +1450,19 @@ async function initialize(){
       });
       scenePending=true;
     }
+    // An already fully dismissed mosaic contributes no visible pixels.
+    // Resize the full-resolution scene, but do not invalidate/re-measure
+    // every hidden tile or rebuild instance buffers on a settled route.
+    // Reflow once at the current dimensions before the mosaic returns.
+    if(deferDismissedMosaic&&tileBuffer&&mosaicCanDefer()){
+      mosaicLayoutDirty=true;
+      cornerInert.fill(1,0,tileCount);
+      audit.deferredMosaicResizes=(audit.deferredMosaicResizes||0)+1;
+      if(sized)rebindGlassGroups();
+      return;
+    }
+    mosaicLayoutDirty=false;
+    audit.mosaicLayoutBuilds=(audit.mosaicLayoutBuilds||0)+1;
     // Reset only compositor transforms for truthful baseline grid metrics.
     // A resize synchronously reapplies track motion in the same GPU frame.
     const all=activeTiles();
@@ -1476,26 +1510,14 @@ async function initialize(){
       ])===4).length
     };
     audit.sdfModes.mode5=tileCount-audit.sdfModes.mode4;
-    tileBuffer?.destroy();
-    tileBuffer=device.createBuffer({
-      size:Math.max(48,data.byteLength),
-      usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
-    });
+    tileBuffer=storageBuffer(tileBuffer,Math.max(48,data.byteLength));
     if(data.length)device.queue.writeBuffer(tileBuffer,0,data);
-    tintTileBuffer?.destroy();
-    tintTileBuffer=device.createBuffer({
-      size:Math.max(16,tintData.byteLength),
-      usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST
-    });
-    materialBuffer?.destroy();
-    materialBuffer=device.createBuffer({size:Math.max(MATERIAL_FLOATS*4,materialData.byteLength),
-      usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    tintTileBuffer=storageBuffer(tintTileBuffer,Math.max(16,tintData.byteLength));
+    materialBuffer=storageBuffer(materialBuffer,Math.max(MATERIAL_FLOATS*4,materialData.byteLength));
     device.queue.writeBuffer(materialBuffer,0,materialData);
-    regionBuffer?.destroy();
-    regionBuffer=device.createBuffer({size:Math.max(REGION_FLOATS*4,regionData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    regionBuffer=storageBuffer(regionBuffer,Math.max(REGION_FLOATS*4,regionData.byteLength));
     device.queue.writeBuffer(regionBuffer,0,regionData);
-    iconBuffer?.destroy();
-    iconBuffer=device.createBuffer({size:Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
+    iconBuffer=storageBuffer(iconBuffer,Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength));
     device.queue.writeBuffer(iconBuffer,0,iconData);
     lastTintKey="";
     syncTileTints(true);
@@ -1631,6 +1653,7 @@ async function initialize(){
     };
   }
   function render(){
+    if(mosaicLayoutDirty&&!mosaicCanDefer())rebuild();
     // Also sample reduced-motion preference on every active frame. Some
     // headless/host browsers do not dispatch a MediaQueryList change event
     // when system preferences are changed while WebGPU is already active.
@@ -1651,7 +1674,7 @@ async function initialize(){
     const authDt=Math.max(0,(now-lastAuthFrameTime)/1000);
     lastFrameTime=now;
     lastAuthFrameTime=now;
-    if(tileCount)paintTrack(dt);
+    if(tileCount&&!mosaicLayoutDirty)paintTrack(dt);
     const authAnimating=paintAuthPanes();
     syncTileTints();
     syncMaterialProfiles();
@@ -1692,7 +1715,7 @@ async function initialize(){
       underlay.setPipeline(compositeBackdropPipeline);
       underlay.setBindGroup(0,compositeBackdropGroup);
       underlay.draw(3);
-      if(tileCount){
+      if(tileCount&&!mosaicLayoutDirty){
         underlay.setPipeline(compositeGlassPipeline);
         underlay.setBindGroup(0,compositeGlassGroup);
         underlay.draw(6,tileCount);
@@ -1717,7 +1740,7 @@ async function initialize(){
     });
     pass.setPipeline(copyPipeline);pass.setBindGroup(0,copyGroup);
     pass.draw(3);
-    if(tileCount){
+    if(tileCount&&!mosaicLayoutDirty){
       pass.setPipeline(glassPipeline);pass.setBindGroup(0,glassGroup);
       pass.draw(6,tileCount);
       // The three scaled capsules are separate instances of the same
@@ -1821,7 +1844,7 @@ async function initialize(){
   }
   await iconsReady;
   await waitForVisibleHome();
-  engine={rebuild,render,renderAuthOnly,dispose,device};
+  engine={rebuild,render,renderAuthOnly,flushResize,dispose,device};
   if(root)root.dataset.gpuPhase="submit-first-gpu-frame";
   rebuild();
   render();
@@ -1941,10 +1964,10 @@ async function initialize(){
   // CSS glass and WebGPU glass use DIFFERENT face/color models. Switching
   // to CSS glass during resize caused the user-visible tint/scheme flash.
   // Never change the presentation mode when the window is resized.
-  // The resize event (or pre-paint ResizeObserver delivery) synchronously
-  // updates the backing dimensions, scene, mip pyramid and tile geometry,
-  // then submits a matching GPU frame before returning to the browser.
-  // An older GPU canvas is never laid out at the new CSS size for a paint.
+  // Coalesce window and ResizeObserver notifications into the existing RAF.
+  // Update the explicit CSS size, physical backing, full mip pyramid and
+  // geometry together in that pre-paint callback, never scale an old texture
+  // to the new size or swap to CSS glass while dragging.
   // GPU completion is recorded for telemetry, never used as a color swap.
   // React mounts/unmounts and animates route panes independently.
   // Wake this same GPU frame loop without ever capturing DOM pixels.
@@ -1958,6 +1981,11 @@ async function initialize(){
   // the canvas's actual viewport rect, not a predictive scrollTop value.
   const onAuthScroll=()=>{
     if(authUsesCompositor()||stopped||!engine||!homeActive())return;
+    // Width changes can clamp native scrollTop as the grid reflows. Do not
+    // submit a second pane frame against the old viewport dimensions.
+    if(audit.resizePending||Math.floor(innerWidth*(devicePixelRatio||1))!==physicalWidth){
+      onSize();requestRender();return;
+    }
     if(fixedProjectRoot()){
       // Commit foreground translation and matching fixed-wallpaper GPU
       // frame within the same main-thread rendering turn. No old sampled
@@ -2010,26 +2038,33 @@ async function initialize(){
   audit.resizePending=false;
   const onSize=()=>{
     if(stopped||!homeActive())return;
-    const nextKey=layoutKey();
-    if(nextKey===lastLayoutKey)return;
-    lastLayoutKey=nextKey;
-    const generation=++resizeGeneration;
+    if(audit.resizePending){
+      audit.coalescedResizeNotifications=(audit.coalescedResizeNotifications||0)+1;
+      return;
+    }
+    if(layoutKey()===lastLayoutKey)return;
     audit.resizeEvents=(audit.resizeEvents||0)+1;
     audit.resizePending=true;
-    try{
-      // Do not defer this with requestAnimationFrame: the browser must never
-      // paint the old GPU backing pixels stretched to the new CSS viewport.
-      engine.rebuild();
-      engine.render();
-      audit.resizeSubmissions=(audit.resizeSubmissions||0)+1;
-      audit.resizeSubmittedFrame=audit.frameCount;
-      audit.resizePending=false;
-      device.queue.onSubmittedWorkDone().then(()=>{
-        if(stopped||generation!==resizeGeneration)return;
-        audit.resizeCompletions=(audit.resizeCompletions||0)+1;
-      }).catch(fallback);
-    }catch(error){fallback(error);}
+    requestRender();
   };
+  function flushResize(){
+    const nextKey=layoutKey();
+    audit.resizePending=false;
+    if(nextKey===lastLayoutKey)return null;
+    lastLayoutKey=nextKey;
+    const generation=++resizeGeneration;
+    const start=performance.now();
+    engine.rebuild({deferDismissedMosaic:true});
+    const animating=engine.render();
+    audit.resizeSubmissions=(audit.resizeSubmissions||0)+1;
+    audit.resizeSubmittedFrame=audit.frameCount;
+    audit.resizeCpuMs=performance.now()-start;
+    device.queue.onSubmittedWorkDone().then(()=>{
+      if(stopped||generation!==resizeGeneration)return;
+      audit.resizeCompletions=(audit.resizeCompletions||0)+1;
+    }).catch(fallback);
+    return animating;
+  }
   // The explicit invalidation contract for future moving squares/content:
   // reflowTiles rewrites only tile positions; invalidateBackdrop triggers
   // the scene+mip rebuild. Neither action reads rendered DOM pixels.

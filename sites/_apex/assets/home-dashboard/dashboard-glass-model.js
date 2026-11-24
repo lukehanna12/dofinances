@@ -240,3 +240,16 @@ export function glassEntrance(seconds,delay=0){
   const alpha=t*t*(3-2*t);
   return {alpha,scale:.85+.15*alpha};
 }
+
+/** Cull only coverage work whose entire owner quad is outside BOTH the
+ * presentation canvas and the completed optical underlay. The vertex shader
+ * expands the quad during dismissal; use its identical bloom envelope.
+ * Coordinates are physical pixels, with the underlay in route-local space.
+ * Never change a visible pixel, optical source, or surface geometry. */
+export function glassPaneIntersectsViewport(rect,width,height,underlayOffset=0,underlayHeight=height,dismiss=0){
+ const [x,y,w,h]=rect;
+ const t=Math.min(1,Math.max(0,dismiss)),b=t*t*(3-2*t);
+ const dx=w*.085*b*.5,dy=h*.065*b*.5;
+ return w>0&&h>0&&x+w+dx>=0&&x-dx<=width&&
+   y+h+dy>=Math.min(0,underlayOffset)&&y-dy<=Math.max(height,underlayOffset+underlayHeight);
+}
