@@ -1141,7 +1141,9 @@ try{
     "const card=document.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')[5];"+
     "return getComputedStyle(card).transform;})()");
   assert.notEqual(closeProgressInitial,closeProgressAfter,
-    "Lower-row panels must visibly begin returning before closure ends");
+    "Lower-row panels must visibly begin returning before closure ends: "+
+    JSON.stringify({before:closeProgressInitial,after:closeProgressAfter,
+      shift:closeClocks[2],wrap:closeClocks[3]}));
   await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
   assert.equal(await evaluate("document.querySelector('.project-showcase-expand-close').hidden"),true,
     "The X fully reverses the expansion and hides its glass pane");
