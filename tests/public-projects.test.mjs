@@ -402,3 +402,11 @@ test("project switching retargets the live rectangles on one expansion clock",as
  assert.match(renderer,/projects\?panes:null/);
  assert.match(renderer,/node\.matches\("\.project-showcase-dissolve-ghost,\.is-contracting"\)/);
 });
+
+test("project title-band, action, badge clearance and switch geometry share expansion progress",async()=>{
+ const [css,exp]=await Promise.all([load("../sites/_apex/assets/public-projects.css"),load("../sites/_apex/assets/public-projects-expand.js")]);
+ assert.match(css,/padding-right:calc\(53px\*var\(--project-regular-progress\)\)/);
+ assert.match(css,/translateX\(calc\(-100%\*var\(--project-regular-progress\)\)\)/);
+ assert.match(exp,/motion\.startTime=sharedStart/);
+ assert.match(exp,/rect\.left\+=originDX;rect\.top\+=originDY/);
+});

@@ -395,6 +395,12 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     discard();
     if(card)open(card,{immediate:true,keyboard:false});
     const destinationOrigin=box(grid);
+    // The scrollport can clamp when a bottom-row expansion changes the
+    // row count. Convert the sampled screen coordinates into the NEW
+    // grid origin so the first animated frame is still continuous.
+    const originDX=origin.left-destinationOrigin.left,originDY=origin.top-destinationOrigin.top;
+    for(const rect of presented.values()){rect.left+=originDX;rect.top+=originDY;}
+    xStart.left+=originDX;xStart.top+=originDY;
     const destinations=new Map(visible.map(node=>{
       const r=box(node);
       return [node,{left:r.left-destinationOrigin.left,top:r.top-destinationOrigin.top,width:r.width,height:r.height}];
@@ -458,6 +464,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     ];
     const buttonMotion=animate(closeButton,buttonFrames,{duration:EXPAND_MS,easing:SELECTED_EASING});
     if(buttonMotion)current.animations.push(buttonMotion);
+    const sharedStart=document.timeline?.currentTime;
+    if(Number.isFinite(sharedStart))for(const motion of current.animations)motion.startTime=sharedStart;
     if(keyboard&&card)closeButton.focus({preventScroll:true});
     else if(focused)closeButton.blur();
     current.timers.push(setTimeout(()=>{

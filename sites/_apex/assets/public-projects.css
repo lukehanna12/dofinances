@@ -158,7 +158,8 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-upper{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0}
 .public-projects-root .project-showcase-top{
   display:flex;justify-content:space-between;align-items:flex-start;
-  gap:5px;width:100%;margin-bottom:9px
+  gap:5px;width:100%;margin-bottom:9px;
+  padding-right:calc(53px*var(--project-regular-progress));box-sizing:border-box
 }
 .public-projects-root .project-showcase-number{
   display:grid;place-items:center;flex:none;width:20px;height:20px;
@@ -197,7 +198,10 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   letter-spacing:inherit
 }
 .public-projects-root .project-showcase-action{
-  position:absolute;left:var(--project-card-inset);
+  position:absolute;
+  left:calc(var(--project-card-inset) + var(--project-regular-progress)*(100% - 2*var(--project-card-inset)));
+  transform:translateX(calc(-100%*var(--project-regular-progress)));
+  width:max-content;
   bottom:calc(var(--project-regular-height) + 4px);
   display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.9);
   font-size:10px;font-weight:500;line-height:1.35;opacity:0;
@@ -209,10 +213,8 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-action{opacity:1}
 body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
  .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-action{opacity:0!important}
-/* Expanded title stays bottom-left; keep the action clear of it. */
-.public-projects-root .project-showcase-card:is(.is-expanded,.is-contracting) .project-showcase-action{
-  left:auto;right:var(--project-card-inset)
-}
+/* The action travels from left to right on the same registered expansion
+ * progress as the title band, rather than jumping when a class changes. */
 .public-projects-root .project-showcase-card.is-expanded{--project-regular-progress:1}
 /* Only when the same original GPU pipeline has submitted a valid first frame
  * do we reveal the actual glass and remove the ordinary opaque fallback. */
@@ -451,9 +453,6 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root .project-showcase-dissolve-ghost{
   pointer-events:none!important;z-index:2;animation:none!important;
   user-select:none;-webkit-user-select:none
-}
-.public-projects-root.has-project-expansion .project-showcase-card.is-expanded .project-showcase-top{
-  padding-right:53px;box-sizing:border-box
 }
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-photo{
   opacity:1;transform:scale(1)
