@@ -307,9 +307,9 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(renderer,/tileDismissProgress\(elapsedDismiss,trackRows\[i\],trackColumns\[i\]\)/);
   assert.match(renderer,/tileDismissScale\(dissolving\)/);
   assert.match(renderer,/tileDismissDrift\(dissolving,trackRows\[i\],trackColumns\[i\],/);
-  assert.match(renderer,/shrink\.x\.toFixed\(5\)/);
+  assert.match(renderer,/\(shrink\.x\*intro\.scale\)\.toFixed\(5\)/);
   assert.match(renderer,/brightness\(0\) blur\("/);
-  assert.match(renderer,/shrink\.y\.toFixed\(5\)/);
+  assert.match(renderer,/\(shrink\.y\*intro\.scale\)\.toFixed\(5\)/);
   assert.match(renderer,/tileDismissBlur\(dissolving\)\.toFixed\(3\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
   assert.match(style,/data-public-route="leaving"/);

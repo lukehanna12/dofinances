@@ -419,7 +419,7 @@ async function initialize(){
   if(root)root.dataset.gpuPhase="request-adapter";
   if(!navigator.gpu)throw new Error("WebGPU API not available");
   const base="/assets/home-dashboard/";
-  const url=base+"dashboard-cloud-veiled-colorful-fields.avif";
+  const url="/assets/home-dashboard/dashboard-cloud-veiled-colorful-fields.avif";
   // Start independent cold-cache I/O and decoding before requesting the GPU.
   const img=new Image();
   img.decoding="async";
