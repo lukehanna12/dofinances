@@ -24,3 +24,30 @@ export function heldout(w,h,k,n=1024){
  }
  return {src,points};
 }
+
+export function weightsQ16(p,q,r){
+ const a=Math.floor(((256-p)*(256-q)*r+32)/64),b=Math.floor((p*(256-q)*r+32)/64);
+ return [a,b,(256-p)*r*4-a,p*r*4-b];
+}
+export function lodState(lod,last){
+ if(!Number.isFinite(lod)||!Number.isInteger(last)||last<0)throw RangeError("Invalid LOD");
+ const n=Math.floor(Math.max(0,Math.min(last,half(lod)))*64),a=n>>6;
+ return [a,Math.min(a+1,last),n&63];
+}
+function weighted(level,u,v,r,c){
+ const {values:src,width:w,height:h}=level,[a,b,p]=axis(u,w),[d,e,q]=axis(v,h),t=weightsQ16(p,q,r);
+ return src[(d*w+a)*4+c]*t[0]+src[(d*w+b)*4+c]*t[1]+src[(e*w+a)*4+c]*t[2]+src[(e*w+b)*4+c]*t[3];
+}
+export function sampleBGRA8Mip(levels,u,v,lod,c){
+ const [a,b,p]=lodState(lod,levels.length-1);
+ return half(Math.floor((weighted(levels[a],u,v,64-p,c)+weighted(levels[b],u,v,p,c)+2048)/4096)/4080);
+}
+export function trilinearHeldout(w,h,k,n){
+ const m=1+Math.floor(Math.log2(Math.max(w,h))),levels=Array.from({length:m},(_,l)=>{
+  const width=Math.max(1,w>>l),height=Math.max(1,h>>l);
+  return {width,height,values:Uint8Array.from({length:width*height*4},(_,j)=>mix32(j+10007*k+5011*l)&255)};
+ });
+ const {points:xy}=heldout(w,h,k,n),points=new Float32Array(n*4);
+ for(let j=0;j<n;j++){points[4*j]=xy[2*j];points[4*j+1]=xy[2*j+1];points[4*j+2]=mix32(j+3079*k+19)%((m+1)*2048)/2048-.5;}
+ return {levels,points};
+}
