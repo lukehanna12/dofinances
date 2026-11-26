@@ -10,6 +10,7 @@ const server=createServer(async(req,res)=>{
   const path=new URL(req.url,"http://localhost").pathname;
   if(path==="/"){res.writeHead(200,{"content-type":"text/html"});return res.end("<!doctype html><title>Owned continuous GPU test</title>");}
   if(path.startsWith("/site/")&&/^[\w.-]+\.(js|json|wgsl)$/.test(basename(path))){const name=basename(path);res.writeHead(200,{"content-type":name.endsWith(".js")?"text/javascript":name.endsWith(".json")?"application/json":"text/plain"});return res.end(await readFile(resolve(root,"../../sites/_apex/assets/home-dashboard",name)));}
+  if(/^\/original\/[\w.-]+\.svg$/.test(path)){res.writeHead(200,{"content-type":"image/svg+xml"});return res.end(await readFile(resolve(root,"../../sites/_apex/assets/project-icons",basename(path))));}
   if(process.env.LG_VECTOR_ASSETS){
    if(path==="/icon-list"){res.writeHead(200,{"content-type":"application/json"});return res.end(JSON.stringify((await readdir(process.env.LG_VECTOR_ASSETS)).filter(n=>/^[\w.-]+\.json$/.test(n)).map(n=>n.slice(0,-5))));}
    if(/^\/outline\/[\w.-]+\.json$/.test(path)){res.writeHead(200,{"content-type":"application/json"});return res.end(await readFile(join(process.env.LG_VECTOR_ASSETS,basename(path))));}
@@ -37,7 +38,7 @@ try{
  const send=(method,params={})=>new Promise((r,j)=>{const k=++id;pending.set(k,[r,j]);ws.send(JSON.stringify({id:k,method,params}));});
  await send("Page.enable");const load=new Promise(r=>events.set("Page.loadEventFired",r));
  await send("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/"});await load;
- const result=await Promise.race([send("Runtime.evaluate",{expression:process.env.LG_VECTOR_ASSETS?"import('./icon-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="site-shader"?"import('./site-shader-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="bgra8-lod"?"import('./bgra8-trilinear-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="bgra8"?"import('./bgra8-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="diamond"?"import('./diamond-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="prefix"?"import('./prefix-gpu-check.mjs').then(m=>m.run())":"import('./gpu-check.mjs').then(m=>m.run())",awaitPromise:true,returnByValue:true}),new Promise((_,j)=>timer=setTimeout(()=>j(new Error("GPU evaluation timeout")),90000))]);
+ const result=await Promise.race([send("Runtime.evaluate",{expression:process.env.LG_VECTOR_ASSETS?"import('./icon-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="site-compare"?"import('./site-compare.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="site-shader"?"import('./site-shader-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="bgra8-lod"?"import('./bgra8-trilinear-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="bgra8"?"import('./bgra8-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="diamond"?"import('./diamond-gpu-check.mjs').then(m=>m.run())":process.env.LG_GPU_TEST==="prefix"?"import('./prefix-gpu-check.mjs').then(m=>m.run())":"import('./gpu-check.mjs').then(m=>m.run())",awaitPromise:true,returnByValue:true}),new Promise((_,j)=>timer=setTimeout(()=>j(new Error("GPU evaluation timeout")),90000))]);
  if(result.exceptionDetails)throw new Error(JSON.stringify(result.exceptionDetails));
  console.log(JSON.stringify(result.result.value,null,2));
 }finally{
