@@ -11,5 +11,7 @@ for(const r of v.heldout){
  for(let i=0;i<m.length;i++)maxMetric=Math.max(maxMetric,Math.abs(m[i]-r.metrics[i])*r.size);
 }
 console.log(JSON.stringify({glyphs:a.ids.length,knots:v.opticalKnots,tuples:v.gvarTuples,regions:v.hvarRegions,heldout:v.heldout.length,coordinates:n,maxControlCSSPx:maxControl,maxPositionCSSPx:maxPosition,maxMetricCSSPx:maxMetric}));
-if(maxControl>.08||maxPosition>.15||maxMetric>.15)throw Error("Variation model exceeds finite error budget");
+// Layout is deliberately NOT accepted: use browser positions/metrics instead.
+if(maxControl>.08)throw Error("Variation outline model exceeds finite error budget");
+console.log(JSON.stringify({layoutAccepted:maxPosition<=.15&&maxMetric<=.15,endpointControlDifference:Math.max(...a.paths.flat(Infinity).map((x,i)=>Math.abs(x-b.paths.flat(Infinity)[i])))}));
 if(out)writeFileSync(out,JSON.stringify({schema:"dofinances-projects-word-outline-v1",text:v.text,scope:"Reference macOS SF system font, word-specific authored title geometry only; no font file",opticalKnots:v.opticalKnots,samples:v.samples})+"\n");
