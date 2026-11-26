@@ -9,13 +9,25 @@ export async function loadContinuousGlass(device,base){
  if(asset.schema!=="dofinances-vector-controls-v1"||Object.keys(asset.assets).length!==16)throw Error("Invalid continuous icon catalog");
  const entries=Object.entries(asset.assets),n=entries.length,bytes=Uint8Array.from(atob(asset.curves),c=>c.charCodeAt(0));
  if(bytes.length!==asset.curveCount*48)throw Error("Invalid continuous curve buffer");
- const data=new Float32Array((n+asset.curveCount)*12),index=new Map(),view=new DataView(bytes.buffer);
- for(let i=0;i<bytes.length/4;i++)data[n*12+i]=view.getFloat32(i*4,true);
+ const rows=Array.from({length:n},()=>Array(12).fill(0)),index=new Map(),view=new DataView(bytes.buffer);
+ const all=Array.from({length:asset.curveCount},(_,i)=>Array.from({length:12},(_,j)=>view.getFloat32((i*12+j)*4,true)));
+ const bounds=c=>[Math.min(c[0],c[2],c[4],c[6]),Math.min(c[1],c[3],c[5],c[7]),Math.max(c[0],c[2],c[4],c[6]),Math.max(c[1],c[3],c[5],c[7])];
+ // Build a hierarchy of vector bounding boxes, not a spatial raster.
+ // Every leaf retains the original degree-elevated curve control points.
+ function build(items){
+  const id=rows.length;rows.push(null);
+  const boxes=items.map(bounds),lo=[Math.min(...boxes.map(b=>b[0])),Math.min(...boxes.map(b=>b[1]))],hi=[Math.max(...boxes.map(b=>b[2])),Math.max(...boxes.map(b=>b[3]))];
+  if(items.length<=4){const from=rows.length;rows.push(...items);rows[id]=[...lo,...hi,0,0,from,items.length,-2,0,0,0];}
+  else{const a=hi[0]-lo[0]>=hi[1]-lo[1]?0:1;items.sort((x,y)=>{const b=bounds(x),c=bounds(y);return (b[a]+b[a+2])-(c[a]+c[a+2]);});const m=items.length>>1,l=build(items.slice(0,m)),r=build(items.slice(m));rows[id]=[...lo,...hi,l,r,0,0,-1,0,0,0];}
+  return id;
+ }
  entries.forEach(([name,v],i)=>{
   if(v.count<=0||v.start<0||v.start+v.count>asset.curveCount||v.scale<=0)throw Error("Invalid icon range");
-  data.set([...v.origin,v.scale,v.count,n+v.start,v.viewBox[2],v.viewBox[0],v.viewBox[1],v.viewBox[3],0,0,0],i*12);
+  const root=build(all.slice(v.start,v.start+v.count));
+  rows[i]=[...v.origin,v.scale,v.count,root,v.viewBox[2],v.viewBox[0],v.viewBox[1],v.viewBox[3],0,0,0];
   index.set(name,i+1);
  });
+ const data=Float32Array.from(rows.flat());
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
  device.queue.writeBuffer(buffer,0,data);
  return {buffer,code,curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();}};
