@@ -93,7 +93,8 @@ function makeCard(project,index,{detail=false}={}){
     registerGlassSilhouette(icon);
     marker.append(icon);
   }
-  const badge=el("span","project-showcase-badge "+badgeClass,status);
+  const badge=el("span","project-showcase-badge "+badgeClass);
+  badge.append(el("span","project-showcase-badge-label",status));
   top.append(marker,badge);
   const title=el(detail?"h1":"span","project-showcase-title");
   const lines=projectTitleLines(project.name);

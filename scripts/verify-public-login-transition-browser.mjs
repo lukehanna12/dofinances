@@ -929,6 +929,31 @@ try{
   assert.deepEqual(badges.filter(b=>b.label==="In Progress").map(b=>b.slug),["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"]);
   assert.ok(badges.filter(b=>b.label==="In Progress").every(b=>b.color==="rgb(245, 130, 45)"));
   assert.ok(badges.filter(b=>b.label==="Coming Soon").every(b=>b.color==="rgb(44, 103, 197)"));
+  // The badge remains a native label, with a right-anchored circular clip.
+  const badgeProbe=()=>evaluate(`(()=>{
+    const c=document.querySelector('.public-projects-root .project-showcase-card');
+    const b=c.querySelector('.project-showcase-badge'),r=b.getBoundingClientRect();
+    return {clip:getComputedStyle(b).clipPath,alpha:+getComputedStyle(b).opacity,
+      textAlpha:+getComputedStyle(b.firstElementChild).opacity,
+      dotAlpha:+getComputedStyle(b,'::before').opacity,right:r.right,height:r.height,
+      x:r.right-8,y:r.top+8};
+  })()`);
+  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:5,y:5});
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)<.01",40,25);
+  const restingBadge=await badgeProbe();
+  assert.equal(restingBadge.height,16);
+  assert.equal(restingBadge.dotAlpha,1);
+  assert.match(restingBadge.clip,/100% - 16px/);
+  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:restingBadge.x,y:restingBadge.y});
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)>.99",40,25);
+  const openBadge=await badgeProbe();
+  assert.equal(openBadge.dotAlpha,0);
+  assert.notEqual(openBadge.clip,restingBadge.clip);
+  assert.ok(Math.abs(openBadge.right-restingBadge.right)<1);
+  await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:5,y:5});
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)<.01",40,25);
+  assert.equal((await badgeProbe()).clip,restingBadge.clip);
+
   // Legacy is-coming-soon class indicates absent private project navigation,
   // not the editorial badge status. These two projects still have no linked repo.
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
@@ -1272,6 +1297,7 @@ try{
       "pushedTop:firstPushed.top,pushedLeft:firstPushed.left,"+
       "gridLeft:grid.getBoundingClientRect().left,closeGlass:close.dataset.publicProjectGlass,"+
       "closeVisible:!close.hidden,expanded:cards[0].getAttribute('aria-expanded')};})()");
+  assert.equal((await badgeProbe()).alpha,0,"Expanded card badge must be invisible");
   const descriptionGeometry=await evaluate(`(()=>{
     const card=document.querySelector('.project-showcase-card.is-expanded');
     const desc=card.querySelector('.project-showcase-description');
@@ -1435,6 +1461,7 @@ try{
   assert.ok(Math.abs(resetFirst.firstWidth-resetFirst.secondWidth)<2);
   assert.equal(resetFirst.hasOverlay,false,"Reversal removes the spacer");
   assert.ok(await evaluate("[...document.querySelectorAll('.project-showcase-card')].every(c=>!c.hasAttribute('aria-describedby')&&getComputedStyle(c.querySelector('.project-showcase-description')).visibility==='hidden')"));
+  assert.equal((await badgeProbe()).alpha,1,"Collapsed card badge must be visible again");
   const restoredRows=await evaluate("[...document.querySelectorAll('.project-showcase-card')].map(c=>({top:c.getBoundingClientRect().top,height:c.getBoundingClientRect().height}))");
   for(let i=0;i<restoredRows.length;i++){
     assert.ok(Math.abs(restoredRows[i].height-originalProjectRects[i].height)<2);

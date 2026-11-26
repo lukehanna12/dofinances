@@ -190,9 +190,34 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   filter:brightness(0) invert(1)
 }
 .public-projects-root .project-showcase-badge{
+  position:relative;flex:none;display:block;box-sizing:border-box;
   font-size:9px;font-weight:500;line-height:12px;padding:2px 9px;
-  border-radius:999px;white-space:nowrap;
-  background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45,201,100)
+  min-width:16px;height:16px;border-radius:999px;white-space:nowrap;
+  background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45,201,100);
+  /* Keep the full intrinsic label width, but reveal its surface from the
+   * fixed right edge. No layout shift or scaling of the live text. */
+  clip-path:inset(0 0 0 calc(100% - 16px) round 999px);
+  transition:clip-path 300ms cubic-bezier(.2,.78,.2,1);
+  opacity:clamp(0,calc(1 - 2*var(--project-regular-progress)),1)
+}
+.public-projects-root .project-showcase-badge::before{
+  content:"";position:absolute;right:0;top:0;width:16px;height:16px;
+  border-radius:50%;background:currentColor;opacity:1;
+  transition:opacity 300ms cubic-bezier(.2,.78,.2,1)
+}
+.public-projects-root .project-showcase-badge-label{
+  display:block;opacity:0;
+  transition:opacity 300ms cubic-bezier(.2,.78,.2,1)
+}
+.public-projects-root .project-showcase-card:not(.is-expanded):not(.is-contracting):is(:hover,:has(>.project-showcase-trigger:focus-visible)) .project-showcase-badge{
+  clip-path:inset(0 0 0 0 round 999px)
+}
+.public-projects-root .project-showcase-card:not(.is-expanded):not(.is-contracting):is(:hover,:has(>.project-showcase-trigger:focus-visible)) .project-showcase-badge::before{opacity:0}
+.public-projects-root .project-showcase-card:not(.is-expanded):not(.is-contracting):is(:hover,:has(>.project-showcase-trigger:focus-visible)) .project-showcase-badge-label{opacity:1}
+@media(prefers-reduced-motion:reduce){
+  .public-projects-root .project-showcase-badge,
+  .public-projects-root .project-showcase-badge::before,
+  .public-projects-root .project-showcase-badge-label{transition:none}
 }
 .public-projects-root .project-showcase-badge--review{
   background:color(srgb 0.98 0.76 0.07 / .09);color:rgb(230,180,51)
