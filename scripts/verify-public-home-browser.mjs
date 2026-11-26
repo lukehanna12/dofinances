@@ -109,12 +109,17 @@ try{
   await sleep(80);
  }
  assert.ok(pendingBoot,"Cold-start probe never reached the deliberately delayed GPU adapter");
- const boot=await evaluate('(()=>{const m=document.querySelector("#cta6-mosaic"),t=m.querySelector(".cta6-tile--icon"),i=t.querySelector("img");return {state:m.dataset.glassStartup,clip:getComputedStyle(m).clipPath,animation:getComputedStyle(t).animationName,icon:getComputedStyle(i).opacity,width:t.offsetWidth};})()');
+ const boot=await evaluate('(()=>{const m=document.querySelector("#cta6-mosaic"),t=m.querySelector(".cta6-tile--icon"),i=t.querySelector("img");const logo=document.querySelector("#dashboard-title"),s=getComputedStyle(logo);return {state:m.dataset.glassStartup,clip:getComputedStyle(m).clipPath,animation:getComputedStyle(t).animationName,icon:getComputedStyle(i).opacity,width:t.offsetWidth,wordmark:{text:logo.textContent,color:s.color,fill:s.webkitTextFillColor,shadow:s.textShadow,width:logo.getBoundingClientRect().width,height:logo.getBoundingClientRect().height}};})()');
  assert.equal(boot.state,"pending");
  assert.equal(boot.clip,"inset(50%)","Dark provisional tiles cannot paint before GPU readiness");
  assert.equal(boot.animation,"none","CSS animation cannot outrun GPU initialization");
  assert.equal(boot.icon,"0","Icons cannot appear before their glass");
  assert.ok(boot.width>0,"Startup gate must preserve measurable layout");
+ assert.equal(boot.wordmark.text,"DoFinances");
+ assert.equal(boot.wordmark.color,"rgba(0, 0, 0, 0)","Cold Home must not flash ordinary text");
+ assert.equal(boot.wordmark.fill,"rgba(0, 0, 0, 0)");
+ assert.equal(boot.wordmark.shadow,"none");
+ assert.ok(boot.wordmark.width>0&&boot.wordmark.height>0,"GPU glyph measurement must remain available");
  await evaluate("window.__releaseColdAdapter()");
  let fallbackBoot=false;
  for(let i=0;i<120;i++){
@@ -122,6 +127,10 @@ try{
   await sleep(80);
  }
  assert.ok(fallbackBoot,"Unsupported GPU must release the startup gate");
+ const fallbackWordmark=await evaluate('(()=>{const logo=document.querySelector("#dashboard-title"),s=getComputedStyle(logo);return {color:s.color,fill:s.webkitTextFillColor,text:logo.textContent};})()');
+ assert.equal(fallbackWordmark.text,"DoFinances");
+ assert.notEqual(fallbackWordmark.color,"rgba(0, 0, 0, 0)","Confirmed GPU fallback must reveal the readable wordmark");
+ assert.notEqual(fallbackWordmark.fill,"rgba(0, 0, 0, 0)");
  await send("Page.removeScriptToEvaluateOnNewDocument",{identifier:held.identifier});
  await send("Page.navigate",{url:origin+"/"});
  let ready=false;

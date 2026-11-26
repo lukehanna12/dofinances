@@ -55,6 +55,8 @@ try{
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   await wait('window.__dashboardWebGPU?.glassSilhouettes?.homeIcons?.length>0',"Home icon glass not rendered");
   await wait('window.__dashboardWebGPU?.homeCtaGlass?.brandGlyphGlass&&document.querySelector("#dashboard-title").hasAttribute("data-glass-text-ready")',"Home clock-text glass not rendered");
+  const wordmarkPaint=await ev('(()=>{const m=document.querySelector("#cta6-mosaic"),logo=document.querySelector("#dashboard-title"),s=getComputedStyle(logo);return {startup:m.dataset.glassStartup,color:s.color,fill:s.webkitTextFillColor,shadow:s.textShadow};})()');
+  if(wordmarkPaint.startup!=="ready"||wordmarkPaint.color!=="rgba(0, 0, 0, 0)"||wordmarkPaint.fill!=="rgba(0, 0, 0, 0)"||wordmarkPaint.shadow!=="none")throw Error("Home GPU wordmark has duplicate native paint "+JSON.stringify(wordmarkPaint));
   const home=await state(),homeReadyMs=Date.now()-t;
   if(home.title?.text!=="DoFinances"||home.title?.material!=="clock-text"||home.title.nonzeroPixels<100||((mode==="default"||mode==="continuous")&&!process.env.LG_TITLE_OUTLINE&&!process.env.LG_PORTABLE_TITLE&&!home.title.vectorOptics))throw Error("Home wordmark glyph regression "+JSON.stringify(home.title));
   const homeIcons=await ev(`(()=>{const a=window.__dashboardWebGPU,icons=a.glassSilhouettes.homeIcons;

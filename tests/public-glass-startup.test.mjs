@@ -35,3 +35,14 @@ test("startup defers unused GPU resources without lowering quality",()=>{
  assert.match(asset("dashboard-glass-artwork.js"),/get view\(\)\{ensureAtlas\(\);return view/);
  assert.match(asset("dashboard-glass-artwork.js"),/size:\[ART_SIZE,ART_SIZE,ART_LAYERS\]/);
 });
+
+test("cold homepage clock-text is gated until the first completed frame or confirmed fallback",()=>{
+ const css=readFileSync(new URL("../sites/_apex/assets/public-home.css",import.meta.url),"utf8");
+ const html=readFileSync(new URL("../sites/_apex/index.html",import.meta.url),"utf8");
+ const renderer=asset("dashboard-gpu-renderer.js"),loader=asset("dashboard-home-loader.js");
+ assert.match(html,/id="cta6-mosaic"[^>]*data-glass-startup="pending"[^>]*><\/div>\s*<div class="cta6-center"><h1 id="dashboard-title"/);
+ assert.match(css,/body\.public-home:not\(\[data-public-route\]\) #cta6-mosaic\[data-glass-startup="pending"\] \+ \.cta6-center > #dashboard-title,[\s\S]*?color:transparent!important;\s*-webkit-text-fill-color:transparent!important;\s*text-shadow:none!important/);
+ assert.ok(renderer.indexOf("await device.queue.onSubmittedWorkDone()")<renderer.indexOf('root.dataset.glassStartup=OFFSCREEN_CI?"fallback":"ready"'));
+ assert.match(renderer,/finally\{if\(root\)root\.dataset\.glassStartup="fallback"/);
+ assert.match(loader,/finally\{const root=document\.getElementById\("cta6-mosaic"\);if\(root\)root\.dataset\.glassStartup="fallback"/);
+});

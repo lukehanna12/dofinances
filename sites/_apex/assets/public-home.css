@@ -610,10 +610,21 @@ body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-icon{
   opacity:var(--public-icon-spatial-alpha,0);
 }
 
-/* Authored semantic text remains visible until its shared GPU field is ready. */
+/* Cold Home follows the mosaic's existing first-frame startup gate.
+ * The native heading stays measurable and accessible, but never paints
+ * flat letters ahead of the completed GPU clock-text frame. A confirmed
+ * fallback releases the gate; compact route wordmarks are not gated. */
+body.public-home:not([data-public-route]) #cta6-mosaic[data-glass-startup="pending"] + .cta6-center > #dashboard-title,
 body.public-home[data-gpu-scene="ready"]:not([data-public-route]) .cta6-center > #dashboard-title[data-glass-text-ready],
 body.public-home[data-auth-gpu-scene="ready"] .public-projects-root [data-glass-text-ready]{
   color:transparent!important;
   -webkit-text-fill-color:transparent!important;
   text-shadow:none!important
+}
+
+/* No script can complete the startup gate when scripting is disabled. */
+@media(scripting:none){
+  body.public-home:not([data-public-route]) #cta6-mosaic[data-glass-startup="pending"] + .cta6-center > #dashboard-title{
+    color:#f7f9fa!important;-webkit-text-fill-color:#f7f9fa!important
+  }
 }
