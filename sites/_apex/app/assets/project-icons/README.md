@@ -17,7 +17,8 @@
 - Lightwork: Caravaggio, *The Calling of Saint Matthew* (1599–1600), verified Wikimedia Commons 960px reproduction, referenced externally.
 - BootScript: Frederic Remington, *Buying Polo Ponies in the West* (1905), WikiArt.
 - ReadMe GLP: Claude Monet, *Gorge of the Petite Creuse* (1889), also catalogued as *Valley of the Petite Creuse* (Wildenstein 1230; Museum of Fine Arts, Boston, accession 23.541), direct Wikimedia Commons artwork image.
-- ChatStore: Takashi Murakami, *Dragon in Clouds – Indigo Blue* (2010), Gagosian image of the artwork itself (detail, without gallery surroundings; artwork copyright Takashi Murakami/Kaikai Kiki Co., Ltd.; photography rights may apply).
+- ChatStore: Katsushika Hokusai, *A merchant making up the account*, public domain. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:A_merchant_making_up_the_account.jpg).
+- Apple Adobe FX: Frederic Remington, *The Bronco Buster*, public-domain artwork image. [WikiArt](https://www.wikiart.org/en/frederic-remington/the-bronco-buster).
 - Colosseum: Thomas Cole, *The Course of Empire: The Arcadian or Pastoral State* (c. 1834), Wikimedia Commons (verified 960px rendering of the public-domain painting).
 - Apple HIGs Reader: René Magritte, *The Son of Man* (1964); copyright-protected reproduction referenced externally.
 - Unicode Plus: Samuel van Hoogstraten, *A Perspective View of the Courtyard of a House*, National Trust / Art UK image.

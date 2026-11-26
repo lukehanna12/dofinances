@@ -62,7 +62,10 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"/assets/project-art/bootscript-polo-ponies.v1.webp",
   "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
-  "chatgpt-chat-save-chrome-extension":"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg",
+  // Katsushika Hokusai, A merchant making up the account, public domain (Wikimedia Commons).
+  "chatgpt-chat-save-chrome-extension":"/assets/project-art/chatstore-hokusai-merchant.v1.webp",
+  // Frederic Remington, The Bronco Buster, public domain (WikiArt).
+  "apple-adobe-fx":"/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp",
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
   "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
   // Source: https://dam-media.fra1.digitaloceanspaces.com/Mohr2020_22_P3010_8_b0152949c4.jpg

@@ -199,7 +199,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
- const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","ozoning-board"];
+ const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","apple-adobe-fx","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -213,7 +213,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
- }else if(["bootscript","hidden-functions","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
+ }else if(["bootscript","chatgpt-chat-save-chrome-extension","apple-adobe-fx","hidden-functions","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
   assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".webp"));
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
@@ -267,9 +267,17 @@ test("App Caviar uses the attached local WebP and the requested artworks are ass
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
  const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
  const pastoral=PROJECT_CARD_IMAGES.colosseum;
- assert.equal(mural,"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg");
+ assert.equal(mural,"/assets/project-art/chatstore-hokusai-merchant.v1.webp");
+ assert.equal(PROJECT_CARD_IMAGES["apple-adobe-fx"],"/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp");
  assert.equal(pastoral,"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg");
- assert.ok(!mural.includes("ktga-hG5fIhh"),"Do not use the gallery installation image");
+ for(const slug of ["chatgpt-chat-save-chrome-extension","apple-adobe-fx"]){
+  const asset=PROJECT_CARD_IMAGES[slug];
+  const bytes=readFileSync(new URL("../sites/_apex"+asset,import.meta.url));
+  assert.equal(bytes.toString("ascii",0,4),"RIFF");
+  assert.equal(bytes.toString("ascii",8,12),"WEBP");
+  assert.ok(bytes.length>20000&&bytes.length<=285000,"Optimized artwork within 285 KB");
+  assert.deepEqual(bytes,readFileSync(new URL("../public"+asset,import.meta.url)));
+ }
  assert.ok(!pastoral.includes("upload.wikimedia.org/wikipedia/commons/thumb"),"Use the verified Commons image thumbnail host");
 });
 

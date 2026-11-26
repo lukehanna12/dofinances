@@ -324,6 +324,10 @@ jobs:
           cmp sites/_apex/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp public/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp
           test -s dist/assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp
           cmp sites/_apex/assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp public/assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp
+          test -s dist/assets/project-art/chatstore-hokusai-merchant.v1.webp
+          cmp sites/_apex/assets/project-art/chatstore-hokusai-merchant.v1.webp public/assets/project-art/chatstore-hokusai-merchant.v1.webp
+          test -s dist/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp
+          cmp sites/_apex/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp public/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp
           test -s sites/_apex/app/assets/project-icons/hidden-functions.svg
           test -s sites/_apex/app/assets/project-icons/latexcel.svg
           cmp sites/_apex/assets/project-icons/hidden-functions.svg sites/_apex/app/assets/project-icons/hidden-functions.svg
@@ -422,6 +426,8 @@ jobs:
             /assets/project-icons/apple-higs-reader.v4.svg \
             /assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp \
             /assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp \
+            /assets/project-art/chatstore-hokusai-merchant.v1.webp \
+            /assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp \
             /assets/project-art/terminal-scalars-liquid-symmetry.v3.webp \
             /assets/home-dashboard/dashboard-gpu-renderer.js \
             /assets/home-dashboard/dashboard-mosaic.js \
