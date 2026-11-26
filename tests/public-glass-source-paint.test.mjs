@@ -26,7 +26,7 @@ test("authored sources enter the actual GPU attachment before higher glass sampl
  assert.doesNotMatch(p,/getDisplayMedia|captureStream|html2canvas|drawWindow/);
 });
 
-test("ordinary public card and toolbar foreground plus Home icons stay native",()=>{
+test("ordinary foreground stays native, while Home icon sources stay authored SVG silhouettes",()=>{
  const entry=read("../sites/_apex/assets/public-projects-entry.js");
  const controls=read("../sites/_apex/assets/public-projects-controls.js");
  const mosaic=read(base+"dashboard-mosaic.js"),r=read(base+"dashboard-gpu-renderer.js");

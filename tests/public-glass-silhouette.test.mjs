@@ -66,7 +66,7 @@ test("shared silhouette registration uses Clear tint and same owner fragment",()
  assert.match(shader,/clearTint\(clearFace\(base,darkFace\),icon.tint,0\.25\)/);
  assert.ok(shader.indexOf("color=mix(color,paint.rgb,clamp(paint.a*region.params.w")<shader.indexOf("color=composeGlassSilhouette(color"));
  assert.match(r,/const iconAnimating=syncGlassIcons\(authDt\)/);
- assert.match(r,/const iconAnimating=syncGlassIcons\(dt\)/);
+ assert.match(r,/const iconAnimating=syncGlassIcons\(dt,false\)/);
  assert.match(r,/suppressHover:suppressed/);
  assert.match(r,/owner.matches\("\.is-expanded,\.project-showcase-dissolve-ghost"\)/);
  assert.match(asset("dashboard-glass-source-paint.js"),/if\(el.hasAttribute\("data-glass-icon-owned"\)\)return/);
@@ -82,6 +82,11 @@ test("native SVG final coverage is independent of 512px optical mask and haze",(
  const bloom=coverageGeometry([10.25,8.5,91,91],[50.5,80.25,400,300],1);
  assert.ok(Math.abs(bloom.pw-91*1.085)<1e-10);
  assert.ok(Math.abs(bloom.ph-91*1.065)<1e-10);
+ const entering=coverageGeometry([10.25,8.5,91,91],[50.5,80.25,400,300],0,[1,1],.85);
+ assert.ok(Math.abs(entering.pw-91*.85)<1e-10);
+ assert.ok(Math.abs(entering.rect[2]-.85)<1e-10);
+ const reference=coverageGeometry([10.25,8.5,91,91],[50.5,80.25,400,300],1,[.5,.5],.85);
+ assert.ok(Math.abs(reference.pw-91*1.085*.5*.85)<1e-10);
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js"),v=asset("dashboard-glass-vector-coverage.js");
  assert.match(shader,/textureLoad\(silhouetteVectorCoverage,pixel,i32\(icon.coverageMeta.x\)-1,0\)\.r/);
  assert.match(shader,/let iconCoverage=finalSilhouetteCoverage\(icon,local,mask.r\)/);
