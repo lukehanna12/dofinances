@@ -33,5 +33,5 @@ const server=createServer((req,res)=>{
 });
 await new Promise(r=>server.listen(0,"127.0.0.1",r));
 const origin="http://127.0.0.1:"+server.address().port;
-const proc=spawn(process.env.LG_WEBKIT_DRIVER,[origin+"/?glass-renderer="+(process.env.LG_SITE_MODE||"continuous")+"&glass-source-proof"],{stdio:"inherit"});
+const proc=spawn(process.env.LG_WEBKIT_DRIVER,[origin+"/?"+(process.env.LG_SITE_MODE==="default"?"":"glass-renderer="+(process.env.LG_SITE_MODE||"continuous"))+"&glass-source-proof"],{stdio:"inherit"});
 try{const status=await new Promise((r,j)=>{proc.on("error",j);proc.on("exit",(c,s)=>r(c??1));});process.exitCode=status;}finally{server.close();}

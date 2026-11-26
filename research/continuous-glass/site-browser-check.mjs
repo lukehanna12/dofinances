@@ -14,6 +14,7 @@ const server=createServer((req,res)=>{
  const path=new URL(req.url,"http://127.0.0.1").pathname;
  try{
   let target=resolve(root,"."+path);
+  if(process.env.LG_SITE_MODE==="fallback"&&path==="/assets/home-dashboard/continuous-icon-vectors.json"){res.writeHead(503);return res.end("Controlled candidate asset failure");}
   if(path==="/assets/home-dashboard/continuous-title-outline.json"&&process.env.LG_TITLE_OUTLINE){res.writeHead(200,{"content-type":"application/json"});return res.end(readFileSync(process.env.LG_TITLE_OUTLINE));}
   if(path==="/"||path==="/projects"||path==="/projects/"||path==="/login"||path==="/login/"){
    let html=readFileSync(join(root,"index.html"),"utf8");
@@ -50,9 +51,11 @@ try{
  const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:process.env.LG_PERFORMANCE?(process.env.LG_PERFORMANCE==="reverse"?["continuous","baseline"]:["baseline","continuous"]):["baseline","continuous"])){
   if(!nativeZoom)await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
-  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
+  const t=Date.now();await send("Page.navigate",{url:origin+"/?"+(["default","fallback"].includes(mode)?"":"glass-renderer="+mode)+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state(),homeReadyMs=Date.now()-t;
+  if(mode==="default"&&home.renderer!=="continuous-candidate")throw Error("Default renderer did not activate "+JSON.stringify(home));
+  if(mode==="fallback"){const reason=await ev("window.__dashboardWebGPU.continuousStartupFallback");if(home.renderer!=="baseline"||!reason||home.errors.length)throw Error("Candidate startup did not preserve baseline "+JSON.stringify({home,reason}));results.push({mode,home,reason});continue;}
   if(nativeZoom){
    await wait(`document.documentElement.dataset.lgZoomReady==="1"`,"Native zoom extension not loaded");
    const cases=[];
@@ -147,7 +150,7 @@ try{
    if(mode==="continuous"&&new Set(cases.map(x=>x.digest)).size!==1)throw Error("Fixed source changed across DPR "+JSON.stringify(cases));
    results.push({mode,cases});continue;
   }
-  if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
+  if(home.renderer!==(["continuous","default"].includes(mode)?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
   const entryStart=Date.now();
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
@@ -164,7 +167,7 @@ try{
   }
   if(mode==="continuous"&&(process.env.LG_TITLE_OUTLINE||process.env.LG_PORTABLE_TITLE||process.env.LG_LOCAL_TITLE)&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
   await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
-  if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
+  if(["continuous","default"].includes(mode)&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
   if(process.env.LG_PERFORMANCE){
    await send("Performance.enable");
    const readMetrics=async()=>Object.fromEntries((await send("Performance.getMetrics")).metrics.map(x=>[x.name,x.value]));
