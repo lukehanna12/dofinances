@@ -1,6 +1,7 @@
 // Recovered finite G14G variable-blur diamond. Logical reconstruction is real arithmetic;
 // the separate dyadic compatibility evaluator preserves observed half operation boundaries.
 import {half} from "./native-field.mjs";
+import {sampleBGRA8,unormByte} from "./bgra8-sampler.mjs";
 export const GROUPS=Object.freeze([[[0,-2],[-2,0],[2,0],[0,2]],[[-1,-1],[1,-1],[-1,1],[1,1]],[[0,-1],[-1,0],[1,0],[0,1]],[[0,0]]].map(g=>Object.freeze(g.map(Object.freeze))));
 export const WEIGHTS=Object.freeze([.05633544921875,.07708740234375,.0902099609375,.10546875]);
 export function diamond(scene,x,y,sx=scene.step[0],sy=scene.step[1]){
@@ -18,8 +19,18 @@ export function halfDiamond(sample){
  for(const i of [1,2,0])v=half(v+sums[i]*WEIGHTS[i]);
  return v;
 }
-const roundEven=x=>{const f=Math.floor(x),r=x-f;return r===.5?f+(f%2):Math.round(x);};
-const toUnorm=z=>Math.max(0,Math.min(255,roundEven(z*255)));
+const toUnorm=unormByte;
+// Finite BGRA8 route, including tested odd dimensions. Source and target dimensions
+// are explicit; this does not determine which level Core Animation selects.
+export function nativeBGRA8Downsample(src,w,h){
+ if(!(src instanceof Uint8Array)||![w,h].every(n=>Number.isSafeInteger(n)&&n>0&&n<=4096)||src.length!==w*h*4||Math.max(w,h)<2)throw new RangeError("Invalid BGRA8 mip input");
+ const dw=Math.max(1,Math.floor(w/2)),dh=Math.max(1,Math.floor(h/2)),out=new Uint8Array(dw*dh*4),f=Math.fround;
+ for(let y=0;y<dh;y++)for(let x=0;x<dw;x++)for(let c=0;c<4;c++){
+  const v=halfDiamond((a,b)=>sampleBGRA8(src,w,h,f(f(x+a+.5)*f(1/dw)),f(f(y+b+.5)*f(1/dh)),c));
+  out[(y*dw+x)*4+c]=toUnorm(v);
+ }
+ return {width:dw,height:dh,values:out};
+}
 export function evenNativeDownsample(src,w,h,{unorm=false}={}){
  if(![w,h].every(n=>Number.isInteger(n)&&n>=2&&n%2===0)||src.length!==w*h*4||!Array.from(src).every(x=>Number.isFinite(x)&&(unorm?Number.isInteger(x)&&x>=0&&x<=255:half(x)===x)))throw new RangeError("Finite even-dimension native domain required");
  const dw=w/2,dh=h/2,out=unorm?new Uint8Array(dw*dh*4):new Float64Array(dw*dh*4);
@@ -68,8 +79,9 @@ export function nativeFixedMipChain(src,w,h,options){
  const count=options.levelCount??levels.length;
  if(!Number.isSafeInteger(count)||count<levels.length||count>12)throw new RangeError("Invalid mip level count");
  while(levels.length<count){
-  const p=levels.at(-1),next=evenNativeDownsample(p.values,p.width,p.height,{unorm:options.unorm??true});
-  levels.push({...next,sourceOrigin:p.sourceOrigin.map(x=>x+p.sourcePitch*.5),sourcePitch:p.sourcePitch*2});
+  const p=levels.at(-1),next=(options.unorm??true)?nativeBGRA8Downsample(p.values,p.width,p.height):evenNativeDownsample(p.values,p.width,p.height,{unorm:false});
+  const oldPitch=p.sourcePitchXY??[p.sourcePitch,p.sourcePitch],ratio=[p.width/next.width,p.height/next.height],pitch=ratio.map((v,i)=>v*oldPitch[i]);
+  levels.push({...next,sourceOrigin:p.sourceOrigin.map((x,i)=>x+oldPitch[i]*(ratio[i]-1)*.5),sourcePitchXY:pitch,sourcePitch:pitch[0]===pitch[1]?pitch[0]:null});
  }
  return levels;
 }
