@@ -53,7 +53,7 @@ export async function run(){
    }
    const cacheT=performance.now();
    const cachedIcons=Float32Array.from(icons);let cached=0;
-   for(let i=0;i<16;i++){const a=cachedIcons.subarray(i*20,(i+1)*20);if(data.cacheField(a,atlas.coverageView)){a[19]*=-1;cached++;}}
+   data.beginCache();for(let i=0;i<16;i++){const a=cachedIcons.subarray(i*20,(i+1)*20);if(data.cacheField(a,atlas.coverageView)){a[19]*=-1;cached++;}}data.endCache();
    await device.queue.onSubmittedWorkDone();const cacheBuildMs=performance.now()-cacheT;
    const buffers=[makeBuffer(Float32Array.from(tiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.of(W,H,1,scale,0,0,0,H,0,0,0,0,0,0,0,0,1,1,0,0,W,H,0,0),GPUBufferUsage.UNIFORM),makeBuffer(Float32Array.from(tints),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(profiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(regions),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(icons),GPUBufferUsage.STORAGE)];
    const sourceView=scene.createView(),entries=[{binding:0,resource:sourceView},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:glyph.createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:sourceView},{binding:9,resource:detail.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:12,resource:atlas.view},{binding:13,resource:atlas.hazeView},{binding:14,resource:atlas.coverageView}];
@@ -75,7 +75,7 @@ export async function run(){
     const j=(y*W+x)*8;
     for(let c=0;c<4;c++){const a=A.getFloat16(j+2*c,true),b=B.getFloat16(j+2*c,true),d=Math.abs(a-b);if(!Number.isFinite(d)){nonfinite++;continue;}if(c===3){alpha.push(d);continue;}diff.push(d);sum+=d;max=Math.max(max,d);}
    }
-   for(let i=0;i<16;i++){let total=0,peak=0,n=0;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;peak=Math.max(peak,d);n++;}perIcon.push({name:names[i],mean:total/n,max:peak});}
+   for(let i=0;i<16;i++){let total=0,peak=0,n=0,worst=null;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;if(d>peak){peak=d;worst={x,y,channel:c,baseline:A.getFloat16(j,true),candidate:B.getFloat16(j,true)};}n++;}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
    results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
