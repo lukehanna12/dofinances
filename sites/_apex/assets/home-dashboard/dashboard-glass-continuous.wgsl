@@ -77,7 +77,8 @@ fn pathDistance(p:vec2<f32>,root:u32,tol:f32)->f32{
  }
  return select(best.x,-best.x,inside);
 }
-fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
+struct IconFieldQuery {p:vec2<f32>,px:f32,tol:f32,root:u32,step:f32}
+fn iconFieldQuery(icon:GlassSilhouette,local:vec2<f32>)->IconFieldQuery{
  let h=curves[u32(abs(icon.coverageMeta.w))-1u];
  let size=vec2<f32>(h.c.y,h.degreeInfo.x);
  let fit=min(icon.rect.z/size.x,icon.rect.w/size.y);
@@ -85,18 +86,28 @@ fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
  let authored=h.d+size*.5+(local-center)/fit;
  let p=(authored-h.a)/h.b.x;let px=fit*h.b.x;
  let tol=max(0.000008,min(0.00012,0.025/max(px,1.0)));
- let root=u32(h.c.x);
- let sd=pathDistance(p,root,tol);
- // Retain the old authored normal-smoothing footprint, but evaluate
- // the continuous field rather than a quantized sampled distance atlas.
- let step=max(size.x,size.y)/(256.0*h.b.x);
- let dx=vec2<f32>(step,0.0);let dy=dx.yx;
- let grad=vec2<f32>(pathDistance(p+dx,root,tol)-pathDistance(p-dx,root,tol),pathDistance(p+dy,root,tol)-pathDistance(p-dy,root,tol));
- // The centered difference is an average directional derivative over the
- // existing authored stencil. Do not normalize a vanishing medial-axis
- // gradient into an arbitrary full-strength refraction vector.
+ return IconFieldQuery(p,px,tol,u32(h.c.x),max(size.x,size.y)/(256.0*h.b.x));
+}
+fn iconStencil(q:IconFieldQuery,lane:u32)->f32{
+ var p=q.p;
+ switch lane{
+  case 1u:{p+=vec2<f32>(q.step,0.0);}
+  case 2u:{p-=vec2<f32>(q.step,0.0);}
+  case 3u:{p+=vec2<f32>(0.0,q.step);}
+  case 4u:{p-=vec2<f32>(0.0,q.step);}
+  default:{}
+ }
+ return pathDistance(p,q.root,q.tol);
+}
+fn assembleIconField(q:IconFieldQuery,sd:f32,xp:f32,xm:f32,yp:f32,ym:f32)->vec3<f32>{
+ let grad=vec2<f32>(xp-xm,yp-ym);
+ // Average directional derivatives over the existing authored stencil.
  // Projection onto the closed unit disk is continuous and nonexpansive.
- return vec3<f32>(sd*px,grad/max(2.0*step,length(grad)));
+ return vec3<f32>(sd*q.px,grad/max(2.0*q.step,length(grad)));
+}
+fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
+ let q=iconFieldQuery(icon,local);
+ return assembleIconField(q,iconStencil(q,0u),iconStencil(q,1u),iconStencil(q,2u),iconStencil(q,3u),iconStencil(q,4u));
 }
 
 fn evaluateContinuousTitleField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
