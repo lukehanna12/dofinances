@@ -92,7 +92,11 @@ fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
  let step=max(size.x,size.y)/(256.0*h.b.x);
  let dx=vec2<f32>(step,0.0);let dy=dx.yx;
  let grad=vec2<f32>(pathDistance(p+dx,root,tol)-pathDistance(p-dx,root,tol),pathDistance(p+dy,root,tol)-pathDistance(p-dy,root,tol));
- return vec3<f32>(sd*px,grad/max(length(grad),0.000001));
+ // The centered difference is an average directional derivative over the
+ // existing authored stencil. Do not normalize a vanishing medial-axis
+ // gradient into an arbitrary full-strength refraction vector.
+ // Projection onto the closed unit disk is continuous and nonexpansive.
+ return vec3<f32>(sd*px,grad/max(2.0*step,length(grad)));
 }
 
 fn evaluateContinuousTitleField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{

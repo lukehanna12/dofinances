@@ -50,7 +50,7 @@ export async function run(){
    const x=(i+.319)*24/3,y=(j+.683)*24/2,ref=d(x,y);
    if(ref===null){skipped++;continue;}
    const a=d(x+h,y),b=d(x-h,y),c=d(x,y+h),e=d(x,y-h);
-   let n=null;if([a,b,c,e].every(v=>v!==null)){const dx=a-b,dy=c-e,len=Math.hypot(dx,dy);if(len>.001)n=[dx/len,dy/len];}
+   let n=null;if([a,b,c,e].every(v=>v!==null)){const dx=a-b,dy=c-e,len=Math.hypot(dx,dy);n=[dx/Math.max(2*h,len),dy/Math.max(2*h,len)];}
    const old=bilinear(mask,MASK_PAD+x*MASK_INNER/24,MASK_PAD+y*MASK_INNER/24);
    for(let k=0;k<scales.length;k++){const s=scales[k];rows.push(x*s,y*s,s,index,24*s,24*s,0,0);refs.push({k,ref,old,n,name});}
   }
