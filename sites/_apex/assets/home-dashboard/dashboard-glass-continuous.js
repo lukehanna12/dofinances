@@ -1,8 +1,17 @@
 import {clockTextField} from "./dashboard-glass-text.js";
 import {prepareTitleWord,portableTitleAlpha} from "./dashboard-glass-title-geometry.js";
-// Opt-in public renderer candidate. The baseline shader and source pipeline
-// are unchanged unless glass-renderer=continuous is explicitly requested.
-export const continuousRequested=()=>new URLSearchParams(location.search).get("glass-renderer")==="continuous";
+// Production selection preserves the prior WebGPU path for unsupported
+// devices and an explicit rollback URL. Research opt-in may exercise f32.
+export function continuousRequested(search=globalThis.location?.search??"",nativeF16=true,limits=null,width=0,height=0){
+ const mode=new URLSearchParams(search).get("glass-renderer");
+ if(mode==="baseline")return false;
+ if(mode==="continuous")return true;
+ if(!nativeF16)return false;
+ if(limits&&(limits.maxComputeInvocationsPerWorkgroup<160||
+  limits.maxComputeWorkgroupSizeZ<5||limits.maxTextureArrayLayers<32||
+  limits.maxTextureDimension2D<Math.max(256,width*2,height*2)))return false;
+ return true;
+}
 export async function loadContinuousGlass(device,base){
  const [asset,code]=await Promise.all([
   fetch(base+"continuous-icon-vectors.json").then(r=>{if(!r.ok)throw Error("Continuous icon data unavailable");return r.json();}),
@@ -39,6 +48,8 @@ export async function loadContinuousGlass(device,base){
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength+(titleAsset?titleReserve*48:0),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
  device.queue.writeBuffer(buffer,0,data);
  const capacity=32,keys=new Map(),uniforms=new Map(),channels=new Map();
+ let titleUniform=null;
+ try{
  // Allocate just the needed side, rounded to 32 physical samples, with
  // a bounded per-channel budget. Higher magnifications evaluate directly.
  const makeChannel=(name,side)=>{
@@ -61,7 +72,7 @@ export async function loadContinuousGlass(device,base){
  let builds=0,hits=0,misses=0,titleBuilds=0,cacheSubmissions=0,cacheBatch=null;
  function beginCache(){if(cacheBatch)throw Error('Nested vector cache batch');cacheBatch={cmd:null,slots:new Set()};}
  function endCache(){const batch=cacheBatch;cacheBatch=null;if(batch?.cmd){device.queue.submit([batch.cmd.finish()]);cacheSubmissions++;}}
- let titlePipeline=null,titleUniform=null,titleGeometryKey=null,titleGeometry=null,titleGeometryBuilds=0;
+ let titlePipeline=null,titleGeometryKey=null,titleGeometry=null,titleGeometryBuilds=0;
  if(titleAsset){
   const module=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> titleIcon:GlassSilhouette;\n@group(0) @binding(1) var titleOut:texture_storage_2d<rgba32float,write>;\n@group(0) @binding(2) var titleAlpha:texture_2d<f32>;\nvar<workgroup> titleStencil:array<f32,160>;\n@compute @workgroup_size(8,4,5)\nfn titleMain(@builtin(global_invocation_id) id:vec3<u32>,@builtin(local_invocation_id) lid:vec3<u32>){\n let dims=textureDimensions(titleOut);let valid=all(id.xy<dims);\n let p=vec2<i32>(id.xy);var a=0.0;var near=0.0;\n if(valid){\n  a=textureLoad(titleAlpha,p,0).a;near=a;\n  for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){\n   near=max(near,textureLoad(titleAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(dims)-1),0).a);\n  }}\n }\n let n=(lid.y*8u+lid.x)*5u;\n let local=vec2<f32>(id.xy)+titleIcon.coverageRect.xy;\n var value=0.0;\n if(near>0.0){value=iconStencil(titleFieldQuery(titleIcon,local),lid.z);}\n titleStencil[n+lid.z]=value;\n workgroupBarrier();\n if(lid.z==0u&&valid){\n  if(near<=0.0){textureStore(titleOut,p,vec4<f32>(1000,0,0,0));}\n  else{let q=titleFieldQuery(titleIcon,local);let f=assembleTitleField(q,titleStencil[n],titleStencil[n+1u],titleStencil[n+2u],titleStencil[n+3u],titleStencil[n+4u]);textureStore(titleOut,p,vec4<f32>(f,a));}\n }\n}\n"});
   titlePipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module,entryPoint:"titleMain"}});
@@ -106,6 +117,7 @@ export async function loadContinuousGlass(device,base){
   keys.set(cacheSlot,key);builds++;return true;
  }
  return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",get fieldView(){return fieldFor("display");},fieldFor,ensureField,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,titleGeometryBuilds,cacheSubmissions,parallelCache,bytes:[...channels.values()].reduce((n,c)=>n+c.side*c.side*capacity*16,0),sides:Object.fromEntries([...channels].map(([n,c])=>[n,c.side]))};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();for(const c of channels.values())c.texture.destroy();channels.clear();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
+ }catch(error){buffer.destroy();for(const c of channels.values())c.texture.destroy();titleUniform?.destroy();throw error;}
 }
 function once(s,a,b){if(!s.includes(a)||s.indexOf(a)!==s.lastIndexOf(a))throw Error("Continuous specialization mismatch: "+a.slice(0,100));return s.replace(a,b);}
 export function specializeContinuousGlass(s,code){

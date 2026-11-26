@@ -542,20 +542,22 @@ async function initialize(){
     }
   }
 
-  const continuous=continuousRequested()?await loadContinuousGlass(device,base):null;
-  audit.glassRenderer=continuous?"continuous-candidate":"baseline";
-  if(continuous){sources[2]=specializeContinuousGlass(sources[2],continuous.code);audit.continuousVectors={curveCount:continuous.curveCount,bytes:continuous.bytes};}
+  // A failed optional vector asset or candidate pipeline must not force a
+  // visitor onto a less faithful CSS renderer. The original WebGPU program
+  // is still available on the very same device, before any scene is shown.
+  async function createPublicPipelines(candidate){
   if(root)root.dataset.gpuPhase="compile-wgsl";
-  sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replaceAll(
+  const glassSource=(nativeF16?"enable f16;\n":"")+(candidate?specializeContinuousGlass(sources[2],candidate.code):sources[2]).replaceAll(
     "__ORACLE_HALF_BODY__",
     nativeF16?"return vec3<f32>(vec3<f16>(v));":"return v;");
-  if(sources[2].includes("__ORACLE_HALF_BODY__"))
+  if(glassSource.includes("__ORACLE_HALF_BODY__"))
     throw Error("Native half-conversion shader specialization did not apply");
-  const modules=sources.map((code,i)=>device.createShaderModule({
+  const modules=[sources[0],sources[1],glassSource].map((code,i)=>device.createShaderModule({
     label:["background","explicit mip reduction","oracle glass"][i],code
   }));
   await Promise.all(modules.map((x,i)=>compileCheck(x,["scene","mips","glass"][i])));
   device.pushErrorScope("validation");
+  let result;try{
   const backdropPipeline=device.createRenderPipeline({
     label:"GPU-owned scene -> mip0",
     layout:"auto",
@@ -620,8 +622,28 @@ async function initialize(){
     primitive:{topology:"triangle-list"}
   });
   if(root)root.dataset.gpuPhase="validate-pipelines";
-  const pipelineError=await device.popErrorScope();
-  if(pipelineError)throw Error("GPU pipeline validation: "+pipelineError.message);
+
+  result={backdropPipeline,mipPipeline,detailMipPipeline,copyPipeline,glassPipeline,compositeBackdropPipeline,compositeGlassPipeline,projectRegionCapturePipeline};
+  }finally{
+   const pipelineError=await device.popErrorScope();
+   if(pipelineError)throw Error("GPU pipeline validation: "+pipelineError.message);
+  }
+  return result;
+  }
+  let continuous=null,pipelines;
+  const requested=continuousRequested(location.search,nativeF16,device.limits,innerWidth,innerHeight);
+  if(requested){
+    try{continuous=await loadContinuousGlass(device,base);pipelines=await createPublicPipelines(continuous);}
+    catch(error){
+      continuous?.dispose();continuous=null;
+      audit.continuousStartupFallback=String(error);
+      console.warn("Continuous glass startup compatibility fallback:",error);
+    }
+  }
+  if(!pipelines)pipelines=await createPublicPipelines(null);
+  audit.glassRenderer=continuous?"continuous-candidate":"baseline";
+  if(continuous)audit.continuousVectors={curveCount:continuous.curveCount,bytes:continuous.bytes};
+  const {backdropPipeline,mipPipeline,detailMipPipeline,copyPipeline,glassPipeline,compositeBackdropPipeline,compositeGlassPipeline,projectRegionCapturePipeline}=pipelines;
   const sampler=device.createSampler({
     magFilter:"linear",minFilter:"linear",mipmapFilter:"nearest",
     addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
