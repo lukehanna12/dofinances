@@ -168,7 +168,7 @@ export function prepareVectorPath(contours,{fillRule="nonzero",tolerance=1e-4}={
 // Word-specific reference geometry. Browser shaping and coverage remain
 // authoritative. Never load or export a system font file.
 export function prepareTitleWord(asset,text,style,width,height,dpr){
- if(asset?.schema==="dofinances-local-projects-word-v1"){const lh=parseFloat(style.lineHeight);if(!(lh>0))return null;const local=localTitleContours(text,style,lh);if(!local)return null;const contours=local.contours.map(c=>c.map(s=>s.map(q=>q.map(v=>v*dpr))));return {...prepareVectorPath(contours,{fillRule:"evenodd",tolerance:Math.max(.003,width*1e-5)}),width,height,dpr,localEvidence:{segments:local.segments,deviation:local.deviation,buildMs:local.buildMs,scale:local.scale}};}
+ if(asset?.schema==="dofinances-local-projects-word-v1"){const lh=parseFloat(style.lineHeight);if(!(lh>0))return null;const local=localTitleContours(text,style,lh);if(!local)return null;const contours=local.contours.map(c=>c.map(s=>s.map(q=>q.map(v=>v*dpr))));return {...prepareVectorPath(contours,{fillRule:"evenodd",tolerance:Math.max(.003,width*1e-5)}),width,height,dpr,localEvidence:{segments:local.segments,deviation:local.deviation,buildMs:local.buildMs,timing:local.timing,scale:local.scale}};}
  if(asset?.schema==="dofinances-portable-projects-word-v1"){const word=portableTitlePath(asset,text,style,width,height,dpr);if(!word)return null;return {...prepareVectorPath(word.contours,{tolerance:Math.max(.003,width*1e-5)}),width,height,dpr};}
  if(asset?.schema!=="dofinances-projects-word-outline-v1"||text!==asset.text||text!=="Projects"||
    !navigator.platform.includes("Mac")||Number(style.fontWeight)!==550||style.fontStyle!=="normal"||

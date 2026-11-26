@@ -3,11 +3,11 @@
 // Finite sampled approximation, NOT an exact font outline extractor.
 // All coordinates are logical CSS points; framebuffer DPR never enters capture.
 const threshold=127.5;
-const distance=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],q=dx*dx+dy*dy,t=q?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/q)):0;return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
+const distance2=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],q=dx*dx+dy*dy,t=q?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/q)):0;return (p[0]-a[0]-t*dx)**2+(p[1]-a[1]-t*dy)**2;};
 function simplify(points,tol){
  const keep=new Uint8Array(points.length);keep[0]=keep[points.length-1]=1;
  const stack=[[0,points.length-1]];
- while(stack.length){const [a,b]=stack.pop();let best=tol,k=-1;for(let i=a+1;i<b;i++){const v=distance(points[i],points[a],points[b]);if(v>best){best=v;k=i;}}if(k>=0){keep[k]=1;stack.push([a,k],[k,b]);}}
+ while(stack.length){const [a,b]=stack.pop();let best=tol*tol,k=-1;for(let i=a+1;i<b;i++){const v=distance2(points[i],points[a],points[b]);if(v>best){best=v;k=i;}}if(k>=0){keep[k]=1;stack.push([a,k],[k,b]);}}
  return points.filter((_,i)=>keep[i]);
 }
 // Marching squares on pixel CENTER values, with linear edge interpolation.
@@ -63,7 +63,8 @@ function capture(text,style,logicalHeight,scale,tol){
 // Finite convergence diagnostic, comparing vertices and midpoints in both
 // directions. It is not a certified Hausdorff bound on the unknown font.
 export function contourDeviation(a,b){
- const seg=b.flat(),one=(v)=>Math.min(...seg.map(s=>distance(v,s[0],s[1])));let max=0;
+ const seg=b.flat().map(s=>({s,loX:Math.min(s[0][0],s[1][0]),hiX:Math.max(s[0][0],s[1][0]),loY:Math.min(s[0][1],s[1][1]),hiY:Math.max(s[0][1],s[1][1])}));
+ const one=v=>{let best=Infinity;for(const q of seg){const dx=Math.max(q.loX-v[0],0,v[0]-q.hiX),dy=Math.max(q.loY-v[1],0,v[1]-q.hiY);if(dx*dx+dy*dy<best)best=Math.min(best,distance2(v,q.s[0],q.s[1]));}return Math.sqrt(best);};let max=0;
  for(const c of a)for(const s of c){max=Math.max(max,one(s[0]),one([(s[0][0]+s[1][0])*.5,(s[0][1]+s[1][1])*.5]));}
  return max;
 }
@@ -74,10 +75,10 @@ export function localTitleContours(text,style,logicalHeight){
  if(cache.has(key))return cache.get(key);
  const t=performance.now();let result=null;
  try{
-  const coarse=capture(text,style,logicalHeight,8,.035),fine=capture(text,style,logicalHeight,16,.035);
+  const coarse=capture(text,style,logicalHeight,8,.035),middle=performance.now(),fine=capture(text,style,logicalHeight,16,.035),after=performance.now();
   const deviation=Math.max(contourDeviation(coarse.contours,fine.contours),contourDeviation(fine.contours,coarse.contours));
   if(coarse.contours.length!==fine.contours.length||fine.segments>1024||deviation>.18)throw Error("Font contour convergence failed: "+JSON.stringify({deviation,coarse:coarse.segments,fine:fine.segments}));
-  result={...fine,deviation,coarseSegments:coarse.segments,buildMs:performance.now()-t};
+  result={...fine,deviation,coarseSegments:coarse.segments,buildMs:performance.now()-t,timing:[middle-t,after-middle,performance.now()-after]};
  }catch(error){console.warn("Local heading outline:",String(error));}
  if(cache.size>=8)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
 }
