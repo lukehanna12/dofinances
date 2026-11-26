@@ -170,6 +170,6 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let buv=nativeHalf2(baseUV+nativeHalf2(normal*bleed*pointScale/extent));","let buv=baseUV+normal*bleed*pointScale/extent;");
  s=once(s,"-signed/11.0","-signed/(11.0*referenceDensity())");
  s=once(s,"exp(-abs(signed)*0.18)","exp(-abs(signed)/referenceDensity()*0.18)");
- const density="fn geometryPosition(p:vec2<f32>)->vec2<f32>{return p*state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0));}\nfn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\nfn nativeCornerCompare(x:f32)->f32{return unpack2x16float(pack2x16float(vec2<f32>(x,0.0))).x;}\n";
+ const density="fn geometryPosition(p:vec2<f32>)->vec2<f32>{return p*(state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0)));}\nfn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\nfn nativeCornerCompare(x:f32)->f32{return unpack2x16float(pack2x16float(vec2<f32>(x,0.0))).x;}\n";
  return s+"\n"+density+envelope+code;
 }

@@ -1080,7 +1080,8 @@ async function initialize(){
     if(!underlay)for(const layer of routeActiveLayers)drawRouteLayer(pass,layer,false);
   }
   function ensureCompositeScene(home=false){
-    const w=home&&continuous?sourceWidth:physicalWidth,h=home&&continuous?sourceHeight:physicalHeight;
+    const fixed=home&&continuous&&!routeActiveLayers.length;
+    const w=fixed?sourceWidth:physicalWidth,h=fixed?sourceHeight:physicalHeight;
     if(compositeScene&&compositeScene.width===w&&compositeScene.height===h)return;
     compositeScene?.destroy();
     compositeScene=rgba16Texture(device,w,h);
@@ -2095,7 +2096,7 @@ async function initialize(){
     ...(new URLSearchParams(location.search).has("glass-source-proof")?{async sourceRegionDigest(kind,rect){
       const texture=kind==="base"?scene:kind==="underlay"?(routeActiveLayers.length>1?secondRouteScene:compositeScene):null;
       if(!texture||!Array.isArray(rect)||rect.length!==4||!rect.every(Number.isFinite))throw TypeError("Owned source region required");
-      const sampleDpr=kind==="base"?sourceDpr:dpr;
+      const sampleDpr=kind==="base"?sourceDpr:texture.width/innerWidth;
       const x=Math.max(0,Math.floor(rect[0]*sampleDpr)),y=Math.max(0,Math.floor((rect[1]-sceneTop)*sampleDpr));
       const w=Math.min(128,texture.width-x,Math.max(1,Math.ceil(rect[2]*sampleDpr))),h=Math.min(128,texture.height-y,Math.max(1,Math.ceil(rect[3]*sampleDpr)));
       if(w<1||h<1)throw RangeError("Source region outside viewport");
