@@ -17,7 +17,7 @@ export const PROJECT_CATEGORIES_BY_SLUG=Object.freeze({
   "bootscript":Object.freeze(["Extensions"]),
   "github-readme-chrome-extension":Object.freeze(["Extensions"]),
   "chatgpt-chat-save-chrome-extension":Object.freeze(["Extensions"]),
-  "protocol-monitor-pruner":Object.freeze(["Extensions"]),
+  "protocol-monitor-pruner":Object.freeze(["Extensions","CLIs"]),
   "hidden-functions":Object.freeze(["Add-ons"]),
   "latexcel":Object.freeze(["Add-ons"]),
   "unicode-plus":Object.freeze(["CLIs"]),

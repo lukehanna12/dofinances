@@ -15,7 +15,7 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
  {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
- {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Developer utility",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
+ {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Chrome extension and CLI",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
  {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null},
  {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},

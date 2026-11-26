@@ -695,6 +695,42 @@ export const PROJECT_DIAGRAMS=Object.freeze({
         ]
       ],
       "planned": false
+    },
+    {
+      "title": "Two independent interfaces",
+      "rows": [
+        [
+          "Chrome extension\nIn-browser control",
+          "CLI\nLocal control"
+        ],
+        [
+          "Shared processing code"
+        ],
+        [
+          "Common preservation formats"
+        ]
+      ],
+      "edges": [
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          2,
+          0
+        ]
+      ],
+      "planned": true
     }
   ],
   "app-caviar": [

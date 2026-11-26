@@ -173,7 +173,8 @@ test("Projects search and seven multiselect filters use exact slug memberships",
     "CLIs": [
       "Colosseum",
       "Unicode Plus",
-      "Lightwork"
+      "Lightwork",
+      "Protocol Monitor Pruner"
     ],
     "MCPs": [
       "Apple HIGs Reader",
@@ -197,6 +198,8 @@ test("Projects search and seven multiselect filters use exact slug memberships",
   assert.equal(PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p)).length,16);
   const cliAndExt=PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"",new Set(["CLIs","Extensions"])));
   assert.equal(cliAndExt.length,7);
+  assert.equal(cliAndExt.filter(p=>p.slug==="protocol-monitor-pruner").length,1);
+  assert.ok(PUBLIC_PROJECTS.some(p=>p.slug==="protocol-monitor-pruner"&&projectMatchesFilters(p,"CLI",new Set(["CLIs"]))));
   const mcpAndLibrary=PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"",new Set(["MCPs","Libraries"])));
   assert.equal(mcpAndLibrary.length,6);
   assert.equal(mcpAndLibrary.filter(p=>p.name==="Terminal Scalars").length,1);
@@ -481,6 +484,11 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/most faithful reconstruction/);
   assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/recently open-sourced Adobe Photoshop reconstruction/);
   assert.match(PROJECT_DESCRIPTIONS["protocol-monitor-pruner"],/Few specialized tools exist/);
+  assert.match(PROJECT_DESCRIPTIONS["protocol-monitor-pruner"],/Chrome extension in development for direct in-browser control.*independent command-line interface \(CLI\) for local control/);
+  assert.match(PROJECT_DESCRIPTIONS["protocol-monitor-pruner"],/one repository, sharing code where appropriate/);
+  assert.equal(PROJECT_DIAGRAMS["protocol-monitor-pruner"][0].planned,false);
+  assert.equal(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].planned,true);
+  assert.deepEqual(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].rows[0],["Chrome extension\nIn-browser control","CLI\nLocal control"]);
   assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/most versatile in-memory Vite and React application builder/);
   assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/extensive collection of hidden Google Sheets functions/);
