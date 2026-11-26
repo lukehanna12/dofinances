@@ -118,7 +118,7 @@ test("Named art sources match and the retired Piranesi crop is removed from both
     load("../sites/_apex/app/assets/project-showcase.css")
   ]);
   for(const css of [publicCSS,privateCSS]){
-    assert.doesNotMatch(css,/\\[data-project-slug="hidden-functions"\\][^{}]*\\.project-showcase-photo\\s*\\{/);
+    assert.ok(!css.includes('[data-project-slug="hidden-functions"]'),"Remove the old artwork-specific crop");
   }
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
 });
