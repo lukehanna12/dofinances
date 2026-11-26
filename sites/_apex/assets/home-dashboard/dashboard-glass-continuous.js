@@ -91,7 +91,8 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"exp(-abs(signed)*1.16)","exp(-abs(signed)/referenceDensity()*1.16)");
  s=once(s,"exp(-abs(silhouetteSigned)*1.16)","exp(-abs(silhouetteSigned)/referenceDensity()*1.16)");
  s=s.replaceAll("thresholdMix(signed)","thresholdMix(signed/referenceDensity())");
- s=once(s,"let chosen=clamp(lod,0.0,maxLevel);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maxLevel);");
+ const mipStart=s.indexOf("fn mipSample("),mipEnd=s.indexOf("// Same explicit bilinear",mipStart);
+ s=s.slice(0,mipStart)+once(s.slice(mipStart,mipEnd),"let chosen=clamp(lod,0.0,maxLevel);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maxLevel);")+s.slice(mipEnd);
  s=once(s,"let chosen=clamp(lod,0.0,maximum);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maximum);");
  s=once(s,"max(footprint.x,footprint.y)))+max(0.0,lod)","max(footprint.x,footprint.y)*referenceDensity()))+max(0.0,lod)");
  for(const distance of ["signed+inner","signed+outer"]){
