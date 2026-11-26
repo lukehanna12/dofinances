@@ -30,6 +30,7 @@ export function alphaContours(alpha,w,h,scale,tol=.035,offset=[0,0]){
   if(e.length!==2)throw Error("Unresolved glyph contour saddle");
   link(edge(x,y,e[0],[a,b,c,d]),edge(x,y,e[1],[a,b,c,d]));
  }
+ if([...edges.values()].some(neighbors=>neighbors.length!==2))throw Error("Open glyph contour");
  const contours=[];let rawVertices=0;
  for(const [first,neighbors] of edges){
   if(!neighbors.length)continue;
