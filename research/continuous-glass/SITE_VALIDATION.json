@@ -395,6 +395,19 @@
         "trace": "d170e5f0-dbf5-47c4-8c6d-5b0738473cba",
         "passed": true,
         "scope": "Actual built login from prior code with no production modifications except candidate default/fallback selection and startup compilation refactor; final release workflow must independently build."
+      },
+      "ciCompatibility": {
+        "blockedRun": 45769531704,
+        "issue": "Node22 lacks DataView.setFloat16; four retained numerical hash tests failed before deployment",
+        "fixCommit": "5175d15608489c89379fdf4244b174ef4fe4ae21",
+        "trace": "dc59459d-92cb-45d3-8c1c-5a0f6ca21fb1",
+        "localTests": 696,
+        "failed": 0,
+        "disabledFloat16API": {
+          "passed": 11,
+          "failed": 0
+        },
+        "expectedHashesChanged": false
       }
     }
   },
