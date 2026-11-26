@@ -4,6 +4,7 @@ import Foundation
 import CoreText
 import CoreGraphics
 let text="Projects"
+let unionBoundary=CommandLine.arguments.contains("--union")
 let f=CTFontCreateUIFontForLanguage(.system,63,nil)!
 func table(_ s:String)->Data{CTFontCopyTable(f,s.utf8.reduce(UInt32(0)){$0<<8|UInt32($1)},[])! as Data}
 func u16(_ d:Data,_ i:Int)->Int{Int(d[i])*256+Int(d[i+1])}
@@ -76,7 +77,7 @@ func shape(_ size:Double)->[String:Any]{
    guard let p=CTFontCreatePathForGlyph(font,gs[i],nil) else{fatalError("Missing title glyph")}
    // CoreText may return overlapping component subpaths. Only the actual
    // boundary of their filled union is a valid signed-distance reference.
-   paths.append(contours(p.normalized(using:.winding),size))
+   paths.append(contours(unionBoundary ? p.normalized(using:.winding):p,size))
   }
  }
  var asc:CGFloat=0,desc:CGFloat=0,lead:CGFloat=0
@@ -84,5 +85,5 @@ func shape(_ size:Double)->[String:Any]{
  return ["size":size,"font":CTFontCopyPostScriptName(font) as String,"ids":ids,"positions":positions,"paths":paths,"metrics":[w/size,Double(asc)/size,Double(desc)/size]]
 }
 let selected=[51.75,69.75],hold=[52.125,54.375,57.5,60.625,63,66.25,68.875]
-let out:[String:Any]=["text":text,"gvarTuples":tuples,"hvarRegions":num,"opticalKnots":sizes,"samples":selected.map(shape),"heldout":hold.map(shape)]
+let out:[String:Any]=["text":text,"unionBoundary":unionBoundary,"gvarTuples":tuples,"hvarRegions":num,"opticalKnots":sizes,"samples":selected.map(shape),"heldout":hold.map(shape)]
 FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject:out,options:[.sortedKeys]))
