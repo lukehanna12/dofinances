@@ -8,37 +8,37 @@
     {
       "id": "site-vector-geometry",
       "status": "open",
-      "reason": "All 16 icon vector fields pass 480 independent magnification controls; Projects title 199 curves verified with reference-local opt-in only. Portable font outline delivery remains open.",
+      "reason": "16 authored icons pass independent 480-control magnification test; 190-curve portable Projects title implemented and integrated but changes glyph appearance (18.4–23.7% relative alpha difference before logical baseline correction). Native system title remains default; no automatic typography substitution.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-coordinate-separation",
       "status": "open",
-      "reason": "Finite aligned interior six-shape density comparisons pass; fixed logical base source region unchanged across four DPRs. AA edges and fully composed title/icon density, real screen events remain open.",
+      "reason": "Aligned six-shape interior density test passes; rectangle footprint corrected and exact area integrated, curved coverage ramp retained. Four reference route source regions agree at DPR1/3, portable title residual max .000977 after logical baseline fix. Full cross-platform and real screen-event validation open.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-optical-reconstruction",
       "status": "open",
-      "reason": "Base and Home hover optical attachments use fixed logical reference lattice, actual GPU hover/press at DPR1/3 passed. Route layers can still use actual source spacing; mipbox/haze retained, full reconstruction comparison open.",
+      "reason": "Fixed reference lattice now covers base, Home and overlapping route attachments, with independent reference SVG coverage and title source. Four region checks pass with system fallback, near-half precision with portable title. Full dynamic composition and native-derived mip producer integration not proven.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-material-interaction-preservation",
       "status": "open",
-      "reason": "Real packaged login, Home hover and press, Projects scrolling/resizing pass on reference browser. Full transition/dropdown/animation and nonreference validation incomplete.",
+      "reason": "Packaged login, Home hover/press, Projects scroll/resize/filter render pass on reference Mac; exhaustive animation, route transitions and nonreference hardware not validated.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-comparative-fidelity",
       "status": "open",
-      "reason": "Independent icon geometry accuracy vastly improved, six shape Retina interior max RGB diff .0048828125; ordinary icon attachment max .331909 at DPR2 persists. No full appearance approval.",
+      "reason": "Independent bounded optical vector error greatly reduced on all 16 worst locations; ordinary icon max RGB difference .297119 remains, portable wordmark differs from original title, appearance equivalence or superiority not established.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "production-performance-and-regressions",
       "status": "open",
-      "reason": "686 tests pass, actual production build and packaged login pass; candidate scroll 402.8–542.6ms and earlier baseline 401.4–622.7ms variable; latest DPR2 cached draw samples 1.3–3.8ms vs baseline 1.1–1.3ms, rebuild 36.5ms. No robust performance approval.",
+      "reason": "688 tests and final build/sign-in pass. Parallel cache 25.5–28.1ms measured, three paired scroll runs 335.2/468.8/660.7ms baseline vs 395.3/502.3/519.6ms candidate; mixed performance, extra reference cache memory. No robust performance approval.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     }
   ],
@@ -100,8 +100,8 @@
     "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
   },
   "latestSiteValidation": {
-    "commit": "8066f9108697d67edac8beb4a85c7bf4425c88da",
+    "commit": "cea3a903d17c233f17ada7967098c0ad7cb2da6d",
     "path": "research/continuous-glass/SITE_VALIDATION.json",
-    "scope": "Finite geometry/density and reference browser checks; all six complete release gates remain open."
+    "scope": "New independent optical normal, fixed reference route, portable wordmark, rectangle AA and performance evidence; release remains blocked."
   }
 }
