@@ -50,7 +50,7 @@ try{
    const cases=[];
    for(const density of [2,1,1.5,3,2]){
     await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:density,mobile:false});
-    await wait("devicePixelRatio==="+density+"&&window.__dashboardWebGPU?.status==='ready'&&typeof window.__dashboardGpuControls?.sourceRegionDigest==='function'","DPR not ready");
+    await wait("devicePixelRatio==="+density+"&&window.__dashboardWebGPU?.status==='ready'&&typeof window.__dashboardGpuControls?.sourceRegionDigest==='function'&&document.querySelector('#dashboard-webgpu-scene')?.width==="+Math.floor(1400*density),"DPR output not ready");
     await sleep(400);
     const snapshot=await state(),digest=await ev('window.__dashboardGpuControls.sourceRegionDigest("base",[100,150,35,30])');
     cases.push({density,sceneBuilds:snapshot.sceneBuilds,lattice:snapshot.lattice,errors:snapshot.errors,digest});

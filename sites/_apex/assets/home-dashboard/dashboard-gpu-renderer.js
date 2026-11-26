@@ -2102,11 +2102,17 @@ async function initialize(){
     }}:{})
   });
   window.addEventListener("resize",onSize,{passive:true});
+  // Resolution changes (screen moves or browser zoom) can leave CSS layout
+  // dimensions unchanged. Re-arm the exact-resolution media query on events.
+  let resolutionQuery=null;
+  const watchResolution=()=>{resolutionQuery?.removeEventListener("change",resolutionChanged);resolutionQuery=matchMedia("(resolution: "+(devicePixelRatio||1)+"dppx)");resolutionQuery.addEventListener("change",resolutionChanged);};
+  const resolutionChanged=()=>{watchResolution();onSize();};
+  watchResolution();
   const resizeObserver=new ResizeObserver(onSize);
   resizeObserver.observe(root);
   device.lost.then(reason=>{
     authObserver?.disconnect();authSizeObserver?.disconnect();materialObserver.disconnect();
-    resizeObserver.disconnect();
+    resizeObserver.disconnect();resolutionQuery?.removeEventListener("change",resolutionChanged);
     fallback("GPU device lost: "+reason.message);
   });
   requestRender();
