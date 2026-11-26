@@ -131,7 +131,13 @@ try{
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
-  const projects=await state();if(process.env.LG_REAL_ART_DIR){await wait(`Array.from(document.querySelectorAll(".project-showcase-photo")).every(x=>x.complete&&x.naturalWidth>0)`,"Production artwork decode failed");}
+  const projects=await state();if(process.env.LG_REAL_ART_DIR){
+   // Artwork is intentionally not assigned a source until user interaction.
+   // Invoke each authored reveal event in this test, and force eager decode
+   // only in the isolated browser to verify the complete catalog.
+   const decoded=await ev(`(async()=>{const cards=[...document.querySelectorAll(".project-showcase-card")];return Promise.all(cards.map(async c=>{const img=c.querySelector(".project-showcase-photo");img.loading="eager";c.dispatchEvent(new PointerEvent("pointerenter"));try{await img.decode();return {slug:c.dataset.projectSlug,src:img.getAttribute("src"),width:img.naturalWidth,height:img.naturalHeight};}catch{return {slug:c.dataset.projectSlug,src:img.getAttribute("src"),width:0};}}));})()`);
+   if(decoded.some(x=>!x.width))throw Error("Production artwork decode failed "+JSON.stringify(decoded.filter(x=>!x.width)));projects.realArtwork=decoded;
+  }
   if(mode==="continuous"&&(process.env.LG_TITLE_OUTLINE||process.env.LG_PORTABLE_TITLE||process.env.LG_LOCAL_TITLE)&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
   await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
   if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
