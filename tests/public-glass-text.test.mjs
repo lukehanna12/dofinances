@@ -21,7 +21,7 @@ test("ten-bit distance codes survive half storage exactly; coverage is independe
  const field=clockTextField(a,5,5,2);
  assert.equal(field.length,100);
  assert.equal(field[12*4+3],0x3c00);assert.equal(field[11*4+3],floatToHalf(128/255));
- assert.equal(field[3],0);assert.ok(field[12*4]>0);assert.ok((field[0]&0x8000)!==0);
+ assert.equal(field[3],0);assert.ok(field[12*4]>0);assert.equal(field[0]&0x8000,0);
  assert.ok(Array.from(field).every(v=>(v&0x7c00)!==0x7c00));
 });
 test("registration is independent of route and text content",()=>{
