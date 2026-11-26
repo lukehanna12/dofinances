@@ -40,7 +40,7 @@ test("Permissions registry retains its badges while Projects uses spacious capsu
  assert.ok(projects.includes("border-radius:999px;white-space:nowrap"),
   "Projects badge uses a fully rounded capsule without wrapping the label");
  // Permissions keeps its original color; Projects receives the new translucent
- // hue families explicitly requested for Active/In Progress/Coming Soon.
+ // hue families explicitly requested for Ready/Review/In Progress/Coming Soon.
  assert.ok(pm.includes("background:#173827;color:#86efac"));
  assert.ok(projects.includes("background:color(srgb 0.137 0.855 0.349 / 0.09)"));
  assert.ok(projects.includes("background:color(srgb 0.172549 0.403922 0.772549 / 0.1)"));

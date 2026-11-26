@@ -160,8 +160,11 @@
 }
 /* Same 10%-opacity color family as the blue Coming Soon badge,
    with stronger saturated green/yellow channels and 10% less alpha. */
-.view[data-view="projects"] .project-showcase-badge--progress{
+.view[data-view="projects"] .project-showcase-badge--review{
  background:color(srgb 0.98 0.76 0.07 / 0.09);color:rgb(230, 180, 51)
+}
+.view[data-view="projects"] .project-showcase-badge--progress{
+ background:color(srgb 0.98 0.45 0.08 / 0.09);color:rgb(245, 130, 45)
 }
 .view[data-view="projects"] .project-showcase-badge--soon{
  background:color(srgb 0.172549 0.403922 0.772549 / 0.1);

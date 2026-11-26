@@ -187,8 +187,11 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   border-radius:999px;white-space:nowrap;
   background:color(srgb 0.137 0.855 0.349 / 0.09);color:rgb(45,201,100)
 }
-.public-projects-root .project-showcase-badge--progress{
+.public-projects-root .project-showcase-badge--review{
   background:color(srgb 0.98 0.76 0.07 / .09);color:rgb(230,180,51)
+}
+.public-projects-root .project-showcase-badge--progress{
+ background:color(srgb 0.98 0.45 0.08 / 0.09);color:rgb(245, 130, 45)
 }
 .public-projects-root .project-showcase-badge--soon{
   background:color(srgb 0.172549 0.403922 0.772549 / .1);color:rgb(44,103,197)

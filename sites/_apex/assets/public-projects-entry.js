@@ -41,8 +41,9 @@ const el=(tag,className,text)=>{
 function makeCard(project,index,{detail=false}={}){
   const status=projectShowcaseStatus(project);
   const active=Boolean(project.repository||project.docs===true);
-  const badgeClass=status==="In Progress"?"project-showcase-badge--progress":
-    status==="Active"?"project-showcase-badge--active":"project-showcase-badge--soon";
+  const badgeClass=status==="Review"?"project-showcase-badge--review":
+    status==="In Progress"?"project-showcase-badge--progress":
+    status==="Ready"?"project-showcase-badge--ready":"project-showcase-badge--soon";
   // Separate interactive siblings: a native expansion button and a real
   // navigation link. Never nest a link inside a native button.
   const card=el("article","project-showcase-card "+(active?"is-active":"is-coming-soon"));

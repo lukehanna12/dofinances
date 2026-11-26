@@ -19,7 +19,7 @@ test("Projects roster applies requested names and progress states without retire
   slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null
  });
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
-  slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"in-progress"
+  slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"review"
  });
  for(const [slug,name] of [["hidden-functions","Hidden Functions"],["latexcel","LaTeXceL"]]){
   assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug===slug),{
@@ -39,18 +39,19 @@ test("Curated projects link their verified GitHub repositories",()=>{
   ["protocol-monitor-pruner","lukehanna12/protocol-monitor-pruner"]
  ]);
  assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,8);
- assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="review").map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
-  "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"
+  "apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs).map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[]);
- assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
- assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"in-progress");
- assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board")),"In Progress");
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,"ready");
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),["chatgpt-chat-save-chrome-extension"]);
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"review");
+ assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board")),"Review");
 });
 test("Local Docs are created in account storage without overwriting saved READMEs",()=>{
  const store=read("edge/auth-store-projects.mjs");
@@ -89,6 +90,7 @@ test("Compact quarter-area Projects cards retain image reveal and status styling
  assert.match(css,/color:rgb\(44, 103, 197\)/);
  assert.match(css,/background:color\(srgb 0\.137 0\.855 0\.349 \/ 0\.09\)/);
  assert.match(css,/background:color\(srgb 0\.98 0\.76 0\.07 \/ 0\.09\)/);
+ assert.match(css,/\.project-showcase-badge--progress\{\s*background:color\(srgb 0\.98 0\.45 0\.08 \/ 0\.09\);color:rgb\(245, 130, 45\)/);
  assert.match(permissions,/\.pm-rule-row\[data-enabled="false"\] \.pm-rule-status\{color:#747474\}/);
  assert.match(source,/const status=projectShowcaseStatus\(project\)/);
  assert.match(store,/\["protocol-monitor-pruner","Protocol Monitor Pruner","lukehanna12\/protocol-monitor-pruner"\]/);
@@ -104,7 +106,7 @@ test("Projects uses native static catalog without exposing private data in Studi
  const ui=read("sites/_apex/app/assets/project-readme-ui.js");
  const store=read("edge/auth-store-projects.mjs");
  const workflow=read(".github/workflows/site.yml");
- assert.match(html,/href="\/app\/assets\/project-showcase\.css\?artwork=rembrandt-cotan-v1"/);
+ assert.match(html,/href="\/app\/assets\/project-showcase\.css\?artwork=rembrandt-cotan-v1-badges-v2"/);
  assert.match(html,/id="project-list" class="project-showcase-grid"/);
  assert.match(ui,/renderProjectShowcase\(cards,projects,slugRoute\)/);
  assert.match(ui,/location\.hash="#"\+slugRoute\(data\.project\.slug\)/);
@@ -138,20 +140,22 @@ test("Verified repository associations backfill once and respect account overrid
  assert.match(store,/UPDATE project_records SET repository=\?,updated_at=\? WHERE user_id=\? AND slug=\? AND repository IS NULL/);
 });
 
-test("Project cards order Active → In Progress → Coming Soon with stable ties",()=>{
+test("Project cards order Ready, Review, In Progress, Coming Soon with stable ties",()=>{
+ assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"review"}),"Review");
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"in-progress"}),"In Progress");
- assert.equal(projectShowcaseStatus({repository:"owner/repo"}),"Active");
- assert.equal(projectShowcaseStatus({docs:true}),"Active");
+ assert.equal(projectShowcaseStatus({repository:null,status:"ready"}),"Ready");
+ assert.equal(projectShowcaseStatus({repository:"owner/repo"}),"Ready");
+ assert.equal(projectShowcaseStatus({docs:true}),"Ready");
  assert.equal(projectShowcaseStatus({repository:null}),"Coming Soon");
  const input=[
-  {slug:"soon-a"},{slug:"in-progress-a",status:"in-progress",repository:"owner/repo"},
-  {slug:"active-a",repository:"owner/repo"},{slug:"soon-b"},
-  {slug:"active-b",docs:true},{slug:"in-progress-b",status:"in-progress"}
+  {slug:"soon-a"},{slug:"progress",status:"in-progress",repository:"owner/repo"},
+  {slug:"review-a",status:"review"},{slug:"ready-a",repository:"owner/repo"},{slug:"soon-b"},
+  {slug:"ready-b",docs:true},{slug:"review-b",status:"review"}
  ];
  assert.deepEqual(sortProjectShowcase(input).map(p=>p.slug),[
-  "active-a","active-b","in-progress-a","in-progress-b","soon-a","soon-b"
+  "ready-a","ready-b","review-a","review-b","progress","soon-a","soon-b"
  ]);
- assert.deepEqual(input.map(p=>p.slug),["soon-a","in-progress-a","active-a","soon-b","active-b","in-progress-b"],
+ assert.deepEqual(input.map(p=>p.slug),["soon-a","progress","review-a","ready-a","soon-b","ready-b","review-b"],
   "Sorting must not mutate the account-owned project array");
 });
 
@@ -306,8 +310,8 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v4"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v12"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v12"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v13"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v13"'));
  assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v14"'));
 });
 
@@ -385,7 +389,7 @@ test("Rembrandt artwork uses its own cover alignment and no Warhol-specific zoom
   assert.ok(source.includes('object-fit:cover;object-position:center'));
   assert.ok(source.includes('transition:opacity .5s ease-out,transform .5s ease-out'));
  }
- assert.ok(read("sites/_apex/app/index.html").includes('/app/assets/project-showcase.css?artwork=rembrandt-cotan-v1'));
+ assert.ok(read("sites/_apex/app/index.html").includes('/app/assets/project-showcase.css?artwork=rembrandt-cotan-v1-badges-v2'));
 });
 
 test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{

@@ -4,20 +4,20 @@
 import {validateProjectTitle} from "./public-projects-title.js";
 import {PROJECT_ICON_REVISIONS} from "./project-icon-revisions.js";
 export const PROJECT_SHOWCASE=Object.freeze([
- {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
- {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
- {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"in-progress",docs:true},
+ {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"review",docs:true},
+ {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"review",docs:true},
+ {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"review",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
- {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum"},
- {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"in-progress"},
+ {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"ready"},
+ {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"review"},
  {slug:"terminal-scalars",name:"Terminal Scalars",kind:"Terminal utility",repository:null},
- {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:"lukehanna12/unicode-plus",status:"in-progress"},
+ {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:"lukehanna12/unicode-plus",status:"review"},
  {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
  {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
- {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Chrome extension and CLI",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
+ {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Chrome extension and CLI",repository:"lukehanna12/protocol-monitor-pruner",status:"review"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
- {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"in-progress"},
+ {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"review"},
  {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},
  {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"coming-soon"}
 ]);
@@ -52,13 +52,15 @@ const PHOTO_ROUTES=Object.freeze([
  "colosseum/providers","colosseum/permissions","colosseum/diagnostics","settings"
 ]);
 // Preserve the curated order within each status group. A linked repository
-// does not silently promote an explicitly In Progress project to Active.
+// does not silently promote an explicitly Review or In Progress project to Ready.
 export function projectShowcaseStatus(project){
+ if(project.status==="ready")return "Ready";
+ if(project.status==="review")return "Review";
  if(project.status==="in-progress")return "In Progress";
  if(project.status==="coming-soon")return "Coming Soon";
- return project.repository||project.docs===true?"Active":"Coming Soon";
+ return project.repository||project.docs===true?"Ready":"Coming Soon";
 }
-const STATUS_ORDER=Object.freeze({"Active":0,"In Progress":1,"Coming Soon":2});
+const STATUS_ORDER=Object.freeze({"Ready":0,"Review":1,"In Progress":2,"Coming Soon":3});
 export function sortProjectShowcase(projects){
  return [...projects].sort((a,b)=>STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)]);
 }

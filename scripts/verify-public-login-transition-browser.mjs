@@ -921,6 +921,13 @@ try{
   assert.deepEqual(Object.fromEntries(projectIconURLs),Object.fromEntries(PROJECT_SHOWCASE.map(p=>[p.slug,publicProjectIconSource(p.slug)])),
     "Every project card must use the same content-revision URL as its homepage icon");
   assert.ok(iconDeclarations.every(i=>i.registered&&i.tint==="white"&&i.opacity==="0.2"),"Every project icon registers white Clear tint at 20%");
+  const badges=await evaluate("[...document.querySelectorAll('.public-projects-root .project-showcase-card')].map(c=>{const b=c.querySelector('.project-showcase-badge');return {slug:c.dataset.projectSlug,label:b.textContent,color:getComputedStyle(b).color};})");
+  assert.deepEqual(badges.map(b=>b.label),["Ready",...Array(7).fill("Review"),"In Progress",...Array(7).fill("Coming Soon")]);
+  assert.equal(badges[0].slug,"colosseum");
+  assert.equal(badges[0].color,"rgb(45, 201, 100)");
+  assert.ok(badges.filter(b=>b.label==="Review").every(b=>b.color==="rgb(230, 180, 51)"));
+  assert.deepEqual(badges[8],{slug:"chatgpt-chat-save-chrome-extension",label:"In Progress",color:"rgb(245, 130, 45)"});
+  assert.ok(badges.filter(b=>b.label==="Coming Soon").every(b=>b.color==="rgb(44, 103, 197)"));
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
     "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
     "const icon=card?.querySelector('.project-showcase-lucide');"+

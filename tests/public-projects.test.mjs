@@ -495,8 +495,8 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.deepEqual(PROJECT_DESCRIPTION_FOOTNOTES,{"ozoning-board":"¹ expanded June 2026"});
   const entry=await load("../sites/_apex/assets/public-projects-entry.js");
   assert.match(entry,/if\(footnote\)description\.append\(el\("span","project-showcase-description-footnote",footnote\)\)/);
-  assert.equal(publicStatus(PUBLIC_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
-  assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
+  assert.equal(publicStatus(PUBLIC_PROJECTS.find(project=>project.slug==="ozoning-board")),"Review");
+  assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug==="ozoning-board")),"Review");
   assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/extensive collection of hidden Google Sheets functions/);
   // Direct project copy should not rely on owner or creator attribution.
   for(const copy of Object.values(PROJECT_DESCRIPTIONS)){
@@ -603,4 +603,16 @@ test("all sixteen public icon URLs are revisioned by actual SVG bytes and agree 
   assert.equal(packed.assets[name].sourceSha256,hash);
   assert.equal(publicProjectIconSource(project.slug),"/assets/project-icons/"+name+".svg?v="+hash);
  }
+});
+
+test("Public and private badge semantics and ordering agree for every project",async()=>{
+  const expected={Ready:["colosseum"],Review:["bootscript","translucence-lab","github-readme-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"],"In Progress":["chatgpt-chat-save-chrome-extension"],"Coming Soon":["terminal-scalars","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","apple-adobe-fx","app-caviar","hidden-functions","latexcel"]};
+  for(const [label,slugs] of Object.entries(expected)){
+    assert.deepEqual(PUBLIC_PROJECTS.filter(p=>publicStatus(p)===label).map(p=>p.slug),slugs);
+    assert.deepEqual(PRIVATE_PROJECTS.filter(p=>privateStatus(p)===label).map(p=>p.slug),slugs);
+  }
+  assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS).map(p=>p.slug),Object.values(expected).flat());
+  const css=await load("../sites/_apex/assets/public-projects.css");
+  assert.match(css,/\.project-showcase-badge--review\{\s*background:color\(srgb 0\.98 0\.76 0\.07 \/ \.09\);color:rgb\(230,180,51\)/);
+  assert.match(css,/\.project-showcase-badge--progress\{\s*background:color\(srgb 0\.98 0\.45 0\.08 \/ 0\.09\);color:rgb\(245, 130, 45\)/);
 });
