@@ -1,7 +1,7 @@
 {
   "schema": "continuous-glass-release-gate-v1",
   "productionBaseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
-  "oracleBaseline": "1483361c620d427441ab9485207219348d78f1c9",
+  "oracleBaseline": "aab7598ef0fa4e800f3ce0d0bb2f0699644d1515",
   "scope": "DoFinances public renderer replacement. Not a global native equivalence proof.",
   "policy": "All required gates must have independent retained validation. No production import or deployment on incomplete gates.",
   "gates": [
@@ -18,7 +18,7 @@
     {
       "id": "fixed-source-reconstruction",
       "status": "passed",
-      "scope": "Mathematical box integration CPU/GPU; not native kernel."
+      "scope": "Mathematical box integration and native-derived 13-tap continuous reconstruction verified on CPU/GPU; separate exact finite native mip preparation at fixed logical pitch. Not a universal native LOD or renderer claim."
     },
     {
       "id": "complete-vector-ingestion",
@@ -28,12 +28,12 @@
     {
       "id": "native-parameter-and-blur",
       "status": "open",
-      "reason": "LG-P-SCALARS remains open; exact private blur producer and kernel are not established. Public Metal mipmap evidence is already retained. Owned offscreen density probe did not fill the 2x target; new LLDB/impulse acquisitions returned no admissible data."
+      "reason": "Live Clear and Regular variable-blur compute dispatches and complete mip textures recovered; independent mathematical replay matches all 11 textures across four captured native cases. Exact 13-tap weights and finite copy/downsample arithmetic validated. Unrestricted public scale/radius, crop, source capture, level and branch selection still open (LG-P-SCALARS)."
     },
     {
       "id": "native-numerical-semantics",
       "status": "open",
-      "reason": "LG-SR-NATIVE remains open; native precision and hardware semantics cannot be replaced by real arithmetic without validating fidelity."
+      "reason": "15,992 exact mathematical channel outputs on independent native copy/even-mip cases; 4,136 further exact odd-mip outputs using measured hardware samples plus independent arithmetic. Portable odd-size sampler internals and full native program equivalence still open (LG-SR-NATIVE)."
     },
     {
       "id": "native-output-semantics",
@@ -48,7 +48,7 @@
     {
       "id": "native-heldout-output",
       "status": "open",
-      "reason": "Need equivalent source/state, owned native resource and browser output lineage; no qualifying full comparison yet."
+      "reason": "Four native Clear/Regular intermediate-resource chains now reproduced mathematically byte-for-byte with captured input and ABI. Offscreen output stripe classes retained. Equivalent final fragment/material and active-display output lineage is not established."
     },
     {
       "id": "production-performance-and-regressions",
@@ -57,8 +57,8 @@
     }
   ],
   "latestResearchValidation": {
-    "commit": "ab0abdec40a6d6d42d9b7d812a47ba1b741f183d",
+    "commit": "22fe7d52032bb1dfdcb96a6788bca06e57e2d4cb",
     "path": "research/continuous-glass/VALIDATION.json",
-    "scope": "Finite browser/CPU/GPU diagnostics, not Apple Glass equivalence."
+    "scope": "Finite native compute and browser/CPU/GPU diagnostics; not full Apple Glass equivalence."
   }
 }

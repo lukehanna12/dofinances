@@ -344,8 +344,59 @@
     "scope": "Both original GPU direct and prefix paths exhibited common source-coordinate loss; fixed by local integer-cell transport."
   },
   "nativeAcquisition": {
-    "status": "not admitted",
-    "reason": "Shortened offscreen density probe rendered 49152 nonzero byte values for both 1x and 2x textures, indicating it did not fill the 2x target. LLDB disassembly and RGBA16Float impulse attempt returned consumed-receipt errors. No valid native blur or density comparison admitted."
+    "status": "admitted finite native intermediate resource evidence",
+    "oraclePRs": [
+      54,
+      55,
+      56
+    ],
+    "oddSamplerPR": 57,
+    "liveCases": 4,
+    "liveMipTexturesExact": 11,
+    "independentMathChannels": 15992,
+    "oddHardwareSampleAssistedChannels": 4136,
+    "retainedOddSampleLanes": 53768,
+    "offscreenStripeCases": 23,
+    "repeats": 2,
+    "scope": "One installed target build; capture input and compute ABI supplied. Odd dimensions still not supported by software native-compatible mip evaluator. Final shading, public state selection, active display and interaction unresolved."
   },
-  "release": "blocked"
+  "release": "blocked",
+  "nativeDiamond": {
+    "codeCommit": "55a63e9fc2b3744557192046d0a4089a69b82a17",
+    "testCommit": "22fe7d52032bb1dfdcb96a6788bca06e57e2d4cb",
+    "mathTests": 30,
+    "passed": 30,
+    "sourceQueries": 432,
+    "repeatIdenticalWords": 6912,
+    "densityEquivalentTileWords": 1152,
+    "results": [
+      {
+        "w": 16,
+        "h": 16,
+        "count": 144,
+        "maxSource": 0.0000017613857106191233,
+        "maxColor": 0.0000017029524217448966
+      },
+      {
+        "w": 257,
+        "h": 193,
+        "count": 144,
+        "maxSource": 0.000009331183956962086,
+        "maxColor": 0.000006536509624677233
+      },
+      {
+        "w": 1024,
+        "h": 768,
+        "count": 144,
+        "maxSource": 0.000012055250845799392,
+        "maxColor": 0.000011486181588638011
+      }
+    ],
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "isFallbackAdapter": false
+    },
+    "scope": "Independent continuous GPU math, not final native material colors."
+  }
 }
