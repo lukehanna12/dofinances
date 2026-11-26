@@ -49,12 +49,13 @@ try{
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
   const projects=await state();
+  await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
   if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
   const scroll=await ev(`(async()=>{const outlet=document.querySelector("#public-route-content"),a=window.__dashboardWebGPU.frameCount,t=performance.now(),frames=[];for(let i=0;i<12;i++){outlet.scrollTop=Math.max(0,Math.min(outlet.scrollHeight-outlet.clientHeight,i*17.25));await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now());}return {ms:performance.now()-t,frameDelta:window.__dashboardWebGPU.frameCount-a,scroll:outlet.scrollTop,intervals:frames.slice(1).map((v,i)=>v-frames[i])};})()`);
   const afterScroll=await state();
   await send("Emulation.setDeviceMetricsOverride",{width:1024,height:720,deviceScaleFactor:2,mobile:false});await sleep(600);
   const resized=await state();
-  results.push({mode,home,projects,scroll,afterScroll,resized,elapsedMs:Date.now()-t});
+  results.push({mode,home,projects,font,fontMetrics,scroll,afterScroll,resized,elapsedMs:Date.now()-t});
  }
  console.log(JSON.stringify({results,exceptions:events},null,2));
 }finally{ws?.close();proc.kill();await new Promise(r=>proc.exitCode!==null||proc.signalCode!==null?r():proc.once("exit",r));server.close();rmSync(profile,{recursive:true,force:true,maxRetries:3,retryDelay:100});}

@@ -1,6 +1,6 @@
 // Actual integrated GPU vector evaluator versus independently regenerated
 // original outline geometry and the original site's encoded mask.
-import {contourField} from "./vector-field.mjs";
+import {closestCurve} from "./vector-field.mjs";
 import {loadContinuousGlass} from "/site/dashboard-glass-continuous.js";
 import {silhouetteMask,MASK_SIZE,MASK_INNER,MASK_PAD} from "/site/dashboard-glass-silhouette.js";
 export async function run(){
@@ -30,9 +30,19 @@ export async function run(){
   const index=data.indexFor(img);if(!index)throw Error("missing index "+name);
   ctx.clearRect(0,0,MASK_SIZE,MASK_SIZE);ctx.drawImage(img,MASK_PAD,MASK_PAD,MASK_INNER,MASK_INNER);
   const alpha=ctx.getImageData(0,0,MASK_SIZE,MASK_SIZE).data,mask=silhouetteMask(Uint8Array.from({length:MASK_SIZE*MASK_SIZE},(_,i)=>alpha[i*4+3]),MASK_SIZE,MASK_SIZE);
-  const d=(x,y)=>{let f=contourField(outline.contours,[x,y],{tolerance:1e-5});return f.converged?f.distance:null;},h=24/256;
-  for(let j=0;j<7;j++)for(let i=0;i<7;i++){
-   const x=(i+.319)*24/7,y=(j+.683)*24/7,ref=d(x,y);
+  // Independent Float64 reference: prune using original control hulls,
+  // then use the CPU subdivision solver; original outline Path2D for sign.
+  const path=new Path2D(),segments=[];
+  for(const c of outline.contours){path.moveTo(...c[0][0]);for(const a of c){
+   if(a.length===2)path.lineTo(...a[1]);else if(a.length===3)path.quadraticCurveTo(...a[1],...a[2]);else path.bezierCurveTo(...a[1],...a[2],...a[3]);
+   segments.push({a,b:[Math.min(...a.map(p=>p[0])),Math.min(...a.map(p=>p[1])),Math.max(...a.map(p=>p[0])),Math.max(...a.map(p=>p[1]))]});
+  }path.closePath();}
+  const d=(x,y)=>{const ordered=segments.map(({a,b})=>({a,lower:Math.hypot(Math.max(b[0]-x,0,x-b[2]),Math.max(b[1]-y,0,y-b[3]))})).sort((a,b)=>a.lower-b.lower);let best=Infinity;
+   for(const q of ordered){if(q.lower>best)break;const r=closestCurve(q.a,[x,y],{tolerance:1e-5,maxNodes:20000});if(!r.converged)return null;best=Math.min(best,r.distance);}
+   return (ctx.isPointInPath(path,x,y)?-1:1)*best;
+  },h=24/256;
+  for(let j=0;j<4;j++)for(let i=0;i<4;i++){
+   const x=(i+.319)*24/4,y=(j+.683)*24/4,ref=d(x,y);
    if(ref===null){skipped++;continue;}
    const a=d(x+h,y),b=d(x-h,y),c=d(x,y+h),e=d(x,y-h);
    let n=null;if([a,b,c,e].every(v=>v!==null)){const dx=a-b,dy=c-e,len=Math.hypot(dx,dy);if(len>.001)n=[dx/len,dy/len];}
