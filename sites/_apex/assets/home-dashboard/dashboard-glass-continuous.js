@@ -41,11 +41,11 @@ export async function loadContinuousGlass(device,base){
  let builds=0,hits=0,misses=0,titleBuilds=0;
  let titlePipeline=null,titleUniform=null;
  if(titleAsset){
-  const module=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> titleIcon:GlassSilhouette;\n@group(0) @binding(1) var titleOut:texture_storage_2d<rgba32float,write>;\n@group(0) @binding(2) var titleAlpha:texture_2d<f32>;\n@compute @workgroup_size(8,8)\nfn titleMain(@builtin(global_invocation_id) id:vec3<u32>){\n let dims=textureDimensions(titleOut);\n if(any(id.xy>=dims)){return;}\n let p=vec2<i32>(id.xy);let a=textureLoad(titleAlpha,p,0).a;\n // A one-pixel guard ensures every adjacent derivative lane around\n // a covered fragment has a continuous signed distance.\n var near=a;\n for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){\n  near=max(near,textureLoad(titleAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(dims)-1),0).a);\n }}\n if(near<=0.0){textureStore(titleOut,p,vec4<f32>(1000,0,0,0));return;}\n let f=evaluateContinuousTitleField(titleIcon,vec2<f32>(id.xy)+vec2<f32>(0.5));\n textureStore(titleOut,p,vec4<f32>(f,a));\n}\n"});
+  const module=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> titleIcon:GlassSilhouette;\n@group(0) @binding(1) var titleOut:texture_storage_2d<rgba32float,write>;\n@group(0) @binding(2) var titleAlpha:texture_2d<f32>;\n@compute @workgroup_size(8,8)\nfn titleMain(@builtin(global_invocation_id) id:vec3<u32>){\n let dims=textureDimensions(titleOut);\n if(any(id.xy>=dims)){return;}\n let p=vec2<i32>(id.xy);let a=textureLoad(titleAlpha,p,0).a;\n // A one-pixel guard ensures every adjacent derivative lane around\n // a covered fragment has a continuous signed distance.\n var near=a;\n for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){\n  near=max(near,textureLoad(titleAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(dims)-1),0).a);\n }}\n if(near<=0.0){textureStore(titleOut,p,vec4<f32>(1000,0,0,0));return;}\n let f=evaluateContinuousTitleField(titleIcon,vec2<f32>(id.xy)+titleIcon.coverageRect.xy);\n textureStore(titleOut,p,vec4<f32>(f,a));\n}\n"});
   titlePipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module,entryPoint:"titleMain"}});
   titleUniform=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
  }
- function titleField(text,style,width,height,dpr,alphaTexture){
+ function titleField(text,style,width,height,dpr,alphaTexture,phase){
   if(!titlePipeline)return null;
   const model=prepareTitleWord(titleAsset,text,style,width,height,dpr);if(!model)return null;
   rows.length=titleSlot;rows.push(null);
@@ -55,7 +55,7 @@ export async function loadContinuousGlass(device,base){
   const packed=Float32Array.from(rows.slice(titleSlot).flat());
   if(packed.byteLength>titleReserve*48)throw Error("Title vector storage budget exceeded");
   device.queue.writeBuffer(buffer,titleSlot*48,packed);
-  const id=titleSlot+1,lanes=Float32Array.of(0,0,width,height,dpr,0,0,0,0,0,0,0,0,0,0,0,0,width,height,id);
+  const id=titleSlot+1,lanes=Float32Array.of(0,0,width,height,dpr,0,0,0,0,0,0,0,...phase,0,0,0,width,height,id);
   device.queue.writeBuffer(titleUniform,0,lanes);
   const texture=device.createTexture({label:"Exact output-density title optical samples",size:[width,height],format:"rgba32float",usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.STORAGE_BINDING});
   const group=device.createBindGroup({layout:titlePipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:titleUniform}},{binding:1,resource:texture.createView()},{binding:2,resource:alphaTexture.createView()},{binding:15,resource:{buffer}}]});
@@ -82,7 +82,7 @@ export function specializeContinuousGlass(s,code){
  // The real-valued geometry and UV transport are the only changes to
  // existing surface optics. Preserve the material and interaction stages.
  s=once(s,"fn titleGlyphField(local:vec2<f32>)->vec4<f32>{","fn titleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{");
- s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(all(abs(local-vec2<f32>(p)-vec2<f32>(0.5))<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
+ s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(all(abs(local-vec2<f32>(p)-title.coverageRect.xy)<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
  s=once(s,"let glyph=titleGlyphField(in.local);","let glyph=titleGlyphField(in.local,in.tileIndex);");
  const start=s.indexOf("fn supercircleSDF("),end=s.indexOf("/* AIR glass_background_sdf_no_bleed_lph",start);
  if(start<0||end<start)throw Error("Missing geometry range");

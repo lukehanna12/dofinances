@@ -660,7 +660,7 @@ async function initialize(){
     label:"Placeholder alpha for glyph-shaped WebGPU glass",
     size:[1,1,1],format:"rgba16float",usage:glyphUsage
   });
-  let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null,glyphVectorIndex=0;
+  let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null,glyphVectorIndex=0,glyphVectorPhase=[.5,.5];
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
   let regionData=new Float32Array(0),regionBuffer=null;
@@ -933,7 +933,7 @@ async function initialize(){
         const slot=tileCount+i,p=slot*TILE_FLOATS;
         if(continuous&&owner===glyphMaskOwner&&glyphVectorIndex){
           const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);
-          lanes.set([0,0,...glyphMaskDimensions,dpr],0);lanes[19]=glyphVectorIndex;
+          lanes.set([0,0,...glyphMaskDimensions,dpr],0);lanes.set(glyphVectorPhase,12);lanes[19]=glyphVectorIndex;
         }
         if(!img)continue;
         if(owner.hidden||tileData[p+18]<=.001){img.removeAttribute("data-glass-icon-owned");continue;}
@@ -1139,7 +1139,9 @@ async function initialize(){
     glyphMaskOwner=null;if(!title)return;
     const style=getComputedStyle(title),rect=title.getBoundingClientRect();
     const width=Math.max(1,Math.ceil(rect.width*dpr)),height=Math.max(1,Math.ceil(rect.height*dpr)),text=title.textContent||"";
-    const signature=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,
+    const layout=continuous?.titleAvailable?makeLayoutData(title,dpr,authOriginTop()):null;
+    const phase=layout?layout.slice(0,2).map(v=>{const n=.5-Math.fround(v);return n-Math.floor(n);}):[.5,.5];
+    const signature=JSON.stringify([text,width,height,dpr,...phase,style.fontFamily,style.fontSize,
       style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
     if(signature===glyphMaskKey){
       glyphMaskOwner=title;if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";return;
@@ -1156,8 +1158,8 @@ async function initialize(){
       const pixels=raster.pixels;
       device.queue.writeTexture({texture},pixels,{offset:0,bytesPerRow:width*8,rowsPerImage:height},{width,height,depthOrArrayLayers:1});
       let vector=null;
-      if(continuous?.titleAvailable)vector=continuous.titleField(text,style,width,height,dpr,texture);
-      glyphMaskTexture=vector?.texture||texture;glyphVectorIndex=vector?.index||0;
+      if(continuous?.titleAvailable)vector=continuous.titleField(text,style,width,height,dpr,texture,phase);
+      glyphMaskTexture=vector?.texture||texture;glyphVectorIndex=vector?.index||0;glyphVectorPhase=phase;
       glyphMaskKey=signature;glyphMaskDimensions=[width,height];glyphMaskOwner=title;
       if(glyphMaskTexture!==previous){rebindGlassGroups();previous.destroy();}
       if(vector&&texture!==previous)texture.destroy();
