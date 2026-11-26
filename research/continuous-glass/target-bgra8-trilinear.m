@@ -4,15 +4,16 @@
 #include <stdint.h>
 static NSString* hex(const void*p,NSUInteger n){NSMutableString*s=[NSMutableString string];const uint8_t*b=p;for(NSUInteger i=0;i<n;i++)[s appendFormat:@"%02x",b[i]];return s;}
 static uint32_t mix(uint32_t n){n^=n>>16;n*=0x7feb352dU;n^=n>>15;n*=0x846ca68bU;return n^(n>>16);}
-int main(){@autoreleasepool{
+int main(int argc,const char **argv){@autoreleasepool{
+ BOOL heldout=argc==2 && strcmp(argv[1],"heldout")==0;
  id<MTLDevice>d=MTLCreateSystemDefaultDevice();NSError*err=nil;
  NSString*code=@"#include <metal_stdlib>\nusing namespace metal;\nkernel void probe(texture2d<half,access::sample> t [[texture(0)]], device const float4 *p [[buffer(0)]],device half4 *o [[buffer(1)]],uint i [[thread_position_in_grid]]){constexpr sampler s(coord::normalized,address::clamp_to_edge,filter::linear,mip_filter::linear);o[i]=t.sample(s,p[i].xy,level(p[i].z));}";
  id<MTLLibrary>lib=[d newLibraryWithSource:code options:nil error:&err];if(!lib){NSLog(@"%@",err);return 1;}
  id<MTLComputePipelineState>ps=[d newComputePipelineStateWithFunction:[lib newFunctionWithName:@"probe"] error:&err];if(!ps){NSLog(@"%@",err);return 1;}
  id<MTLCommandQueue>q=[d newCommandQueue];
- const int dims[][2]={{16,16},{29,19},{7,11},{1,9}};
- for(int k=0;k<4;k++){
-  int w=dims[k][0],h=dims[k][1],n=2048;
+ const int dims[2][4][2]={{{16,16},{29,19},{7,11},{1,9}},{{15,21},{33,9},{128,65},{11,1}}};
+ for(int i=0;i<4;i++){
+  int k=i+(heldout?11:0),w=dims[heldout][i][0],h=dims[heldout][i][1],n=heldout?4096:2048;
   MTLTextureDescriptor*td=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:w height:h mipmapped:YES];td.storageMode=MTLStorageModeShared;td.usage=MTLTextureUsageShaderRead;
   id<MTLTexture>t=[d newTextureWithDescriptor:td];
   for(int l=0;l<t.mipmapLevelCount;l++){
