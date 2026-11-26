@@ -82,3 +82,41 @@ export function localTitleContours(text,style,logicalHeight){
  }catch(error){console.warn("Local heading outline:",String(error));}
  if(cache.size>=8)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
 }
+
+// Reuse the word's browser-local reference contours at new logical sizes.
+// Only the measured system-font family on the reference Mac is eligible;
+// unknown fonts or unresolved glyph grouping keep the per-size path.
+// The six-size normalized-shape validation lives in the research harness.
+const templates=new Map();
+function metrics(text,style,logicalHeight){
+ const c=document.createElement("canvas").getContext("2d");
+ c.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
+ c.letterSpacing=style.letterSpacing==="normal"?"0px":style.letterSpacing;c.fontKerning=style.fontKerning||"auto";c.direction="ltr";
+ const m=c.measureText(text),baseline=(logicalHeight-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
+ const positions=[...text].map((ch,i)=>c.measureText(text.slice(0,i+1)).width-c.measureText(ch).width);
+ const glyphs=[...text].map((ch,i)=>{const b=c.measureText(ch);return {x:positions[i],bounds:[positions[i]-b.actualBoundingBoxLeft,baseline-b.actualBoundingBoxAscent,positions[i]+b.actualBoundingBoxRight,baseline+b.actualBoundingBoxDescent]};});
+ return {baseline,glyphs};
+}
+export function reusableLocalTitleContours(text,style,logicalHeight){
+ const size=parseFloat(style.fontSize);
+ if(text!=="Projects"||!navigator.platform.includes("Mac")||size<51.75-.01||size>69.75+.01||style.fontWeight!=="550"||style.fontStyle!=="normal"||!style.fontFamily.includes("system-ui"))return localTitleContours(text,style,logicalHeight);
+ const key=JSON.stringify([text,style.fontFamily,style.fontStyle,style.fontWeight,style.fontKerning,document.fonts?.status]),referenceSize=63;
+ let template=templates.get(key);
+ if(!template){
+  const refStyle={fontFamily:style.fontFamily,fontStyle:style.fontStyle,fontWeight:style.fontWeight,fontKerning:style.fontKerning,direction:"ltr",fontSize:"63px",letterSpacing:(-.035*referenceSize)+"px"};
+  const refHeight=referenceSize*1.02,local=localTitleContours(text,refStyle,refHeight);
+  if(!local)return localTitleContours(text,style,logicalHeight);
+  const m=metrics(text,refStyle,refHeight),groups=m.glyphs.map(()=>[]);
+  for(const contour of local.contours){
+   const points=contour.flat(),bounds=[Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))];
+   const matches=m.glyphs.map((g,i)=>({g,i})).filter(({g})=>bounds[0]>=g.bounds[0]-1&&bounds[1]>=g.bounds[1]-1&&bounds[2]<=g.bounds[2]+1&&bounds[3]<=g.bounds[3]+1);
+   if(matches.length!==1)return localTitleContours(text,style,logicalHeight);
+   const {g,i}=matches[0];groups[i].push(contour.map(s=>s.map(q=>[(q[0]-g.x)/referenceSize,(q[1]-m.baseline)/referenceSize])));
+  }
+  if(groups.some(g=>!g.length))return localTitleContours(text,style,logicalHeight);
+  template={groups,local};if(templates.size>=4)templates.delete(templates.keys().next().value);templates.set(key,template);
+ }
+ const start=performance.now(),m=metrics(text,style,logicalHeight);
+ const contours=template.groups.flatMap((group,i)=>group.map(c=>c.map(s=>s.map(q=>[q[0]*size+m.glyphs[i].x,q[1]*size+m.baseline]))));
+ return {...template.local,contours,reused:true,placementMs:performance.now()-start};
+}

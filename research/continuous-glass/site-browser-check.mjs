@@ -45,7 +45,7 @@ try{
  const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:["baseline","continuous"])){
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
-  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector=local":"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
+  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();
   if(process.env.LG_REAL_LOGIN){

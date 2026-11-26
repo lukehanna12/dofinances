@@ -31,7 +31,7 @@ export async function loadContinuousGlass(device,base){
  });
  const titleSlot=rows.length, titleReserve=4096;
  const titleMode=new URLSearchParams(location.search).get("glass-title-vector");
- const titleAsset=titleMode==="local"?{schema:"dofinances-local-projects-word-v1"}:titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
+ const titleAsset=(titleMode==="local"||titleMode==="local-reuse")?{schema:"dofinances-local-projects-word-v1",reuse:titleMode==="local-reuse"}:titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
  function rasterTitle(text,style,width,height,dpr){if(titleMode!=="portable"||!titleAsset)return null;const r=portableTitleAlpha(titleAsset,text,style,width,height,dpr);if(!r||!r.filled)return null;return {pixels:clockTextField(r.alpha,width,height,dpr),filled:r.filled};}
  const data=Float32Array.from(rows.flat());
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength+(titleAsset?titleReserve*48:0),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});

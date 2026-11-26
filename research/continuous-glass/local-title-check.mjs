@@ -1,6 +1,6 @@
 // Compare local continuous contour with a separately generated native word
 // outline on the reference Mac. Never export that native outline.
-import {localTitleContours,contourDeviation} from "/site/dashboard-glass-local-title.js";
+import {localTitleContours,reusableLocalTitleContours,contourDeviation} from "/site/dashboard-glass-local-title.js";
 
 import {rasterClockText} from "/site/dashboard-glass-text.js";
 function flatten(s,err=.003){
@@ -31,7 +31,8 @@ export async function run(){
    for(let i=0;i<W*H;i++){const x=dv.getFloat16(i*8+6,true);total+=Math.abs(x-a[i*4+3]/255);area+=x;}
    coverage.push({dpr,relativeAlphaDifference:total/area});
   }
-  result.push({size,segments:local.segments,convergence:local.deviation,nativeBoundaryDeviation:deviation,buildMs:local.buildMs,coverage});
+  const reuse=reusableLocalTitleContours(native.text,style,h),reuseDeviation=Math.max(contourDeviation(reference,reuse.contours),contourDeviation(reuse.contours,reference));
+  result.push({size,reuse:reuse.reused||false,reuseDeviation,placementMs:reuse.placementMs,segments:local.segments,convergence:local.deviation,nativeBoundaryDeviation:deviation,buildMs:local.buildMs,coverage});
  }
  return {result,scope:"Sampled bidirectional edge diagnostics against reference-local CoreText word geometry. Final production coverage remains actual browser alpha."};
 }
