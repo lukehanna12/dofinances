@@ -939,19 +939,19 @@ try{
       x:r.right-8,y:r.top+8};
   })()`);
   await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:5,y:5});
-  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)<.01",40,25);
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)===0",40,25);
   const restingBadge=await badgeProbe();
   assert.equal(restingBadge.height,16);
   assert.equal(restingBadge.dotAlpha,1);
-  assert.match(restingBadge.clip,/100% - 16px/);
+  assert.match(restingBadge.clip,/100%/);assert.match(restingBadge.clip,/16px/);
   await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:restingBadge.x,y:restingBadge.y});
-  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)>.99",40,25);
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)===1",40,25);
   const openBadge=await badgeProbe();
   assert.equal(openBadge.dotAlpha,0);
   assert.notEqual(openBadge.clip,restingBadge.clip);
   assert.ok(Math.abs(openBadge.right-restingBadge.right)<1);
   await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:5,y:5});
-  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)<.01",40,25);
+  await until("Number(getComputedStyle(document.querySelector('.project-showcase-badge-label')).opacity)===0",40,25);
   assert.equal((await badgeProbe()).clip,restingBadge.clip);
 
   // Legacy is-coming-soon class indicates absent private project navigation,
