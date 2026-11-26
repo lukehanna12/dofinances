@@ -13,3 +13,23 @@ Run: node --test research/continuous-glass/*.test.mjs
 No new target measurement is admitted to Oracle in this change: static graph was already retained, and the new controls are browser/reference mathematical deductions rather than independently observed native execution.
 
 Nested simple disjoint contours under nonzero fill are classified for active boundaries using other-contour winding and polynomial signed area. Same-direction nested outlines do not introduce false refractive edges. No automatic topology validation is claimed.
+
+## Exact rational bound
+
+Let q(u)=u²P(u) for the polynomial in the recovered real-arithmetic counterpart. Conversion from monomial to degree-six Bernstein coefficients gives a nonnegative coefficient vector with every coefficient strictly below 0.126. The regression verifies the inequalities using exact BigInt rational arithmetic on the AIR binary32 coefficients, not numerical sampling. Therefore 1-q(u)*clamp(rad,0,1)>0.874 for u in [0,1]. This proves absence of a rational pole for the continuous expression in that domain, not global differentiability or native instruction-level equivalence.
+
+## Target Metal arithmetic experiment
+
+Run the owned compute probe on macOS:
+```sh
+d=$(mktemp -d)
+trap 'rm -rf "$d"' EXIT
+node cast-probe.mjs generate "$d/in"
+xcrun swiftc target-cast-probe.swift -o "$d/probe"
+"$d/probe" "$d/in" "$d/out1"
+"$d/probe" "$d/in" "$d/out2"
+cmp "$d/out1" "$d/out2"
+node cast-probe.mjs verify "$d/out1"
+```
+
+Observed target: macOS 26.5.1 build 25F80, Apple M2. 2,304 input rows, 499 differing output pairs; two identical raw output buffers. Input SHA-256 8d88271b513cd3de063c4de2db88bf2301d58c80635a03a048e36b6979dd2b10, output SHA-256 d2c25ca21abdb93e0b0f3c250334f9accedba239b6b5ec55ebaae813b21d77c3. Both reference paths matched all numeric results, ignoring signed-zero differences. Owned precise compute kernel only; not native Glass output. The reduced self-contained witness is proposed in Oracle PR 52.

@@ -101,3 +101,20 @@ test("static normal mix and affine normal state remain distinct from geometry",(
  near(c.opticalNormal[0],-b.opticalNormal[1]);near(c.opticalNormal[1],b.opticalNormal[0]);
  assert.equal(mode4Field(0,0,w,h,r,{normalBlend:1}).opticalNormal,null);
 });
+
+test("exact rational positivity bound for native-derived rational polynomial",()=>{
+ // f32 constants from AIR 1091–1098 are exact dyadic rationals.
+ // q(u)=u^2 P(u), degree 6. Its Bernstein coefficients bound q on [0,1].
+ const coefficients=[0,0,.2685309946537018,1.268030047416687,-3.6412200927734375,3.1560099124908447,-.9260540008544922];
+ const scale=2**30;
+ const ints=coefficients.map(x=>{assert.ok(Number.isSafeInteger(x*scale));return BigInt(x*scale);});
+ const choose=(n,k)=>{let r=1n;for(let i=1;i<=k;i++)r=r*BigInt(n-i+1)/BigInt(i);return r;};
+ const denominator=60n*BigInt(scale);
+ for(let i=0;i<=6;i++){
+  let numerator=0n;
+  for(let j=0;j<=i;j++)numerator+=ints[j]*choose(i,j)*(60n/choose(6,j));
+  assert.ok(numerator>=0n);
+  assert.ok(numerator*1000n<126n*denominator);
+ }
+ // Since clamp(rad,0,1) lies in [0,1], the denominator is strictly > .874.
+});
