@@ -2,7 +2,7 @@
 // Local same-origin fixture artwork is used instead of remote library photos.
 // No browser screenshot or rendered-page capture.
 import {createServer} from "node:http";
-import {readFileSync,existsSync,mkdtempSync,rmSync} from "node:fs";
+import {readFileSync,existsSync,mkdtempSync,rmSync,mkdirSync,writeFileSync} from "node:fs";
 import {resolve,join,extname} from "node:path";
 import {tmpdir} from "node:os";
 import {spawn} from "node:child_process";
@@ -32,7 +32,9 @@ const server=createServer((req,res)=>{
  }catch{res.writeHead(404);res.end();}
 });
 await new Promise(r=>server.listen(0,"127.0.0.1",r));
-const proc=spawn(process.env.CHROME_BIN??"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",["--headless=new","--enable-unsafe-webgpu","--no-first-run","--no-default-browser-check","--remote-debugging-port=0","--user-data-dir="+profile,"--window-size=1400,880","about:blank"],{stdio:["ignore","ignore","pipe"]});
+const nativeZoom=process.env.LG_NATIVE_ZOOM==="1",extension=join(profile,"zoom-extension");
+if(nativeZoom){mkdirSync(extension);writeFileSync(join(extension,"manifest.json"),JSON.stringify({manifest_version:3,name:"Isolated glass zoom verification",version:"1.0",permissions:["tabs"],background:{service_worker:"worker.js"},content_scripts:[{matches:["http://127.0.0.1/*"],js:["content.js"],run_at:"document_idle"}]}));writeFileSync(join(extension,"worker.js"),'chrome.runtime.onMessage.addListener((message,sender,reply)=>{chrome.tabs.setZoom(sender.tab.id,message.zoom).then(()=>reply({ok:true}),e=>reply({error:String(e)}));return true;});');writeFileSync(join(extension,"content.js"),'window.addEventListener("lg-zoom-request",e=>{chrome.runtime.sendMessage({zoom:Number(e.detail)},r=>window.dispatchEvent(new CustomEvent("lg-zoom-result",{detail:JSON.stringify(r||{error:String(chrome.runtime.lastError)})})));});document.documentElement.dataset.lgZoomReady="1";');}
+const proc=spawn(process.env.CHROME_BIN??"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",["--headless=new","--enable-unsafe-webgpu","--no-first-run","--no-default-browser-check","--remote-debugging-port=0","--user-data-dir="+profile,"--window-size=1400,880",...(nativeZoom?["--load-extension="+extension,"--disable-extensions-except="+extension]:[]),"about:blank"],{stdio:["ignore","ignore","pipe"]});
 let ws;const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  const port=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error("Chrome startup timeout")),10000);let s="";proc.stderr.on("data",b=>{s+=b;const m=s.match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)/);if(m){clearTimeout(t);resolve(+m[1]);}});proc.once("exit",c=>reject(Error("Chrome exit "+c)));});
@@ -47,10 +49,28 @@ try{
  const origin="http://127.0.0.1:"+server.address().port,results=[];
  const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:process.env.LG_PERFORMANCE?(process.env.LG_PERFORMANCE==="reverse"?["continuous","baseline"]:["baseline","continuous"]):["baseline","continuous"])){
-  await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
+  if(!nativeZoom)await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state(),homeReadyMs=Date.now()-t;
+  if(nativeZoom){
+   await wait(`document.documentElement.dataset.lgZoomReady==="1"`,"Native zoom extension not loaded");
+   const cases=[];
+   await ev(`(()=>{window.__lgResolutionEvents={resize:0,media:0};addEventListener("resize",()=>window.__lgResolutionEvents.resize++);let q;const arm=()=>{q=matchMedia("(resolution: "+devicePixelRatio+"dppx)");q.addEventListener("change",()=>{window.__lgResolutionEvents.media++;arm()},{once:true});};arm();return true;})()`);
+   const zoom=async factor=>{
+    const old=await ev(`({dpr:devicePixelRatio,resize:window.__dashboardWebGPU.resizeSubmissions||0})`);
+    const ack=await ev(`new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error("Zoom extension timeout")),3000);window.addEventListener("lg-zoom-result",e=>{clearTimeout(t);resolve(JSON.parse(e.detail));},{once:true});window.dispatchEvent(new CustomEvent("lg-zoom-request",{detail:${factor}}));})`);
+    if(!ack.ok)throw Error(JSON.stringify(ack));
+    await wait(`devicePixelRatio!==${old.dpr}&&window.__dashboardWebGPU.status==="ready"&&window.__dashboardWebGPU.resizeSubmissions>${old.resize}&&document.querySelector("#dashboard-webgpu-scene").width===Math.floor(innerWidth*devicePixelRatio)`,"Browser zoom not automatically applied "+factor);
+    await sleep(180);const snapshot=await state(),events=await ev("window.__lgResolutionEvents"),submissions=await ev("window.__dashboardWebGPU.resizeSubmissions");
+    if(snapshot.errors.length)throw Error(JSON.stringify(snapshot.errors));cases.push({factor,events,submissions,...snapshot});
+   };
+   for(const factor of [1.25,.8,1])await zoom(factor);
+   await ev(`document.querySelector("[data-public-target='/projects']").click()`);
+   await wait(`window.__dofPublicRouter.state==="projects"&&document.querySelector(".public-projects-root.is-settled")&&window.__dashboardWebGPU?.projectTitleMask?.vectorOptics`,"Projects after native zoom");
+   for(const factor of [1.25,.8,1])await zoom(factor);
+   results.push({mode,cases});continue;
+  }
   if(process.env.LG_REAL_LOGIN){
    await ev(`document.querySelector(".cta6-bottom-action a[href='/login']").click()`);
    await wait(`location.pathname==="/login"&&document.querySelector(".auth3-root form")&&window.__dashboardWebGPU?.authGlass?.opacity>=.99`,"Actual login not rendered");
