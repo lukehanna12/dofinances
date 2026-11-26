@@ -46,6 +46,26 @@ try{
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")+(process.env.LG_DENSITY_CHECK?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();
+  if(process.env.LG_HOME_UNDERLAY){
+   const cases=[];
+   for(const density of [1,3]){
+    await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:density,mobile:false});
+    await ev("window.__dashboardGpuControls.reflowTiles()");
+    await wait("document.querySelector('#dashboard-webgpu-scene').width==="+Math.floor(1400*density),"Underlay output not ready");
+    const target=await ev(`(()=>{const r=document.querySelector(".cta6-bottom-action > [data-home-cta-glass]").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+    const before=await ev("window.__dashboardWebGPU.homeCtaGlass?.compositeFrames||0");
+    await send("Input.dispatchMouseEvent",{type:"mouseMoved",...target});
+    await wait("window.__dashboardWebGPU.homeCtaGlass?.compositeFrames>"+before,"Hover underlay not rendered");
+    await send("Input.dispatchMouseEvent",{type:"mousePressed",...target,button:"left",clickCount:1});
+    await sleep(250);
+    const result=await ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a.status,errors:a.errors,lattice:a.sourceLattice,underlay:a.homeCompositeLattice,cta:a.homeCtaGlass};})()`);
+    await send("Input.dispatchMouseEvent",{type:"mouseReleased",...target,button:"left",clickCount:1});
+    await send("Input.dispatchMouseEvent",{type:"mouseMoved",x:10,y:50});
+    if(result.status!=="ready"||result.errors.length||result.underlay[0]!==result.lattice.width||result.underlay[1]!==result.lattice.height)throw Error("Fixed Home underlay failure "+JSON.stringify(result));
+    cases.push({density,...result});
+   }
+   results.push({mode,cases});continue;
+  }
   if(process.env.LG_DENSITY_CHECK){
    const cases=[];
    for(const density of [2,1,1.5,3,2]){
