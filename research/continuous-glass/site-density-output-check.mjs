@@ -54,9 +54,25 @@ export async function run(){
   for(let c=0;c<3;c++){const d=Math.abs(a.v.getFloat16(i+2*c,true)-b.v.getFloat16(j+2*c,true));if(!Number.isFinite(d)){nonfinite++;continue;}diff.push(d);sum+=d;max=Math.max(max,d);total+=d;if(d>peak){peak=d;worst={x:(x+.5)/a.dpr,y:(y+.5)/a.dpr,channel:c,values:[a.v.getFloat16(i+2*c,true),b.v.getFloat16(j+2*c,true)]};}count++;n++;}
  }perShape.push({mode:shape.mode,regular:shape.regular,count,mean:total/count,max:peak,worst});}
  diff.sort((a,b)=>a-b);return {samples:n,nonfinite,edgeExcluded,mean:sum/n,p99:diff[Math.floor(diff.length*.99)],max,perShape};};
+ // Coverage is compared over identical physical pixel footprints, not
+ // point-sampled alpha at different output densities. High-density
+ // output is box-integrated into each low-density footprint.
+ function compareCoverage(low,high){
+  const ratio=high.dpr/low.dpr;if(!Number.isInteger(ratio))throw Error("Integer coverage ratio required");
+  const alpha=(a,x,y)=>a.v.getFloat16((y*a.W+x)*8+6,true),stats=[];
+  for(const shape of shapes){const [X,Y,w,h]=shape.r;let edges=0,sum=0,max=0,lowArea=0,highArea=0;
+   for(let y=Math.max(0,Math.floor(Y*low.dpr)-1);y<Math.min(low.H,Math.ceil((Y+h)*low.dpr)+1);y++)for(let x=Math.max(0,Math.floor(X*low.dpr)-1);x<Math.min(low.W,Math.ceil((X+w)*low.dpr)+1);x++){
+    const a=alpha(low,x,y);let b=0;for(let j=0;j<ratio;j++)for(let i=0;i<ratio;i++)b+=alpha(high,x*ratio+i,y*ratio+j);b/=ratio*ratio;
+    lowArea+=a;highArea+=b;
+    if(a>0&&a<1||b>0&&b<1||a!==b){edges++;const error=Math.abs(a-b);sum+=error;max=Math.max(max,error);}
+   }
+   stats.push({mode:shape.mode,regular:shape.regular,edgeFootprints:edges,mean:edges?sum/edges:0,max,areaRelativeError:Math.abs(lowArea-highArea)/Math.max(highArea,1)});
+  }
+  return stats;
+ }
  try{
   const a=await render(1,1),b=await render(3,1),c=await render(2,1),d=await render(6,1),baseline=await render(2,0);
   const normalA=await render(2,1,true),normalB=await render(6,1,true);
-  return {source:[sw,sh],shapes:shapes.length,comparisons:{oneToThree:compare(a,b),twoToSix:compare(c,d),retinaBaseline:compare(baseline,c),normalTwoToSix:compare(normalA,normalB)},acceptance:"Predeclared density interior p99 <= .003 and max <= .02; baseline deviations are diagnostics, not blanket native proof."};
+  return {source:[sw,sh],shapes:shapes.length,comparisons:{oneToThree:compare(a,b),twoToSix:compare(c,d),retinaBaseline:compare(baseline,c),normalTwoToSix:compare(normalA,normalB)},coverage:{oneToThree:compareCoverage(a,b),twoToSix:compareCoverage(c,d)},acceptance:"Predeclared density interior p99 <= .003 and max <= .02; baseline deviations are diagnostics, not blanket native proof."};
  }finally{device.destroy();vectors.dispose();}
 }
