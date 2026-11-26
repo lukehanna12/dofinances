@@ -1,3 +1,5 @@
+import {parseIconSVG} from "./svg-ingestion.mjs";
+import {prepareStrokeUnion,strokeImplicit} from "./stroke-union.mjs";
 import {parseSilhouetteSVG} from "./production-vector-coverage.js";
 import {prepareVectorPath,contourField} from "./vector-field.mjs";
 import {ContinuousScene} from "./sampling.mjs";
@@ -20,7 +22,8 @@ export async function run(){
  const scene=new ContinuousScene(5,5,Float32Array.from({length:100},(_,i)=>i%4===3?1:(i%17)/16),{origin:[0,0],step:[6,6]});
  for(const name of names){
   const native=await (await fetch("/outline/"+name+".json")).json();
-  const original=parseSilhouetteSVG(await(await fetch("/original/"+name+".svg")).text());
+  const xml=await(await fetch("/original/"+name+".svg")).text();
+  const original=parseSilhouetteSVG(xml),direct=prepareStrokeUnion(parseIconSVG(xml));
   const vector=outlinePath(native.contours);
   function originalContains(x,y){
    for(const op of original.ops){
@@ -28,13 +31,19 @@ export async function run(){
     if(op.stroke){ctx.lineWidth=op.width;ctx.lineCap=op.cap;ctx.lineJoin=op.join;ctx.miterLimit=op.miter;if(ctx.isPointInStroke(op.path,x,y))return true;}
    }return false;
   }
-  const info={name,grid:0,outlineMismatch:0,maxMismatchDistance:0,gpuTested:0,gpuUnresolved:0,gpuMismatch:0,maxFieldError:0};
+  const info={name,grid:0,outlineMismatch:0,maxMismatchDistance:0,gpuTested:0,gpuUnresolved:0,gpuMismatch:0,maxFieldError:0,directVsBrowser:0,directVsOutline:0,directUncertain:0,maxDirectMargin:0};
   const points=[];
   for(let j=0;j<48;j++)for(let i=0;i<48;i++){
    const x=(i+.319)*.5,y=(j+.683)*.5,orig=originalContains(x,y),shape=ctx.isPointInPath(vector,x,y);
    info.grid++;
    if(orig!==shape){
     info.outlineMismatch++;
+    const f=strokeImplicit(direct,[x,y]);
+    if(f.inside===null)info.directUncertain++;else{
+     if(f.inside!==orig)info.directVsBrowser++;
+     if(f.inside!==shape)info.directVsOutline++;
+     info.maxDirectMargin=Math.max(info.maxDirectMargin,Math.min(Math.abs(f.lower),Math.abs(f.upper)));
+    }
     const d=contourField(native.contours,[x,y],{tolerance:1e-5});
     info.maxMismatchDistance=Math.max(info.maxMismatchDistance,Math.abs(d.distance??0));
    }
