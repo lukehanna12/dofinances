@@ -1,3 +1,4 @@
+import {prepareVectorPath,contourField} from "./vector-field.mjs";
 import {ContinuousScene} from "./sampling.mjs";
 import {query,pointReference,createEvaluator,renderTile,OUTPUT} from "./gpu-evaluator.mjs";
 const must=(c,m)=>{if(!c)throw new Error(m);};
@@ -70,5 +71,39 @@ export async function run(){
  must(maxSource<.0002,"Source error "+maxSource);
  must(maxColor<.0002,"Color error "+maxColor);
  must(coverage===0,"Point coverage mismatches "+coverage);
- return {adapter,count,identical,maxField,maxNormal,maxDisplacement,maxSource,maxColor,coverage,render,precision,edge};
+ const vector=await checkVectors();
+ return {adapter,count,identical,maxField,maxNormal,maxDisplacement,maxSource,maxColor,coverage,render,precision,edge,vector};
+}
+
+async function checkVectors(){
+ const box=(x,y,w,h)=>[[[x,y],[x+w,y]],[[x+w,y],[x+w,y+h]],[[x+w,y+h],[x,y+h]],[[x,y+h],[x,y]]];
+ const lens=[[[-2,0],[0,-4],[2,0]],[[2,0],[0,4],[-2,0]]];
+ const cubic=[[[-3,0],[-2,-4],[2,-3],[4,0]],[[4,0],[1,5],[-1,3],[-3,0]]];
+ const outer=box(-5,-4,10,8),hole=box(-2,-1,4,2).reverse().map(s=>s.slice().reverse());
+ const scenes=[[lens],[cubic],[outer,hole],[outer,box(-2,-1,4,2)]];
+ const rgba=Float32Array.from({length:9*7*4},(_,i)=>i%4===3?1:.5+.25*Math.sin(i*.31));
+ const scene=new ContinuousScene(9,7,rgba,{origin:[-10,-10],step:[2.5,10/3]});
+ let tested=0,maxError=0,maxInterval=0,maxNodes=0,unknown=0;
+ for(const contours of scenes){
+  const path=prepareVectorPath(contours,{tolerance:.0005});
+  const ev=await createEvaluator(scene,{path});
+  try{
+   const pts=[];for(const x of [-5.2,-3.6,-2.3,-.7,.6,2.7,4.3,5.4])for(const y of [-4.3,-2.6,-.45,.65,2.5,4.4])pts.push([x,y]);
+   const rows=pts.map(([x,y])=>query({x,y,w:10,h:8,r:0,mode:7,amount:-8,depth:2.88,sceneX:x,sceneY:y,blur:[.5,.75],hover:.2}));
+   const a=await ev.evaluate(rows);
+   for(let i=0;i<rows.length;i++){
+    const q=a.subarray(i*OUTPUT,(i+1)*OUTPUT),r=contourField(contours,pts[i],{tolerance:1e-7});
+    if(q[11]<0){unknown++;continue;}
+    must(r.distance!==null&&r.converged,"Unresolved independent CPU reference");
+    must(q[12]<=Math.abs(r.distance)+1e-6&&q[13]>=Math.abs(r.distance)-1e-6,"GPU interval did not enclose reference");
+    must(q[11]===(r.inside?1:0),"Path coverage mismatch");
+    must(q[10]>=0&&q[10]<=1&&q.every(Number.isFinite),"Invalid optical result");
+    maxError=Math.max(maxError,Math.abs(q[0]-r.distance));maxInterval=Math.max(maxInterval,q[13]-q[12]);maxNodes=Math.max(maxNodes,q[15]);tested++;
+   }
+   const exact=contours[0][0][0];const z=await ev.evaluate([query({x:exact[0],y:exact[1],w:10,h:8,r:0,mode:7})]);
+   must(z[11]===-1,"Exact path boundary should fail closed");
+  }finally{ev.dispose();}
+ }
+ must(unknown===0&&tested===192&&maxError<=.0005&&maxInterval<=.0005,"Path error or unresolved held-out points");
+ return {tested,maxError,maxInterval,maxNodes,unknown,exactBoundaryRejected:scenes.length};
 }

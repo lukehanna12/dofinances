@@ -9,3 +9,7 @@ node research/continuous-glass/run-gpu-check.mjs
 Uses an isolated temporary browser profile and owned internal storage readback, no screenshots. Compares GPU values against the independent JavaScript reference at thousands of query coordinates and repeated equivalent logical footprint tiles. This is CPU/GPU candidate consistency, not Apple Glass validation.
 
 Coordinate transport now computes edge-relative coordinates, pointer deltas and source-origin-relative coordinates in binary64 before conversion to WGSL float32. This reduces cancellation under deep zoom. The test includes offsets as small as ±0.000001 point at a 4096-point rectangle and a partial-coverage tile at its edge; these are finite controls, not arbitrary-precision GPU guarantees.
+
+## Vector path GPU prototype
+
+A prepared simple closed outline is normalized and split at y-extrema, then represented by exact degree-elevated cubic controls rather than tessellated samples. The WGSL evaluator uses adaptive control-hull distance bounds, bounded local stacks, half-open winding, and explicit status lanes. It directly feeds the same optical material computation on the GPU; unresolved samples are rejected rather than painted using an invented value. The supplied normal is a candidate closest-point normal, not a proof of uniqueness or native optical normal. The tolerance guards are engineering bounds, not certified interval arithmetic. Self-intersections, arbitrary overlapping SVG strokes, arc parsing and glyph shaping are not yet supported. This is not a production performance implementation.

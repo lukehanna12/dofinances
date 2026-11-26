@@ -3,9 +3,9 @@
 struct Query {
  pointSize:vec4<f32>, geometry:vec4<f32>, radii:vec4<f32>, source:vec4<f32>,
  material:vec4<f32>, pointer:vec4<f32>, tint:vec4<f32>,
- face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>,edgeOffsets:vec4<f32>
+ face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>,edgeOffsets:vec4<f32>,pathPoint:vec4<f32>
 }
-struct Result {field:vec4<f32>,source:vec4<f32>,color:vec4<f32>}
+struct Result {field:vec4<f32>,source:vec4<f32>,color:vec4<f32>,bounds:vec4<f32>}
 struct Scene {grid:vec4<f32>,step:vec4<f32>}
 @group(0) @binding(0) var<storage,read> queries:array<Query>;
 @group(0) @binding(1) var<storage,read> texels:array<vec4<f32>>;
@@ -96,7 +96,12 @@ fn integrateSource(center:vec2<f32>,radius:vec2<f32>)->vec4<f32>{
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let i=gid.x;if(i>=arrayLength(&queries)){return;}let q=queries[i];
- let f=geometry(q);let disp=envelope(f.x,q.geometry.z,q.geometry.w);
+ var f=vec3<f32>(0.0);var bounds=vec4<f32>(0.0);
+ if(q.geometry.y==7.0){
+  let path=pathField(q.pathPoint);f=path.field.xyz;bounds=path.bounds;
+  if(path.field.w==0.0){results[i]=Result(vec4<f32>(f,0.0),vec4<f32>(0.0),vec4<f32>(0.0,0.0,0.0,-1.0),bounds);return;}
+ }else{f=geometry(q);}
+ let disp=envelope(f.x,q.geometry.z,q.geometry.w);
  // Existing authored interaction, now in logical point units; not a recovered native law.
  let d=min(q.pointSize.z,q.pointSize.w);let reach=max(24.0,d*.8)*clamp(q.pointSize.zw/max(d,1.0),vec2<f32>(1.0),vec2<f32>(2.4));
  let rel=q.pointer.xy/reach;let prox=exp(-dot(rel,rel));
@@ -112,5 +117,5 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
   color=vec3<f32>(q.material.y)+clamp(src.rgb+vec3<f32>(edge+light),vec3<f32>(0.0),vec3<f32>(1.0))*(q.material.z-q.material.y);
  }
  color=mix(color,q.tint.rgb,sat(q.tint.a)*q.material.w);
- results[i]=Result(vec4<f32>(f,disp),src,vec4<f32>(color,select(0.0,1.0,f.x<=0.0)));
+ results[i]=Result(vec4<f32>(f,disp),src,vec4<f32>(color,select(0.0,1.0,f.x<=0.0)),bounds);
 }

@@ -124,3 +124,42 @@ export function contourField(contours,p,{tolerance=1e-6,fillRule="nonzero",maxNo
   // Nearest point alone cannot certify uniqueness at medial axes or seams.
   gradient:null};
 }
+
+// Exact curve degree elevation plus monotone-y splitting; no fixed tessellation.
+// Assumes simple, mutually disjoint or nested contours, not arbitrary intersections.
+export function prepareVectorPath(contours,{fillRule="nonzero",tolerance=1e-4}={}){
+ if(!Array.isArray(contours)||!contours.length||!["nonzero","evenodd"].includes(fillRule)||!Number.isFinite(tolerance)||tolerance<=0)throw new RangeError("Invalid path");
+ for(const c of contours){
+  if(!Array.isArray(c)||!c.length)throw new RangeError("Empty contour");c.forEach(segment);
+  for(let i=0;i<c.length;i++)if(dist(c[i].at(-1),c[(i+1)%c.length][0])!==0)throw new RangeError("Unclosed path");
+ }
+ const active=[];
+ for(let i=0;i<contours.length;i++){
+  const c=contours[i];let winding=0;
+  for(let j=0;j<contours.length;j++)if(i!==j)for(const s of contours[j]){
+   const w=crossing(s,c[0][0]);if(w.uncertain)throw new RangeError("Unresolved nesting");winding+=w.winding;
+  }
+  const sign=Math.sign(signedArea(c));if(!sign)throw new RangeError("Degenerate contour");
+  if(fillRule==="evenodd"||(winding===0)!==(winding+sign===0))active.push(c);
+ }
+ const coords=active.flat(2),minX=Math.min(...coords.map(p=>p[0])),maxX=Math.max(...coords.map(p=>p[0])),minY=Math.min(...coords.map(p=>p[1])),maxY=Math.max(...coords.map(p=>p[1]));
+ const origin=[(minX+maxX)/2,(minY+maxY)/2],scale=Math.max(maxX-minX,maxY-minY);
+ if(!Number.isFinite(scale)||scale<=0)throw new RangeError("Degenerate path scale");
+ const rows=[];
+ for(const c of active)for(const s of c){
+  const points=s.map(p=>[(p[0]-origin[0])/scale,(p[1]-origin[1])/scale]);
+  const pieces=[];let rest=points,last=0;
+  for(const t of extremaY(points)){const [left,right]=split(rest,(t-last)/(1-last));pieces.push(left);rest=right;last=t;}
+  pieces.push(rest);
+  for(const p of pieces){
+   const deg=p.length-1;let cubic=p;
+   if(deg===1)cubic=[p[0],lerp(p[0],p[1],1/3),lerp(p[0],p[1],2/3),p[1]];
+   if(deg===2)cubic=[p[0],lerp(p[0],p[1],2/3),lerp(p[2],p[1],2/3),p[2]];
+   rows.push(...cubic.flat(),deg,0,0,0);
+  }
+ }
+ if(!rows.length||rows.length>128*12)throw new RangeError("Path segment budget exceeded");
+ const normalizedTolerance=tolerance/scale;
+ if(normalizedTolerance<1e-5)throw new RangeError("Requested path tolerance below Float32 reference guard");
+ return {origin,scale,tolerance,normalizedTolerance,curves:Float32Array.from(rows),contours,fillRule};
+}
