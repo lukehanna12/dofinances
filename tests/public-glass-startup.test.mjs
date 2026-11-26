@@ -31,7 +31,7 @@ test("startup defers unused GPU resources without lowering quality",()=>{
  assert.match(renderer,/if\(homeCompositeActive\)ensureCompositeScene\(true\)/);
  assert.match(renderer,/if\(compositeScene&&compositeScene.width===w&&compositeScene.height===h\)return/);
  assert.match(renderer,/compositeScene=rgba16Texture\(device,w,h\)/);
- assert.match(renderer,/const fixed=home&&continuous&&!routeActiveLayers.length/);
+ assert.match(renderer,/const fixed=!!continuous/);
  assert.match(asset("dashboard-glass-artwork.js"),/get view\(\)\{ensureAtlas\(\);return view/);
  assert.match(asset("dashboard-glass-artwork.js"),/size:\[ART_SIZE,ART_SIZE,ART_LAYERS\]/);
 });
