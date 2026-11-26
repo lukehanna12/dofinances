@@ -15,7 +15,7 @@ test("authored source rect follows actual viewport and legacy scroll coordinates
 });
 test("authored sources enter the actual GPU attachment before higher glass samples its mips",()=>{
  const r=read(base+"dashboard-gpu-renderer.js"),p=read(base+"dashboard-glass-source-paint.js");
- assert.match(r,/sourcePainter.draw\(pass,baseSourceEntries,"scene","offscreen"\);\s*pass.end\(\);\s*for\(let level=1/);
+ assert.match(r,/sourcePainter.draw\(pass,baseSourceEntries,continuous\?"base":"scene","offscreen"\);\s*pass.end\(\);\s*for\(let level=1/);
  assert.doesNotMatch(r,/homeSourceEntries|syncHomeSources/);
  assert.match(r,/pass.draw\(6,end-first,0,tileCount\+first\);\s*sourcePainter.draw\(pass,paint/);
  assert.match(r,/drawRoutePanes\(pass,true\);pass.end\(\);mipComposite/);

@@ -28,9 +28,10 @@ test("shared entry uses the same stagger, smoothstep and scale as WGSL",()=>{
 test("startup defers unused GPU resources without lowering quality",()=>{
  const renderer=asset("dashboard-gpu-renderer.js");
  assert.match(renderer,/Promise\.all\(\[deviceReady,ready,sourcesReady\]\)/);
- assert.match(renderer,/if\(homeCompositeActive\)ensureCompositeScene\(\)/);
- assert.match(renderer,/function ensureCompositeScene\(\)\{\s*if\(compositeScene\)return/);
- assert.match(renderer,/compositeScene=rgba16Texture\(device,physicalWidth,physicalHeight\)/);
+ assert.match(renderer,/if\(homeCompositeActive\)ensureCompositeScene\(true\)/);
+ assert.match(renderer,/if\(compositeScene&&compositeScene.width===w&&compositeScene.height===h\)return/);
+ assert.match(renderer,/compositeScene=rgba16Texture\(device,w,h\)/);
+ assert.match(renderer,/const fixed=home&&continuous&&!routeActiveLayers.length/);
  assert.match(asset("dashboard-glass-artwork.js"),/get view\(\)\{ensureAtlas\(\);return view/);
  assert.match(asset("dashboard-glass-artwork.js"),/size:\[ART_SIZE,ART_SIZE,ART_LAYERS\]/);
 });
