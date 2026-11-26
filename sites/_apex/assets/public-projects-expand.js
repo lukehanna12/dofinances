@@ -257,7 +257,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       if(state!==current||current.phase!=="closing")return;
       if(optical&&optical.playState!=="finished"){optical.finished.then(retire,()=>{});return;}
       closeButton.hidden=true;
-      animateGlass(90);
+      // Retiring the small pane must not shorten the still-running card's
+      // WebGPU submission window; its 620ms layout clock is independent.
+      animateGlass(EXPAND_MS-duration+90);
     };
     if(optical)optical.finished.then(retire,()=>{});
     else retire();
