@@ -462,6 +462,8 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
+  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/^Lightwork is a native macOS application and independent command-line interface/);
+  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/share a Metal rendering engine/);
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/lightweight live documentation editor/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/detailed preservation of individual conversations/);
