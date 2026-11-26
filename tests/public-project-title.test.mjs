@@ -37,7 +37,8 @@ test("width targets are anchored to 9 and 15 characters and use measured glyphs"
 test("public cards retain artwork and status, omit footer rows and pin the bold title to equal insets",()=>{
  const entry=readFileSync(new URL("../sites/_apex/assets/public-projects-entry.js",import.meta.url),"utf8");
  const css=readFileSync(new URL("../sites/_apex/assets/public-projects.css",import.meta.url),"utf8");
- assert.match(entry,/upper\.append\(top,action,title\)/);
+ assert.match(entry,/upper\.append\(top,title\)/);
+ assert.match(entry,/if\(!detail\)details\.append\(action\)/);
  assert.doesNotMatch(entry,/project-showcase-(details|row)/);
  assert.doesNotMatch(css,/project-showcase-(details|row)/);
  assert.match(css,/font-weight:700;\s*\/\* 100cqw/);
