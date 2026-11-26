@@ -1802,15 +1802,15 @@ try{
   assert.equal(action.visibility,"visible");assert.equal(action.pointer,"auto");assert.ok(action.radius>100&&!action.nested);
   const shellBefore=await evaluate("window.__projectShellIdentity=document.querySelector('#global-menu');true");
   await evaluate("document.querySelector('.project-showcase-card.is-expanded .project-showcase-action').click()");
-  await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
+  await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail.is-settled')",100,30);
   const detail=await evaluate(`(()=>{
     const hero=document.querySelector('.project-detail-hero'),body=document.querySelector('.project-detail-body'),r=hero.getBoundingClientRect(),b=body.getBoundingClientRect();
     return {shell:window.__projectShellIdentity===document.querySelector('#global-menu'),title:document.title,
-      heroWidth:r.width,fade:hero.querySelector('.project-showcase-regular-boundary').getBoundingClientRect().height,
+      heroWidth:r.width,availableWidth:document.querySelector('#public-route-content').clientWidth,fade:hero.querySelector('.project-showcase-regular-boundary').getBoundingClientRect().height,
       bodyColor:getComputedStyle(body).backgroundColor,bodyTop:b.top,heroBottom:r.bottom,
       hasX:!!document.querySelector('.project-showcase-expand-close'),description:body.querySelector('.project-showcase-description').textContent.length};
   })()`);
-  assert.ok(shellBefore&&detail.shell&&detail.heroWidth>=389&&detail.fade<=112&&detail.fade>=88,JSON.stringify(detail));
+  assert.ok(shellBefore&&detail.shell&&Math.abs(detail.heroWidth-detail.availableWidth)<1&&detail.fade<=112&&detail.fade>=88&&Math.abs(detail.bodyTop-detail.heroBottom)<1,JSON.stringify(detail));
   assert.equal(detail.bodyColor,"rgb(0, 0, 0)");assert.equal(detail.hasX,false);assert.ok(detail.description>250);
   assert.ok(detail.title.startsWith("ChatStore | Projects"),detail.title);
   await evaluate("document.querySelector('.public-projects-back').click()");
