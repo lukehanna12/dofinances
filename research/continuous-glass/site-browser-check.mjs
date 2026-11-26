@@ -8,6 +8,7 @@ import {tmpdir} from "node:os";
 import {spawn} from "node:child_process";
 import {fileURLToPath} from "node:url";
 const root=resolve(fileURLToPath(new URL("../../sites/_apex/",import.meta.url))),profile=mkdtempSync(join(tmpdir(),"lg-site-browser-"));
+const dist=resolve(root,"../../dist");
 const mime={".js":"text/javascript",".css":"text/css",".html":"text/html",".svg":"image/svg+xml",".json":"application/json",".webp":"image/webp",".avif":"image/avif",".wgsl":"text/plain"};
 const server=createServer((req,res)=>{
  const path=new URL(req.url,"http://127.0.0.1").pathname;
@@ -20,6 +21,7 @@ const server=createServer((req,res)=>{
    res.writeHead(200,{"content-type":"text/html"});return res.end(html);
   }
   if(path.startsWith("/project-artwork/")||path.startsWith("/wallpapers/"))target=join(root,"assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
+  if(process.env.LG_REAL_LOGIN&&path.startsWith("/assets/")&&existsSync(resolve(dist,"."+path))){const file=resolve(dist,"."+path);if(!file.startsWith(dist+"/"))throw Error("Invalid dist path");res.writeHead(200,{"content-type":mime[extname(file)]||"application/octet-stream"});return res.end(readFileSync(file));}
   if(path==="/assets/public-login-manifest.json"){res.writeHead(200,{"content-type":"application/json"});return res.end(JSON.stringify({js:"/assets/fixture-login.js",css:[]}));}
   if(path==="/assets/fixture-login.js"){res.writeHead(200,{"content-type":"text/javascript"});return res.end('export function mountLogin(host,{onExitComplete}){const card=document.createElement("h2");card.textContent="Sign in";host.append(card);return {exit(){onExitComplete()},unmount(){card.remove()}}}');}
   if(!target.startsWith(root+"/")||!existsSync(target)){res.writeHead(404);return res.end();}
@@ -46,6 +48,20 @@ try{
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")+(process.env.LG_DENSITY_CHECK?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();
+  if(process.env.LG_REAL_LOGIN){
+   await ev(`document.querySelector(".cta6-bottom-action a[href='/login']").click()`);
+   await wait(`location.pathname==="/login"&&document.querySelector(".auth3-root form")&&window.__dashboardWebGPU?.authGlass?.opacity>=.99`,"Actual login not rendered");
+   const target=await ev(`(()=>{const r=document.querySelector("[data-auth-glass-input]").getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+   await send("Input.dispatchMouseEvent",{type:"mouseMoved",...target});
+   await wait("window.__dashboardWebGPU?.authGlass?.cardHovered&&window.__dashboardWebGPU?.authGlass?.controlHovered","Login hover not reflected");
+   await send("Input.dispatchMouseEvent",{type:"mousePressed",...target,button:"left",clickCount:1});await sleep(200);
+   const pressed=await ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a.status,errors:a.errors,glass:a.authGlass,mode:document.body.dataset.authGlassMode,scene:document.body.dataset.authGpuScene};})()`);
+   await send("Input.dispatchMouseEvent",{type:"mouseReleased",...target,button:"left",clickCount:1});
+   await ev(`document.querySelector(".auth3-back-link").click()`);
+   await wait(`location.pathname==="/"&&window.__dofPublicRouter?.state==="home"&&!document.querySelector(".auth3-root")`,"Return to Home failed");
+   if(pressed.status!=="ready"||pressed.errors.length||pressed.mode!=="webgpu"||pressed.scene!=="ready")throw Error("Login GPU regression "+JSON.stringify(pressed));
+   results.push({mode,home,pressed,returned:await state()});continue;
+  }
   if(process.env.LG_HOME_UNDERLAY){
    const cases=[];
    for(const density of [1,3]){
