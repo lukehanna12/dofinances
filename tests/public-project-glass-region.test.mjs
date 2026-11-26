@@ -143,3 +143,19 @@ test("Project artwork stays original except the expanded raw backdrop fade",()=>
  assert.match(shader,/return vec4<f32>\(rgb,combined\*coverage\)/);
  assert.doesNotMatch(shader,/color\*=1.0-clamp\(region.optics.x/);
 });
+
+test("ChatStore left alignment and edge inset remain identical in GPU artwork sampling",()=>{
+ for(const [w,h] of [[165,220],[261,250],[350,250],[1300,250]]){
+   const align=artworkCSSAlignment({objectPosition:"0% 50%",transformOrigin:w/2+"px "+h/2+"px",width:w+"px",height:h+"px"});
+   assert.deepEqual(align,[0,.5,.5,.5]);
+   for(const scale of [1.04,1.09,1.144]){
+     const uv=artworkCoverTransform(w,h,1800,1242,scale,scale,0,0,...align);
+     const centered=artworkCoverTransform(w,h,1800,1242,scale,scale);
+     assert.ok(uv[2]>0&&uv[2]+uv[0]<1);
+     assert.ok(uv[3]>0&&uv[3]+uv[1]<1);
+     assert.ok(uv[2]<=centered[2]+1e-12);
+     if(w/h<1800/1242)assert.ok(uv[2]<centered[2]);
+     assert.ok(Math.abs(uv[2]-(scale-1)*uv[0]/2)<1e-12);
+   }
+ }
+});

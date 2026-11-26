@@ -119,6 +119,13 @@
 .view[data-view="projects"] .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
  transform:scale(1.1025)
 }
+/* ChatStore: reveal the far-left composition, with a narrow edge crop. */
+.view[data-view="projects"] .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"] .project-showcase-photo{
+ object-position:0% 50%;transform-origin:50% 50%;transform:scale(1.144)
+}
+.view[data-view="projects"] .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+ transform:scale(1.04)
+}
 .view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
   object-position:50% 66%
 }

@@ -137,6 +137,13 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:scale(1.1025)
 }
+/* ChatStore: reveal the far-left composition, with a narrow edge crop. */
+.public-projects-root .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"] .project-showcase-photo{
+  object-position:0% 50%;transform-origin:50% 50%;transform:scale(1.144)
+}
+.public-projects-root .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
+  transform:scale(1.04)
+}
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
   object-position:50% 66%
 }
@@ -563,6 +570,9 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="bootscript"].is-photo-ready .project-showcase-photo{
   transform:scale(1.1025)
 }
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready .project-showcase-photo{
+  transform:scale(1.04)
+}
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="github-readme-chrome-extension"].is-photo-ready .project-showcase-photo{
   transform:translateY(-.6%) scale(1.04)
 }
@@ -670,5 +680,6 @@ body.public-home > #public-route-content:has(.public-project-detail){background:
 .public-projects-root .project-showcase-card.is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{opacity:1;transform:scale(1)}
 .public-projects-root .project-showcase-card[data-project-slug="terminal-scalars"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.03)}
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.1025)}
+.public-projects-root .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.04)}
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(-.6%) scale(1.04)}
 .public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.11)}

@@ -618,3 +618,17 @@ test("Public and private badge semantics and ordering agree for every project",a
   assert.match(css,/\.project-showcase-badge--review\{\s*background:color\(srgb 0\.98 0\.76 0\.07 \/ \.09\);color:rgb\(230,180,51\)/);
   assert.match(css,/\.project-showcase-badge--progress\{\s*background:color\(srgb 0\.98 0\.45 0\.08 \/ 0\.09\);color:rgb\(245, 130, 45\)/);
 });
+
+test("ChatStore aligns artwork to the left with a small border crop in every reveal state",async()=>{
+ const csses=await Promise.all([
+   load("../sites/_apex/assets/public-projects.css"),
+   load("../sites/_apex/app/assets/project-showcase.css")
+ ]);
+ for(const css of csses){
+   assert.match(css,/\[data-project-slug="chatgpt-chat-save-chrome-extension"\] \.project-showcase-photo\{\s*object-position:0% 50%;transform-origin:50% 50%;transform:scale\(1\.144\)/);
+   assert.match(css,/\[data-project-slug="chatgpt-chat-save-chrome-extension"\]\.is-photo-ready:is\(:hover,:focus-visible(?:,:focus-within)?\) \.project-showcase-photo\{\s*transform:scale\(1\.04\)/);
+ }
+ assert.match(csses[0],/\.is-expanded\[data-project-slug="chatgpt-chat-save-chrome-extension"\]\.is-photo-ready \.project-showcase-photo\{\s*transform:scale\(1\.04\)/);
+ assert.match(csses[0],/\[data-project-slug="chatgpt-chat-save-chrome-extension"\]\.is-photo-ready:has\(>\.project-showcase-trigger:focus-visible\) \.project-showcase-photo\{transform:scale\(1\.04\)/);
+ assert.ok(Math.abs(1.144/1.04-1.1)<1e-12);
+});
