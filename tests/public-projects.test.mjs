@@ -525,7 +525,7 @@ test("all 16 projects have readable, explicitly connected native architecture sc
     }
   }
   assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/^Terminal Scalars is a library.*command-line interfaces.*terminal user interfaces/);
-  assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/includes scripts.*Google-hosted Model Context Protocol \(MCP\) server using Google Apps Script/);
+  assert.ok(PROJECT_DESCRIPTIONS["terminal-scalars"].endsWith("Scripts are also included for the purpose of deploying your own customizable Google-hosted MCP server using Google Apps Script; all you need is a Google Drive account."));
   assert.doesNotMatch(PROJECT_DESCRIPTIONS["terminal-scalars"],/\b(?:framework|planned)\b/i);
   assert.equal(PROJECT_DIAGRAMS["terminal-scalars"][0].title,"Native terminal library");
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
