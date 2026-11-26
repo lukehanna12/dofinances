@@ -1,13 +1,14 @@
 // Actual public fsGlass A/B on owned synthetic GPU attachments, no screenshots.
 // The production material code, SVG raster coverage and backdrop mip reducer
 // are identical for both variants. Output statistics are not native evidence.
+import {packedReference,boundedGradient} from "./site-packed-reference.mjs";
 import {specializeContinuousGlass,loadContinuousGlass} from "/site/dashboard-glass-continuous.js";
 import {createGlassSilhouetteAtlas} from "/site/dashboard-glass-silhouette.js";
 import {resolveRegularMaterial,regularMaterialLanes} from "/site/dashboard-glass-material.js";
 export async function run(){
  const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"}),f16=adapter.features.has("shader-f16"),device=await adapter.requestDevice({requiredFeatures:f16?["shader-f16"]:[]});
  const errors=[];device.addEventListener('uncapturederror',e=>errors.push(e.error.message));
- const original=await(await fetch("/site/dashboard-gpu-glass.wgsl")).text(),data=await loadContinuousGlass(device,"/site/"),names=Object.keys((await(await fetch("/site/continuous-icon-vectors.json")).json()).assets);
+ const original=await(await fetch("/site/dashboard-gpu-glass.wgsl")).text(),data=await loadContinuousGlass(device,"/site/"),packed=await(await fetch("/site/continuous-icon-vectors.json")).json(),names=Object.keys(packed.assets);
  const atlas=createGlassSilhouetteAtlas(device);
  const pipelines=[];
  const makeBuffer=(v,usage)=>{const b=device.createBuffer({size:v.byteLength,usage:usage|GPUBufferUsage.COPY_DST});device.queue.writeBuffer(b,0,v);return b;};
@@ -82,7 +83,15 @@ export async function run(){
     const j=(y*W+x)*8;
     for(let c=0;c<4;c++){const a=A.getFloat16(j+2*c,true),b=B.getFloat16(j+2*c,true),d=Math.abs(a-b);if(!Number.isFinite(d)){nonfinite++;continue;}if(c===3){alpha.push(d);continue;}diff.push(d);sum+=d;max=Math.max(max,d);}
    }
-   for(let i=0;i<16;i++){let total=0,peak=0,n=0,worst=null;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;if(d>peak){peak=d;worst={x,y,channel:c,baseline:A.getFloat16(j,true),candidate:B.getFloat16(j,true)};}n++;}if(worst){const j=(worst.y*W+worst.x)*8,aa=new DataView(resultsForMode[3].raw.buffer),bb=new DataView(resultsForMode[4].raw.buffer);worst.fields=[aa,bb].map(v=>[0,1,2,3].map(c=>v.getFloat16(j+2*c,true)));}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
+   for(let i=0;i<16;i++){let total=0,peak=0,n=0,worst=null;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;if(d>peak){peak=d;worst={x,y,channel:c,baseline:A.getFloat16(j,true),candidate:B.getFloat16(j,true)};}n++;}if(worst){const j=(worst.y*W+worst.x)*8,aa=new DataView(resultsForMode[3].raw.buffer),bb=new DataView(resultsForMode[4].raw.buffer);worst.fields=[aa,bb].map(v=>[0,1,2,3].map(c=>v.getFloat16(j+2*c,true)));
+     const v=packed.assets[names[i]].viewBox,rect=icons.slice(i*20,i*20+4),fit=Math.min(rect[2]/v[2],rect[3]/v[3]);
+     const x=v[0]+v[2]*.5+(worst.x+.5-tiles[i*20]-rect[0]-rect[2]*.5)/fit,y=v[1]+v[3]*.5+(worst.y+.5-tiles[i*20+1]-rect[1]-rect[3]*.5)/fit;
+     const ref=packedReference(packed,names[i]),h=Math.max(v[2],v[3])/256;
+     const n0=boundedGradient(ref,x,y,h),dist=ref(x,y)*fit/scale;
+     worst.reference=[dist,...n0];worst.normalError=worst.fields.map(f=>Math.hypot(f[1]-n0[0],f[2]-n0[1]));worst.distanceError=worst.fields.map(f=>Math.abs(f[0]-dist));
+     // Independent stability test at 1/1000 of authored normal stencil.
+     const perturbations=[[h/1000,0],[-h/1000,0],[0,h/1000],[0,-h/1000]];
+     worst.referenceMaxPerturbation=Math.max(...perturbations.map(([dx,dy])=>{const n=boundedGradient(ref,x+dx,y+dy,h);return Math.hypot(n[0]-n0[0],n[1]-n0[1]);}));}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
    results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();

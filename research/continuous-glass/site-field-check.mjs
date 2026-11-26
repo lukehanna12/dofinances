@@ -1,6 +1,6 @@
 // Actual integrated GPU vector evaluator versus independently regenerated
 // packed authored controls (independent Float64 evaluator) and the original site's encoded mask.
-import {closestCurve} from "./vector-field.mjs";
+import {packedReference,boundedGradient} from "./site-packed-reference.mjs";
 import {loadContinuousGlass} from "/site/dashboard-glass-continuous.js";
 import {silhouetteMask,MASK_SIZE,MASK_INNER,MASK_PAD} from "/site/dashboard-glass-silhouette.js";
 export async function run(){
@@ -32,20 +32,7 @@ export async function run(){
   const alpha=ctx.getImageData(0,0,MASK_SIZE,MASK_SIZE).data,mask=silhouetteMask(Uint8Array.from({length:MASK_SIZE*MASK_SIZE},(_,i)=>alpha[i*4+3]),MASK_SIZE,MASK_SIZE);
   // Independent Float64 reference: prune using original control hulls,
   // then use the CPU subdivision solver and independent monotone-ray parity.
-  const path=new Path2D(),segments=[];
-  for(let j=0;j<asset.count;j++){const offset=(asset.start+j)*48;const a=Array.from({length:4},(_,i)=>[asset.origin[0]+asset.scale*view.getFloat32(offset+i*8,true),asset.origin[1]+asset.scale*view.getFloat32(offset+i*8+4,true)]);if(view.getFloat32(offset+32,true)===1)a.splice(1,2);
-   path.moveTo(...a[0]);if(a.length===2)path.lineTo(...a[1]);else if(a.length===3)path.quadraticCurveTo(...a[1],...a[2]);else path.bezierCurveTo(...a[1],...a[2],...a[3]);
-   segments.push({a,b:[Math.min(...a.map(p=>p[0])),Math.min(...a.map(p=>p[1])),Math.max(...a.map(p=>p[0])),Math.max(...a.map(p=>p[1]))]});
-  }
-  const d=(x,y)=>{const ordered=segments.map(({a,b})=>({a,lower:Math.hypot(Math.max(b[0]-x,0,x-b[2]),Math.max(b[1]-y,0,y-b[3]))})).sort((a,b)=>a.lower-b.lower);let best=Infinity;
-   for(const q of ordered){if(q.lower>best)break;const r=closestCurve(q.a,[x,y],{tolerance:1e-5,maxNodes:20000});if(!r.converged)return null;best=Math.min(best,r.distance);}
-   let parity=false;for(const {a} of segments){const first=a[0],last=a.at(-1);if(!((first[1]<=y&&last[1]>y)||(last[1]<=y&&first[1]>y)))continue;
-    const up=last[1]>first[1];let lo=0,hi=1;
-    const evalAt=t=>{let p=a.map(p=>p.slice());while(p.length>1)p=p.slice(1).map((q,i)=>[(1-t)*p[i][0]+t*q[0],(1-t)*p[i][1]+t*q[1]]);return p[0];};
-    for(let i=0;i<44;i++){let mid=(lo+hi)/2;if((evalAt(mid)[1]<=y)===up)lo=mid;else hi=mid;}
-    if(evalAt((lo+hi)/2)[0]>x)parity=!parity;
-   }return (parity?-1:1)*best;
-  },h=24/256;
+  const d=packedReference(packed,name),h=24/256;
   for(let j=0;j<2;j++)for(let i=0;i<3;i++){
    const x=(i+.319)*24/3,y=(j+.683)*24/2,ref=d(x,y);
    if(ref===null){skipped++;continue;}
