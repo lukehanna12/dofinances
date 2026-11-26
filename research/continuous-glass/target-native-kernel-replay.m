@@ -150,10 +150,42 @@ static void copyMatrix(void){
  }
 }
 
+
+static void oddSampler(void){
+ // Isolate hardware normalized linear sampling in an independently compiled
+ // public MSL kernel. The same owned input is also submitted to native AGX2.
+ NSString *code=@"#include <metal_stdlib>\nusing namespace metal;\nkernel void sample_probe(texture2d<half,access::sample> t [[texture(0)]], device const float2 *p [[buffer(0)]],device half4 *o [[buffer(1)]],uint i [[thread_position_in_grid]]){ constexpr sampler s(coord::normalized,address::clamp_to_edge,filter::linear);o[i]=t.sample(s,p[i],level(0.0f));}";
+ NSError *error=nil;id<MTLLibrary> lib=[dev newLibraryWithSource:code options:nil error:&error];if(!lib){NSLog(@"%@",error);abort();}
+ id<MTLComputePipelineState> samplePipeline=[dev newComputePipelineStateWithFunction:[lib newFunctionWithName:@"sample_probe"] error:&error];if(!samplePipeline){NSLog(@"%@",error);abort();}
+ const int dims[][2]={{9,7},{17,11},{63,31}};
+ const int offsets[13][2]={{0,-2},{-2,0},{2,0},{0,2},{-1,-1},{1,-1},{-1,1},{1,1},{0,-1},{-1,0},{1,0},{0,1},{0,0}};
+ for(int j=0;j<3;j++)for(int type=0;type<2;type++){
+  int i=j+4,w=dims[j][0],h=dims[j][1],dw=w/2,dh=h/2,count=dw*dh*13;
+  NSUInteger bpp=type?4:8;MTLPixelFormat fmt=type?MTLPixelFormatBGRA8Unorm:MTLPixelFormatRGBA16Float;
+  id<MTLTexture> t=texture(w,h,fmt,YES);NSMutableData *d=[NSMutableData dataWithLength:w*h*bpp];
+  for(int y=0;y<h;y++)for(int x=0;x<w;x++)for(int k=0;k<4;k++){
+   int z=(y*w+x)*4+k,v=(17*x*x+13*y*y+11*x*y+7*k*x+19*k*y+23*k+3*i)%127;
+   if(type)((uint8_t*)d.mutableBytes)[z]=(uint8_t)(v*2+(x+y+k)%2);
+   else ((uint16_t*)d.mutableBytes)[z]=half((v-61)/32.0f);
+  }
+  writeTexture(t,0,d,bpp);down(t,0,@"variable_blur_downsample_compute_agx2");
+  NSData *native=readTexture(t,1,bpp);
+  id<MTLBuffer> positions=[dev newBufferWithLength:count*8 options:MTLResourceStorageModeShared],out=[dev newBufferWithLength:count*8 options:MTLResourceStorageModeShared];
+  float *p=positions.contents;float dx=1.0f/dw,dy=1.0f/dh;
+  for(int y=0;y<dh;y++)for(int x=0;x<dw;x++)for(int k=0;k<13;k++){
+   int z=((y*dw+x)*13+k)*2;p[z]=(x+offsets[k][0]+.5f)*dx;p[z+1]=(y+offsets[k][1]+.5f)*dy;
+  }
+  id<MTLCommandBuffer> b=[queue commandBuffer];id<MTLComputeCommandEncoder> e=[b computeCommandEncoder];
+  [e setComputePipelineState:samplePipeline];[e setTexture:t atIndex:0];[e setBuffer:positions offset:0 atIndex:0];[e setBuffer:out offset:0 atIndex:1];
+  [e dispatchThreads:MTLSizeMake(count,1,1) threadsPerThreadgroup:MTLSizeMake(32,1,1)];[e endEncoding];[b commit];[b waitUntilCompleted];if(b.status!=MTLCommandBufferStatusCompleted){NSLog(@"%@",b.error);abort();}
+  printf("SAMPLES %d %d %d %d %s %s\n",i,w,h,type,hex(native.bytes,native.length).UTF8String,hex(out.contents,count*8).UTF8String);
+ }
+}
+
 int main(int argc,const char **argv){@autoreleasepool{
  dev=MTLCreateSystemDefaultDevice();queue=[dev newCommandQueue];pipelines=[NSMutableDictionary dictionary];NSError *error=nil;
  library=[dev newLibraryWithURL:[NSURL fileURLWithPath:@"/System/Library/Frameworks/QuartzCore.framework/Versions/A/Resources/default.metallib"] error:&error];
  if(!library){NSLog(@"%@",error);return 1;}
  if(argc!=2)return 2;
- if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else if(strcmp(argv[1],"matrix")==0)matrix();else if(strcmp(argv[1],"impulse2d")==0)impulse2D();else if(strcmp(argv[1],"copy-matrix")==0)copyMatrix();else return 2;
+ if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else if(strcmp(argv[1],"matrix")==0)matrix();else if(strcmp(argv[1],"impulse2d")==0)impulse2D();else if(strcmp(argv[1],"copy-matrix")==0)copyMatrix();else if(strcmp(argv[1],"odd-sampler")==0)oddSampler();else return 2;
 }}
