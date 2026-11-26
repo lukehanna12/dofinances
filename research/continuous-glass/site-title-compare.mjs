@@ -1,3 +1,4 @@
+import {referenceTitleField} from "./native-title-reference.mjs";
 // Actual title material output against the preserved browser-native alpha.
 // All readback is of test-owned offscreen attachments, not displayed pixels.
 import {specializeContinuousGlass,loadContinuousGlass} from "/site/dashboard-glass-continuous.js";
@@ -20,21 +21,24 @@ export async function run(){
  const size=63,style={fontStyle:"normal",fontWeight:"550",fontSize:"63px",fontFamily:'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',letterSpacing:(-.035*size)+"px",lineHeight:(1.02*size)+"px",direction:"ltr",fontKerning:"auto"};
  const ctx=document.createElement("canvas").getContext("2d");ctx.font=style.fontWeight+" "+style.fontSize+" "+style.fontFamily;ctx.letterSpacing=style.letterSpacing;
  const logicalWidth=ctx.measureText("Projects").width,logicalHeight=parseFloat(style.lineHeight),out=[];
+ const useReference=new URLSearchParams(location.search).has("native-reference"),native=useReference?await(await fetch("/title-outline")).json():null;
  const make=(a,usage)=>{const v=Float32Array.from(a),b=device.createBuffer({size:v.byteLength,usage:usage|GPUBufferUsage.COPY_DST});device.queue.writeBuffer(b,0,v);return b;};
  try{
- for(const dpr of [1,2,3]){
+ for(const dpr of (useReference?[2]:[1,2,3])){
   const W=240*dpr,H=90*dpr,w=Math.ceil(logicalWidth*dpr),h=Math.ceil(logicalHeight*dpr),x=8*dpr,y=6*dpr,alpha=rasterClockText("Projects",style,w,h,dpr),glyph=tex(w,h);
   device.queue.writeTexture({texture:glyph},alpha.pixels,{bytesPerRow:w*8},[w,h]);
   const t0=performance.now(),v=vectors.titleField("Projects",style,w,h,dpr,glyph,[.5,.5]);if(!v)throw Error("Missing title model");
   await device.queue.onSubmittedWorkDone();const buildMs=performance.now()-t0;
+  let referenceTexture=null,reference=null;
+  if(native){reference=referenceTitleField(native,"Projects",style,w,h,dpr,alpha);referenceTexture=tex(w,h,1,0,"rgba32float");device.queue.writeTexture({texture:referenceTexture},reference.out,{bytesPerRow:w*16},[w,h]);}
   const tile=[x,y,w,h,0,-8,2.5,4,0,0,0,0,0,0,w*.5,h*.5,0,0,1,0];
   const lanes=phase=>[0,0,w,h,dpr,0,0,0,0,0,0,0,phase,phase,0,0,0,w,h,v.index];
   const buffers=[make(tile,GPUBufferUsage.STORAGE),make([W,H,1,dpr,0,0,0,H,0,0,0,0,0,0,0,0,1,1,0,0,W,H,0,0],GPUBufferUsage.UNIFORM),make([0,0,0,0],GPUBufferUsage.STORAGE),make(clockTextMaterialLanes(),GPUBufferUsage.STORAGE),make(Array(24).fill(0),GPUBufferUsage.STORAGE),make(lanes(.5),GPUBufferUsage.STORAGE)];
   const target=tex(W,H,1,GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC),stride=Math.ceil(W*8/256)*256,read=device.createBuffer({size:stride*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
   const values=[],timings=[];
-  for(let mode=0;mode<3;mode++){
+  for(let mode=0;mode<(useReference?4:3);mode++){
    device.queue.writeBuffer(buffers[5],0,Float32Array.from(lanes(mode===2?.25:.5)));
-   const entries=[{binding:0,resource:source},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:(mode?v.texture:glyph).createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:source},{binding:9,resource:dummy.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:13,resource:array},{binding:14,resource:array},...(mode?[{binding:15,resource:{buffer:vectors.buffer}},{binding:16,resource:vectors.fieldView}]:[{binding:12,resource:array}])];
+   const entries=[{binding:0,resource:source},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:(mode===3?referenceTexture:mode?v.texture:glyph).createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:source},{binding:9,resource:dummy.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:13,resource:array},{binding:14,resource:array},...(mode?[{binding:15,resource:{buffer:vectors.buffer}},{binding:16,resource:vectors.fieldView}]:[{binding:12,resource:array}])];
    const pipeline=programs[mode?1:0],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries});
    const draw=async copy=>{const c=device.createCommandEncoder(),p=c.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});p.setPipeline(pipeline);p.setBindGroup(0,bind);p.draw(6);p.end();if(copy)c.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([c.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
    await draw(false);const ms=[];for(let i=0;i<3;i++)ms.push(await draw(false));timings.push(ms);await draw(true);await read.mapAsync(GPUMapMode.READ);
@@ -43,8 +47,9 @@ export async function run(){
   const a=new DataView(values[0].buffer),b=new DataView(values[1].buffer),rgb=[],alphaDiff=[];let exact=0,nonfinite=0,cacheByteDifferences=0;
   for(let i=0;i<values[1].length;i++)cacheByteDifferences+=+(values[1][i]!==values[2][i]);
   for(let i=0;i<W*H;i++){const j=i*8,aa=a.getFloat16(j+6,true),bb=b.getFloat16(j+6,true);alphaDiff.push(Math.abs(aa-bb));exact+=+(aa===bb);if(aa>0||bb>0)for(let c=0;c<3;c++){const d=Math.abs(a.getFloat16(j+c*2,true)-b.getFloat16(j+c*2,true));if(Number.isFinite(d))rgb.push(d);else nonfinite++;}}
-  rgb.sort((a,b)=>a-b);out.push({dpr,geometry:v.localEvidence,buildMs,coveredChannels:rgb.length,meanRGB:rgb.reduce((a,b)=>a+b,0)/rgb.length,p99RGB:rgb[Math.floor(rgb.length*.99)],maxRGB:rgb.at(-1),alphaEqual:exact,totalPixels:W*H,maxAlpha:alphaDiff.reduce((a,b)=>Math.max(a,b),0),cacheByteDifferences,nonfinite,timings});
-  glyph.destroy();v.texture.destroy();buffers.forEach(b=>b.destroy());target.destroy();read.destroy();
+  const referenceErrors=useReference?[0,1].map(mode=>{const a=new DataView(values[mode].buffer),r=new DataView(values[3].buffer),d=[];for(let i=0;i<W*H;i++){const j=i*8;if(r.getFloat16(j+6,true)>0)for(let c=0;c<3;c++)d.push(Math.abs(a.getFloat16(j+c*2,true)-r.getFloat16(j+c*2,true)));}d.sort((a,b)=>a-b);return {mode,channels:d.length,mean:d.reduce((a,b)=>a+b,0)/d.length,p99:d[Math.floor(d.length*.99)],max:d.at(-1)};}):null;
+  rgb.sort((a,b)=>a-b);out.push({dpr,referenceErrors,referenceEdgeCount:reference?.edgeCount,geometry:v.localEvidence,buildMs,coveredChannels:rgb.length,meanRGB:rgb.reduce((a,b)=>a+b,0)/rgb.length,p99RGB:rgb[Math.floor(rgb.length*.99)],maxRGB:rgb.at(-1),alphaEqual:exact,totalPixels:W*H,maxAlpha:alphaDiff.reduce((a,b)=>Math.max(a,b),0),cacheByteDifferences,nonfinite,timings});
+  glyph.destroy();v.texture.destroy();referenceTexture?.destroy();buffers.forEach(b=>b.destroy());target.destroy();read.destroy();
  }
  if(errors.length)throw Error(errors.join(";"));return {out,scope:"Current clock text material and final browser coverage; synthetic fixed optical source. Baseline color differences are not native proof."};
  }finally{scene.destroy();dummy.destroy();vectors.dispose();device.destroy();}
