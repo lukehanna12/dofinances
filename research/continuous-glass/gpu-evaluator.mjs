@@ -2,24 +2,26 @@
 import {mode4Field,mode5Field} from "./native-field.mjs";
 import {roundedBoxField,refractionEnvelope} from "./reference.mjs";
 import {ContinuousScene} from "./sampling.mjs";
+import {diamond} from "./native-diamond.mjs";
 export const LANES=56,OUTPUT=16;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),dot=(a,b)=>a.reduce((z,x,i)=>z+x*b[i],0);
-export function pointReference(a,scene){
+export function pointReference(a,scene,{kernel="box"}={}){
  const [x,y,w,h,r]=a.logical?.geometry??a;const [, , , , ,mode,amount,depth]=a;
  const g=mode===4?mode4Field(x,y,w,h,r):mode===5?mode5Field(x,y,w,h,Array.from(a.slice(8,12))):roundedBoxField(x,y,w,h,r);
  const n=g.opticalNormal??g.gradient??[0,0],d=g.distance,disp=refractionEnvelope(d,amount,depth).displacement;
  const dim=Math.min(w,h),reach=[w,h].map(z=>Math.max(24,dim*.8)*clamp(z/Math.max(dim,1),1,2.4));
  const rel=[a[20]/reach[0],a[21]/reach[1]],prox=Math.exp(-dot(rel,rel)),hover=a[40],press=a[41];
  const shift=rel.map((v,i)=>prox*(v*(hover*.55+press*1.1)+a[22+i]*(hover*.42+press*.65)));
- const [sx,sy]=a.logical?.source??[a[12],a[13]];const src=scene.box(sx+n[0]*disp+shift[0],sy+n[1]*disp+shift[1],a[14],a[15]);
+ const [sx,sy]=a.logical?.source??[a[12],a[13]];const center=[sx+n[0]*disp+shift[0],sy+n[1]*disp+shift[1]];const src=kernel==="diamond"?diamond(scene,...center,...stagePitch(a)):scene.box(...center,a[14],a[15]);
  const rim=Math.exp(-Math.abs(d)*1.16),edge=clamp(rim*.28,0,.28),light=prox*(hover*.075+press*.06)+rim*prox*press*.035;
  const color=src.slice(0,3).map((v,i)=>a[16]===1?clamp(dot(src.slice(0,3),a.slice(28+4*i,31+4*i))+a[31+4*i]+(edge+light)*.75,0,1):a[17]+clamp(v+edge+light,0,1)*(a[18]-a[17]));
  const tint=clamp(a[27],0,1)*a[19];
  return [d,...n,disp,...src,...color.map((c,i)=>c+(a[24+i]-c)*tint),d<=0?1:0];
 }
-export function query({x,y,w,h,r,mode=4,radii=[-r,-r,-r,-r],amount=-60,depth=20,sceneX=x,sceneY=y,blur=[4,4],regular=false,face=[.05,.8],tint=[0,0,0,0],film=.25,pointer=[0,0,0,0],hover=0,press=0,rows=[1,0,0,0,0,1,0,0,0,0,1,0]}){
+function stagePitch(a){const s=a.logical?.diamondStep;if(!s||s.length!==2||!s.every(x=>Number.isFinite(x)&&x>0))throw new RangeError("Explicit logical diamondStep required");return s;}
+export function query({x,y,w,h,r,mode=4,radii=[-r,-r,-r,-r],amount=-60,depth=20,sceneX=x,sceneY=y,blur=[4,4],diamondStep=null,regular=false,face=[.05,.8],tint=[0,0,0,0],film=.25,pointer=[0,0,0,0],hover=0,press=0,rows=[1,0,0,0,0,1,0,0,0,0,1,0]}){
  const a=Float32Array.from([x,y,w,h,r,mode,amount,depth,...radii,sceneX,sceneY,...blur,regular?1:0,...face,film,x-pointer[0],y-pointer[1],pointer[2],pointer[3],...tint,...rows,hover,press,0,0,x-w/2,-x-w/2,y-h/2,-y-h/2,0,0,0,0,0,0,0,0]);
- Object.defineProperty(a,"logical",{value:{geometry:[x,y,w,h,r],source:[sceneX,sceneY]}});
+ Object.defineProperty(a,"logical",{value:{geometry:[x,y,w,h,r],source:[sceneX,sceneY],diamondStep}});
  if(a.length!==LANES||!a.every(Number.isFinite)||w<=0||h<=0||depth<=0||blur.some(v=>v<0)||![4,5,6,7].includes(mode)||r<0||(mode===4&&r===0)||(mode===5&&radii.some(v=>v===0))||(mode===6&&r>Math.min(w,h)/2))throw new RangeError("Invalid experimental query");
  return a;
 }
@@ -38,7 +40,8 @@ export function packPrefix(width,height,source){
  }
  return out;
 }
-export async function createEvaluator(scene,{path=null,integrator="prefix"}={}){
+export async function createEvaluator(scene,{path=null,integrator="prefix",kernel="box"}={}){
+ if(!["box","diamond"].includes(kernel))throw new RangeError("Invalid kernel");
  if(!(scene instanceof ContinuousScene))throw new TypeError("Fixed source required");
  const adapter=await navigator.gpu?.requestAdapter({powerPreference:"high-performance"});
  if(!adapter)throw new Error("No WebGPU adapter");
@@ -54,13 +57,13 @@ export async function createEvaluator(scene,{path=null,integrator="prefix"}={}){
  if(integrator==="prefix"&&prefixBytes>device.limits.maxStorageBufferBindingSize){device.destroy();throw new RangeError("Prefix source exceeds experimental GPU binding budget");}
  const src=make(source,GPUBufferUsage.STORAGE);
  const prefix=make(integrator==="prefix"?packPrefix(scene.width,scene.height,source):new Float32Array(4),GPUBufferUsage.STORAGE);
- const meta=make(Float32Array.from([scene.width,scene.height,0,0,...scene.step,integrator==="prefix"?1:0,0]),GPUBufferUsage.UNIFORM);
+ const meta=make(Float32Array.from([scene.width,scene.height,0,0,...scene.step,integrator==="prefix"?1:0,kernel==="diamond"?1:0]),GPUBufferUsage.UNIFORM);
  const vector=make(path?.curves??new Float32Array(12),GPUBufferUsage.STORAGE);
  let disposed=false;
  return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,device:adapter.info.device,description:adapter.info.description,isFallbackAdapter:adapter.info.isFallbackAdapter},
  async evaluate(rows){
   if(disposed||!rows.length||rows.length>65536||rows.some(x=>x.length!==LANES))throw new RangeError("Invalid query batch");
-  const data=new Float32Array(rows.length*LANES);rows.forEach((a,i)=>{data.set(a,i*LANES);const [x,y]=a.logical?.source??[a[12],a[13]];const gx=(x-scene.origin[0])/scene.step[0],gy=(y-scene.origin[1])/scene.step[1];
+  const data=new Float32Array(rows.length*LANES);rows.forEach((a,i)=>{data.set(a,i*LANES);if(kernel==="diamond")data.set(stagePitch(a),i*LANES+14);const [x,y]=a.logical?.source??[a[12],a[13]];const gx=(x-scene.origin[0])/scene.step[0],gy=(y-scene.origin[1])/scene.step[1];
    const ix=Math.floor(gx),iy=Math.floor(gy);
    if(![ix,iy].every(v=>Number.isSafeInteger(v)&&Math.abs(v)<=1048576))throw new RangeError("Source cell outside experimental transport range");
    data[i*LANES+12]=gx-ix;data[i*LANES+13]=gy-iy;data[i*LANES+52]=ix;data[i*LANES+53]=iy;if(a[5]===7){if(!path)throw new RangeError("Vector query requires prepared path");const [px,py]=a.logical?.geometry??a;data.set([(px-path.origin[0])/path.scale,(py-path.origin[1])/path.scale,path.normalizedTolerance,path.scale],i*LANES+48);}});

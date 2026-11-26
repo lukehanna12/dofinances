@@ -134,6 +134,23 @@ fn integrateSource(center:vec2<f32>,radius:vec2<f32>,sourceCell:vec2<i32>)->vec4
  }
  return out;
 }
+// Real-valued extension of the recovered 13-tap native diamond on a fixed
+// bilinear source. Native half/FMA rounding is intentionally not asserted here.
+fn diamondSource(center:vec2<f32>,pitch:vec2<f32>,cell:vec2<i32>)->vec4<f32>{
+ let p=2.0*pitch/scene.step.xy;
+ var out=vec4<f32>(0.0);
+ for(var y=-2;y<=2;y++){
+  for(var x=-2;x<=2;x++){
+   let a=abs(x);let b=abs(y);let m=a+b;
+   if(m>2){continue;}
+   var w=0.10546875;
+   if(m==1){w=0.0902099609375;}
+   if(m==2){w=select(0.05633544921875,0.07708740234375,a==1&&b==1);}
+   out+=w*integrateSource(center+vec2<f32>(f32(x),f32(y))*p,vec2<f32>(0.0),cell);
+  }
+ }
+ return out;
+}
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let i=gid.x;if(i>=arrayLength(&queries)){return;}let q=queries[i];
@@ -148,7 +165,10 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let rel=q.pointer.xy/reach;let prox=exp(-dot(rel,rel));
  let hover=q.interaction.x;let press=q.interaction.y;
  let shift=prox*(rel*(hover*.55+press*1.1)+q.pointer.zw*(hover*.42+press*.65));
- let src=integrateSource(q.source.xy+(f.yz*disp+shift)/scene.step.xy,q.source.zw,vec2<i32>(q.sourceCell.xy));
+ let center=q.source.xy+(f.yz*disp+shift)/scene.step.xy;let cell=vec2<i32>(q.sourceCell.xy);
+ var src:vec4<f32>;
+ if(scene.step.w>0.0){src=diamondSource(center,q.source.zw,cell);}
+ else{src=integrateSource(center,q.source.zw,cell);}
  let rim=exp(-abs(f.x)*1.16);let edge=clamp(rim*.28,0.0,.28);
  let light=prox*(hover*.075+press*.06)+rim*prox*press*.035;
  var color:vec3<f32>;
