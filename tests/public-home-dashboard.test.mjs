@@ -36,13 +36,13 @@ test("Three responsive actions include only one link, to the real sign-in route"
   assert.match(style,/transform:scale\(1\.00783\); \/\* 1\.039 \* \.97 \*\//);
   assert.match(style,/\.cta6-action:active\{[\s\S]*?transform:scale\(\.97\)/);
 });
-test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
+test("Home rounded rectangles share WebGPU geometry, tint and press lighting",()=>{
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
   const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
   assert.match(style,/@property --home-cta-tint\{\s*syntax:"<number>";/);
   assert.match(style,/min-height:58\.5px;\s*height:58\.5px;/);
   assert.match(style,/min-height:48px;\s*height:48px;/);
-  assert.match(style,/border-radius:999px;/);
+  assert.match(style,/border-radius:12px;/);
   assert.match(style,/--home-cta-tint 180ms cubic-bezier\(\.2,\.78,\.2,1\)/);
   assert.match(style,/transform:scale\(1\.039\)/);
   assert.match(style,/data-gpu-scene="ready"\] \.dashboard-home \.cta6-bottom-action \.cta6-action\{\s*background:rgb\(0 0 0 \/ calc\(1 - var\(--home-cta-tint\)\)\)!important;/);

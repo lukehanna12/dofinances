@@ -274,7 +274,7 @@ try{
     "Every Home icon must load its shared SVG asset in black, including GPU mode");
   assert.ok(g.iconRefs.every(icon=>!icon.selectable&&!icon.draggable),"Home icons never participate in native selection or image dragging");
   assert.ok(g.iconRefs.every(icon=>icon.registered&&icon.tint==="white"&&icon.tintOpacity===.2),"All sixteen Home icons use the Projects Clear silhouette tint");
-  assert.ok(g.items.every(item=>parseFloat(item.radius)>100),"All three CTAs are capsules");
+  assert.ok(g.items.every(item=>parseFloat(item.radius)===12&&parseFloat(item.radius)<Math.min(item.rect.width,item.rect.height)/2),"All three CTAs are rounded rectangles");
   assert.ok(g.items.every(item=>item.background==="rgb(0, 0, 0)"&&item.tint===0),
     "Every button must be solid opaque black at rest, including with GPU ready");
   const [about,projects,signIn]=g.items.map(item=>item.rect);
@@ -332,8 +332,8 @@ try{
    assert.equal(hoveredCta.glass.backdrop,"GPU-composited-moving-squares");
    assert.equal(hoveredCta.glass.geometry,"oracle-finite-per-surface-min-dimension");
    assert.deepEqual(hoveredCta.glass.layers.map(x=>x.layer),[0,1]);
-   assert.ok(hoveredCta.glass.capsules.every(x=>x.renderMode===6),
-     "Three capsules must use true CSS round-ended SDF geometry");
+   assert.ok(hoveredCta.glass.capsules.every(x=>x.renderMode===4),
+      "Three rounded rectangles must use the shared uniform-corner SDF geometry");
    assert.ok(hoveredCta.glass.capsules.every(x=>x.content==="text"),
      "Button text should remain live content over the glass");
    assert.ok(hoveredCta.glass.capsules.every(x=>
@@ -348,8 +348,8 @@ try{
      "The live GPU square animation must be composed before glass capsule sampling");
    near(hoveredCta.glass.capsules[1].width,150*1.039,
      "GPU rectangle follows the actually scaled capsule",1440);
-   near(hoveredCta.glass.capsules[1].radius,58.5*1.039/2,
-     "GPU SDF radius follows scaled capsule height",1440);
+   near(hoveredCta.glass.capsules[1].radius,12*1.039,
+      "GPU SDF radius follows the scaled rounded rectangle",1440);
  }
  // About is intentionally inert, so hold its press without navigating.
  const aboutCta=await ctaCenter('.cta6-bottom-action [data-home-cta-glass]');

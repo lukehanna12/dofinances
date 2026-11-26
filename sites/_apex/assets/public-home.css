@@ -318,7 +318,7 @@ body.public-home .dashboard-home .cta6-action{
   height:58.5px;
   margin:0;
   padding:9px 17px;
-  border-radius:999px;
+  border-radius:12px;
   --home-cta-tint:0;
   transition:transform 180ms cubic-bezier(.2,.78,.2,1),
     --home-cta-tint 180ms cubic-bezier(.2,.78,.2,1),
