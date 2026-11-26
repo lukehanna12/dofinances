@@ -1,10 +1,42 @@
 {
-  "schema": "continuous-glass-release-gate-v1",
+  "schema": "dofinances-continuous-release-gate-v2",
   "productionBaseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
   "oracleBaseline": "9ba14d6e18442cd2b833a64a2983d9783f38d8aa",
-  "scope": "DoFinances public renderer replacement. Not a global native equivalence proof.",
-  "policy": "All required gates must have independent retained validation. No production import or deployment on incomplete gates.",
+  "scope": "Website-specific public renderer replacement for /, /login and /projects. Authenticated /app renderer is outside this public research integration and remains unchanged.",
+  "policy": "Candidate only until all website gates pass with independent retained comparative evidence. Existing material, interaction, color and compositing behavior retained. No universal Apple proof is required for site release.",
   "gates": [
+    {
+      "id": "site-vector-geometry",
+      "status": "open",
+      "reason": "All current optical shapes and project icons, plus glass text, must have continuous optical distance and normals. Final pixel coverage may be rasterized at output density."
+    },
+    {
+      "id": "site-coordinate-separation",
+      "status": "open",
+      "reason": "Verify geometric resize, DPR and magnification independently; eliminate avoidable atlas and normalized UV quantization."
+    },
+    {
+      "id": "site-optical-reconstruction",
+      "status": "open",
+      "reason": "Preserve current source and blur appearance while removing avoidable resolution dependence. Verify actual integrated candidate."
+    },
+    {
+      "id": "site-material-interaction-preservation",
+      "status": "open",
+      "reason": "Retain existing material and interaction code; validate Clear, Regular, tint, hover, click, routes and scroll transitions."
+    },
+    {
+      "id": "site-comparative-fidelity",
+      "status": "open",
+      "reason": "Compare candidate and exact baseline at ordinary sizes and demonstrate improved magnification/resizing on held-out shapes. No regressions in ordinary appearance."
+    },
+    {
+      "id": "production-performance-and-regressions",
+      "status": "open",
+      "reason": "Actual browser frame performance, resource use and full site tests must pass."
+    }
+  ],
+  "deferredNativeProofs": [
     {
       "id": "continuous-procedural-field",
       "status": "passed",

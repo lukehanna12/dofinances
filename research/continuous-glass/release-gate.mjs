@@ -1,9 +1,6 @@
 import {readFileSync} from "node:fs";
-const manifest=JSON.parse(readFileSync(new URL("./RELEASE_CRITERIA.json",import.meta.url),"utf8"));
-const required=["continuous-procedural-field","coordinate-separation","fixed-source-reconstruction","complete-vector-ingestion","native-parameter-and-blur","native-numerical-semantics","native-output-semantics","native-interaction","native-heldout-output","production-performance-and-regressions"];
-const got=manifest.gates??[];
-const structurallyValid=manifest.schema==="continuous-glass-release-gate-v1"&&got.length===required.length&&new Set(got.map(x=>x.id)).size===required.length&&required.every(id=>got.some(x=>x.id===id))&&got.every(x=>["passed","open"].includes(x.status));
-if(!structurallyValid){console.error("INVALID RELEASE CRITERIA");process.exit(2);}
-const open=got.filter(x=>x.status!=="passed");
-if(open.length){console.error("PRODUCTION REPLACEMENT BLOCKED");for(const x of open)console.error(x.id+": "+x.reason);process.exit(1);}
-console.log("Research gate manifest records all required gates passed; verify retained evidence independently before deployment.");
+const m=JSON.parse(readFileSync(new URL("./RELEASE_CRITERIA.json",import.meta.url),"utf8"));
+const ids=["site-vector-geometry","site-coordinate-separation","site-optical-reconstruction","site-material-interaction-preservation","site-comparative-fidelity","production-performance-and-regressions"];
+if(m.schema!=="dofinances-continuous-release-gate-v2"||m.gates.length!==ids.length||!ids.every(id=>m.gates.filter(g=>g.id===id).length===1)||m.gates.some(g=>!["passed","open"].includes(g.status)||(g.status==="passed"&&!g.evidence))){console.error("INVALID RELEASE CRITERIA");process.exit(2);}
+const open=m.gates.filter(g=>g.status==="open");if(open.length){console.error("PRODUCTION REPLACEMENT BLOCKED");for(const g of open)console.error(g.id+": "+g.reason);process.exit(1);}
+console.log("All site-specific gates have retained evidence; review before deployment.");

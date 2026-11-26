@@ -1,0 +1,64 @@
+{
+  "schema": "continuous-glass-release-gate-v1",
+  "productionBaseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
+  "oracleBaseline": "9ba14d6e18442cd2b833a64a2983d9783f38d8aa",
+  "scope": "DoFinances public renderer replacement. Not a global native equivalence proof.",
+  "policy": "All required gates must have independent retained validation. No production import or deployment on incomplete gates.",
+  "gates": [
+    {
+      "id": "continuous-procedural-field",
+      "status": "passed",
+      "scope": "Finite CPU/GPU mode 4, mode 5, Euclidean primitives and simple closed vector paths; not general topology or native fidelity."
+    },
+    {
+      "id": "coordinate-separation",
+      "status": "passed",
+      "scope": "Finite density/magnification and rebased edge controls."
+    },
+    {
+      "id": "fixed-source-reconstruction",
+      "status": "passed",
+      "scope": "Finite mathematical box and diamond reconstruction on CPU/GPU; fixed native mip lattice with encoded channel correction and continuous logical LOD consumer on CPU. Exact native encoded BGRA8 sampler independently implemented on CPU/GPU."
+    },
+    {
+      "id": "complete-vector-ingestion",
+      "status": "open",
+      "reason": "All 16 current authored round-stroke icon assets ingest and run on GPU; 36,864 browser membership comparisons and 576 GPU controls retained as finite diagnostics. Independent direct stroke union supports 105/106 outline/browser disagreement points in favor of the outline, one in favor of original browser at 1x. Exact general stroke/boolean tolerances, robust singular normals, arbitrary SVG styles/transforms, portability and exact browser glyph shaping remain open."
+    },
+    {
+      "id": "native-parameter-and-blur",
+      "status": "open",
+      "reason": "Live Clear and Regular variable-blur compute dispatches and complete mip textures recovered; independent mathematical replay matches all 11 textures across four captured native cases. Exact 13-tap weights and finite copy/downsample arithmetic validated. Unrestricted public scale/radius, crop, source capture, level and branch selection still open (LG-P-SCALARS)."
+    },
+    {
+      "id": "native-numerical-semantics",
+      "status": "open",
+      "reason": "15,992 independent copy/even-mip channels and 2,068 native odd BGRA8 mip channels exact in software; 24,576 native linear and 98,304 native trilinear BGRA8 lanes matched by integer WebGPU. Signed-half arbitrary sampling and full native program equivalence remain open (LG-SR-NATIVE)."
+    },
+    {
+      "id": "native-output-semantics",
+      "status": "open",
+      "reason": "LG-Q-NUMERICAL remains open; runtime color and EDR chain not established."
+    },
+    {
+      "id": "native-interaction",
+      "status": "open",
+      "reason": "Offscreen local event control delivered hover enter/move/exit, but interactive and noninteractive Clear had identical model/presentation and output-hash sequence. Genuine active native interaction state, hover/click/release operator not recovered."
+    },
+    {
+      "id": "native-heldout-output",
+      "status": "open",
+      "reason": "Four native Clear/Regular intermediate-resource chains now reproduced mathematically byte-for-byte with captured input and ABI. Offscreen output stripe classes retained. Equivalent final fragment/material and active-display output lineage is not established."
+    },
+    {
+      "id": "production-performance-and-regressions",
+      "status": "open",
+      "reason": "Fixed-source GPU prefix integration passes finite CPU comparisons and accelerates a 128-query large-footprint benchmark; memory overhead, large artwork binding budgets, full-frame performance, 16 moving surfaces, overlap, scroll/route transitions and production regression validation remain open."
+    }
+  ],
+  "latestResearchValidation": {
+    "commit": "0f9e1c384df5745ec705036a3210a7e3b65798fd",
+    "path": "research/continuous-glass/VALIDATION.json",
+    "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
+  }
+}
