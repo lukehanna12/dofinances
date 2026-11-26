@@ -668,3 +668,6 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/verify-live-gallery.mjs
+
+      - name: Verify LaTeXceL hosted release and renderer integrity
+        run: node scripts/verify-latexcel-live.mjs

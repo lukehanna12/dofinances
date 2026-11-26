@@ -1,0 +1,870 @@
+{
+  "functions": [
+    {
+      "id": "RM",
+      "name": "RM",
+      "description": "Roman math font",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "FONT",
+      "name": "FONT",
+      "description": "Choose a math font: rm, it, bf, bb, cal, sf, tt, frak",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "style",
+          "description": "style",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "TEXT",
+      "name": "TEXT",
+      "description": "Escape literal text for a math expression",
+      "parameters": [
+        {
+          "name": "text",
+          "description": "text",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SUB",
+      "name": "SUB",
+      "description": "Attach a subscript",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "subscript",
+          "description": "subscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SUPER",
+      "name": "SUPER",
+      "description": "Attach a superscript",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "superscript",
+          "description": "superscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SCRIPTS",
+      "name": "SCRIPTS",
+      "description": "Attach subscript and superscript; blanks omitted",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "subscript",
+          "description": "subscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "superscript",
+          "description": "superscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "INTERACTION",
+      "name": "INTERACTION",
+      "description": "Legacy Covariates interaction, exact concatenation",
+      "parameters": [
+        {
+          "name": "factor1",
+          "description": "factor1",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "factor2",
+          "description": "factor2",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "TIMES",
+      "name": "TIMES",
+      "description": "Multiply with a safe command boundary",
+      "parameters": [
+        {
+          "name": "factor1",
+          "description": "factor1",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "factor2",
+          "description": "factor2",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "FRAC",
+      "name": "FRAC",
+      "description": "Build a fraction",
+      "parameters": [
+        {
+          "name": "numerator",
+          "description": "numerator",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "denominator",
+          "description": "denominator",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SQRT",
+      "name": "SQRT",
+      "description": "Square root",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "ROOT",
+      "name": "ROOT",
+      "description": "Nth root, integer degree 2 to 99",
+      "parameters": [
+        {
+          "name": "degree",
+          "description": "degree",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "PAREN",
+      "name": "PAREN",
+      "description": "Scalable parentheses",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "ABS",
+      "name": "ABS",
+      "description": "Absolute value",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "NORM",
+      "name": "NORM",
+      "description": "Norm",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "NATLOG",
+      "name": "NATLOG",
+      "description": "Natural logarithm",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "LOG",
+      "name": "LOG",
+      "description": "Logarithm with base",
+      "parameters": [
+        {
+          "name": "base",
+          "description": "base",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "BINOM",
+      "name": "BINOM",
+      "description": "Binomial coefficient",
+      "parameters": [
+        {
+          "name": "n",
+          "description": "n",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "k",
+          "description": "k",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "ACCENT",
+      "name": "ACCENT",
+      "description": "Accent: hat, bar, tilde, dot, ddot, vec, check, breve, acute, grave",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "accent",
+          "description": "accent",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "HAT",
+      "name": "HAT",
+      "description": "Wide hat",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "BAR",
+      "name": "BAR",
+      "description": "Overline",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "TILDE",
+      "name": "TILDE",
+      "description": "Wide tilde",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "VECTOR",
+      "name": "VECTOR",
+      "description": "Vector arrow",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "GREEK",
+      "name": "GREEK",
+      "description": "Greek letter by case-sensitive name",
+      "parameters": [
+        {
+          "name": "name",
+          "description": "name",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SET",
+      "name": "SET",
+      "description": "Set notation",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "SUM",
+      "name": "SUM",
+      "description": "Summation with limits",
+      "parameters": [
+        {
+          "name": "lower",
+          "description": "lower",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "upper",
+          "description": "upper",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "PROD",
+      "name": "PROD",
+      "description": "Product with limits",
+      "parameters": [
+        {
+          "name": "lower",
+          "description": "lower",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "upper",
+          "description": "upper",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "INTEGRAL",
+      "name": "INTEGRAL",
+      "description": "Definite integral",
+      "parameters": [
+        {
+          "name": "lower",
+          "description": "lower",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "upper",
+          "description": "upper",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "variable",
+          "description": "variable",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "LIMIT",
+      "name": "LIMIT",
+      "description": "Limit",
+      "parameters": [
+        {
+          "name": "variable",
+          "description": "variable",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "target",
+          "description": "target",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "DERIV",
+      "name": "DERIV",
+      "description": "Ordinary derivative",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "variable",
+          "description": "variable",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "PARTIAL",
+      "name": "PARTIAL",
+      "description": "Partial derivative",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "variable",
+          "description": "variable",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "INDICATOR",
+      "name": "INDICATOR",
+      "description": "Indicator expression",
+      "parameters": [
+        {
+          "name": "condition",
+          "description": "condition",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "EXPECT",
+      "name": "EXPECT",
+      "description": "Expected value",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "PROB",
+      "name": "PROB",
+      "description": "Probability",
+      "parameters": [
+        {
+          "name": "term",
+          "description": "term",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "TEXMOD",
+      "name": "TEXMOD",
+      "description": "Compose font, accent, subscript, superscript and optional natural log",
+      "parameters": [
+        {
+          "name": "base",
+          "description": "base",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "font",
+          "description": "font",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "accent",
+          "description": "accent",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "subscript",
+          "description": "subscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "superscript",
+          "description": "superscript",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "logarithm",
+          "description": "logarithm",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "MATRIX",
+      "name": "MATRIX",
+      "description": "Matrix: comma-separated cells, semicolon-separated rows, delimiter environment",
+      "parameters": [
+        {
+          "name": "entries",
+          "description": "entries",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "environment",
+          "description": "environment",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "CASES",
+      "name": "CASES",
+      "description": "Piecewise cases: expression,condition pairs separated by semicolons",
+      "parameters": [
+        {
+          "name": "entries",
+          "description": "entries",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "EQ",
+      "name": "EQ",
+      "description": "Equality",
+      "parameters": [
+        {
+          "name": "left",
+          "description": "left",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "right",
+          "description": "right",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "ALIGNED",
+      "name": "ALIGNED",
+      "description": "Aligned equations: & marks alignment; semicolons separate rows",
+      "parameters": [
+        {
+          "name": "equations",
+          "description": "equations",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "TEXURL",
+      "name": "TEXURL",
+      "description": "Legacy CodeCogs PNG URL, 180 DPI; no network call",
+      "parameters": [
+        {
+          "name": "tex",
+          "description": "tex",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    },
+    {
+      "id": "URL",
+      "name": "URL",
+      "description": "CodeCogs PNG URL at chosen DPI (72 to 600); no network call",
+      "parameters": [
+        {
+          "name": "tex",
+          "description": "tex",
+          "type": "any",
+          "dimensionality": "scalar"
+        },
+        {
+          "name": "dpi",
+          "description": "dpi",
+          "type": "any",
+          "dimensionality": "scalar"
+        }
+      ],
+      "result": {
+        "type": "string",
+        "dimensionality": "scalar"
+      }
+    }
+  ]
+}

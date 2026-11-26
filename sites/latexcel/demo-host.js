@@ -1,0 +1,1 @@
+globalThis.LatexcelHost=Object.freeze({kind:"demo",label:"Web preview",canInsertImage:false,ready:()=>Promise.resolve(),read:async()=>{throw Error("Install LaTeXceL in a workbook first.");},write:async()=>{throw Error("Install LaTeXceL in a workbook first.");}});

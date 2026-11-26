@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0-rc.1",
+  "sourceCommit": "0993a833c1e92f1075dddcd8278466a65c291265",
+  "distributionCommit": "89c0a182eb5f59390714b6951b71c841c172a342",
+  "mathjax": {
+    "version": "3.2.2",
+    "integrity": "sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L"
+  },
+  "files": {
+    "THIRD_PARTY_LICENSE.txt": "55a76131dd0083b2c1a8149b76390b734570ae45d301d081e646fccd09c50ccf",
+    "core.js": "7ddf78591e5c8ab4780e6c54da234db057f93b6fd638e8f51d1070100c50fb7b",
+    "demo-host.js": "64daedc798470c4b2371d9b08a0656eee06db333cdd5b17820f0c1e836fb10ff",
+    "excel-host.js": "367ad63df27902da58b7e413408d6e3657dba4ac2784df67641268f5545517c4",
+    "functions.js": "89e12e4034ac58ea1e1cd930088c72893c7018024b97e492fcddd38a88fb968e",
+    "functions.json": "ccdc144f6ffa530673eda7931c5c87a1d2faff1440b68d45df62ebed79065cac",
+    "help.html": "bf5968152d62b4a0f41fdb25be58964585e368b56db661de09ebb4c40415c4e7",
+    "icon-16.png": "b7ca4e4fc061a69daacab09db7751e788b31e79afcb5b14d62dae8410f5b6215",
+    "icon-32.png": "572fa3d574b5497635dc23c90bd708d4ae330e8c10c7ea2eefe5ccb6f414a9d0",
+    "icon-80.png": "1f9db9294078758541a128df702529e4df891d57c760830d3a366b770deed65e",
+    "index.html": "bb98ed6753079cdb7e7fd44fceebd840ff88e1cb8facfc6db845c7b658e055dd",
+    "manifest.xml": "d24c1f6ebda119745b74d15def730fb3d442154b88963bf463220e29553393d3",
+    "math-config.js": "92249047669193b787af8b011c90ddb7b3f0a2a7ed4bfa1beb0157bb2f0f4a48",
+    "pane.css": "b13180b9f36b45c8d492d39aa6ce6d7c19633238522afda2c7a137c9099b38bf",
+    "pane.js": "b360e31c7d22d7c029d91ce756bda6f253f5d160f331f5a5ab513d6bc61bef00",
+    "renderer.js": "1162c23d67bf880a50b17507864c707afc3ce9f7ab39f65b804e6bce411d3135",
+    "taskpane.html": "fc6a134dbe801313c7846febddd8d526eacb2de5067f8b29863920aa54370360"
+  }
+}

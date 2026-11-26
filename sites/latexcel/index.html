@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>LaTeXceL | Equation Studio</title>
+<link rel="stylesheet" href="pane.css">
+
+<script defer src="math-config.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax-full@3.2.2/es5/tex-svg.js" integrity="sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L" crossorigin="anonymous"></script>
+<script defer src="core.js"></script>
+<script defer src="renderer.js"></script>
+<script defer src="demo-host.js"></script>
+<script defer src="pane.js"></script>
+</head>
+<body>
+<main class="shell">
+<header class="brand">
+ <div class="mark" aria-hidden="true">∑</div>
+ <div><p class="eyebrow">DOFINANCES</p><h1>LaTeXceL</h1><p class="subtitle">Equation Studio</p></div>
+ <span id="host-badge" class="host-badge">Loading</span>
+</header>
+<section class="intro"><h2>Mathematics, in your workbook.</h2><p>Compose LaTeX, preview mathematical notation, and insert it without leaving your spreadsheet.</p></section>
+<section class="panel" aria-labelledby="editor-heading">
+ <div class="section-head"><h2 id="editor-heading">Equation editor</h2><button type="button" id="read" class="text-button">Read selection</button></div>
+ <label for="tex">LaTeX source</label>
+ <textarea id="tex" rows="4" maxlength="8192" spellcheck="false" aria-describedby="source-hint">\frac{\widehat{\beta}_1}{\sqrt{n}}</textarea>
+ <p id="source-hint" class="hint">Your preview is rendered in this pane, without sending the expression to a rendering service. Use Ctrl+Enter or Command+Enter to render.</p>
+ <div class="toolbar"><button type="button" id="render" class="primary">Render equation</button><button type="button" id="copy">Copy TeX</button></div>
+ <div id="preview" class="preview" aria-live="polite"><p>Preparing math renderer...</p></div>
+ <div class="toolbar compact"><button id="svg" type="button" disabled>Export SVG</button><button id="png" type="button" disabled>Export PNG</button><label for="density" class="inline-label">PNG <select id="density"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option></select></label></div>
+</section>
+<section class="panel" aria-labelledby="builder-heading">
+ <div class="section-head"><h2 id="builder-heading">Function builder</h2><span class="micro" id="function-count"></span></div>
+ <label for="function-search">Find a function</label><input id="function-search" type="search" placeholder="Fraction, Greek, subscript...">
+ <label for="function">Function</label><select id="function"></select>
+ <p id="function-description" class="hint"></p><div id="arguments" class="arguments"></div>
+ <div class="toolbar"><button id="compose" type="button" class="primary">Use expression</button><button id="compose-formula" type="button">Insert function</button></div>
+ <pre id="function-example" class="code" aria-live="polite"></pre>
+</section>
+<section class="panel" aria-labelledby="insert-heading">
+ <div class="section-head"><h2 id="insert-heading">Workbook</h2><span class="micro" id="target">No cell selected</span></div>
+ <p class="hint">Insert into the current single-cell selection. Existing contents are never replaced without confirmation.</p>
+ <div class="toolbar"><button id="insert-source" type="button">Insert source text</button><button id="insert-image" type="button" class="primary" disabled>Insert PNG</button></div>
+ <details class="external"><summary>Selected cell formula</summary><pre id="selected-formula" class="code">Read a selected cell first.</pre></details>
+ <p id="image-hint" class="hint">A locally rendered PNG is inserted as a worksheet image, not an in-cell formula.</p>
+ <details class="external"><summary>Dynamic in-cell image (external)</summary>
+ <p class="hint">CodeCogs receives the equation in the image URL. Your formula may expose it to collaborators. Availability, quotas and service terms are external.</p>
+ <label class="check"><input id="consent" type="checkbox"> I understand and allow this external request.</label>
+ <label for="source-reference">Equation cell (optional)</label><input id="source-reference" type="text" placeholder="A1, or leave blank for current TeX" maxlength="12" spellcheck="false">
+ <button id="insert-url" type="button" disabled>Insert IMAGE formula</button></details>
+</section>
+<section class="panel help" aria-labelledby="help-heading"><h2 id="help-heading">Formula reference</h2><p class="hint" id="syntax">Functions are pure LaTeX strings; nest them in workbook formulas.</p><div id="reference"></div></section>
+<footer><p>LaTeXceL <span id="version"></span> | Local rendering by default</p><p id="status" role="status" aria-live="polite">Starting...</p></footer>
+</main>
+<dialog id="confirm-dialog" aria-labelledby="confirm-title"><form method="dialog"><h2 id="confirm-title">Replace cell contents?</h2><p id="confirm-text"></p><div class="toolbar"><button value="cancel" autofocus>Cancel</button><button class="primary" value="replace">Replace</button></div></form></dialog>
+</body>
+</html>
