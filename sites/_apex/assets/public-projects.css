@@ -631,7 +631,7 @@ body.public-home > #public-route-content:has(.public-project-detail){background:
   position:absolute;top:var(--project-detail-inset);left:var(--project-detail-inset);
   padding:0;margin:0;gap:0;pointer-events:none
 }
-.public-project-detail .public-projects-back{pointer-events:auto}
+.public-project-detail .public-projects-back{pointer-events:auto;animation:project-detail-enter .5s both}
 .public-projects-root.public-project-detail .project-detail-hero{
   width:100%;min-height:0;height:clamp(310px,45vw,570px);flex:none;
   border-radius:0;cursor:default;pointer-events:none;
@@ -642,6 +642,10 @@ body.public-home > #public-route-content:has(.public-project-detail){background:
   animation-delay:0ms
 }
 @keyframes project-detail-enter{from{opacity:0}to{opacity:1}}
+@keyframes project-detail-exit{from{opacity:1}to{opacity:0}}
+.public-projects-root.public-project-detail.is-exiting .project-detail-hero{
+  animation:project-detail-exit .42s both;animation-delay:0ms
+}
 .public-project-detail .project-detail-hero .project-showcase-top{padding-right:0;justify-content:flex-end}
 .public-project-detail .project-detail-hero .project-showcase-number{margin-top:auto}
 .public-project-detail .project-detail-hero .project-showcase-title{margin:0 0 8px}
