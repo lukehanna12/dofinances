@@ -306,7 +306,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
           "AI assistant"
         ],
         [
-          "/mcp (planned)"
+          "/mcp Worker"
         ],
         [
           "Apps Script",
@@ -351,7 +351,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
           0
         ]
       ],
-      "planned": true
+      "planned": false
     }
   ],
   "terminal-scalars": [

@@ -532,7 +532,10 @@ test("all 16 projects have readable, explicitly connected native architecture sc
   assert.equal(PROJECT_DIAGRAMS["terminal-scalars"][0].title,"Native terminal library");
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Model Context Protocol \(MCP\).*Agent2Agent \(A2A\)/);
-  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form.*\/mcp endpoint/);
+  assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/authenticated Model Context Protocol.*\/mcp endpoint/);
+  assert.doesNotMatch(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form|planned/);
+  assert.equal(PROJECT_DIAGRAMS["apple-hig-reader"][0].planned,false);
+  assert.ok(PROJECT_DIAGRAMS["apple-hig-reader"][0].rows.flat().includes("/mcp Worker"));
 });
 
 test("every project has a unique readable hash URL and legacy alias",async()=>{
