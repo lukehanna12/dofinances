@@ -34,6 +34,7 @@ import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
+import {createVectorCoverageAtlas} from "./dashboard-glass-vector-coverage.js";
 import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
 import {continuousRequested,loadContinuousGlass,specializeContinuousGlass} from "./dashboard-glass-continuous.js";
 import {CLOCK_TEXT_PROFILE,clockTextMaterialLanes,rasterClockText} from "./dashboard-glass-text.js";
@@ -634,7 +635,8 @@ async function initialize(){
   const sourcePainter=createGlassSourcePainter(device,format);
   const nativeOcclusion=createNativeForegroundOcclusion(document);
   const silhouetteAtlas=createGlassSilhouetteAtlas(device,requestRender,continuous?{vectorOnly:true,hasVector:img=>Boolean(continuous.indexFor(img))}:{});
-  let iconData=new Float32Array(0),iconBuffer=null;
+  let iconData=new Float32Array(0),iconBuffer=null,referenceIconData=new Float32Array(0),referenceIconBuffer=null;
+  let referenceCoverage=null,referenceBindingView=null,referenceFieldBinding=null;
   const routeCompositeGlobalsBuffer=device.createBuffer({size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
   const homeCompositeGlobalsBuffer=continuous?device.createBuffer({size:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}):globalsBuffer;
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
@@ -661,6 +663,7 @@ async function initialize(){
     label:"Placeholder alpha for glyph-shaped WebGPU glass",
     size:[1,1,1],format:"rgba16float",usage:glyphUsage
   });
+  let referenceGlyphTexture=null,referenceGlyphKey="";
   let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null,glyphVectorIndex=0,glyphVectorPhase=[.5,.5];
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
@@ -927,7 +930,9 @@ async function initialize(){
   }
   // The route supplies hover policy; the shared atlas owns alpha and distance.
   function syncGlassIcons(dt){
-    iconData.fill(0);silhouetteAtlas.begin();
+    iconData.fill(0);silhouetteAtlas.begin();referenceIconData.fill(0);
+    const referenceActive=!!(continuous&&routeActiveLayers.length);
+    if(referenceActive&&!referenceCoverage)referenceCoverage=createVectorCoverageAtlas(device,requestRender);
     const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,icons=[];
     let animating=false;
     if(!authUsesCompositor()){
@@ -939,6 +944,7 @@ async function initialize(){
           const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);
           lanes.set([0,0,...glyphMaskDimensions,dpr],0);lanes.set(glyphVectorPhase,12);lanes[19]=glyphVectorIndex;
         }
+        if(referenceActive&&owner===glyphMaskOwner&&glyphVectorIndex)referenceIconData.set(iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS),slot*GLASS_ICON_FLOATS);
         if(!img)continue;
         if(owner.hidden||tileData[p+18]<=.001){img.removeAttribute("data-glass-icon-owned");continue;}
         // Final SVG coverage is exact at the physical pixel phase. Only
@@ -957,15 +963,17 @@ async function initialize(){
         if(continuous){
           const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);
           lanes[19]=continuous.indexFor(img);
-          
+          if(referenceActive){const b=Array.from(tileData.subarray(p,p+4));b[1]-=authUniform[11];const ref=referenceCoverage.sync(img,i,Array.from(lanes.subarray(0,4)),b,tileData[p+19],[sourceWidth/physicalWidth,sourceHeight/physicalHeight]);if(ref){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);q.set(lanes);q.set(ref.rect,12);q.set(ref.meta,16);q[19]=lanes[19];}}
         }
         animating ||= icon.animating;
         icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
       }
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
-    if(continuous){continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;}}finally{continuous.endCache();}}
+    if(continuous){continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
+      if(referenceActive){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(q[19]>0&&q[16]>0&&continuous.cacheField(q,referenceCoverage.view,"reference"))q[19]*=-1;}}}finally{continuous.endCache();}}
     device.queue.writeBuffer(iconBuffer,0,iconData);
+    if(referenceActive){device.queue.writeBuffer(referenceIconBuffer,0,referenceIconData);const a=referenceCoverage.view,b=continuous.fieldFor("reference");if(a!==referenceBindingView||b!==referenceFieldBinding){referenceBindingView=a;referenceFieldBinding=b;rebindGlassGroups();}}
     if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView)rebindGlassGroups();
     audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),...(continuous?{continuousSampleCache:continuous.stats()}:{}),backdrop:"current fragment color + original GPU sources"};
     return animating;
@@ -999,25 +1007,25 @@ async function initialize(){
   function rebindGlassGroups(){
     if(!sceneView||!tileBuffer||!tintTileBuffer||!materialBuffer||!regionBuffer||!iconBuffer||!projectRegionSceneView)return;
     detailGroups.clear();routeCompositeDetailGroups.clear();routeLayerSources.clear();
-    const entries=(buffer,source=sceneView,detail=emptyDetailView)=>[
+    const entries=(buffer,source=sceneView,detail=emptyDetailView,reference=false)=>[
       {binding:0,resource:source},
       {binding:1,resource:{buffer:tileBuffer}},
       {binding:2,resource:{buffer}},
       {binding:3,resource:{buffer:tintTileBuffer}},
-      {binding:4,resource:glyphMaskTexture.createView()},
+      {binding:4,resource:(reference&&referenceGlyphTexture?referenceGlyphTexture:glyphMaskTexture).createView()},
       {binding:5,resource:{buffer:materialBuffer}},
       {binding:6,resource:{buffer:regionBuffer}},
       // Source-only artwork binding 7 belongs exclusively to the capture
       // pipeline; the glass pipeline consumes only the composed capture.
       {binding:8,resource:projectRegionSceneView},
       {binding:9,resource:detail},{binding:10,resource:detailSampler},
-      {binding:11,resource:{buffer:iconBuffer}},...(!continuous?[{binding:12,resource:silhouetteAtlas.view}]:[]),
-      {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:silhouetteAtlas.coverageView},
-      ...(continuous?[{binding:15,resource:{buffer:continuous.buffer}},{binding:16,resource:continuous.fieldView}]:[])
+      {binding:11,resource:{buffer:reference&&referenceIconBuffer?referenceIconBuffer:iconBuffer}},...(!continuous?[{binding:12,resource:silhouetteAtlas.view}]:[]),
+      {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:reference&&referenceBindingView?referenceBindingView:silhouetteAtlas.coverageView},
+      ...(continuous?[{binding:15,resource:{buffer:continuous.buffer}},{binding:16,resource:reference&&referenceFieldBinding?referenceFieldBinding:continuous.fieldView}]:[])
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
-    routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
-    routeLayerEntries=(buffer,source,detail)=>entries(buffer,source,detail);
+    routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail,!!continuous);
+    routeLayerEntries=(buffer,source,detail)=>entries(buffer,source,detail,!!continuous&&buffer===routeCompositeGlobalsBuffer);
     projectRegionCaptureGroup=null; // bind only when a region actually renders
     glassGroup=device.createBindGroup({
       layout:glassPipeline.getBindGroupLayout(0),entries:entries(globalsBuffer)
@@ -1081,7 +1089,7 @@ async function initialize(){
     if(!underlay)for(const layer of routeActiveLayers)drawRouteLayer(pass,layer,false);
   }
   function ensureCompositeScene(home=false){
-    const fixed=home&&continuous&&!routeActiveLayers.length;
+    const fixed=!!continuous;
     const w=fixed?sourceWidth:physicalWidth,h=fixed?sourceHeight:physicalHeight;
     if(compositeScene&&compositeScene.width===w&&compositeScene.height===h)return;
     compositeScene?.destroy();
@@ -1124,7 +1132,7 @@ async function initialize(){
     routeLayerSources.set(routeActiveLayers[0],source(compositeSceneView));
     if(routeActiveLayers.length>1){
       if(!secondRouteScene){
-        secondRouteScene=rgba16Texture(device,physicalWidth,physicalHeight);
+        secondRouteScene=rgba16Texture(device,compositeScene.width,compositeScene.height);
         secondRouteMips=[];
         for(let level=1;level<secondRouteScene.mipLevelCount;level++)secondRouteMips.push(device.createBindGroup({layout:mipPipeline.getBindGroupLayout(0),entries:[
           {binding:0,resource:secondRouteScene.createView({baseMipLevel:level-1,mipLevelCount:1})},
@@ -1141,6 +1149,7 @@ async function initialize(){
     }
     if(audit.dropdownGlass?.visible.length)audit.dropdownGlass.compositeFrames=++dropdownCompositeFrames;
     audit.sourceComposition.completedLayers=[...routeActiveLayers];
+    if(continuous)audit.routeCompositeLattice={width:compositeScene.width,height:compositeScene.height,referenceIcons:referenceIconData.filter((_,i)=>i%20===19).filter(v=>v!==0).length,referenceGlyph:!!referenceGlyphTexture};
   }
   function syncGlassTextMask(panes){
     const title=panes.find(node=>node.hasAttribute("data-glass-text"));
@@ -1160,6 +1169,7 @@ async function initialize(){
     }
     try{
       const raster=rasterClockText(text,style,width,height,dpr);
+      if(continuous){const rw=Math.max(1,Math.ceil(rect.width*sourceDpr)),rh=Math.max(1,Math.ceil(rect.height*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:rasterClockText(text,style,rw,rh,sourceDpr);if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
       if(!raster){title.removeAttribute("data-glass-text-ready");return;}
       const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1]||glyphVectorIndex>0,previous=glyphMaskTexture;
       const texture=resized?device.createTexture({label:"Native clock text: 10-bit SDF, normals and full-pixel glyph coverage",
@@ -1517,7 +1527,7 @@ async function initialize(){
     tintData=new Float32Array(instanceCount*4);
     materialData=new Float32Array(instanceCount*MATERIAL_FLOATS);
     regionData=new Float32Array(instanceCount*REGION_FLOATS);
-    iconData=new Float32Array(instanceCount*GLASS_ICON_FLOATS);
+    iconData=new Float32Array(instanceCount*GLASS_ICON_FLOATS);if(continuous)referenceIconData=new Float32Array(iconData.length);
     audit.sdfModes={
       mode4:all.filter(t=>selectModeForNormalizedCorners([
         getComputedStyle(t).borderTopLeftRadius,
@@ -1534,7 +1544,7 @@ async function initialize(){
     device.queue.writeBuffer(materialBuffer,0,materialData);
     regionBuffer=storageBuffer(regionBuffer,Math.max(REGION_FLOATS*4,regionData.byteLength));
     device.queue.writeBuffer(regionBuffer,0,regionData);
-    iconBuffer=storageBuffer(iconBuffer,Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength));
+    iconBuffer=storageBuffer(iconBuffer,Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength));if(continuous)referenceIconBuffer=storageBuffer(referenceIconBuffer,Math.max(GLASS_ICON_FLOATS*4,iconData.byteLength));
     device.queue.writeBuffer(iconBuffer,0,iconData);
     lastTintKey="";
     syncTileTints(true);
@@ -1854,7 +1864,7 @@ async function initialize(){
     return authAnimating||hoverAnimating||artworkAnimating||iconAnimating;
   }
   function dispose(){
-    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();continuous?.dispose();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();referenceIconBuffer?.destroy();referenceCoverage?.dispose();referenceGlyphTexture?.destroy();silhouetteAtlas.dispose();continuous?.dispose();
     glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();

@@ -57,10 +57,10 @@ function requestVectorCoverage(img,wake){
 }
 // Match vsGlass owner translation and dismissal scale. Keep the actual
 // fractional framebuffer pixel phase rather than stretching a cached bitmap.
-export function coverageGeometry(bounds,ownerRect,dismiss=0){
- const t=Math.max(0,Math.min(1,dismiss)),b=t*t*(3-2*t),sx=1+.085*b,sy=1+.065*b;
+export function coverageGeometry(bounds,ownerRect,dismiss=0,targetScale=[1,1]){
+ const t=Math.max(0,Math.min(1,dismiss)),b=t*t*(3-2*t),dx=1+.085*b,dy=1+.065*b,sx=dx*targetScale[0],sy=dy*targetScale[1];
  const [ox,oy,ow,oh]=ownerRect,[x,y,w,h]=bounds;
- const left=ox+ow*.5+(x-ow*.5)*sx,top=oy+oh*.5+(y-oh*.5)*sy;
+ const left=(ox+ow*.5)*targetScale[0]+(x-ow*.5)*sx,top=(oy+oh*.5)*targetScale[1]+(y-oh*.5)*sy;
  const pw=w*sx,ph=h*sy,ix=Math.floor(left)-1,iy=Math.floor(top)-1;
  const phaseX=left-ix,phaseY=top-iy,width=Math.ceil(phaseX+pw)+1,height=Math.ceil(phaseY+ph)+1;
  return {width,height,pw,ph,w,h,phaseX,phaseY,sx,sy,rect:[x-phaseX/sx,y-phaseY/sy,sx,sy]};
@@ -95,10 +95,10 @@ export function createVectorCoverageAtlas(device,wake){
   if(old){const encoder=device.createCommandEncoder();encoder.copyTextureToTexture({texture:old},{texture},[previous,previous,CAPACITY]);device.queue.submit([encoder.finish()]);old.destroy();}
   view=texture.createView({dimension:"2d-array"});
  }
- function sync(img,slot,bounds,ownerRect,dismiss){
+ function sync(img,slot,bounds,ownerRect,dismiss,targetScale){
   const entry=requestVectorCoverage(img,wake);
   if(entry?.status!=="ready"||slot<0||slot>=CAPACITY)return null;
-  const g=coverageGeometry(bounds,ownerRect,dismiss),size=Math.max(g.width,g.height);
+  const g=coverageGeometry(bounds,ownerRect,dismiss,targetScale),size=Math.max(g.width,g.height);
   if(!Number.isFinite(size)||size>device.limits.maxTextureDimension2D)return null;
   try{
    ensure(size);

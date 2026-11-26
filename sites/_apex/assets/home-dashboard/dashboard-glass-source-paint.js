@@ -216,7 +216,7 @@ export function createGlassSourcePainter(device,displayFormat){
   let e=cache.get(node);
   const s=snapshot(node);
   if(!s||!s.ops.length){node.removeAttribute("data-glass-paint-owned");return null;}
-  const dpr=placement==="scene"&&views.base?views.base.dpr:views.scene.dpr;
+  const dpr=views.base?views.base.dpr:views.scene.dpr;
   const key=JSON.stringify([q(s.w),q(s.h),s.pad,dpr,s.ops,s.clip,s.filter]);
   if(!e){e={key:null,texture:null,buffers:new Map(),groups:new Map(),revision:0};cache.set(node,e);}
   if(e.key!==key){
