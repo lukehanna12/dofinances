@@ -929,19 +929,21 @@ try{
   assert.deepEqual(badges.filter(b=>b.label==="In Progress").map(b=>b.slug),["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"]);
   assert.ok(badges.filter(b=>b.label==="In Progress").every(b=>b.color==="rgb(245, 130, 45)"));
   assert.ok(badges.filter(b=>b.label==="Coming Soon").every(b=>b.color==="rgb(44, 103, 197)"));
+  // Legacy is-coming-soon class indicates absent private project navigation,
+  // not the editorial badge status. These two projects still have no linked repo.
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
     "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
     "const icon=card?.querySelector('.project-showcase-lucide');"+
     "return {slug,name:card?.querySelector('.project-showcase-title')?.textContent,"+
     "badge:card?.querySelector('.project-showcase-badge')?.textContent,"+
-    "coming:card?.classList.contains('is-coming-soon'),"+
+    "unlinked:card?.classList.contains('is-coming-soon'),"+
     "src:icon?.getAttribute('src')};}))()");
   assert.deepEqual(newCards,[
     {slug:"hidden-functions",name:"Hidden Functions",badge:"In Progress",
-      coming:false,src:publicProjectIconSource("hidden-functions")},
+      unlinked:true,src:publicProjectIconSource("hidden-functions")},
     {slug:"latexcel",name:"LaTeXceL",badge:"In Progress",
-      coming:false,src:publicProjectIconSource("latexcel")}
-  ],"The two additional In Progress cards must use the original SVG paths");
+      unlinked:true,src:publicProjectIconSource("latexcel")}
+  ],"In Progress cards retain their original SVG paths and unlinked navigation state");
   const newIconAssets=await evaluate("(async()=>Promise.all("+
     "['hidden-functions','latexcel'].map(async slug=>{"+
     "const response=await fetch('/assets/project-icons/'+slug+'.svg');"+
