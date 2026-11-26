@@ -1184,7 +1184,7 @@ async function initialize(){
       if(vector&&texture!==previous)texture.destroy();
       if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
       audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
-        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,titleMode:continuous?.titleMode||"system",
+        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,titleMode:continuous?.titleMode||"system",localEvidence:vector?.localEvidence,
         pipeline:"shared-webgpu-glassPipeline",nativeEvidence:"2f4217b4530654e6e9fd432c9834528c0fdd2e89"};
     }catch(error){title.removeAttribute("data-glass-text-ready");console.warn("Glass heading contour:",String(error));}
   }

@@ -29,9 +29,9 @@ export async function loadContinuousGlass(device,base){
   rows[i]=[...v.origin,v.scale,v.count,root,v.viewBox[2],v.viewBox[0],v.viewBox[1],v.viewBox[3],0,0,0];
   index.set(name,i+1);
  });
- const titleSlot=rows.length, titleReserve=2048;
+ const titleSlot=rows.length, titleReserve=4096;
  const titleMode=new URLSearchParams(location.search).get("glass-title-vector");
- const titleAsset=titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
+ const titleAsset=titleMode==="local"?{schema:"dofinances-local-projects-word-v1"}:titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
  function rasterTitle(text,style,width,height,dpr){if(titleMode!=="portable"||!titleAsset)return null;const r=portableTitleAlpha(titleAsset,text,style,width,height,dpr);if(!r||!r.filled)return null;return {pixels:clockTextField(r.alpha,width,height,dpr),filled:r.filled};}
  const data=Float32Array.from(rows.flat());
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength+(titleAsset?titleReserve*48:0),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
@@ -67,7 +67,7 @@ export async function loadContinuousGlass(device,base){
   const texture=device.createTexture({label:"Exact output-density title optical samples",size:[width,height],format:"rgba32float",usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.STORAGE_BINDING});
   const group=device.createBindGroup({layout:titlePipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:titleUniform}},{binding:1,resource:texture.createView()},{binding:2,resource:alphaTexture.createView()},{binding:15,resource:{buffer}}]});
   const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(titlePipeline);pass.setBindGroup(0,group);pass.dispatchWorkgroups(Math.ceil(width/8),Math.ceil(height/8));pass.end();device.queue.submit([enc.finish()]);
-  titleBuilds++;return {texture,index:id,curves:items.length};
+  titleBuilds++;return {texture,index:id,curves:items.length,localEvidence:model.localEvidence};
  }
  function cacheField(lanes,coverageView,channel="display"){
   const slot=lanes[16]-1,w=lanes[17],h=lanes[18];
