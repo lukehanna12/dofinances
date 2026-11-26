@@ -12,7 +12,7 @@ import {
   projectShowcaseStatus as publicStatus
 } from "../sites/_apex/assets/public-projects-catalog.js";
 import {
-  PROJECT_FILTER_CATEGORIES,PROJECT_CATEGORY_BY_KIND,projectMatchesFilters
+  PROJECT_FILTER_CATEGORIES,PROJECT_CATEGORIES_BY_SLUG,projectMatchesFilters
 } from "../sites/_apex/assets/public-projects-controls.js";
 import {createAuthGlassHoverController} from "../sites/_apex/assets/home-dashboard/dashboard-auth-hover.js";
 import {
@@ -150,27 +150,59 @@ test("new Coming Soon cards and their exact supplied SVGs appear in both Project
     assert.ok(pub.includes(specialPath),"Original supplied SVG geometry changed");
   }
 });
-test("Projects search and the five multiselect filters use only public curated kinds",()=>{
-  assert.deepEqual(PROJECT_FILTER_CATEGORIES,
-    ["Applications","Extensions","Plugins","Add-ons","CLIs"]);
+test("Projects search and seven multiselect filters use exact slug memberships",()=>{
+  const expected={
+    "Applications": [
+      "Colosseum",
+      "Lightwork",
+      "App Caviar"
+    ],
+    "Extensions": [
+      "BootScript",
+      "ReadMe GLP",
+      "ChatStore",
+      "Protocol Monitor Pruner"
+    ],
+    "Plugins": [
+      "Colosseum"
+    ],
+    "Add-ons": [
+      "Hidden Functions",
+      "LaTeXceL"
+    ],
+    "CLIs": [
+      "Colosseum",
+      "Unicode Plus",
+      "Lightwork"
+    ],
+    "MCPs": [
+      "Apple HIGs Reader",
+      "Terminal Scalars",
+      "Ozoning Board"
+    ],
+    "Libraries": [
+      "3D Liquid Glass",
+      "Apple Adobe FX",
+      "Terminal Scalars",
+      "Liquid Plexiglass 26"
+    ]
+  };
+  assert.deepEqual(PROJECT_FILTER_CATEGORIES,Object.keys(expected));
   assert.equal(PUBLIC_PROJECTS.length,16);
-  const types=new Set(PROJECT_FILTER_CATEGORIES);
-  for(const p of PUBLIC_PROJECTS)
-    assert.ok(types.has(PROJECT_CATEGORY_BY_KIND[p.kind]),"Unclassified "+p.slug);
-  const all=PUBLIC_PROJECTS.filter(project=>projectMatchesFilters(project));
-  assert.equal(all.length,16);
-  const extensions=PUBLIC_PROJECTS.filter(project=>
-    projectMatchesFilters(project,"",new Set(["Extensions"])));
-  assert.deepEqual(extensions.map(project=>project.name).sort(),["ChatStore","ReadMe GLP"]);
-  const cliAndExt=PUBLIC_PROJECTS.filter(project=>
-    projectMatchesFilters(project,"",new Set(["CLIs","Extensions"])));
-  assert.equal(cliAndExt.length,5);
-  assert.equal(PUBLIC_PROJECTS.filter(project=>
-    projectMatchesFilters(project,"ReadMe",new Set(["Extensions"]))).length,1);
-  assert.equal(PUBLIC_PROJECTS.filter(project=>
-    projectMatchesFilters(project,"ReadMe",new Set(["CLIs"]))).length,0);
-  assert.equal(PUBLIC_PROJECTS.filter(project=>
-    projectMatchesFilters(project,"no-project-can-match-this-phrase")).length,0);
+  assert.deepEqual(Object.keys(PROJECT_CATEGORIES_BY_SLUG).sort(),PUBLIC_PROJECTS.map(p=>p.slug).sort());
+  for(const [category,names] of Object.entries(expected)){
+    const matches=PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"",new Set([category])));
+    assert.deepEqual(matches.map(p=>p.name).sort(),[...names].sort(),category);
+  }
+  assert.equal(PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p)).length,16);
+  const cliAndExt=PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"",new Set(["CLIs","Extensions"])));
+  assert.equal(cliAndExt.length,7);
+  const mcpAndLibrary=PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"",new Set(["MCPs","Libraries"])));
+  assert.equal(mcpAndLibrary.length,6);
+  assert.equal(mcpAndLibrary.filter(p=>p.name==="Terminal Scalars").length,1);
+  assert.equal(PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"ReadMe",new Set(["Extensions"]))).length,1);
+  assert.equal(PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"ReadMe",new Set(["CLIs"]))).length,0);
+  assert.equal(PUBLIC_PROJECTS.filter(p=>projectMatchesFilters(p,"no-project-can-match-this-phrase")).length,0);
 });
 test("WebGPU capsule radius resolves to the rendered CSS semicircle",()=>{
   assert.deepEqual(normalizeGlassCornerRadii(["999px","999px","999px","999px"],390,40),

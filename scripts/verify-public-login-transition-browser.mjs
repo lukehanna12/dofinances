@@ -1643,7 +1643,7 @@ try{
     "leftTransform:getComputedStyle(document.querySelector('.public-projects-filter-morph-left')).transform,"+
     "rightTransform:getComputedStyle(document.querySelector('.public-projects-filter-morph-right')).transform,"+
     "tailOpacity:Number(getComputedStyle(document.querySelector('.public-projects-filter-morph-tail')).opacity)};})()");
-  assert.deepEqual(dropdown.names,["Applications","Extensions","Plugins","Add-ons","CLIs"]);
+  assert.deepEqual(dropdown.names,["Applications","Extensions","Plugins","Add-ons","CLIs","MCPs","Libraries"]);
   assert.equal(dropdown.glass,"filter-dropdown");
   assert.equal(dropdown.expanded,"true");
   // Internal state and actual DOM geometry, never screenshots.
@@ -1672,7 +1672,7 @@ try{
   assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),1);
   await evaluate("(()=>{const input=document.querySelector('.public-projects-search-input');"+
     "input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
-  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),5,
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),7,
     "Selected types are combined with OR while search uses AND");
 
   // Clicking outside collapses (rather than unmounting) the glass menu,
@@ -1690,6 +1690,14 @@ try{
   assert.equal(await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').classList.contains('is-selected')"),true);
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=Extensions]').click()");
   await evaluate("document.querySelector('.public-projects-filter-option[data-category=CLIs]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=MCPs]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),3);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=Libraries]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),6);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=MCPs]').click()");
+  assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),4);
+  await evaluate("document.querySelector('.public-projects-filter-option[data-category=Libraries]').click()");
   assert.equal(await evaluate("document.querySelectorAll('.project-showcase-card:not([hidden])').length"),16);
   if(await evaluate("document.body.dataset.authGpuScene==='ready'")){
     await until("window.__dashboardWebGPU?.sourceComposition?.nativeOccluded>0",80,40);

@@ -6,30 +6,33 @@
  */
 import {registerGlassDropdown} from "./home-dashboard/dashboard-glass-dropdown.js";
 export const PROJECT_FILTER_CATEGORIES=Object.freeze([
-  "Applications","Extensions","Plugins","Add-ons","CLIs"
+  "Applications","Extensions","Plugins","Add-ons","CLIs","MCPs","Libraries"
 ]);
-// Public catalog already declares each project's kind. Keep one explicit
-// editorial grouping for every kind rather than claiming private metadata.
-export const PROJECT_CATEGORY_BY_KIND=Object.freeze({
-  "Developer tooling":"CLIs",
-  "Translucence experiments":"Applications",
-  "Browser extension":"Extensions",
-  "Development platform":"Applications",
-  "Documentation reader":"Applications",
-  "Terminal utility":"CLIs",
-  "Unicode utility":"Applications",
-  "Material research":"Add-ons",
-  "Swift package":"Add-ons",
-  "Creative tooling":"Plugins",
-  "Developer utility":"CLIs",
-  "Application":"Applications",
-  "Project":"Applications"
+// Explicit editorial memberships keyed by stable project slug. A project's
+// descriptive kind is independent of its potentially multiple filter categories.
+export const PROJECT_CATEGORIES_BY_SLUG=Object.freeze({
+  "colosseum":Object.freeze(["Applications","Plugins","CLIs"]),
+  "translucence-lab":Object.freeze(["Applications","CLIs"]),
+  "app-caviar":Object.freeze(["Applications"]),
+  "bootscript":Object.freeze(["Extensions"]),
+  "github-readme-chrome-extension":Object.freeze(["Extensions"]),
+  "chatgpt-chat-save-chrome-extension":Object.freeze(["Extensions"]),
+  "protocol-monitor-pruner":Object.freeze(["Extensions"]),
+  "hidden-functions":Object.freeze(["Add-ons"]),
+  "latexcel":Object.freeze(["Add-ons"]),
+  "unicode-plus":Object.freeze(["CLIs"]),
+  "apple-hig-reader":Object.freeze(["MCPs"]),
+  "terminal-scalars":Object.freeze(["MCPs","Libraries"]),
+  "ozoning-board":Object.freeze(["MCPs"]),
+  "3d-liquid-glass-26-swift-package":Object.freeze(["Libraries"]),
+  "apple-adobe-fx":Object.freeze(["Libraries"]),
+  "liquid-plexiglass-26":Object.freeze(["Libraries"])
 });
 export function projectMatchesFilters(project,query="",selectedCategories=new Set()){
   const selected=selectedCategories instanceof Set?
     selectedCategories:new Set(selectedCategories);
-  const category=PROJECT_CATEGORY_BY_KIND[project.kind];
-  if(!category||selected.size>0&&!selected.has(category))return false;
+  const categories=PROJECT_CATEGORIES_BY_SLUG[project.slug];
+  if(!categories||selected.size>0&&!categories.some(category=>selected.has(category)))return false;
   const term=String(query).trim().toLocaleLowerCase();
   if(!term)return true;
   return [project.name,project.kind,project.repository,project.slug]
