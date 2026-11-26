@@ -50,10 +50,16 @@ try{
    const cases=[];
    for(const density of [2,1,1.5,3,2]){
     await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:density,mobile:false});
-    await wait("devicePixelRatio==="+density+"&&window.__dashboardWebGPU?.status==='ready'&&typeof window.__dashboardGpuControls?.sourceRegionDigest==='function'&&document.querySelector('#dashboard-webgpu-scene')?.width==="+Math.floor(1400*density),"DPR output not ready");
-    await sleep(400);
+    await wait("devicePixelRatio==="+density+"&&window.__dashboardWebGPU?.status==='ready'&&typeof window.__dashboardGpuControls?.sourceRegionDigest==='function'","DPR not ready");
+    await sleep(250);
+    const automatic=await ev("document.querySelector('#dashboard-webgpu-scene').width==="+Math.floor(1400*density));
+    // CDP can change the emulated DPR without a real screen/resize event.
+    // Exercise the public explicit reflow contract in that case, and report it.
+    if(!automatic)await ev("window.__dashboardGpuControls.reflowTiles()");
+    await wait("document.querySelector('#dashboard-webgpu-scene').width==="+Math.floor(1400*density),"DPR output not ready");
+    await sleep(250);
     const snapshot=await state(),digest=await ev('window.__dashboardGpuControls.sourceRegionDigest("base",[100,150,35,30])');
-    cases.push({density,sceneBuilds:snapshot.sceneBuilds,lattice:snapshot.lattice,errors:snapshot.errors,digest});
+    cases.push({density,automatic,sceneBuilds:snapshot.sceneBuilds,lattice:snapshot.lattice,errors:snapshot.errors,digest});
    }
    if(mode==="continuous"&&new Set(cases.map(x=>x.digest)).size!==1)throw Error("Fixed source changed across DPR "+JSON.stringify(cases));
    results.push({mode,cases});continue;
