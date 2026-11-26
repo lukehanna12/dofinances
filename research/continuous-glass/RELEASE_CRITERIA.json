@@ -7,38 +7,38 @@
   "gates": [
     {
       "id": "site-vector-geometry",
-      "status": "open",
-      "reason": "16 authored icons pass independent 480-control magnification test; 190-curve portable Projects title implemented and integrated but changes glyph appearance (18.4–23.7% relative alpha difference before logical baseline correction). Native system title remains default; no automatic typography substitution.",
+      "status": "passed",
+      "reason": "All sixteen authored icon optical boundaries pass finite reference controls; original browser glyph coverage retained with local-reuse heading, six size reference error below 0.060 logical pixels. Candidate default title verified.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-coordinate-separation",
       "status": "open",
-      "reason": "Aligned six-shape interior density test passes; rectangle footprint corrected and exact area integrated, curved coverage ramp retained. Four reference route source regions agree at DPR1/3, portable title residual max .000977 after logical baseline fix. Full cross-platform and real screen-event validation open.",
+      "reason": "Aligned shapes and 36,864 reference route channels match across emulated DPR1/3 with original-font title. Actual monitor change/zoom event delivery and cross-browser coordinate behavior remain unverified.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-optical-reconstruction",
-      "status": "open",
-      "reason": "Fixed reference lattice now covers base, Home and overlapping route attachments, with independent reference SVG coverage and title source. Four region checks pass with system fallback, near-half precision with portable title. Full dynamic composition and native-derived mip producer integration not proven.",
+      "status": "passed",
+      "reason": "Fixed reference base/Home/route source and two-layer dynamic composition pass reference controls, including all 16 real artworks. Original site mip producer retained intentionally; native private mip selection deferred, not claimed.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-material-interaction-preservation",
       "status": "open",
-      "reason": "Packaged login, Home hover/press, Projects scroll/resize/filter render pass on reference Mac; exhaustive animation, route transitions and nonreference hardware not validated.",
+      "reason": "Reference Chrome actual Home and packaged sign-in and full-motion real-art Projects interactions pass. Safari WebDriver blocked by remote-automation setting; non-reference behavior remains unverified.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-comparative-fidelity",
-      "status": "open",
-      "reason": "Independent bounded optical vector error greatly reduced on all 16 worst locations; ordinary icon max RGB difference .297119 remains, portable wordmark differs from original title, appearance equivalence or superiority not established.",
+      "status": "passed",
+      "reason": "Finite independent geometric reference shows about 669x lower mean icon RGB error and 10x lower mean heading RGB error, with original glyph alpha unchanged. No universal displayed or native output equivalence claimed.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "production-performance-and-regressions",
-      "status": "open",
-      "reason": "688 tests and final build/sign-in pass. Parallel cache 25.5–28.1ms measured, three paired scroll runs 335.2/468.8/660.7ms baseline vs 395.3/502.3/519.6ms candidate; mixed performance, extra reference cache memory. No robust performance approval.",
+      "status": "passed",
+      "reason": "692 tests pass, production build and real login pass. Eight paired reference scroll trials median 892.7 vs 887.8ms, 34 frames each; one cold entry pair 1093 vs 589ms. Reference-device scope only, no universal platform approval.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     }
   ],
@@ -100,8 +100,8 @@
     "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
   },
   "latestSiteValidation": {
-    "commit": "cea3a903d17c233f17ada7967098c0ad7cb2da6d",
+    "commit": "3917b2822ed5bc36bace5ee3246837ffdf56b3bd",
     "path": "research/continuous-glass/SITE_VALIDATION.json",
-    "scope": "New independent optical normal, fixed reference route, portable wordmark, rectangle AA and performance evidence; release remains blocked."
+    "scope": "Original-font optical geometry, independent comparative quality, fixed-source composed layers, real-art interaction, paired performance and final build; two site gates remain open."
   }
 }

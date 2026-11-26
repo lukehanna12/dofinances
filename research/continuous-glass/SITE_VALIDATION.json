@@ -2,7 +2,7 @@
   "schema": "dofinances-site-integration-validation-v1",
   "scope": "Public renderer candidate only; no production deploy or native proof closure.",
   "baseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
-  "testedCandidate": "cea3a903d17c233f17ada7967098c0ad7cb2da6d",
+  "testedCandidate": "3917b2822ed5bc36bace5ee3246837ffdf56b3bd",
   "device": {
     "chip": "Apple M2",
     "gpu": "Apple Metal 3",
@@ -117,199 +117,169 @@
     "reason": "Preserve the tested Retina baseline's authored physical-pixel optical lengths and scale them relative to the source lattice. Intentionally changes old DPR1 optics. Further cross-density and held-out geometry validation required."
   },
   "unresolved": [
-    "Portable title wordmark differs materially from existing native system-font silhouette; keep as explicit alternate, original system-font fallback remains sampled. Native font files and native word geometry not distributed.",
-    "Bounded icon optical gradient agrees with independent mathematical adapter reference, but original ordinary-size optical RGB outliers persist and complete appearance equivalence or superiority is not established.",
-    "Fixed reference optical source validated for sampled overlapping route regions; full attachment/animation/real display changes, curved AA and nonreference browsers remain unproved.",
-    "Parallel cache improved rebuild cost but full-page performance comparisons remain mixed. Separate reference cache increases allocated field memory to 16 MiB when needed.",
-    "Native Oracle universal proof obligations unchanged. No production release."
+    "Safari and non-reference GPU validation unavailable; Safari remote automation disabled. Real monitor-switch and browser zoom event delivery not independently validated on physical displays.",
+    "Reference device performance passes finite controls; broader platform memory and performance remain untested. Browser-local title approximation is not exact native font geometry. Native private program and active display proof remain deferred.",
+    "Production main remains unchanged pending remaining site gate checks."
   ],
   "previousTestedCandidate": "989547c170515b2cbc632aa478fa657d4e72ac6e",
   "latest": {
-    "date": "2026-11-25",
-    "scope": "Reference Mac M2 Chrome 158, bounded public renderer controls; no production deploy or native proof closure.",
+    "date": "2026-11-26",
+    "scope": "Finite reference Mac M2 / Chrome 158 public site validation. Not an unrestricted native or cross-browser proof.",
     "tests": {
-      "passed": 688,
+      "passed": 692,
       "failed": 0,
-      "trace": "c9810852-68f1-48ab-891b-d101f166c30d",
-      "newTests": "Reference coverage scaling and anisotropic projection. Static assertions updated for separate optical attachment bindings."
+      "trace": "2a060890-e959-4863-8be2-7bd8eba2a61e",
+      "commit": "3917b2822ed5bc36bace5ee3246837ffdf56b3bd"
     },
-    "iconMedialAxis": {
-      "commit": "bb00f6623fcd87698d6fbd08d6f7a5f4e33d31f7",
-      "trace": "550a6cea-5585-4908-866f-ba422f4b86c1",
-      "cases": 16,
-      "originalMaxNormalError": 0.9423407396608692,
-      "candidateMaxNormalError": 0.0005762256774792203,
-      "referenceMaxPerturbation": 0.001321833005672711,
-      "scope": "Independent Float64 packed-curve distance and bounded centered-difference vector at each icon's largest observed candidate/baseline color deviation. The bounded vector is a deliberate site adapter correction, not recovered Apple evidence. Signed distance is continuous; no universal solver precision guarantee."
-    },
-    "iconMagnification": {
-      "trace": "e41812b8-6eb6-40c1-889c-63eaac31f6f1",
-      "samples": 480,
-      "signDisagreements": 0,
-      "scales": [
-        1,
-        2,
-        16,
-        64,
-        1024
+    "systemTitle": {
+      "mode": "local-reuse",
+      "originalBrowserAlphaRetained": true,
+      "reference": "CoreText word-specific filled-union boundary; local probe --union, no font file or outline distributed",
+      "sixLogicalSizes": [
+        51.75,
+        54.375,
+        60.625,
+        63,
+        66.25,
+        69.75
       ],
-      "maxDistanceError": [
-        0.0004279270280296288,
-        0.0004279270280296288,
-        0.00015329434165423095,
-        0.00007843090781634032,
-        0.00002649313197577996
+      "maxIndependentBoundaryError": 0.0595372,
+      "maxReusableBoundaryError": 0.05568194,
+      "segments": 717,
+      "convergence": 0.07335776950873582,
+      "traces": [
+        "ce8dd520-6bf3-4932-bae5-3d320dda70df",
+        "bbc62089-6fd0-47db-957a-b3e7ba579a2e",
+        "2a060890-e959-4863-8be2-7bd8eba2a61e"
       ],
-      "maxNormalError": [
-        0.0019751731509081868,
-        0.0019751731509081868,
-        0.0008630524781063122,
-        0.0002795166063736977,
-        0.00013134095341704852
-      ]
+      "limits": "Finite approximation to the browser-local original word; alpha not replaced; not exact source font Beziers. Unresolved glyph contour retains original sampled heading."
     },
-    "parallelCache": {
-      "trace": "60981cf9-d067-455a-9e41-860df95d7f2b",
-      "commit": "d48c611c68a973379cd2245bf21e21bc75ff8210",
-      "buildMs": 25.5,
-      "submissions": 1,
-      "cacheDirectByteDifferences": 0
-    },
-    "finalIconAttachment": {
-      "trace": "47066d7f-e935-4bbe-bd4c-83f07d405928",
-      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
-      "cacheBuildMs": 28.1,
-      "cacheDirectByteDifferences": 0,
+    "titleOpticalReference": {
+      "channels": 52953,
+      "baselineMean": 0.07609624338404863,
+      "candidateMean": 0.007600332435223365,
+      "baselineP99": 0.3603516,
+      "candidateP99": 0.0629883,
+      "baselineMax": 0.57568,
+      "candidateMax": 0.2983398,
+      "alphaEqualPixels": 86400,
+      "cacheMax": 0.0009765625,
       "nonfinite": 0,
-      "baselineMs": [
-        2.2,
-        2.1,
-        2
-      ],
-      "candidateMs": [
-        3.7,
-        2.4,
-        2.3
-      ],
-      "meanRGB": 0.0012859304275480098,
-      "maxRGB": 0.297119140625,
-      "scope": "DPR2 owned optical attachment. Localized deviations remain despite better independent bounded gradient agreement."
+      "trace": "c38acee2-7ca9-45c6-82c8-d096ac3b5537",
+      "scope": "Independent Float64 union-corrected boundary with bounded optical derivative, same site material and coverage; not native fragment-output equivalence."
+    },
+    "iconOpticalReference": {
+      "channels": 1464408,
+      "coveredIconSamples": 46763,
+      "referenceSegments": 40066,
+      "baselineMean": 0.001618611296918949,
+      "candidateMean": 0.0000024186882420287328,
+      "baselineP99": 0.028930664,
+      "candidateP99": 0,
+      "baselineMax": 0.297119,
+      "candidateMax": 0.0068359375,
+      "cacheDirectByteDifferences": 0,
+      "trace": "c7c498e0-a870-4491-be22-34d127c1b9bc",
+      "scope": "Independent Float64 adaptive flattening of packed filled outlines and bounded derivatives; actual site shader, synthetic source."
     },
     "routeReference": {
-      "commit": "837d7bb36ed79e7aefd388c150805c969ee42878",
-      "traces": [
-        "39157817-c3a2-4b65-a0b5-3db09660d8ec",
-        "b1cf6369-e08c-4097-995b-8ee600bcbf36"
-      ],
-      "source": [
-        2800,
-        1672
-      ],
       "densities": [
         1,
         3
       ],
-      "regions": [
-        [
-          66,
-          242,
-          24,
-          24
-        ],
-        [
-          57,
-          136,
-          24,
-          24
-        ],
-        [
-          50,
-          226,
-          24,
-          24
-        ],
-        [
-          100,
-          150,
-          24,
-          24
-        ]
-      ],
       "channels": 36864,
       "max": 0,
-      "errors": 0,
-      "scope": "Reference optical attachments with system title fallback. Four bounded source regions; not whole-frame equality."
-    },
-    "coverage": {
-      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
-      "trace": "7d798c45-970b-4e25-8686-44493a833c76",
-      "interiorChannels": 213573,
-      "interiorMax": 0.00048828125,
-      "thinRectangle": {
-        "oneToThreeMax": 0,
-        "twoToSixMax": 0.00016276041666662966,
-        "twoToSixAreaRelativeError": 2.019360414978193e-7
-      },
-      "curvedMax": 0.1338840060763889,
-      "curvedMaxRelativeAreaError": 0.00008037698798379574,
-      "scope": "Matched footprint aggregation; exact rectangle area, retained curved fwidth ramp. No general AA equivalence claim."
-    },
-    "portableTitle": {
-      "commit": "e76547507af3a1046ca752acf2fd2e801ed7ab27",
-      "trace": "179ba217-10c3-4c74-9762-70597aaf550e",
-      "source": "Inter fixed word graphic from OFL font blob 047c92f6e2212473dc436020afed689527076d44; no font file distributed.",
-      "curves": 190,
-      "coverageCases": 12,
-      "relativeAlphaDifferenceRange": [
-        0.18412463914015115,
-        0.23697569211891947
+      "regions": 4,
+      "titleMode": "local-reuse",
+      "cacheMisses": 0,
+      "dpr3CacheBytes": 21495808,
+      "traces": [
+        "655a40f6-83e1-4d91-937e-607285bdf83e",
+        "f4f1a160-b7bf-4edc-ab06-604a6d77fd4b"
       ],
-      "scope": "Optional alternate wordmark, not approved substitute for original system-font design. Browser typography is otherwise retained.",
-      "finalLogicalBaselineCorrection": {
-        "commit": "cea3a903d17c233f17ada7967098c0ad7cb2da6d",
-        "traces": [
-          "217aba70-854c-403e-8f0b-53b4456da66d",
-          "ed974398-0a35-40af-992b-acd4bc0060a9"
-        ],
-        "channels": 36864,
-        "referenceRegionMax": 0.0009765625,
-        "p99": 0,
-        "errors": 0
-      }
+      "scope": "Owned reference optical attachments, four bounded samples, not entire displayed frame."
+    },
+    "realArtwork": {
+      "decoded": 16,
+      "trace": "8cef7971-484d-4758-8f5c-56d45901a23a"
+    },
+    "fullMotion": {
+      "steps": [
+        "hover",
+        "pressed",
+        "expanded",
+        "retargeted",
+        "overlap",
+        "filtered",
+        "restored",
+        "home"
+      ],
+      "errors": 0,
+      "exceptions": 0,
+      "overlapLayers": [
+        1,
+        2
+      ],
+      "filteredCards": 8,
+      "restoredCards": 16,
+      "realArtwork": true,
+      "trace": "fbb412e6-2e1a-45b1-8e87-f9f5f29589c0"
     },
     "performance": {
-      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
+      "baselineMs": [
+        793.6,
+        906.7,
+        782.6,
+        989,
+        878.7,
+        869.6,
+        1093,
+        1287.6
+      ],
+      "candidateMs": [
+        932.7,
+        828.7,
+        986.3,
+        794.9,
+        994.6,
+        768.7,
+        842.9,
+        1067.4
+      ],
+      "medianBaselineMs": 892.7,
+      "medianCandidateMs": 887.8,
+      "framesPerTrial": 34,
       "traces": [
-        "911579d7-98c9-47d9-99c8-0b0e47ae400e",
-        "081cc88d-8f35-4585-8889-541a7f42356e",
-        "2cc2afd7-f093-4e56-92ed-5986f7b8786b"
+        "3e8d7a92-f853-4636-bef3-b752a172ec24",
+        "417b5eb1-b55c-48fe-a031-ecb903e3c18a"
       ],
-      "baseline": [
-        335.2,
-        468.8,
-        660.7
-      ],
-      "candidate": [
-        395.3,
-        502.3,
-        519.6
-      ],
-      "framesPerRun": 16,
-      "scope": "Three sequential paired local fixture browser runs at DPR2, portable title enabled. Mixed results; performance not approved."
+      "cold": {
+        "baselineHomeMs": 791,
+        "candidateHomeMs": 558,
+        "baselineEntryMs": 1093,
+        "candidateEntryMs": 589,
+        "trace": "1b3ef7ca-6dd4-4a9c-90af-a03c0b29660c",
+        "scope": "One pair; reduced motion; not a statistically established speedup."
+      },
+      "scope": "Warm scrolling, 8 trials each in both renderer orders; local fixture artwork; comparable reference-device performance. No universal memory/performance approval."
     },
     "productionBuild": {
-      "trace": "caaa3754-51ea-487d-b16f-d698a2fc8421",
       "passed": true,
-      "warnings": "Bundler motion use client warning, optional install scripts warning."
+      "trace": "410b4725-3e11-4400-bbea-6b31da71ff15",
+      "note": "npm install in temporary checkout because repository has no package-lock.json; existing Framer Motion use client bundler warning."
     },
     "realLogin": {
-      "trace": "c9810852-68f1-48ab-891b-d101f166c30d",
-      "webgpu": true,
+      "passed": true,
       "hover": 1,
       "press": 1,
       "returnedHome": true,
       "errors": 0,
-      "exceptions": 0
+      "trace": "0c1dcf15-06a9-4f66-b9e6-72b26255ba03"
+    },
+    "safari": {
+      "status": "blocked",
+      "reason": "Safari WebDriver requires Allow remote automation in Safari Developer settings. No preference changed.",
+      "trace": "d1cb5899-9331-4541-b0b2-773ec4bac4f6"
     }
   },
   "previousTurn": {
@@ -549,6 +519,194 @@
       "cacheByteDifferences": 0,
       "nonfinite": 0,
       "scope": "Local ordinary-size icon appearance outliers persist; timings insufficient for approval."
+    }
+  },
+  "previousLatest": {
+    "date": "2026-11-25",
+    "scope": "Reference Mac M2 Chrome 158, bounded public renderer controls; no production deploy or native proof closure.",
+    "tests": {
+      "passed": 688,
+      "failed": 0,
+      "trace": "c9810852-68f1-48ab-891b-d101f166c30d",
+      "newTests": "Reference coverage scaling and anisotropic projection. Static assertions updated for separate optical attachment bindings."
+    },
+    "iconMedialAxis": {
+      "commit": "bb00f6623fcd87698d6fbd08d6f7a5f4e33d31f7",
+      "trace": "550a6cea-5585-4908-866f-ba422f4b86c1",
+      "cases": 16,
+      "originalMaxNormalError": 0.9423407396608692,
+      "candidateMaxNormalError": 0.0005762256774792203,
+      "referenceMaxPerturbation": 0.001321833005672711,
+      "scope": "Independent Float64 packed-curve distance and bounded centered-difference vector at each icon's largest observed candidate/baseline color deviation. The bounded vector is a deliberate site adapter correction, not recovered Apple evidence. Signed distance is continuous; no universal solver precision guarantee."
+    },
+    "iconMagnification": {
+      "trace": "e41812b8-6eb6-40c1-889c-63eaac31f6f1",
+      "samples": 480,
+      "signDisagreements": 0,
+      "scales": [
+        1,
+        2,
+        16,
+        64,
+        1024
+      ],
+      "maxDistanceError": [
+        0.0004279270280296288,
+        0.0004279270280296288,
+        0.00015329434165423095,
+        0.00007843090781634032,
+        0.00002649313197577996
+      ],
+      "maxNormalError": [
+        0.0019751731509081868,
+        0.0019751731509081868,
+        0.0008630524781063122,
+        0.0002795166063736977,
+        0.00013134095341704852
+      ]
+    },
+    "parallelCache": {
+      "trace": "60981cf9-d067-455a-9e41-860df95d7f2b",
+      "commit": "d48c611c68a973379cd2245bf21e21bc75ff8210",
+      "buildMs": 25.5,
+      "submissions": 1,
+      "cacheDirectByteDifferences": 0
+    },
+    "finalIconAttachment": {
+      "trace": "47066d7f-e935-4bbe-bd4c-83f07d405928",
+      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
+      "cacheBuildMs": 28.1,
+      "cacheDirectByteDifferences": 0,
+      "nonfinite": 0,
+      "baselineMs": [
+        2.2,
+        2.1,
+        2
+      ],
+      "candidateMs": [
+        3.7,
+        2.4,
+        2.3
+      ],
+      "meanRGB": 0.0012859304275480098,
+      "maxRGB": 0.297119140625,
+      "scope": "DPR2 owned optical attachment. Localized deviations remain despite better independent bounded gradient agreement."
+    },
+    "routeReference": {
+      "commit": "837d7bb36ed79e7aefd388c150805c969ee42878",
+      "traces": [
+        "39157817-c3a2-4b65-a0b5-3db09660d8ec",
+        "b1cf6369-e08c-4097-995b-8ee600bcbf36"
+      ],
+      "source": [
+        2800,
+        1672
+      ],
+      "densities": [
+        1,
+        3
+      ],
+      "regions": [
+        [
+          66,
+          242,
+          24,
+          24
+        ],
+        [
+          57,
+          136,
+          24,
+          24
+        ],
+        [
+          50,
+          226,
+          24,
+          24
+        ],
+        [
+          100,
+          150,
+          24,
+          24
+        ]
+      ],
+      "channels": 36864,
+      "max": 0,
+      "errors": 0,
+      "scope": "Reference optical attachments with system title fallback. Four bounded source regions; not whole-frame equality."
+    },
+    "coverage": {
+      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
+      "trace": "7d798c45-970b-4e25-8686-44493a833c76",
+      "interiorChannels": 213573,
+      "interiorMax": 0.00048828125,
+      "thinRectangle": {
+        "oneToThreeMax": 0,
+        "twoToSixMax": 0.00016276041666662966,
+        "twoToSixAreaRelativeError": 2.019360414978193e-7
+      },
+      "curvedMax": 0.1338840060763889,
+      "curvedMaxRelativeAreaError": 0.00008037698798379574,
+      "scope": "Matched footprint aggregation; exact rectangle area, retained curved fwidth ramp. No general AA equivalence claim."
+    },
+    "portableTitle": {
+      "commit": "e76547507af3a1046ca752acf2fd2e801ed7ab27",
+      "trace": "179ba217-10c3-4c74-9762-70597aaf550e",
+      "source": "Inter fixed word graphic from OFL font blob 047c92f6e2212473dc436020afed689527076d44; no font file distributed.",
+      "curves": 190,
+      "coverageCases": 12,
+      "relativeAlphaDifferenceRange": [
+        0.18412463914015115,
+        0.23697569211891947
+      ],
+      "scope": "Optional alternate wordmark, not approved substitute for original system-font design. Browser typography is otherwise retained.",
+      "finalLogicalBaselineCorrection": {
+        "commit": "cea3a903d17c233f17ada7967098c0ad7cb2da6d",
+        "traces": [
+          "217aba70-854c-403e-8f0b-53b4456da66d",
+          "ed974398-0a35-40af-992b-acd4bc0060a9"
+        ],
+        "channels": 36864,
+        "referenceRegionMax": 0.0009765625,
+        "p99": 0,
+        "errors": 0
+      }
+    },
+    "performance": {
+      "commit": "b83056ce616d8deeaa1a4fd15bb3a399e1337787",
+      "traces": [
+        "911579d7-98c9-47d9-99c8-0b0e47ae400e",
+        "081cc88d-8f35-4585-8889-541a7f42356e",
+        "2cc2afd7-f093-4e56-92ed-5986f7b8786b"
+      ],
+      "baseline": [
+        335.2,
+        468.8,
+        660.7
+      ],
+      "candidate": [
+        395.3,
+        502.3,
+        519.6
+      ],
+      "framesPerRun": 16,
+      "scope": "Three sequential paired local fixture browser runs at DPR2, portable title enabled. Mixed results; performance not approved."
+    },
+    "productionBuild": {
+      "trace": "caaa3754-51ea-487d-b16f-d698a2fc8421",
+      "passed": true,
+      "warnings": "Bundler motion use client warning, optional install scripts warning."
+    },
+    "realLogin": {
+      "trace": "c9810852-68f1-48ab-891b-d101f166c30d",
+      "webgpu": true,
+      "hover": 1,
+      "press": 1,
+      "returnedHome": true,
+      "errors": 0,
+      "exceptions": 0
     }
   }
 }
