@@ -213,6 +213,8 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
+ }else if(["apple-adobe-fx","hidden-functions"].includes(slug)){
+  assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".jpg"));
  }else if(["bootscript","chatgpt-chat-save-chrome-extension","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
   assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".webp"));
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
