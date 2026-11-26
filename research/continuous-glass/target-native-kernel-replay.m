@@ -39,7 +39,8 @@ static NSData *readTexture(id<MTLTexture> t,NSUInteger level,NSUInteger bpp){
 }
 static void dispatch(NSString *name,id<MTLTexture> input,id<MTLTexture> output,NSData *u,MTLSize grid,MTLSize group){
  id<MTLCommandBuffer> b=[queue commandBuffer];id<MTLComputeCommandEncoder> e=[b computeCommandEncoder];
- [e setComputePipelineState:pipeline(name)];[e setTexture:input atIndex:0];[e setTexture:output atIndex:1];
+ [e setComputePipelineState:pipeline(name)];
+ if([name containsString:@"copy_base_mip"])[e setImageblockWidth:32 height:32];else [e setImageblockWidth:16 height:32];[e setTexture:input atIndex:0];[e setTexture:output atIndex:1];
  [e setBytes:u.bytes length:u.length atIndex:0];
  [e dispatchThreadgroups:grid threadsPerThreadgroup:group];[e endEncoding];[b commit];[b waitUntilCompleted];
  if(b.status!=MTLCommandBufferStatusCompleted){NSLog(@"%@",b.error);abort();}
