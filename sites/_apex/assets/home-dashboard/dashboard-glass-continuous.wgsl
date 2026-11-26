@@ -118,7 +118,9 @@ fn titleFieldQuery(icon:GlassSilhouette,local:vec2<f32>)->IconFieldQuery{
 }
 fn assembleTitleField(q:IconFieldQuery,sd:f32,xp:f32,xm:f32,yp:f32,ym:f32)->vec3<f32>{
  let grad=vec2<f32>(xp-xm,yp-ym);
- return vec3<f32>(sd*q.px,grad/max(length(grad),0.000001));
+ // A finite-footprint distance derivative has magnitude at most one.
+ // Retain its strength rather than assigning full refraction to a medial tie.
+ return vec3<f32>(sd*q.px,grad/max(2.0*q.step,length(grad)));
 }
 fn evaluateContinuousTitleField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
  let q=titleFieldQuery(icon,local);

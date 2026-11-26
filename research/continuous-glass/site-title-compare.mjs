@@ -30,7 +30,7 @@ export async function run(){
   const t0=performance.now(),v=vectors.titleField("Projects",style,w,h,dpr,glyph,[.5,.5]);if(!v)throw Error("Missing title model");
   await device.queue.onSubmittedWorkDone();const buildMs=performance.now()-t0;
   let referenceTexture=null,reference=null;
-  if(native){reference=referenceTitleField(native,"Projects",style,w,h,dpr,alpha);referenceTexture=tex(w,h,1,0,"rgba32float");device.queue.writeTexture({texture:referenceTexture},reference.out,{bytesPerRow:w*16},[w,h]);}
+  if(native){reference=referenceTitleField(native,"Projects",style,w,h,dpr,alpha,[.5,.5],true);referenceTexture=tex(w,h,1,0,"rgba32float");device.queue.writeTexture({texture:referenceTexture},reference.out,{bytesPerRow:w*16},[w,h]);}
   const tile=[x,y,w,h,0,-8,2.5,4,0,0,0,0,0,0,w*.5,h*.5,0,0,1,0];
   const lanes=phase=>[0,0,w,h,dpr,0,0,0,0,0,0,0,phase,phase,0,0,0,w,h,v.index];
   const buffers=[make(tile,GPUBufferUsage.STORAGE),make([W,H,1,dpr,0,0,0,H,0,0,0,0,0,0,0,0,1,1,0,0,W,H,0,0],GPUBufferUsage.UNIFORM),make([0,0,0,0],GPUBufferUsage.STORAGE),make(clockTextMaterialLanes(),GPUBufferUsage.STORAGE),make(Array(24).fill(0),GPUBufferUsage.STORAGE),make(lanes(.5),GPUBufferUsage.STORAGE)];
@@ -44,11 +44,12 @@ export async function run(){
    await draw(false);const ms=[];for(let i=0;i<3;i++)ms.push(await draw(false));timings.push(ms);await draw(true);await read.mapAsync(GPUMapMode.READ);
    const raw=new Uint8Array(W*H*8),b=new Uint8Array(read.getMappedRange());for(let y=0;y<H;y++)raw.set(b.subarray(y*stride,y*stride+W*8),y*W*8);read.unmap();values.push(raw);
   }
-  const a=new DataView(values[0].buffer),b=new DataView(values[1].buffer),rgb=[],alphaDiff=[];let exact=0,nonfinite=0,cacheByteDifferences=0;
+  const a=new DataView(values[0].buffer),b=new DataView(values[1].buffer),rgb=[],alphaDiff=[];let exact=0,nonfinite=0,cacheByteDifferences=0,cacheMax=0;
   for(let i=0;i<values[1].length;i++)cacheByteDifferences+=+(values[1][i]!==values[2][i]);
+  const direct=new DataView(values[2].buffer);for(let j=0;j<values[1].length;j+=2)cacheMax=Math.max(cacheMax,Math.abs(b.getFloat16(j,true)-direct.getFloat16(j,true)));
   for(let i=0;i<W*H;i++){const j=i*8,aa=a.getFloat16(j+6,true),bb=b.getFloat16(j+6,true);alphaDiff.push(Math.abs(aa-bb));exact+=+(aa===bb);if(aa>0||bb>0)for(let c=0;c<3;c++){const d=Math.abs(a.getFloat16(j+c*2,true)-b.getFloat16(j+c*2,true));if(Number.isFinite(d))rgb.push(d);else nonfinite++;}}
   const referenceErrors=useReference?[0,1].map(mode=>{const a=new DataView(values[mode].buffer),r=new DataView(values[3].buffer),d=[];for(let i=0;i<W*H;i++){const j=i*8;if(r.getFloat16(j+6,true)>0)for(let c=0;c<3;c++)d.push(Math.abs(a.getFloat16(j+c*2,true)-r.getFloat16(j+c*2,true)));}d.sort((a,b)=>a-b);return {mode,channels:d.length,mean:d.reduce((a,b)=>a+b,0)/d.length,p99:d[Math.floor(d.length*.99)],max:d.at(-1)};}):null;
-  rgb.sort((a,b)=>a-b);out.push({dpr,referenceErrors,referenceEdgeCount:reference?.edgeCount,geometry:v.localEvidence,buildMs,coveredChannels:rgb.length,meanRGB:rgb.reduce((a,b)=>a+b,0)/rgb.length,p99RGB:rgb[Math.floor(rgb.length*.99)],maxRGB:rgb.at(-1),alphaEqual:exact,totalPixels:W*H,maxAlpha:alphaDiff.reduce((a,b)=>Math.max(a,b),0),cacheByteDifferences,nonfinite,timings});
+  rgb.sort((a,b)=>a-b);out.push({dpr,referenceErrors,referenceEdgeCount:reference?.edgeCount,geometry:v.localEvidence,buildMs,coveredChannels:rgb.length,meanRGB:rgb.reduce((a,b)=>a+b,0)/rgb.length,p99RGB:rgb[Math.floor(rgb.length*.99)],maxRGB:rgb.at(-1),alphaEqual:exact,totalPixels:W*H,maxAlpha:alphaDiff.reduce((a,b)=>Math.max(a,b),0),cacheByteDifferences,cacheMax,nonfinite,timings});
   glyph.destroy();v.texture.destroy();referenceTexture?.destroy();buffers.forEach(b=>b.destroy());target.destroy();read.destroy();
  }
  if(errors.length)throw Error(errors.join(";"));return {out,scope:"Current clock text material and final browser coverage; synthetic fixed optical source. Baseline color differences are not native proof."};
