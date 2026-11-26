@@ -1,10 +1,11 @@
+import {setBinary16LE} from "./binary16.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {sampleBGRA8,heldout} from "./bgra8-sampler.mjs";
 import {nativeBGRA8Downsample} from "./native-diamond.mjs";
 const hash=x=>createHash("sha256").update(x).digest("hex");
-const words=values=>{const b=new ArrayBuffer(values.length*2),v=new DataView(b);values.forEach((a,i)=>v.setFloat16(i*2,a,true));return new Uint8Array(b);};
+const words=values=>{const b=new ArrayBuffer(values.length*2),v=new DataView(b);values.forEach((a,i)=>setBinary16LE(v,i*2,a));return new Uint8Array(b);};
 export const cases=[
 [16,16,"0d9dda42556fab2893e472d74ee7ae64f0e94e699a735a9447dc6513ed539bba"],
 [29,19,"57c82fbdbf8f8d3c24f0b32c4d839073ab5d20d9f785611744d76758509657d7"],

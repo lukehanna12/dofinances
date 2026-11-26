@@ -1,3 +1,4 @@
+import {setBinary16LE} from "./binary16.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -30,7 +31,7 @@ test("native half/FMA mathematical outputs match all eight observed even texture
   for(let t=0;t<2;t++){
    const src=Float64Array.from({length:w*h*4},(_,j)=>{const x=(j>>2)%w,y=Math.floor(j/(4*w)),k=j%4,v=(17*x*x+13*y*y+11*x*y+7*k*x+19*k*y+23*k+3*i)%127;return t?v*2+(x+y+k)%2:(v-61)/32;});
    const out=evenNativeDownsample(src,w,h,{unorm:!!t}).values;
-   let bytes;if(t)bytes=out;else{const a=new ArrayBuffer(out.length*2),d=new DataView(a);out.forEach((v,j)=>d.setFloat16(2*j,v,true));bytes=new Uint8Array(a);}
+   let bytes;if(t)bytes=out;else{const a=new ArrayBuffer(out.length*2),d=new DataView(a);out.forEach((v,j)=>setBinary16LE(d,2*j,v));bytes=new Uint8Array(a);}
    assert.equal(createHash("sha256").update(bytes).digest("hex"),expected[t]);
   }
  }
@@ -72,7 +73,7 @@ test("native copy arithmetic matches ten independent crop output hashes",()=>{
   for(let type=0;type<2;type++){
    const src=Float64Array.from({length:w*h*4},(_,j)=>{const x=(j>>2)%w,y=Math.floor(j/(4*w)),k=j%4,v=(17*x*x+13*y*y+11*x*y+7*k*x+19*k*y+23*k+3*i)%127;return type?v*2+(x+y+k)%2:(v-61)/32;});
    const [out]=nativeCopyBase(src,w,h,{base:[bx,by],limits:[l,t,r,b],baseSize:[2*dw,2*dh],mipSize:[dw,dh],noBaseMip:true,unorm:!!type});
-   let bytes;if(type)bytes=out.values;else{const a=new ArrayBuffer(out.values.length*2),d=new DataView(a);out.values.forEach((v,j)=>d.setFloat16(2*j,v,true));bytes=new Uint8Array(a);}
+   let bytes;if(type)bytes=out.values;else{const a=new ArrayBuffer(out.values.length*2),d=new DataView(a);out.values.forEach((v,j)=>setBinary16LE(d,2*j,v));bytes=new Uint8Array(a);}
    assert.equal(hash(bytes),expected[type]);
   }
  }
