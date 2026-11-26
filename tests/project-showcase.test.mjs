@@ -16,16 +16,16 @@ test("Projects roster applies requested names and progress states without retire
  assert.ok(!PROJECT_SHOWCASE.some(p=>p.slug==="bootscribe"),"Retired BootScribe must not be rendered");
  assert.ok(!PROJECT_SHOWCASE.some(p=>p.slug==="3d-liquid-glass-27-swift-package"));
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="3d-liquid-glass-26-swift-package"),{
-  slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null
+  slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null,status:"in-progress"
  });
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
   slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"review"
  });
  for(const [slug,name] of [["hidden-functions","Hidden Functions"],["latexcel","LaTeXceL"]]){
   assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug===slug),{
-   slug,name,kind:"Project",repository:null,status:"coming-soon"
+   slug,name,kind:"Project",repository:null,status:"in-progress"
   });
-  assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug===slug)),"Coming Soon");
+  assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug===slug)),"In Progress");
  }
 });
 test("Curated projects link their verified GitHub repositories",()=>{
@@ -48,8 +48,8 @@ test("Curated projects link their verified GitHub repositories",()=>{
   "chatgpt-chat-save-chrome-extension"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[]);
- assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,"ready");
- assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),["chatgpt-chat-save-chrome-extension"]);
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,"coming-soon");
+ assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"review");
  assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board")),"Review");
 });
@@ -142,6 +142,7 @@ test("Verified repository associations backfill once and respect account overrid
 
 test("Project cards order Ready, Review, In Progress, Coming Soon with stable ties",()=>{
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"review"}),"Review");
+ assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"coming-soon"}),"Coming Soon");
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"in-progress"}),"In Progress");
  assert.equal(projectShowcaseStatus({repository:null,status:"ready"}),"Ready");
  assert.equal(projectShowcaseStatus({repository:"owner/repo"}),"Ready");
@@ -310,8 +311,8 @@ test("Ozoning treehouse release uses a new asset path and a refreshed module cha
  assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
  assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v4"'));
- assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v13"'));
- assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v13"'));
+ assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v14"'));
+ assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v14"'));
  assert.ok(read("sites/_apex/app/index.html").includes('src="/app/assets/dashboard.js?project-art=v14"'));
 });
 

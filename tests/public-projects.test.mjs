@@ -121,23 +121,23 @@ test("Named art sources and all-sided Piranesi crop are the same on both routes"
   }
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
 });
-test("new Coming Soon cards and their exact supplied SVGs appear in both Projects views",async()=>{
+test("new In Progress cards and their exact supplied SVGs appear in both Projects views",async()=>{
   const incoming=[
     ["hidden-functions","Hidden Functions","M 14 2 A2.4 2.4 0 0 1 15.704 2.706"],
     ["latexcel","LaTeXceL","M14 17h2l2 5 2-10h2.5"]
   ];
   const sorted=sortProjectShowcase(PUBLIC_PROJECTS);
-  assert.deepEqual(sorted.slice(-2).map(project=>project.slug),
-    incoming.map(row=>row[0]),"The new Coming Soon cards end the curated catalog");
+  assert.deepEqual(sorted.filter(project=>publicStatus(project)==="In Progress").slice(-2).map(project=>project.slug),
+    incoming.map(row=>row[0]),"The new In Progress cards end their status group");
   for(const [slug,name,specialPath] of incoming){
     const match=PUBLIC_PROJECTS.find(project=>project.slug===slug);
     assert.ok(match,"Missing project "+slug);
     assert.equal(match.name,name);
     assert.equal(match.kind,"Project");
-    assert.equal(match.status,"coming-soon");
+    assert.equal(match.status,"in-progress");
     assert.equal(match.repository,null);
-    assert.equal(publicStatus(match),"Coming Soon");
-    assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug===slug)),"Coming Soon");
+    assert.equal(publicStatus(match),"In Progress");
+    assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug===slug)),"In Progress");
     assert.equal(PUBLIC_ICONS[slug],slug);
     assert.equal(PRIVATE_ICONS[slug],slug);
     const [pub,priv]=await Promise.all([
@@ -606,7 +606,7 @@ test("all sixteen public icon URLs are revisioned by actual SVG bytes and agree 
 });
 
 test("Public and private badge semantics and ordering agree for every project",async()=>{
-  const expected={Ready:["colosseum"],Review:["bootscript","translucence-lab","github-readme-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"],"In Progress":["chatgpt-chat-save-chrome-extension"],"Coming Soon":["terminal-scalars","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","apple-adobe-fx","app-caviar","hidden-functions","latexcel"]};
+  const expected={Ready:[],Review:["bootscript","translucence-lab","github-readme-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"],"In Progress":["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"],"Coming Soon":["colosseum","terminal-scalars","apple-adobe-fx","app-caviar"]};
   for(const [label,slugs] of Object.entries(expected)){
     assert.deepEqual(PUBLIC_PROJECTS.filter(p=>publicStatus(p)===label).map(p=>p.slug),slugs);
     assert.deepEqual(PRIVATE_PROJECTS.filter(p=>privateStatus(p)===label).map(p=>p.slug),slugs);

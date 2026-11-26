@@ -8,18 +8,18 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"review",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"review",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
- {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"ready"},
+ {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"coming-soon"},
  {slug:"apple-hig-reader",name:"Apple HIGs Reader",kind:"Documentation reader",repository:"lukehanna12/apple-higs-reader",status:"review"},
  {slug:"terminal-scalars",name:"Terminal Scalars",kind:"Terminal utility",repository:null},
  {slug:"unicode-plus",name:"Unicode Plus",kind:"Unicode utility",repository:"lukehanna12/unicode-plus",status:"review"},
- {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null},
- {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null},
+ {slug:"liquid-plexiglass-26",name:"Liquid Plexiglass 26",kind:"Material research",repository:null,status:"in-progress"},
+ {slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null,status:"in-progress"},
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
  {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Chrome extension and CLI",repository:"lukehanna12/protocol-monitor-pruner",status:"review"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
  {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"review"},
- {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},
- {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"coming-soon"}
+ {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"in-progress"},
+ {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"in-progress"}
 ]);
 const PHOTO_ROUTES=Object.freeze([
  "projects","colosseum/readme","colosseum/utilities","colosseum/collections",
