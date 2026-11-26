@@ -50,7 +50,7 @@ try{
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
-  const home=await state();
+  const home=await state(),homeReadyMs=Date.now()-t;
   if(process.env.LG_REAL_LOGIN){
    await ev(`document.querySelector(".cta6-bottom-action a[href='/login']").click()`);
    await wait(`location.pathname==="/login"&&document.querySelector(".auth3-root form")&&window.__dashboardWebGPU?.authGlass?.opacity>=.99`,"Actual login not rendered");
@@ -128,8 +128,12 @@ try{
    results.push({mode,cases});continue;
   }
   if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
+  const entryStart=Date.now();
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
+  const firstProjectFrameMs=Date.now()-entryStart;
+  if(process.env.LG_COLD_ENTRY)await wait(`document.querySelector(".public-projects-root.is-settled")&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>=15`,"Complete Projects entry not ready");
+  const projectEntryMs=Date.now()-entryStart;
   await sleep(400);
   const projects=await state();if(process.env.LG_REAL_ART_DIR){
    // Artwork is intentionally not assigned a source until user interaction.
@@ -173,7 +177,7 @@ try{
    await ev(`document.querySelector(".public-projects-back").click()`);await wait(`window.__dofPublicRouter.state==="home"&&!document.querySelector(".public-projects-root")`,"Return to Home not complete");await capture("home");
    results.push({mode,steps});continue;
   }
-  if(process.env.LG_TITLE_SMOKE){results.push({mode,home,projects,font,fontMetrics});continue;}
+  if(process.env.LG_TITLE_SMOKE){results.push({mode,home,projects,font,fontMetrics,homeReadyMs,firstProjectFrameMs,projectEntryMs});continue;}
   const scroll=await ev(`(async()=>{const outlet=document.querySelector("#public-route-content"),a=window.__dashboardWebGPU.frameCount,t=performance.now(),frames=[];for(let i=0;i<12;i++){outlet.scrollTop=Math.max(0,Math.min(outlet.scrollHeight-outlet.clientHeight,i*17.25));await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now());}return {ms:performance.now()-t,frameDelta:window.__dashboardWebGPU.frameCount-a,scroll:outlet.scrollTop,intervals:frames.slice(1).map((v,i)=>v-frames[i])};})()`);
   const afterScroll=await state();
   await send("Emulation.setDeviceMetricsOverride",{width:1024,height:720,deviceScaleFactor:2,mobile:false});await sleep(600);
