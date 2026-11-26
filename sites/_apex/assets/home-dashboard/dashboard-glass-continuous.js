@@ -149,6 +149,9 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));","let nativeWidth=max(fwidth(signed),0.0001);");
  s=once(s,"let signedRatio=nativeHalf1(-signed/nativeWidth);","let signedRatio=-signed/nativeWidth;");
  s=once(s,"nativeHalf1(clamp(0.5+signedRatio,0.0,1.0))","clamp(0.5+signedRatio,0.0,1.0)");
+ // Exact area integral for the axis-aligned zero-radius rectangle. A
+ // fwidth ramp is retained for the recovered curved-material coverage.
+ s=once(s,"let coverage=select(clamp(0.5+signedRatio,0.0,1.0),\n    glyphCoverage,glassTitle);","let baseCoverage=select(clamp(0.5+signedRatio,0.0,1.0),glyphCoverage,glassTitle);\n  let footprint=max(fwidth(in.local),vec2<f32>(0.0001));\n  let a=max(in.local-footprint*.5,vec2<f32>(0.0));let b=min(in.local+footprint*.5,dimensions);\n  let covered=clamp((b-a)/footprint,vec2<f32>(0.0),vec2<f32>(1.0));\n  let coverage=select(baseCoverage,covered.x*covered.y,!glassTitle&&tile.properties.w==4.0&&tile.properties.x==0.0&&tile.motion.w<=0.0);");
  s=once(s,"let baseUV=nativeHalf2(backdropPosition/backdropExtent);","let baseUV=backdropPosition/backdropExtent;");
  s=once(s,"let innerUV=nativeHalf2(baseUV+nativeHalf2(\n    field.yz*inner*displacementFactor/backdropExtent));","let innerUV=baseUV+field.yz*inner*displacementFactor/backdropExtent;");
  s=once(s,"let outerUV=nativeHalf2(baseUV+nativeHalf2(\n    field.yz*outer*displacementFactor/backdropExtent));","let outerUV=baseUV+field.yz*outer*displacementFactor/backdropExtent;");
