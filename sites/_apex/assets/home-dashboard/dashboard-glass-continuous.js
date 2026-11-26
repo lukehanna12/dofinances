@@ -103,6 +103,12 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"field=mode5SDF(in.local,dimensions,tile.cornerRadii);","let local=select(in.local,in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w),authPane&&tile.motion.w<=0.0&&state.tintMeta.z>=0.0);\n    field=mode5SDF(local,dimensions,tile.cornerRadii);");
  s=once(s,"return textureLoad(backdrop,coord,0);","// Reconstruct the fixed logical source at the current output sample.\n  let dims=vec2<f32>(textureDimensions(backdrop,0));\n  if(all(abs(input.uv*dims-input.position.xy)<vec2<f32>(0.001))){return textureLoad(backdrop,coord,0);}\n  return levelBilinear(input.uv,0);");
  s=once(s,"  tintMeta: vec4<f32>, // tint enabled, dark scheme, +1 diagnostic overlay / -1 optical-only underlay / 0 display, vertical offset","  tintMeta: vec4<f32>, // existing material and vertical offset\n  raster: vec4<f32>, // actual target lattice dimensions, independent of geometry extent");
+ // Rasterization must invoke the SDF coverage operator for partially
+ // covered pixels whose centers lie just outside the logical rectangle.
+ // One target-pixel guard is sufficient for the retained fwidth support;
+ // no change to the underlying geometry, hit area or dismissal animation.
+ s=once(s,"let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);","let guard=select(vec2<f32>(0.0),state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0))/(scale*diffuseScale),tile.properties.y!=-8.0&&dismiss<=0.0);\n  let local=uv*tile.rect.zw+(uv*2.0-vec2<f32>(1.0))*guard;\n  let p=center+(local-tile.rect.zw*.5)*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);");
+ s=once(s,"out.local=uv*tile.rect.zw;","out.local=local;");
  s=once(s,"var backdropPosition=in.position.xy;","var backdropPosition=geometryPosition(in.position.xy);");
  s=once(s,"in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)","geometryPosition(in.position.xy)-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)");
  s=once(s,"let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);","let px=geometryPosition(in.position.xy).x;let edgeDistance=min(px,state.viewport.x-px);");
