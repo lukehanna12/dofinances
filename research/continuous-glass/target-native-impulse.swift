@@ -46,6 +46,7 @@ func hex(_ a:[UInt8])->String{a.map{String(format:"%02x",$0)}.joined()}
 let digest=hex(Array(SHA256.hash(data:Data(pixels))))
 let row=Array(pixels[(48*w*4)..<(49*w*4)])
 let alpha=(0..<(w*h)).filter{pixels[$0*4+3]==255}.count
-let gray=(0..<(w*h)).filter{pixels[$0*4]==pixels[$0*4+1]&&pixels[$0*4+1]==pixels[$0*4+2]}.count
+var gray=0
+for i in 0..<(w*h){let j=i*4;let b=pixels[j],g=pixels[j+1],r=pixels[j+2];if b==g && g==r{gray+=1}}
 print("ROW",x,width,style,digest,alpha,gray,hex(row))
 win.contentView=nil
