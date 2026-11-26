@@ -264,7 +264,7 @@ test("App Caviar uses the attached local WebP and the requested artworks are ass
  assert.ok(height>=1750&&height<=1752,"Preserve the original portrait aspect ratio");
  assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v2.webp");
  assert.equal(PROJECT_CARD_IMAGES["latexcel"],"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
- assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg");
+ assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg");
 });
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
  const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
@@ -421,9 +421,9 @@ test("Lightworks has one canonical slug and an atomic data migration",()=>{
  assert.ok(store.includes("lightworks-custom-"));
 });
 
-// The two portrait assets retain their original composition within the artwork budget.
+// The two local JPEG assets retain their original composition within the artwork budget.
 test("Replaced project artwork has valid JPEG signatures and synchronized lightweight files",()=>{
- for(const [slug,name,width,height] of [["apple-adobe-fx","apple-adobe-fx-bronze-sculpture.v2.jpg",1087,1440],["hidden-functions","hidden-functions-rockwell-stairway.v2.jpg",842,1024]]){
+ for(const [slug,name,width,height] of [["apple-adobe-fx","apple-adobe-fx-bronze-sculpture.v2.jpg",1087,1440],["hidden-functions","hidden-functions-rockwell-shadow-artist.v3.jpg",545,550]]){
   const a=readFileSync(new URL("../sites/_apex/assets/project-art/"+name,import.meta.url));
   const b=readFileSync(new URL("../public/assets/project-art/"+name,import.meta.url));
   assert.equal(a[0],0xff);assert.equal(a[1],0xd8);assert.equal(a[a.length-2],0xff);assert.equal(a[a.length-1],0xd9);

@@ -316,8 +316,8 @@ jobs:
           test -s dist/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp
           test -s dist/assets/project-art/bootscript-polo-ponies.v1.webp
           cmp sites/_apex/assets/project-art/bootscript-polo-ponies.v1.webp public/assets/project-art/bootscript-polo-ponies.v1.webp
-          test -s dist/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg
-          cmp sites/_apex/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg public/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg
+          test -s dist/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg
+          cmp sites/_apex/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg public/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg
           test -s dist/assets/project-art/ozoning-board-el-khasne.v1.webp
           cmp sites/_apex/assets/project-art/ozoning-board-el-khasne.v1.webp public/assets/project-art/ozoning-board-el-khasne.v1.webp
           test -s dist/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp
@@ -428,6 +428,7 @@ jobs:
             /assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp \
             /assets/project-art/chatstore-hokusai-merchant.v1.webp \
             /assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg \
+            /assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg \
             /assets/project-art/terminal-scalars-liquid-symmetry.v3.webp \
             /assets/home-dashboard/dashboard-gpu-renderer.js \
             /assets/home-dashboard/dashboard-mosaic.js \

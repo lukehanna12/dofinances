@@ -71,8 +71,8 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   // Source: https://dam-media.fra1.digitaloceanspaces.com/Mohr2020_22_P3010_8_b0152949c4.jpg
   "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
   "app-caviar":"/assets/project-art/app-caviar-source.v2.webp",
-  // Norman Rockwell, What a Protection Electric Is (Old Man on Stairway), 1925.
-  "hidden-functions":"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg",
+  // Norman Rockwell, Shadow Artist, 1920. Smithsonian American Art Museum exhibition.
+  "hidden-functions":"/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg",
   "latexcel":"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg",
   "unicode-plus":"https://d3d00swyhr67nd.cloudfront.net/w1200h1200/collection/NTI/DYP/NTI_DYP_453771-001.jpg",
   "protocol-monitor-pruner":"https://most-famous-paintings.com/media-resize/960/artworks/images-full/76/18/76183ece8e74b1c3404d66a0bc2e70a6.jpg.webp",

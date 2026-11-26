@@ -37,7 +37,7 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.equal(publicProjectImage({slug:"chatgpt-chat-save-chrome-extension"},3),"/assets/project-art/chatstore-hokusai-merchant.v1.webp");
   assert.equal(publicProjectImage({slug:"apple-adobe-fx"},10),"/assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg");
   assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v2.webp");
-  assert.equal(publicProjectImage({slug:"hidden-functions"},14),"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg");
+  assert.equal(publicProjectImage({slug:"hidden-functions"},14),"/assets/project-art/hidden-functions-rockwell-shadow-artist.v3.jpg");
   assert.equal(publicProjectImage({slug:"latexcel"},15),"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
   const fallback=publicProjectImage({slug:"__unassigned__"},12);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);
@@ -119,6 +119,7 @@ test("Named art sources match and the retired Piranesi crop is removed from both
   ]);
   for(const css of [publicCSS,privateCSS]){
     assert.ok(!css.includes('[data-project-slug="hidden-functions"]'),"Remove the old artwork-specific crop");
+    assert.match(css,/\[data-project-slug="apple-adobe-fx"\] \.project-showcase-photo\{\s*object-position:50% 0%;transform-origin:50% 0%/);
   }
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
 });

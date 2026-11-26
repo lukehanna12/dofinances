@@ -153,6 +153,9 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:scale(1.04)
 }
+.public-projects-root .project-showcase-card[data-project-slug="apple-adobe-fx"] .project-showcase-photo{
+  object-position:50% 0%;transform-origin:50% 0%
+}
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
   object-position:50% 66%
 }
