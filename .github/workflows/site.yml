@@ -403,7 +403,7 @@ jobs:
           trap 'rm -f "$home"' EXIT
           curl --retry 3 --retry-delay 2 -fsSL --max-time 20 https://dofinances.com/ -o "$home"
           grep -Fq 'id="cta6-mosaic"' "$home"
-          grep -Fq 'id="dashboard-title">DoFinances' "$home"
+          grep -Fq 'id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text">DoFinances' "$home"
           grep -Fq 'Quick Downloads' "$home"
           grep -Fq 'href="/login">Sign in' "$home"
           for path in \

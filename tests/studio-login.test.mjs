@@ -15,7 +15,7 @@ test("the public shell persists across / and /login; no login document recreates
   ]);
   assert.match(home, /name="dofinances-app-shell"/);
   assert.match(home, /id="public-route-content"[^>]*hidden/);
-  assert.match(home, /id="dashboard-title">DoFinances<\/h1>/);
+  assert.match(home, /id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text">DoFinances<\/h1>/);
   assert.match(home, /id="global-menu"/);
   assert.match(route, /history\.pushState/);
   assert.match(route, /history\.back\(\)/);
@@ -64,7 +64,7 @@ test("the live shell owns the top bar, fixed dark palette and compact doof mark"
   assert.match(home,/<nav class="global-menu" id="global-menu"/);
   assert.match(home,/<html lang="en" data-dof-theme="dark">/);
   assert.doesNotMatch(home,/public-theme-toggle|public-theme\.(js|css)|doof-theme-toggle/);
-  assert.match(home,/id="dashboard-title">DoFinances<\/h1>/);
+  assert.match(home,/id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text">DoFinances<\/h1>/);
   assert.doesNotMatch(auth,/id="global-menu"|doof-theme-toggle|data-auth-scene/);
   assert.match(auth,/const isDark = true;/);
   assert.match(renderer,/let restoreStart=null;/);

@@ -611,7 +611,8 @@ body.public-home #cta6-mosaic[data-glass-startup="pending"] .cta6-icon{
 }
 
 /* Authored semantic text remains visible until its shared GPU field is ready. */
-body.public-home[data-auth-gpu-scene="ready"] [data-glass-text-ready]{
+body.public-home[data-gpu-scene="ready"]:not([data-public-route]) .cta6-center > #dashboard-title[data-glass-text-ready],
+body.public-home[data-auth-gpu-scene="ready"] .public-projects-root [data-glass-text-ready]{
   color:transparent!important;
   -webkit-text-fill-color:transparent!important
 }

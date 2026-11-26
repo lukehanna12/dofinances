@@ -71,7 +71,7 @@ export function contourDeviation(a,b){
 }
 const cache=new Map();
 export function localTitleContours(text,style,logicalHeight){
- if(text!=="Projects"||style.direction!=="ltr"||!(logicalHeight>0))return null;
+ if(!["Projects","DoFinances"].includes(text)||style.direction!=="ltr"||!(logicalHeight>0))return null;
  const key=JSON.stringify([text,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.fontKerning,logicalHeight,document.fonts?.status]);
  if(cache.has(key))return cache.get(key);
  const t=performance.now();let result=null;

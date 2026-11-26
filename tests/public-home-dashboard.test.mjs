@@ -13,7 +13,7 @@ const original=asset("app/assets/dashboard-home.css");
 const mirrored=asset("assets/home-dashboard/dashboard-home.css");
 test("Apex homepage is the independent public copy of the live Dashboard",()=>{
   assert.match(home,/<section class="view dashboard-home" data-view="dashboard"/);
-  assert.match(home,/<h1 id="dashboard-title">DoFinances<\/h1>/);
+  assert.match(home,/<h1 id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text">DoFinances<\/h1>/);
   assert.match(home,/<div id="cta6-mosaic" class="cta6-mosaic"/);
   assert.match(home,/src="\/assets\/home-dashboard\/dashboard-home-loader\.js"/);
   assert.deepEqual(mirrored,original,"Preserve exact private-dashboard lattice and optics styling");
@@ -397,4 +397,14 @@ test("public DoFinances wordmark shares Projects typography without changing its
     assert.ok(projects.includes("var(--public-heading-"+field+")"));
   }
   assert.match(style,/body\.public-home #dashboard-title\{[^}]*white-space:nowrap/);
+});
+
+test("Home wordmark shares the actual clock-text glass pipeline, not just CSS typography",()=>{
+ const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
+ const local=asset("assets/home-dashboard/dashboard-glass-local-title.js");
+ assert.match(home,/id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text"/);
+ assert.match(renderer,/ctas\.push\(brand\)/);
+ assert.match(renderer,/pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
+ assert.match(local,/\["Projects","DoFinances"\]\.includes\(text\)/);
+ assert.match(style,/\.cta6-center > #dashboard-title\[data-glass-text-ready\]/);
 });

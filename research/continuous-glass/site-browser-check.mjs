@@ -54,7 +54,9 @@ try{
   const t=Date.now();await send("Page.navigate",{url:origin+"/?"+(["default","fallback"].includes(mode)?"":"glass-renderer="+mode)+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   await wait('window.__dashboardWebGPU?.glassSilhouettes?.homeIcons?.length>0',"Home icon glass not rendered");
+  await wait('window.__dashboardWebGPU?.homeCtaGlass?.brandGlyphGlass&&document.querySelector("#dashboard-title").hasAttribute("data-glass-text-ready")',"Home clock-text glass not rendered");
   const home=await state(),homeReadyMs=Date.now()-t;
+  if(home.title?.text!=="DoFinances"||home.title?.material!=="clock-text"||home.title.nonzeroPixels<100||((mode==="default"||mode==="continuous")&&!process.env.LG_TITLE_OUTLINE&&!process.env.LG_PORTABLE_TITLE&&!home.title.vectorOptics))throw Error("Home wordmark glyph regression "+JSON.stringify(home.title));
   const homeIcons=await ev(`(()=>{const a=window.__dashboardWebGPU,icons=a.glassSilhouettes.homeIcons;
     return {icons,errors:a.errors,owned:[...document.querySelectorAll(".cta6-icon[data-glass-icon-owned]")].every(img=>getComputedStyle(img).clipPath!=="none")};})()`);
   if(!homeIcons.icons.length||homeIcons.errors.length||!homeIcons.owned||homeIcons.icons.some(i=>i.tint!=="white"||Math.abs(i.tintOpacity-.2)>1e-7||((mode==="continuous"||mode==="default")&&(!i.continuousVector||!i.vectorCoverage))))throw Error("Home silhouette regression "+JSON.stringify(homeIcons));
@@ -65,7 +67,7 @@ try{
     const after=await ev("window.__dashboardWebGPU.frameCount");
     const result=await ev(`(()=>{const a=window.__dashboardWebGPU;return {homeIcons:a.glassSilhouettes.homeIcons,errors:a.errors,cache:a.glassSilhouettes.continuousSampleCache,track:a.track};})()`);
     if(result.errors.length)throw Error(JSON.stringify(result.errors));
-    results.push({mode,homeReadyMs,frames:after-before,elapsedMs:Date.now()-start,...result});continue;
+    results.push({mode,homeReadyMs,wordmark:home.title,frames:after-before,elapsedMs:Date.now()-start,...result});continue;
   }
   if(mode==="default"&&home.renderer!=="continuous-candidate")throw Error("Default renderer did not activate "+JSON.stringify(home));
   if(mode==="fallback"){const reason=await ev("window.__dashboardWebGPU.continuousStartupFallback");if(home.renderer!=="baseline"||!reason||home.errors.length)throw Error("Candidate startup did not preserve baseline "+JSON.stringify({home,reason}));results.push({mode,home,reason});continue;}

@@ -145,7 +145,15 @@ function authPaneElements(){
     '[data-auth-glass-input],[data-auth-glass-submit],[data-auth-glass-provider]'
   ),...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY);
   const projects=document.querySelector(".public-projects-root");
-  if(!projects)return texts.length||dropdowns.length?[...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY):[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
+  if(!projects){
+    if(texts.length||dropdowns.length)return [...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY);
+    const ctas=[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
+    const brand=document.querySelector(".cta6-center > #dashboard-title[data-glass-text]");
+    // Only the unscaled Home wordmark owns the glyph field here. The
+    // persistent compact wordmark keeps its DOM fallback on other routes.
+    if(brand&&homeActive()&&routeOutlet?.hidden&&!document.body.dataset.publicRoute)ctas.push(brand);
+    return ctas;
+  }
   const all=[...new Set([...projects.querySelectorAll("[data-public-project-glass]"),...texts,...dropdowns])];
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
@@ -1231,7 +1239,8 @@ async function initialize(){
     glyphMaskOwner=null;if(!title)return;
     const style=getComputedStyle(title),rect=title.getBoundingClientRect();
     const width=Math.max(1,Math.ceil(rect.width*dpr)),height=Math.max(1,Math.ceil(rect.height*dpr)),text=title.textContent||"";
-    const layout=continuous?.titleAvailable?makeLayoutData(title,dpr,authOriginTop()):null;
+    const homeBrand=title.id==="dashboard-title";
+    const layout=continuous?.titleAvailable?makeLayoutData(title,dpr,homeBrand?sceneTop:authOriginTop()):null;
     const phase=layout?layout.slice(0,2).map(v=>{const n=.5-Math.fround(v);return n-Math.floor(n);}):[.5,.5];
     const geometrySignature=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,
       style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
@@ -1263,7 +1272,7 @@ async function initialize(){
       if(glyphAlphaTexture&&glyphAlphaTexture!==texture)glyphAlphaTexture.destroy();
       glyphAlphaTexture=vector?texture:null;glyphAlphaKey=vector?geometrySignature:"";
       if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
-      audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
+      audit.projectTitleMask={text,owner:homeBrand?"home-brand":"route-heading",source:"computed-font contour and alpha only; no DOM or wallpaper capture",
         width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,titleMode:continuous?.titleMode||"system",localEvidence:vector?.localEvidence,
         pipeline:"shared-webgpu-glassPipeline",nativeEvidence:"2f4217b4530654e6e9fd432c9834528c0fdd2e89"};
     }catch(error){title.removeAttribute("data-glass-text-ready");console.warn("Glass heading contour:",String(error));}
@@ -1313,7 +1322,8 @@ async function initialize(){
           Number.parseFloat(getComputedStyle(node).opacity)||0)):
         projects?Math.max(0,Math.min(1,
           Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
-      tileData[p+18]=paneOpacity;tileData[p+19]=0;
+      const homeBrand=homeCtas&&node.id==="dashboard-title";
+      tileData[p+18]=paneOpacity*(homeBrand?Math.max(0,Math.min(1,Number.parseFloat(getComputedStyle(node.parentElement).opacity)||0)):1);tileData[p+19]=0;
       const projectRole=node.dataset.publicProjectGlass;
       if(projects&&projectDismissElapsed>=0&&
          PROJECT_HEADER_DISMISS_ROLES.has(projectRole)){
@@ -1413,14 +1423,16 @@ async function initialize(){
       projects||homeCtas||card?.hasAttribute("data-glass-dropdown")?"independent":"nested",projects?panes:null);
     if(homeCtas){
       audit.homeCtaGlass={renderer:"shared-webgpu-glassPipeline",
-        materialTag:-9,face:"shared-per-surface-Clear",count:panes.length,roles,
+        materialTag:-9,face:"shared-per-surface-Clear",count:panes.filter(node=>node.hasAttribute("data-home-cta-glass")).length,roles:roles.slice(0,3),
+        brandSlot:panes.findIndex(node=>node.id==="dashboard-title"),
+        brandGlyphGlass:glyphMaskOwner?.id==="dashboard-title",
         tintModel:"shared-square-film",tintFilmStrength:0.25,
         pressLightGain:GLASS_INTERACTION.pressLight,
         geometry:"oracle-finite-per-surface-min-dimension",
         layers:PUBLIC_HOME_GLASS_LAYERS.map(x=>({...x})),
         backdrop:"GPU-composited-moving-squares",
         compositeFrames:homeCompositeFrames,
-        liveGeometry:true,capsules:panes.map((node,i)=>{
+        liveGeometry:true,capsules:panes.slice(0,3).map((node,i)=>{
           const p=(tileCount+i)*TILE_FLOATS;
           return {width:tileData[p+2]/dpr,height:tileData[p+3]/dpr,
             radius:tileData[p+4]/dpr,renderMode:tileData[p+7],
@@ -1430,7 +1442,9 @@ async function initialize(){
             tint:Number.parseFloat(getComputedStyle(node).getPropertyValue("--home-cta-tint"))||0};
         })};
       audit.authGlass=null;audit.projectGlass=null;
-      return homeGroupOpacity>.001&&homeGroupOpacity<.999;
+      const brand=panes.find(node=>node.id==="dashboard-title");
+      const brandOpacity=brand?Number.parseFloat(getComputedStyle(brand.parentElement).opacity):1;
+      return homeGroupOpacity>.001&&homeGroupOpacity<.999||brandOpacity<.999;
     }
     audit.homeCtaGlass=null;
     if(projects){
@@ -1874,6 +1888,12 @@ async function initialize(){
         // capsules sample the GPU frame including live moving squares.
         pass.setBindGroup(0,homeCompositeActive?homeCapsuleGroup:glassGroup);
         pass.draw(6,audit.homeCtaGlass.count,0,tileCount);
+        if(audit.homeCtaGlass.brandGlyphGlass&&audit.homeCtaGlass.brandSlot>=0){
+          // Same clock-text material and static scene source as the
+          // Projects heading. No separate full-screen capture or mip pass.
+          pass.setBindGroup(0,glassGroup);
+          pass.draw(6,1,0,tileCount+audit.homeCtaGlass.brandSlot);
+        }
       }
     }
     pass.end();
