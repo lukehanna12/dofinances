@@ -53,9 +53,10 @@ test("the sign-in route owns the card entrance and reversed exit, not homepage a
   assert.match(shell,/function finishClose\(\)/);
   assert.match(gpu,/dofinances:home-restore/);
   assert.match(gpu,/DISMISS_MS-\(performance\.now\(\)-restoreStart\)/);
-  assert.match(shell,/positionCompactLogo/);
+  assert.doesNotMatch(shell,/positionCompactLogo|--doof-exit-y/);
+  assert.match(shell,/function dismissHome\(/);
 });
-test("the live shell owns the top bar, fixed dark palette and compact doof mark",async()=>{
+test("the live shell owns the top bar, fixed dark palette and Home-only wordmark",async()=>{
   const [home,auth,renderer]=await Promise.all([
     load("../sites/_apex/index.html"),
     load("../src/components/Auth3.jsx"),
