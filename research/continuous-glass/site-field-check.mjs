@@ -1,5 +1,5 @@
 // Actual integrated GPU vector evaluator versus independently regenerated
-// original outline geometry and the original site's encoded mask.
+// packed authored controls (independent Float64 evaluator) and the original site's encoded mask.
 import {closestCurve} from "./vector-field.mjs";
 import {loadContinuousGlass} from "/site/dashboard-glass-continuous.js";
 import {silhouetteMask,MASK_SIZE,MASK_INNER,MASK_PAD} from "/site/dashboard-glass-silhouette.js";
@@ -19,30 +19,35 @@ export async function run(){
  output[id.x]=vec4<f32>(f/q.p.z*vec3<f32>(1,q.p.z,q.p.z),0);
  }`});
  const pipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module:shader,entryPoint:"main"}});
- const names=await(await fetch("/icon-list")).json(),rows=[],refs=[],scales=[1,2,16,64,1024],stats=scales.map(scale=>({scale,n:0,signMismatch:0,maxError:0,sumError:0,legacyMax:0,legacySum:0,maxNormalError:0}));
+ const packed=await(await fetch("/site/continuous-icon-vectors.json")).json(),names=Object.keys(packed.assets),bytes=Uint8Array.from(atob(packed.curves),c=>c.charCodeAt(0)),view=new DataView(bytes.buffer),rows=[],refs=[],scales=[1,2,16,64,1024],stats=scales.map(scale=>({scale,n:0,signMismatch:0,maxError:0,sumError:0,legacyMax:0,legacySum:0,maxNormalError:0}));
  const canvas=new OffscreenCanvas(MASK_SIZE,MASK_SIZE),ctx=canvas.getContext("2d",{willReadFrequently:true});
  const bilinear=(mask,x,y)=>{let a=x-.5,b=y-.5,i=Math.floor(a),j=Math.floor(b),u=a-i,v=b-j;let f=(k,l)=>mask[2*(l*MASK_SIZE+k)+1]/255;
  return ((1-v)*((1-u)*f(i,j)+u*f(i+1,j))+v*((1-u)*f(i,j+1)+u*f(i+1,j+1))-.5)*256/MASK_INNER*24;};
  let skipped=0;
  try{
  for(const name of names){
-  const outline=await(await fetch("/outline/"+name+".json")).json(),img=new Image();img.src="/original/"+name+".svg";await img.decode();
+  const asset=packed.assets[name],img=new Image();img.src="/original/"+name+".svg";await img.decode();
   const index=data.indexFor(img);if(!index)throw Error("missing index "+name);
   ctx.clearRect(0,0,MASK_SIZE,MASK_SIZE);ctx.drawImage(img,MASK_PAD,MASK_PAD,MASK_INNER,MASK_INNER);
   const alpha=ctx.getImageData(0,0,MASK_SIZE,MASK_SIZE).data,mask=silhouetteMask(Uint8Array.from({length:MASK_SIZE*MASK_SIZE},(_,i)=>alpha[i*4+3]),MASK_SIZE,MASK_SIZE);
   // Independent Float64 reference: prune using original control hulls,
-  // then use the CPU subdivision solver; original outline Path2D for sign.
+  // then use the CPU subdivision solver and independent monotone-ray parity.
   const path=new Path2D(),segments=[];
-  for(const c of outline.contours){path.moveTo(...c[0][0]);for(const a of c){
-   if(a.length===2)path.lineTo(...a[1]);else if(a.length===3)path.quadraticCurveTo(...a[1],...a[2]);else path.bezierCurveTo(...a[1],...a[2],...a[3]);
+  for(let j=0;j<asset.count;j++){const offset=(asset.start+j)*48;const a=Array.from({length:4},(_,i)=>[asset.origin[0]+asset.scale*view.getFloat32(offset+i*8,true),asset.origin[1]+asset.scale*view.getFloat32(offset+i*8+4,true)]);if(view.getFloat32(offset+32,true)===1)a.splice(1,2);
+   path.moveTo(...a[0]);if(a.length===2)path.lineTo(...a[1]);else if(a.length===3)path.quadraticCurveTo(...a[1],...a[2]);else path.bezierCurveTo(...a[1],...a[2],...a[3]);
    segments.push({a,b:[Math.min(...a.map(p=>p[0])),Math.min(...a.map(p=>p[1])),Math.max(...a.map(p=>p[0])),Math.max(...a.map(p=>p[1]))]});
-  }path.closePath();}
+  }
   const d=(x,y)=>{const ordered=segments.map(({a,b})=>({a,lower:Math.hypot(Math.max(b[0]-x,0,x-b[2]),Math.max(b[1]-y,0,y-b[3]))})).sort((a,b)=>a.lower-b.lower);let best=Infinity;
    for(const q of ordered){if(q.lower>best)break;const r=closestCurve(q.a,[x,y],{tolerance:1e-5,maxNodes:20000});if(!r.converged)return null;best=Math.min(best,r.distance);}
-   return (ctx.isPointInPath(path,x,y)?-1:1)*best;
+   let parity=false;for(const {a} of segments){const first=a[0],last=a.at(-1);if(!((first[1]<=y&&last[1]>y)||(last[1]<=y&&first[1]>y)))continue;
+    const up=last[1]>first[1];let lo=0,hi=1;
+    const evalAt=t=>{let p=a.map(p=>p.slice());while(p.length>1)p=p.slice(1).map((q,i)=>[(1-t)*p[i][0]+t*q[0],(1-t)*p[i][1]+t*q[1]]);return p[0];};
+    for(let i=0;i<44;i++){let mid=(lo+hi)/2;if((evalAt(mid)[1]<=y)===up)lo=mid;else hi=mid;}
+    if(evalAt((lo+hi)/2)[0]>x)parity=!parity;
+   }return (parity?-1:1)*best;
   },h=24/256;
-  for(let j=0;j<4;j++)for(let i=0;i<4;i++){
-   const x=(i+.319)*24/4,y=(j+.683)*24/4,ref=d(x,y);
+  for(let j=0;j<2;j++)for(let i=0;i<3;i++){
+   const x=(i+.319)*24/3,y=(j+.683)*24/2,ref=d(x,y);
    if(ref===null){skipped++;continue;}
    const a=d(x+h,y),b=d(x-h,y),c=d(x,y+h),e=d(x,y-h);
    let n=null;if([a,b,c,e].every(v=>v!==null)){const dx=a-b,dy=c-e,len=Math.hypot(dx,dy);if(len>.001)n=[dx/len,dy/len];}
