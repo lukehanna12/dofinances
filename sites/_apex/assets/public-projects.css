@@ -254,6 +254,9 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   color:#f8f8f8;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;
   -webkit-user-select:text;user-select:text;cursor:text
 }
+.public-projects-root .project-showcase-description-footnote{
+  display:block;margin-top:.85em;font-size:.85em;color:rgba(248,248,248,.82)
+}
 /* The card is a native button, whose default selection policy would
  * otherwise prevent selecting its paragraph. Re-enable hit testing only
  * for settled, live description text; never for moving/dissolving cards. */

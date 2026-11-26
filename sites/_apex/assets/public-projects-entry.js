@@ -5,7 +5,7 @@ import {registerGlassText} from "./home-dashboard/dashboard-glass-text.js";
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
  * Cards expand locally; the expanded See project link opens a public detail view.
  */
-import {PROJECT_SHOWCASE,PROJECT_DESCRIPTIONS,PROJECT_CARD_IMAGES,publicProjectIconSource,
+import {PROJECT_SHOWCASE,PROJECT_DESCRIPTIONS,PROJECT_DESCRIPTION_FOOTNOTES,PROJECT_CARD_IMAGES,publicProjectIconSource,
   projectShowcaseStatus,sortProjectShowcase,publicProjectImage,publicProjectArtworkSource,publicProjectHref,projectFromPublicHash} from "./public-projects-catalog.js";
 import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
@@ -121,6 +121,8 @@ function makeCard(project,index,{detail=false}={}){
   const description=el("span","project-showcase-description",PROJECT_DESCRIPTIONS[project.slug]);
   description.id="project-description-"+project.slug;
   description.setAttribute("role","paragraph");
+  const footnote=PROJECT_DESCRIPTION_FOOTNOTES[project.slug];
+  if(footnote)description.append(el("span","project-showcase-description-footnote",footnote));
   description.setAttribute("aria-hidden","true");
   const details=el("span","project-showcase-expanded-detail");
   details.append(description,createProjectDiagrams(project.slug));

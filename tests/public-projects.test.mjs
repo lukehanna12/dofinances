@@ -7,7 +7,7 @@ import {
   projectShowcaseStatus as privateStatus
 } from "../sites/_apex/app/assets/project-showcase.js";
 import {
-  PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_DESCRIPTIONS,PROJECT_CARD_ICONS as PUBLIC_ICONS,
+  PROJECT_SHOWCASE as PUBLIC_PROJECTS,PROJECT_DESCRIPTIONS,PROJECT_DESCRIPTION_FOOTNOTES,PROJECT_CARD_ICONS as PUBLIC_ICONS,
   PROJECT_CARD_IMAGES as PUBLIC_IMAGES,publicProjectImage,publicProjectIconSource,sortProjectShowcase,
   projectShowcaseStatus as publicStatus
 } from "../sites/_apex/assets/public-projects-catalog.js";
@@ -450,7 +450,7 @@ test("project title-band, action, badge clearance and switch geometry share expa
  assert.match(exp,/rect\.left\+=originDX;rect\.top\+=originDY/);
 });
 
-test("every public project has a single substantive, source-conscious paragraph",()=>{
+test("every public project has a single substantive, source-conscious paragraph",async()=>{
   assert.deepEqual(Object.keys(PROJECT_DESCRIPTIONS).sort(),PUBLIC_PROJECTS.map(p=>p.slug).sort());
   for(const [slug,copy] of Object.entries(PROJECT_DESCRIPTIONS)){
     assert.ok(copy.length>=250&&copy.length<750,slug);
@@ -490,7 +490,10 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.equal(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].planned,true);
   assert.deepEqual(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].rows[0],["Chrome extension\nIn-browser control","CLI\nLocal control"]);
   assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
-  assert.equal(PROJECT_DESCRIPTIONS["ozoning-board"],"Ozoning Board is a lightweight MCP for building Vite and React applications entirely in-memory, hosted entirely for free on Google servers. Its architecture leverages Google Apps Script's generous usage allowances, Agent2Agent (A2A) protocols, and expanded support of WASM/ECMAScript Modules (introduced July 2026) to optimize a highly efficient backend workflow, providing AI assistants with extensive access to build tools as well as optionally-remembered collaborative environments. It rivals the vast majority of cloud-compute tools that require payment or impose restrictive free-tier limits since this implementation only requires a user to have a Google Drive account.");
+  assert.equal(PROJECT_DESCRIPTIONS["ozoning-board"],"Ozoning Board is a lightweight MCP for building Vite and React applications entirely in-memory, hosted entirely for free on Google servers. Its architecture leverages Google Apps Script's generous usage allowances, backwards-compatible Agent2Agent (A2A) protocols, and recently expanded¹ support for self-contained WASM loader functions to optimize highly efficient Server-Side Rendering (SSR) and cheaply provide AI assistants with both extensive access to build tools and the option of remembered collaborative environments. It rivals the vast majority of cloud-compute tools, since nearly all require payment or impose restrictive free-tier limits; this implementation only requires a user to have a Google Drive account.");
+  assert.deepEqual(PROJECT_DESCRIPTION_FOOTNOTES,{"ozoning-board":"¹ expanded June 2026"});
+  const entry=await load("../sites/_apex/assets/public-projects-entry.js");
+  assert.match(entry,/if\(footnote\)description\.append\(el\("span","project-showcase-description-footnote",footnote\)\)/);
   assert.equal(publicStatus(PUBLIC_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
   assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
   assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/extensive collection of hidden Google Sheets functions/);
