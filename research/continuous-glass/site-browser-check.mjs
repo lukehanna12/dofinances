@@ -45,7 +45,7 @@ try{
  const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:["baseline","continuous"])){
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
-  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")+(process.env.LG_DENSITY_CHECK?"&glass-source-proof":"")});
+  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();
   if(process.env.LG_REAL_LOGIN){
@@ -78,7 +78,11 @@ try{
     await sleep(250);
     const result=await ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a.status,errors:a.errors,source:a.sourceLattice,route:a.routeCompositeLattice,composition:a.sourceComposition,cache:a.glassSilhouettes?.continuousSampleCache};})()`);
     if(result.status!=="ready"||result.errors.length||result.route.width!==result.source.width||result.route.height!==result.source.height||!result.route.referenceIcons||!result.route.referenceGlyph)throw Error("Reference route underlay failure "+JSON.stringify(result));
-    cases.push({density,...result});
+    // Capture bounded owned optical input arrays, never displayed pixels.
+    const regions=await ev(`(()=>{const icon=document.querySelector(".project-showcase-card [data-glass-silhouette-source]").getBoundingClientRect(),title=document.querySelector(".public-projects-title").getBoundingClientRect(),card=document.querySelector(".project-showcase-card").getBoundingClientRect();return [[Math.floor(icon.x+8),Math.floor(icon.y+8),24,24],[Math.floor(title.x+15),Math.floor(title.y+12),24,24],[Math.floor(card.x+8),Math.floor(card.y+8),24,24],[100,150,24,24]]})()`);
+    const samples=[];
+    for(const region of regions)samples.push(await ev("window.__dashboardGpuControls.sourceRegionDigest('underlay',"+JSON.stringify(region)+",'numeric')"));
+    cases.push({density,...result,regions,samples});
    }
    results.push({mode,cases});continue;
   }

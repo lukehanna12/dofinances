@@ -1402,7 +1402,7 @@ async function initialize(){
     const sourceSized=sw!==sourceWidth||sh!==sourceHeight||!scene;
     const sized=w!==physicalWidth||h!==physicalHeight||sourceSized;
     physicalWidth=w;physicalHeight=h;sourceWidth=sw;sourceHeight=sh;sourceDpr=sourceScale;
-    if(continuous)audit.sourceLattice={width:sw,height:sh,density:sourceScale,outputWidth:w,outputHeight:h,scope:"fixed logical base; dynamic composite uses actual source spacing"};
+    if(continuous)audit.sourceLattice={width:sw,height:sh,density:sourceScale,outputWidth:w,outputHeight:h,scope:"fixed logical base and reference optical attachments"};
     document.body.style.setProperty("--dashboard-scene-top",sceneTop+"px");
     audit.sceneTopCSS=sceneTop;
     audit.sceneCSSHeight=viewport.height;
@@ -2104,7 +2104,7 @@ async function initialize(){
       element.setAttribute("data-glass-material",material);requestRender();
     },
     invalidateBackdrop:()=>{if(!stopped){scenePending=true;requestRender()}},
-    ...(new URLSearchParams(location.search).has("glass-source-proof")?{async sourceRegionDigest(kind,rect){
+    ...(new URLSearchParams(location.search).has("glass-source-proof")?{async sourceRegionDigest(kind,rect,mode="digest"){
       const texture=kind==="base"?scene:kind==="underlay"?(routeActiveLayers.length>1?secondRouteScene:compositeScene):null;
       if(!texture||!Array.isArray(rect)||rect.length!==4||!rect.every(Number.isFinite))throw TypeError("Owned source region required");
       const sampleDpr=kind==="base"?sourceDpr:texture.width/innerWidth;
@@ -2115,6 +2115,8 @@ async function initialize(){
       try{const enc=device.createCommandEncoder({label:"Owned internal source numeric digest (not display)"});
         enc.copyTextureToBuffer({texture,origin:[x,y,0]},{buffer:b,bytesPerRow:stride,rowsPerImage:h},[w,h,1]);device.queue.submit([enc.finish()]);
         await b.mapAsync(GPUMapMode.READ);const bytes=new Uint8Array(b.getMappedRange());
+        if(mode==="numeric"){const v=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),out=[];for(let j=0;j<h;j++)for(let i=0;i<w*4;i++)out.push(v.getFloat16(j*stride+i*2,true));return {width:w,height:h,values:out};}
+        if(mode!=="digest")throw TypeError("Invalid owned source result mode");
         const digest=await crypto.subtle.digest("SHA-256",bytes.slice());
         return Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,"0")).join("");
       }finally{b.destroy();}

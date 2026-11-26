@@ -88,7 +88,7 @@ test("native SVG final coverage is independent of 512px optical mask and haze",(
  assert.match(shader,/mix\(shaded,glass,clamp\(iconCoverage\*icon.params.w/);
  assert.match(v,/new Path2D\(node.getAttribute\("d"\)/);
  assert.match(v,/ctx.stroke\(op.path\)/);
- assert.match(r,/binding:14,resource:silhouetteAtlas.coverageView/);
+ assert.match(r,/binding:14,resource:reference&&referenceBindingView\?referenceBindingView:silhouetteAtlas.coverageView/);
 });
 
 test("haze is display-only and never enters glass optical inputs",()=>{
