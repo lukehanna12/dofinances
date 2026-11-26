@@ -74,6 +74,20 @@ function crossing(c,p){
  }
  return {winding,uncertain};
 }
+function signedArea(c){
+ const origin=c[0][0],g=Math.sqrt(3/5)/2;
+ const nodes=[.5-g,.5,.5+g],weights=[5/18,4/9,5/18];
+ let area=0;
+ for(const s of c){
+  const a=s.map(q=>[q[0]-origin[0],q[1]-origin[1]]),n=a.length-1;
+  const derivative=a.slice(1).map((q,i)=>[(q[0]-a[i][0])*n,(q[1]-a[i][1])*n]);
+  for(let i=0;i<3;i++){
+   const q=evaluate(a,nodes[i]),d=derivative.length===1?derivative[0]:evaluate(derivative,nodes[i]);
+   area+=weights[i]*(q[0]*d[1]-q[1]*d[0]);
+  }
+ }
+ return area/2;
+}
 export function contourField(contours,p,{tolerance=1e-6,fillRule="nonzero",maxNodes=200000}={}){
  point(p);
  if(!Array.isArray(contours)||!contours.length||!["nonzero","evenodd"].includes(fillRule))throw new RangeError("Closed outline contours and valid fill rule required");
@@ -82,12 +96,26 @@ export function contourField(contours,p,{tolerance=1e-6,fillRule="nonzero",maxNo
   if(!Array.isArray(c)||!c.length)throw new RangeError("Empty contour");
   c.forEach(segment);
   for(let i=0;i<c.length;i++)if(dist(c[i].at(-1),c[(i+1)%c.length][0])!==0)throw new RangeError("Contour is not closed");
+ }
+ // Under nonzero fill, a same-direction nested contour may not separate filled
+ // and empty regions. Classify its two sides using other contours' winding
+ // plus its own orientation (signed area from exact polynomial quadrature).
+ for(let i=0;i<contours.length;i++){
+  const c=contours[i];let outsideWinding=0,classificationUncertain=false;
+  for(let j=0;j<contours.length;j++)if(i!==j)for(const s of contours[j]){
+   const w=crossing(s,c[0][0]);outsideWinding+=w.winding;classificationUncertain||=w.uncertain;
+  }
+  const orientation=Math.sign(signedArea(c));
+  if(!orientation||classificationUncertain)throw new RangeError("Degenerate or unresolved contour nesting");
+  const active=fillRule==="evenodd"||(outsideWinding===0)!==(outsideWinding+orientation===0);
   for(const s of c){
-   const a=closestCurve(s,p,{tolerance,maxNodes});nodes+=a.nodes;converged=converged&&a.converged;
+   const w=crossing(s,p);winding+=w.winding;uncertain||=active&&w.uncertain;
+   if(!active)continue;
+   const a=closestCurve(s,p,{tolerance,maxNodes});nodes+=a.nodes;converged&&=a.converged;
    if(!best||a.distance<best.distance)best=a;lower=Math.min(lower,a.lower);
-   const w=crossing(s,p);winding+=w.winding;uncertain=uncertain||w.uncertain;
   }
  }
+ if(!best)throw new RangeError("No active boundary");
  const inside=fillRule==="evenodd"?Math.abs(winding)%2===1:winding!==0;
  const signKnown=!uncertain&&lower>0;
  const signedInterval=signKnown?(inside?[-best.upper,-lower]:[lower,best.upper]):[-best.upper,best.upper];

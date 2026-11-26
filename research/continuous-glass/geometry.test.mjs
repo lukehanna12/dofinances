@@ -73,6 +73,9 @@ test("closed contours, winding and holes, boundaries fail closed",()=>{
  assert.equal(contourField([outer,hole],[0,10]).distance,null);
  assert.equal(contourField([outer,square(5,5,10,10)],[10,10],{fillRule:"evenodd"}).inside,false);
  assert.equal(contourField([outer,square(5,5,10,10)],[10,10]).inside,true);
+ assert.equal(contourField([outer,square(5,5,10,10)],[10,10]).distance,-10);
+ assert.equal(contourField([outer,square(5,5,10,10)],[5,10]).distance,-5);
+ assert.equal(contourField([outer,square(5,5,10,10)],[10,10],{fillRule:"evenodd"}).distance,5);
  assert.throws(()=>contourField([[[[0,0],[1,0]]]],[1,1]));
  const lens=[[[-2,0],[0,-4],[2,0]],[[2,0],[0,4],[-2,0]]];
  assert.equal(contourField([lens],[0,0]).inside,true);
@@ -88,4 +91,13 @@ test("vector field is invariant across coordinate scale with explicit tolerance"
    assert.ok(b.converged);assert.equal(a.inside,b.inside);near(a.distance,b.distance/scale,2e-6);
   }
  }
+});
+
+test("static normal mix and affine normal state remain distinct from geometry",()=>{
+ const x=30,y=17,w=100,h=60,r=12;
+ const a=mode4Field(x,y,w,h,r),b=mode4Field(x,y,w,h,r,{normalBlend:1}),radial=[x,y*w/h],l=Math.hypot(...radial);
+ near(a.distance,b.distance);near(b.opticalNormal[0],radial[0]/l);near(b.opticalNormal[1],radial[1]/l);
+ const c=mode4Field(x,y,w,h,r,{normalBlend:1,normalMatrix:[0,-1,1,0]});
+ near(c.opticalNormal[0],-b.opticalNormal[1]);near(c.opticalNormal[1],b.opticalNormal[0]);
+ assert.equal(mode4Field(0,0,w,h,r,{normalBlend:1}).opticalNormal,null);
 });

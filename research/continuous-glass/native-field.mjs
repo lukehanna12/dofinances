@@ -50,14 +50,25 @@ function quadrant(x,y,hw,hh,r,bx,by){
  return {distance:field.x,gradient:[field.dx,field.dy].every(Number.isFinite)?[field.dx,field.dy]:null,
   opticalNormal:normal,normalized:normalized.x,inner:inner.x,k,hx:hx.x,hy:hy.x,denominator:denom.x};
 }
-export function mode4Field(x,y,width,height,radius,{blendX=0,blendY=0}={}){
+// AIR 895–933 and 999–1037: radial-normal mix, renormalization, then
+// explicit 2x2 normal transform. Coordinates and matrix here are y-down.
+function postNormal(n,x,y,w,h,normalBlend,normalMatrix){
+ if(!Number.isFinite(normalBlend)||normalBlend<0||normalBlend>1||!Array.isArray(normalMatrix)||normalMatrix.length!==4||!normalMatrix.every(Number.isFinite))throw new RangeError("Invalid normal state");
+ const length=Math.hypot(x,y*w/h);
+ if(normalBlend!==0&&length===0)return null;
+ const radial=length===0?[0,0]:[x/length,(y*w/h)/length];
+ const m=n.map((a,i)=>mix(a,radial[i],normalBlend)),l=Math.hypot(...m);
+ if(l===0)return null;
+ const [a,b,c,d]=normalMatrix;return [(a*m[0]+b*m[1])/l,(c*m[0]+d*m[1])/l];
+}
+export function mode4Field(x,y,width,height,radius,{blendX=0,blendY=0,normalBlend=0,normalMatrix=[1,0,0,1]}={}){
  const a=quadrant(Math.abs(x),Math.abs(y),width/2,height/2,radius,blendX,blendY);
  const sx=x>=0?1:-1,sy=y>=0?1:-1;
  return {...a,gradient:a.gradient&&x!==0&&y!==0?[a.gradient[0]*sx,a.gradient[1]*sy]:null,
-  opticalNormal:[a.opticalNormal[0]*sx,a.opticalNormal[1]*sy]};
+  opticalNormal:postNormal([a.opticalNormal[0]*sx,a.opticalNormal[1]*sy],x,y,width,height,normalBlend,normalMatrix)};
 }
 const factor=(r,h)=>r>=0?1:sat((-K-h/r)*-1.891557216644287);
-export function mode5Field(x,y,width,height,radii){
+export function mode5Field(x,y,width,height,radii,{normalBlend=0,normalMatrix=[1,0,0,1]}={}){
  if(!Array.isArray(radii)||radii.length!==4||!radii.every(r=>Number.isFinite(r)&&r!==0))
   throw new RangeError("Four explicit nonzero signed private radius lanes required");
  const [tl,tr,br,bl]=radii,hw=width/2,hh=height/2;
@@ -70,7 +81,7 @@ export function mode5Field(x,y,width,height,radii){
  });
  let best=results[0];for(const r of results.slice(1))if(r.distance>best.distance)best=r;
  const ties=results.filter(r=>r.distance===best.distance).length;
- return {...best,gradient:ties===1?best.gradient:null,ties};
+ return {...best,gradient:ties===1?best.gradient:null,ties,opticalNormal:postNormal(best.opticalNormal,x,y,width,height,normalBlend,normalMatrix)};
 }
 // IEEE binary16 round-to-nearest-even for finite JS numbers; no claim about native fast-math/FTZ.
 export function half(x){
@@ -86,7 +97,7 @@ export function distanceCastDiagnostic(field){
  return {continuous:distance,finalOnly:half(distance),airCastOrder:half(inner+scaled)};
 }
 export function normalMismatch(field){
- if(!field.gradient)return null;
+ if(!field.gradient||!field.opticalNormal)return null;
  const l=Math.hypot(...field.gradient);if(l===0)return null;
  const n=field.gradient.map(x=>x/l);
  return Math.atan2(Math.abs(n[0]*field.opticalNormal[1]-n[1]*field.opticalNormal[0]),
