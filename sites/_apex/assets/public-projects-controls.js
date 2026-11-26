@@ -141,8 +141,10 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
   github.setAttribute("aria-label","Open GitHub profile in a new tab");
   github.title="GitHub";
   github.innerHTML=GITHUB_ICON;
-  // Toolbar glyphs are native SVG foreground over their WebGPU glass.
-  toolbar.append(searchWrap,filterWrap,github);
+  // Keep the GitHub pane in the upper header, with search and filter below.
+  // All three glyphs remain native SVG foreground over their WebGPU glass.
+  headingRow.parentElement.insertBefore(github,headingRow);
+  toolbar.append(searchWrap,filterWrap);
   headingRow.append(toolbar);
 
   const empty=el("p","public-projects-empty");
@@ -287,7 +289,7 @@ export function mountProjectControls({root,headingRow,grid,projects,animateGlass
       disposed=true;
       clearTimeout(searchTimer);
       abort.abort();disposeDropdown();
-      empty.remove();toolbar.remove();
+      empty.remove();toolbar.remove();github.remove();
     }
   };
 }

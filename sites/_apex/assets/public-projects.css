@@ -20,8 +20,8 @@ html:has(body.public-home #public-route-content .public-projects-root),
 body.public-home:has(#public-route-content .public-projects-root){
   overscroll-behavior-y:none;
 }
-/* Stack the glass back chip above the page title; the project grid begins
- * below the entire header rather than sharing its first horizontal row. */
+/* Stack the back and GitHub chips above the page title and its toolbar;
+ * the project grid begins below the entire header. */
 .public-projects-header{
   display:flex;flex-direction:column;align-items:flex-start;
   gap:12px;margin:0 0 24px;position:relative;z-index:5
@@ -351,7 +351,7 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
  * The real WebGPU path uses its own tile.motion.w and coherent alpha holes. */
 body.public-home:not([data-auth-gpu-scene="ready"])
   .public-projects-root.is-dissolving-header
-  :is(.public-projects-back,.public-projects-title,.public-projects-toolbar){
+  :is(.public-projects-back,.public-projects-title,.public-projects-toolbar,.public-projects-github-button){
   opacity:0!important;
   transform:translate3d(0,-1px,0) scale(1.085,1.065);
   filter:blur(1.4px);
@@ -378,8 +378,8 @@ body.public-home:not([data-auth-gpu-scene="ready"])
 }
 
 
-/* Three identically sized, spaced toolbar chips. Only GPU glassPipeline
- * paints their optical faces when ready; CSS owns layout/entrance alone. */
+/* Two equally spaced toolbar chips and a separate upper GitHub chip.
+ * Only GPU glassPipeline paints their optical faces when ready. */
 .public-projects-toolbar{
   position:relative;z-index:10;display:flex;align-items:center;justify-content:flex-end;
   flex:none;gap:10px;height:40px
@@ -506,6 +506,11 @@ body.public-home:not([data-auth-gpu-scene="ready"])
 .public-projects-filter-check{display:grid;place-items:center;order:-1;width:13px;height:11px;opacity:0;flex:none}
 .public-projects-filter-check svg{display:block;width:13px;height:11px}
 .public-projects-filter-option.is-selected .public-projects-filter-check{opacity:1}
+/* Center the 40px GitHub pane on the 36px back pane, preserving both sizes
+ * and the existing header height. Filter now ends at the same right edge. */
+.public-projects-header > .public-projects-github-button{
+  position:absolute;top:-2px;right:0;z-index:10
+}
 .public-projects-github-button svg{fill:#fff}
 /* When active, clear every fallback face; this is the existing real GPU
  * pane material, not a CSS background-filter or optical approximation. */

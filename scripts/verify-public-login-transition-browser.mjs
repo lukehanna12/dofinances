@@ -819,7 +819,7 @@ try{
     "headingBottom:root.querySelector('.public-projects-title').getBoundingClientRect().bottom,"+
     "titleSize:parseFloat(getComputedStyle(root.querySelector('.public-projects-title')).fontSize),"+
     "tools:[...root.querySelector('.public-projects-toolbar').children].map(node=>({x:node.getBoundingClientRect().x,top:node.getBoundingClientRect().top,w:node.getBoundingClientRect().width,h:node.getBoundingClientRect().height})),"+
-    "github:(()=>{const a=root.querySelector('.public-projects-github-button');return {href:a.href,target:a.target,rel:a.rel}})(),"+
+    "github:(()=>{const a=root.querySelector('.public-projects-github-button');const r=a.getBoundingClientRect();return {href:a.href,target:a.target,rel:a.rel,top:r.top,right:r.right,w:r.width,h:r.height}})(),"+
     "gridTop:root.querySelector('.project-showcase-grid').getBoundingClientRect().top,"+
     "shell:!!document.querySelector('#cta6-mosaic'),"+
     "transparent: getComputedStyle(first).backgroundColor};})()");
@@ -982,14 +982,19 @@ try{
   assert.equal(projectState.shell,true);
   assert.ok(Math.abs(projectState.titleSize-63)<1,
     "Projects title is 75% of the previous 84px desktop size");
-  assert.equal(projectState.tools.length,3,"Search, filter and GitHub are three equal chips");
+  assert.equal(projectState.tools.length,2,"Only search and filter occupy the heading toolbar");
   for(const tool of projectState.tools){
     assert.equal(tool.w,40);assert.equal(tool.h,40);
     assert.ok(Math.abs(tool.top-projectState.headingTop)<1,"Projects title and toolbar share the same top edge");
   }
-  assert.ok(Math.abs((projectState.tools[1].x-projectState.tools[0].x)-
-    (projectState.tools[2].x-projectState.tools[1].x))<1,
-    "All three toolbar chips are equally spaced");
+  assert.ok(Math.abs(projectState.tools[1].x-projectState.tools[0].x-50)<1,
+    "Search and filter preserve their 10px gap");
+  assert.equal(projectState.github.w,40);assert.equal(projectState.github.h,40);
+  assert.ok(Math.abs(projectState.github.top+projectState.github.h/2-
+    (projectState.backTop+projectState.backBottom)/2)<1,
+    "GitHub and back buttons share the same horizontal centerline");
+  assert.ok(Math.abs(projectState.github.right-projectState.tools[1].x-projectState.tools[1].w)<1,
+    "GitHub and filter share the same right edge");
   assert.equal(projectState.github.href,"https://github.com/lukehanna12");
   assert.equal(projectState.github.target,"_blank");
   assert.match(projectState.github.rel,/noopener/);
