@@ -31,7 +31,7 @@ test("Projects roster applies requested names and progress states without retire
 test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
   ["bootscript","lukehanna12/bootscript"],
-  ["translucence-lab","lukehanna12/lightworks"],
+  ["lightworks","lukehanna12/lightworks"],
   ["github-readme-chrome-extension","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","lukehanna12/chatstore"],
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
@@ -40,11 +40,11 @@ test("Curated projects link their verified GitHub repositories",()=>{
  ]);
  assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,8);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="review").map(p=>p.slug),[
-  "bootscript","translucence-lab","github-readme-chrome-extension",
+  "bootscript","lightworks","github-readme-chrome-extension",
   "apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs).map(p=>p.slug),[
-  "bootscript","translucence-lab","github-readme-chrome-extension",
+  "bootscript","lightworks","github-readme-chrome-extension",
   "chatgpt-chat-save-chrome-extension"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[]);
@@ -122,7 +122,7 @@ test("Verified repository associations backfill once and respect account overrid
  for(const [slug,name,repository] of [
   ["bootscript","BootScript","lukehanna12/bootscript"],
   ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
-  ["translucence-lab","Lightworks","lukehanna12/lightworks"],
+  ["lightworks","Lightworks","lukehanna12/lightworks"],
   ["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
  ]){
@@ -184,7 +184,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  const iconNames={
  "colosseum": "colosseum-lucide.v2",
  "bootscript": "paint-roller",
- "translucence-lab": "lightworks.v3",
+ "lightworks": "lightworks.v3",
  "github-readme-chrome-extension": "readme-glp.v2",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "terminal-scalars.v3",
@@ -199,7 +199,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
- const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","apple-adobe-fx","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","ozoning-board"];
+ const artworkSlugs=["bootscript","lightworks","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","apple-adobe-fx","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -281,20 +281,13 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
  assert.ok(!pastoral.includes("upload.wikimedia.org/wikipedia/commons/thumb"),"Use the verified Commons image thumbnail host");
 });
 
-test("Ozoning Board displays the revised user-supplied treehouse SVG at 28px",()=>{
- const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v3.svg");
+test("Ozoning Board displays the current user-supplied treehouse SVG at 28px",()=>{
+ const svg=read("sites/_apex/app/assets/project-icons/treehouse-ozoning.v4.svg");
  assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v4");
- assert.match(svg,/viewBox="0 0 24 24"/);
- assert.match(svg,/stroke-width="2"/);
- assert.match(svg,/M12 19h8\.3a1 1 0 00\.7-1\.7L18 14/);
- assert.ok(svg.includes('M4 9v4.5h9V9L8.5 4.5z'),"Revised cabin and peaked roof");
- assert.ok(svg.includes('M6.5 13.5 L6.5 22'),"Latest centered ladder rail");
- assert.ok(!svg.includes('M5.5 13.5V22'),"Older ladder rail must not return");
- assert.ok(!svg.includes('M9 13.5V22'),"Earlier ladder right rail was removed");
- assert.ok(svg.includes('M9 19.5H5.5'),"Revised ladder rung");
- assert.ok(!svg.includes('M13 8.5H7v14'),"Retired earlier cabin geometry");
- const js=read("sites/_apex/app/assets/project-showcase.js");
- assert.ok(js.includes('icon.width=28;icon.height=28'));
+ assert.equal(svg,read("sites/_apex/assets/project-icons/treehouse-ozoning.v4.svg"));
+ for(const fragment of ['M4 9v4.5h9V9L8.5 4.5z','M6.5 13.5V22','M8 16.5H4.75','M8 19.5H5'])assert.ok(svg.includes(fragment));
+ assert.ok(svg.includes('stroke-width="2"'));
+ assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
 });
 
 test("Unicode Plus and Protocol Monitor Pruner use the exact supplied SVG geometry",()=>{
@@ -306,18 +299,8 @@ test("Unicode Plus and Protocol Monitor Pruner use the exact supplied SVG geomet
  assert.match(read("sites/_apex/app/assets/project-showcase.css"),/filter:brightness\(0\) invert\(1\)/);
 });
 
-test("Ozoning treehouse release uses a new asset path and a refreshed module chain",()=>{
+test("Ozoning treehouse release uses the current asset and refreshed module chain",()=>{
  const dir="sites/_apex/app/assets/";
- const v1=read(dir+"project-icons/treehouse-ozoning.svg");
- const v2=read(dir+"project-icons/treehouse-ozoning.v2.svg");
- const v3=read(dir+"project-icons/treehouse-ozoning.v3.svg");
- assert.equal(v1,v2,"Earlier two SVG filenames contain the preceding approved drawing");
- assert.notEqual(v2,v3,"The third SVG file contains the latest user-supplied ladder");
- assert.ok(v1.includes('M4 9v4.5h9V9L8.5 4.5z'),"Both filenames hold the revised image");
- assert.ok(v2.includes('M4 9v4.5h9V9L8.5 4.5z'));
- assert.ok(!v2.includes('M13 8.5H7v14'));
- assert.ok(v3.includes('M6.5 13.5 L6.5 22'));
- assert.ok(!v3.includes('M5.5 13.5V22'));
  assert.ok(read(dir+"project-showcase.js").includes('"ozoning-board":"treehouse-ozoning.v4"'));
  assert.ok(read(dir+"project-readme-ui.js").includes('from "./project-showcase.js?project-art=v14"'));
  assert.ok(read(dir+"dashboard.js").includes('from "./project-readme-ui.js?project-art=v14"'));
@@ -340,30 +323,9 @@ test("Apple HIGs Reader uses the exact user-supplied v4 icon",()=>{
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('icon.width=28;icon.height=28'));
 });
 
-test("Apple worm v2 is a short hooked curl with a separate head, not the former S",()=>{
- const original=read("sites/_apex/app/assets/project-icons/apple-worm.svg");
- const updated=read("sites/_apex/app/assets/project-icons/apple-worm.v2.svg");
- assert.notEqual(original,updated,"Versioned worm must change shape");
- assert.ok(original.includes('M16.5 11.3c-1.8-1.1'),"Original worm remains available for old references");
- assert.ok(updated.includes('M12.4 17.8c-1-1.7-.5-3.3 1.1-4.2'),"Updated worm has one continuous curved hook");
- assert.ok(!updated.includes('2.4 1.3 2.3 2.6'),"S-shaped middle reversal is removed");
- assert.ok(updated.includes('<circle cx="17.35" cy="13.65" r="1"'),"Separate, rounded head is retained");
- assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes('"apple-hig-reader":"apple-higs-reader.v4"'));
-});
 
-test("Apple worm v3 is outside the right side with no head or internal squiggle",()=>{
- const svg=read("sites/_apex/app/assets/project-icons/apple-worm.v3.svg");
- const old=read("sites/_apex/app/assets/project-icons/apple-worm.v2.svg");
- assert.notEqual(svg,old,"New icon differs from the earlier worm");
- assert.equal(PROJECT_CARD_ICONS["apple-hig-reader"],"apple-higs-reader.v4",
-  "v3 stays archived while v4 is active");
- assert.ok(svg.includes('M19.25 13.1q1.15-1.6 3.1-1.1'),"Worm protrudes beyond right edge");
- assert.ok(svg.includes('scale(.9)'),"Apple shifted inward to provide room for outside worm");
- assert.ok(svg.includes('vector-effect="non-scaling-stroke"'),"Apple preserves Lucide stroke weight at its new scale");
- assert.ok(!svg.includes("<circle"),"No separate head");
- assert.ok(!svg.includes("M12.4 17.8"),"No internal worm body");
- assert.ok(!svg.includes("M16.5 11.3"),"No old S-shaped body");
-});
+
+
 
 test("Colosseum and Terminal Scalars use the exact revised user-supplied SVG geometry",()=>{
  for(const [slug,name,geometry] of [["colosseum","colosseum-lucide.v2","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M1.5 21h21\" />\n  <path d=\"m11 13-.2-2.4\" />\n  <path d=\"M11.8 20.5v-4\" />\n  <path d=\"M18 13.5v-.4\" />\n  <path d=\"M18 20.8v-3.7\" />\n  <path d=\"M2 10.2c3.5-1.6 6.8-2.8 10.5-2.7\" />\n  <path d=\"M2 15.2a33 33 0 0120-.2\" />\n  <path d=\"M2 21V6.4C4.7 4.5 8.7 3 12 3l3.4 18\" />\n  <path d=\"M21 21v-4.3\" />\n  <path d=\"M22 21v-9c-2.4-.9-5.1-1.5-8-1.5\" />\n  <path d=\"m5 14-.1-2.2\" />\n  <path d=\"M5.1 20.8v-3.4\" />\n  <path d=\"m8 13-.1-2.1\" />\n  <path d=\"M8.6 20.8v-3.9\" />\n</svg>\n"],["terminal-scalars","terminal-scalars.v3","<svg\n  xmlns=\"http://www.w3.org/2000/svg\"\n  width=\"24\"\n  height=\"24\"\n  viewBox=\"0 0 24 24\"\n  fill=\"none\"\n  stroke=\"currentColor\"\n  stroke-width=\"2\"\n  stroke-linecap=\"round\"\n  stroke-linejoin=\"round\"\n>\n  <path d=\"M 19 3 A2 2 0 0 1 21 5\" />\n  <path d=\"M 21 5 L 21 19\" />\n  <path d=\"M 3 5 A2 2 0 0 1 5 3\" />\n  <path d=\"M 5 3 L 19 3\" />\n  <path d=\"M10.6 21v-1.15\" />\n  <path d=\"M11 13h4\" />\n  <path d=\"M13.4 21v-2.2\" />\n  <path d=\"M16.2 21v-2\" />\n  <path d=\"M21 19 A2 2 0 0 1 19 21\" />\n  <path d=\"M3 19 L3 5\" />\n  <path d=\"M5 21 A2 2 0 0 1 3 19\" />\n  <path d=\"m7 11 2-2-2-2\" />\n  <path d=\"M7.8 21v-2.75\" />\n</svg>\n"]]){
@@ -412,7 +374,7 @@ test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
 
 
 test("Lightworks painting and requested App Caviar/Liquid Plexiglass 26 icon handoff",()=>{
- assert.equal(PROJECT_CARD_IMAGES["translucence-lab"],
+ assert.equal(PROJECT_CARD_IMAGES["lightworks"],
   "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg");
  assert.equal(PROJECT_CARD_ICONS["app-caviar"],"opacity");
  assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens");
@@ -441,8 +403,18 @@ test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>
 
 test("Lightworks migrates its old repository link and unedited default README without touching custom links",async()=>{
  const store=read("edge/auth-store-projects.mjs");
- assert.ok(store.includes('["translucence-lab","Lightwork","Lightworks"]'));
+ assert.ok(store.includes('["lightworks","Lightwork","Lightworks"]'));
  assert.ok(store.includes('lower(repository)=?'));
- assert.ok(store.includes('"lukehanna12/lightworks",NOW(),userId,"translucence-lab","lukehanna12/lightwork"'));
+ assert.ok(store.includes('"lukehanna12/lightworks",NOW(),userId,"lightworks","lukehanna12/lightwork"'));
  assert.ok(store.includes('slug=? AND default_readme=?'));
+});
+
+test("Lightworks has one canonical slug and an atomic data migration",()=>{
+ const store=read("edge/auth-store-projects.mjs");
+ assert.equal(PROJECT_SHOWCASE.find(p=>p.name==="Lightworks").slug,"lightworks");
+ assert.ok(store.includes("lightworks-slug-v1"));
+ assert.ok(store.includes("this.ctx.storage.transactionSync"));
+ assert.ok(store.includes('UPDATE project_records SET slug=? WHERE user_id=? AND slug=?'));
+ assert.ok(store.includes("INSERT OR IGNORE INTO project_repository_link_migrations(user_id,slug) SELECT"));
+ assert.ok(store.includes("lightworks-custom-"));
 });

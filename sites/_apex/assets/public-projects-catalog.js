@@ -5,7 +5,7 @@ import {validateProjectTitle} from "./public-projects-title.js";
 import {PROJECT_ICON_REVISIONS} from "./project-icon-revisions.js";
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"review",docs:true},
- {slug:"translucence-lab",name:"Lightworks",kind:"Translucence experiments",repository:"lukehanna12/lightworks",status:"review",docs:true},
+ {slug:"lightworks",name:"Lightworks",kind:"Translucence experiments",repository:"lukehanna12/lightworks",status:"review",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"review",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"coming-soon"},
@@ -25,7 +25,7 @@ export const PROJECT_SHOWCASE=Object.freeze([
 // Keep proposed features and comparative research distinct from shipped facts.
 export const PROJECT_DESCRIPTIONS=Object.freeze({
   "bootscript": "BootScript is built to be the most capable Google Apps Script Chrome extension. Its 97-criterion documented-feature comparison against 21 competing extensions credits BootScript with 66 capabilities, 2.44 times the highest competing count and 8.25 times the competitor median. It enhances Google's native editor with 57 editor theme choices, project-wide navigation, TypeScript intelligence, encrypted recovery, GitHub review workflows, Gemini assistance, collaborative draft editing, HTML previews, execution and deployment tools, and Sheets integration. The development build has passed local engineering tests and is not yet published on the Chrome Web Store.",
-  "translucence-lab": "Lightworks is a native macOS application and independent command-line interface (CLI) for exploring how light bends, travels through and interacts with translucent materials. Drawing on the gold standard of modern knowledge about light, it brings refraction, absorption, scattering, dispersion and surface behavior into interactive experiments with up to eight independently adjustable lights. Both products share a Metal rendering engine, portable scenes and high-resolution PNG export, while the CLI also provides analytic optical calculations and reproducible experiments. The visual simulation uses physically inspired approximations rather than an exact physical solver.",
+  "lightworks": "Lightworks is a native macOS application and independent command-line interface (CLI) for exploring how light bends, travels through and interacts with translucent materials. Drawing on the gold standard of modern knowledge about light, it brings refraction, absorption, scattering, dispersion and surface behavior into interactive experiments with up to eight independently adjustable lights. Both products share a Metal rendering engine, portable scenes and high-resolution PNG export, while the CLI also provides analytic optical calculations and reproducible experiments. The visual simulation uses physically inspired approximations rather than an exact physical solver.",
   "github-readme-chrome-extension": "ReadMe GLP (ReadMe GitHub Live) is a lightweight live documentation editor for GitHub, delivered as a Chrome extension. It turns GitHub's own editing screen into an editable rendered document, so headings, paragraphs, tables, code and checklists can be changed directly as they appear. Edits flow into GitHub's existing source editor and normal save process, with no separate application, service or account required.",
   "chatgpt-chat-save-chrome-extension": "ChatStore is a browser extension and comprehensive ChatGPT conversation downloader designed for detailed preservation of individual conversations. Its comparative development research examined 26 alternatives and found none matching its depth of preservation. With reported near-instant, on-demand capture, there is no need to wait for the official account export, which can take up to seven days. Branching messages, available files, resource relationships and source evidence are retained locally, so complex AI projects can be continued rather than merely reread.",
   "colosseum": "Colosseum is an extremely advanced, modern development platform with a web application, a command-line interface (CLI) and a ChatGPT plugin framework that organizes and exposes virtually any tool or reference you could want available to your AI model. Through one secure connection, it brings together local software, cloud services, research, documents and specialized capabilities, supported by a searchable catalog, organized collections, extensible integrations and fine-grained permissions. The framework keeps a wide-ranging supply of resources available to the model while safeguarding actions that change things. Expansion to Claude plugins is planned soon.",
@@ -69,7 +69,7 @@ export function sortProjectShowcase(projects){
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
-  "translucence-lab":"lightworks.v3",
+  "lightworks":"lightworks.v3",
   "github-readme-chrome-extension":"readme-glp.v2",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"terminal-scalars.v3",
@@ -95,7 +95,7 @@ export function publicProjectIconSource(slug){
 }
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"/assets/project-art/bootscript-polo-ponies.v1.webp",
-  "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
+  "lightworks":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
   // Katsushika Hokusai, A merchant making up the account, public domain (Wikimedia Commons).
   "chatgpt-chat-save-chrome-extension":"/assets/project-art/chatstore-hokusai-merchant.v1.webp",

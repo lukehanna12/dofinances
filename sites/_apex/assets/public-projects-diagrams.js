@@ -11,7 +11,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
       "planned": false
     }
   ],
-  "translucence-lab": [
+  "lightworks": [
     {
       "title": "Optical laboratory",
       "rows": [

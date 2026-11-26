@@ -18,6 +18,27 @@ export class AuthStore extends FederatedAuthStore{
   this.sql.exec("CREATE TABLE IF NOT EXISTS project_catalog_migrations(user_id TEXT NOT NULL,migration TEXT NOT NULL,PRIMARY KEY(user_id,migration))");
  }
  projectsSeed(userId){
+  // One-time, atomic slug migration. Preserve user data and the unlink ledger.
+  if(!this.sql.exec("SELECT 1 FROM project_catalog_migrations WHERE user_id=? AND migration='lightworks-slug-v1'",userId).toArray().length){
+   this.ctx.storage.transactionSync(()=>{
+    const legacy="translucence-lab";
+    const exists=slug=>this.sql.exec("SELECT 1 FROM project_records WHERE user_id=? AND slug=?",userId,slug).toArray().length>0;
+    if(exists(legacy)){
+     if(exists("lightworks")){
+      // A separately created project must not be overwritten or dropped.
+      let i=1,spare="lightworks-custom-"+i;
+      while(exists(spare))spare="lightworks-custom-"+(++i);
+      this.sql.exec("UPDATE project_records SET slug=? WHERE user_id=? AND slug=?",spare,userId,"lightworks");
+      this.sql.exec("UPDATE OR IGNORE project_repository_link_migrations SET slug=? WHERE user_id=? AND slug=?",spare,userId,"lightworks");
+      this.sql.exec("DELETE FROM project_repository_link_migrations WHERE user_id=? AND slug=?",userId,"lightworks");
+     }
+     this.sql.exec("UPDATE project_records SET slug=? WHERE user_id=? AND slug=?","lightworks",userId,legacy);
+    }
+    this.sql.exec("INSERT OR IGNORE INTO project_repository_link_migrations(user_id,slug) SELECT user_id,'lightworks' FROM project_repository_link_migrations WHERE user_id=? AND slug=?",userId,legacy);
+    this.sql.exec("DELETE FROM project_repository_link_migrations WHERE user_id=? AND slug=?",userId,legacy);
+    this.sql.exec("INSERT INTO project_catalog_migrations(user_id,migration) VALUES(?,'lightworks-slug-v1')",userId);
+   });
+  }
   // Remove the retired BootScribe project from existing account storage once.
   // Do not recreate it; preserve a user's ability to reuse the slug later.
   if(!this.sql.exec("SELECT 1 FROM project_catalog_migrations WHERE user_id=? AND migration='remove-bootscribe-v1'",userId).toArray().length){
@@ -32,7 +53,7 @@ export class AuthStore extends FederatedAuthStore{
   // overwrite an existing document, repository association or presentation.
   for(const [slug,name] of [
    ["bootscript","BootScript"],
-   ["translucence-lab","Lightworks"],
+   ["lightworks","Lightworks"],
    ["github-readme-chrome-extension","ReadMe GLP"],
    ["chatgpt-chat-save-chrome-extension","ChatStore"]
   ]){
@@ -41,8 +62,8 @@ export class AuthStore extends FederatedAuthStore{
   // Migrate display names only when they still match the old curated names.
   // Existing user-authored README content is intentionally preserved.
   for(const [slug,previous,name] of [
-   ["translucence-lab","Translucence Lab","Lightworks"],
-   ["translucence-lab","Lightwork","Lightworks"],
+   ["lightworks","Translucence Lab","Lightworks"],
+   ["lightworks","Lightwork","Lightworks"],
    ["github-readme-chrome-extension","GitHub README Chrome Extension","ReadMe GLP"],
    ["github-readme-chrome-extension","ReadMe GLP (GitHub Live Previewer)","ReadMe GLP"],
    ["chatgpt-chat-save-chrome-extension","ChatGPT Chat Save Chrome Extension","ChatStore"]
@@ -51,9 +72,9 @@ export class AuthStore extends FederatedAuthStore{
   }
   // Rename the existing association independently of the one-time link
   // ledger. Do not override an explicit unlink, custom link or edited README.
-  this.sql.exec("UPDATE project_records SET repository=?,updated_at=? WHERE user_id=? AND slug=? AND lower(repository)=?", "lukehanna12/lightworks",NOW(),userId,"translucence-lab","lukehanna12/lightwork");
+  this.sql.exec("UPDATE project_records SET repository=?,updated_at=? WHERE user_id=? AND slug=? AND lower(repository)=?", "lukehanna12/lightworks",NOW(),userId,"lightworks","lukehanna12/lightwork");
   for(const previous of ["Lightwork","Translucence Lab"]){
-   this.sql.exec("UPDATE project_records SET default_readme=? WHERE user_id=? AND slug=? AND default_readme=?",template("Lightworks"),userId,"translucence-lab",template(previous));
+   this.sql.exec("UPDATE project_records SET default_readme=? WHERE user_id=? AND slug=? AND default_readme=?",template("Lightworks"),userId,"lightworks",template(previous));
   }
   // Upgrade previous repository-less Apple Reader records without overriding
   // user-associated repositories or the account's saved README.
@@ -64,7 +85,7 @@ export class AuthStore extends FederatedAuthStore{
   for(const [slug,name,repository] of [
    ["bootscript","BootScript","lukehanna12/bootscript"],
    ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
-   ["translucence-lab","Lightworks","lukehanna12/lightworks"],
+   ["lightworks","Lightworks","lukehanna12/lightworks"],
    ["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"],
    ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
   ]){

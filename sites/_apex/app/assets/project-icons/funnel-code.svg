@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <!-- The horizontal rim is deliberately interrupted, leaving generous space beside the code glyph. -->
-  <path d="M2.75 5.25h2.65m13.2 0h2.65"/>
-  <!-- Lucide-style funnel body, descending into a narrow stem. -->
-  <path d="m2.75 5.25 6.92 7.67a2 2 0 0 1 .51 1.34v6.26a.7.7 0 0 0 .4.64l2.33 1.08a.7.7 0 0 0 .99-.64v-7.34a2 2 0 0 1 .51-1.34l6.84-7.67"/>
-  <!-- Lucide code chevrons, reduced uniformly to fit the cutout. -->
-  <path d="m10.4 3.33-1.92 1.92 1.92 1.92m3.2-3.84 1.92 1.92-1.92 1.92"/>
-</svg>

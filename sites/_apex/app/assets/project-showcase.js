@@ -5,7 +5,7 @@ import {mountProjectArtworkReveal} from "../../assets/project-artwork-reveal.js"
 
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"review",docs:true},
- {slug:"translucence-lab",name:"Lightworks",kind:"Translucence experiments",repository:"lukehanna12/lightworks",status:"review",docs:true},
+ {slug:"lightworks",name:"Lightworks",kind:"Translucence experiments",repository:"lukehanna12/lightworks",status:"review",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"review",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"coming-soon"},
@@ -43,7 +43,7 @@ export function sortProjectShowcase(projects){
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
-  "translucence-lab":"lightworks.v3",
+  "lightworks":"lightworks.v3",
   "github-readme-chrome-extension":"readme-glp.v2",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"terminal-scalars.v3",
@@ -60,7 +60,7 @@ export const PROJECT_CARD_ICONS=Object.freeze({
 });
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"/assets/project-art/bootscript-polo-ponies.v1.webp",
-  "translucence-lab":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
+  "lightworks":"https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg",
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
   // Katsushika Hokusai, A merchant making up the account, public domain (Wikimedia Commons).
   "chatgpt-chat-save-chrome-extension":"/assets/project-art/chatstore-hokusai-merchant.v1.webp",
@@ -163,7 +163,7 @@ function makeCard(project,index,slugRoute){
 export function renderProjectShowcase(root,projects,slugRoute){
  const canonical=new Set(PROJECT_SHOWCASE.map(p=>p.slug));
  // Account records are authoritative for migrated curated repository links.
- const linkedSlugs=new Set(["bootscript","unicode-plus","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension"]);
+ const linkedSlugs=new Set(["bootscript","unicode-plus","lightworks","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension"]);
  const account=new Map((Array.isArray(projects)?projects:[])
   .filter(p=>p&&linkedSlugs.has(p.slug)).map(p=>[p.slug,p]));
  // Preserve account-created projects: the curated items always come first.

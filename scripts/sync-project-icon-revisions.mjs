@@ -1,11 +1,20 @@
 // Derive URL revisions from the exact authored SVG bytes. The vector pack
 // must agree before a release can publish any icon revision.
-import {readFileSync,writeFileSync} from "node:fs";
+import {readFileSync,writeFileSync,readdirSync} from "node:fs";
+import {PROJECT_CARD_ICONS as publicIcons} from "../sites/_apex/assets/public-projects-catalog.js";
+import {PROJECT_CARD_ICONS as privateIcons} from "../sites/_apex/app/assets/project-showcase.js";
 import {createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import {fileURLToPath} from "node:url";
 const assets=new URL("../sites/_apex/assets/",import.meta.url);
 const packed=JSON.parse(readFileSync(new URL("home-dashboard/continuous-icon-vectors.json",assets)));
+const expected=Object.values(publicIcons).sort();
+assert.deepEqual(privateIcons,publicIcons,"Project icon catalogs must agree");
+assert.deepEqual(Object.keys(packed.assets).sort(),expected,"Vector pack must contain exactly the assigned icons");
+for(const directory of ["project-icons/","../app/assets/project-icons/"]){
+ const actual=readdirSync(new URL(directory,assets)).filter(name=>name.endsWith(".svg")).map(name=>name.slice(0,-4)).sort();
+ assert.deepEqual(actual,expected,"Remove unassigned SVGs and restore missing icons in "+directory);
+}
 const revisions={};
 for(const name of Object.keys(packed.assets).sort()){
  const svg=readFileSync(new URL("project-icons/"+name+".svg",assets));

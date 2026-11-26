@@ -12,7 +12,7 @@ export const PROJECT_FILTER_CATEGORIES=Object.freeze([
 // descriptive kind is independent of its potentially multiple filter categories.
 export const PROJECT_CATEGORIES_BY_SLUG=Object.freeze({
   "colosseum":Object.freeze(["Applications","Plugins","CLIs"]),
-  "translucence-lab":Object.freeze(["Applications","CLIs"]),
+  "lightworks":Object.freeze(["Applications","CLIs"]),
   "app-caviar":Object.freeze(["Applications"]),
   "bootscript":Object.freeze(["Extensions"]),
   "github-readme-chrome-extension":Object.freeze(["Extensions"]),

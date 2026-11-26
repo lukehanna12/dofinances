@@ -52,7 +52,7 @@ test("supplied project SVGs are identical across public and authenticated views"
   const assigned=[
     ["terminal-scalars","terminal-scalars.v3",13],
     ["colosseum","colosseum-lucide.v2",14],
-    ["translucence-lab","lightworks.v3",6],
+    ["lightworks","lightworks.v3",6],
     ["apple-adobe-fx","apple-adobe-fx.v2",6],
     ["ozoning-board","treehouse-ozoning.v4",6],
     ["github-readme-chrome-extension","readme-glp.v2",5],
@@ -444,9 +444,9 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/2\.44 times the highest competing count and 8\.25 times the competitor median/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
-  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
-  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/^Lightworks is a native macOS application and independent command-line interface/);
-  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/share a Metal rendering engine/);
+  assert.match(PROJECT_DESCRIPTIONS["lightworks"],/gold standard of modern knowledge about light/);
+  assert.match(PROJECT_DESCRIPTIONS["lightworks"],/^Lightworks is a native macOS application and independent command-line interface/);
+  assert.match(PROJECT_DESCRIPTIONS["lightworks"],/share a Metal rendering engine/);
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/lightweight live documentation editor/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/detailed preservation of individual conversations/);
@@ -585,7 +585,7 @@ test("all sixteen public icon URLs are revisioned by actual SVG bytes and agree 
 });
 
 test("Public and private badge semantics and ordering agree for every project",async()=>{
-  const expected={Ready:[],Review:["bootscript","translucence-lab","github-readme-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"],"In Progress":["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"],"Coming Soon":["colosseum","terminal-scalars","apple-adobe-fx","app-caviar"]};
+  const expected={Ready:[],Review:["bootscript","lightworks","github-readme-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"],"In Progress":["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"],"Coming Soon":["colosseum","terminal-scalars","apple-adobe-fx","app-caviar"]};
   for(const [label,slugs] of Object.entries(expected)){
     assert.deepEqual(PUBLIC_PROJECTS.filter(p=>publicStatus(p)===label).map(p=>p.slug),slugs);
     assert.deepEqual(PRIVATE_PROJECTS.filter(p=>privateStatus(p)===label).map(p=>p.slug),slugs);
