@@ -1,7 +1,7 @@
 // Compare local continuous contour with a separately generated native word
 // outline on the reference Mac. Never export that native outline.
 import {localTitleContours,contourDeviation} from "/site/dashboard-glass-local-title.js";
-import {prepareTitleWord} from "/site/dashboard-glass-title-geometry.js";
+
 import {rasterClockText} from "/site/dashboard-glass-text.js";
 function flatten(s,err=.003){
  if(s.length===2)return [s];
@@ -16,9 +16,12 @@ export async function run(){
  for(const size of [51.75,54.375,60.625,63,66.25,69.75]){
   const style={fontStyle:"normal",fontWeight:"550",fontSize:size+"px",fontFamily:'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',letterSpacing:(-.035*size)+"px",lineHeight:(1.02*size)+"px",direction:"ltr",fontKerning:"auto"};
   const ctx=document.createElement("canvas").getContext("2d");ctx.font=style.fontWeight+" "+style.fontSize+" "+style.fontFamily;ctx.letterSpacing=style.letterSpacing;
-  const w=Math.ceil(ctx.measureText(native.text).width),h=parseFloat(style.lineHeight),local=localTitleContours(native.text,style,h),ref=prepareTitleWord(native,native.text,style,w,h,1);
-  if(!local||!ref)throw Error("Unavailable local or native reference "+size);
-  const reference=ref.contours.map(c=>c.flatMap(s=>flatten(s))),deviation=Math.max(contourDeviation(reference,local.contours),contourDeviation(local.contours,reference));
+  const metrics=ctx.measureText(native.text),h=parseFloat(style.lineHeight),local=localTitleContours(native.text,style,h),sample=[...native.samples,...native.heldout].find(x=>x.size===size);
+  if(!local||!sample)throw Error("Unavailable local or native reference "+size);
+  const baseline=(h-metrics.fontBoundingBoxAscent-metrics.fontBoundingBoxDescent)*.5+metrics.fontBoundingBoxAscent;
+  const positions=[...native.text].map((ch,i)=>ctx.measureText(native.text.slice(0,i+1)).width-ctx.measureText(ch).width);
+  const reference=sample.paths.flatMap((glyph,i)=>glyph.map(c=>c.flatMap(s=>flatten(s.map(p=>[positions[i]+p[0]*size,baseline+p[1]*size])))));
+  const deviation=Math.max(contourDeviation(reference,local.contours),contourDeviation(local.contours,reference));
   const coverage=[];
   for(const dpr of [1,2,3]){
    const W=Math.ceil(ctx.measureText(native.text).width*dpr),H=Math.ceil(h*dpr),old=rasterClockText(native.text,style,W,H,dpr),dv=new DataView(old.pixels.buffer);
