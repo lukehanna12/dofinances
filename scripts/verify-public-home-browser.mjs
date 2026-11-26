@@ -145,7 +145,7 @@ try{
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius,background:getComputedStyle(e).backgroundColor,tint:Number(getComputedStyle(e).getPropertyValue("--home-cta-tint"))})),',
- 'iconRefs:[...grid.querySelectorAll(":scope>.cta6-tile--icon")].map(tile=>{const img=tile.querySelector("img.cta6-icon");return {slug:tile.dataset.homeProjectIcon,collidesWithProjectCards:tile.hasAttribute("data-project-slug"),src:img?.getAttribute("src"),tag:img?.tagName,black:getComputedStyle(img).filter.includes("brightness(0)"),loaded:img?.complete&&img?.naturalWidth>0,selectable:getComputedStyle(img).userSelect!=="none",draggable:img.draggable};}),',
+ 'iconRefs:[...grid.querySelectorAll(":scope>.cta6-tile--icon")].map(tile=>{const img=tile.querySelector("img.cta6-icon");return {slug:tile.dataset.homeProjectIcon,collidesWithProjectCards:tile.hasAttribute("data-project-slug"),src:img?.getAttribute("src"),tag:img?.tagName,black:getComputedStyle(img).filter.includes("brightness(0)"),loaded:img?.complete&&img?.naturalWidth>0,registered:img?.hasAttribute("data-glass-silhouette-source"),tint:img?.dataset.glassSilhouetteTint,selectable:getComputedStyle(img).userSelect!=="none",draggable:img.draggable};}),',
  'nav:nav.map(e=>e.textContent.trim()),',
  'navDisplay:getComputedStyle(document.getElementById("global-menu-links")).display,',
  'hamburgerDisplay:getComputedStyle(document.getElementById("public-menu-toggle")).display,',
@@ -258,6 +258,7 @@ try{
   assert.ok(g.iconRefs.every(icon=>icon.tag==="IMG"&&icon.black&&icon.loaded),
     "Every Home icon must load its shared SVG asset in black, including GPU mode");
   assert.ok(g.iconRefs.every(icon=>!icon.selectable&&!icon.draggable),"Home icons never participate in native selection or image dragging");
+  assert.ok(g.iconRefs.every(icon=>icon.registered&&icon.tint==="black"),"All sixteen home icons declare black Clear silhouette optics");
   assert.ok(g.items.every(item=>parseFloat(item.radius)>100),"All three CTAs are capsules");
   assert.ok(g.items.every(item=>item.background==="rgb(0, 0, 0)"&&item.tint===0),
     "Every button must be solid opaque black at rest, including with GPU ready");

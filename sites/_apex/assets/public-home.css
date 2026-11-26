@@ -268,6 +268,11 @@ body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-mosaic{
 body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-tile--webgpu .cta6-icon{
   opacity:var(--public-icon-spatial-alpha,1);
 }
+/* Hide only the flat duplicate after a real GPU silhouette owns it.
+ * Preserve intrinsic layout, fallback SVG and pointer interaction. */
+body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-icon[data-glass-icon-owned]{
+  clip-path:inset(50%)!important
+}
 
 /* Public-only elevation: another exact 950/11px square above the last
    position; the foreground logo and the glass oval must move together.

@@ -137,20 +137,24 @@ export function createGlassSilhouetteAtlas(device,wake=()=>{},options={}){
   }catch(error){console.warn("Authored glass silhouette:",String(error));return null;}
  }
  function begin(){for(const img of owned)if(!img.isConnected)owned.delete(img);}
- function sync(owner,img,{width,height,dpr,scheme,hover=false,suppressHover=false,dt=0,reduced=false,opacity=1,slot=-1,ownerRect=null,dismiss=0}){
-  const rect=owner.getBoundingClientRect(),r=img.getBoundingClientRect();
-  if(!rect.width||!rect.height||!r.width||!r.height||!(width>0&&height>0)){img.removeAttribute("data-glass-icon-owned");return null;}
+ function sync(owner,img,{width,height,dpr,scheme,hover=false,suppressHover=false,dt=0,reduced=false,opacity=1,slot=-1,ownerRect=null,dismiss=0,entranceScale=1,boundsOverride=null}){
+  let bounds=boundsOverride;
+  if(!bounds){
+   const rect=owner.getBoundingClientRect(),r=img.getBoundingClientRect();
+   if(!rect.width||!rect.height||!r.width||!r.height||!(width>0&&height>0)){img.removeAttribute("data-glass-icon-owned");return null;}
+   const sx=width/rect.width,sy=height/rect.height;
+   bounds=[(r.left-rect.left)*sx,(r.top-rect.top)*sy,r.width*sx,r.height*sy];
+  }
+  if(!(bounds[2]>0&&bounds[3]>0)){img.removeAttribute("data-glass-icon-owned");return null;}
   if(vectorOnly&&!options.hasVector?.(img)){img.removeAttribute("data-glass-icon-owned");return null;}
   const layer=layerFor(img);
   if(layer===null){img.removeAttribute("data-glass-icon-owned");return null;}
-  const sx=width/rect.width,sy=height/rect.height;
-  const bounds=[(r.left-rect.left)*sx,(r.top-rect.top)*sy,r.width*sx,r.height*sy];
   const material=tintParameters(img.dataset.glassSilhouetteTint||"white",Number(img.dataset.glassSilhouetteOpacity??.2),scheme);
   const target=hover&&!suppressHover?1:0,old=springs.get(owner)||[0,0];
   const next=suppressHover||reduced?[target,0]:glassSpring(old[0],old[1],target,dt,target?26:18);
   if(Math.abs(next[0]-target)<.001&&Math.abs(next[1])<.01){next[0]=target;next[1]=0;}
   springs.set(owner,next);
-  const coverage=ownerRect?coverageAtlas.sync(img,slot,bounds,ownerRect,dismiss):null;
+  const coverage=ownerRect?coverageAtlas.sync(img,slot,bounds,ownerRect,dismiss,undefined,entranceScale):null;
   if(vectorOnly&&!coverage){img.removeAttribute("data-glass-icon-owned");return null;}
   const word=observedBlurWord(nativePublicBlurRadius("clear",bounds[2]/dpr,bounds[3]/dpr),1,.25);
   if(!img.hasAttribute("data-glass-icon-owned"))img.dataset.glassIconOwned="";

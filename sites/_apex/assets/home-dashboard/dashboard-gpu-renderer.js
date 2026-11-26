@@ -700,7 +700,7 @@ async function initialize(){
   const emptyDetail=device.createTexture({size:[1,1],format:"rgba8unorm",usage:GPUTextureUsage.TEXTURE_BINDING});
   const emptyDetailView=emptyDetail.createView();
   let paneDetailViews=[],detailGroups=new Map(),authDetailEntries=null,routeLayerEntries=null;
-  let trackTiles=[],trackIcons=[],trackRows=[],trackColumns=[],
+  let trackTiles=[],trackIcons=[],trackIconBounds=[],trackRows=[],trackColumns=[],
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
     dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
@@ -955,14 +955,17 @@ async function initialize(){
     if(key!==baseSourceKey){baseSourceKey=key;scenePending=true;}
   }
   // The route supplies hover policy; the shared atlas owns alpha and distance.
-  function syncGlassIcons(dt){
+  function syncGlassIcons(dt,includeHome=true){
     iconData.fill(0);silhouetteAtlas.begin();referenceIconData.fill(0);
-    const referenceActive=!!(continuous&&routeActiveLayers.length);
+    const homeComposite=includeHome&&Boolean(audit.homeCtaGlass?.count)&&
+      audit.homeCtaGlass.capsules.some(c=>c.opacity>.002&&c.tint>.002);
+    const referenceActive=!!(continuous&&(routeActiveLayers.length||homeComposite));
     if(referenceActive&&!referenceCoverage)referenceCoverage=createVectorCoverageAtlas(device,requestRender);
-    const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,beforeField=continuous?.fieldView,icons=[];
+    const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,beforeField=continuous?.fieldView,icons=[],homeIcons=[];
+    const movingSlots=new Set(),panes=authPaneElements();
     let animating=false;
     if(!authUsesCompositor()){
-      const panes=authPaneElements(),scheme=authGlassScheme();
+      const scheme=authGlassScheme();
       for(let i=0;i<panes.length;i++){
         const owner=panes[i],img=owner.querySelector("[data-glass-silhouette-source]");
         const slot=tileCount+i,p=slot*TILE_FLOATS;
@@ -995,17 +998,55 @@ async function initialize(){
         icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
       }
-    }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
+    }else for(const img of document.querySelectorAll(".public-projects-root [data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
+    // Home uses the SAME silhouette lanes and vector controls as Projects.
+    // Assign disjoint coverage slots during the route handoff: all sixteen
+    // canonical home shapes fit alongside the sixteen project card shapes.
+    if(includeHome&&!mosaicLayoutDirty){
+      const reserved=new Set(panes.map((owner,i)=>owner.querySelector("[data-glass-silhouette-source]")?i:-1));
+      const free=Array.from({length:32},(_,i)=>31-i).filter(i=>!reserved.has(i));
+      let j=0;
+      for(let i=0;i<trackIcons.length;i++){
+        const img=trackIcons[i],owner=trackTiles[i],relative=trackIconBounds[i];
+        if(!img||!relative)continue;
+        const slot=free[j++],p=i*TILE_FLOATS,rect=Array.from(tileData.subarray(p,p+4));
+        const dismiss=dismissProgress[i],intro=glassEntrance(uniform[2],tileData[p+5]);
+        if(slot===undefined||dismiss>=1||trackOpacity[i]<=.001||!glassPaneIntersectsViewport(rect,physicalWidth,physicalHeight,0,physicalHeight,dismiss)){
+          img.removeAttribute("data-glass-icon-owned");continue;
+        }
+        const bounds=relative.map((v,k)=>v*rect[2+(k%2)]);
+        // The vertex shader's intro and dismissal scales determine exact
+        // framebuffer coverage. Do not resample an old moving icon mask.
+        const icon=silhouetteAtlas.sync(owner,img,{width:rect[2],height:rect[3],dpr,scheme:authGlassScheme(),
+          suppressHover:true,dt,reduced:reducedMotion.matches,opacity:tileDismissIconOpacity(dismiss),
+          slot,ownerRect:rect,dismiss,entranceScale:intro.scale,boundsOverride:bounds});
+        if(!icon)continue;
+        const lanes=iconData.subarray(i*GLASS_ICON_FLOATS,(i+1)*GLASS_ICON_FLOATS);
+        lanes.set(icon.lanes);
+        if(continuous){
+          lanes[19]=continuous.indexFor(img);
+          // Moving geometry changes its sample phase each frame. Direct
+          // continuous evaluation avoids rebuilding a large cache every
+          // frame; stationary/reduced-motion icons use exact sample reuse.
+          if(trackRunning||!audit.track?.introComplete||dismiss>0)movingSlots.add(i);
+          if(homeComposite){
+            const ref=referenceCoverage.sync(img,slot,bounds,rect,dismiss,[sourceWidth/physicalWidth,sourceHeight/physicalHeight],intro.scale);
+            if(ref){const q=referenceIconData.subarray(i*GLASS_ICON_FLOATS,(i+1)*GLASS_ICON_FLOATS);q.set(lanes);q.set(ref.rect,12);q.set(ref.meta,16);q[19]=lanes[19];}
+          }
+        }
+        homeIcons.push({slug:owner.dataset.homeProjectIcon,bounds:icon.bounds,tint:icon.tint,tintOpacity:icon.tintOpacity,vectorCoverage:icon.vectorCoverage,continuousVector:continuous?Boolean(lanes[19]):false});
+      }
+    }
     if(continuous){
       // Grow once, before binding any dispatch to the exact sample cache.
       const extent=lanes=>{let max=0;for(let slot=0;slot<instanceCount;slot++){const i=slot*GLASS_ICON_FLOATS;if(lanes[i+19]>0&&lanes[i+16]>0){const n=Math.max(lanes[i+17],lanes[i+18]);if(n<=256)max=Math.max(max,n);}}return max;};
       continuous.ensureField("display",extent(iconData));if(referenceActive)continuous.ensureField("reference",extent(referenceIconData));
-      continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
-      if(referenceActive){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(q[19]>0&&q[16]>0&&continuous.cacheField(q,referenceCoverage.view,"reference"))q[19]*=-1;}}}finally{continuous.endCache();}}
+      continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(!movingSlots.has(slot)&&lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
+      if(referenceActive){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(!movingSlots.has(slot)&&q[19]>0&&q[16]>0&&continuous.cacheField(q,referenceCoverage.view,"reference"))q[19]*=-1;}}}finally{continuous.endCache();}}
     device.queue.writeBuffer(iconBuffer,0,iconData);
     if(referenceActive){device.queue.writeBuffer(referenceIconBuffer,0,referenceIconData);const a=referenceCoverage.view,b=continuous.fieldFor("reference");if(a!==referenceBindingView||b!==referenceFieldBinding){referenceBindingView=a;referenceFieldBinding=b;rebindGlassGroups();}}
     if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView||beforeField!==continuous?.fieldView)rebindGlassGroups();
-    audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),...(continuous?{continuousSampleCache:continuous.stats()}:{}),backdrop:"current fragment color + original GPU sources"};
+    audit.glassSilhouettes={icons,homeIcons,...silhouetteAtlas.stats(),...(continuous?{continuousSampleCache:continuous.stats()}:{}),backdrop:"current fragment color + original GPU sources"};
     return animating;
   }
   function syncRouteSources(){
@@ -1069,7 +1110,7 @@ async function initialize(){
     // Offscreen squares read the existing STATIC wallpaper, as always.
     compositeGlassGroup=device.createBindGroup({
       layout:compositeGlassPipeline.getBindGroupLayout(0),
-      entries:entries(homeCompositeGlobalsBuffer)
+      entries:entries(homeCompositeGlobalsBuffer,sceneView,emptyDetailView,!!continuous)
     });
     // Only HOME CAPSULES read this frame's composited moving glass.
     homeCapsuleGroup=compositeSceneView?device.createBindGroup({
@@ -1550,6 +1591,13 @@ async function initialize(){
     if(!(pitchCSS>0))throw new Error("Original six-row pitch unavailable");
     trackTiles=all;
     trackIcons=all.map(cell=>cell.querySelector(".cta6-icon"));
+    // Layout is stable throughout the moving track. Measure normalized SVG
+    // bounds only on layout rebuild, not after every animated DOM write.
+    trackIconBounds=all.map((cell,i)=>{
+      const img=trackIcons[i];if(!img)return null;
+      const a=cell.getBoundingClientRect(),b=img.getBoundingClientRect();
+      return a.width>0&&a.height>0?[(b.left-a.left)/a.width,(b.top-a.top)/a.height,b.width/a.width,b.height/a.height]:null;
+    });
     trackRows=all.map(cell=>rowIndex.get(cell));
     trackColumns=all.map(cell=>columnIndex.get(cell));
     if(trackRows.some(row=>row===undefined||row<0||row>6)||
@@ -1776,7 +1824,7 @@ async function initialize(){
     // No CSS/DOM capture: directly re-render the CURRENT GPU square tiles
     // into a separate RGBA16F surface atop the original GPU photo. Build
     // its real mip levels in this same submission before the capsule draw.
-    // Native SVG mosaic icons are not optical inputs or duplicated sprites.
+    // GPU-owned mosaic icon optics are included in this completed lower layer.
     // The backdrop is dynamic ONLY while any black capsule is transitioning
     // toward/away from transparent green glass, avoiding idle GPU overhead.
     const homeCompositeActive=Boolean(audit.homeCtaGlass?.count)&&
@@ -1881,7 +1929,7 @@ async function initialize(){
     syncTileTints();
     syncMaterialProfiles();
     const artworkAnimating=syncGlassRegions();
-    const iconAnimating=syncGlassIcons(dt);
+    const iconAnimating=syncGlassIcons(dt,false);
     syncRouteSources();
     const hoverAnimating=authHover.advance(dt,reducedMotion.matches);
     authHover.writeTo(tileData,tileCount);

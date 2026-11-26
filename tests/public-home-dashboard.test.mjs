@@ -375,3 +375,15 @@ test("public top-bar text controls match /app text-link hover, not boxed-button 
   assert.doesNotMatch(asset("index.html"),/public-theme\.(js|css)|public-theme-toggle/);
   assert.doesNotMatch(style,/\.global-menu-control:hover\{\s*background:rgba\(255,255,255,\.13\)/);
 });
+
+test("home mosaic registers the same glass silhouette optics without a flat duplicate",()=>{
+ const mosaic=asset("assets/home-dashboard/dashboard-mosaic.js");
+ const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
+ assert.match(mosaic,/registerGlassSilhouette\(icon,\{tint:"black",opacity:1\}\)/);
+ assert.match(renderer,/trackIconBounds=all\.map/);
+ assert.match(renderer,/homeIcons\.push\(/);
+ assert.match(renderer,/boundsOverride:bounds/);
+ assert.match(renderer,/!movingSlots\.has\(slot\)&&lanes\[19\]>0/);
+ assert.match(style,/\.cta6-icon\[data-glass-icon-owned\]\{\s*clip-path:inset\(50%\)!important/);
+ assert.match(style,/user-select:none/);
+});

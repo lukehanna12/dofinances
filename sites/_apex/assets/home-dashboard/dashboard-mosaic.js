@@ -5,6 +5,7 @@
    The Dashboard CTA text is intentionally minimal. */
 import {PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource}
   from "../public-projects-catalog.js";
+import {registerGlassSilhouette} from "./dashboard-glass-silhouette.js";
 
 // Preserve all sixteen ORIGINAL 11x6 icon slots. Each slot receives the
 // corresponding project from the same ordered collection used on /projects.
@@ -45,6 +46,7 @@ if(root){
       icon.width=24;icon.height=24;
       icon.decoding="async";
       icon.draggable=false;
+      registerGlassSilhouette(icon,{tint:"black",opacity:1});
       icon.setAttribute("aria-hidden","true");
       tile.append(icon);
     }
