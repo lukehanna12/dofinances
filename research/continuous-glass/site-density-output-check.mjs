@@ -25,7 +25,7 @@ export async function run(){
  for(const mode of ["baseline","continuous"]){
   const code=(f16?"enable f16;\n":"")+(mode==="baseline"?original:specializeContinuousGlass(original,vectors.code)).replaceAll("__ORACLE_HALF_BODY__",f16?"return vec3<f32>(vec3<f16>(v));":"return v;");
   const module=device.createShaderModule({code});
-  programs.push({glass:await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsGlass"},fragment:{module,entryPoint:"fsGlass",targets:[{format:fmt,blend}]},primitive:{topology:"triangle-list"}),copy:await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsCopy"},fragment:{module,entryPoint:"fsCopy",targets:[{format:fmt}]},primitive:{topology:"triangle-list"}})});
+  programs.push({glass:await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsGlass"},fragment:{module,entryPoint:"fsGlass",targets:[{format:fmt,blend}]},primitive:{topology:"triangle-list"}}),copy:await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsCopy"},fragment:{module,entryPoint:"fsCopy",targets:[{format:fmt}]},primitive:{topology:"triangle-list"}})});
  }
  const render=async(dpr,mode)=>{
   const W=logical[0]*dpr,H=logical[1]*dpr,tiles=[],profiles=[],tints=[],region=[],icons=[];
