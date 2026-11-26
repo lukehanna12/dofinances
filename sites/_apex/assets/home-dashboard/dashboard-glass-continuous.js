@@ -1,4 +1,5 @@
-import {prepareTitleWord} from "./dashboard-glass-title-geometry.js";
+import {clockTextField} from "./dashboard-glass-text.js";
+import {prepareTitleWord,portableTitleAlpha} from "./dashboard-glass-title-geometry.js";
 // Opt-in public renderer candidate. The baseline shader and source pipeline
 // are unchanged unless glass-renderer=continuous is explicitly requested.
 export const continuousRequested=()=>new URLSearchParams(location.search).get("glass-renderer")==="continuous";
@@ -29,8 +30,9 @@ export async function loadContinuousGlass(device,base){
   index.set(name,i+1);
  });
  const titleSlot=rows.length, titleReserve=2048;
- const titleRequested=new URLSearchParams(location.search).get("glass-title-vector")==="1";
- const titleAsset=titleRequested?await fetch(base+"continuous-title-outline.json").then(r=>r.ok?r.json():null):null;
+ const titleMode=new URLSearchParams(location.search).get("glass-title-vector");
+ const titleAsset=titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
+ function rasterTitle(text,style,width,height,dpr){if(titleMode!=="portable"||!titleAsset)return null;const r=portableTitleAlpha(titleAsset,text,style,width,height,dpr);if(!r||!r.filled)return null;return {pixels:clockTextField(r.alpha,width,height,dpr),filled:r.filled};}
  const data=Float32Array.from(rows.flat());
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength+(titleAsset?titleReserve*48:0),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
  device.queue.writeBuffer(buffer,0,data);
@@ -84,7 +86,7 @@ export async function loadContinuousGlass(device,base){
   if(cacheBatch)cacheBatch.slots.add(cacheSlot);else{device.queue.submit([cmd.finish()]);cacheSubmissions++;}
   keys.set(cacheSlot,key);builds++;return true;
  }
- return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",fieldView,fieldFor,cacheField,beginCache,endCache,titleField,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,cacheSubmissions,parallelCache,bytes:side*side*capacity*16*(referenceFieldTexture?2:1)};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();fieldTexture.destroy();referenceFieldTexture?.destroy();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
+ return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",fieldView,fieldFor,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,cacheSubmissions,parallelCache,bytes:side*side*capacity*16*(referenceFieldTexture?2:1)};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();fieldTexture.destroy();referenceFieldTexture?.destroy();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
 }
 function once(s,a,b){if(!s.includes(a)||s.indexOf(a)!==s.lastIndexOf(a))throw Error("Continuous specialization mismatch: "+a.slice(0,100));return s.replace(a,b);}
 export function specializeContinuousGlass(s,code){

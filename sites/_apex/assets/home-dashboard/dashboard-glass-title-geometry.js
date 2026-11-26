@@ -167,6 +167,7 @@ export function prepareVectorPath(contours,{fillRule="nonzero",tolerance=1e-4}={
 // Word-specific reference geometry. Browser shaping and coverage remain
 // authoritative. Never load or export a system font file.
 export function prepareTitleWord(asset,text,style,width,height,dpr){
+ if(asset?.schema==="dofinances-portable-projects-word-v1"){const word=portableTitlePath(asset,text,style,width,height,dpr);if(!word)return null;return {...prepareVectorPath(word.contours,{tolerance:Math.max(.003,width*1e-5)}),width,height,dpr};}
  if(asset?.schema!=="dofinances-projects-word-outline-v1"||text!==asset.text||text!=="Projects"||
    !navigator.platform.includes("Mac")||Number(style.fontWeight)!==550||style.fontStyle!=="normal"||
    !style.fontFamily.includes("system-ui")||style.direction!=="ltr")return null;
@@ -187,4 +188,48 @@ export function prepareTitleWord(asset,text,style,width,height,dpr){
  paths.forEach((glyph,i)=>{for(const contour of glyph)contours.push(contour.map(seg=>seg.map(pt=>[(positions[i]+pt[0]*size)*dpr,(baseline+pt[1]*size)*dpr])));});
  const model=prepareVectorPath(contours,{tolerance:Math.max(.003,width*1e-5)});
  return {...model,width,height,dpr};
+}
+
+// A fixed, licensed word graphic is a portable option, not an assertion
+// that Inter and the platform system font are identical. Fit only to the
+// existing browser layout metrics; the optical field and final coverage
+// consume exactly the same transformed paths.
+export function portableTitlePath(asset,text,style,width,height,dpr){
+ if(asset?.schema!=="dofinances-portable-projects-word-v1"||asset.text!==text||text!=="Projects"||
+  !Number.isFinite(dpr)||dpr<=0||!Number.isFinite(asset.units)||asset.units<=0)return null;
+ const size=parseFloat(style.fontSize);
+ if(!Number.isFinite(size)||size<=0)return null;
+ const ctx=document.createElement("canvas").getContext("2d");
+ ctx.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;
+ ctx.letterSpacing=style.letterSpacing==="normal"?"0px":style.letterSpacing;
+ ctx.fontKerning=style.fontKerning||"auto";ctx.direction="ltr";
+ const m=ctx.measureText(text),sx=m.width/asset.metrics[0]*dpr/asset.units,sy=size*dpr/asset.units;
+ const baseline=(height/dpr-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
+ const map=(x,y)=>[x*sx,y*sy+baseline*dpr],contours=[],path=new Path2D();
+ for(const cmds of asset.commands){
+  let start=null,last=null,segments=[];
+  for(const c of cmds){
+   if(c[0]===0){start=map(c[1],c[2]);last=start;path.moveTo(...start);}
+   else if(c[0]===4){if(last[0]!==start[0]||last[1]!==start[1])segments.push([last,start]);path.closePath();}
+   else{
+    const next=[];for(let i=1;i<c.length;i+=2)next.push(map(c[i],c[i+1]));
+    if(c[0]===1){path.lineTo(...next[0]);if(last[0]!==next[0][0]||last[1]!==next[0][1])segments.push([last,next[0]]);}
+    else if(c[0]===2){path.quadraticCurveTo(...next[0],...next[1]);segments.push([last,...next]);}
+    else if(c[0]===3){path.bezierCurveTo(...next[0],...next[1],...next[2]);segments.push([last,...next]);}
+    else throw Error("Unknown wordmark command");
+    last=next.at(-1);
+   }
+  }
+  if(segments.length)contours.push(segments);
+ }
+ return {path,contours,metrics:{width:m.width,baseline},width,height,dpr};
+}
+export function portableTitleAlpha(asset,text,style,width,height,dpr){
+ const model=portableTitlePath(asset,text,style,width,height,dpr);if(!model)return null;
+ const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+ try{const ctx=canvas.getContext("2d",{willReadFrequently:true});ctx.fillStyle="#fff";ctx.fill(model.path,"nonzero");
+  const rgba=ctx.getImageData(0,0,width,height).data,alpha=new Uint8Array(width*height);let filled=0;
+  for(let i=0;i<alpha.length;i++){alpha[i]=rgba[i*4+3];filled+=+(alpha[i]>0);}
+  return {alpha,filled,model};
+ }finally{canvas.width=canvas.height=0;}
 }

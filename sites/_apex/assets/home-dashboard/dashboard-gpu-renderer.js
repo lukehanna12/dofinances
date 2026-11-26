@@ -1168,8 +1168,8 @@ async function initialize(){
       title.removeAttribute("data-glass-text-ready");return;
     }
     try{
-      const raster=rasterClockText(text,style,width,height,dpr);
-      if(continuous){const rw=Math.max(1,Math.ceil(rect.width*sourceDpr)),rh=Math.max(1,Math.ceil(rect.height*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:rasterClockText(text,style,rw,rh,sourceDpr);if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
+      const raster=continuous?.rasterTitle(text,style,width,height,dpr)||rasterClockText(text,style,width,height,dpr);
+      if(continuous){const rw=Math.max(1,Math.ceil(rect.width*sourceDpr)),rh=Math.max(1,Math.ceil(rect.height*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:(continuous?.rasterTitle(text,style,rw,rh,sourceDpr)||rasterClockText(text,style,rw,rh,sourceDpr));if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
       if(!raster){title.removeAttribute("data-glass-text-ready");return;}
       const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1]||glyphVectorIndex>0,previous=glyphMaskTexture;
       const texture=resized?device.createTexture({label:"Native clock text: 10-bit SDF, normals and full-pixel glyph coverage",
@@ -1184,7 +1184,7 @@ async function initialize(){
       if(vector&&texture!==previous)texture.destroy();
       if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
       audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
-        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,
+        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,titleMode:continuous?.titleMode||"system",
         pipeline:"shared-webgpu-glassPipeline",nativeEvidence:"2f4217b4530654e6e9fd432c9834528c0fdd2e89"};
     }catch(error){title.removeAttribute("data-glass-text-ready");console.warn("Glass heading contour:",String(error));}
   }
