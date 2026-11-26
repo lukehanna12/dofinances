@@ -204,7 +204,8 @@ export function portableTitlePath(asset,text,style,width,height,dpr){
  ctx.letterSpacing=style.letterSpacing==="normal"?"0px":style.letterSpacing;
  ctx.fontKerning=style.fontKerning||"auto";ctx.direction="ltr";
  const m=ctx.measureText(text),sx=m.width/asset.metrics[0]*dpr/asset.units,sy=size*dpr/asset.units;
- const baseline=(height/dpr-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
+ const lineHeight=parseFloat(style.lineHeight),logicalHeight=Number.isFinite(lineHeight)&&lineHeight>0?lineHeight:height/dpr;
+ const baseline=(logicalHeight-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
  const map=(x,y)=>[x*sx,y*sy+baseline*dpr],contours=[],path=new Path2D();
  for(const cmds of asset.commands){
   let start=null,last=null,segments=[];

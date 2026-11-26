@@ -3,7 +3,7 @@ import {rasterClockText} from "/site/dashboard-glass-text.js";
 export async function run(){
  const asset=await(await fetch("/site/continuous-portable-word.json")).json(),out=[];
  for(const size of [51.75,60.625,63,69.75])for(const dpr of [1,2,3]){
-  const style={fontStyle:"normal",fontWeight:"550",fontSize:size+"px",fontFamily:'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',letterSpacing:(-.035*size)+"px",direction:"ltr",fontKerning:"auto"};
+  const style={fontStyle:"normal",fontWeight:"550",fontSize:size+"px",fontFamily:'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',letterSpacing:(-.035*size)+"px",lineHeight:(1.12*size)+"px",direction:"ltr",fontKerning:"auto"};
   const ctx=document.createElement("canvas").getContext("2d");ctx.font=style.fontWeight+" "+style.fontSize+" "+style.fontFamily;ctx.letterSpacing=style.letterSpacing;
   const w=Math.ceil(ctx.measureText(asset.text).width*dpr),h=Math.ceil(size*1.12*dpr),r=portableTitleAlpha(asset,asset.text,style,w,h,dpr),f=prepareTitleWord(asset,asset.text,style,w,h,dpr),old=rasterClockText(asset.text,style,w,h,dpr),dv=new DataView(old.pixels.buffer);
   if(!r||!f||!old)throw Error("Missing portable title field");
