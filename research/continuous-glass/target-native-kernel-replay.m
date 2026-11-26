@@ -29,11 +29,11 @@ static id<MTLTexture> texture(NSUInteger w,NSUInteger h,MTLPixelFormat format,BO
  d.storageMode=MTLStorageModeShared;d.usage=MTLTextureUsageShaderRead|MTLTextureUsageShaderWrite;
  id<MTLTexture> t=[dev newTextureWithDescriptor:d];if(!t)abort();return t;
 }
-static void write(id<MTLTexture> t,NSUInteger level,NSData *data,NSUInteger bpp){
+static void writeTexture(id<MTLTexture> t,NSUInteger level,NSData *data,NSUInteger bpp){
  NSUInteger w=MAX(1,t.width>>level),h=MAX(1,t.height>>level);
  if(data.length!=w*h*bpp)abort();[t replaceRegion:MTLRegionMake2D(0,0,w,h) mipmapLevel:level withBytes:data.bytes bytesPerRow:w*bpp];
 }
-static NSData *read(id<MTLTexture> t,NSUInteger level,NSUInteger bpp){
+static NSData *readTexture(id<MTLTexture> t,NSUInteger level,NSUInteger bpp){
  NSUInteger w=MAX(1,t.width>>level),h=MAX(1,t.height>>level);NSMutableData *d=[NSMutableData dataWithLength:w*h*bpp];
  [t getBytes:d.mutableBytes bytesPerRow:w*bpp fromRegion:MTLRegionMake2D(0,0,w,h) mipmapLevel:level];return d;
 }
@@ -57,15 +57,15 @@ static void replay(void){
  const NSUInteger w=64,h=64;NSMutableData *d=[NSMutableData dataWithLength:w*h*4];uint8_t *p=d.mutableBytes;
  for(NSUInteger y=0;y<39;y++)for(NSUInteger x=0;x<55;x++){uint8_t v=x==26?136:43;NSUInteger i=(y*w+x)*4;p[i]=p[i+1]=p[i+2]=v;p[i+3]=255;}
  id<MTLTexture> input=texture(w,h,MTLPixelFormatBGRA8Unorm,NO),surface=texture(w,h,MTLPixelFormatBGRA8Unorm,YES);
- write(input,0,d,4);
+ writeTexture(input,0,d,4);
  NSData *u=unhex(@"ebffebff00000000000000003500250080008000400040000000010000000000");
  dispatch(@"variable_blur_copy_base_mip_compute",input,surface,u,MTLSizeMake(4,4,1),MTLSizeMake(20,20,1));
  printf("REPLAY input %s\n",hash(d).UTF8String);
- printf("REPLAY mip0 %s\n",hash(read(surface,0,4)).UTF8String);
+ printf("REPLAY mip0 %s\n",hash(readTexture(surface,0,4)).UTF8String);
  down(surface,0,@"variable_blur_downsample_compute_agx2");
- printf("REPLAY mip1 %s\n",hash(read(surface,1,4)).UTF8String);
+ printf("REPLAY mip1 %s\n",hash(readTexture(surface,1,4)).UTF8String);
  down(surface,1,@"variable_blur_downsample_compute_agx2");
- printf("REPLAY mip2 %s\n",hash(read(surface,2,4)).UTF8String);
+ printf("REPLAY mip2 %s\n",hash(readTexture(surface,2,4)).UTF8String);
 }
 static void impulse(void){
  const NSUInteger w=64,h=64;id<MTLTexture> t=texture(w,h,MTLPixelFormatRGBA16Float,YES);
@@ -81,8 +81,8 @@ static void impulse(void){
      int x=axis?other:index,y=axis?index:other;p[(y*64+x)*4+k]=half(1);
     }
    }
-   write(t,0,d,8);down(t,0,@"variable_blur_downsample_compute_agx2");
-   NSData *r=read(t,1,8);const uint16_t *q=r.bytes;
+   writeTexture(t,0,d,8);down(t,0,@"variable_blur_downsample_compute_agx2");
+   NSData *r=readTexture(t,1,8);const uint16_t *q=r.bytes;
    for(int k=0;k<4;k++){printf(" %d:%04x",start+k,q[(16*32+16)*4+k]);}
   }
   puts("");
