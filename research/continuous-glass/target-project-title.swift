@@ -74,7 +74,9 @@ func shape(_ size:Double)->[String:Any]{
   for i in 0..<n {
    ids.append(Int(gs[i]));positions.append(Double(ps[i].x)/size)
    guard let p=CTFontCreatePathForGlyph(font,gs[i],nil) else{fatalError("Missing title glyph")}
-   paths.append(contours(p,size))
+   // CoreText may return overlapping component subpaths. Only the actual
+   // boundary of their filled union is a valid signed-distance reference.
+   paths.append(contours(p.normalized(using:.winding),size))
   }
  }
  var asc:CGFloat=0,desc:CGFloat=0,lead:CGFloat=0
