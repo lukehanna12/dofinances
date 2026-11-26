@@ -51,7 +51,7 @@ test("Regular uses one shared GPU shader, material buffer and both frame paths",
  assert.match(s,/let face=regularFace\(source\.rgb,profile\)/);
  assert.match(s,/dot\(v,r0\),dot\(v,r1\),dot\(v,r2\)/);
  assert.doesNotMatch(s,/color=mix\(vec3<f32>\(profile\.face/);
- assert.match(s,/let routePane=authPane && !homeCapsule/);
+ assert.match(s,/let routePane=authPane && state\.fit\.w>0\.0/);
  assert.match(r,/binding:5,resource:\{buffer:materialBuffer\}/);
  assert.equal((r.match(/syncMaterialProfiles\(\);/g)||[]).length,2);
  assert.match(r,/attributeFilter:\["data-glass-material"\]/);

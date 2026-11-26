@@ -82,8 +82,7 @@ test("homepage capsules sample live squares in viewport coordinates, never the 1
  const renderer=asset("dashboard-gpu-renderer.js");
  // Home material tag -9 is a capsule on the HOME canvas, even though its
  // negative tag also marks it as a glass pane for shared material stages.
- assert.match(shader,/let homeCapsule=tile\.properties\.y == -9\.0;/);
- assert.match(shader,/let routePane=authPane && !homeCapsule;/);
+ assert.match(shader,/let routePane=authPane && state\.fit\.w>0\.0;/);
  assert.match(shader,/var backdropExtent=state\.viewport\.xy;/);
  assert.match(shader,/var backdropPosition=in\.position\.xy;/);
  assert.match(shader,/if\(routePane\)\{\s*backdropExtent\.y=max\(1\.0,state\.fit\.w\);\s*backdropPosition\.y-=state\.pointer\.w;/);

@@ -300,7 +300,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(renderer,/tileData\[p\+5\]=authPaneMaterialTag\(node\)/);
   assert.match(hover,/mode="nested"/);
   // Route panes still use the auth-scrolling backdrop; Home capsules do not.
-  assert.match(shader,/let routePane=authPane && !homeCapsule;/);
+  assert.match(shader,/let routePane=authPane && state\.fit\.w>0\.0;/);
   assert.match(shader,/if\(routePane\)\{/);
   // An optional unsupported-GPU DISMISSAL blur is not a CSS imitation
   // of the native glass material. Backdrop filters remain forbidden.
