@@ -84,6 +84,7 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"fn titleGlyphField(local:vec2<f32>)->vec4<f32>{","fn titleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{");
  s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(all(abs(local-vec2<f32>(p)-title.coverageRect.xy)<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
  s=once(s,"let glyph=titleGlyphField(in.local);","let glyph=titleGlyphField(in.local,in.tileIndex);");
+ s=once(s,"return textureLoad(backdrop,coord,0);","// Reconstruct the fixed logical source at the current output sample.\\n  let dims=vec2<f32>(textureDimensions(backdrop,0));\\n  if(all(abs(input.uv*dims-input.position.xy)<vec2<f32>(0.001))){return textureLoad(backdrop,coord,0);}\\n  return levelBilinear(input.uv,0);");
  const start=s.indexOf("fn supercircleSDF("),end=s.indexOf("/* AIR glass_background_sdf_no_bleed_lph",start);
  if(start<0||end<start)throw Error("Missing geometry range");
  let geometry=s.slice(start,end);
@@ -122,8 +123,8 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"exp(-abs(silhouetteSigned)*1.16)","exp(-abs(silhouetteSigned)/referenceDensity()*1.16)");
  s=s.replaceAll("thresholdMix(signed)","thresholdMix(signed/referenceDensity())");
  const mipStart=s.indexOf("fn mipSample("),mipEnd=s.indexOf("// Same explicit bilinear",mipStart);
- s=s.slice(0,mipStart)+once(s.slice(mipStart,mipEnd),"let chosen=clamp(lod,0.0,maxLevel);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maxLevel);")+s.slice(mipEnd);
- s=once(s,"let chosen=clamp(lod,0.0,maximum);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maximum);");
+ s=s.slice(0,mipStart)+once(s.slice(mipStart,mipEnd),"let chosen=clamp(lod,0.0,maxLevel);","let chosen=clamp(lod+log2(max(0.001,f32(textureDimensions(backdrop,0).x)*state.viewport.w/(2.0*state.viewport.x))),0.0,maxLevel);")+s.slice(mipEnd);
+ s=once(s,"let chosen=clamp(lod,0.0,maximum);","let chosen=clamp(lod+log2(max(0.001,f32(textureDimensions(projectRegionBackdrop,0).x)*state.viewport.w/state.viewport.x)),0.0,maximum);");
  s=once(s,"max(footprint.x,footprint.y)))+max(0.0,lod)","max(footprint.x,footprint.y)*referenceDensity()))+max(0.0,lod)");
  for(const distance of ["signed+inner","signed+outer"]){
   s=s.replaceAll("blurDistribution(nativeHalf1("+distance+"),d)","blurDistribution(nativeHalf1(("+distance+")/referenceDensity()),d/referenceDensity())");

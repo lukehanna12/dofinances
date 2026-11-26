@@ -650,7 +650,7 @@ async function initialize(){
     compositeScene=null,compositeSceneView=null,compositeMips=[],
     compositeBackdropGroup=null,compositeGlassGroup=null,homeCapsuleGroup=null,
     homeCompositeFrames=0,
-    tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,physicalAuthHeight=0,
+    tileCount=0,instanceCount=0,physicalWidth=0,physicalHeight=0,physicalAuthHeight=0,sourceWidth=0,sourceHeight=0,sourceDpr=1,
     dpr=1,sceneTop=0;
   // A shape-only texture for the *letterforms* of route-owned glass text.
   // It contains font alpha, never photographic pixels, optics or captured DOM.
@@ -720,7 +720,7 @@ async function initialize(){
     // The same frame clock drives the GPU quad and authored icon.
     uniform[2]=reducedMotion.matches?1:introStart===null?0:Math.min(1,(performance.now()-introStart)/1000);
     uniform[3]=dpr;
-    const fit=coverUVScale(physicalWidth,physicalHeight,photoWidth,photoHeight);
+    const fit=coverUVScale(continuous?sourceWidth:physicalWidth,continuous?sourceHeight:physicalHeight,photoWidth,photoHeight);
     uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=0;
     uniform[8]=pointer.x*dpr;uniform[9]=(pointer.y-sceneTop)*dpr;
     uniform[10]=pointer.enabled;uniform[11]=0;
@@ -913,6 +913,7 @@ async function initialize(){
   }
   function sourceViews(){
     return {scene:{width:physicalWidth,height:physicalHeight,top:sceneTop,dpr},
+      ...(continuous?{base:{width:sourceWidth,height:sourceHeight,top:sceneTop,dpr:sourceDpr}}:{}),
       route:{width:physicalWidth,height:physicalAuthHeight,top:authOriginTop(),dpr}};
   }
   function syncBaseSources(){
@@ -1374,8 +1375,16 @@ async function initialize(){
     const h=Math.max(1,Math.floor(viewport.height*dpr));
     if(w>device.limits.maxTextureDimension2D||h>device.limits.maxTextureDimension2D)
       throw new Error("Visible image region exceeds GPU maxTextureDimension2D");
-    const sized=w!==physicalWidth||h!==physicalHeight||!scene;
-    physicalWidth=w;physicalHeight=h;
+    // Keep the authored optical source lattice independent of display density.
+    // Dynamic underlays still render at output density; their continuous
+    // sampler maps LOD to their own logical source spacing.
+    const sourceScale=continuous?2:dpr;
+    const sw=Math.max(1,Math.floor(innerWidth*sourceScale)),sh=Math.max(1,Math.floor(viewport.height*sourceScale));
+    if(sw>device.limits.maxTextureDimension2D||sh>device.limits.maxTextureDimension2D)throw Error("Reference source exceeds GPU limit");
+    const sourceSized=sw!==sourceWidth||sh!==sourceHeight||!scene;
+    const sized=w!==physicalWidth||h!==physicalHeight||sourceSized;
+    physicalWidth=w;physicalHeight=h;sourceWidth=sw;sourceHeight=sh;sourceDpr=sourceScale;
+    if(continuous)audit.sourceLattice={width:sw,height:sh,density:sourceScale,outputWidth:w,outputHeight:h,scope:"fixed logical base; dynamic composite uses actual source spacing"};
     document.body.style.setProperty("--dashboard-scene-top",sceneTop+"px");
     audit.sceneTopCSS=sceneTop;
     audit.sceneCSSHeight=viewport.height;
@@ -1386,7 +1395,7 @@ async function initialize(){
     if(sized){
       canvas.width=w;canvas.height=h;
       // The scroll-anchored auth canvas has a separate, content-sized height.
-      scene?.destroy();
+      if(sourceSized)scene?.destroy();
       compositeScene?.destroy();projectRegionScene?.destroy();
       secondRouteScene?.destroy();secondRouteScene=null;secondRouteMips=[];secondRouteCopyGroup=null;
       offscreenFrame?.destroy();
@@ -1400,15 +1409,14 @@ async function initialize(){
           usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC
         });
       }
-      scene=rgba16Texture(device,w,h);
-      sceneView=scene.createView();
+      if(sourceSized){scene=rgba16Texture(device,sourceWidth,sourceHeight);sceneView=scene.createView();}
       // Allocate the full-resolution secondary scene only when an upper
       // glass layer actually samples it. Preserve its format and every mip.
       compositeScene=null;compositeSceneView=null;homeCapsuleGroup=null;routeMenuGroup=null;
       // Clear uses a half-resolution raw base and its own mip chain.
       // Never sample the glass-composited Home scene.
       const halfBase=Math.min(1,scene.mipLevelCount-1);
-      projectRegionWidth=Math.max(1,w>>halfBase);projectRegionHeight=Math.max(1,h>>halfBase);
+      projectRegionWidth=Math.max(1,sourceWidth>>halfBase);projectRegionHeight=Math.max(1,sourceHeight>>halfBase);
       projectRegionScene=rgba16Texture(device,projectRegionWidth,projectRegionHeight);
       projectRegionSceneView=projectRegionScene.createView();
       projectRegionCopyGroup=device.createBindGroup({layout:compositeBackdropPipeline.getBindGroupLayout(0),
@@ -1449,7 +1457,7 @@ async function initialize(){
         layout:compositeBackdropPipeline.getBindGroupLayout(0),
         entries:[{binding:0,resource:sceneView}]
       });
-      scenePending=true;
+      scenePending ||= sourceSized;
     }
     // An already fully dismissed mosaic contributes no visible pixels.
     // Resize the full-resolution scene, but do not invalidate/re-measure
@@ -1533,14 +1541,14 @@ async function initialize(){
     pass.setPipeline(backdropPipeline);
     pass.setBindGroup(0,backgroundGroup);
     pass.draw(3);
-    sourcePainter.draw(pass,baseSourceEntries,"scene","offscreen");
+    sourcePainter.draw(pass,baseSourceEntries,continuous?"base":"scene","offscreen");
     pass.end();
     for(let level=1;level<scene.mipLevelCount;level++){
       const next=encoder.beginComputePass({label:"mip level "+level});
       next.setPipeline(mipPipeline);
       next.setBindGroup(0,mipGroups[level-1]);
-      next.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
-        Math.ceil(Math.max(1,physicalHeight>>level)/8),1);
+      next.dispatchWorkgroups(Math.ceil(Math.max(1,sourceWidth>>level)/8),
+        Math.ceil(Math.max(1,sourceHeight>>level)/8),1);
       next.end();
     }
     device.queue.submit([encoder.finish()]);
@@ -2080,8 +2088,9 @@ async function initialize(){
     ...(new URLSearchParams(location.search).has("glass-source-proof")?{async sourceRegionDigest(kind,rect){
       const texture=kind==="base"?scene:kind==="underlay"?(routeActiveLayers.length>1?secondRouteScene:compositeScene):null;
       if(!texture||!Array.isArray(rect)||rect.length!==4||!rect.every(Number.isFinite))throw TypeError("Owned source region required");
-      const x=Math.max(0,Math.floor(rect[0]*dpr)),y=Math.max(0,Math.floor((rect[1]-sceneTop)*dpr));
-      const w=Math.min(128,physicalWidth-x,Math.max(1,Math.ceil(rect[2]*dpr))),h=Math.min(128,physicalHeight-y,Math.max(1,Math.ceil(rect[3]*dpr)));
+      const sampleDpr=kind==="base"?sourceDpr:dpr;
+      const x=Math.max(0,Math.floor(rect[0]*sampleDpr)),y=Math.max(0,Math.floor((rect[1]-sceneTop)*sampleDpr));
+      const w=Math.min(128,texture.width-x,Math.max(1,Math.ceil(rect[2]*sampleDpr))),h=Math.min(128,texture.height-y,Math.max(1,Math.ceil(rect[3]*sampleDpr)));
       if(w<1||h<1)throw RangeError("Source region outside viewport");
       const stride=Math.ceil(w*8/256)*256,b=device.createBuffer({size:stride*h,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
       try{const enc=device.createCommandEncoder({label:"Owned internal source numeric digest (not display)"});
