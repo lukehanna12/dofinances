@@ -6,6 +6,7 @@ import {createGlassSilhouetteAtlas} from "/site/dashboard-glass-silhouette.js";
 import {resolveRegularMaterial,regularMaterialLanes} from "/site/dashboard-glass-material.js";
 export async function run(){
  const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"}),f16=adapter.features.has("shader-f16"),device=await adapter.requestDevice({requiredFeatures:f16?["shader-f16"]:[]});
+ const errors=[];device.addEventListener('uncapturederror',e=>errors.push(e.error.message));
  const original=await(await fetch("/site/dashboard-gpu-glass.wgsl")).text(),data=await loadContinuousGlass(device,"/site/"),names=Object.keys((await(await fetch("/site/continuous-icon-vectors.json")).json()).assets);
  const atlas=createGlassSilhouetteAtlas(device);
  const pipelines=[];
@@ -25,14 +26,14 @@ export async function run(){
     if(a<0||b<0)throw Error("Diagnostic optical range missing");
     code=code.slice(0,a)+"  return vec3<f32>(signed/pointScale,normal);"+code.slice(b);
    }
-   const module=device.createShaderModule({code});
+   const module=device.createShaderModule({code});const info=await module.getCompilationInfo();if(info.messages.some(x=>x.type==='error'))throw Error(mode+': '+info.messages.map(x=>x.message).join(';'));
    pipelines.push(await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsGlass"},fragment:{module,entryPoint:"fsGlass",targets:[{format:fmt,blend}]},primitive:{topology:"triangle-list"}}));
   }
   // Prepare all SVGs and native-pixel coverage before measured renders.
   for(const {o,img} of owners)atlas.sync(o,img,{width:92,height:88,dpr:1,scheme:"dark",hover:false,reduced:true,slot:owners.findIndex(v=>v.img===img),ownerRect:[0,0,92,88]});
   await new Promise(r=>setTimeout(r,250));
   const results=[];
-  for(const scale of [1,2]){
+  for(const scale of (new URLSearchParams(location.search).has('density1')?[1]:[2])){
    const W=400*scale,H=384*scale,mips=6,scene=tex(W,H,mips,fmt,GPUTextureUsage.STORAGE_BINDING);
    const source=new DataView(new ArrayBuffer(W*H*8));
    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
@@ -69,7 +70,7 @@ export async function run(){
     if(mode)device.queue.writeBuffer(buffers[5],0,mode===1?cachedIcons:Float32Array.from(icons));
     const isContinuous=mode===1||mode===2||mode===4,pipeline=pipelines[mode<3?Math.min(mode,1):mode-1],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:isContinuous?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
-    await draw();const ms=[];for(let n=0;n<3;n++)ms.push(await draw());
+    const ms=[];if(mode<3){await draw();for(let n=0;n<3;n++)ms.push(await draw());}
     await draw(true);await read.mapAsync(GPUMapMode.READ);
     const bytes=new Uint8Array(read.getMappedRange()),raw=new Uint8Array(W*H*8);for(let y=0;y<H;y++)raw.set(bytes.subarray(y*stride,y*stride+W*8),y*W*8);read.unmap();
     resultsForMode.push({raw,ms});
@@ -86,6 +87,6 @@ export async function run(){
    results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
   }
-  return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,f16},results};
+  if(errors.length)throw Error(errors.join(';'));return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,f16},results};
  }finally{owners.forEach(({o})=>o.remove());atlas.dispose();data.dispose();glyph.destroy();detail.destroy();device.destroy();}
 }
