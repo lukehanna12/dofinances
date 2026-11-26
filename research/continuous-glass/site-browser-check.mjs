@@ -43,7 +43,7 @@ try{
  await send("Page.enable");await send("Runtime.enable");await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:process.env.LG_INTERACTIONS?"no-preference":"reduce"}]});
  const origin="http://127.0.0.1:"+server.address().port,results=[];
  const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
- for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:["baseline","continuous"])){
+ for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:process.env.LG_PERFORMANCE?(process.env.LG_PERFORMANCE==="reverse"?["continuous","baseline"]:["baseline","continuous"]):["baseline","continuous"])){
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":process.env.LG_PORTABLE_TITLE?"&glass-title-vector=portable":process.env.LG_LOCAL_TITLE?"&glass-title-vector="+(process.env.LG_LOCAL_TITLE==="reuse"?"local-reuse":"local"):"")+(process.env.LG_DENSITY_CHECK||process.env.LG_ROUTE_UNDERLAY?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
@@ -131,6 +131,20 @@ try{
   const projects=await state();if(mode==="continuous"&&(process.env.LG_TITLE_OUTLINE||process.env.LG_PORTABLE_TITLE||process.env.LG_LOCAL_TITLE)&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
   await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
   if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
+  if(process.env.LG_PERFORMANCE){
+   await send("Performance.enable");
+   const readMetrics=async()=>Object.fromEntries((await send("Performance.getMetrics")).metrics.map(x=>[x.name,x.value]));
+   const runs=[];
+   for(let trial=0;trial<4;trial++){
+    await ev(`document.querySelector("#public-route-content").scrollTop=0`);await sleep(150);
+    const before=await readMetrics(),b=await state();
+    const scroll=await ev(`(async()=>{const outlet=document.querySelector("#public-route-content"),a=window.__dashboardWebGPU.frameCount,t=performance.now(),frames=[];for(let i=0;i<24;i++){outlet.scrollTop=Math.max(0,Math.min(outlet.scrollHeight-outlet.clientHeight,(i<=12?i:24-i)*15.5));await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now());}return {ms:performance.now()-t,frameDelta:window.__dashboardWebGPU.frameCount-a,intervals:frames.slice(1).map((v,i)=>v-frames[i])};})()`);
+    await sleep(100);const after=await readMetrics(),a=await state();
+    const metrics=Object.fromEntries(["TaskDuration","ScriptDuration","LayoutDuration","RecalcStyleDuration","LayoutCount","RecalcStyleCount"].map(k=>[k,after[k]-before[k]]));
+    runs.push({scroll,metrics,cacheBefore:b.cache,cacheAfter:a.cache,errors:a.errors});
+   }
+   results.push({mode,initialMs:Date.now()-t,projects,runs});continue;
+  }
   if(process.env.LG_INTERACTIONS){
    await wait(`document.querySelector(".public-projects-root.is-settled")`,"Entry not settled");
    const steps=[];
