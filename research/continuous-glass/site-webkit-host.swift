@@ -75,7 +75,9 @@ import WebKit
   Task {do{try await run();window.close();exit(0)}catch{log("error",String(describing:error));window.close();exit(1)}}
  }
 }
-let app=NSApplication.shared;app.setActivationPolicy(.accessory)
-let d=Driver();d.start(URL(string:CommandLine.arguments[1])!)
-DispatchQueue.main.asyncAfter(deadline:.now()+45){print("WebKit host timeout");exit(1)}
-app.run()
+MainActor.assumeIsolated {
+ let app=NSApplication.shared;app.setActivationPolicy(.accessory)
+ let d=Driver();d.start(URL(string:CommandLine.arguments[1])!)
+ DispatchQueue.main.asyncAfter(deadline:.now()+45){print("WebKit host timeout");exit(1)}
+ withExtendedLifetime(d){app.run()}
+}
