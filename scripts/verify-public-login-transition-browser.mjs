@@ -1325,7 +1325,29 @@ try{
     "Rowmate must wrap to the row BELOW the expanded first card");
   assert.ok(Math.abs(expandedFirst.pushedLeft-expandedFirst.gridLeft)<2,
     "Displaced panels must enter at the left side of the next row");
-  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
+  const closeDissolve=await evaluate(`(()=>{
+    const root=document.querySelector('.public-projects-root');
+    const button=root.querySelector('.project-showcase-expand-close');
+    const row=root.querySelector('.is-expanded .project-showcase-top');
+    button.click();
+    const optical=button.getAnimations().find(a=>a.effect.getKeyframes().some(f=>Object.hasOwn(f,"--project-close-dissolve")));
+    const reserve=row.getAnimations().find(a=>a.effect.getKeyframes().some(f=>Object.hasOwn(f,"paddingRight")));
+    if(!optical||!reserve)return {missing:true};
+    const duration=optical.effect.getTiming().duration,ot=optical.currentTime,rt=reserve.currentTime;
+    const values=[];
+    for(const p of [0,.25,.5,.75,.99]){
+      optical.currentTime=duration*p;reserve.currentTime=duration*p;
+      values.push({progress:+getComputedStyle(button).getPropertyValue("--project-close-dissolve"),padding:parseFloat(getComputedStyle(row).paddingRight)});
+    }
+    optical.currentTime=ot;reserve.currentTime=rt;
+    return {duration,values,inert:getComputedStyle(button).pointerEvents==="none",tabIndex:button.tabIndex,
+      end:parseFloat(reserve.effect.getKeyframes().at(-1).paddingRight)};
+  })()`);
+  assert.ok(!closeDissolve.missing&&closeDissolve.duration<440&&closeDissolve.duration>180,JSON.stringify(closeDissolve));
+  assert.ok(closeDissolve.inert&&closeDissolve.tabIndex===-1,JSON.stringify(closeDissolve));
+  assert.ok(closeDissolve.values.every((v,i)=>Math.abs(v.progress-[0,.25,.5,.75,.99][i])<.01),JSON.stringify(closeDissolve));
+  assert.ok(closeDissolve.values.every((v,i,a)=>i===0||v.padding<a[i-1].padding),JSON.stringify(closeDissolve));
+  assert.equal(closeDissolve.end,0);
   // X, selected pane AND each downstream row must all use the forward
   // entry ease-out, not WAAPI.reverse() (which makes closure ease IN).
   // Preserve the exact spatial return path and all intermediate wrap/fades.

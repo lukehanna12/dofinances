@@ -3,7 +3,7 @@
  * module only plans DOM grid positions and animates actual HTML rectangles.
  * No CSS optical substitute, second canvas or private API is introduced.
  */
-import {DISMISS_MS} from "./home-dashboard/dashboard-public-dismiss.js";
+import {DISMISS_MS,tileDismissIconOpacity,tileDismissBlur,tileDismissScale} from "./home-dashboard/dashboard-public-dismiss.js";
 
 // Preserve the original selected-card expansion and forward-eased X close.
 // All displaced cards share the exact same temporal progress as the
@@ -12,6 +12,19 @@ export const EXPAND_MS=620;
 const SELECTED_EASING="cubic-bezier(.22,.72,.24,1)";
 // Match selected-pane progress while retaining a shared conveyor pitch.
 const CONVEYOR_EASING=SELECTED_EASING;
+// Small controls lose coherence faster than the nominal 120px homepage tile.
+export function projectCloseDismissDuration(width,height){
+  if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)
+    throw new RangeError("Invalid close control dimensions");
+  return Math.max(180,Math.min(DISMISS_MS,Math.round(DISMISS_MS*Math.sqrt(Math.min(width,height)/120))));
+}
+export function projectCloseReserveFrames(reserve){
+  if(!Number.isFinite(reserve)||reserve<0)throw new RangeError("Invalid badge reserve");
+  return Array.from({length:17},(_,i)=>{
+    const p=i/16,s=p*p*(3-2*p);
+    return {offset:p,paddingRight:cssPixels(reserve*(1-s))};
+  });
+}
 const clampInt=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 
 /* Pure stable row packing. The clicked card occupies its ENTIRE original row,
@@ -161,6 +174,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   closeButton.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   closeButton.querySelector("svg").dataset.glassPaint="foreground";
   closeButton.hidden=true;
+  closeButton.tabIndex=-1;
   grid.append(closeButton);
   const abort=new AbortController();
   let state=null,disposed=false,resizeScheduled=false;
@@ -202,6 +216,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     }
     root.classList.remove("has-project-expansion","is-project-reflowing","is-project-retargeting");
     closeButton.hidden=true;
+    closeButton.tabIndex=-1;
+    closeButton.removeAttribute("data-project-close-dismissing");
     closeButton.style.top="";
     closeButton.style.left="";
   };
@@ -216,6 +232,35 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     clearInline();
     if(focus&&!disposed&&root.isConnected&&!previous.card.hidden)
       previous.card.focus({preventScroll:true});
+  }
+  function beginCloseDissolve(current,reserve){
+    const r=box(closeButton),duration=projectCloseDismissDuration(r.width,r.height);
+    closeButton.dataset.projectCloseDismissing="";
+    closeButton.tabIndex=-1;
+    closeButton.blur();
+    // The same GPU pane keeps its press spring, but is no longer a hit target.
+    const optical=animate(closeButton,[
+      {"--project-close-dissolve":"0"},{"--project-close-dissolve":"1"}
+    ],{duration,easing:"linear"});
+    const glyph=closeButton.querySelector("svg");
+    const glyphFrames=Array.from({length:17},(_,i)=>{
+      const p=i/16,scale=tileDismissScale(p),size=Math.min(r.width,r.height)/120;
+      return {offset:p,opacity:tileDismissIconOpacity(p),
+        filter:"blur("+tileDismissBlur(p)*size+"px)",
+        transform:"scale("+scale.x+","+scale.y+")"};
+    });
+    const iconMotion=animate(glyph,glyphFrames,{duration,easing:"linear"});
+    const badgeMotion=animate(current.card.querySelector(".project-showcase-top"),
+      projectCloseReserveFrames(reserve),{duration,easing:"linear"});
+    for(const motion of [optical,iconMotion,badgeMotion])if(motion)current.animations.push(motion);
+    const retire=()=>{
+      if(state!==current||current.phase!=="closing")return;
+      if(optical&&optical.playState!=="finished"){optical.finished.then(retire,()=>{});return;}
+      closeButton.hidden=true;
+      animateGlass(90);
+    };
+    if(optical)optical.finished.then(retire,()=>{});
+    else retire();
   }
   function open(card,{immediate=false,keyboard=false}={}){
     if(disposed||state||card.hidden||root.classList.contains("is-exiting"))return;
@@ -331,8 +376,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
        width:cssPixels(expandedRect.width),height:cssPixels(expandedRect.height),"--project-regular-progress":"1"}
     ],{duration,easing:SELECTED_EASING}):null;
     if(selectedAnimation)animations.push(selectedAnimation);
-    // X stays attached to the growing card's actual right edge, then follows
-    // that same edge backwards at identical velocity during collapse.
+    // X stays attached to the growing card's actual right edge. Closing
+    // follows that edge only while the shorter optical dissolve is visible.
     const buttonAnimation=duration?animate(closeButton,[
       {left:cssPixels(selectedRect.right-gridRect.left-53),
        opacity:0,transform:"translate3d(0,-8px,0)"},
@@ -431,10 +476,16 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       return [node,{left:r.left-origin.left,top:r.top-origin.top,width:r.width,height:r.height,
         opacity:Number(style.opacity),regular:Number(style.getPropertyValue("--project-regular-progress"))||0,
         descriptionSpace:style.getPropertyValue("--project-description-space"),
-        expandedBand:style.getPropertyValue("--project-expanded-band-height")}];
+        expandedBand:style.getPropertyValue("--project-expanded-band-height"),
+        badgeReserve:Number.parseFloat(getComputedStyle(node.querySelector(".project-showcase-top")).paddingRight)||0}];
     }));
-    const x=box(closeButton),xOpacity=Number(getComputedStyle(closeButton).opacity)||0;
-    const xStart={left:x.left-origin.left,top:x.top-origin.top,opacity:xOpacity};
+    const x=box(closeButton),xStyle=getComputedStyle(closeButton);
+    const xDissolve=Number.parseFloat(xStyle.getPropertyValue("--project-close-dissolve"))||0;
+    const xOpacity=closeButton.hidden?0:(Number(xStyle.opacity)||0)*tileDismissIconOpacity(xDissolve);
+    const oldRect=presented.get(old);
+    const xStart=closeButton.hidden?
+      {left:oldRect.left+oldRect.width-53,top:oldRect.top+13,opacity:0}:
+      {left:x.left-origin.left,top:x.top-origin.top,opacity:xOpacity};
     const focused=document.activeElement===closeButton;
     discard();
     if(card)open(card,{immediate:true,keyboard:false});
@@ -488,6 +539,13 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         const motion=animate(node,frames,{duration:EXPAND_MS,easing:SELECTED_EASING});
         if(motion)current.animations.push(motion);
       }
+      // Reopening during a dissolve starts at the actually presented badge.
+      if(card&&previous.phase==="closing"&&(node===old||node===card)){
+        const reserveMotion=animate(node.querySelector(".project-showcase-top"),[
+          {paddingRight:cssPixels(from.badgeReserve)},{paddingRight:node===card?"53px":"0px"}
+        ],{duration:EXPAND_MS,easing:SELECTED_EASING});
+        if(reserveMotion)current.animations.push(reserveMotion);
+      }
     }
     // One close button transfers to the new pane. Its alpha recedes
     // during the handoff and returns along the incoming right edge.
@@ -500,16 +558,20 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     closeButton.hidden=false;
     closeButton.style.top=cssPixels(endpoint.top+13);
     closeButton.style.left=cssPixels(endpoint.left+endpoint.width-53);
-    const buttonFrames=[
+    const buttonFrames=card?[
       {left:cssPixels(xStart.left),top:cssPixels(xStart.top),opacity:String(xStart.opacity)},
       {offset:.20,...anchor(outgoing,outgoingEnd,.20),opacity:"0"},
       // The transfer occurs only at zero opacity, while both panel edges
       // keep moving. The incoming button thereafter follows its own edge.
       {offset:.2001,...anchor(incoming,endpoint,.2001),opacity:"0"},
-      {left:closeButton.style.left,top:closeButton.style.top,opacity:card?"1":"0"}
+      {left:closeButton.style.left,top:closeButton.style.top,opacity:"1"}
+    ]:[
+      {left:cssPixels(xStart.left),top:cssPixels(xStart.top),opacity:String(xStart.opacity)},
+      {left:closeButton.style.left,top:closeButton.style.top,opacity:String(xStart.opacity)}
     ];
     const buttonMotion=animate(closeButton,buttonFrames,{duration:EXPAND_MS,easing:SELECTED_EASING});
     if(buttonMotion)current.animations.push(buttonMotion);
+    if(!card)beginCloseDissolve(current,presented.get(old).badgeReserve);
     const sharedStart=document.timeline?.currentTime;
     if(Number.isFinite(sharedStart))for(const motion of current.animations)motion.startTime=sharedStart;
     if(keyboard&&card)closeButton.focus({preventScroll:true});
@@ -560,6 +622,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const xStyle=getComputedStyle(closeButton);
     const startButtonLeft=Number.parseFloat(xStyle.left);
     const startButtonOpacity=Number.parseFloat(xStyle.opacity);
+    const startButtonTransform=xStyle.transform;
+    const badgeReserve=Number.parseFloat(getComputedStyle(current.card.querySelector(".project-showcase-top")).paddingRight)||0;
     current.selectedAnimation?.cancel();
     current.buttonAnimation?.cancel();
     const contract=animate(current.card,[
@@ -569,9 +633,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const contractButton=animate(closeButton,[
       {left:cssPixels(startButtonLeft),
         opacity:String(startButtonOpacity),
-        transform:"translate3d(0,0,0)"},
+        transform:startButtonTransform},
       {left:cssPixels(current.initialButtonLeft),
-        opacity:"0",transform:"translate3d(0,-8px,0)"}
+        opacity:String(startButtonOpacity),transform:"translate3d(0,0,0)"}
     ],{duration:EXPAND_MS,easing:SELECTED_EASING});
     if(contract)animations.push(contract);
     if(contractButton)animations.push(contractButton);
@@ -598,6 +662,10 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       });
       if(returning)animations.push(returning);
     }
+    beginCloseDissolve(current,badgeReserve);
+    const sharedStart=document.timeline?.currentTime;
+    if(Number.isFinite(sharedStart))for(const motion of animations)
+      if(motion.playState!=="idle")motion.startTime=sharedStart;
     // The original-row dissipating ghosts cohere at the end of closure,
     // with native GPU material. No duplicate CSS glass shader.
     const restoreFrom=Math.min(DISMISS_MS,

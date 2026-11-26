@@ -118,9 +118,9 @@ export function createAuthGlassHoverController(capacity){
     // down/up pairs can both arrive between full-scene frames: a normal
     // pressTarget=1 may never be sampled. On a Home CTA only, preserve a
     // small local spring VELOCITY impulse at pointerdown, so the very next
-    // GPU frame still shows a brief press even after release. The hover
-    // spring, tint and pointer position are not reset or replaced.
-    // Projects and nested Sign in have exactly their previous dynamics.
+    // GPU frame still shows a brief press even after release. The same
+    // opt-in is used by the Projects close control before its dissolution.
+    // Other Projects and nested Sign in keep their previous dynamics.
     if(next&&!pressed&&tapImpulse){
       const index=independent?controlIndex:0;
       const slot=slots[index];

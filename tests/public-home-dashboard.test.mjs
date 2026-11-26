@@ -56,7 +56,7 @@ test("Home capsules share WebGPU geometry, tint and press lighting",()=>{
   assert.match(renderer,/pressLightGain:GLASS_INTERACTION\.pressLight,/);
   assert.match(renderer,/let pointerPressFramePending=false;/);
   assert.match(renderer,/trackRunning&&!pointerPressFramePending&&/);
-  assert.match(renderer,/authHover\.setPressed\(true,\{tapImpulse:homePress\}\)/);
+  assert.match(renderer,/authHover\.setPressed\(true,\{tapImpulse:homePress\|\|closePress\}\)/);
   assert.match(renderer,/if\(homeRelease\)pointerPressFramePending=true;/);
   assert.match(renderer,/backdrop:"GPU-composited-moving-squares"/);
   assert.match(renderer,/compositeGlassPipeline=device\.createRenderPipeline\(/);

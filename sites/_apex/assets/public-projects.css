@@ -58,6 +58,9 @@ body.public-home:has(#public-route-content .public-projects-root){
   display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,.9vw,12px);
   align-items:stretch;margin:0;
 }
+@property --project-close-dissolve{
+  syntax:"<number>";inherits:false;initial-value:0
+}
 @property --project-regular-progress{
   syntax:"<number>";inherits:true;initial-value:0
 }
@@ -547,6 +550,11 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
   appearance:none;outline-offset:3px;box-sizing:border-box
 }
 .public-projects-root .project-showcase-expand-close[hidden]{display:none!important}
+.public-projects-root .project-showcase-expand-close[data-project-close-dismissing]{
+  pointer-events:none;cursor:default;
+  /* CSS fallback face only; WebGPU uses the actual square optical dissolve. */
+  background:color(srgb .14 .14 .14 / calc(1 - var(--project-close-dissolve)))
+}
 .public-projects-root .project-showcase-expand-close svg{
   display:block;pointer-events:none
 }

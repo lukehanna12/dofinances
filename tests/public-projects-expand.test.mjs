@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {planProjectExpansion,projectExpansionMovement,
   projectConveyorPosition,projectConveyorEdge,projectRowWrapPhases,
-  projectForwardCloseFrames,projectDescriptionExtension,projectVerticalExpansionFrames}
+  projectForwardCloseFrames,projectDescriptionExtension,projectVerticalExpansionFrames,
+  projectCloseDismissDuration,projectCloseReserveFrames}
   from "../sites/_apex/assets/public-projects-expand.js";
 
 test("conveyor preserves a full pitch of separation at every animation sample",()=>{
@@ -221,4 +222,17 @@ test("description row adds enough space for measured copy and displaces lower ro
   assert.deepEqual(frames.map(f=>f.transform),[
     "translate3d(-100px,-180px,0)","translate3d(20px,-90px,0)","translate3d(0px,0px,0)"
   ]);
+});
+
+
+test("small close control dissolves before the row completes, releasing badge space continuously",()=>{
+  const duration=projectCloseDismissDuration(40,40);
+  assert.ok(duration>180&&duration<440&&duration<620);
+  assert.ok(projectCloseDismissDuration(20,20)<duration);
+  assert.equal(projectCloseDismissDuration(120,120),440);
+  const frames=projectCloseReserveFrames(53);
+  assert.equal(frames[0].paddingRight,"53px");
+  assert.equal(frames.at(-1).paddingRight,"0px");
+  for(let i=1;i<frames.length;i++)assert.ok(parseFloat(frames[i].paddingRight)<parseFloat(frames[i-1].paddingRight));
+  assert.equal(projectCloseReserveFrames(0).at(-1).paddingRight,"0px");
 });

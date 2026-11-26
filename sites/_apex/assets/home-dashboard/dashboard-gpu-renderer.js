@@ -1017,6 +1017,9 @@ async function initialize(){
       const node=panes[i],role=node.dataset.publicProjectGlass;
       const dropdown=node.hasAttribute("data-glass-dropdown")&&routeLayerSlots[i]>0;
       if(!dropdown&&!(retargeting&&(role==="card"||role==="expand-close")))continue;
+      // A dissolving X sits beneath the arriving native badge; its old
+      // full rectangle must not continue masking foreground.
+      if(role==="expand-close"&&node.hasAttribute("data-project-close-dismissing"))continue;
       const p=(tileCount+i)*TILE_FLOATS,alpha=tileData[p+18];
       if(alpha<=.002||node.hidden)continue;
       covers.push({left:tileData[p]/dpr,top:tileData[p+1]/dpr+authOriginTop(),
@@ -1300,6 +1303,15 @@ async function initialize(){
           if(glyph.style.filter!==nextBlur)glyph.style.filter=nextBlur;
           if(glyph.style.transform!==nextScale)glyph.style.transform=nextScale;
         }
+      }
+      if(projects&&projectRole==="expand-close"&&node.hasAttribute("data-project-close-dismissing")){
+        const progress=reducedMotion.matches?1:Math.max(0,Math.min(1,
+          Number.parseFloat(getComputedStyle(node).getPropertyValue("--project-close-dissolve"))||0));
+        const drift=tileDismissDrift(progress,0,5,tileData[p],tileData[p+2],physicalWidth,dpr);
+        const size=Math.min(tileData[p+2],tileData[p+3])/(120*dpr);
+        tileData[p]+=drift.x*dpr*size;
+        tileData[p+1]+=drift.y*dpr*size;
+        tileData[p+19]=progress;
       }
       if(projects&&projectRole==="card"){
         const cardDismissStart=Number.parseFloat(node.dataset.projectCardDismissAt);
@@ -1984,8 +1996,9 @@ async function initialize(){
     const homePress=authPaneElements()[0]?.hasAttribute("data-home-cta-glass")===true
       &&authHover.activeControl>=0;
     interaction.setPressed(true);
-    authHover.setPressed(true,{tapImpulse:homePress});
-    if(homePress)pointerPressFramePending=true;
+    const closePress=event.target?.closest?.(".project-showcase-expand-close")!=null;
+    authHover.setPressed(true,{tapImpulse:homePress||closePress});
+    if(homePress||closePress)pointerPressFramePending=true;
     requestRender();
   };
   const upPointer=event=>{
