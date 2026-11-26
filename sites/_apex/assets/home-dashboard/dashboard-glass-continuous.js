@@ -90,6 +90,18 @@ export function specializeContinuousGlass(s,code){
  let geometry=s.slice(start,end);
  // Remove the final half conversion, not the original supercircle law.
  geometry=geometry.replaceAll("return nativeHalf3(vec3<f32>(", "return (vec3<f32>(");
+ // Mode 5's AIR corner selector compares half distances with strict >.
+ // Evaluate in one reference coordinate system, keep that necessary native
+ // decision for normals, but return the real maximum (not a half atlas).
+ const a5=geometry.indexOf("fn mode5SDF("),b5=geometry.indexOf("/* Analytic CSS",a5);
+ let m5=geometry.slice(a5,b5);
+ m5=once(m5,"fn mode5SDF(local:vec2<f32>,size:vec2<f32>,radii:vec4<f32>)->vec3<f32>{","fn mode5SDF(outputLocal:vec2<f32>,outputSize:vec2<f32>,outputRadii:vec4<f32>)->vec3<f32>{\n  let scale=referenceDensity();let local=outputLocal/scale;let size=outputSize/scale;let radii=outputRadii/scale;");
+ m5=once(m5,"if(topLeft.x>chosen.x)","if(nativeCornerCompare(topLeft.x)>nativeCornerCompare(chosen.x))");
+ m5=once(m5,"if(bottomRight.x>chosen.x)","if(nativeCornerCompare(bottomRight.x)>nativeCornerCompare(chosen.x))");
+ m5=once(m5,"if(bottomLeft.x>chosen.x)","if(nativeCornerCompare(bottomLeft.x)>nativeCornerCompare(chosen.x))");
+ m5=once(m5,"var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3);","var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3);let trDistance=chosen.x;");
+ m5=once(m5,"return (vec3<f32>(chosen.x,chosen.y,-chosen.z));","return vec3<f32>(max(max(trDistance,topLeft.x),max(bottomRight.x,bottomLeft.x))*scale,chosen.y,-chosen.z);");
+ geometry=geometry.slice(0,a5)+m5+geometry.slice(b5);
  s=s.slice(0,start)+geometry+s.slice(end);
  s=once(s,"let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));","let nativeWidth=max(fwidth(signed),0.0001);");
  s=once(s,"let signedRatio=nativeHalf1(-signed/nativeWidth);","let signedRatio=-signed/nativeWidth;");
@@ -133,6 +145,6 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let buv=nativeHalf2(baseUV+nativeHalf2(normal*bleed*pointScale/extent));","let buv=baseUV+normal*bleed*pointScale/extent;");
  s=once(s,"-signed/11.0","-signed/(11.0*referenceDensity())");
  s=once(s,"exp(-abs(signed)*0.18)","exp(-abs(signed)/referenceDensity()*0.18)");
- const density="fn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\n";
+ const density="fn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\nfn nativeCornerCompare(x:f32)->f32{return unpack2x16float(pack2x16float(vec2<f32>(x,0.0))).x;}\n";
  return s+"\n"+density+envelope+code;
 }
