@@ -31,7 +31,7 @@ test("ordinary foreground stays native, while Home icon sources stay authored SV
  const controls=read("../sites/_apex/assets/public-projects-controls.js");
  const mosaic=read(base+"dashboard-mosaic.js"),r=read(base+"dashboard-gpu-renderer.js");
  for(const source of [entry,controls,mosaic])assert.doesNotMatch(source,/\.dataset\.glassPaint\s*=|registerGlassPaint\(/);
- assert.match(entry,/registerGlassSilhouette\(icon,\{tint:"white",opacity:\.20\}\)/);
+ assert.match(entry,/registerGlassSilhouette\(icon\)/);
  assert.match(entry,/title\.dataset\.publicProjectGlass="title"/);
  assert.match(r,/function syncProjectScrollPresentation\(/);
  assert.match(r,/trackTiles\[i\]\.style\.transform="translate3d\("/);
