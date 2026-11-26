@@ -151,7 +151,7 @@ try{
  'const inOldOval=occupied.filter(tile=>normalized(tile,65,40)<1).length;',
  'const radius=parseFloat(getComputedStyle(grid).getPropertyValue("--public-logo-oval-x"));',
  'const visiblyFaded=occupied.filter(tile=>{const r=normalized(tile,radius,100);return 0.6+0.4*Math.min(1,r)**2<=.86;}).length;',
- 'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
+ 'return {viewport:innerWidth,layout:document.body.dataset.homeLayout,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,logoText:logo.textContent,logoTypography:[getComputedStyle(logo).fontFamily,getComputedStyle(logo).fontWeight,parseFloat(getComputedStyle(logo).lineHeight)/parseFloat(getComputedStyle(logo).fontSize),parseFloat(getComputedStyle(logo).letterSpacing)/parseFloat(getComputedStyle(logo).fontSize)],',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius,background:getComputedStyle(e).backgroundColor,tint:Number(getComputedStyle(e).getPropertyValue("--home-cta-tint"))})),',
@@ -189,22 +189,26 @@ try{
  new Function("return "+expression);
  const near=(actual,expected,label,width)=>assert.ok(Math.abs(actual-expected)<.8,
   label+" at "+width+"px: "+actual+" vs "+expected);
- for(const [width,height] of [[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[749,700],[748,700],[747,700],[500,670],[390,610],[320,560]]){
+ for(const [width,height] of [[2560,1440],[1440,900],[1123,780],[1122,780],[1024,740],[760,680],[749,700],[748,700],[747,700],[500,670],[390,610],[320,560]]){
   await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
   await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
   const g=await evaluate(expression);
   assert.equal(g.viewport,width);
   near(g.grid.width,1080,"Full mosaic width",width);
   near(g.grid.center,width/2,"Mosaic center",width);
-  near(g.logo.center,width/2,"Doof center",width);
-  near(g.logo.centerY,g.grid.centerY-2.5*(950/11),
-    "Doof and oval raised another 86px (2.5 tiles above lattice center)",width);
-  assert.ok(g.inOldOval>=0,"Former small-oval coverage can change after elevating the logo");
-  assert.ok(parseFloat(g.logoOvalX)>280&&parseFloat(g.logoOvalX)<420,"Measured horizontal radius accommodates DoFinances");
-  assert.ok(g.visiblyFaded>=2,
-    "Expanded oval must significantly attenuate at least two occupied squares");
+  const centered=width<=760||width>=2560;
+  assert.equal(g.layout,centered?"centered":"corner");
+  if(centered){
+    near(g.logo.center,width/2,"Centered wordmark",width);
+    near(g.logo.width,width/2,"Half viewport wordmark",width);
+    near(g.logo.centerY,g.grid.centerY-Math.min(2.5*(950/11),Math.max(0,(height-44)/2-g.logo.height/2-12)),"Centered logo elevation",width);
+  }else{
+    near(g.logo.left,32,"Corner wordmark margin",width);
+    near(g.logo.top+g.logo.height,height-32,"Corner wordmark bottom",width);
+    assert.equal(g.font,"63px");
+  }
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
-  assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
+  assert.equal(g.gap,"13px");
   assert.equal(g.logoText,"DoFinances");
   assert.equal(g.logoTypography[1],"550");
   assert.ok(g.logo.width<=width,"Full wordmark must fit the viewport");
@@ -229,9 +233,9 @@ try{
     "Copyright must stay near viewport bottom");
   if(g.gpuReady){
     assert.equal(g.edgeMask,"none","GPU icons must not be cropped by the DOM mosaic");
-    assert.ok(Number(g.firstIconFade)>0&&Number(g.firstIconFade)<=1,
+    assert.ok(Number(g.firstIconFade)>=0&&Number(g.firstIconFade)<=1,
       "Glyph alpha must be in the shader range");
-    assert.ok(Number(g.firstIconRaw)>0&&Number(g.firstIconRaw)<=1,
+    assert.ok(Number(g.firstIconRaw)>=0&&Number(g.firstIconRaw)<=1,
       "GPU renderer must provide the matching SVG alpha every frame");
   }else{
     assert.match(g.edgeMask,/linear-gradient\(to right/,"Fallback mosaic is masked");
@@ -244,13 +248,13 @@ try{
   assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
   assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
-  assert.ok(parseFloat(g.logoOvalX)>280&&parseFloat(g.logoOvalX)<420,"Oval scales to the wider wordmark");
-  assert.equal(g.logoOvalY,"100px","Oval reaches surrounding populated squares");
-  assert.equal(g.logoOffset,"215.90909px","Oval matches raised Doof center");
-  assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");
-  assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.6\)/,
-    "Square opacity reduces to 60% at the logo");
-    assert.ok(g.maskComposite.split(",").every(mode=>mode.trim()==="intersect"),
+  if(centered){
+     near(parseFloat(g.logoOvalX),width/4,"Oval radius",width);
+     near(parseFloat(g.logoOvalY),width*100/1280,"Proportional oval radius",width);
+     assert.match(g.edgeMask,/radial-gradient/);
+     assert.match(g.edgeMask,/rgba\(0, 0, 0, 0\.48\)/);
+   }else assert.match(g.edgeMask,/data:image\/svg\+xml/);
+   assert.ok(g.maskComposite.split(",").every(mode=>mode.trim()==="intersect"),
       "Both fallback masks must intersect, never form a union");
   }
   assert.equal(g.githubHref,"https://github.com/lukehanna12");
@@ -259,10 +263,7 @@ try{
   assert.ok(g.githubRel.split(/\s+/).includes("noreferrer"));
   assert.deepEqual(g.items.map(e=>[e.tag,e.name,e.href]),[
    ["BUTTON","About",null],["BUTTON","See Projects",null],["A","Sign in","/login"]]);
-  for(let i=1;i<g.items.length;i++){
-   near(g.items[i].rect.top,g.items[0].rect.top,"Button-row alignment",width);
-   near(g.items[i].rect.height,g.items[0].rect.height,"Button-row height",width);
-  }
+  for(let i=1;i<g.items.length;i++)near(g.items[i].rect.height,g.items[0].rect.height,"Equal button heights",width);
   assert.ok(g.items.every(item=>item.glass),"All three CTAs share the WebGPU glass contract");
   assert.deepEqual(g.iconRefs.map(({slug,src})=>[slug,src]),
     sortProjectShowcase(PROJECT_SHOWCASE).map(p=>[p.slug,publicProjectIconSource(p.slug)]),
@@ -279,11 +280,19 @@ try{
   const [about,projects,signIn]=g.items.map(item=>item.rect);
   near(about.height,width<=760?48:58.5,"CTA 50%-increased capsule height",width);
   near(about.width,signIn.width,"About/Sign in matching widths",width);
-  near(projects.width,about.width*1.5,"See Projects 50% wider",width);
-  const left=g.items[0].rect.left;
-  const right=g.items[2].rect.left+g.items[2].rect.width;
-  near((left+right)/2,width/2,"Bottom action group center",width);
-  assert.ok(left>=0&&right<=width,"All three buttons must fit the viewport at "+width);
+  if(centered){
+    near(projects.width,width*5/12,"Projects width",width);
+    near(projects.center,width/2,"Projects center",width);
+    near(about.top,signIn.top,"Second row alignment",width);
+    near(about.left,projects.left,"Left edges",width);
+    near(signIn.left+signIn.width,projects.left+projects.width,"Right edges",width);
+    assert.ok(projects.top+projects.height<about.top);
+  }else{
+    near(projects.width,about.width,"Equal corner CTA widths",width);
+    near(about.left,projects.left,"Aligned corner CTA edges",width);
+    near(signIn.left+signIn.width,width-32,"Right margin",width);
+    assert.ok(projects.top+projects.height<about.top&&about.top+about.height<signIn.top);
+  }
   assert.ok(g.scrollWidth<=width+1,"No horizontal page scrolling at "+width);
   process.stdout.write("Public Home geometry passed at "+width+"x"+height+"\n");
  }

@@ -24,6 +24,7 @@ struct Globals {
   pointer: vec4<f32>,  // x,y,enabled,unused
   tint: vec4<f32>,     // matrix-projected RGB and native Float32 opacity lane
   tintMeta: vec4<f32>, // tint enabled, dark scheme, +1 diagnostic overlay / -1 optical-only underlay / 0 display, vertical offset
+  homeAperture: vec4<f32>, // CSS scene geometry; negative z selects corner clearing
 };
 struct Tile {
   rect: vec4<f32>,     // x,y,width,height (physical pixels)
@@ -946,19 +947,19 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let fadeWidth=max(1.0,0.75*tile.rect.z);
   let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);
   let edgeOpacity=mix(0.25,1.0,clamp(edgeDistance/fadeWidth,0.0,1.0));
-  // Public-home title aperture: elliptic ALPHA dip on glass fragments only.
-  // The original 65x40px oval was effectively invisible because the
-  // title sits above EMPTY lattice cells. The measured horizontal radius follows the wordmark width;
-  // vertical radius stays 100px, with no colored overlay.
-  // The logo moved another full tile: its offset is now 2.5 tile heights.
-  // Match the public CSS mask's sampled quadratic radial stops.
-  let logoCenter=vec2<f32>(
-    state.viewport.x*0.5,
-    state.viewport.y*0.5-2.5*(950.0/11.0)*state.viewport.w);
-  let ovalRadii=vec2<f32>(select(140.0,-state.fit.w,state.fit.w<0.0),100.0)*state.viewport.w;
-  let ovalUV=(in.position.xy-logoCenter)/ovalRadii;
-  let ovalDistance=clamp(length(ovalUV),0.0,1.0);
-  let logoOpacity=mix(0.60,1.0,ovalDistance*ovalDistance);
+  let aperturePoint=in.position.xy/state.viewport.w;
+  let a=state.homeAperture;
+  var logoOpacity=1.0;
+  if(a.z<0.0){
+    let soft=-a.z;
+    let q=vec2<f32>(aperturePoint.x-(a.x-soft),a.y+soft-aperturePoint.y);
+    let t=clamp(length(max(q,vec2<f32>(0.0)))/soft,0.0,1.0);
+    logoOpacity=t*t*(3.0-2.0*t);
+  }else if(a.z>0.0 && a.w>0.0){
+    let ovalUV=(aperturePoint-a.xy)/a.zw;
+    let ovalDistance=clamp(length(ovalUV),0.0,1.0);
+    logoOpacity=mix(0.48,1.0,ovalDistance*ovalDistance);
+  }
   // The homepage spatial edge/brand fades do not belong on the Projects
   // header. The exact same local optical decoherence works at full alpha.
   let routeSpatialAlpha=select(edgeOpacity*logoOpacity,1.0,authPane);

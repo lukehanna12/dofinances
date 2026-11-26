@@ -201,9 +201,9 @@ body:is(.public-home,.public-login) .public-menu-panel[hidden]{display:none!impo
    The photographic backdrop and the foreground title are NEVER masked. */
 body.public-home .dashboard-home .cta6-mosaic{
   --public-edge-fade-width:calc(0.75 * ((1080px - 10 * 13px) / 11));
-  --public-logo-oval-x:320px;
-  --public-logo-oval-y:100px;
-  --public-logo-shift:215.90909px;
+  --public-logo-oval-x:25vw;
+  --public-logo-oval-y:7.8125vw;
+  --public-logo-shift:var(--public-home-logo-shift,215.90909px);
   -webkit-mask-image:
     linear-gradient(to right,
       rgba(0,0,0,.25) 0,
@@ -212,11 +212,11 @@ body.public-home .dashboard-home .cta6-mosaic{
       rgba(0,0,0,.25) 100%),
     radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y)
       at 50% calc(50% - var(--public-logo-shift)),
-      rgba(0,0,0,.60) 0%,
-      rgba(0,0,0,.64) 30%,
-      rgba(0,0,0,.744) 60%,
-      rgba(0,0,0,.856) 80%,
-      rgba(0,0,0,.924) 90%,
+      rgba(0,0,0,.48) 0%,
+      rgba(0,0,0,.5268) 30%,
+      rgba(0,0,0,.6672) 60%,
+      rgba(0,0,0,.8128) 80%,
+      rgba(0,0,0,.9012) 90%,
       #000 100%);
   mask-image:
     linear-gradient(to right,
@@ -226,11 +226,11 @@ body.public-home .dashboard-home .cta6-mosaic{
       rgba(0,0,0,.25) 100%),
     radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y)
       at 50% calc(50% - var(--public-logo-shift)),
-      rgba(0,0,0,.60) 0%,
-      rgba(0,0,0,.64) 30%,
-      rgba(0,0,0,.744) 60%,
-      rgba(0,0,0,.856) 80%,
-      rgba(0,0,0,.924) 90%,
+      rgba(0,0,0,.48) 0%,
+      rgba(0,0,0,.5268) 30%,
+      rgba(0,0,0,.6672) 60%,
+      rgba(0,0,0,.8128) 80%,
+      rgba(0,0,0,.9012) 90%,
       #000 100%);
   -webkit-mask-composite:source-in;
   mask-composite:intersect;
@@ -594,5 +594,59 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root [data-glass-
 @media(scripting:none){
   body.public-home:not([data-public-route]) #cta6-mosaic[data-glass-startup="pending"] + .cta6-center > #dashboard-title{
     color:#f7f9fa!important;-webkit-text-fill-color:#f7f9fa!important
+  }
+}
+
+/* Responsive public Home only. Keep the original scene and CTA motion. */
+body.public-home{
+  --public-home-margin:32px;
+  --public-home-cta-width:150px;
+  --public-home-cta-x:0%;
+}
+body.public-home .dashboard-home .cta6-center{
+  inset:auto;
+  left:calc(50% - 50vw);
+  top:calc(50% - var(--dashboard-scene-height)/2);
+  width:100vw;height:var(--dashboard-scene-height);
+  box-sizing:border-box;
+  padding:0 var(--public-home-margin) calc(var(--public-home-margin) + env(safe-area-inset-bottom,0px));
+  align-items:flex-start;justify-content:flex-end;
+}
+body.public-home .dashboard-home .cta6-center h1{font-size:63px;translate:none;}
+body.public-home .dashboard-home .cta6-bottom-action{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  width:var(--public-home-cta-width);left:auto;right:var(--public-home-margin);
+  bottom:calc(var(--public-home-margin) + env(safe-area-inset-bottom,0px));
+  transform:translate3d(var(--public-home-cta-x),0,0);
+}
+body.public-home .dashboard-home .cta6-bottom-action > .cta6-action,
+body.public-home .dashboard-home .cta6-bottom-action button.cta6-action[data-public-target="/projects"]{
+  width:100%;min-width:0;padding-inline:clamp(4px,1vw,17px);
+}
+body.public-home .dashboard-home .cta6-bottom-action button.cta6-action[data-public-target="/projects"]{grid-row:1;}
+body.public-home[data-public-route="leaving"] .dashboard-home .cta6-bottom-action{
+  transform:translate3d(var(--public-home-cta-x),calc(100% + clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px) + 28px),0);
+}
+/* Only the mosaic is masked. The wallpaper and wordmark retain their paint. */
+body.public-home:not([data-gpu-scene="ready"]) .dashboard-home .cta6-mosaic{
+  -webkit-mask-image:linear-gradient(to right,rgba(0,0,0,.25) 0,#000 var(--public-edge-fade-width),#000 calc(100% - var(--public-edge-fade-width)),rgba(0,0,0,.25) 100%),var(--public-desktop-aperture,linear-gradient(#000,#000));
+  mask-image:linear-gradient(to right,rgba(0,0,0,.25) 0,#000 var(--public-edge-fade-width),#000 calc(100% - var(--public-edge-fade-width)),rgba(0,0,0,.25) 100%),var(--public-desktop-aperture,linear-gradient(#000,#000));
+}
+@media(max-width:760px),(any-pointer:coarse),(min-width:2560px){
+  body.public-home{--public-home-cta-width:calc(100vw * 5 / 12);--public-home-cta-x:-50%;}
+  body.public-home .dashboard-home .cta6-center{padding:0;align-items:center;justify-content:center;}
+  body.public-home .dashboard-home .cta6-center h1{
+    font-size:var(--public-home-logo-size,9vw);
+    translate:0 calc(-1 * var(--public-home-logo-shift,215.90909px));
+  }
+  body.public-home .dashboard-home .cta6-bottom-action{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    left:50%;right:auto;
+    bottom:calc(clamp(42px,5.4vh,66px) + env(safe-area-inset-bottom,0px));
+  }
+  body.public-home .dashboard-home .cta6-bottom-action button.cta6-action[data-public-target="/projects"]{grid-column:1/-1;}
+  body.public-home:not([data-gpu-scene="ready"]) .dashboard-home .cta6-mosaic{
+    -webkit-mask-image:linear-gradient(to right,rgba(0,0,0,.25) 0,#000 var(--public-edge-fade-width),#000 calc(100% - var(--public-edge-fade-width)),rgba(0,0,0,.25) 100%),radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y) at 50% calc(50% - var(--public-logo-shift)),rgba(0,0,0,.48) 0%,rgba(0,0,0,.5268) 30%,rgba(0,0,0,.6672) 60%,rgba(0,0,0,.8128) 80%,rgba(0,0,0,.9012) 90%,#000 100%);
+    mask-image:linear-gradient(to right,rgba(0,0,0,.25) 0,#000 var(--public-edge-fade-width),#000 calc(100% - var(--public-edge-fade-width)),rgba(0,0,0,.25) 100%),radial-gradient(ellipse var(--public-logo-oval-x) var(--public-logo-oval-y) at 50% calc(50% - var(--public-logo-shift)),rgba(0,0,0,.48) 0%,rgba(0,0,0,.5268) 30%,rgba(0,0,0,.6672) 60%,rgba(0,0,0,.8128) 80%,rgba(0,0,0,.9012) 90%,#000 100%);
   }
 }

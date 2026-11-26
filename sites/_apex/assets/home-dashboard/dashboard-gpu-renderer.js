@@ -30,7 +30,7 @@ import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularM
  from "./dashboard-glass-material.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
-import {publicIconSpatialAlpha,currentPublicLogoOvalRadius} from "./dashboard-public-icon-fade.js";
+import {publicIconSpatialAlpha,currentPublicLogoOvalRadius,currentHomeAperture} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
@@ -661,18 +661,18 @@ async function initialize(){
     addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
   });
   const globalsBuffer=device.createBuffer({
-    size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+    size:continuous?112:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const authGlobalsBuffer=device.createBuffer({
-    size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+    size:continuous?112:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const sourcePainter=createGlassSourcePainter(device,format);
   const nativeOcclusion=createNativeForegroundOcclusion(document);
   const silhouetteAtlas=createGlassSilhouetteAtlas(device,requestRender,continuous?{vectorOnly:true,hasVector:img=>Boolean(continuous.indexFor(img))}:{});
   let iconData=new Float32Array(0),iconBuffer=null,referenceIconData=new Float32Array(0),referenceIconBuffer=null;
   let referenceCoverage=null,referenceBindingView=null,referenceFieldBinding=null;
-  const routeCompositeGlobalsBuffer=device.createBuffer({size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
-  const homeCompositeGlobalsBuffer=continuous?device.createBuffer({size:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}):globalsBuffer;
+  const routeCompositeGlobalsBuffer=device.createBuffer({size:continuous?112:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  const homeCompositeGlobalsBuffer=continuous?device.createBuffer({size:112,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}):globalsBuffer;
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
   const routeCompositeDetailGroups=new Map();
   let dropdownSlots=[],dropdownCompositeFrames=0;
@@ -715,8 +715,8 @@ async function initialize(){
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
     dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
-  const uniform=new Float32Array(continuous?24:20);
-  const authUniform=new Float32Array(continuous?24:20);
+  const uniform=new Float32Array(continuous?28:24);
+  const authUniform=new Float32Array(continuous?28:24);
   let tileData=new Float32Array(0),mosaicLayoutDirty=false;
   const mosaicCanDefer=()=>Boolean(audit.track?.dismissed)&&dismissStart!==null&&
     restoreStart===null&&!trackResumeRequested&&["login","projects"].includes(window.__dofPublicRouter?.state);
@@ -771,6 +771,9 @@ async function initialize(){
     uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
     uniform[18]=0;uniform[19]=0;
     if(continuous){uniform[20]=physicalWidth;uniform[21]=physicalHeight;}
+    const homeAperture=currentHomeAperture();
+    uniform.set(homeAperture,continuous?24:20);
+    audit.homeAperture=Array.from(homeAperture);
     device.queue.writeBuffer(globalsBuffer,0,uniform);
     if(authContext){
       authUniform.set(uniform);
@@ -1795,7 +1798,7 @@ async function initialize(){
         const glyphAlpha=publicIconSpatialAlpha(
           tileData[p]+tileData[p+2]*0.5,
           tileData[p+1]+tileData[p+3]*0.5,
-          tileData[p+2],physicalWidth,physicalHeight,dpr,-uniform[7]);
+          tileData[p+2],physicalWidth,physicalHeight,dpr,currentHomeAperture());
         trackTiles[i].style.setProperty("--public-icon-spatial-alpha",
           (glyphAlpha*intro.alpha).toFixed(5));
       }

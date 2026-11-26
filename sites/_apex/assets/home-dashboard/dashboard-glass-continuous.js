@@ -174,7 +174,7 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"var backdropPosition=in.position.xy;","var backdropPosition=geometryPosition(in.position.xy);");
  s=once(s,"in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)","geometryPosition(in.position.xy)-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)");
  s=once(s,"let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);","let px=geometryPosition(in.position.xy).x;let edgeDistance=min(px,state.viewport.x-px);");
- s=once(s,"let ovalUV=(in.position.xy-logoCenter)/ovalRadii;","let ovalUV=(geometryPosition(in.position.xy)-logoCenter)/ovalRadii;");
+ s=once(s,"let aperturePoint=in.position.xy/state.viewport.w;","let aperturePoint=geometryPosition(in.position.xy)/state.viewport.w;");
  const start=s.indexOf("fn supercircleSDF("),end=s.indexOf("/* AIR glass_background_sdf_no_bleed_lph",start);
  if(start<0||end<start)throw Error("Missing geometry range");
  let geometry=s.slice(start,end);

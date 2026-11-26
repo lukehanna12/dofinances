@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
-import {publicIconSpatialAlpha,publicLogoOvalRadius} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
+import {publicIconSpatialAlpha,publicLogoOvalRadius,homeAperture,apertureAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortProjectShowcase,publicProjectIconSource}
   from "../sites/_apex/assets/public-projects-catalog.js";
 import {PROJECT_ICON_REVISIONS} from "../sites/_apex/assets/project-icon-revisions.js";
@@ -20,7 +20,7 @@ test("Apex homepage is the independent public copy of the live Dashboard",()=>{
   assert.match(style,/--workspace-wallpaper-image:url\("\/assets\/home-dashboard\/dashboard-cloud-veiled-colorful-fields\.avif"\)!important;/);
   assert.doesNotMatch(home,/\/app\/assets\/|href="\/app"|href="#(?:projects|settings|colosseum)/);
 });
-test("Three horizontal actions include only one link, to the real sign-in route",()=>{
+test("Three responsive actions include only one link, to the real sign-in route",()=>{
   const group=home.match(/<div class="cta6-bottom-action"[^>]*>([\s\S]*?)<\/div>/);
   assert.ok(group);
   const items=[...group[1].matchAll(/<(a|button)\b[^>]*>([^<]+)<\/\1>/g)].map(m=>[m[1],m[2].trim()]);
@@ -28,9 +28,9 @@ test("Three horizontal actions include only one link, to the real sign-in route"
   assert.match(group[1],/<button class="cta6-action" type="button" data-home-cta-glass data-public-target="\/projects">See Projects<\/button>/);
    assert.equal((group[1].match(/data-home-cta-glass/g)||[]).length,3);
    assert.match(group[1],/<a class="cta6-action" data-home-cta-glass href="\/login">Sign in<\/a>/);
-  assert.match(style,/\.cta6-bottom-action button\.cta6-action\[data-public-target="\/projects"\]\{\s*min-width:150px;\s*width:150px;/);
-  assert.match(style,/@media\(max-width:760px\)\{[\s\S]*?\.cta6-bottom-action button\.cta6-action\[data-public-target="\/projects"\]\{\s*min-width:129px;\s*width:129px;/);
-  assert.match(style,/\.cta6-bottom-action\{[\s\S]*?flex-wrap:nowrap;/);
+  assert.match(style,/--public-home-cta-width:calc\(100vw \* 5 \/ 12\);/);
+  assert.match(style,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
+  assert.match(style,/grid-column:1\/-1;/);
   assert.match(style,/\.cta6-action:hover,[\s\S]*?transform:scale\(1\.039\)/);
   assert.match(style,/\.cta6-action:is\(:hover,:focus-visible\):active\{\s*transform:scale\(1\.00783\)/);
   assert.match(style,/transform:scale\(1\.00783\); \/\* 1\.039 \* \.97 \*\//);
@@ -146,21 +146,14 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(style,/mask-composite:intersect;/,"Both square alpha fades must combine");
   assert.match(style,/-webkit-mask-composite:source-in;/);
   assert.match(style,/radial-gradient\(ellipse var\(--public-logo-oval-x\) var\(--public-logo-oval-y\)/);
-  assert.match(style,/--public-logo-oval-x:320px;/);
-  assert.match(style,/--public-logo-oval-y:100px;/);
-  assert.match(style,/--public-logo-shift:215\.90909px;/);
   assert.match(style,/\.cta6-center h1\{\s*translate:0 calc\(-2\.5 \* var\(--cta6-title-tile\)\);/);
-  assert.match(style,/rgba\(0,0,0,\.744\) 60%/,"The opacity ramps quadratically through the oval");
-  assert.match(style,/rgba\(0,0,0,\.60\) 0%/,"Squares are 60% opaque at logo center");
   assert.doesNotMatch(style,/linear-gradient\(to bottom/,"Do not darken the backdrop vertically");
   const shader=asset("assets/home-dashboard/dashboard-gpu-glass.wgsl");
   assert.match(shader,/let fadeWidth=max\(1\.0,0\.75\*tile\.rect\.z\);/);
   assert.match(shader,/let edgeDistance=min\(in\.position\.x,state\.viewport\.x-in\.position\.x\);/);
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
-  assert.match(shader,/let logoCenter=vec2<f32>\(/);
-  assert.match(shader,/state\.viewport\.y\*0\.5-2\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
-  assert.match(shader,/let ovalRadii=vec2<f32>\(select\(140\.0,-state\.fit\.w,state\.fit\.w<0\.0\),100\.0\)\*state\.viewport\.w;/);
-  assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
+  assert.match(shader,/logoOpacity=mix\(0\.48,1\.0,ovalDistance\*ovalDistance\);/);
+  assert.match(shader,/let routeSpatialAlpha=select\(edgeOpacity\*logoOpacity,1\.0,authPane\);/);
   assert.match(shader,/let baseAlpha=coverage\*in\.introAlpha\*/);
   assert.match(shader,/if\(dismiss<=0\.0\)\{return vec4<f32>\(color,baseAlpha\);\}/,
     "Normal presentation must be byte-for-byte original material path");
@@ -225,7 +218,6 @@ test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay b
 });
 test("Icon fade uses the same shader opacity as each square without cropping moving glyphs",()=>{
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
-  assert.match(renderer,/import \{publicIconSpatialAlpha,currentPublicLogoOvalRadius\} from "\.\/dashboard-public-icon-fade\.js";/);
   assert.match(renderer,/trackIcons=all\.map\(cell=>cell\.querySelector\("\.cta6-icon"\)\)/);
   assert.match(renderer,/trackTiles\[i\]\.style\.opacity=\(combinedOpacity\*\s*tileDismissIconOpacity\(dissolving\)\)\.toFixed\(5\);/);
   assert.match(renderer,/const glyphAlpha=publicIconSpatialAlpha\(/);
@@ -241,15 +233,15 @@ test("Icon fade uses the same shader opacity as each square without cropping mov
   const eps=1e-9;
   const near=(actual,expected)=>assert.ok(Math.abs(actual-expected)<eps,
     `expected ${expected}, got ${actual}`);
-  near(publicIconSpatialAlpha(width*dpr/2,logoY,tile,width*dpr,height*dpr,dpr),0.60);
+  near(publicIconSpatialAlpha(width*dpr/2,logoY,tile,width*dpr,height*dpr,dpr),0.48);
   near(publicIconSpatialAlpha(width*dpr/2,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),1);
   near(publicIconSpatialAlpha(0,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),0.25);
   near(publicIconSpatialAlpha(0.75*tile,logoY+300*dpr,tile,width*dpr,height*dpr,dpr),1);
   // Both independent fades multiply at a point near the left window edge.
   const ovalAtEdge=publicIconSpatialAlpha(0,logoY,tile,width*dpr,height*dpr,dpr);
   near(ovalAtEdge,0.25);
-  const midOval=publicIconSpatialAlpha(width*dpr/2,logoY+50*dpr,tile,width*dpr,height*dpr,dpr);
-  near(midOval,0.70);
+  const midOval=publicIconSpatialAlpha(width*dpr/2,logoY+(width*100/1280)/2*dpr,tile,width*dpr,height*dpr,dpr);
+  near(midOval,0.61);
   assert.throws(()=>publicIconSpatialAlpha(10,10,0,100,100),RangeError);
 });
 test("Notification-inspired dismissal is explicitly provisional and clears all square lanes",()=>{
@@ -408,14 +400,14 @@ test("Home wordmark shares the actual clock-text glass pipeline, not just CSS ty
  assert.match(style,/\.cta6-center > #dashboard-title\[data-glass-text-ready\]/);
 });
 
-test("Home aperture scales only its horizontal radius with wordmark geometry",()=>{
-  assert.equal(publicLogoOvalRadius(100,100),140);
-  assert.equal(publicLogoOvalRadius(240,100),336);
-  assert.throws(()=>publicLogoOvalRadius(240,0),RangeError);
-  const w=1440,h=900,dpr=2,rx=336,y=h*dpr/2-2.5*(950/11)*dpr;
-  const at=(dx,dy)=>publicIconSpatialAlpha(w*dpr/2+dx*dpr,y+dy*dpr,950/11*dpr,w*dpr,h*dpr,dpr,rx);
-  for(const [x,y,expected] of [[0,0,.6],[168,0,.7],[336,0,1],[0,50,.7],[0,100,1]])
-    assert.ok(Math.abs(at(x,y)-expected)<1e-9);
-  assert.match(asset("assets/home-dashboard/dashboard-gpu-renderer.js"),/uniform\[7\]=-currentPublicLogoOvalRadius\(\)/);
+test("Responsive Home aperture geometry and soft boundaries",()=>{
+  const a=homeAperture({width:1440,height:900,logoWidth:720,logoHeight:120,centered:true});
+  assert.equal(a[2]*2,720);assert.equal(a[3]*2,225);
+  for(const [x,y,v] of [[0,0,.48],[a[2]/2,0,.61],[a[2],0,1],[0,a[3]/2,.61],[0,a[3],1]])
+    assert.ok(Math.abs(apertureAlpha(a[0]+x,a[1]+y,a)-v)<1e-9);
+  const b=homeAperture({width:1440,height:900,logoWidth:330,logoHeight:70,centered:false});
+  assert.deepEqual(b,[394,766,-32,0]);
+  for(const [x,y,v] of [[100,900,0],[362,798,0],[378,850,.5],[394,850,1],[100,766,1],[100,782,.5],[100,798,0]])assert.equal(apertureAlpha(x,y,b),v);
+  assert.match(asset("assets/home-dashboard/dashboard-gpu-renderer.js"),/uniform\.set\(homeAperture,continuous\?24:20\)/);
   assert.match(asset("assets/home-dashboard/dashboard-home-loader.js"),/observePublicLogoOval\(\)/);
 });
