@@ -213,7 +213,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
- }else if(["bootscript","chatgpt-chat-save-chrome-extension","apple-adobe-fx","hidden-functions","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
+ }else if(["bootscript","chatgpt-chat-save-chrome-extension","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
   assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".webp"));
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
@@ -262,13 +262,13 @@ test("App Caviar uses the attached local WebP and the requested artworks are ass
  assert.ok(height>=1750&&height<=1752,"Preserve the original portrait aspect ratio");
  assert.equal(PROJECT_CARD_IMAGES["app-caviar"],"/assets/project-art/app-caviar-source.v2.webp");
  assert.equal(PROJECT_CARD_IMAGES["latexcel"],"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
- assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"/assets/project-art/hidden-functions-piranesi.v1.webp");
+ assert.equal(PROJECT_CARD_IMAGES["hidden-functions"],"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg");
 });
 test("ChatStore and Colosseum use verified images of their actual artworks",()=>{
  const mural=PROJECT_CARD_IMAGES["chatgpt-chat-save-chrome-extension"];
  const pastoral=PROJECT_CARD_IMAGES.colosseum;
  assert.equal(mural,"/assets/project-art/chatstore-hokusai-merchant.v1.webp");
- assert.equal(PROJECT_CARD_IMAGES["apple-adobe-fx"],"/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp");
+ assert.equal(PROJECT_CARD_IMAGES["apple-adobe-fx"],"/assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg");
  assert.equal(pastoral,"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg");
  for(const slug of ["chatgpt-chat-save-chrome-extension","apple-adobe-fx"]){
   const asset=PROJECT_CARD_IMAGES[slug];
@@ -417,4 +417,15 @@ test("Lightworks has one canonical slug and an atomic data migration",()=>{
  assert.ok(store.includes('UPDATE project_records SET slug=? WHERE user_id=? AND slug=?'));
  assert.ok(store.includes("INSERT OR IGNORE INTO project_repository_link_migrations(user_id,slug) SELECT"));
  assert.ok(store.includes("lightworks-custom-"));
+});
+
+// The two portrait assets retain their original composition within the artwork budget.
+test("Replaced project artwork has valid JPEG signatures and synchronized lightweight files",()=>{
+ for(const [slug,name] of [["apple-adobe-fx","apple-adobe-fx-bronze-sculpture.v2.jpg"],["hidden-functions","hidden-functions-rockwell-stairway.v2.jpg"]]){
+  const a=readFileSync(new URL("../sites/_apex/assets/project-art/"+name,import.meta.url));
+  const b=readFileSync(new URL("../public/assets/project-art/"+name,import.meta.url));
+  assert.equal(a[0],0xff);assert.equal(a[1],0xd8);assert.equal(a[a.length-2],0xff);assert.equal(a[a.length-1],0xd9);
+  assert.ok(a.length>50000&&a.length<300000);
+  assert.deepEqual(a,b);assert.equal(PROJECT_CARD_IMAGES[slug],"/assets/project-art/"+name);
+ }
 });

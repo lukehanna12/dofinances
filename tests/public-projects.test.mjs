@@ -35,9 +35,9 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
     "/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
     "The attached Manfred Mohr artwork is served locally on the public site");
   assert.equal(publicProjectImage({slug:"chatgpt-chat-save-chrome-extension"},3),"/assets/project-art/chatstore-hokusai-merchant.v1.webp");
-  assert.equal(publicProjectImage({slug:"apple-adobe-fx"},10),"/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp");
+  assert.equal(publicProjectImage({slug:"apple-adobe-fx"},10),"/assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg");
   assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v2.webp");
-  assert.equal(publicProjectImage({slug:"hidden-functions"},14),"/assets/project-art/hidden-functions-piranesi.v1.webp");
+  assert.equal(publicProjectImage({slug:"hidden-functions"},14),"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg");
   assert.equal(publicProjectImage({slug:"latexcel"},15),"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg");
   const fallback=publicProjectImage({slug:"__unassigned__"},12);
   assert.match(fallback,/^\/wallpapers\/[a-f0-9]{64}\.[a-z]+$/);

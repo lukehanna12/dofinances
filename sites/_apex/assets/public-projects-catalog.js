@@ -99,14 +99,15 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   "github-readme-chrome-extension":"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg",
   // Katsushika Hokusai, A merchant making up the account, public domain (Wikimedia Commons).
   "chatgpt-chat-save-chrome-extension":"/assets/project-art/chatstore-hokusai-merchant.v1.webp",
-  // Frederic Remington, The Bronco Buster, public domain (WikiArt).
-  "apple-adobe-fx":"/assets/project-art/apple-adobe-fx-remington-bronco-buster.v1.webp",
+  // User-provided photograph of a bronze cowboy sculpture.
+  "apple-adobe-fx":"/assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg",
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
   "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
   // Source: https://dam-media.fra1.digitaloceanspaces.com/Mohr2020_22_P3010_8_b0152949c4.jpg
   "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
   "app-caviar":"/assets/project-art/app-caviar-source.v2.webp",
-  "hidden-functions":"/assets/project-art/hidden-functions-piranesi.v1.webp",
+  // Norman Rockwell, What a Protection Electric Is (Old Man on Stairway), 1925.
+  "hidden-functions":"/assets/project-art/hidden-functions-rockwell-stairway.v2.jpg",
   "latexcel":"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg",
   "unicode-plus":"https://d3d00swyhr67nd.cloudfront.net/w1200h1200/collection/NTI/DYP/NTI_DYP_453771-001.jpg",
   "protocol-monitor-pruner":"https://most-famous-paintings.com/media-resize/960/artworks/images-full/76/18/76183ece8e74b1c3404d66a0bc2e70a6.jpg.webp",
