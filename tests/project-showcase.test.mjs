@@ -19,7 +19,7 @@ test("Projects roster applies requested names and progress states without retire
   slug:"3d-liquid-glass-26-swift-package",name:"3D Liquid Glass",kind:"Swift package",repository:null
  });
  assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board"),{
-  slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null
+  slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"in-progress"
  });
  for(const [slug,name] of [["hidden-functions","Hidden Functions"],["latexcel","LaTeXceL"]]){
   assert.deepEqual(PROJECT_SHOWCASE.find(p=>p.slug===slug),{
@@ -41,7 +41,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
  assert.equal(PROJECT_SHOWCASE.filter(p=>!p.repository).length,8);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.status==="in-progress").map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
-  "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner"
+  "chatgpt-chat-save-chrome-extension","apple-hig-reader","unicode-plus","protocol-monitor-pruner","ozoning-board"
  ]);
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs).map(p=>p.slug),[
   "bootscript","translucence-lab","github-readme-chrome-extension",
@@ -50,6 +50,7 @@ test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.docs&&!p.repository).map(p=>p.slug),[]);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="colosseum").status,undefined);
  assert.equal(PROJECT_SHOWCASE.find(p=>p.slug==="unicode-plus").status,"in-progress");
+ assert.equal(projectShowcaseStatus(PROJECT_SHOWCASE.find(p=>p.slug==="ozoning-board")),"In Progress");
 });
 test("Local Docs are created in account storage without overwriting saved READMEs",()=>{
  const store=read("edge/auth-store-projects.mjs");

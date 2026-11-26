@@ -490,7 +490,9 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.equal(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].planned,true);
   assert.deepEqual(PROJECT_DIAGRAMS["protocol-monitor-pruner"][1].rows[0],["Chrome extension\nIn-browser control","CLI\nLocal control"]);
   assert.match(PROJECT_DESCRIPTIONS["app-caviar"],/homegrown AI assistant/);
-  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/most versatile in-memory Vite and React application builder/);
+  assert.equal(PROJECT_DESCRIPTIONS["ozoning-board"],"Ozoning Board is a lightweight MCP for building Vite and React applications entirely in-memory, hosted entirely for free on Google servers. Its architecture leverages Google Apps Script's generous usage allowances, Agent2Agent (A2A) protocols, and expanded support of WASM/ECMAScript Modules (introduced July 2026) to optimize a highly efficient backend workflow, providing AI assistants with extensive access to build tools as well as optionally-remembered collaborative environments. It rivals the vast majority of cloud-compute tools that require payment or impose restrictive free-tier limits since this implementation only requires a user to have a Google Drive account.");
+  assert.equal(publicStatus(PUBLIC_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
+  assert.equal(privateStatus(PRIVATE_PROJECTS.find(project=>project.slug==="ozoning-board")),"In Progress");
   assert.match(PROJECT_DESCRIPTIONS["hidden-functions"],/extensive collection of hidden Google Sheets functions/);
   // Direct project copy should not rely on owner or creator attribution.
   for(const copy of Object.values(PROJECT_DESCRIPTIONS)){
@@ -539,7 +541,7 @@ test("all 16 projects have readable, explicitly connected native architecture sc
   assert.doesNotMatch(PROJECT_DESCRIPTIONS["terminal-scalars"],/\b(?:framework|planned)\b/i);
   assert.equal(PROJECT_DIAGRAMS["terminal-scalars"][0].title,"Native terminal library");
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
-  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Model Context Protocol \(MCP\).*Agent2Agent \(A2A\)/);
+  assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/lightweight MCP.*Agent2Agent \(A2A\)/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/Model Context Protocol.*native \/exec\/mcp route.*\/exec compatibility fallback/);
   assert.doesNotMatch(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form|planned/);
   assert.equal(PROJECT_DIAGRAMS["apple-hig-reader"][0].planned,false);

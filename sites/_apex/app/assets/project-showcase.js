@@ -17,7 +17,7 @@ export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"apple-adobe-fx",name:"Apple Adobe FX",kind:"Creative tooling",repository:null},
  {slug:"protocol-monitor-pruner",name:"Protocol Monitor Pruner",kind:"Chrome extension and CLI",repository:"lukehanna12/protocol-monitor-pruner",status:"in-progress"},
  {slug:"app-caviar",name:"App Caviar",kind:"Application",repository:null},
- {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null},
+ {slug:"ozoning-board",name:"Ozoning Board",kind:"Project",repository:null,status:"in-progress"},
  {slug:"hidden-functions",name:"Hidden Functions",kind:"Project",repository:null,status:"coming-soon"},
  {slug:"latexcel",name:"LaTeXceL",kind:"Project",repository:null,status:"coming-soon"}
 ]);
