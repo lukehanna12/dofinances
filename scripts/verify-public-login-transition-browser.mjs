@@ -9,6 +9,7 @@ import {tmpdir} from "node:os";
 import {join,resolve,extname} from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {PROJECT_SHOWCASE,publicProjectIconSource} from "../sites/_apex/assets/public-projects-catalog.js";
 const repo=resolve(fileURLToPath(new URL("../",import.meta.url)));
 const apex=join(repo,"sites/_apex");
 const dist=join(repo,"dist");
@@ -916,6 +917,9 @@ try{
 
   const iconDeclarations=await evaluate(`[...document.querySelectorAll(".project-showcase-lucide")].map(img=>({tint:img.dataset.glassSilhouetteTint,opacity:img.dataset.glassSilhouetteOpacity,registered:img.hasAttribute("data-glass-silhouette-source")}))`);
   assert.equal(iconDeclarations.length,16);
+  const projectIconURLs=await evaluate(`[...document.querySelectorAll(".project-showcase-card")].map(card=>[card.dataset.projectSlug,card.querySelector(".project-showcase-lucide").getAttribute("src")])`);
+  assert.deepEqual(Object.fromEntries(projectIconURLs),Object.fromEntries(PROJECT_SHOWCASE.map(p=>[p.slug,publicProjectIconSource(p.slug)])),
+    "Every project card must use the same content-revision URL as its homepage icon");
   assert.ok(iconDeclarations.every(i=>i.registered&&i.tint==="white"&&i.opacity==="0.2"),"Every project icon registers white Clear tint at 20%");
   const newCards=await evaluate("(()=>['hidden-functions','latexcel'].map(slug=>{"+
     "const card=document.querySelector('.public-projects-root [data-project-slug=\"'+slug+'\"]');"+
@@ -926,9 +930,9 @@ try{
     "src:icon?.getAttribute('src')};}))()");
   assert.deepEqual(newCards,[
     {slug:"hidden-functions",name:"Hidden Functions",badge:"Coming Soon",
-      coming:true,src:"/assets/project-icons/hidden-functions.svg"},
+      coming:true,src:publicProjectIconSource("hidden-functions")},
     {slug:"latexcel",name:"LaTeXceL",badge:"Coming Soon",
-      coming:true,src:"/assets/project-icons/latexcel.svg"}
+      coming:true,src:publicProjectIconSource("latexcel")}
   ],"The two additional Coming Soon cards must use the original SVG paths");
   const newIconAssets=await evaluate("(async()=>Promise.all("+
     "['hidden-functions','latexcel'].map(async slug=>{"+
@@ -946,7 +950,7 @@ try{
     "appleIcon:apple.querySelector('.project-showcase-lucide').getAttribute('src')};})()");
   assert.equal(updatedArt.image,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
     "Terminal Scalars must reveal the high-resolution gallery photograph instead of a wallpaper");
-  assert.equal(updatedArt.appleIcon,"/assets/project-icons/apple-higs-reader.v4.svg",
+  assert.equal(updatedArt.appleIcon,publicProjectIconSource("apple-hig-reader"),
     "Apple HIGs Reader must use the new supplied icon");
   const artAssets=await evaluate("(async()=>{const [art,icon]=await Promise.all(["+
     "fetch('/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp'),"+

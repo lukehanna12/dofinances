@@ -27,7 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Run tests
-        run: npm run check
+        run: |
+          node scripts/sync-project-icon-revisions.mjs --check
+          npm run check
       - name: Verify continuous public glass release gate
         run: node research/continuous-glass/release-gate.mjs
       - name: Verify README Markdown typing in Chromium

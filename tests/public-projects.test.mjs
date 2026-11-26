@@ -21,6 +21,8 @@ import {
 import {TILE_FLOATS} from "../sites/_apex/assets/home-dashboard/dashboard-interaction.js";
 import {PROJECT_DIAGRAMS,projectDiagramLayout} from "../sites/_apex/assets/public-projects-diagrams.js";
 import {BOOTSCRIPT_DIAGRAM_SVG} from "../sites/_apex/assets/public-projects-bootscript-diagram.js";
+import {PROJECT_ICON_REVISIONS} from "../sites/_apex/assets/project-icon-revisions.js";
+import {createHash} from "node:crypto";
 const load=path=>readFile(new URL(path,import.meta.url),"utf8");
 
 test("public Projects is a curated snapshot, not an authenticated API leak",()=>{
@@ -41,7 +43,7 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.equal(PRIVATE_ICONS["apple-hig-reader"],"apple-higs-reader.v4");
   for(const project of PUBLIC_PROJECTS)
     assert.equal(publicProjectIconSource(project.slug),
-      "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg");
+      "/assets/project-icons/"+PUBLIC_ICONS[project.slug]+".svg?v="+PROJECT_ICON_REVISIONS[PUBLIC_ICONS[project.slug]]);
   assert.equal(publicProjectIconSource("__unknown__"),null);
 });
 test("seven supplied project SVGs are identical across public and authenticated views",async()=>{
@@ -57,7 +59,7 @@ test("seven supplied project SVGs are identical across public and authenticated 
   for(const [slug,name,pathCount] of assigned){
     assert.equal(PUBLIC_ICONS[slug],name);
     assert.equal(PRIVATE_ICONS[slug],name);
-    assert.equal(publicProjectIconSource(slug),"/assets/project-icons/"+name+".svg");
+    assert.equal(publicProjectIconSource(slug),"/assets/project-icons/"+name+".svg?v="+PROJECT_ICON_REVISIONS[name]);
     const [publicSvg,privateSvg]=await Promise.all([
       load("../sites/_apex/assets/project-icons/"+name+".svg"),
       load("../sites/_apex/app/assets/project-icons/"+name+".svg")
@@ -529,4 +531,17 @@ test("dedicated hero places its original silhouette above the title and overlays
  assert.match(css,/\.public-project-detail \.public-projects-header\{\s*position:absolute;top:var\(--project-detail-inset\);left:var\(--project-detail-inset\)/);
  assert.match(css,/:has\(\.public-project-detail\) #dashboard-title\{\s*visibility:hidden!important;opacity:0!important/);
  assert.match(renderer,/\|\|node\.hasAttribute\("data-project-detail-back"\)/);
+});
+
+test("all sixteen public icon URLs are revisioned by actual SVG bytes and agree with GPU vector inputs",async()=>{
+ const packed=JSON.parse(await load("../sites/_apex/assets/home-dashboard/continuous-icon-vectors.json"));
+ assert.deepEqual(Object.keys(PROJECT_ICON_REVISIONS).sort(),Object.values(PUBLIC_ICONS).sort());
+ for(const project of PUBLIC_PROJECTS){
+  const name=PUBLIC_ICONS[project.slug];
+  const svg=await readFile(new URL("../sites/_apex/assets/project-icons/"+name+".svg",import.meta.url));
+  const hash=createHash("sha256").update(svg).digest("hex");
+  assert.equal(PROJECT_ICON_REVISIONS[name],hash);
+  assert.equal(packed.assets[name].sourceSha256,hash);
+  assert.equal(publicProjectIconSource(project.slug),"/assets/project-icons/"+name+".svg?v="+hash);
+ }
 });

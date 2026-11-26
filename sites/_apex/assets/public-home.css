@@ -241,6 +241,16 @@ body.public-home .dashboard-home .cta6-tile--icon img.cta6-icon{
   display:block;
   object-fit:contain;
   filter:brightness(0);
+  -webkit-user-select:none;user-select:none;
+  -webkit-user-drag:none;
+  pointer-events:none;
+}
+/* The visual mosaic never participates in a text selection or image drag.
+ * Pointer-based glass hover/press continues through the renderer's window
+ * listeners, independently of native hit testing. */
+body.public-home .dashboard-home .cta6-mosaic,
+body.public-home .dashboard-home .cta6-tile{
+  -webkit-user-select:none;user-select:none
 }
 /* When WebGPU is ready, glass squares are painted in the separate viewport-
    sized GPU canvas. Keeping a mask on this 6-row DOM mosaic clips moving

@@ -6,6 +6,7 @@ import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,t
 import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortProjectShowcase,publicProjectIconSource}
   from "../sites/_apex/assets/public-projects-catalog.js";
+import {PROJECT_ICON_REVISIONS} from "../sites/_apex/assets/project-icon-revisions.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
 const home=asset("index.html"),style=asset("assets/public-home.css");
 const original=asset("app/assets/dashboard-home.css");
@@ -206,7 +207,7 @@ test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay b
    "2:1","2:9","3:0","3:10","4:2","4:5","4:8","5:1","5:6","5:9"]);
  const ordered=sortProjectShowcase(PROJECT_SHOWCASE);
  assert.ok(ordered.every(p=>publicProjectIconSource(p.slug)===
-   "/assets/project-icons/"+PROJECT_CARD_ICONS[p.slug]+".svg"));
+   "/assets/project-icons/"+PROJECT_CARD_ICONS[p.slug]+".svg?v="+PROJECT_ICON_REVISIONS[PROJECT_CARD_ICONS[p.slug]]));
  for(const project of ordered)assert.ok(
    existsSync(new URL("../sites/_apex"+publicProjectIconSource(project.slug),import.meta.url)),
    "Both public views use an existing SVG for "+project.slug);

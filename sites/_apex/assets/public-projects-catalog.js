@@ -2,6 +2,7 @@
  * No account-owned records or private APIs are queried on the public route.
  * The source test enforces parity with the canonical private catalog. */
 import {validateProjectTitle} from "./public-projects-title.js";
+import {PROJECT_ICON_REVISIONS} from "./project-icon-revisions.js";
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"in-progress",docs:true},
  {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"in-progress",docs:true},
@@ -82,7 +83,9 @@ export const PROJECT_CARD_ICONS=Object.freeze({
  * Styling owns black-on-Home vs white-on-Projects; SVGs stay unmodified. */
 export function publicProjectIconSource(slug){
  const icon=PROJECT_CARD_ICONS[slug];
- return icon?"/assets/project-icons/"+icon+".svg":null;
+ // A replaced SVG may retain its stable stem. A content-based URL prevents
+ // the browser from reusing an older decoded icon from another route.
+ return icon?"/assets/project-icons/"+icon+".svg?v="+PROJECT_ICON_REVISIONS[icon]:null;
 }
 export const PROJECT_CARD_IMAGES=Object.freeze({
   "bootscript":"/assets/project-art/bootscript-polo-ponies.v1.webp",
