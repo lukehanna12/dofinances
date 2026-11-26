@@ -18,14 +18,58 @@ export function halfDiamond(sample){
  for(const i of [1,2,0])v=half(v+sums[i]*WEIGHTS[i]);
  return v;
 }
+const roundEven=x=>{const f=Math.floor(x),r=x-f;return r===.5?f+(f%2):Math.round(x);};
+const toUnorm=z=>Math.max(0,Math.min(255,roundEven(z*255)));
 export function evenNativeDownsample(src,w,h,{unorm=false}={}){
  if(![w,h].every(n=>Number.isInteger(n)&&n>=2&&n%2===0)||src.length!==w*h*4||!Array.from(src).every(x=>Number.isFinite(x)&&(unorm?Number.isInteger(x)&&x>=0&&x<=255:half(x)===x)))throw new RangeError("Finite even-dimension native domain required");
  const dw=w/2,dh=h/2,out=unorm?new Uint8Array(dw*dh*4):new Float64Array(dw*dh*4);
  const val=(x,y,c)=>src[(Math.max(0,Math.min(h-1,y))*w+Math.max(0,Math.min(w-1,x)))*4+c]/(unorm?255:1);
- const roundEven=x=>{const f=Math.floor(x),r=x-f;return r===.5?f+(f%2):Math.round(x);};
+ 
  for(let y=0;y<dh;y++)for(let x=0;x<dw;x++)for(let c=0;c<4;c++){
   const z=halfDiamond((a,b)=>{let sum=0;for(let v=0;v<2;v++)for(let u=0;u<2;u++)sum+=val(2*(x+a)+u,2*(y+b)+v,c);return sum/4;});
-  out[(y*dw+x)*4+c]=unorm?Math.max(0,Math.min(255,roundEven(z*255))):z;
+  out[(y*dw+x)*4+c]=unorm?toUnorm(z):z;
  }
  return {width:dw,height:dh,values:out};
+}
+
+const EPS=0.00010001659393310547; // binary16 0x068e
+// Copy ABI fields are supplied explicitly; no unsupported public-state inference.
+export function nativeCopyBase(src,w,h,{base,limits,baseSize,mipSize,noBaseMip,unorm=true}){
+ const valid=a=>Array.isArray(a)&&a.every(Number.isSafeInteger);
+ if(![w,h].every(n=>Number.isSafeInteger(n)&&n>0)||src.length!==w*h*4||
+  !valid(base)||base.length!==2||!valid(limits)||limits.length!==4||!valid(baseSize)||baseSize.length!==2||!valid(mipSize)||mipSize.length!==2||
+  !baseSize.every((v,i)=>v===2*mipSize[i])||!mipSize.every(x=>x>0&&x<=4096)||typeof noBaseMip!=="boolean"||
+  !Array.from(src).every(x=>Number.isFinite(x)&&(unorm?Number.isInteger(x)&&x>=0&&x<=255:half(x)===x)))throw new RangeError("Invalid copy ABI");
+ const [l,t,r,b]=limits;if(l<0||t<0||r>=w||b>=h||r<l||b<t)throw new RangeError("Invalid clamp bounds");
+ const [bx,by]=base,[dw,dh]=mipSize;
+ const get=(x,y,c)=>src[(Math.max(t,Math.min(b,y))*w+Math.max(l,Math.min(r,x)))*4+c];
+ const levels=[];
+ const allocate=n=>unorm?new Uint8Array(n):new Float64Array(n);
+ if(!noBaseMip){
+  const [aw,ah]=baseSize,values=allocate(aw*ah*4);
+  for(let y=0;y<ah;y++)for(let x=0;x<aw;x++)for(let c=0;c<4;c++)values[(y*aw+x)*4+c]=get(bx+x,by+y,c);
+  levels.push({width:aw,height:ah,values,sourceOrigin:[bx,by],sourcePitch:1});
+ }
+ const values=allocate(dw*dh*4);
+ const val=(x,y,c)=>half(get(x,y,c)/(unorm?255:1));
+ for(let y=0;y<dh;y++)for(let x=0;x<dw;x++)for(let c=0;c<4;c++){
+  let z=halfDiamond((a,b)=>{
+   const X=bx+2*(x+a),Y=by+2*(y+b);
+   return half(half(half(half(val(X+1,Y,c)+val(X,Y,c))+val(X,Y+1,c))+val(X+1,Y+1,c))*.25);
+  });
+  if(c<3&&Math.abs(z)<EPS)z=0;
+  values[(y*dw+x)*4+c]=unorm?toUnorm(z):z;
+ }
+ levels.push({width:dw,height:dh,values,sourceOrigin:[bx+.5,by+.5],sourcePitch:2});
+ return levels;
+}
+export function nativeFixedMipChain(src,w,h,options){
+ const levels=nativeCopyBase(src,w,h,options);
+ const count=options.levelCount??levels.length;
+ if(!Number.isSafeInteger(count)||count<levels.length||count>12)throw new RangeError("Invalid mip level count");
+ while(levels.length<count){
+  const p=levels.at(-1),next=evenNativeDownsample(p.values,p.width,p.height,{unorm:options.unorm??true});
+  levels.push({...next,sourceOrigin:p.sourceOrigin.map(x=>x+p.sourcePitch*.5),sourcePitch:p.sourcePitch*2});
+ }
+ return levels;
 }
