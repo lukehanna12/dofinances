@@ -664,6 +664,7 @@ async function initialize(){
     size:[1,1,1],format:"rgba16float",usage:glyphUsage
   });
   let referenceGlyphTexture=null,referenceGlyphKey="";
+  let glyphAlphaTexture=null,glyphAlphaKey="";
   let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null,glyphVectorIndex=0,glyphVectorPhase=[.5,.5];
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
@@ -1159,8 +1160,9 @@ async function initialize(){
     const width=Math.max(1,Math.ceil(rect.width*dpr)),height=Math.max(1,Math.ceil(rect.height*dpr)),text=title.textContent||"";
     const layout=continuous?.titleAvailable?makeLayoutData(title,dpr,authOriginTop()):null;
     const phase=layout?layout.slice(0,2).map(v=>{const n=.5-Math.fround(v);return n-Math.floor(n);}):[.5,.5];
-    const signature=JSON.stringify([text,width,height,dpr,...phase,style.fontFamily,style.fontSize,
+    const geometrySignature=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,
       style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
+    const signature=geometrySignature+JSON.stringify(phase);
     if(signature===glyphMaskKey){
       glyphMaskOwner=title;if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";return;
     }
@@ -1168,6 +1170,10 @@ async function initialize(){
       title.removeAttribute("data-glass-text-ready");return;
     }
     try{
+      if(glyphVectorIndex&&glyphAlphaTexture&&glyphAlphaKey===geometrySignature&&continuous?.titleAvailable){
+        const next=continuous.titleField(text,style,width,height,dpr,glyphAlphaTexture,phase,glyphMaskTexture);
+        if(next&&next.texture===glyphMaskTexture){glyphVectorPhase=phase;glyphMaskKey=signature;glyphMaskOwner=title;if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";return;}
+      }
       const raster=continuous?.rasterTitle(text,style,width,height,dpr)||rasterClockText(text,style,width,height,dpr);
       if(continuous){const rw=Math.max(1,Math.ceil(rect.width*sourceDpr)),rh=Math.max(1,Math.ceil(rect.height*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:(continuous?.rasterTitle(text,style,rw,rh,sourceDpr)||rasterClockText(text,style,rw,rh,sourceDpr));if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
       if(!raster){title.removeAttribute("data-glass-text-ready");return;}
@@ -1177,11 +1183,12 @@ async function initialize(){
       const pixels=raster.pixels;
       device.queue.writeTexture({texture},pixels,{offset:0,bytesPerRow:width*8,rowsPerImage:height},{width,height,depthOrArrayLayers:1});
       let vector=null;
-      if(continuous?.titleAvailable)vector=continuous.titleField(text,style,width,height,dpr,texture,phase);
+      if(continuous?.titleAvailable)vector=continuous.titleField(text,style,width,height,dpr,texture,phase,glyphVectorIndex?previous:null);
       glyphMaskTexture=vector?.texture||texture;glyphVectorIndex=vector?.index||0;glyphVectorPhase=phase;
       glyphMaskKey=signature;glyphMaskDimensions=[width,height];glyphMaskOwner=title;
-      if(glyphMaskTexture!==previous){rebindGlassGroups();previous.destroy();}
-      if(vector&&texture!==previous)texture.destroy();
+      if(glyphMaskTexture!==previous){rebindGlassGroups();if(previous!==texture||!vector)previous.destroy();}
+      if(glyphAlphaTexture&&glyphAlphaTexture!==texture)glyphAlphaTexture.destroy();
+      glyphAlphaTexture=vector?texture:null;glyphAlphaKey=vector?geometrySignature:"";
       if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
       audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
         width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,titleMode:continuous?.titleMode||"system",localEvidence:vector?.localEvidence,
@@ -1865,7 +1872,7 @@ async function initialize(){
   }
   function dispose(){
     tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();referenceIconBuffer?.destroy();referenceCoverage?.dispose();referenceGlyphTexture?.destroy();silhouetteAtlas.dispose();continuous?.dispose();
-    glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
+    glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();if(glyphAlphaTexture!==glyphMaskTexture)glyphAlphaTexture?.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();
     globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();if(continuous)homeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();

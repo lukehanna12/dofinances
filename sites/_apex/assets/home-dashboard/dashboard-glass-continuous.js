@@ -46,28 +46,32 @@ export async function loadContinuousGlass(device,base){
  let builds=0,hits=0,misses=0,titleBuilds=0,cacheSubmissions=0,cacheBatch=null;
  function beginCache(){if(cacheBatch)throw Error('Nested vector cache batch');cacheBatch={cmd:null,slots:new Set()};}
  function endCache(){const batch=cacheBatch;cacheBatch=null;if(batch?.cmd){device.queue.submit([batch.cmd.finish()]);cacheSubmissions++;}}
- let titlePipeline=null,titleUniform=null;
+ let titlePipeline=null,titleUniform=null,titleGeometryKey=null,titleGeometry=null,titleGeometryBuilds=0;
  if(titleAsset){
-  const module=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> titleIcon:GlassSilhouette;\n@group(0) @binding(1) var titleOut:texture_storage_2d<rgba32float,write>;\n@group(0) @binding(2) var titleAlpha:texture_2d<f32>;\n@compute @workgroup_size(8,8)\nfn titleMain(@builtin(global_invocation_id) id:vec3<u32>){\n let dims=textureDimensions(titleOut);\n if(any(id.xy>=dims)){return;}\n let p=vec2<i32>(id.xy);let a=textureLoad(titleAlpha,p,0).a;\n // A one-pixel guard ensures every adjacent derivative lane around\n // a covered fragment has a continuous signed distance.\n var near=a;\n for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){\n  near=max(near,textureLoad(titleAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(dims)-1),0).a);\n }}\n if(near<=0.0){textureStore(titleOut,p,vec4<f32>(1000,0,0,0));return;}\n let f=evaluateContinuousTitleField(titleIcon,vec2<f32>(id.xy)+titleIcon.coverageRect.xy);\n textureStore(titleOut,p,vec4<f32>(f,a));\n}\n"});
+  const module=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> titleIcon:GlassSilhouette;\n@group(0) @binding(1) var titleOut:texture_storage_2d<rgba32float,write>;\n@group(0) @binding(2) var titleAlpha:texture_2d<f32>;\nvar<workgroup> titleStencil:array<f32,160>;\n@compute @workgroup_size(8,4,5)\nfn titleMain(@builtin(global_invocation_id) id:vec3<u32>,@builtin(local_invocation_id) lid:vec3<u32>){\n let dims=textureDimensions(titleOut);let valid=all(id.xy<dims);\n let p=vec2<i32>(id.xy);var a=0.0;var near=0.0;\n if(valid){\n  a=textureLoad(titleAlpha,p,0).a;near=a;\n  for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){\n   near=max(near,textureLoad(titleAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),vec2<i32>(dims)-1),0).a);\n  }}\n }\n let n=(lid.y*8u+lid.x)*5u;\n let local=vec2<f32>(id.xy)+titleIcon.coverageRect.xy;\n var value=0.0;\n if(near>0.0){value=iconStencil(titleFieldQuery(titleIcon,local),lid.z);}\n titleStencil[n+lid.z]=value;\n workgroupBarrier();\n if(lid.z==0u&&valid){\n  if(near<=0.0){textureStore(titleOut,p,vec4<f32>(1000,0,0,0));}\n  else{let q=titleFieldQuery(titleIcon,local);let f=assembleTitleField(q,titleStencil[n],titleStencil[n+1u],titleStencil[n+2u],titleStencil[n+3u],titleStencil[n+4u]);textureStore(titleOut,p,vec4<f32>(f,a));}\n }\n}\n"});
   titlePipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module,entryPoint:"titleMain"}});
   titleUniform=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
  }
- function titleField(text,style,width,height,dpr,alphaTexture,phase){
+ function titleField(text,style,width,height,dpr,alphaTexture,phase,reuseTexture=null){
   if(!titlePipeline)return null;
-  const model=prepareTitleWord(titleAsset,text,style,width,height,dpr);if(!model)return null;
-  rows.length=titleSlot;rows.push(null);
-  const items=Array.from({length:model.curves.length/12},(_,i)=>Array.from(model.curves.subarray(i*12,(i+1)*12)));
-  const root=build(items);
-  rows[titleSlot]=[...model.origin,model.scale,items.length,root,width,0,0,height,0,0,0];
-  const packed=Float32Array.from(rows.slice(titleSlot).flat());
-  if(packed.byteLength>titleReserve*48)throw Error("Title vector storage budget exceeded");
-  device.queue.writeBuffer(buffer,titleSlot*48,packed);
+  const key=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
+  if(key!==titleGeometryKey){
+   const model=prepareTitleWord(titleAsset,text,style,width,height,dpr);if(!model)return null;
+   rows.length=titleSlot;rows.push(null);
+   const items=Array.from({length:model.curves.length/12},(_,i)=>Array.from(model.curves.subarray(i*12,(i+1)*12)));
+   const root=build(items);
+   rows[titleSlot]=[...model.origin,model.scale,items.length,root,width,0,0,height,0,0,0];
+   const packed=Float32Array.from(rows.slice(titleSlot).flat());
+   if(packed.byteLength>titleReserve*48)throw Error("Title vector storage budget exceeded");
+   device.queue.writeBuffer(buffer,titleSlot*48,packed);
+   titleGeometryKey=key;titleGeometry={curves:items.length,localEvidence:model.localEvidence};titleGeometryBuilds++;
+  }
   const id=titleSlot+1,lanes=Float32Array.of(0,0,width,height,dpr,0,0,0,0,0,0,0,...phase,0,0,0,width,height,id);
   device.queue.writeBuffer(titleUniform,0,lanes);
-  const texture=device.createTexture({label:"Exact output-density title optical samples",size:[width,height],format:"rgba32float",usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.STORAGE_BINDING});
+  const texture=reuseTexture?.width===width&&reuseTexture?.height===height&&reuseTexture?.format==="rgba32float"?reuseTexture:device.createTexture({label:"Exact output-density title optical samples",size:[width,height],format:"rgba32float",usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.STORAGE_BINDING});
   const group=device.createBindGroup({layout:titlePipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:titleUniform}},{binding:1,resource:texture.createView()},{binding:2,resource:alphaTexture.createView()},{binding:15,resource:{buffer}}]});
-  const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(titlePipeline);pass.setBindGroup(0,group);pass.dispatchWorkgroups(Math.ceil(width/8),Math.ceil(height/8));pass.end();device.queue.submit([enc.finish()]);
-  titleBuilds++;return {texture,index:id,curves:items.length,localEvidence:model.localEvidence};
+  const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(titlePipeline);pass.setBindGroup(0,group);pass.dispatchWorkgroups(Math.ceil(width/8),Math.ceil(height/4));pass.end();device.queue.submit([enc.finish()]);
+  titleBuilds++;return {texture,index:id,...titleGeometry};
  }
  function cacheField(lanes,coverageView,channel="display"){
   const slot=lanes[16]-1,w=lanes[17],h=lanes[18];
@@ -86,7 +90,7 @@ export async function loadContinuousGlass(device,base){
   if(cacheBatch)cacheBatch.slots.add(cacheSlot);else{device.queue.submit([cmd.finish()]);cacheSubmissions++;}
   keys.set(cacheSlot,key);builds++;return true;
  }
- return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",fieldView,fieldFor,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,cacheSubmissions,parallelCache,bytes:side*side*capacity*16*(referenceFieldTexture?2:1)};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();fieldTexture.destroy();referenceFieldTexture?.destroy();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
+ return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",fieldView,fieldFor,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,titleGeometryBuilds,cacheSubmissions,parallelCache,bytes:side*side*capacity*16*(referenceFieldTexture?2:1)};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();fieldTexture.destroy();referenceFieldTexture?.destroy();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
 }
 function once(s,a,b){if(!s.includes(a)||s.indexOf(a)!==s.lastIndexOf(a))throw Error("Continuous specialization mismatch: "+a.slice(0,100));return s.replace(a,b);}
 export function specializeContinuousGlass(s,code){

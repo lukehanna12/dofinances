@@ -110,14 +110,17 @@ fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
  return assembleIconField(q,iconStencil(q,0u),iconStencil(q,1u),iconStencil(q,2u),iconStencil(q,3u),iconStencil(q,4u));
 }
 
-fn evaluateContinuousTitleField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
+fn titleFieldQuery(icon:GlassSilhouette,local:vec2<f32>)->IconFieldQuery{
  let h=curves[u32(icon.coverageMeta.w)-1u];
  let p=(local-h.a)/h.b.x;
  let tol=max(0.000002,min(0.00005,0.005/h.b.x));
- let root=u32(h.c.x);let sd=pathDistance(p,root,tol);
- // The old 1 physical-pixel normal stencil at Retina DPR2 corresponds
- // to a fixed half point, independent of output density.
- let dx=vec2<f32>(0.5*icon.params.x/h.b.x,0.0);let dy=dx.yx;
- let grad=vec2<f32>(pathDistance(p+dx,root,tol)-pathDistance(p-dx,root,tol),pathDistance(p+dy,root,tol)-pathDistance(p-dy,root,tol));
- return vec3<f32>(sd*h.b.x,grad/max(length(grad),0.000001));
+ return IconFieldQuery(p,h.b.x,tol,u32(h.c.x),0.5*icon.params.x/h.b.x);
+}
+fn assembleTitleField(q:IconFieldQuery,sd:f32,xp:f32,xm:f32,yp:f32,ym:f32)->vec3<f32>{
+ let grad=vec2<f32>(xp-xm,yp-ym);
+ return vec3<f32>(sd*q.px,grad/max(length(grad),0.000001));
+}
+fn evaluateContinuousTitleField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
+ let q=titleFieldQuery(icon,local);
+ return assembleTitleField(q,iconStencil(q,0u),iconStencil(q,1u),iconStencil(q,2u),iconStencil(q,3u),iconStencil(q,4u));
 }
