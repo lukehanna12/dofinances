@@ -30,8 +30,17 @@ body.public-home:has(#public-route-content .public-projects-root){
   display:flex;align-items:flex-start;justify-content:space-between;
   gap:16px;width:100%;min-width:0
 }
+@property --project-heading-scale{
+  syntax:"<number>";inherits:true;initial-value:1
+}
 .public-projects-title{
   margin:0;color:#fff;font-size:clamp(51.75px,4.5vw,69.75px);
+  /* Keep the optical glyph geometry at its authored size. Scale about the
+   * left-middle anchor and release the exact unused line height to the grid. */
+  scale:var(--project-heading-scale);transform-origin:left center;
+  margin-bottom:calc((var(--project-heading-scale) - 1)*1em*var(--public-heading-leading));
+  --project-enter-alpha:var(--project-heading-scale);
+  opacity:var(--project-heading-scale);
   font-family:var(--public-heading-family);
   font-weight:var(--public-heading-weight);line-height:var(--public-heading-leading);letter-spacing:var(--public-heading-tracking);
   -webkit-user-select:none;user-select:none
@@ -354,7 +363,7 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root :is(.public-
   background:transparent!important;border-color:transparent!important;
   box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important
 }
-@keyframes project-showcase-enter{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes project-showcase-enter{from{opacity:0;transform:translateY(24px)}to{opacity:var(--project-enter-alpha,1);transform:translateY(0)}}
 @keyframes project-showcase-exit{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(24px)}}
 /* A slightly quicker reverse: 420ms per card, 45ms between siblings.
  * Last-to-first order remains unchanged. The header then exits as one unit.

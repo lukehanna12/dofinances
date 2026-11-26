@@ -477,6 +477,19 @@ fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
  let signed=nativeHalf1(1.0-max(glyph.r,0.0)*(25.0/1023.0));
  return vec4<f32>(signed*max(state.viewport.w,1.0),glyph.gb,glyph.a);
 }
+// Reuse the original baseline glyph field at the transformed coordinates.
+// Bilinear reconstruction avoids nearest-texel stepping during motion.
+fn scaledTitleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{
+ let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
+ let q=local-vec2<f32>(0.5);
+ let i=vec2<i32>(floor(q));let f=fract(q);
+ let a=textureLoad(titleGlyphAlpha,clamp(i,vec2<i32>(0),limit),0);
+ let b=textureLoad(titleGlyphAlpha,clamp(i+vec2<i32>(1,0),vec2<i32>(0),limit),0);
+ let c=textureLoad(titleGlyphAlpha,clamp(i+vec2<i32>(0,1),vec2<i32>(0),limit),0);
+ let d=textureLoad(titleGlyphAlpha,clamp(i+vec2<i32>(1,1),vec2<i32>(0),limit),0);
+ let g=mix(mix(a,b,f.x),mix(c,d,f.x),f.y);
+ return vec4<f32>((1.0-g.r*(25.0/1023.0))*max(state.viewport.w,0.001),g.gb,g.a);
+}
 // The glyph union, including counters and inter-letter gaps, owns the
 // dismissal distance. The baseline reuses its existing distance field.
 fn titleDismissField(local:vec2<f32>,dimensions:vec2<f32>,tileIndex:u32,glyph:vec4<f32>)->vec4<f32>{
@@ -675,12 +688,14 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // native compute_sdf_with_mode uses an i32 mode gate, so only the selected
   // path participates in arithmetic and its half-return rounding.
   let glassTitle=tile.properties.y == -8.0 && clockText;
+  let titleScale=select(1.0,clamp(tile.properties.x,0.7,1.0),glassTitle);
   var field:vec3<f32>;
   var glyphCoverage:f32=1.0;
   if(glassTitle){
     var glyph=titleGlyphField(in.local);
     if(tile.motion.w>0.0){glyph=titleDismissField(in.local,dimensions,in.tileIndex,glyph);}
-    field=glyph.xyz;
+    if(titleScale<1.0){glyph=scaledTitleGlyphField(in.local/titleScale,in.tileIndex);}
+    field=vec3<f32>(glyph.x*titleScale,glyph.yz);
     glyphCoverage=glyph.w;
   }else if(tile.properties.w==6.0){
     field=cssCapsuleSDF(in.local,dimensions);
@@ -698,6 +713,10 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // final truncation to half. Derivatives' exact G14G rules remain open.
   let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));
   let signedRatio=nativeHalf1(-signed/nativeWidth);
+  // Negative coverage marks a directly evaluated transformed vector glyph.
+  // Antialias against the actual target pixel footprint, not a scaled mask.
+  let titleFootprint=max(dot(abs(field.yz),fwidth(in.local)),0.0001);
+  if(glyphCoverage<0.0){glyphCoverage=clamp(0.5-signed/titleFootprint,0.0,1.0);}
   // For text, use the font rasterizer's own antialiased glyph coverage;
   // the estimated distance/normal still drives the identical glass optics.
   let coverage=select(nativeHalf1(clamp(0.5+signedRatio,0.0,1.0)),

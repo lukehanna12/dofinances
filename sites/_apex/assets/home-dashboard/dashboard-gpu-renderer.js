@@ -382,12 +382,16 @@ function actualSceneViewport(){
   return sceneViewportHeight(window.innerHeight,
     bar?.getBoundingClientRect().bottom ?? 44);
 }
+function projectHeadingScale(node){
+  return node?.dataset.publicProjectGlass==="title"?
+    Math.max(.7,Math.min(1,Number.parseFloat(getComputedStyle(node).getPropertyValue("--project-heading-scale"))||1)):1;
+}
 function makeLayoutData(tile,scale,sceneTop=0){
   // Shared public geometry: one resolver for squares, cards, capsules,
   // rectangles, circles and foreground content.
   const b=tile.getBoundingClientRect();
   const live=tile.hasAttribute("data-home-cta-glass")||
-    glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass)||tile.hasAttribute("data-glass-dropdown");
+    glassPaneNeedsLiveTransform(tile.dataset?.publicProjectGlass)||tile.hasAttribute("data-glass-dropdown")||projectHeadingScale(tile)<1;
   const layoutW=Math.max(1,tile.offsetWidth),layoutH=Math.max(1,tile.offsetHeight);
   const w=live?Math.max(1,b.width):layoutW;
   const h=live?Math.max(1,b.height):layoutH;
@@ -1240,10 +1244,14 @@ async function initialize(){
     if(glyphMaskOwner&&glyphMaskOwner!==title)glyphMaskOwner.removeAttribute("data-glass-text-ready");
     glyphMaskOwner=null;if(!title)return;
     const style=getComputedStyle(title),rect=title.getBoundingClientRect();
-    const width=Math.max(1,Math.ceil(rect.width*dpr)),height=Math.max(1,Math.ceil(rect.height*dpr)),text=title.textContent||"";
+    const headingScale=projectHeadingScale(title);
+    // Read the untransformed CSS box, not a succession of resampled glyphs.
+    const naturalWidth=title.dataset.publicProjectGlass==="title"?parseFloat(style.width):rect.width;
+    const naturalHeight=title.dataset.publicProjectGlass==="title"?parseFloat(style.height):rect.height;
+    const width=Math.max(1,Math.ceil(naturalWidth*dpr)),height=Math.max(1,Math.ceil(naturalHeight*dpr)),text=title.textContent||"";
     const homeBrand=title.id==="dashboard-title";
     const layout=continuous?.titleAvailable?makeLayoutData(title,dpr,homeBrand?sceneTop:authOriginTop()):null;
-    const phase=layout?layout.slice(0,2).map(v=>{const n=.5-Math.fround(v);return n-Math.floor(n);}):[.5,.5];
+    const phase=layout&&headingScale===1?layout.slice(0,2).map(v=>{const n=.5-Math.fround(v);return n-Math.floor(n);}):[.5,.5];
     const geometrySignature=JSON.stringify([text,width,height,dpr,style.fontFamily,style.fontSize,
       style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);
     const signature=geometrySignature+JSON.stringify(phase);
@@ -1259,7 +1267,7 @@ async function initialize(){
         if(next&&next.texture===glyphMaskTexture){glyphVectorPhase=phase;glyphMaskKey=signature;glyphMaskOwner=title;if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";return;}
       }
       const raster=continuous?.rasterTitle(text,style,width,height,dpr)||rasterClockText(text,style,width,height,dpr);
-      if(continuous){const rw=Math.max(1,Math.ceil(rect.width*sourceDpr)),rh=Math.max(1,Math.ceil(rect.height*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:(continuous?.rasterTitle(text,style,rw,rh,sourceDpr)||rasterClockText(text,style,rw,rh,sourceDpr));if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
+      if(continuous){const rw=Math.max(1,Math.ceil(naturalWidth*sourceDpr)),rh=Math.max(1,Math.ceil(naturalHeight*sourceDpr));const rk=JSON.stringify([text,rw,rh,style.fontFamily,style.fontSize,style.fontWeight,style.fontStyle,style.letterSpacing,style.lineHeight,style.direction,style.fontKerning,document.fonts?.status]);if(rk!==referenceGlyphKey){const ref=dpr===sourceDpr&&width===rw&&height===rh?raster:(continuous?.rasterTitle(text,style,rw,rh,sourceDpr)||rasterClockText(text,style,rw,rh,sourceDpr));if(ref){const previous=referenceGlyphTexture;referenceGlyphTexture=device.createTexture({label:"Fixed logical title coverage and fallback field",size:[rw,rh,1],format:"rgba16float",usage:glyphUsage});device.queue.writeTexture({texture:referenceGlyphTexture},ref.pixels,{bytesPerRow:rw*8,rowsPerImage:rh},[rw,rh,1]);referenceGlyphKey=rk;rebindGlassGroups();previous?.destroy();}}}
       if(!raster){title.removeAttribute("data-glass-text-ready");return;}
       const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1]||glyphVectorIndex>0,previous=glyphMaskTexture;
       const texture=resized?device.createTexture({label:"Native clock text: 10-bit SDF, normals and full-pixel glyph coverage",
@@ -1318,6 +1326,9 @@ async function initialize(){
       // Only the sign-in controls' neutral pigment film varies by role.
       // Every pane retains the exact shared square glass optics and hover.
       tileData[p+5]=authPaneMaterialTag(node);
+      // Clock-text has no rounded-rectangle radius; its unused radius lane
+      // transports only the live geometric scale of the heading.
+      if(node.hasAttribute("data-glass-text"))tileData[p+4]=projectHeadingScale(node);
       const paneOpacity=node.hasAttribute("data-glass-text")&&node!==glyphMaskOwner?0:(node.hasAttribute("data-glass-dropdown")||node.hasAttribute("data-glass-text"))?Math.max(0,Math.min(1,
         Number.parseFloat(getComputedStyle(node).opacity)||0)):homeCtas?
         homeGroupOpacity*Math.max(0,Math.min(1,

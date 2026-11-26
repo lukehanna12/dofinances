@@ -1060,6 +1060,11 @@ try{
     "return {slug:card.dataset.projectSlug,top:r.top,left:r.left,"+
       "width:r.width,height:r.height};})"+
     ")()");
+  const headingProbe=()=>evaluate(`(()=>{
+    const title=document.querySelector(".public-projects-title"),r=title.getBoundingClientRect(),grid=document.querySelector(".project-showcase-grid").getBoundingClientRect();
+    return {width:r.width,height:r.height,left:r.left,center:r.top+r.height/2,opacity:+getComputedStyle(title).opacity,gridTop:grid.top};
+  })()`);
+  const normalHeading=await headingProbe();
   await evaluate("document.querySelector('.public-projects-root .project-showcase-card').click()");
   assert.equal(await evaluate("location.pathname"),pathBefore,"Public project cards are not links"); 
   // The clicked panel and its attached glass X use the ORIGINAL 620ms
@@ -1069,13 +1074,13 @@ try{
     "const grid=document.querySelector('.project-showcase-grid');"+
     "const cards=[...grid.querySelectorAll('.project-showcase-card:not(.project-showcase-dissolve-ghost)')];"+
     "const panes=[cards[0],cards[1],cards[6],cards[7],"+
-      "grid.querySelector('.project-showcase-expand-close')];"+
+      "grid.querySelector('.project-showcase-expand-close'),grid.closest('.public-projects-root')];"+
     "return panes.map(node=>{const animation=[...node.getAnimations()].find(a=>"+
       "a.effect?.getTiming().duration===620);"+
       "const t=animation?.effect?.getTiming();"+
       "return {duration:t?.duration,delay:t?.delay,easing:t?.easing,"+
         "time:animation?.currentTime,rate:animation?.playbackRate};});})()");
-  assert.equal(expansionClocks.length,5);
+  assert.equal(expansionClocks.length,6);
   for(const [index,clock] of expansionClocks.entries()){
     assert.equal(clock.duration,620,"All moving panels share one 620ms timeline");
     assert.equal(clock.delay,0,"No row or panel waits before moving");
@@ -1113,7 +1118,7 @@ try{
         "c.dataset.projectSlug===ghost.dataset.projectSlug);"+
         "const gr=ghost.getBoundingClientRect();"+
         "return {slug:ghost.dataset.projectSlug,paired:!!card,"+
-          "ghostTop:gr.top,ghostLeft:gr.left,ghostWidth:gr.width,"+
+          "ghostTop:gr.top,ghostLeft:gr.left,ghostWidth:gr.width,gridTop:grid.getBoundingClientRect().top,"+
           "gridRow:getComputedStyle(ghost).gridRowStart,"+
           "incomingOpacity:Number.parseFloat(getComputedStyle(card).opacity),"+
           "secondaryOpacity:card.querySelector('.project-showcase-content').style.opacity,"+
@@ -1128,7 +1133,7 @@ try{
         "Every silhouette must correspond to its real original-row card");
       assert.equal(pair.gridRow,"auto",
         "Dissolving ghost cannot keep the incoming row's grid track");
-      assert.ok(Math.abs(pair.ghostTop-original.top)<2&&
+      assert.ok(Math.abs(pair.ghostTop-original.top-(pair.gridTop-normalHeading.gridTop))<2&&
         Math.abs(pair.ghostLeft-original.left)<2&&
         Math.abs(pair.ghostWidth-original.width)<2,
         "Dissolution MUST start at ORIGINAL card position, not destination row: "+
@@ -1198,6 +1203,11 @@ try{
       "pushedTop:firstPushed.top,pushedLeft:firstPushed.left,"+
       "gridLeft:grid.getBoundingClientRect().left,closeGlass:close.dataset.publicProjectGlass,"+
       "closeVisible:!close.hidden,expanded:cards[0].getAttribute('aria-expanded')};})()");
+  const compactHeading=await headingProbe();
+  assert.ok(Math.abs(compactHeading.width/normalHeading.width-.7)<.005&&Math.abs(compactHeading.height/normalHeading.height-.7)<.005,JSON.stringify(compactHeading));
+  assert.ok(Math.abs(compactHeading.opacity-.7)<.005);
+  assert.ok(Math.abs(compactHeading.left-normalHeading.left)<1&&Math.abs(compactHeading.center-normalHeading.center)<1);
+  assert.ok(Math.abs(normalHeading.gridTop-compactHeading.gridTop-normalHeading.height*.3)<1.5,JSON.stringify({normalHeading,compactHeading}));
   assert.equal((await badgeProbe()).alpha,0,"Expanded card badge must be invisible");
   const descriptionGeometry=await evaluate(`(()=>{
     const card=document.querySelector('.project-showcase-card.is-expanded');
@@ -1362,6 +1372,8 @@ try{
   assert.ok(Math.abs(resetFirst.firstWidth-resetFirst.secondWidth)<2);
   assert.equal(resetFirst.hasOverlay,false,"Reversal removes the spacer");
   assert.ok(await evaluate("[...document.querySelectorAll('.project-showcase-card')].every(c=>!c.hasAttribute('aria-describedby')&&getComputedStyle(c.querySelector('.project-showcase-description')).visibility==='hidden')"));
+  const restoredHeading=await headingProbe();
+  assert.ok(Math.abs(restoredHeading.width-normalHeading.width)<1&&Math.abs(restoredHeading.height-normalHeading.height)<1&&Math.abs(restoredHeading.gridTop-normalHeading.gridTop)<1.5&&Math.abs(restoredHeading.opacity-1)<.005,JSON.stringify(restoredHeading));
   assert.equal((await badgeProbe()).alpha,1,"Collapsed card badge must be visible again");
   const restoredRows=await evaluate("[...document.querySelectorAll('.project-showcase-card')].map(c=>({top:c.getBoundingClientRect().top,height:c.getBoundingClientRect().height}))");
   for(let i=0;i<restoredRows.length;i++){
@@ -1402,15 +1414,17 @@ try{
     await new Promise(r=>setTimeout(r,680));
     const first=cards[1],next=cards[7],third=cards[10],before=first.getBoundingClientRect().width;
     const clickable=getComputedStyle(next).pointerEvents!=='none';
+    const heading=()=>Number(getComputedStyle(root).getPropertyValue("--project-heading-scale"));
+    const beforeHeading=heading();
     click(next);
     await new Promise(r=>setTimeout(r,90));
     const mid={old:first.getBoundingClientRect().width,next:next.getBoundingClientRect().width,
-      selected:next.classList.contains('is-expanded'),expanded:root.classList.contains('has-project-expansion')};
+      selected:next.classList.contains('is-expanded'),expanded:root.classList.contains('has-project-expansion'),heading:heading()};
     click(third);
     const start=performance.now();
     while(root.classList.contains('is-project-reflowing')&&performance.now()-start<1050)
       await new Promise(requestAnimationFrame);
-    const result={before,clickable,mid,elapsed:performance.now()-start,selected:third.classList.contains('is-expanded'),
+    const result={before,clickable,mid,beforeHeading,afterHeading:heading(),elapsed:performance.now()-start,selected:third.classList.contains('is-expanded'),
       selectedCount:root.querySelectorAll('.is-expanded').length,contracting:root.querySelectorAll('.is-contracting').length};
     click(root.querySelector('.project-showcase-expand-close'));
     const closeStart=performance.now();
@@ -1422,6 +1436,7 @@ try{
     return result;
   })()`);
   assert.equal(switched.clickable,true);
+  assert.ok([switched.beforeHeading,switched.mid.heading,switched.afterHeading].every(v=>Math.abs(v-.7)<.005),JSON.stringify(switched));
   assert.equal(switched.mid.selected,true);assert.equal(switched.mid.expanded,true);
   assert.ok(switched.mid.old<switched.before,JSON.stringify(switched));
   assert.equal(switched.selected,true);assert.equal(switched.selectedCount,1);

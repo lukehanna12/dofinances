@@ -127,6 +127,24 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);","let underlay=state.tintMeta.z<0.0;let q=select(local,local*(state.raster.xy/state.viewport.xy),underlay);let p=clamp(vec2<i32>(floor(q)),vec2<i32>(0),limit);");
  s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(underlay){let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);}\n  if(all(abs(local-vec2<f32>(p)-title.coverageRect.xy)<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
  s=once(s,"var glyph=titleGlyphField(in.local);","var glyph=titleGlyphField(in.local,in.tileIndex);");
+ // Transform the existing vector union into the live title geometry.
+ // The retained mask is only a conservative near-contour acceleration
+ // predicate, never the coverage source for the scaled vector glyphs.
+ s=once(s,"fn scaledTitleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{",`fn scaledTitleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{
+ let title=silhouettes[tileIndex];
+ if(title.coverageMeta.w>0.0){
+  if(state.tintMeta.z>=0.0){
+   let dims=vec2<i32>(textureDimensions(titleGlyphAlpha,0));
+   let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),dims-1);
+   var near=false;
+   for(var y=-1;y<=1;y++){for(var x=-1;x<=1;x++){
+    near=near||textureLoad(titleGlyphAlpha,clamp(p+vec2<i32>(x,y),vec2<i32>(0),dims-1),0).x<999.0;
+   }}
+   if(!near){return vec4<f32>(1000.0,0.0,0.0,0.0);}
+  }
+  let f=evaluateContinuousTitleField(title,local);
+  return vec4<f32>(f,-1.0);
+ }`);
  // The cached optical field intentionally skips distant empty pixels.
  // At dismissal, evaluate the true exterior glyph-union distance from
  // the same positioned curves, including counters and the fringe guard.

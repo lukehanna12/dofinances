@@ -236,3 +236,17 @@ test("small close control dissolves before the row completes, releasing badge sp
   for(let i=1;i<frames.length;i++)assert.ok(parseFloat(frames[i].paddingRight)<parseFloat(frames[i-1].paddingRight));
   assert.equal(projectCloseReserveFrames(0).at(-1).paddingRight,"0px");
 });
+
+test("Projects heading shares expansion progress but survives direct card handoffs",async()=>{
+ const asset=name=>readFile(new URL("../sites/_apex/assets/"+name,import.meta.url),"utf8");
+ const [e,css,r,s,c]=await Promise.all(["public-projects-expand.js","public-projects.css","home-dashboard/dashboard-gpu-renderer.js","home-dashboard/dashboard-gpu-glass.wgsl","home-dashboard/dashboard-glass-continuous.js"].map(asset));
+ assert.match(e,/if\(!preserveHeading\)setHeadingScale\(\.7,duration,sharedStart\)/);
+ assert.match(e,/discard\(\{preserveHeading:true\}\)/);
+ assert.match(e,/if\(!card\|\|previous.phase==="closing"\)setHeadingScale/);
+ assert.match(e,/setHeadingScale\(1,EXPAND_MS,sharedStart\)/);
+ assert.match(css,/scale:var\(--project-heading-scale\);transform-origin:left center/);
+ assert.match(css,/margin-bottom:calc\(\(var\(--project-heading-scale\) - 1\)\*1em\*var\(--public-heading-leading\)\)/);
+ assert.match(r,/Math.ceil\(naturalWidth\*dpr\)/);
+ assert.match(s,/scaledTitleGlyphField\(in.local\/titleScale,in.tileIndex\)/);
+ assert.match(c,/evaluateContinuousTitleField\(title,local\)/);
+});

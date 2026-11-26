@@ -322,7 +322,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.doesNotMatch(css,/backdrop-filter\s*:\s*blur\(|-webkit-backdrop-filter\s*:\s*blur\(/);
   assert.match(css,/\.public-projects-root\.is-dissolving-header[\s\S]*?filter:blur\(1\.4px\)/);
   assert.match(css,/body\.public-home\[data-auth-gpu-scene="ready"\]/);
-  assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:1;transform:translateY\(0\)\}\}/);
+  assert.match(css,/@keyframes project-showcase-enter\{from\{opacity:0;transform:translateY\(24px\)\}to\{opacity:var\(--project-enter-alpha,1\);transform:translateY\(0\)\}\}/);
   assert.match(css,/\.public-projects-title,\s*\.public-projects-search-button,\s*\.public-projects-filter-button,\s*\.public-projects-github-button\{\s*animation:project-showcase-enter \.5s both;\s*animation-delay:var\(--project-heading-enter-delay,165ms\)/);
   assert.match(css,/animation-delay:calc\(var\(--project-first-card-enter-delay,330ms\) \+ min\(var\(--project-index,0\),15\)\*65ms\)/);
   assert.match(css,/@keyframes project-showcase-exit\{from\{opacity:1;transform:translateY\(0\)\}to\{opacity:0;transform:translateY\(24px\)\}\}/);

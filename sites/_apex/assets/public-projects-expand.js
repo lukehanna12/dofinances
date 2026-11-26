@@ -178,6 +178,24 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   grid.append(closeButton);
   const abort=new AbortController();
   let state=null,disposed=false,resizeScheduled=false;
+  // The heading belongs to the expansion session, not an individual card.
+  // Its independent WAAPI handle survives direct card-to-card retargets.
+  let headingMotion=null;
+  function setHeadingScale(target,duration=0,sharedStart=document.timeline?.currentTime){
+    const property="--project-heading-scale";
+    const from=Number.parseFloat(getComputedStyle(root).getPropertyValue(property))||1;
+    headingMotion?.cancel();headingMotion=null;
+    root.style.setProperty(property,String(target));
+    if(!duration||Math.abs(from-target)<1e-6)return;
+    const motion=animate(root,[{[property]:String(from)},{[property]:String(target)}],
+      {duration,easing:SELECTED_EASING});
+    if(!motion)return;
+    headingMotion=motion;
+    if(Number.isFinite(sharedStart))motion.startTime=sharedStart;
+    motion.finished.then(()=>{
+      if(headingMotion===motion){headingMotion=null;motion.cancel();}
+    },()=>{});
+  }
   const rectSnapshot=nodes=>new Map(nodes.map(node=>[node,box(node)]));
   function releasePointerFocus(){
     const active=document.activeElement;
@@ -224,7 +242,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     closeButton.style.top="";
     closeButton.style.left="";
   };
-  function discard({focus=false}={}){
+  function discard({focus=false,preserveHeading=false}={}){
     if(!state)return;
     const previous=state;
     state=null;
@@ -233,6 +251,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     for(const ghost of previous.ghosts)ghost.remove();
     previous.placeholder.remove();
     clearInline();
+    if(!preserveHeading)setHeadingScale(1);
     if(focus&&!disposed&&root.isConnected&&!previous.card.hidden)
       (previous.card.querySelector(".project-showcase-trigger")||previous.card).focus({preventScroll:true});
   }
@@ -267,7 +286,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     if(optical)optical.finished.then(retire,()=>{});
     else retire();
   }
-  function open(card,{immediate=false,keyboard=false}={}){
+  function open(card,{immediate=false,keyboard=false,preserveHeading=false}={}){
     if(disposed||state||card.hidden||root.classList.contains("is-exiting"))return;
     const visible=cards.filter(item=>!item.hidden);
     const selectedIndex=visible.indexOf(card);
@@ -450,6 +469,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     }
     const sharedStart=document.timeline?.currentTime;
     if(Number.isFinite(sharedStart))for(const motion of animations)motion.startTime=sharedStart;
+    if(!preserveHeading)setHeadingScale(.7,duration,sharedStart);
     state={card,placeholder,animations,timers,ghosts,phase:"open",immediate,
       initialTime,selectedAnimation,buttonAnimation,
       initialLeft:selectedRect.left-gridRect.left,
@@ -494,8 +514,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
       {left:oldRect.left+oldRect.width-53,top:oldRect.top+13,opacity:0}:
       {left:x.left-origin.left,top:x.top-origin.top,opacity:xOpacity};
     const focused=document.activeElement===closeButton;
-    discard();
-    if(card)open(card,{immediate:true,keyboard:false});
+    discard({preserveHeading:true});
+    if(card)open(card,{immediate:true,keyboard:false,preserveHeading:true});
     const destinationOrigin=box(grid);
     // The scrollport can clamp when a bottom-row expansion changes the
     // row count. Convert the sampled screen coordinates into the NEW
@@ -512,6 +532,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     current.direct=true;current.immediate=false;
     current.phase=card?"open":"closing";
     if(hasReduce()){
+      setHeadingScale(card ? .7 : 1);
       if(!card)discard({focus:restoreFocus});
       else if(keyboard)closeButton.focus({preventScroll:true});
       animateGlass(90);return;
@@ -581,6 +602,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     if(!card)beginCloseDissolve(current,presented.get(old).badgeReserve);
     const sharedStart=document.timeline?.currentTime;
     if(Number.isFinite(sharedStart))for(const motion of current.animations)motion.startTime=sharedStart;
+    // Ordinary switches never touch the heading, even during the first open.
+    // A switch interrupting an explicit close resumes the compact endpoint.
+    if(!card||previous.phase==="closing")setHeadingScale(card ? .7 : 1,EXPAND_MS,sharedStart);
     if(keyboard&&card)closeButton.focus({preventScroll:true});
     else if(focused)closeButton.blur();
     current.timers.push(setTimeout(()=>{
@@ -674,6 +698,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     const sharedStart=document.timeline?.currentTime;
     if(Number.isFinite(sharedStart))for(const motion of animations)
       if(motion.playState!=="idle")motion.startTime=sharedStart;
+    setHeadingScale(1,EXPAND_MS,sharedStart);
     // The original-row dissipating ghosts cohere at the end of closure,
     // with native GPU material. No duplicate CSS glass shader.
     const restoreFrom=Math.min(DISMISS_MS,
