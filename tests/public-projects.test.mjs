@@ -274,7 +274,7 @@ test("projects glass uses the exact existing WebGPU pane pipeline, not CSS optic
   assert.match(controls,/FILTER_MORPH_ICON=svg\(/);
   assert.match(controls,/class="public-projects-icon-morph"/);
   assert.doesNotMatch(controls,/FILTER_ICON\+FILTER_UP/);
-  assert.match(renderer,/glyphMaskTexture\.createView\(\)/);
+  assert.match(renderer,/\(reference&&referenceGlyphTexture\?referenceGlyphTexture:glyphMaskTexture\)\.createView\(\)/);
   assert.match(renderer,/rebindGlassGroups\(\)/);
   assert.match(renderer,/device\.queue\.writeTexture\(\{texture\},pixels/);
   assert.match(renderer,/titleGlyphGlass:roles\.includes\("title"\)/);
