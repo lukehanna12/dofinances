@@ -20,7 +20,10 @@ const server=createServer((req,res)=>{
    if(path!=="/")html=html.replace('<body class="public-home">','<body class="public-home" data-public-route="leaving" data-direct-login="true">');
    res.writeHead(200,{"content-type":"text/html"});return res.end(html);
   }
-  if(path.startsWith("/project-artwork/")||path.startsWith("/wallpapers/"))target=join(root,"assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
+  if(path.startsWith("/project-artwork/")||path.startsWith("/wallpapers/")){
+   if(process.env.LG_REAL_ART_DIR){const dir=resolve(process.env.LG_REAL_ART_DIR),file=resolve(dir,"."+path);if(!file.startsWith(dir+"/")||!existsSync(file)||!existsSync(file+".type")){res.writeHead(404);return res.end();}const type=readFileSync(file+".type","utf8").trim();if(!type.startsWith("image/"))throw Error("Invalid test asset MIME");res.writeHead(200,{"content-type":type,"cache-control":"no-store"});return res.end(readFileSync(file));}
+   target=join(root,"assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
+  }
   if(process.env.LG_REAL_LOGIN&&path.startsWith("/assets/")&&existsSync(resolve(dist,"."+path))){const file=resolve(dist,"."+path);if(!file.startsWith(dist+"/"))throw Error("Invalid dist path");res.writeHead(200,{"content-type":mime[extname(file)]||"application/octet-stream"});return res.end(readFileSync(file));}
   if(path==="/assets/public-login-manifest.json"){res.writeHead(200,{"content-type":"application/json"});return res.end(JSON.stringify({js:"/assets/fixture-login.js",css:[]}));}
   if(path==="/assets/fixture-login.js"){res.writeHead(200,{"content-type":"text/javascript"});return res.end('export function mountLogin(host,{onExitComplete}){const card=document.createElement("h2");card.textContent="Sign in";host.append(card);return {exit(){onExitComplete()},unmount(){card.remove()}}}');}
@@ -128,7 +131,8 @@ try{
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
-  const projects=await state();if(mode==="continuous"&&(process.env.LG_TITLE_OUTLINE||process.env.LG_PORTABLE_TITLE||process.env.LG_LOCAL_TITLE)&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
+  const projects=await state();if(process.env.LG_REAL_ART_DIR){await wait(`Array.from(document.querySelectorAll(".project-showcase-photo")).every(x=>x.complete&&x.naturalWidth>0)`,"Production artwork decode failed");}
+  if(mode==="continuous"&&(process.env.LG_TITLE_OUTLINE||process.env.LG_PORTABLE_TITLE||process.env.LG_LOCAL_TITLE)&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
   await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
   if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
   if(process.env.LG_PERFORMANCE){
