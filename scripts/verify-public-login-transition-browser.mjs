@@ -1808,16 +1808,28 @@ try{
   await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail.is-settled')",100,30);
   const detail=await evaluate(`(()=>{
     const hero=document.querySelector('.project-detail-hero'),body=document.querySelector('.project-detail-body'),r=hero.getBoundingClientRect(),b=body.getBoundingClientRect();
-    return {shell:window.__projectShellIdentity===document.querySelector('#global-menu'),title:document.title,
+    const menu=document.querySelector('#global-menu'),logo=document.querySelector('#dashboard-title'),back=document.querySelector('.public-projects-back');
+    const icon=hero.querySelector('.project-showcase-number').getBoundingClientRect(),title=hero.querySelector('.project-showcase-title').getBoundingClientRect(),backRect=back.getBoundingClientRect();
+    return {shell:window.__projectShellIdentity===menu,title:document.title,
+      menuBottom:menu.getBoundingClientRect().bottom,heroTop:r.top,logoHidden:getComputedStyle(logo).visibility==='hidden',
+      menuVisible:getComputedStyle(menu).visibility==='visible'&&menu.getBoundingClientRect().height>0,
+      iconBottom:icon.bottom,titleTop:title.top,iconLeft:icon.left,titleLeft:title.left,
+      backTop:backRect.top,backLeft:backRect.left,backBottom:backRect.bottom,iconTop:icon.top,
+      backHit:back.contains(document.elementFromPoint(backRect.x+backRect.width/2,backRect.y+backRect.height/2)),
+      backLayer:back.dataset.glassBackdropLayer,
       heroWidth:r.width,availableWidth:document.querySelector('#public-route-content').clientWidth,fade:hero.querySelector('.project-showcase-regular-boundary').getBoundingClientRect().height,
       bodyColor:getComputedStyle(body).backgroundColor,bodyTop:b.top,heroBottom:r.bottom,
       hasX:!!document.querySelector('.project-showcase-expand-close'),description:body.querySelector('.project-showcase-description').textContent.length};
   })()`);
   assert.ok(shellBefore&&detail.shell&&Math.abs(detail.heroWidth-detail.availableWidth)<1&&detail.fade<=112&&detail.fade>=88&&Math.abs(detail.bodyTop-detail.heroBottom)<1,JSON.stringify(detail));
   assert.equal(detail.bodyColor,"rgb(0, 0, 0)");assert.equal(detail.hasX,false);assert.ok(detail.description>250);
+  assert.ok(detail.logoHidden&&detail.menuVisible&&Math.abs(detail.heroTop-detail.menuBottom)<1,JSON.stringify(detail));
+  assert.ok(Math.abs(detail.iconLeft-detail.titleLeft)<1&&Math.abs(detail.iconBottom-detail.titleTop)<1&&detail.backBottom<detail.iconTop,JSON.stringify(detail));
+  assert.ok(Math.abs(detail.backLeft-detail.iconLeft)<1&&detail.backTop>=detail.heroTop&&detail.backHit&&detail.backLayer==="1",JSON.stringify(detail));
   assert.ok(detail.title.startsWith("ChatStore | Projects"),detail.title);
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).visibility"),"visible");
   await evaluate("history.forward()");
   await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
   await evaluate("history.back()");

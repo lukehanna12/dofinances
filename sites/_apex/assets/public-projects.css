@@ -621,19 +621,33 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   display:flex;flex-direction:column;padding:0;min-height:100%;
   --project-detail-inset:clamp(18px,3vw,44px)
 }
-.public-project-detail .public-projects-header{
-  padding:clamp(19px,2.3vw,36px) var(--project-detail-inset) 12px;margin:0;
+/* The global menu remains in the persistent shell. The dedicated hero
+ * starts at the scrollport's top edge, with no intervening Doof strip. */
+body.public-home:has(.public-project-detail) #dashboard-title{
+  visibility:hidden!important;opacity:0!important
 }
+body.public-home > #public-route-content:has(.public-project-detail){background:#000}
+.public-project-detail .public-projects-header{
+  position:absolute;top:var(--project-detail-inset);left:var(--project-detail-inset);
+  padding:0;margin:0;gap:0;pointer-events:none
+}
+.public-project-detail .public-projects-back{pointer-events:auto}
 .public-projects-root.public-project-detail .project-detail-hero{
   width:100%;min-height:0;height:clamp(310px,45vw,570px);flex:none;
   border-radius:0;cursor:default;pointer-events:none;
   --project-card-inset:var(--project-detail-inset);
   --project-expanded-band-height:clamp(88px,10vw,112px);
   --project-regular-progress:1;
+  animation:project-detail-enter .5s both;
   animation-delay:0ms
 }
-.public-project-detail .project-detail-hero .project-showcase-top{padding-right:0}
-.public-project-detail .project-detail-hero .project-showcase-title{margin-bottom:8px}
+@keyframes project-detail-enter{from{opacity:0}to{opacity:1}}
+.public-project-detail .project-detail-hero .project-showcase-top{padding-right:0;justify-content:flex-end}
+.public-project-detail .project-detail-hero .project-showcase-number{margin-top:auto}
+.public-project-detail .project-detail-hero .project-showcase-title{margin:0 0 8px}
+@media(prefers-reduced-motion:reduce){
+  .public-projects-root.public-project-detail .project-detail-hero{animation:none!important}
+}
 .public-projects-root.public-project-detail .project-detail-body{
   position:relative;inset:auto;box-sizing:border-box;flex:1;
   min-height:240px;width:100%;padding:24px var(--project-detail-inset) 52px;

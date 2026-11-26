@@ -150,7 +150,7 @@ function authPaneElements(){
   // The dropdown overlays the cards in the route-owned DOM stack; draw its
   // very same glass pane LAST so the GPU material obeys that stacking order.
   const top=all.filter(node=>
-    ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)||node.hasAttribute("data-glass-dropdown"));
+    ["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)||node.hasAttribute("data-glass-dropdown")||node.hasAttribute("data-project-detail-back"));
   // The route's CSS z-order cannot reorder instances inside one WebGPU
   // draw call. Disappearing old-row silhouettes must be composited BEHIND
   // the widening selected pane, or their glass looks like it reappears
@@ -161,6 +161,7 @@ function authPaneElements(){
   const contracting=all.filter(node=>node.classList.contains("is-contracting"));
   const base=all.filter(node=>
     !["filter-dropdown","expand-close"].includes(node.dataset.publicProjectGlass)&&!node.hasAttribute("data-glass-dropdown")&&
+    !node.hasAttribute("data-project-detail-back")&&
     !node.classList.contains("project-showcase-dissolve-ghost")&&
     !node.classList.contains("is-expanded")&&!node.classList.contains("is-contracting"));
   return [...ghosts,...base,...contracting,...expanded,...top].slice(0,AUTH_PANE_CAPACITY);

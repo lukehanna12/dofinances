@@ -516,3 +516,17 @@ test("Terminal Scalars uses a centered 3% crop without altering the reveal ratio
  assert.match(publicCSS,/\[data-project-slug="terminal-scalars"\]\.is-photo-ready:has\(>\.project-showcase-trigger:focus-visible\) \.project-showcase-photo\{transform:scale\(1\.03\)/);
  assert.ok(Math.abs(1.133/1.03-1.1)<1e-12);
 });
+
+test("dedicated hero places its original silhouette above the title and overlays the shared back chip",async()=>{
+ const [entry,css,renderer]=await Promise.all([
+  load("../sites/_apex/assets/public-projects-entry.js"),
+  load("../sites/_apex/assets/public-projects.css"),
+  load("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js")]);
+ const detail=entry.slice(entry.indexOf("function mountProjectDetail("),entry.indexOf("export function mountProjects("));
+ assert.match(detail,/title\.before\(hero\.querySelector\("\.project-showcase-number"\)\)/);
+ assert.match(detail,/back\.dataset\.glassBackdropLayer="1"/);
+ assert.doesNotMatch(detail,/projectsLogoPinned|logoParent|syncLogo/);
+ assert.match(css,/\.public-project-detail \.public-projects-header\{\s*position:absolute;top:var\(--project-detail-inset\);left:var\(--project-detail-inset\)/);
+ assert.match(css,/:has\(\.public-project-detail\) #dashboard-title\{\s*visibility:hidden!important;opacity:0!important/);
+ assert.match(renderer,/\|\|node\.hasAttribute\("data-project-detail-back"\)/);
+});

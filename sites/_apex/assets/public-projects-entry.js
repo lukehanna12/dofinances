@@ -283,6 +283,8 @@ function mountProjectDetail(host,project,{onBack,onExitComplete}){
   const back=el("button","public-projects-back");
   back.type="button";
   back.dataset.publicProjectGlass="back";
+  back.dataset.projectDetailBack="";
+  back.dataset.glassBackdropLayer="1";
   back.setAttribute("aria-label","Back to Projects");
   back.title="Back to Projects";
   back.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
@@ -291,6 +293,10 @@ function mountProjectDetail(host,project,{onBack,onExitComplete}){
   const hero=makeCard(project,index,{detail:true});
   hero.classList.add("is-expanded","project-detail-hero");
   hero.dataset.projectDetailHero="";
+  // The existing silhouette stays registered to its original hero pane;
+  // move the same node directly above the heading rather than cloning it.
+  const title=hero.querySelector(".project-showcase-title");
+  title.before(hero.querySelector(".project-showcase-number"));
   const details=hero.querySelector(".project-showcase-expanded-detail");
   details.querySelector(".project-showcase-description").removeAttribute("aria-hidden");
   details.querySelector(".project-showcase-diagrams").removeAttribute("aria-hidden");
@@ -298,14 +304,9 @@ function mountProjectDetail(host,project,{onBack,onExitComplete}){
   root.append(head,hero,details);
   host.replaceChildren(root);
   mountProjectTitleSizing(root);
-  const logo=document.getElementById("dashboard-title"),logoParent=logo?.parentElement;
-  document.body.dataset.projectsLogoPinned="true";
-  if(logoParent)document.body.append(logo);
-  const scroll=root.closest("#public-route-content"),abort=new AbortController();
-  const syncLogo=()=>document.body.toggleAttribute("data-projects-logo-hidden",(scroll?.scrollTop||0)>40);
-  scroll?.addEventListener("scroll",syncLogo,{passive:true,signal:abort.signal});
-  scroll?.addEventListener("project-scroll-presented",syncLogo,{signal:abort.signal});
-  syncLogo();
+  // The detail view starts immediately below global navigation. Unlike the
+  // gallery, it never detaches or displays the compact Doof wordmark.
+  const abort=new AbortController();
   let closed=false,exiting=false,timer=null;
   const settle=setTimeout(()=>root.classList.add("is-settled"),reduced.matches?0:680);
   back.addEventListener("click",event=>{
@@ -320,9 +321,6 @@ function mountProjectDetail(host,project,{onBack,onExitComplete}){
     },
     unmount(){
       if(closed)return;closed=true;abort.abort();clearTimeout(settle);clearTimeout(timer);
-      if(logoParent&&logo?.parentElement===document.body)logoParent.append(logo);
-      document.body.removeAttribute("data-projects-logo-pinned");
-      document.body.removeAttribute("data-projects-logo-hidden");
       root.remove();
     }
   };
