@@ -5,14 +5,14 @@ import {ContinuousScene} from "./sampling.mjs";
 import {diamond} from "./native-diamond.mjs";
 export const LANES=56,OUTPUT=16;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),dot=(a,b)=>a.reduce((z,x,i)=>z+x*b[i],0);
-export function pointReference(a,scene,{kernel="box"}={}){
+export function pointReference(a,scene,{kernel="box",lod=null}={}){
  const [x,y,w,h,r]=a.logical?.geometry??a;const [, , , , ,mode,amount,depth]=a;
  const g=mode===4?mode4Field(x,y,w,h,r):mode===5?mode5Field(x,y,w,h,Array.from(a.slice(8,12))):roundedBoxField(x,y,w,h,r);
  const n=g.opticalNormal??g.gradient??[0,0],d=g.distance,disp=refractionEnvelope(d,amount,depth).displacement;
  const dim=Math.min(w,h),reach=[w,h].map(z=>Math.max(24,dim*.8)*clamp(z/Math.max(dim,1),1,2.4));
  const rel=[a[20]/reach[0],a[21]/reach[1]],prox=Math.exp(-dot(rel,rel)),hover=a[40],press=a[41];
  const shift=rel.map((v,i)=>prox*(v*(hover*.55+press*1.1)+a[22+i]*(hover*.42+press*.65)));
- const [sx,sy]=a.logical?.source??[a[12],a[13]];const center=[sx+n[0]*disp+shift[0],sy+n[1]*disp+shift[1]];const src=kernel==="diamond"?diamond(scene,...center,...stagePitch(a)):scene.box(...center,a[14],a[15]);
+ const [sx,sy]=a.logical?.source??[a[12],a[13]];const center=[sx+n[0]*disp+shift[0],sy+n[1]*disp+shift[1]];const src=kernel==="diamond"?diamond(scene,...center,...stagePitch(a)):kernel==="mip-continuous"?scene.continuous(...center,lod,a[14],a[15]):kernel==="mip-native"?scene.native(...center,lod):scene.box(...center,a[14],a[15]);
  const rim=Math.exp(-Math.abs(d)*1.16),edge=clamp(rim*.28,0,.28),light=prox*(hover*.075+press*.06)+rim*prox*press*.035;
  const color=src.slice(0,3).map((v,i)=>a[16]===1?clamp(dot(src.slice(0,3),a.slice(28+4*i,31+4*i))+a[31+4*i]+(edge+light)*.75,0,1):a[17]+clamp(v+edge+light,0,1)*(a[18]-a[17]));
  const tint=clamp(a[27],0,1)*a[19];
