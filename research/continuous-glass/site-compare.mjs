@@ -1,3 +1,4 @@
+import {referenceIconCache} from "./independent-icon-cache.mjs";
 // Actual public fsGlass A/B on owned synthetic GPU attachments, no screenshots.
 // The production material code, SVG raster coverage and backdrop mip reducer
 // are identical for both variants. Output statistics are not native evidence.
@@ -9,7 +10,7 @@ export async function run(){
  const adapter=await navigator.gpu.requestAdapter({powerPreference:"high-performance"}),f16=adapter.features.has("shader-f16"),device=await adapter.requestDevice({requiredFeatures:f16?["shader-f16"]:[]});
  const errors=[];device.addEventListener('uncapturederror',e=>errors.push(e.error.message));
  const original=await(await fetch("/site/dashboard-gpu-glass.wgsl")).text(),data=await loadContinuousGlass(device,"/site/"),packed=await(await fetch("/site/continuous-icon-vectors.json")).json(),names=Object.keys(packed.assets);
- const atlas=createGlassSilhouetteAtlas(device);
+ const atlas=createGlassSilhouetteAtlas(device);const independent=new URLSearchParams(location.search).has("independent-icon-reference");
  const pipelines=[];
  const makeBuffer=(v,usage)=>{const b=device.createBuffer({size:v.byteLength,usage:usage|GPUBufferUsage.COPY_DST});device.queue.writeBuffer(b,0,v);return b;};
  const fmt="rgba16float",tex=(w,h,mips=1,format=fmt,extra=0)=>device.createTexture({size:[w,h],format,mipLevelCount:mips,usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|extra});
@@ -63,13 +64,14 @@ export async function run(){
    const cachedIcons=Float32Array.from(icons);let cached=0;
    data.beginCache();for(let i=0;i<16;i++){const a=cachedIcons.subarray(i*20,(i+1)*20);if(data.cacheField(a,atlas.coverageView)){a[19]*=-1;cached++;}}data.endCache();
    await device.queue.onSubmittedWorkDone();const cacheBuildMs=performance.now()-cacheT;
+   const reference=independent?await referenceIconCache(device,packed,names,icons,atlas.coverageTexture):null;
    const buffers=[makeBuffer(Float32Array.from(tiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.of(W,H,1,scale,0,0,0,H,0,0,0,0,0,0,0,0,1,1,0,0,W,H,0,0),GPUBufferUsage.UNIFORM),makeBuffer(Float32Array.from(tints),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(profiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(regions),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(icons),GPUBufferUsage.STORAGE)];
    const sourceView=scene.createView(),entries=[{binding:0,resource:sourceView},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:glyph.createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:sourceView},{binding:9,resource:detail.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:12,resource:atlas.view},{binding:13,resource:atlas.hazeView},{binding:14,resource:atlas.coverageView}];
    const target=tex(W,H,1,fmt,GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC),stride=Math.ceil(W*8/256)*256,read=device.createBuffer({size:stride*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
    const resultsForMode=[];
-   for(let mode=0;mode<5;mode++){
-    if(mode)device.queue.writeBuffer(buffers[5],0,mode===1?cachedIcons:Float32Array.from(icons));
-    const isContinuous=mode===1||mode===2||mode===4,pipeline=pipelines[mode<3?Math.min(mode,1):mode-1],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:isContinuous?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
+   for(let mode=0;mode<(independent?6:5);mode++){
+    if(mode)device.queue.writeBuffer(buffers[5],0,mode===1||mode===5?cachedIcons:Float32Array.from(icons));
+    const isContinuous=mode===1||mode===2||mode===4||mode===5,pipeline=pipelines[mode===5?1:mode<3?Math.min(mode,1):mode-1],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:isContinuous?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:mode===5?reference.view:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
     const ms=[];if(mode<3){await draw();for(let n=0;n<3;n++)ms.push(await draw());}
     await draw(true);await read.mapAsync(GPUMapMode.READ);
@@ -92,9 +94,10 @@ export async function run(){
      // Independent stability test at 1/1000 of authored normal stencil.
      const perturbations=[[h/1000,0],[-h/1000,0],[0,h/1000],[0,-h/1000]];
      worst.referenceMaxPerturbation=Math.max(...perturbations.map(([dx,dy])=>{const n=boundedGradient(ref,x+dx,y+dy,h);return Math.hypot(n[0]-n0[0],n[1]-n0[1]);}));}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
+   const refErrors=independent?[0,1].map(mode=>{const a=new DataView(resultsForMode[mode].raw.buffer),b=new DataView(resultsForMode[5].raw.buffer),d=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=(y*W+x)*8;if(b.getFloat16(j+6,true)>0)for(let c=0;c<3;c++)d.push(Math.abs(a.getFloat16(j+c*2,true)-b.getFloat16(j+c*2,true)));}d.sort((a,b)=>a-b);return {mode,channels:d.length,mean:d.reduce((a,b)=>a+b,0)/d.length,p99:d[Math.floor(d.length*.99)],max:d.at(-1)};}):null;
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
-   results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
-   buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
+   results.push({scale,W,H,refErrors,refSamples:reference?.samples,refSegments:reference?.segments,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
+   reference?.texture.destroy();buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
   }
   if(errors.length)throw Error(errors.join(';'));return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,f16},results};
  }finally{owners.forEach(({o})=>o.remove());atlas.dispose();data.dispose();glyph.destroy();detail.destroy();device.destroy();}

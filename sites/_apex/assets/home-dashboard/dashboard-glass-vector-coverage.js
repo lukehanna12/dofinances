@@ -114,6 +114,6 @@ export function createVectorCoverageAtlas(device,wake){
    return {rect:g.rect,meta:[slot+1,g.width,g.height,0]};
   }catch(error){console.warn("SVG final coverage:",String(error));return null;}
  }
- return {get view(){return view;},sync,stats(){return {coverageMode:"canonical-svg-native-pixel",coverageUploads:uploads,coverageSide:side,coverageBytes:side*side*CAPACITY};},
+ return {get view(){return view;},get texture(){return texture;},sync,stats(){return {coverageMode:"canonical-svg-native-pixel",coverageUploads:uploads,coverageSide:side,coverageBytes:side*side*CAPACITY};},
   dispose(){texture?.destroy();placeholder.destroy();keys.clear();}};
 }

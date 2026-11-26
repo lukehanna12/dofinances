@@ -10,13 +10,8 @@ function flatten(s,err=.002){
  let row=s.slice(),l=[a],r=[b];while(row.length>1){row=row.slice(1).map((q,i)=>[(q[0]+row[i][0])/2,(q[1]+row[i][1])/2]);l.push(row[0]);r.push(row.at(-1));}
  return [...flatten(l,err),...flatten(r.reverse(),err)];
 }
-export function nativeWordDistance(native,text,style,logicalHeight){
- const size=parseFloat(style.fontSize),sample=[...native.samples,...native.heldout].find(x=>x.size===size);
- if(!sample)throw Error("Exact native size missing");
- const c=document.createElement("canvas").getContext("2d");c.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;c.letterSpacing=style.letterSpacing;c.fontKerning=style.fontKerning||"auto";
- const m=c.measureText(text),baseline=(logicalHeight-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
- const positions=[...text].map((ch,i)=>c.measureText(text.slice(0,i+1)).width-c.measureText(ch).width);
- const edges=sample.paths.flatMap((glyph,i)=>glyph.flatMap(c=>c.flatMap(s=>flatten(s.map(p=>[positions[i]+p[0]*size,baseline+p[1]*size]))))).map(([a,b])=>{
+export function makeIndependentSegmentDistance(contours,err=.002){
+ const edges=contours.flatMap(c=>c.flatMap(s=>flatten(s,err))).map(([a,b])=>{
   const dx=b[0]-a[0],dy=b[1]-a[1];return {x:a[0],y:a[1],dx,dy,inv:dx*dx+dy*dy>0?1/(dx*dx+dy*dy):0,loX:Math.min(a[0],b[0]),hiX:Math.max(a[0],b[0]),loY:Math.min(a[1],b[1]),hiY:Math.max(a[1],b[1])};
  });
  function build(edges){
@@ -38,7 +33,16 @@ export function nativeWordDistance(native,text,style,logicalHeight){
   return (inside?-1:1)*Math.sqrt(best);
  }
  return {distance,edgeCount:edges.length};
+}export function nativeWordDistance(native,text,style,logicalHeight){
+ const size=parseFloat(style.fontSize),sample=[...native.samples,...native.heldout].find(x=>x.size===size);
+ if(!sample)throw Error("Exact native size missing");
+ const c=document.createElement("canvas").getContext("2d");c.font=style.fontStyle+" "+style.fontWeight+" "+style.fontSize+" "+style.fontFamily;c.letterSpacing=style.letterSpacing;c.fontKerning=style.fontKerning||"auto";
+ const m=c.measureText(text),baseline=(logicalHeight-m.fontBoundingBoxAscent-m.fontBoundingBoxDescent)*.5+m.fontBoundingBoxAscent;
+ const positions=[...text].map((ch,i)=>c.measureText(text.slice(0,i+1)).width-c.measureText(ch).width);
+ const contours=sample.paths.flatMap((glyph,i)=>glyph.map(c=>c.map(s=>s.map(p=>[positions[i]+p[0]*size,baseline+p[1]*size]))));
+ return makeIndependentSegmentDistance(contours,.002);
 }
+
 export function referenceTitleField(native,text,style,w,h,dpr,alpha,phase=[.5,.5],bounded=false){
  const ref=nativeWordDistance(native,text,style,parseFloat(style.lineHeight)),d=ref.distance,out=new Float32Array(w*h*4),dv=new DataView(alpha.pixels.buffer,alpha.pixels.byteOffset,alpha.pixels.byteLength);
  const get=(x,y)=>dv.getFloat16((Math.max(0,Math.min(h-1,y))*w+Math.max(0,Math.min(w-1,x)))*8+6,true);
