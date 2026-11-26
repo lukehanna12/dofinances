@@ -6,7 +6,7 @@ export const LANES=48,OUTPUT=12;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),dot=(a,b)=>a.reduce((z,x,i)=>z+x*b[i],0);
 export function pointReference(a,scene){
  const [x,y,w,h,r]=a.logical?.geometry??a;const [, , , , ,mode,amount,depth]=a;
- const g=mode===4?mode4Field(x,y,w,h,r):mode===5?mode5Field(x,y,w,h,a.slice(8,12)):roundedBoxField(x,y,w,h,r);
+ const g=mode===4?mode4Field(x,y,w,h,r):mode===5?mode5Field(x,y,w,h,Array.from(a.slice(8,12))):roundedBoxField(x,y,w,h,r);
  const n=g.opticalNormal??g.gradient??[0,0],d=g.distance,disp=refractionEnvelope(d,amount,depth).displacement;
  const dim=Math.min(w,h),reach=[w,h].map(z=>Math.max(24,dim*.8)*clamp(z/Math.max(dim,1),1,2.4));
  const rel=[a[20]/reach[0],a[21]/reach[1]],prox=Math.exp(-dot(rel,rel)),hover=a[40],press=a[41];
