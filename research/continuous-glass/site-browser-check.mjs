@@ -45,7 +45,7 @@ try{
   const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
-  await ev('document.querySelector("[data-public-target=\"/projects\"]").click()');
+  await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
   const projects=await state();
