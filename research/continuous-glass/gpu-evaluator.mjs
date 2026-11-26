@@ -23,7 +23,22 @@ export function query({x,y,w,h,r,mode=4,radii=[-r,-r,-r,-r],amount=-60,depth=20,
  if(a.length!==LANES||!a.every(Number.isFinite)||w<=0||h<=0||depth<=0||blur.some(v=>v<0)||![4,5,6,7].includes(mode)||r<0||(mode===4&&r===0)||(mode===5&&radii.some(v=>v===0))||(mode===6&&r>Math.min(w,h)/2))throw new RangeError("Invalid experimental query");
  return a;
 }
-export async function createEvaluator(scene,{path=null}={}){
+export function packPrefix(width,height,source){
+ // The prefix is constructed from the exact f32 source uploaded to WebGPU,
+ // not the higher-precision CPU input. Split each f64 sum into high/low f32.
+ const stride=width+1,out=new Float32Array(stride*(height+1)*8),previous=new Float64Array(stride*4);
+ for(let y=0;y<height;y++){
+  const row=[0,0,0,0];
+  for(let x=0;x<width;x++)for(let c=0;c<4;c++){
+   row[c]+=source[(y*width+x)*4+c];
+   const p=(x+1)*4+c,value=previous[p]+row[c];
+   previous[p]=value;const high=Math.fround(value),offset=((y+1)*stride+x+1)*8+c;
+   out[offset]=high;out[offset+4]=value-high;
+  }
+ }
+ return out;
+}
+export async function createEvaluator(scene,{path=null,integrator="prefix"}={}){
  if(!(scene instanceof ContinuousScene))throw new TypeError("Fixed source required");
  const adapter=await navigator.gpu?.requestAdapter({powerPreference:"high-performance"});
  if(!adapter)throw new Error("No WebGPU adapter");
@@ -34,8 +49,12 @@ export async function createEvaluator(scene,{path=null}={}){
  if(errors.length)throw new Error(errors.map(e=>e.lineNum+":"+e.linePos+" "+e.message).join("\n"));
  const pipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module:shader,entryPoint:"main"}});
  const make=(data,usage)=>{const buffer=device.createBuffer({size:data.byteLength,usage,mappedAtCreation:true});new Uint8Array(buffer.getMappedRange()).set(new Uint8Array(data.buffer,data.byteOffset,data.byteLength));buffer.unmap();return buffer;};
- const src=make(Float32Array.from(scene.rgba),GPUBufferUsage.STORAGE);
- const meta=make(Float32Array.from([scene.width,scene.height,0,0,...scene.step,0,0]),GPUBufferUsage.UNIFORM);
+ if(!["prefix","direct"].includes(integrator))throw new RangeError("Invalid integrator");
+ const source=Float32Array.from(scene.rgba),prefixBytes=(scene.width+1)*(scene.height+1)*32;
+ if(integrator==="prefix"&&prefixBytes>device.limits.maxStorageBufferBindingSize){device.destroy();throw new RangeError("Prefix source exceeds experimental GPU binding budget");}
+ const src=make(source,GPUBufferUsage.STORAGE);
+ const prefix=make(integrator==="prefix"?packPrefix(scene.width,scene.height,source):new Float32Array(4),GPUBufferUsage.STORAGE);
+ const meta=make(Float32Array.from([scene.width,scene.height,0,0,...scene.step,integrator==="prefix"?1:0,0]),GPUBufferUsage.UNIFORM);
  const vector=make(path?.curves??new Float32Array(12),GPUBufferUsage.STORAGE);
  let disposed=false;
  return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,device:adapter.info.device,description:adapter.info.description,isFallbackAdapter:adapter.info.isFallbackAdapter},
@@ -45,12 +64,12 @@ export async function createEvaluator(scene,{path=null}={}){
   const input=make(data,GPUBufferUsage.STORAGE),size=rows.length*OUTPUT*4;
   const out=device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC}),read=device.createBuffer({size,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
   try{
-   const bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[input,src,meta,out,vector].map((buffer,binding)=>({binding,resource:{buffer}}))});
+   const bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[input,src,meta,out,vector,prefix].map((buffer,binding)=>({binding,resource:{buffer}}))});
    const encoder=device.createCommandEncoder(),pass=encoder.beginComputePass();pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.dispatchWorkgroups(Math.ceil(rows.length/64));pass.end();encoder.copyBufferToBuffer(out,0,read,0,size);device.queue.submit([encoder.finish()]);
    await read.mapAsync(GPUMapMode.READ);const values=new Float32Array(read.getMappedRange()).slice();read.unmap();return values;
   }finally{input.destroy();out.destroy();read.destroy();}
  },
- dispose(){if(!disposed){disposed=true;src.destroy();meta.destroy();vector.destroy();device.destroy();}}
+ dispose(){if(!disposed){disposed=true;src.destroy();meta.destroy();vector.destroy();prefix.destroy();device.destroy();}}
  };
 }
 export async function renderTile(evaluator,{width,height,origin=[0,0],density=1,magnification=1,samples=4,makeQuery}){

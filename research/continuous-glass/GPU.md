@@ -13,3 +13,7 @@ Coordinate transport now computes edge-relative coordinates, pointer deltas and 
 ## Vector path GPU prototype
 
 A prepared simple closed outline is normalized and split at y-extrema, then represented by exact degree-elevated cubic controls rather than tessellated samples. The WGSL evaluator uses adaptive control-hull distance bounds, bounded local stacks, half-open winding, and explicit status lanes. It directly feeds the same optical material computation on the GPU; unresolved samples are rejected rather than painted using an invented value. The supplied normal is a candidate closest-point normal, not a proof of uniqueness or native optical normal. The tolerance guards are engineering bounds, not certified interval arithmetic. Self-intersections, arbitrary overlapping SVG strokes, arc parsing and glyph shaping are not yet supported. This is not a production performance implementation.
+
+## Prefix-integrated GPU candidate
+
+Large box footprints use at most five disjoint index ranges per axis, hence at most 25 rectangle sums. Small rectangles use direct fetch; large ones use a fixed-source summed-area table with high/low Float32 storage derived from binary64 sums of the exact uploaded source samples. The table is independent of output dimensions. The experiment reports memory and actual end-to-end compute/readback time separately; it is not yet a frame-rate benchmark. Large sources exceeding the storage binding limit are rejected rather than silently downsampled. Further tiled storage optimization and numerical validation remain necessary.

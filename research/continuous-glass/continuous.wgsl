@@ -11,6 +11,7 @@ struct Scene {grid:vec4<f32>,step:vec4<f32>}
 @group(0) @binding(1) var<storage,read> texels:array<vec4<f32>>;
 @group(0) @binding(2) var<uniform> scene:Scene;
 @group(0) @binding(3) var<storage,read_write> results:array<Result>;
+@group(0) @binding(5) var<storage,read> prefixes:array<vec4<f32>>;
 const K:f32=1.5286649465560913;
 fn sat(x:f32)->f32{return clamp(x,0.0,1.0);}
 fn normalizedOrZero(p:vec2<f32>)->vec2<f32>{
@@ -79,12 +80,51 @@ fn axisWeight(n:u32,i:u32,lo:f32,hi:f32)->f32{
  else{z+=max(0.0,hi-max(lo,last));}
  return z/(hi-lo);
 }
+struct AxisRange {lo:u32,hi:u32,weight:f32}
+struct AxisRanges {items:array<AxisRange,5>,count:u32}
+fn ranges(n:u32,lo:f32,hi:f32)->AxisRanges{
+ var r:AxisRanges;
+ let start=u32(floor(clamp(lo,0.0,f32(n-1u))));
+ let end=u32(ceil(clamp(hi,0.0,f32(n-1u))));
+ if(end-start<=3u){
+  for(var i=start;i<=end;i++){r.items[r.count]=AxisRange(i,i,axisWeight(n,i,lo,hi));r.count++;}
+ }else{
+  r.items[0]=AxisRange(start,start,axisWeight(n,start,lo,hi));
+  r.items[1]=AxisRange(start+1u,start+1u,axisWeight(n,start+1u,lo,hi));
+  r.items[2]=AxisRange(start+2u,end-2u,1.0/(hi-lo));
+  r.items[3]=AxisRange(end-1u,end-1u,axisWeight(n,end-1u,lo,hi));
+  r.items[4]=AxisRange(end,end,axisWeight(n,end,lo,hi));r.count=5u;
+ }
+ return r;
+}
+fn rectSum(n:vec2<u32>,a:AxisRange,b:AxisRange)->vec4<f32>{
+ // Small supports use the original source to avoid unnecessary cancellation.
+ let area=(a.hi-a.lo+1u)*(b.hi-b.lo+1u);
+ if(area<=64u){
+  var sum=vec4<f32>(0.0);
+  for(var y=b.lo;y<=b.hi;y++){for(var x=a.lo;x<=a.hi;x++){sum+=texels[y*n.x+x];}}
+  return sum;
+ }
+ let stride=n.x+1u;
+ let i=2u*((b.hi+1u)*stride+a.hi+1u);let j=2u*((b.hi+1u)*stride+a.lo);
+ let k=2u*(b.lo*stride+a.hi+1u);let l=2u*(b.lo*stride+a.lo);
+ let high=(prefixes[i]-prefixes[j])-(prefixes[k]-prefixes[l]);
+ let low=(prefixes[i+1u]-prefixes[j+1u])-(prefixes[k+1u]-prefixes[l+1u]);
+ return high+low;
+}
 fn integrateSource(center:vec2<f32>,radius:vec2<f32>)->vec4<f32>{
  let n=vec2<u32>(scene.grid.xy);let p=(center-scene.grid.zw)/scene.step.xy;let r=radius/scene.step.xy;
  let lo=p-r;let hi=p+r;var out=vec4<f32>(0.0);
- // Small-source reference evaluator. Only occupied supports are visited.
+ // Small footprints use direct integration, large ones use bounded range sums.
  let start=vec2<u32>(floor(clamp(lo,vec2<f32>(0.0),vec2<f32>(n-vec2<u32>(1u)))));
  let end=vec2<u32>(ceil(clamp(hi,vec2<f32>(0.0),vec2<f32>(n-vec2<u32>(1u)))));
+ if(scene.step.z>0.0&&(end.x-start.x+1u)*(end.y-start.y+1u)>64u){
+  let xs=ranges(n.x,lo.x,hi.x);let ys=ranges(n.y,lo.y,hi.y);
+  for(var j=0u;j<ys.count;j++){for(var i=0u;i<xs.count;i++){
+   let x=xs.items[i];let y=ys.items[j];out+=rectSum(n,x,y)*(x.weight*y.weight);
+  }}
+  return out;
+ }
  for(var y=start.y;y<=end.y;y++){
   let wy=axisWeight(n.y,y,lo.y,hi.y);
   for(var x=start.x;x<=end.x;x++){

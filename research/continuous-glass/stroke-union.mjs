@@ -37,7 +37,7 @@ export function strokeDistance(model,p,{tolerance=.005,maxCells=100000}={}){
  if(!(tolerance>0)||!Number.isSafeInteger(maxCells)||maxCells<1)throw new RangeError("Invalid search budget");
  const eps=Math.max(1e-9,tolerance/32),f=q=>strokeImplicit(model,q,{tolerance:eps}),initial=f(p);
  if(initial.inside===false)return {signedInterval:[initial.lower,initial.upper],converged:initial.upper-initial.lower<=tolerance,cells:0,inside:false};
- if(initial.inside!==true)return {signedInterval:[-initial.upper,initial.upper].sort((a,b)=>a-b),converged:false,cells:0,inside:null};
+ if(initial.inside!==true)return {signedInterval:null,converged:false,cells:0,inside:null};
  const margin=1+model.error,exterior=[model.extent[2]+margin,p[1]];
  let best=hyp(exterior[0]-p[0],exterior[1]-p[1]);
  if(best<=0||f(exterior).inside!==false)throw Error("Exterior witness unavailable");

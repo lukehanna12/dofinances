@@ -25,22 +25,25 @@ export async function run(){
   const xml=await(await fetch("/original/"+name+".svg")).text();
   const original=parseSilhouetteSVG(xml),direct=prepareStrokeUnion(parseIconSVG(xml));
   const vector=outlinePath(native.contours);
-  function originalContains(x,y){
+  function originalContains(x,y,scale=1){
+   ctx.setTransform(scale,0,0,scale,0,0);x*=scale;y*=scale;
    for(const op of original.ops){
     if(op.fill&&ctx.isPointInPath(op.path,x,y,op.rule))return true;
     if(op.stroke){ctx.lineWidth=op.width;ctx.lineCap=op.cap;ctx.lineJoin=op.join;ctx.miterLimit=op.miter;if(ctx.isPointInStroke(op.path,x,y))return true;}
    }return false;
   }
-  const info={name,grid:0,outlineMismatch:0,maxMismatchDistance:0,gpuTested:0,gpuUnresolved:0,gpuMismatch:0,maxFieldError:0,directVsBrowser:0,directVsOutline:0,directUncertain:0,maxDirectMargin:0};
+  const info={name,grid:0,outlineMismatch:0,maxMismatchDistance:0,gpuTested:0,gpuUnresolved:0,gpuMismatch:0,maxFieldError:0,directVsBrowser:0,directVsOutline:0,directUncertain:0,maxDirectMargin:0,browserScaleChanged:0,browserAt64MatchesDirect:0,outlineAt64Changed:0};
   const points=[];
   for(let j=0;j<48;j++)for(let i=0;i<48;i++){
    const x=(i+.319)*.5,y=(j+.683)*.5,orig=originalContains(x,y),shape=ctx.isPointInPath(vector,x,y);
+   const high=originalContains(x,y,64),outlineHigh=ctx.isPointInPath(vector,x*64,y*64);ctx.resetTransform();
+   if(high!==orig)info.browserScaleChanged++;if(outlineHigh!==shape)info.outlineAt64Changed++;
    info.grid++;
    if(orig!==shape){
     info.outlineMismatch++;
     const f=strokeImplicit(direct,[x,y]);
     if(f.inside===null)info.directUncertain++;else{
-     if(f.inside!==orig)info.directVsBrowser++;
+     if(f.inside!==orig)info.directVsBrowser++;if(f.inside===high)info.browserAt64MatchesDirect++;
      if(f.inside!==shape)info.directVsOutline++;
      info.maxDirectMargin=Math.max(info.maxDirectMargin,Math.min(Math.abs(f.lower),Math.abs(f.upper)));
     }
