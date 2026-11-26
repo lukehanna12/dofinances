@@ -6,16 +6,15 @@ export const publicLogoOvalRadius=(width,referenceWidth)=>{
   if(!Number.isFinite(width)||!Number.isFinite(referenceWidth)||width<=0||referenceWidth<=0)throw new RangeError("Positive finite wordmark widths required");
   return 140*width/referenceWidth;
 };
-export function homeAperture({width,height,logoWidth,logoHeight,centered,margin=32,bottom=margin}){
+export function homeAperture({width,height,logoWidth,logoHeight,centered,margin=32,bottom=margin,feather=margin*3}){
   if(centered){
     const shift=Math.min(OLD_SHIFT,Math.max(0,height/2-logoHeight/2-12));
     return [width/2,height/2-shift,width/4,width*100/1280];
   }
   // The clear interior reaches the left and bottom scene edges; only the
   // top and right feather are visible. The feather is inside the margins.
-  // Double the original feather with the wordmark about its existing
+  // Scale the original feather with the wordmark about its existing
   // bottom-left anchor. The left/bottom portion remains offscreen.
-  const feather=margin*2;
   return [logoWidth+margin+feather,height-bottom-logoHeight-feather,-feather,0];
 }
 export function apertureAlpha(x,y,a){
@@ -63,11 +62,14 @@ export function observePublicLogoOval(){
     probe.style.letterSpacing=(parseFloat(style.letterSpacing)/parseFloat(style.fontSize)*45)+"px";
     const referenceWidth=probe.getBoundingClientRect().width;
     if(!(referenceWidth>0))return;
-    const size=centered?45*(width/2)/referenceWidth:126;
+    const margin=32,ctaWidth=150;
+    // Keep the threefold target unless a narrower desktop would overlap
+    // the adjacent CTA stack. Preserve the bottom-left anchor at every size.
+    const size=centered?45*(width/2)/referenceWidth:Math.min(189,45*Math.max(1,width-3*margin-ctaWidth)/referenceWidth);
     document.body.style.setProperty("--public-home-logo-size",size+"px");
     const logoWidth=title.offsetWidth,logoHeight=title.offsetHeight;
-    const margin=32,bottom=parseFloat(getComputedStyle(title.parentElement).paddingBottom)||margin;
-    const next=homeAperture({width,height,logoWidth,logoHeight,centered,margin,bottom});
+    const bottom=parseFloat(getComputedStyle(title.parentElement).paddingBottom)||margin;
+    const next=homeAperture({width,height,logoWidth,logoHeight,centered,margin,bottom,feather:margin*size/63});
     const key=JSON.stringify([next,grid.clientHeight]);
     if(previous===key)return;
     previous=key;aperture=next;

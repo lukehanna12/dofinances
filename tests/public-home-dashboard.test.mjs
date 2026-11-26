@@ -405,12 +405,13 @@ test("Responsive Home aperture geometry and soft boundaries",()=>{
   assert.equal(a[2]*2,720);assert.equal(a[3]*2,225);
   for(const [x,y,v] of [[0,0,.48],[a[2]/2,0,.61],[a[2],0,1],[0,a[3]/2,.61],[0,a[3],1]])
     assert.ok(Math.abs(apertureAlpha(a[0]+x,a[1]+y,a)-v)<1e-9);
-  const b=homeAperture({width:1440,height:900,logoWidth:660,logoHeight:140,centered:false});
-  assert.deepEqual(b,[756,664,-64,0]);
-  // Exact 2x scaling of the prior aperture about the logo's bottom-left anchor.
-  assert.equal(b[0],32+2*(394-32));
-  assert.equal(b[1],868+2*(766-868));
-  for(const [x,y,v] of [[100,900,0],[692,728,0],[724,850,.5],[756,850,1],[100,664,1],[100,696,.5],[100,728,0]])assert.equal(apertureAlpha(x,y,b),v);
+  const b=homeAperture({width:1440,height:900,logoWidth:990,logoHeight:210,centered:false});
+  assert.deepEqual(b,[1118,562,-96,0]);
+  // Exact 3x scaling of the prior aperture about the logo's bottom-left anchor.
+  assert.equal(b[0],32+3*(394-32));
+  assert.equal(b[1],868+3*(766-868));
+  for(const [x,y,v] of [[100,900,0],[1022,658,0],[1070,850,.5],[1118,850,1],[100,562,1],[100,610,.5],[100,658,0]])assert.equal(apertureAlpha(x,y,b),v);
+  assert.deepEqual(homeAperture({width:1024,height:740,logoWidth:660,logoHeight:140,centered:false,feather:64}),[756,504,-64,0]);
   assert.match(asset("assets/home-dashboard/dashboard-gpu-renderer.js"),/uniform\.set\(homeAperture,continuous\?24:20\)/);
   assert.match(asset("assets/home-dashboard/dashboard-home-loader.js"),/observePublicLogoOval\(\)/);
 });
