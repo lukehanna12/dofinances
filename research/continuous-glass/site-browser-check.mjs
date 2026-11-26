@@ -40,12 +40,25 @@ try{
  const wait=async(expression,label)=>{for(let i=0;i<100;i++){const r=await ev(expression).catch(()=>null);if(r)return r;await sleep(100);}throw Error(label+" "+JSON.stringify(await ev("window.__dashboardWebGPU??null").catch(()=>null)));};
  await send("Page.enable");await send("Runtime.enable");await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
  const origin="http://127.0.0.1:"+server.address().port,results=[];
- const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
+ const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,lattice:a?.sourceLattice,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:["baseline","continuous"])){
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
-  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")});
+  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")+(process.env.LG_DENSITY_CHECK?"&glass-source-proof":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
-  const home=await state();if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
+  const home=await state();
+  if(process.env.LG_DENSITY_CHECK){
+   const cases=[];
+   for(const density of [2,1,1.5,3,2]){
+    await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:density,mobile:false});
+    await wait("devicePixelRatio==="+density+"&&window.__dashboardWebGPU?.status==='ready'&&typeof window.__dashboardGpuControls?.sourceRegionDigest==='function'","DPR not ready");
+    await sleep(400);
+    const snapshot=await state(),digest=await ev('window.__dashboardGpuControls.sourceRegionDigest("base",[100,150,35,30])');
+    cases.push({density,sceneBuilds:snapshot.sceneBuilds,lattice:snapshot.lattice,errors:snapshot.errors,digest});
+   }
+   if(mode==="continuous"&&new Set(cases.map(x=>x.digest)).size!==1)throw Error("Fixed source changed across DPR "+JSON.stringify(cases));
+   results.push({mode,cases});continue;
+  }
+  if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
