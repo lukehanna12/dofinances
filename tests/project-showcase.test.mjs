@@ -440,7 +440,7 @@ test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>
 });
 
 test("Lightworks migrates its old repository link and unedited default README without touching custom links",async()=>{
- const store=await readFile(new URL("../edge/auth-store-projects.mjs",import.meta.url),"utf8");
+ const store=read("edge/auth-store-projects.mjs");
  assert.ok(store.includes('["translucence-lab","Lightwork","Lightworks"]'));
  assert.ok(store.includes('lower(repository)=?'));
  assert.ok(store.includes('"lukehanna12/lightworks",NOW(),userId,"translucence-lab","lukehanna12/lightwork"'));
