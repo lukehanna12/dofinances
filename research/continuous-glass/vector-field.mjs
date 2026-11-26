@@ -158,7 +158,7 @@ export function prepareVectorPath(contours,{fillRule="nonzero",tolerance=1e-4}={
    rows.push(...cubic.flat(),deg,0,0,0);
   }
  }
- if(!rows.length||rows.length>128*12)throw new RangeError("Path segment budget exceeded");
+ if(!rows.length||rows.length>1024*12)throw new RangeError("Path segment budget exceeded");
  const normalizedTolerance=tolerance/scale;
  if(normalizedTolerance<1e-5)throw new RangeError("Requested path tolerance below Float32 reference guard");
  return {origin,scale,tolerance,normalizedTolerance,curves:Float32Array.from(rows),contours,fillRule};

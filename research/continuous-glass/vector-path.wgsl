@@ -34,6 +34,8 @@ fn pathField(q:vec4<f32>)->PathResult{
    if(dist<best){best=dist;bestPoint=near;}lower=min(lower,max(0.0,dist-pad));nodes++;
    continue;
   }
+  let rootLower=lowerBound(root,p,pad);
+  if(rootLower>=best-tol*.5){lower=min(lower,rootLower);continue;}
   let d0=length(c.a-p);let d1=length(c.d-p);
   if(d0<best){best=d0;bestPoint=c.a;}if(d1<best){best=d1;bestPoint=c.d;}
   var stack:array<Piece,32>;var count=1u;stack[0]=root;

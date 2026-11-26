@@ -1,7 +1,7 @@
 import {createServer} from "node:http";
-import {readFile,mkdtemp,rm} from "node:fs/promises";
+import {readFile,readdir,mkdtemp,rm} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join,dirname,basename} from "node:path";
+import {join,dirname,basename,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawn} from "node:child_process";
 const root=dirname(fileURLToPath(import.meta.url)),profile=await mkdtemp(join(tmpdir(),"lg-webgpu-profile-"));
@@ -9,6 +9,12 @@ const server=createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,"http://localhost").pathname;
   if(path==="/"){res.writeHead(200,{"content-type":"text/html"});return res.end("<!doctype html><title>Owned continuous GPU test</title>");}
+  if(process.env.LG_VECTOR_ASSETS){
+   if(path==="/icon-list"){res.writeHead(200,{"content-type":"application/json"});return res.end(JSON.stringify((await readdir(process.env.LG_VECTOR_ASSETS)).filter(n=>/^[\w.-]+\.json$/.test(n)).map(n=>n.slice(0,-5))));}
+   if(/^\/outline\/[\w.-]+\.json$/.test(path)){res.writeHead(200,{"content-type":"application/json"});return res.end(await readFile(join(process.env.LG_VECTOR_ASSETS,basename(path))));}
+   if(/^\/original\/[\w.-]+\.svg$/.test(path)){res.writeHead(200,{"content-type":"image/svg+xml"});return res.end(await readFile(resolve(root,"../../sites/_apex/assets/project-icons",basename(path))));}
+   if(path==="/production-vector-coverage.js"){res.writeHead(200,{"content-type":"text/javascript"});return res.end(await readFile(resolve(root,"../../sites/_apex/assets/home-dashboard/dashboard-glass-vector-coverage.js")));}
+  }
   const name=basename(path);if(!/^[\w.-]+\.(mjs|wgsl)$/.test(name)){res.writeHead(404);return res.end();}
   res.writeHead(200,{"content-type":name.endsWith(".mjs")?"text/javascript":"text/plain"});res.end(await readFile(join(root,name)));
  }catch{res.writeHead(404);res.end();}
@@ -30,7 +36,7 @@ try{
  const send=(method,params={})=>new Promise((r,j)=>{const k=++id;pending.set(k,[r,j]);ws.send(JSON.stringify({id:k,method,params}));});
  await send("Page.enable");const load=new Promise(r=>events.set("Page.loadEventFired",r));
  await send("Page.navigate",{url:"http://127.0.0.1:"+server.address().port+"/"});await load;
- const result=await Promise.race([send("Runtime.evaluate",{expression:"import('./gpu-check.mjs').then(m=>m.run())",awaitPromise:true,returnByValue:true}),new Promise((_,j)=>timer=setTimeout(()=>j(new Error("GPU evaluation timeout")),90000))]);
+ const result=await Promise.race([send("Runtime.evaluate",{expression:process.env.LG_VECTOR_ASSETS?"import('./icon-gpu-check.mjs').then(m=>m.run())":"import('./gpu-check.mjs').then(m=>m.run())",awaitPromise:true,returnByValue:true}),new Promise((_,j)=>timer=setTimeout(()=>j(new Error("GPU evaluation timeout")),90000))]);
  if(result.exceptionDetails)throw new Error(JSON.stringify(result.exceptionDetails));
  console.log(JSON.stringify(result.result.value,null,2));
 }finally{
