@@ -1,7 +1,14 @@
 /* Public-facing copy of the authenticated Dashboard composition.
  * The lattice, optics, artwork and renderer are versioned public assets;
  * no authenticated workspace routes, credentials or API calls are imported. */
-:root{--global-menu-height:44px;}
+:root{
+  --global-menu-height:44px;
+  /* One public heading typography, independent of layout and material. */
+  --public-heading-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --public-heading-weight:550;
+  --public-heading-leading:1.12;
+  --public-heading-tracking:-.035em;
+}
 html,body{margin:0;width:100%;min-height:100%;overflow-x:clip;}
 body.public-home{
   min-height:100dvh;
@@ -280,6 +287,15 @@ body.public-home[data-gpu-scene="ready"] .dashboard-home .cta6-icon[data-glass-i
 body.public-home .dashboard-home .cta6-center h1{
   translate:0 calc(-2.5 * var(--cta6-title-tile));
 }
+/* The persistent wordmark uses the Projects heading typography at its
+ * original 45px size, including its compact sign-in and gallery states. */
+body.public-home #dashboard-title{
+  font-family:var(--public-heading-family);
+  font-weight:var(--public-heading-weight);
+  line-height:var(--public-heading-leading);
+  letter-spacing:var(--public-heading-tracking);
+  white-space:nowrap;
+}
 @property --home-cta-tint{
   syntax:"<number>";
   inherits:false;
@@ -440,9 +456,6 @@ body.public-home[data-projects-logo-pinned="true"] > #dashboard-title{
   z-index:5;
   margin:0;
   font-size:45px;
-  line-height:1.08;
-  letter-spacing:-.055em;
-  font-weight:600;
   color:#f7f9fa;
   text-shadow:0 2px 18px rgba(0,0,0,.22);
   transform:translate(-50%,-50%) scale(.6);

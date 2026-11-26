@@ -142,7 +142,7 @@ try{
  'const inOldOval=occupied.filter(tile=>normalized(tile,65,40)<1).length;',
  'const visiblyFaded=occupied.filter(tile=>{const r=normalized(tile,140,100);return 0.6+0.4*Math.min(1,r)**2<=.86;}).length;',
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
- 'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,',
+ 'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,logoText:logo.textContent,logoTypography:[getComputedStyle(logo).fontFamily,getComputedStyle(logo).fontWeight,parseFloat(getComputedStyle(logo).lineHeight)/parseFloat(getComputedStyle(logo).fontSize),parseFloat(getComputedStyle(logo).letterSpacing)/parseFloat(getComputedStyle(logo).fontSize)],',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
  'items:actions.map(e=>({name:e.textContent.trim(),tag:e.tagName,href:e.getAttribute("href"),rect:box(e),glass:e.hasAttribute("data-home-cta-glass"),radius:getComputedStyle(e).borderTopLeftRadius,background:getComputedStyle(e).backgroundColor,tint:Number(getComputedStyle(e).getPropertyValue("--home-cta-tint"))})),',
  'iconRefs:[...grid.querySelectorAll(":scope>.cta6-tile--icon")].map(tile=>{const img=tile.querySelector("img.cta6-icon");return {slug:tile.dataset.homeProjectIcon,collidesWithProjectCards:tile.hasAttribute("data-project-slug"),src:img?.getAttribute("src"),tag:img?.tagName,black:getComputedStyle(img).filter.includes("brightness(0)"),loaded:img?.complete&&img?.naturalWidth>0,registered:img?.hasAttribute("data-glass-silhouette-source"),tint:img?.dataset.glassSilhouetteTint,tintOpacity:Number(img?.dataset.glassSilhouetteOpacity),selectable:getComputedStyle(img).userSelect!=="none",draggable:img.draggable};}),',
@@ -194,6 +194,9 @@ try{
     "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");assert.equal(g.font,"45px");
+  assert.equal(g.logoText,"DoFinances");
+  assert.equal(g.logoTypography[1],"550");
+  assert.ok(g.logo.width<=width,"Full wordmark must fit the viewport");
   assert.deepEqual(g.nav,["Quick Downloads","Projects","FAQs","Settings"]);
   if(width>748){
    assert.equal(g.navDisplay,"flex","Desktop navigation must remain visible");
@@ -480,7 +483,10 @@ try{
   }
   await sleep(50);
  }
- assert.ok(projectsReady,"Public Projects must mount the original doof in the viewport layer");
+ assert.ok(projectsReady,"Public Projects must mount the original DoFinances wordmark in the viewport layer");
+ const typography=await evaluate('(()=>{const fields=e=>{const s=getComputedStyle(e),size=parseFloat(s.fontSize);return [s.fontFamily,s.fontWeight,parseFloat(s.lineHeight)/size,parseFloat(s.letterSpacing)/size]};return {logo:fields(document.querySelector("#dashboard-title")),projects:fields(document.querySelector(".public-projects-title"))}})()');
+ assert.deepEqual(typography.logo.slice(0,2),typography.projects.slice(0,2));
+ for(let i=2;i<4;i++)assert.ok(Math.abs(typography.logo[i]-typography.projects[i])<.001,"Wordmark and Projects typography must match");
  const projectLogo=()=>evaluate('(()=>{const e=document.getElementById("dashboard-title");const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,position:getComputedStyle(e).position,pinned:document.body.dataset.projectsLogoPinned,hidden:document.body.hasAttribute("data-projects-logo-hidden")};})()');
  for(const [width,height] of [[1440,900],[1440,480],[1440,1120],[900,1120],[1600,580],[640,760]]){
   await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});

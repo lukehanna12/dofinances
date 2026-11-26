@@ -32,7 +32,8 @@ body.public-home:has(#public-route-content .public-projects-root){
 }
 .public-projects-title{
   margin:0;color:#fff;font-size:clamp(51.75px,4.5vw,69.75px);
-  font-weight:550;line-height:1.12;letter-spacing:-.035em;
+  font-family:var(--public-heading-family);
+  font-weight:var(--public-heading-weight);line-height:var(--public-heading-leading);letter-spacing:var(--public-heading-tracking);
   -webkit-user-select:none;user-select:none
 }
 /* The back chip enters first. Heading glyphs and each top-right glass

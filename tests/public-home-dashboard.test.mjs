@@ -13,7 +13,7 @@ const original=asset("app/assets/dashboard-home.css");
 const mirrored=asset("assets/home-dashboard/dashboard-home.css");
 test("Apex homepage is the independent public copy of the live Dashboard",()=>{
   assert.match(home,/<section class="view dashboard-home" data-view="dashboard"/);
-  assert.match(home,/<h1 id="dashboard-title">doof<\/h1>/);
+  assert.match(home,/<h1 id="dashboard-title">DoFinances<\/h1>/);
   assert.match(home,/<div id="cta6-mosaic" class="cta6-mosaic"/);
   assert.match(home,/src="\/assets\/home-dashboard\/dashboard-home-loader\.js"/);
   assert.deepEqual(mirrored,original,"Preserve exact private-dashboard lattice and optics styling");
@@ -387,4 +387,14 @@ test("home mosaic registers the same glass silhouette optics without a flat dupl
  assert.match(renderer,/!movingSlots\.has\(slot\)&&lanes\[19\]>0/);
  assert.match(style,/\.cta6-icon\[data-glass-icon-owned\]\{\s*clip-path:inset\(50%\)!important/);
  assert.match(style,/user-select:none/);
+});
+
+test("public DoFinances wordmark shares Projects typography without changing its scale",()=>{
+  const projects=asset("assets/public-projects.css");
+  for(const field of ["family","weight","leading","tracking"]){
+    assert.ok(style.includes("--public-heading-"+field+":"));
+    assert.ok(style.includes("var(--public-heading-"+field+")"));
+    assert.ok(projects.includes("var(--public-heading-"+field+")"));
+  }
+  assert.match(style,/body\.public-home #dashboard-title\{[^}]*white-space:nowrap/);
 });
