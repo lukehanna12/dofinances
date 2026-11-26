@@ -13,8 +13,8 @@
     },
     {
       "id": "site-coordinate-separation",
-      "status": "open",
-      "reason": "Aligned shapes and 36,864 reference route channels match across emulated DPR1/3 with original-font title. Actual monitor change/zoom event delivery and cross-browser coordinate behavior remain unverified.",
+      "status": "passed",
+      "reason": "Finite aligned geometry and fixed route controls plus actual Chromium browser zoom on Home and Projects (6 resize and 6 resolution media events) and native WebKit pageZoom (3 resize events) pass automatic framebuffer rebuilds. No explicit reflow. One physical display only; external monitor switch untested, not claimed.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
@@ -25,8 +25,8 @@
     },
     {
       "id": "site-material-interaction-preservation",
-      "status": "open",
-      "reason": "Reference Chrome actual Home and packaged sign-in and full-motion real-art Projects interactions pass. Safari WebDriver blocked by remote-automation setting; non-reference behavior remains unverified.",
+      "status": "passed",
+      "reason": "Reference Chromium actual mouse and full-motion real-art Projects and actual packaged login checks pass; native WebKit Home, Projects, original-font title, card expansion/retarget, two-layer filter, packaged login hover/press and return pass. Occluded native view CSS hover does not activate on either baseline or candidate, so no physical WebKit hover equivalence claimed. Original WebGPU startup fallback verified.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
@@ -38,7 +38,7 @@
     {
       "id": "production-performance-and-regressions",
       "status": "passed",
-      "reason": "692 tests pass, production build and real login pass. Eight paired reference scroll trials median 892.7 vs 887.8ms, 34 frames each; one cold entry pair 1093 vs 589ms. Reference-device scope only, no universal platform approval.",
+      "reason": "692 tests pass, production build and real login pass. Eight paired reference scroll trials median 892.7 vs 887.8ms, 34 frames each; one cold entry pair 1093 vs 589ms. Reference-device scope only, no universal platform approval. Final startup selection/compatibility tests bring repository count to 694; default activation in Chromium and WebKit and controlled missing-vector asset fallback verified.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     }
   ],
@@ -100,8 +100,8 @@
     "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
   },
   "latestSiteValidation": {
-    "commit": "3917b2822ed5bc36bace5ee3246837ffdf56b3bd",
+    "commit": "7230dabc684afbb825ada9975ff03b77fff72836",
     "path": "research/continuous-glass/SITE_VALIDATION.json",
-    "scope": "Original-font optical geometry, independent comparative quality, fixed-source composed layers, real-art interaction, paired performance and final build; two site gates remain open."
+    "scope": "All finite website-specific gates supported; independent native proof and physical monitor/other hardware validation remain deferred. Deployment still requires existing CI."
   }
 }

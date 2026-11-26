@@ -2,7 +2,7 @@
   "schema": "dofinances-site-integration-validation-v1",
   "scope": "Public renderer candidate only; no production deploy or native proof closure.",
   "baseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
-  "testedCandidate": "3917b2822ed5bc36bace5ee3246837ffdf56b3bd",
+  "testedCandidate": "7230dabc684afbb825ada9975ff03b77fff72836",
   "device": {
     "chip": "Apple M2",
     "gpu": "Apple Metal 3",
@@ -117,9 +117,9 @@
     "reason": "Preserve the tested Retina baseline's authored physical-pixel optical lengths and scale them relative to the source lattice. Intentionally changes old DPR1 optics. Further cross-density and held-out geometry validation required."
   },
   "unresolved": [
-    "Safari and non-reference GPU validation unavailable; Safari remote automation disabled. Real monitor-switch and browser zoom event delivery not independently validated on physical displays.",
-    "Reference device performance passes finite controls; broader platform memory and performance remain untested. Browser-local title approximation is not exact native font geometry. Native private program and active display proof remain deferred.",
-    "Production main remains unchanged pending remaining site gate checks."
+    "No external monitor attached; physical monitor switch not exercised. Native browser zoom events verified in two engines. WebKit occluded host cannot activate physical CSS hover on either baseline or candidate; actual pointer behavior verified in reference Chrome and login pointer handlers exercised in WebKit.",
+    "Other GPU vendors, full Safari browser UI and mobile hardware not independently measured. Automatic selection guarded by qualified device capabilities and startup fallback; baseline remains available. Browser-local title approximation is not exact native font geometry.",
+    "No universal native Apple proof; retained deferred native obligations unchanged. Production deployment not yet confirmed; GitHub Actions required."
   ],
   "previousTestedCandidate": "989547c170515b2cbc632aa478fa657d4e72ac6e",
   "latest": {
@@ -280,6 +280,122 @@
       "status": "blocked",
       "reason": "Safari WebDriver requires Allow remote automation in Safari Developer settings. No preference changed.",
       "trace": "d1cb5899-9331-4541-b0b2-773ec4bac4f6"
+    },
+    "crossEngineRelease": {
+      "commit": "7230dabc684afbb825ada9975ff03b77fff72836",
+      "date": "2026-11-26",
+      "scope": "Finite site-specific validation on the reference Apple M2 using actual Chromium and native WebKit with nonpersistent data store. Not universal platform proof.",
+      "tests": {
+        "passed": 694,
+        "failed": 0,
+        "trace": "0f5a4390-6f46-4035-8a68-642d90f9354f",
+        "commit": "6954acd1916d4e52433a884543034e462abdf9c1"
+      },
+      "chromiumNativeZoom": {
+        "trace": "4c35bb02-4aee-4149-9f0f-6b7aa28a20ef",
+        "commit": "3fb3eae96caa7d6dbc26ec903a7fe8900d352416",
+        "browser": "Chrome for Testing from existing local browser cache; isolated temporary extension calls chrome.tabs.setZoom",
+        "routes": [
+          "home",
+          "projects"
+        ],
+        "factors": [
+          1.25,
+          0.8,
+          1,
+          1.25,
+          0.8,
+          1
+        ],
+        "resizeEvents": 6,
+        "resolutionMediaEvents": 6,
+        "resizeSubmissions": 8,
+        "manualReflow": false,
+        "gpuErrors": 0,
+        "exceptions": 0,
+        "vectorHeadingAfterAllProjectZooms": true,
+        "scope": "Actual browser zoom, not CDP DPR emulation. Single attached physical display."
+      },
+      "webkitNativeZoom": {
+        "trace": "9dedcb15-8b61-421b-a292-6d171461dbc4",
+        "commit": "87cb5bed57a935fed7d4d0428c865386392f4679",
+        "host": "WKWebView native WebKit with nonpersistent data store and M2 WebGPU shader-f16 adapter",
+        "factors": [
+          1.25,
+          0.8,
+          1
+        ],
+        "dpr": [
+          2.5,
+          1.600000023841858,
+          2
+        ],
+        "resizeEvents": 3,
+        "resolutionMediaEvents": 0,
+        "resizeSubmissions": 3,
+        "manualReflow": false,
+        "gpuErrors": 0,
+        "vectorHeading": true,
+        "filterReferenceIcons": 16,
+        "scope": "Native WKWebView pageZoom; physical monitor switch and full Safari browser chrome not tested."
+      },
+      "webkitInteractions": {
+        "trace": "aa8b9451-8c02-4b65-a164-1f23d951797c",
+        "commit": "dd3367e201c78e55451fb210a40796254f528081",
+        "steps": [
+          "home",
+          "projects",
+          "expanded",
+          "retargeted",
+          "overlap",
+          "filtered",
+          "login",
+          "returned-home"
+        ],
+        "overlapLayers": [
+          1,
+          2
+        ],
+        "loginHover": 0.9921489969027301,
+        "loginPress": 0.9758003315453981,
+        "gpuErrors": 0,
+        "scope": "DOM route events and synthetic browser-native PointerEvent objects for login. Actual Chrome mouse input and full-motion real-art validation retained from prior evidence. CSS :hover cannot be induced by native view events in the occluded WebKit host: both baseline and candidate fail identically; not claimed as a passed physical hover test.",
+        "hoverDiagnostics": {
+          "baselineTrace": "1a9b8039-8e1e-4d68-bf75-9dc17769d7ae",
+          "candidateTrace": "c3445ed8-27f4-460d-91e2-95e0f6095ec0",
+          "both": "no CSS hover activated, all icon hover values zero, WebGPU ready and error-free"
+        }
+      },
+      "defaultSelection": {
+        "trace": "8d97288d-f358-4afb-8497-965eaabf9c2f",
+        "commit": "7230dabc684afbb825ada9975ff03b77fff72836",
+        "chromium": {
+          "renderer": "continuous-candidate",
+          "projects": "ready",
+          "originalFontVector": true,
+          "errors": 0
+        },
+        "controlledVectorAssetFailure": {
+          "renderer": "baseline",
+          "status": "ready",
+          "reason": "Continuous icon data unavailable",
+          "errors": 0
+        },
+        "webkit": {
+          "trace": "509272f9-b4bf-4a8a-8208-62705539e8ac",
+          "renderer": "continuous-candidate",
+          "loginHover": 0.9945486744331257,
+          "loginPress": 0.9771586196065393,
+          "errors": 0,
+          "returnedHome": true
+        },
+        "policy": "Default for qualified f16-capable WebGPU with adequate initial source/workgroup/array limits; explicit glass-renderer=baseline preserves original pipeline; candidate startup error falls back to original WebGPU before presentation. Existing CSS fallback retained for unavailable/lost GPU. Experimental forced continuous still available."
+      },
+      "productionBuild": {
+        "trace": "d170e5f0-dbf5-47c4-8c6d-5b0738473cba",
+        "passed": true,
+        "scope": "Actual built login from prior code with no production modifications except candidate default/fallback selection and startup compilation refactor; final release workflow must independently build."
+      }
     }
   },
   "previousTurn": {
