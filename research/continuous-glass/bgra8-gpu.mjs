@@ -1,4 +1,6 @@
 // Experimental native-compatible integer BGRA8 producer, not production rendering.
+import {axis} from "./bgra8-sampler.mjs";
+const quantized=(u,n)=>{const [a,,f]=axis(u,n);return a*256+f;};
 export async function createBGRA8GPU(){
  const adapter=await navigator.gpu?.requestAdapter({powerPreference:"high-performance"});
  if(!adapter)throw Error("No WebGPU");
@@ -14,7 +16,13 @@ export async function createBGRA8GPU(){
   const dw=Math.max(1,Math.floor(w/2)),dh=Math.max(1,Math.floor(h/2)),count=points?points.length/2:dw*dh,size=count*16;
   // Explicit byte packing, independent of host endianness.
   const packed=Uint32Array.from({length:w*h},(_,i)=>(src[i*4]|src[i*4+1]<<8|src[i*4+2]<<16|src[i*4+3]<<24)>>>0);
-  const buffers=[make(packed,GPUBufferUsage.STORAGE),make(points??new Float32Array(2),GPUBufferUsage.STORAGE),make(Uint32Array.of(w,h,dw,dh,points?0:1,count,0,0),GPUBufferUsage.UNIFORM),device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC})];
+  // CPU transport encodes native Float32 coordinate boundaries before shader arithmetic.
+  // Downsample needs only O(max(dw,dh)) shared axis positions, not a per-pixel atlas.
+  const f=Math.fround,xy=points?Uint32Array.from(points,(v,i)=>quantized(v,i%2?h:w)):Uint32Array.from({length:2*(Math.max(dw,dh)+4)},(_,i)=>{
+   const n=i%2?h:w,d=i%2?dh:dw,j=Math.floor(i/2)-2;
+   return quantized(f(f(j+.5)*f(1/d)),n);
+  });
+  const buffers=[make(packed,GPUBufferUsage.STORAGE),make(xy,GPUBufferUsage.STORAGE),make(Uint32Array.of(w,h,dw,dh,points?0:1,count,0,0),GPUBufferUsage.UNIFORM),device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC})];
   const read=device.createBuffer({size,usage:GPUBufferUsage.MAP_READ|GPUBufferUsage.COPY_DST});
   try{
    const bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:buffers.map((buffer,binding)=>({binding,resource:{buffer}}))});
