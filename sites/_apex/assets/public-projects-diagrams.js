@@ -300,16 +300,16 @@ export const PROJECT_DIAGRAMS=Object.freeze({
   ],
   "apple-hig-reader": [
     {
-      "title": "Free-hosted reference service",
+      "title": "Google-hosted reference service",
       "rows": [
         [
           "AI assistant"
         ],
         [
-          "/mcp Worker"
+          "Apps Script MCP\n/exec/mcp or /exec"
         ],
         [
-          "Apps Script",
+          "DocC reader",
           "Cache"
         ],
         [
