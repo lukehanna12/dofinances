@@ -125,10 +125,35 @@ static void impulse2D(void){
  }
 }
 
+typedef struct {int16_t base[2],pad0[2],limits[4];uint16_t dst0[2],dst1[2],level;uint8_t noBase,pad1[5];} Copy;
+_Static_assert(sizeof(Copy)==32,"ABI");
+static void copyMatrix(void){
+ // Independent owned captures; explicit clamped signed coordinate interval.
+ const int cases[][10]={{18,16,8,6,-3,-2,0,0,16,14},{33,27,16,13,1,-4,2,3,30,24},{64,64,32,32,-9,-7,4,3,53,52},{23,17,11,9,3,2,0,0,21,15},{8,6,4,3,-1,-1,1,1,6,4}};
+ for(int i=0;i<5;i++){
+  const int *z=cases[i];int w=z[0],h=z[1],dw=z[2],dh=z[3];
+  Copy u={{z[4],z[5]},{0,0},{z[6],z[7],z[8],z[9]},{2*dw,2*dh},{dw,dh},0,1,{0}};
+  for(int type=0;type<2;type++){
+   NSUInteger bpp=type?4:8;MTLPixelFormat format=type?MTLPixelFormatBGRA8Unorm:MTLPixelFormatRGBA16Float;
+   id<MTLTexture> t=texture(w,h,format,NO),o=texture(dw,dh,format,NO);
+   NSMutableData *d=[NSMutableData dataWithLength:w*h*bpp];
+   for(int y=0;y<h;y++)for(int x=0;x<w;x++)for(int k=0;k<4;k++){
+    int j=(y*w+x)*4+k,v=(17*x*x+13*y*y+11*x*y+7*k*x+19*k*y+23*k+3*i)%127;
+    if(type)((uint8_t*)d.mutableBytes)[j]=(uint8_t)(v*2+(x+y+k)%2);
+    else ((uint16_t*)d.mutableBytes)[j]=half((v-61)/32.0f);
+   }
+   writeTexture(t,0,d,bpp);
+   dispatch(@"variable_blur_copy_base_mip_compute",t,o,[NSData dataWithBytes:&u length:sizeof u],MTLSizeMake((2*dw+31)/32,(2*dh+31)/32,1),MTLSizeMake(20,20,1));
+   NSData *out=readTexture(o,0,bpp);
+   printf("COPY %d %d %s %s %s %s\n",i,type,hex(&u,sizeof u).UTF8String,hash(d).UTF8String,hash(out).UTF8String,hex(out.bytes,out.length).UTF8String);
+  }
+ }
+}
+
 int main(int argc,const char **argv){@autoreleasepool{
  dev=MTLCreateSystemDefaultDevice();queue=[dev newCommandQueue];pipelines=[NSMutableDictionary dictionary];NSError *error=nil;
  library=[dev newLibraryWithURL:[NSURL fileURLWithPath:@"/System/Library/Frameworks/QuartzCore.framework/Versions/A/Resources/default.metallib"] error:&error];
  if(!library){NSLog(@"%@",error);return 1;}
  if(argc!=2)return 2;
- if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else if(strcmp(argv[1],"matrix")==0)matrix();else if(strcmp(argv[1],"impulse2d")==0)impulse2D();else return 2;
+ if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else if(strcmp(argv[1],"matrix")==0)matrix();else if(strcmp(argv[1],"impulse2d")==0)impulse2D();else if(strcmp(argv[1],"copy-matrix")==0)copyMatrix();else return 2;
 }}
