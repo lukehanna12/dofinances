@@ -53,7 +53,7 @@ test("adaptive haze is zero in dark pixels, restrained and very soft",()=>{
 });
 test("shared silhouette registration uses Clear tint and same owner fragment",()=>{
  const img={dataset:{}};
- registerGlassSilhouette(img,{tint:"white",opacity:.2});
+ registerGlassSilhouette(img);
  assert.equal(img.dataset.glassSilhouetteTint,"white");
  assert.equal(img.dataset.glassSilhouetteOpacity,"0.2");
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js");

@@ -57,7 +57,7 @@ try{
   const home=await state(),homeReadyMs=Date.now()-t;
   const homeIcons=await ev(`(()=>{const a=window.__dashboardWebGPU,icons=a.glassSilhouettes.homeIcons;
     return {icons,errors:a.errors,owned:[...document.querySelectorAll(".cta6-icon[data-glass-icon-owned]")].every(img=>getComputedStyle(img).clipPath!=="none")};})()`);
-  if(!homeIcons.icons.length||homeIcons.errors.length||!homeIcons.owned||homeIcons.icons.some(i=>i.tint!=="black"||i.tintOpacity!==1||((mode==="continuous"||mode==="default")&&(!i.continuousVector||!i.vectorCoverage))))throw Error("Home silhouette regression "+JSON.stringify(homeIcons));
+  if(!homeIcons.icons.length||homeIcons.errors.length||!homeIcons.owned||homeIcons.icons.some(i=>i.tint!=="white"||Math.abs(i.tintOpacity-.2)>1e-7||((mode==="continuous"||mode==="default")&&(!i.continuousVector||!i.vectorCoverage))))throw Error("Home silhouette regression "+JSON.stringify(homeIcons));
   if(process.env.LG_HOME_ONLY){
     await ev(`matchMedia("(prefers-reduced-motion: reduce)").matches`);
     const before=await ev("window.__dashboardWebGPU.frameCount");const start=Date.now();

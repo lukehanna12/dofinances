@@ -379,7 +379,8 @@ test("public top-bar text controls match /app text-link hover, not boxed-button 
 test("home mosaic registers the same glass silhouette optics without a flat duplicate",()=>{
  const mosaic=asset("assets/home-dashboard/dashboard-mosaic.js");
  const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
- assert.match(mosaic,/registerGlassSilhouette\(icon,\{tint:"black",opacity:1\}\)/);
+ assert.match(mosaic,/registerGlassSilhouette\(icon\)/);
+ assert.match(asset("assets/public-projects-entry.js"),/registerGlassSilhouette\(icon\)/);
  assert.match(renderer,/trackIconBounds=all\.map/);
  assert.match(renderer,/homeIcons\.push\(/);
  assert.match(renderer,/boundsOverride:bounds/);

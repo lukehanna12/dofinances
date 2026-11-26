@@ -46,7 +46,8 @@ if(root){
       icon.width=24;icon.height=24;
       icon.decoding="async";
       icon.draggable=false;
-      registerGlassSilhouette(icon,{tint:"black",opacity:1});
+      // Match the shared project-card Clear silhouette material.
+      registerGlassSilhouette(icon);
       icon.setAttribute("aria-hidden","true");
       tile.append(icon);
     }
