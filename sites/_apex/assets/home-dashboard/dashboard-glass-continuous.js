@@ -36,10 +36,23 @@ export async function loadContinuousGlass(device,base){
  const data=Float32Array.from(rows.flat());
  const buffer=device.createBuffer({label:"Continuous authored vector controls",size:data.byteLength+(titleAsset?titleReserve*48:0),usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
  device.queue.writeBuffer(buffer,0,data);
- const side=128,capacity=32,fieldTexture=device.createTexture({label:"Exact current-framebuffer vector sample cache",size:[side,side,capacity],format:"rgba32float",usage:GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.TEXTURE_BINDING});
- const fieldView=fieldTexture.createView({dimension:"2d-array"}),keys=new Map(),uniforms=new Map();
- let referenceFieldTexture=null,referenceFieldView=null;
- function fieldFor(channel){if(channel!=="reference")return fieldView;if(!referenceFieldTexture){referenceFieldTexture=device.createTexture({label:"Reference optical attachment exact sample cache",size:[side,side,capacity],format:"rgba32float",usage:GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.TEXTURE_BINDING});referenceFieldView=referenceFieldTexture.createView({dimension:"2d-array"});}return referenceFieldView;}
+ const capacity=32,keys=new Map(),uniforms=new Map(),channels=new Map();
+ // Allocate just the needed side, rounded to 32 physical samples, with
+ // a bounded per-channel budget. Higher magnifications evaluate directly.
+ const makeChannel=(name,side)=>{
+  const texture=device.createTexture({label:name+" exact optical sample cache",size:[side,side,capacity],format:"rgba32float",usage:GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_SRC|GPUTextureUsage.COPY_DST});
+  return {side,texture,view:texture.createView({dimension:"2d-array"})};
+ };
+ channels.set("display",makeChannel("display",128));
+ function fieldFor(channel){if(!channels.has(channel))channels.set(channel,makeChannel(channel,128));return channels.get(channel).view;}
+ function ensureField(channel,size){
+  const current=channels.get(channel);if(current&&current.side>=size)return current.view;
+  if(!Number.isFinite(size)||size>256)throw RangeError("Optical sample cache extent budget");
+  if(cacheBatch?.cmd)throw Error("Grow exact sample cache before recording dispatches");
+  const next=makeChannel(channel,Math.max(128,Math.ceil(size/32)*32));
+  if(current){const e=device.createCommandEncoder();e.copyTextureToTexture({texture:current.texture},{texture:next.texture},[current.side,current.side,capacity]);device.queue.submit([e.finish()]);current.texture.destroy();}
+  channels.set(channel,next);return next.view;
+ }
  const cacheModule=device.createShaderModule({code:"struct GlassSilhouette { rect:vec4<f32>, params:vec4<f32>, tint:vec4<f32>, coverageRect:vec4<f32>, coverageMeta:vec4<f32> };\n"+code+"\n@group(0) @binding(0) var<uniform> cacheIcon:GlassSilhouette;\n@group(0) @binding(1) var cacheOutput:texture_storage_2d_array<rgba32float,write>;\n@group(0) @binding(2) var cacheCoverage:texture_2d_array<f32>;\n@compute @workgroup_size(8,8)\nfn cacheMain(@builtin(global_invocation_id) id:vec3<u32>){\n if(any(id.xy>=vec2<u32>(cacheIcon.coverageMeta.yz))){return;}\n let pixel=vec2<i32>(id.xy);let layer=i32(cacheIcon.coverageMeta.x)-1;\n if(textureLoad(cacheCoverage,pixel,layer,0).r<=0.001){textureStore(cacheOutput,pixel,layer,vec4<f32>(0.0));return;}\n let local=cacheIcon.coverageRect.xy+(vec2<f32>(id.xy)+vec2<f32>(0.5))/cacheIcon.coverageRect.zw;\n let field=evaluateContinuousIconField(cacheIcon,local);\n textureStore(cacheOutput,pixel,layer,vec4<f32>(field,1.0));\n}\n"+"\n// Five independent distance solves share a pixel's stencil, not a\n// sampled field. Every invocation reaches the barrier; inactive lanes\n// perform no geometry. Cached and direct evaluation share arithmetic.\nvar<workgroup> stencil:array<f32,160>;\n@compute @workgroup_size(8,4,5)\nfn cacheParallel(@builtin(global_invocation_id) id:vec3<u32>,\n @builtin(local_invocation_id) lid:vec3<u32>){\n let pixel=vec2<i32>(id.xy);let layer=i32(cacheIcon.coverageMeta.x)-1;\n let valid=all(id.xy<vec2<u32>(cacheIcon.coverageMeta.yz));\n var covered=false;\n if(valid){covered=textureLoad(cacheCoverage,pixel,layer,0).r>0.001;}\n let n=(lid.y*8u+lid.x)*5u;\n let local=cacheIcon.coverageRect.xy+(vec2<f32>(id.xy)+vec2<f32>(0.5))/cacheIcon.coverageRect.zw;\n var value=0.0;\n if(covered){value=iconStencil(iconFieldQuery(cacheIcon,local),lid.z);}\n stencil[n+lid.z]=value;\n workgroupBarrier();\n if(lid.z==0u&&valid){\n  if(covered){\n   let q=iconFieldQuery(cacheIcon,local);\n   let f=assembleIconField(q,stencil[n],stencil[n+1u],stencil[n+2u],stencil[n+3u],stencil[n+4u]);\n   textureStore(cacheOutput,pixel,layer,vec4<f32>(f,1.0));\n  }else{textureStore(cacheOutput,pixel,layer,vec4<f32>(0.0));}\n }\n}\n"});
  const parallelCache=new URLSearchParams(location.search).get("glass-cache")!=="serial";
  const cachePipeline=await device.createComputePipelineAsync({layout:"auto",compute:{module:cacheModule,entryPoint:parallelCache?"cacheParallel":"cacheMain"}});
@@ -74,7 +87,7 @@ export async function loadContinuousGlass(device,base){
   titleBuilds++;return {texture,index:id,...titleGeometry};
  }
  function cacheField(lanes,coverageView,channel="display"){
-  const slot=lanes[16]-1,w=lanes[17],h=lanes[18];
+  const slot=lanes[16]-1,w=lanes[17],h=lanes[18],side=channels.get(channel)?.side||128;
   if(slot<0||slot>=capacity||!lanes[19]||w>side||h>side||w<1||h<1){misses++;return false;}
   // Relative icon and exact physical sample lattice only: no appearance,
   // material, pointer, time, or backdrop is cached.
@@ -90,7 +103,7 @@ export async function loadContinuousGlass(device,base){
   if(cacheBatch)cacheBatch.slots.add(cacheSlot);else{device.queue.submit([cmd.finish()]);cacheSubmissions++;}
   keys.set(cacheSlot,key);builds++;return true;
  }
- return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",fieldView,fieldFor,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,titleGeometryBuilds,cacheSubmissions,parallelCache,bytes:side*side*capacity*16*(referenceFieldTexture?2:1)};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();fieldTexture.destroy();referenceFieldTexture?.destroy();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
+ return {buffer,code:code+"\n@group(0) @binding(16) var continuousOutputField:texture_2d_array<f32>;\nfn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{\n if(icon.coverageMeta.w<0.0&&icon.coverageMeta.x>0.0){\n  let q=(local-icon.coverageRect.xy)*icon.coverageRect.zw;let p=floor(q);\n  // Only consume a cached evaluation at the SAME framebuffer sample.\n  // Nonmatching phase, large output and changed geometry evaluate directly.\n  if(all(p>=vec2<f32>(0.0))&&all(p<icon.coverageMeta.yz)&&all(abs(q-p-vec2<f32>(0.5))<vec2<f32>(0.001))){\n   let v=textureLoad(continuousOutputField,vec2<i32>(p),i32(icon.coverageMeta.x)-1,0);\n   if(v.w==1.0){return v.xyz;}\n  }\n }\n return evaluateContinuousIconField(icon,local);\n}\n",get fieldView(){return fieldFor("display");},fieldFor,ensureField,cacheField,beginCache,endCache,titleField,rasterTitle,titleMode,titleAvailable:Boolean(titleAsset),stats(){return {builds,hits,misses,titleBuilds,titleGeometryBuilds,cacheSubmissions,parallelCache,bytes:[...channels.values()].reduce((n,c)=>n+c.side*c.side*capacity*16,0),sides:Object.fromEntries([...channels].map(([n,c])=>[n,c.side]))};},curveCount:asset.curveCount,bytes:data.byteLength,indexFor(img){const name=new URL(img.currentSrc||img.src,location.href).pathname.split("/").at(-1).replace(/\.svg$/,"");return index.get(name)||0;},dispose(){buffer.destroy();for(const c of channels.values())c.texture.destroy();channels.clear();titleUniform?.destroy();for(const u of uniforms.values())u.destroy();}};
 }
 function once(s,a,b){if(!s.includes(a)||s.indexOf(a)!==s.lastIndexOf(a))throw Error("Continuous specialization mismatch: "+a.slice(0,100));return s.replace(a,b);}
 export function specializeContinuousGlass(s,code){

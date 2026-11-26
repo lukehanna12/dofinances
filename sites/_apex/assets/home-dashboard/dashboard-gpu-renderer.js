@@ -934,7 +934,7 @@ async function initialize(){
     iconData.fill(0);silhouetteAtlas.begin();referenceIconData.fill(0);
     const referenceActive=!!(continuous&&routeActiveLayers.length);
     if(referenceActive&&!referenceCoverage)referenceCoverage=createVectorCoverageAtlas(device,requestRender);
-    const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,icons=[];
+    const before=silhouetteAtlas.view,beforeCoverage=silhouetteAtlas.coverageView,beforeField=continuous?.fieldView,icons=[];
     let animating=false;
     if(!authUsesCompositor()){
       const panes=authPaneElements(),scheme=authGlassScheme();
@@ -971,11 +971,15 @@ async function initialize(){
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
       }
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
-    if(continuous){continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
+    if(continuous){
+      // Grow once, before binding any dispatch to the exact sample cache.
+      const extent=lanes=>{let max=0;for(let slot=0;slot<instanceCount;slot++){const i=slot*GLASS_ICON_FLOATS;if(lanes[i+19]>0&&lanes[i+16]>0){const n=Math.max(lanes[i+17],lanes[i+18]);if(n<=256)max=Math.max(max,n);}}return max;};
+      continuous.ensureField("display",extent(iconData));if(referenceActive)continuous.ensureField("reference",extent(referenceIconData));
+      continuous.beginCache();try{for(let slot=0;slot<instanceCount;slot++){const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(lanes[19]>0&&lanes[16]>0&&continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
       if(referenceActive){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);if(q[19]>0&&q[16]>0&&continuous.cacheField(q,referenceCoverage.view,"reference"))q[19]*=-1;}}}finally{continuous.endCache();}}
     device.queue.writeBuffer(iconBuffer,0,iconData);
     if(referenceActive){device.queue.writeBuffer(referenceIconBuffer,0,referenceIconData);const a=referenceCoverage.view,b=continuous.fieldFor("reference");if(a!==referenceBindingView||b!==referenceFieldBinding){referenceBindingView=a;referenceFieldBinding=b;rebindGlassGroups();}}
-    if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView)rebindGlassGroups();
+    if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView||beforeField!==continuous?.fieldView)rebindGlassGroups();
     audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),...(continuous?{continuousSampleCache:continuous.stats()}:{}),backdrop:"current fragment color + original GPU sources"};
     return animating;
   }
