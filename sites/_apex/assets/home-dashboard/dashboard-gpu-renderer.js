@@ -35,6 +35,7 @@ import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from ".
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
 import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
+import {continuousRequested,loadContinuousGlass,specializeContinuousGlass} from "./dashboard-glass-continuous.js";
 import {CLOCK_TEXT_PROFILE,clockTextMaterialLanes,rasterClockText} from "./dashboard-glass-text.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
 
@@ -540,6 +541,9 @@ async function initialize(){
     }
   }
 
+  const continuous=continuousRequested()?await loadContinuousGlass(device,base):null;
+  audit.glassRenderer=continuous?"continuous-candidate":"baseline";
+  if(continuous){sources[2]=specializeContinuousGlass(sources[2],continuous.code);audit.continuousVectors={curveCount:continuous.curveCount,bytes:continuous.bytes};}
   if(root)root.dataset.gpuPhase="compile-wgsl";
   sources[2]=(nativeF16?"enable f16;\n":"")+sources[2].replaceAll(
     "__ORACLE_HALF_BODY__",
@@ -942,9 +946,10 @@ async function initialize(){
           ownerRect:Array.from(tileData.subarray(p,p+4)),dismiss:tileData[p+19]});
         if(!icon)continue;
         iconData.set(icon.lanes,slot*GLASS_ICON_FLOATS);
+        if(continuous)iconData[slot*GLASS_ICON_FLOATS+19]=continuous.indexFor(img);
         animating ||= icon.animating;
         icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
-          tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed});
+          tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
       }
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
     device.queue.writeBuffer(iconBuffer,0,iconData);
@@ -994,7 +999,8 @@ async function initialize(){
       {binding:8,resource:projectRegionSceneView},
       {binding:9,resource:detail},{binding:10,resource:detailSampler},
       {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view},
-      {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:silhouetteAtlas.coverageView}
+      {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:silhouetteAtlas.coverageView},
+      ...(continuous?[{binding:15,resource:{buffer:continuous.buffer}}]:[])
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
@@ -1817,7 +1823,7 @@ async function initialize(){
     return authAnimating||hoverAnimating||artworkAnimating||iconAnimating;
   }
   function dispose(){
-    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();
+    tileBuffer?.destroy();tintTileBuffer?.destroy();materialBuffer?.destroy();regionBuffer?.destroy();artworkAtlas.dispose();iconBuffer?.destroy();silhouetteAtlas.dispose();continuous?.dispose();
     glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();
