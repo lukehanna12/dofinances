@@ -205,9 +205,9 @@ try{
   }else{
     near(g.logo.left,32,"Corner wordmark margin",width);
     near(g.logo.top+g.logo.height,height-32,"Corner wordmark bottom",width);
-    assert.ok(parseFloat(g.font)<=189&&parseFloat(g.font)>0);
+    assert.ok(parseFloat(g.font)<=157.5&&parseFloat(g.font)>0);
     assert.ok(g.logo.left+g.logo.width<=width-182+1,"Wordmark must not overlap the CTA stack");
-    if(width>=1440)assert.equal(g.font,"189px");
+    if(width>=1440)assert.equal(g.font,"157.5px");
   }
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");

@@ -6,7 +6,7 @@ export const publicLogoOvalRadius=(width,referenceWidth)=>{
   if(!Number.isFinite(width)||!Number.isFinite(referenceWidth)||width<=0||referenceWidth<=0)throw new RangeError("Positive finite wordmark widths required");
   return 140*width/referenceWidth;
 };
-export function homeAperture({width,height,logoWidth,logoHeight,centered,margin=32,bottom=margin,feather=margin*3}){
+export function homeAperture({width,height,logoWidth,logoHeight,centered,margin=32,bottom=margin,feather=margin*2.5}){
   if(centered){
     const shift=Math.min(OLD_SHIFT,Math.max(0,height/2-logoHeight/2-12));
     return [width/2,height/2-shift,width/4,width*100/1280];
@@ -63,9 +63,9 @@ export function observePublicLogoOval(){
     const referenceWidth=probe.getBoundingClientRect().width;
     if(!(referenceWidth>0))return;
     const margin=32,ctaWidth=150;
-    // Keep the threefold target unless a narrower desktop would overlap
+    // Keep the 2.5x target unless a narrower desktop would overlap
     // the adjacent CTA stack. Preserve the bottom-left anchor at every size.
-    const size=centered?45*(width/2)/referenceWidth:Math.min(189,45*Math.max(1,width-3*margin-ctaWidth)/referenceWidth);
+    const size=centered?45*(width/2)/referenceWidth:Math.min(157.5,45*Math.max(1,width-3*margin-ctaWidth)/referenceWidth);
     document.body.style.setProperty("--public-home-logo-size",size+"px");
     const logoWidth=title.offsetWidth,logoHeight=title.offsetHeight;
     const bottom=parseFloat(getComputedStyle(title.parentElement).paddingBottom)||margin;
