@@ -77,8 +77,8 @@ fn pathDistance(p:vec2<f32>,root:u32,tol:f32)->f32{
  }
  return select(best.x,-best.x,inside);
 }
-fn continuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
- let h=curves[u32(icon.coverageMeta.w)-1u];
+fn evaluateContinuousIconField(icon:GlassSilhouette,local:vec2<f32>)->vec3<f32>{
+ let h=curves[u32(abs(icon.coverageMeta.w))-1u];
  let size=vec2<f32>(h.c.y,h.degreeInfo.x);
  let fit=min(icon.rect.z/size.x,icon.rect.w/size.y);
  let center=icon.rect.xy+icon.rect.zw*.5;

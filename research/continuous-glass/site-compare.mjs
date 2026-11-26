@@ -51,12 +51,17 @@ export async function run(){
     profiles.push(...(isRegular?regularMaterialLanes(resolveRegularMaterial({width:92,height:88,scale,scheme:"dark"})):Array(16).fill(0)));
     tints.push(.7,.25,.35,i%4===0?.3:0);regions.push(...Array(24).fill(0));
    }
+   const cacheT=performance.now();
+   const cachedIcons=Float32Array.from(icons);let cached=0;
+   for(let i=0;i<16;i++){const a=cachedIcons.subarray(i*20,(i+1)*20);if(data.cacheField(a,atlas.coverageView)){a[19]*=-1;cached++;}}
+   await device.queue.onSubmittedWorkDone();const cacheBuildMs=performance.now()-cacheT;
    const buffers=[makeBuffer(Float32Array.from(tiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.of(W,H,1,scale,0,0,0,H,0,0,0,0,0,0,0,0,1,1,0,0),GPUBufferUsage.UNIFORM),makeBuffer(Float32Array.from(tints),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(profiles),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(regions),GPUBufferUsage.STORAGE),makeBuffer(Float32Array.from(icons),GPUBufferUsage.STORAGE)];
    const sourceView=scene.createView(),entries=[{binding:0,resource:sourceView},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:glyph.createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:sourceView},{binding:9,resource:detail.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:12,resource:atlas.view},{binding:13,resource:atlas.hazeView},{binding:14,resource:atlas.coverageView}];
    const target=tex(W,H,1,fmt,GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC),stride=Math.ceil(W*8/256)*256,read=device.createBuffer({size:stride*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
    const resultsForMode=[];
    for(let mode=0;mode<2;mode++){
-    const pipeline=pipelines[mode],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries,{binding:15,resource:{buffer:data.buffer}}]:entries});
+    if(mode)device.queue.writeBuffer(buffers[5],0,cachedIcons);
+    const pipeline=pipelines[mode],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries,{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
     await draw();const ms=[];for(let n=0;n<3;n++)ms.push(await draw());
     await draw(true);await read.mapAsync(GPUMapMode.READ);
@@ -71,7 +76,7 @@ export async function run(){
    }
    for(let i=0;i<16;i++){let total=0,peak=0,n=0;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;peak=Math.max(peak,d);n++;}perIcon.push({name:names[i],mean:total/n,max:peak});}
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
-   results.push({scale,W,H,coverageCount,nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
+   results.push({scale,W,H,coverageCount,cached,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
   }
   return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,f16},results};

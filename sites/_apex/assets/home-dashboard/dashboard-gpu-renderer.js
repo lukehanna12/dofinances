@@ -946,7 +946,11 @@ async function initialize(){
           ownerRect:Array.from(tileData.subarray(p,p+4)),dismiss:tileData[p+19]});
         if(!icon)continue;
         iconData.set(icon.lanes,slot*GLASS_ICON_FLOATS);
-        if(continuous)iconData[slot*GLASS_ICON_FLOATS+19]=continuous.indexFor(img);
+        if(continuous){
+          const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);
+          lanes[19]=continuous.indexFor(img);
+          if(continuous.cacheField(lanes,silhouetteAtlas.coverageView))lanes[19]*=-1;
+        }
         animating ||= icon.animating;
         icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
@@ -954,7 +958,7 @@ async function initialize(){
     }else for(const img of document.querySelectorAll("[data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");
     device.queue.writeBuffer(iconBuffer,0,iconData);
     if(before!==silhouetteAtlas.view||beforeCoverage!==silhouetteAtlas.coverageView)rebindGlassGroups();
-    audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),backdrop:"current fragment color + original GPU sources"};
+    audit.glassSilhouettes={icons,...silhouetteAtlas.stats(),...(continuous?{continuousSampleCache:continuous.stats()}:{}),backdrop:"current fragment color + original GPU sources"};
     return animating;
   }
   function syncRouteSources(){
@@ -1000,7 +1004,7 @@ async function initialize(){
       {binding:9,resource:detail},{binding:10,resource:detailSampler},
       {binding:11,resource:{buffer:iconBuffer}},{binding:12,resource:silhouetteAtlas.view},
       {binding:13,resource:silhouetteAtlas.hazeView},{binding:14,resource:silhouetteAtlas.coverageView},
-      ...(continuous?[{binding:15,resource:{buffer:continuous.buffer}}]:[])
+      ...(continuous?[{binding:15,resource:{buffer:continuous.buffer}},{binding:16,resource:continuous.fieldView}]:[])
     ];
     authDetailEntries=detail=>entries(authGlobalsBuffer,sceneView,detail);
     routeCompositeEntries=(detail,source=sceneView)=>entries(routeCompositeGlobalsBuffer,source,detail);
