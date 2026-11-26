@@ -1,6 +1,6 @@
 // Vector path geometry from normalized, monotone cubic controls.
 // The bound uses conservative engineering guards, not certified interval arithmetic.
-struct Curve {a:vec2<f32>,b:vec2<f32>,c:vec2<f32>,d:vec2<f32>,meta:vec4<f32>}
+struct Curve {a:vec2<f32>,b:vec2<f32>,c:vec2<f32>,d:vec2<f32>,degreeInfo:vec4<f32>}
 struct Piece {a:vec2<f32>,b:vec2<f32>,c:vec2<f32>,d:vec2<f32>}
 struct PathResult {field:vec4<f32>,bounds:vec4<f32>}
 @group(0) @binding(4) var<storage,read> curves:array<Curve>;
@@ -28,7 +28,7 @@ fn pathField(q:vec4<f32>)->PathResult{
    let x=curvePoint(root,(lo+hi)*.5).x-p.x;
    if(abs(x)<=pad){uncertain=true;}else if(x>0.0){parity=!parity;}
   }
-  if(c.meta.x==1.0){
+  if(c.degreeInfo.x==1.0){
    let d=c.d-c.a;let len2=dot(d,d);var t=0.0;if(len2>0.0){t=clamp(dot(p-c.a,d)/len2,0.0,1.0);}
    let near=c.a+t*d;let dist=length(near-p);
    if(dist<best){best=dist;bestPoint=near;}lower=min(lower,max(0.0,dist-pad));nodes++;
