@@ -660,7 +660,7 @@ async function initialize(){
     label:"Placeholder alpha for glyph-shaped WebGPU glass",
     size:[1,1,1],format:"rgba16float",usage:glyphUsage
   });
-  let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null;
+  let glyphMaskKey="",glyphMaskDimensions=[1,1],glyphMaskOwner=null,glyphVectorIndex=0;
   let tintData=new Float32Array(0),lastTintKey="";
   let materialData=new Float32Array(0);
   let regionData=new Float32Array(0),regionBuffer=null;
@@ -930,8 +930,12 @@ async function initialize(){
       const panes=authPaneElements(),scheme=authGlassScheme();
       for(let i=0;i<panes.length;i++){
         const owner=panes[i],img=owner.querySelector("[data-glass-silhouette-source]");
-        if(!img)continue;
         const slot=tileCount+i,p=slot*TILE_FLOATS;
+        if(continuous&&owner===glyphMaskOwner&&glyphVectorIndex){
+          const lanes=iconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);
+          lanes.set([0,0,...glyphMaskDimensions,dpr],0);lanes[19]=glyphVectorIndex;
+        }
+        if(!img)continue;
         if(owner.hidden||tileData[p+18]<=.001){img.removeAttribute("data-glass-icon-owned");continue;}
         // Final SVG coverage is exact at the physical pixel phase. Only
         // request it for a pane that can contribute to a visible attachment.
@@ -1146,16 +1150,20 @@ async function initialize(){
     try{
       const raster=rasterClockText(text,style,width,height,dpr);
       if(!raster){title.removeAttribute("data-glass-text-ready");return;}
-      const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1],previous=glyphMaskTexture;
+      const resized=width!==glyphMaskDimensions[0]||height!==glyphMaskDimensions[1]||glyphVectorIndex>0,previous=glyphMaskTexture;
       const texture=resized?device.createTexture({label:"Native clock text: 10-bit SDF, normals and full-pixel glyph coverage",
         size:[width,height,1],format:"rgba16float",usage:glyphUsage}):previous;
       const pixels=raster.pixels;
       device.queue.writeTexture({texture},pixels,{offset:0,bytesPerRow:width*8,rowsPerImage:height},{width,height,depthOrArrayLayers:1});
-      glyphMaskTexture=texture;glyphMaskKey=signature;glyphMaskDimensions=[width,height];glyphMaskOwner=title;
-      if(resized){rebindGlassGroups();previous.destroy();}
+      let vector=null;
+      if(continuous?.titleAvailable)vector=continuous.titleField(text,style,width,height,dpr,texture);
+      glyphMaskTexture=vector?.texture||texture;glyphVectorIndex=vector?.index||0;
+      glyphMaskKey=signature;glyphMaskDimensions=[width,height];glyphMaskOwner=title;
+      if(glyphMaskTexture!==previous){rebindGlassGroups();previous.destroy();}
+      if(vector&&texture!==previous)texture.destroy();
       if(!title.hasAttribute("data-glass-text-ready"))title.dataset.glassTextReady="";
       audit.projectTitleMask={source:"computed-font contour and alpha only; no DOM or wallpaper capture",
-        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:10,distanceRange:[-24,1],
+        width,height,nonzeroPixels:raster.filled,shaderTag:-8,material:"clock-text",sdfBits:vector?32:10,distanceRange:vector?null:[-24,1],vectorOptics:!!vector,vectorCurves:vector?.curves||0,
         pipeline:"shared-webgpu-glassPipeline",nativeEvidence:"2f4217b4530654e6e9fd432c9834528c0fdd2e89"};
     }catch(error){title.removeAttribute("data-glass-text-ready");console.warn("Glass heading contour:",String(error));}
   }

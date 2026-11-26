@@ -13,6 +13,7 @@ const server=createServer((req,res)=>{
  const path=new URL(req.url,"http://127.0.0.1").pathname;
  try{
   let target=resolve(root,"."+path);
+  if(path==="/assets/home-dashboard/continuous-title-outline.json"&&process.env.LG_TITLE_OUTLINE){res.writeHead(200,{"content-type":"application/json"});return res.end(readFileSync(process.env.LG_TITLE_OUTLINE));}
   if(path==="/"||path==="/projects"||path==="/projects/"||path==="/login"||path==="/login/"){
    let html=readFileSync(join(root,"index.html"),"utf8");
    if(path!=="/")html=html.replace('<body class="public-home">','<body class="public-home" data-public-route="leaving" data-direct-login="true">');
@@ -39,16 +40,16 @@ try{
  const wait=async(expression,label)=>{for(let i=0;i<100;i++){const r=await ev(expression).catch(()=>null);if(r)return r;await sleep(100);}throw Error(label+" "+JSON.stringify(await ev("window.__dashboardWebGPU??null").catch(()=>null)));};
  await send("Page.enable");await send("Runtime.enable");await send("Emulation.setEmulatedMedia",{features:[{name:"prefers-reduced-motion",value:"reduce"}]});
  const origin="http://127.0.0.1:"+server.address().port,results=[];
- const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
+ const state=()=>ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,frame:a?.frameCount,sceneBuilds:a?.sceneBuilds,route:window.__dofPublicRouter?.state,icons:a?.glassSilhouettes?.icons?.map(x=>({slug:x.slug,vector:x.continuousVector,coverage:x.vectorCoverage})),title:a?.projectTitleMask,maskSize:a?.glassSilhouettes?.maskSize,atlasBytes:a?.glassSilhouettes?.atlasBytes,cache:a?.glassSilhouettes?.continuousSampleCache,panes:a?.projectGlass?.count,canvas:[innerWidth,innerHeight,devicePixelRatio]}})()`);
  for(const mode of (process.env.LG_SITE_MODE?[process.env.LG_SITE_MODE]:["baseline","continuous"])){
   await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:2,mobile:false});
-  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode});
+  const t=Date.now();await send("Page.navigate",{url:origin+"/?glass-renderer="+mode+(process.env.LG_TITLE_OUTLINE?"&glass-title-vector=1":"")});
   await wait('window.__dashboardWebGPU?.status==="ready"',"Home renderer not ready");
   const home=await state();if(home.renderer!==(mode==="continuous"?"continuous-candidate":"baseline"))throw Error("Wrong renderer "+JSON.stringify(home));
   await ev('Array.from(document.querySelectorAll("[data-public-target]")).find(n=>n.dataset.publicTarget==="/projects").click()');
   await wait('window.__dofPublicRouter?.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0',"Projects not rendered");
   await sleep(400);
-  const projects=await state();
+  const projects=await state();if(mode==="continuous"&&process.env.LG_TITLE_OUTLINE&&!projects.title?.vectorOptics)throw Error("Title vector optics not enabled "+JSON.stringify(projects.title));
   await send("DOM.enable");await send("CSS.enable");const doc=await send("DOM.getDocument");const title=await send("DOM.querySelector",{nodeId:doc.root.nodeId,selector:".public-projects-title"});const font=await send("CSS.getPlatformFontsForNode",{nodeId:title.nodeId});const fontMetrics=await ev(`(()=>{const n=document.querySelector(".public-projects-title"),s=getComputedStyle(n),c=document.createElement("canvas").getContext("2d");c.font=s.fontStyle+" "+s.fontWeight+" "+s.fontSize+" "+s.fontFamily;c.letterSpacing=s.letterSpacing;let m=c.measureText(n.textContent);return {font:c.font,spacing:c.letterSpacing,rect:[n.offsetWidth,n.offsetHeight],width:m.width,ascent:m.fontBoundingBoxAscent,descent:m.fontBoundingBoxDescent,actual:[m.actualBoundingBoxLeft,m.actualBoundingBoxRight,m.actualBoundingBoxAscent,m.actualBoundingBoxDescent]};})()`);
   if(mode==="continuous"&&(projects.maskSize!==0||projects.icons.some(x=>!x.vector||!x.coverage)))throw Error("Candidate optical mask regression "+JSON.stringify(projects));
   const scroll=await ev(`(async()=>{const outlet=document.querySelector("#public-route-content"),a=window.__dashboardWebGPU.frameCount,t=performance.now(),frames=[];for(let i=0;i<12;i++){outlet.scrollTop=Math.max(0,Math.min(outlet.scrollHeight-outlet.clientHeight,i*17.25));await new Promise(r=>requestAnimationFrame(r));frames.push(performance.now());}return {ms:performance.now()-t,frameDelta:window.__dashboardWebGPU.frameCount-a,scroll:outlet.scrollTop,intervals:frames.slice(1).map((v,i)=>v-frames[i])};})()`);
