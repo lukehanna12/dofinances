@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
 import {CLOCK_TEXT_PROFILE as p,clockTextMaterialLanes,encodeClockDistance,decodeClockDistance,floatToHalf,clockTextField,registerGlassText} from "../sites/_apex/assets/home-dashboard/dashboard-glass-text.js";
 import {validateGlassMaterial} from "../sites/_apex/assets/home-dashboard/dashboard-glass-material.js";
 test("clock profile carries finite native scalar and matrix witness",()=>{
@@ -27,4 +28,14 @@ test("registration is independent of route and text content",()=>{
  const node={dataset:{},textContent:"Å字 مرحبا 🧪"};
  assert.equal(registerGlassText(node),node);
  assert.deepEqual(node.dataset,{glassText:"clock-text",glassMaterial:"clock-text"});
+});
+
+test("clock glyphs use the coordinate space of their draw target, not their material tag",()=>{
+ const shader=readFileSync(new URL("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+ const renderer=readFileSync(new URL("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js",import.meta.url),"utf8");
+ assert.match(shader,/let routePane=authPane && state\.fit\.w>0\.0;/);
+ assert.match(shader,/if\(routePane\)\{\s*backdropExtent\.y=max\(1\.0,state\.fit\.w\);\s*backdropPosition\.y-=state\.pointer\.w;/);
+ assert.match(renderer,/uniform\[7\]=0;/);
+ assert.match(renderer,/authUniform\[7\]=physicalHeight;/);
+ assert.match(renderer,/pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
 });

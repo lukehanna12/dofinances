@@ -738,8 +738,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Keep the squares, their optical coefficients and the shared face/tint
   // entirely unchanged. The home capsules still use their own Clear
   // shape profile, but MUST use viewport-space backdrop sampling.
-  let homeCapsule=tile.properties.y == -9.0;
-  let routePane=authPane && !homeCapsule;
+  // Material identity does not determine the coordinate space. The
+  // Home clock wordmark shares tag -8 with the Projects title; both
+  // Home and reference underlays must use their actual viewport extent.
+  // Only scrolling route globals supply a nonzero fit.w.
+  let routePane=authPane && state.fit.w>0.0;
   var backdropExtent=state.viewport.xy;
   var backdropPosition=in.position.xy;
   if(routePane){
