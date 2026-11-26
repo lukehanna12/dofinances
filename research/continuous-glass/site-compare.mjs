@@ -61,7 +61,7 @@ export async function run(){
    const resultsForMode=[];
    for(let mode=0;mode<2;mode++){
     if(mode)device.queue.writeBuffer(buffers[5],0,cachedIcons);
-    const pipeline=pipelines[mode],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries,{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
+    const pipeline=pipelines[mode],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
     await draw();const ms=[];for(let n=0;n<3;n++)ms.push(await draw());
     await draw(true);await read.mapAsync(GPUMapMode.READ);

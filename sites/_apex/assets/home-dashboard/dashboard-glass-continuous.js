@@ -66,8 +66,14 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let baseUV=nativeHalf2(backdropPosition/backdropExtent);","let baseUV=backdropPosition/backdropExtent;");
  s=once(s,"let innerUV=nativeHalf2(baseUV+nativeHalf2(\n    field.yz*inner*displacementFactor/backdropExtent));","let innerUV=baseUV+field.yz*inner*displacementFactor/backdropExtent;");
  s=once(s,"let outerUV=nativeHalf2(baseUV+nativeHalf2(\n    field.yz*outer*displacementFactor/backdropExtent));","let outerUV=baseUV+field.yz*outer*displacementFactor/backdropExtent;");
- s=once(s,"let signed=(mask.g-0.5)*256.0*scale;","var signed=(mask.g-0.5)*256.0*scale;");
- s=once(s,"let normal=grad/max(length(grad),0.00001);","var normal=grad/max(length(grad),0.00001);\n  if(icon.coverageMeta.w!=0.0){let f=continuousIconField(icon,local);signed=f.x;normal=f.yz;}");
+ const iconStart=s.indexOf("  let uv=iconUV*(512.0/544.0)"),iconEnd=s.indexOf("  let d=min(icon.rect.z,icon.rect.w);",iconStart);
+ if(iconStart<0||iconEnd<iconStart)throw Error("Missing legacy icon optical block");
+ s=s.slice(0,iconStart)+`  let iconCoverage=finalSilhouetteCoverage(icon,local,0.0);
+  if(icon.coverageMeta.w==0.0||iconCoverage<=0.001){return shaded;}
+  let vectorField=continuousIconField(icon,local);
+  let signed=vectorField.x;
+  let normal=vectorField.yz;
+`+s.slice(iconEnd);
  s=once(s,"let sampleUV=nativeHalf2(parentInnerUV+nativeHalf2(displacement/backdropExtent));","let sampleUV=parentInnerUV+displacement/backdropExtent;");
  // Cancellation-stable real extension; same amount/height parameters.
  const envelope="fn continuousEnvelope(d:f32,amount:f32,invHeight:f32)->f32{let t=clamp(-d*invHeight,0.0,1.0);let q=1.0-t;return amount*q*q/(1.0+sqrt(t*(2.0-t)));}\n";
