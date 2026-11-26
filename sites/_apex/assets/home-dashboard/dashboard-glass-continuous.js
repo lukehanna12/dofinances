@@ -30,7 +30,9 @@ export async function loadContinuousGlass(device,base){
   index.set(name,i+1);
  });
  const titleSlot=rows.length, titleReserve=4096;
- const titleMode=new URLSearchParams(location.search).get("glass-title-vector");
+ // Preserve the authored font and make the validated browser-local outline
+ // the default title geometry whenever the continuous candidate is selected.
+ const titleMode=new URLSearchParams(location.search).get("glass-title-vector")??"local-reuse";
  const titleAsset=(titleMode==="local"||titleMode==="local-reuse")?{schema:"dofinances-local-projects-word-v1",reuse:titleMode==="local-reuse"}:titleMode==="1"||titleMode==="portable"?await fetch(base+(titleMode==="portable"?"continuous-portable-word.json":"continuous-title-outline.json")).then(r=>r.ok?r.json():null):null;
  function rasterTitle(text,style,width,height,dpr){if(titleMode!=="portable"||!titleAsset)return null;const r=portableTitleAlpha(titleAsset,text,style,width,height,dpr);if(!r||!r.filled)return null;return {pixels:clockTextField(r.alpha,width,height,dpr),filled:r.filled};}
  const data=Float32Array.from(rows.flat());
