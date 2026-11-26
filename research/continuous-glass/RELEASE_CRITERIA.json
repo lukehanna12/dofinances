@@ -8,37 +8,37 @@
     {
       "id": "site-vector-geometry",
       "status": "open",
-      "reason": "Sixteen optical icon fields integrated, fixed RG8 distance atlas disabled. Projects heading glyph optical field remains raster-derived. Integrated high-scale comparison awaits usable result.",
+      "reason": "All 16 icon vector fields pass 480 independent magnification controls; Projects title 199 curves verified with reference-local opt-in only. Portable font outline delivery remains open.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-coordinate-separation",
       "status": "open",
-      "reason": "Real geometry, refraction and normalized UVs, reference DPR2 optical lengths, viewport source LOD adjustment. Cache/direct exact output in two attachments; full independent magnification and density checks not yet passed.",
+      "reason": "Finite aligned interior six-shape density comparisons pass; fixed logical base source region unchanged across four DPRs. AA edges and fully composed title/icon density, real screen events remain open.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-optical-reconstruction",
       "status": "open",
-      "reason": "Existing source mipbox chain and haze retained; continuous UV interpolation with reference-density LOD. No completed cross-density comparative source test.",
+      "reason": "Base and Home hover optical attachments use fixed logical reference lattice, actual GPU hover/press at DPR1/3 passed. Route layers can still use actual source spacing; mipbox/haze retained, full reconstruction comparison open.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-material-interaction-preservation",
       "status": "open",
-      "reason": "Original face/tint/material/spring stages retained; Home and Projects local browser smoke/scroll/resize pass. Real sign-in and interactive transitions not fully validated.",
+      "reason": "Real packaged login, Home hover and press, Projects scrolling/resizing pass on reference browser. Full transition/dropdown/animation and nonreference validation incomplete.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-comparative-fidelity",
       "status": "open",
-      "reason": "All 16 tested icons, finite output, DPR2 mean RGB abs diff .001061 but max .331909. DPR1 mean .010704 after intentional reference-DPR normalization. Held-out high-scale comparison incomplete; no ordinary-appearance approval.",
+      "reason": "Independent icon geometry accuracy vastly improved, six shape Retina interior max RGB diff .0048828125; ordinary icon attachment max .331909 at DPR2 persists. No full appearance approval.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "production-performance-and-regressions",
       "status": "open",
-      "reason": "686 tests pass, isolated cached draws comparable to baseline. Full cache build 31.4–35.8ms; local 12-step scroll 460ms candidate vs 401.4ms baseline. Full performance, production build and route checks not passed.",
+      "reason": "686 tests pass, actual production build and packaged login pass; candidate scroll 402.8–542.6ms and earlier baseline 401.4–622.7ms variable; latest DPR2 cached draw samples 1.3–3.8ms vs baseline 1.1–1.3ms, rebuild 36.5ms. No robust performance approval.",
       "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     }
   ],
@@ -100,8 +100,8 @@
     "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
   },
   "latestSiteValidation": {
-    "commit": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+    "commit": "8066f9108697d67edac8beb4a85c7bf4425c88da",
     "path": "research/continuous-glass/SITE_VALIDATION.json",
-    "scope": "Finite candidate tests and open blockers; all six site gates remain open."
+    "scope": "Finite geometry/density and reference browser checks; all six complete release gates remain open."
   }
 }

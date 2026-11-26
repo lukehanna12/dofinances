@@ -2,7 +2,7 @@
   "schema": "dofinances-site-integration-validation-v1",
   "scope": "Public renderer candidate only; no production deploy or native proof closure.",
   "baseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
-  "testedCandidate": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+  "testedCandidate": "8066f9108697d67edac8beb4a85c7bf4425c88da",
   "device": {
     "chip": "Apple M2",
     "gpu": "Apple Metal 3",
@@ -117,10 +117,250 @@
     "reason": "Preserve the tested Retina baseline's authored physical-pixel optical lengths and scale them relative to the source lattice. Intentionally changes old DPR1 optics. Further cross-density and held-out geometry validation required."
   },
   "unresolved": [
-    "Projects heading still uses actual-output-density raster glyph optical field, not vector distance.",
-    "Source mipbox chain and display-only haze preserved. No complete density-independent reconstruction of arbitrary composed source.",
-    "Integrated vector field high-scale comparison harness written; two remote runs returned consumed receipts without results.",
-    "Localized RGB differences, especially normals; independent full appearance approval not established.",
-    "Scroll timings and cache rebuild latency, real sign-in and interactive route/press validation, full production build and deployment checks remain open."
-  ]
+    "Projects title vector optics verified on reference Mac only with locally generated word-specific outline; portable lawful delivery and equivalent other-font behavior remain unresolved.",
+    "Display-only haze and sampled final coverage preserved. Fixed base and Home underlay now independent of output density, but simultaneous route/dynamic Projects underlays still use actual source spacing; original mipbox kernel retained.",
+    "Finite site geometry and interior density tests pass; AA boundaries, icon/title final optical appearance, ordinary size localized RGB outliers and held-out artwork comparisons remain open.",
+    "Actual login build and mouse interaction pass; exhaustive route dropdown, scroll, animation and non-reference browser/display checks incomplete.",
+    "Full cache rebuild latency and variable isolated/candidate browser times require further optimization and paired performance validation. No deployment authorized by gate."
+  ],
+  "previousTestedCandidate": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+  "latest": {
+    "date": "2026-11-25",
+    "tests": {
+      "commit": "130e213f330e3dfb8b8d7a444df53f6c84aa32e6",
+      "passed": 686,
+      "failed": 0,
+      "trace": "42e5758a-a4b2-4b3d-942d-43077dd75e51",
+      "note": "Two static assertions updated for explicit source lattice and lazy dimension-aware allocation; no original behavioral tests removed."
+    },
+    "iconMagnification": {
+      "commit": "89b0e85a1396cd199811ebdfe3c9a35cfc80602b",
+      "trace": "d93f8ba9-551d-4c97-9389-217cbc933437",
+      "scope": "96 authored packed control points at each scale, independent Float64 nearest-curve and parity solver; not native or final optical pixels.",
+      "signDisagreements": 0,
+      "scales": [
+        1,
+        2,
+        16,
+        64,
+        1024
+      ],
+      "legacyMaxIn24UnitSpace": 0.82348256,
+      "candidateMaxIn24UnitSpace": [
+        0.000427927,
+        0.000427927,
+        0.000153294,
+        0.0000784309,
+        0.0000264931
+      ],
+      "legacyMeanAtOne": 0.02052602,
+      "candidateMeanAtOne": 0.00001605849
+    },
+    "densityOutput": {
+      "commit": "0931025889db5794743555ea5d1cd0907b4bfdd2",
+      "trace": "34d1abbb-c5c2-4e3c-8208-d5e275a3e77b",
+      "source": [
+        380,
+        300
+      ],
+      "cases": 6,
+      "oneToThree": {
+        "channels": 42147,
+        "p99": 0,
+        "max": 0.00048828125,
+        "mean": 1.0716306172444065e-7
+      },
+      "twoToSix": {
+        "channels": 171423,
+        "p99": 0,
+        "max": 0.00048828125,
+        "mean": 9.114879566919259e-8
+      },
+      "retinaBaseline": {
+        "channels": 171423,
+        "p99": 0.0018310546875,
+        "max": 0.0048828125,
+        "mean": 0.00035617691490175254
+      },
+      "normalTwoToSix": {
+        "channels": 171423,
+        "max": 0.00048828125
+      },
+      "acceptance": {
+        "max": 0.02,
+        "p99": 0.003,
+        "passed": true
+      },
+      "scope": "Interior aligned samples only, not AA edge or icon/title composited appearance. Stable edge offsets eliminate mode5 cancellation; native half corner selection preserved for normals."
+    },
+    "fixedBase": {
+      "trace": "e56c23f9-a768-42e1-adbe-24368e265109",
+      "commit": "170206ec59c311b4c1c48d4c39c133a0bb0d47df",
+      "source": [
+        2800,
+        1672
+      ],
+      "dpr": [
+        2,
+        1,
+        1.5,
+        3,
+        2
+      ],
+      "outputs": [
+        [
+          2800,
+          1672
+        ],
+        [
+          1400,
+          836
+        ],
+        [
+          2100,
+          1254
+        ],
+        [
+          4200,
+          2508
+        ],
+        [
+          2800,
+          1672
+        ]
+      ],
+      "sceneBuilds": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "regionSHA256": "b4d481e121306dfd97ea19fd00c756049181095651c3cb3b94c95fb909ce3937",
+      "scope": "One owned internal texture region, no displayed pixels. Explicit reflow required for CDP DPR changes. Real screen-change event not proven."
+    },
+    "title": {
+      "trace": "6bf8ed86-e0f1-40f1-8145-864e33d74d10",
+      "commit": "130e213f330e3dfb8b8d7a444df53f6c84aa32e6",
+      "reference": "Mac system SF, Projects word only, 550 weight",
+      "curves": 199,
+      "geometryHeldoutSizes": 7,
+      "normalizedCoordinates": 8134,
+      "coordinateDifferences": 0,
+      "coverageRelativeAlphaDifference": [
+        0.04655,
+        0.06048
+      ],
+      "finalCoverage": "Original browser alpha, not outline rasterization",
+      "localOptIn": true,
+      "assetDistributed": false,
+      "scope": "Reference machine only. Browser metrics determine placement. Outline generated locally; no font or outline asset in repo. Other platform and delivery unresolved."
+    },
+    "browser": {
+      "trace": "6bf8ed86-e0f1-40f1-8145-864e33d74d10",
+      "home": "ready",
+      "projects": "ready",
+      "resized": "ready",
+      "scrollMs": 542.6,
+      "frames": 16,
+      "errors": 0,
+      "exceptions": 0,
+      "earlierCandidateMs": 402.8,
+      "scope": "Fixture artwork, reduced motion; scroll timing variable, no performance pass."
+    },
+    "homeUnderlay": {
+      "commit": "059335514f5c11da887e2430c9645a4cd686445f",
+      "trace": "e71bb2b3-c539-4741-8d8a-ff04a8d969b1",
+      "densities": [
+        1,
+        3
+      ],
+      "outputs": [
+        [
+          1400,
+          836
+        ],
+        [
+          4200,
+          2508
+        ]
+      ],
+      "source": [
+        2800,
+        1672
+      ],
+      "underlay": [
+        2800,
+        1672
+      ],
+      "hover": [
+        1,
+        1
+      ],
+      "press": [
+        1,
+        1
+      ],
+      "errors": 0,
+      "exceptions": 0,
+      "scope": "Real mouse events; fixed Home underlay except simultaneous route layers, which use actual output spacing."
+    },
+    "build": {
+      "trace": "4d3b3fef-7e5c-4648-99f6-9e46f99e9391",
+      "command": "npm install --no-audit --no-fund --cache ../npm-cache; npm run build; node scripts/package-public-login-route.mjs",
+      "passed": true,
+      "warnings": "npm blocked optional install scripts; bundler warns on motion use client directives."
+    },
+    "realLogin": {
+      "commit": "8066f9108697d67edac8beb4a85c7bf4425c88da",
+      "trace": "262057c8-d43d-426e-a62f-fe11d6dbc05c",
+      "webgpu": true,
+      "panes": 7,
+      "hover": 1,
+      "press": 1,
+      "returnedHome": true,
+      "errors": 0,
+      "exceptions": 0,
+      "scope": "Packaged actual React login, no account credentials or submission."
+    },
+    "iconAttachment": {
+      "commit": "8066f9108697d67edac8beb4a85c7bf4425c88da",
+      "trace": "cdc594d3-db93-4b52-bda9-370e1dd4a531",
+      "dpr1": {
+        "meanRGB": 0.010703724956191662,
+        "p99": 0.0736083984375,
+        "max": 0.34814453125,
+        "cacheBuildMs": 30.5,
+        "baselineMs": [
+          0.7,
+          0.7,
+          0.6
+        ],
+        "candidateMs": [
+          0.6,
+          0.6,
+          0.9
+        ]
+      },
+      "dpr2": {
+        "meanRGB": 0.0010604624220609872,
+        "p99": 0.018798828125,
+        "max": 0.3319091796875,
+        "cacheBuildMs": 36.5,
+        "baselineMs": [
+          1.3,
+          1.2,
+          1.1
+        ],
+        "candidateMs": [
+          3.8,
+          3,
+          1.3
+        ]
+      },
+      "cacheByteDifferences": 0,
+      "nonfinite": 0,
+      "scope": "Local ordinary-size icon appearance outliers persist; timings insufficient for approval."
+    }
+  }
 }
