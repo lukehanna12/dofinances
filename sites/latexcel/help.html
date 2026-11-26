@@ -1,4 +1,17 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LaTeXceL | Reference</title><link rel="stylesheet" href="pane.css"></head><body><main class="shell"><header class="brand"><div class="mark">∑</div><div><p class="eyebrow">DOFINANCES</p><h1>LaTeXceL</h1><p class="subtitle">Function reference</p></div></header><section class="panel"><h2>Start here</h2><p>Open <a href="index.html">Equation Studio preview</a>. Excel functions use LATEXCEL.NAME; Google Sheets functions use LATEXCEL_NAME. The functions return LaTeX strings and do not calculate the numerical expression. Use the pane to render SVG or PNG. Explicit external image formulas send expressions to CodeCogs.</p><p>Excel: <a href="manifest.xml" download>download the add-in manifest</a>, then sideload it in a supported Excel installation. Google Sheets: install the Editor add-on from its Apps Script project or use the packaged development files.</p></section><section class="panel"><h2>Typography</h2><h3>RM</h3><p>Roman math font</p><pre class="code">=LATEXCEL.RM(&quot;WT&quot;)
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LaTeXceL | Reference</title><link rel="stylesheet" href="pane.css"></head><body><main class="shell"><header class="brand"><div class="mark" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <rect x="1" y="1" width="30" height="30" rx="5" fill="#F5F3E9"/>
+  <g transform="translate(4 4)" fill="none" stroke="#174B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 22H6a2 2 0 0 1-2-2v-6"/>
+    <path d="M14 12.25 L16 12.25"/>
+    <path d="M14 17h2l2 5 2-10h2.5"/>
+    <path d="M2 9h4"/>
+    <path d="M20 8v1"/>
+    <path d="M4 4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8h-5a1 1 0 0 1-1-1V2"/>
+    <path d="M4 7v4"/>
+    <path d="M8 12.25 L10 12.25"/>
+    <path d="M8 17h2"/>
+  </g>
+</svg></div><div><p class="eyebrow">DOFINANCES</p><h1>LaTeXceL</h1><p class="subtitle">Function reference</p></div></header><section class="panel"><h2>Start here</h2><p>Open <a href="index.html">Equation Studio preview</a>. Excel functions use LATEXCEL.NAME; Google Sheets functions use LATEXCEL_NAME. The functions return LaTeX strings and do not calculate the numerical expression. Use the pane to render SVG or PNG. Explicit external image formulas send expressions to CodeCogs.</p><p>Excel: <a href="manifest.xml" download>download the add-in manifest</a>, then sideload it in a supported Excel installation. Google Sheets: install the Editor add-on from its Apps Script project or use the packaged development files.</p></section><section class="panel"><h2>Typography</h2><h3>RM</h3><p>Roman math font</p><pre class="code">=LATEXCEL.RM(&quot;WT&quot;)
 =LATEXCEL_RM(&quot;WT&quot;)
 \mathrm{WT}</pre><h3>FONT</h3><p>Choose a math font: rm, it, bf, bb, cal, sf, tt, frak</p><pre class="code">=LATEXCEL.FONT(&quot;R&quot;,&quot;bb&quot;)
 =LATEXCEL_FONT(&quot;R&quot;,&quot;bb&quot;)

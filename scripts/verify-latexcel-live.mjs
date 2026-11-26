@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 const release = JSON.parse(readFileSync(new URL('../docs/latexcel-deployment.json', import.meta.url), 'utf8'));
 const origin = 'https://latexcel.dofinances.com';
+const logo = readFileSync(new URL('../sites/latexcel/logo.svg', import.meta.url),'utf8').trim();
 async function get(url, verify) {
   let failure;
   for(let attempt=0; attempt<4; attempt++) {
@@ -16,9 +17,10 @@ for(const [file,digest] of Object.entries(release.files)) {
     if(file.endsWith('.html')) {
       const html=bytes.toString('utf8').replace('<link rel="icon" type="image/svg+xml" href="/favicon.svg">','');
       assert.ok(html.includes('LaTeXceL'),file);
+      assert.ok(html.includes(logo),file+' canonical logo');
       if(file!=='help.html') assert.ok(html.includes(release.mathjax.integrity),file);
       assert.match(r.headers.get('content-type')||'',/text\/html/);
-    } else { assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,file); }
+    } else { assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,file); if(file.endsWith('.png')) assert.match(r.headers.get('content-type')||'',/^image\/png/); }
   });
   console.log('Verified '+file);
 }

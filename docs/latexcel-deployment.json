@@ -1,7 +1,7 @@
 {
   "version": "1.0.0-rc.1",
-  "sourceCommit": "0993a833c1e92f1075dddcd8278466a65c291265",
-  "distributionCommit": "89c0a182eb5f59390714b6951b71c841c172a342",
+  "sourceCommit": "9960d94aa232de85fd8a3fe607873cefa9b0ab31",
+  "distributionCommit": "325dbee0d4eeb4183f732cb28cb1bbba78f40e72",
   "mathjax": {
     "version": "3.2.2",
     "integrity": "sha384-KKWa9jJ1MZvssLeOoXG6FiOAZfAgmzsIIfw8BXwI9+kYm0lPCbC6yTQPBC00F1/L"
@@ -13,16 +13,25 @@
     "excel-host.js": "367ad63df27902da58b7e413408d6e3657dba4ac2784df67641268f5545517c4",
     "functions.js": "89e12e4034ac58ea1e1cd930088c72893c7018024b97e492fcddd38a88fb968e",
     "functions.json": "ccdc144f6ffa530673eda7931c5c87a1d2faff1440b68d45df62ebed79065cac",
-    "help.html": "bf5968152d62b4a0f41fdb25be58964585e368b56db661de09ebb4c40415c4e7",
-    "icon-16.png": "b7ca4e4fc061a69daacab09db7751e788b31e79afcb5b14d62dae8410f5b6215",
-    "icon-32.png": "572fa3d574b5497635dc23c90bd708d4ae330e8c10c7ea2eefe5ccb6f414a9d0",
-    "icon-80.png": "1f9db9294078758541a128df702529e4df891d57c760830d3a366b770deed65e",
-    "index.html": "bb98ed6753079cdb7e7fd44fceebd840ff88e1cb8facfc6db845c7b658e055dd",
-    "manifest.xml": "d24c1f6ebda119745b74d15def730fb3d442154b88963bf463220e29553393d3",
+    "help.html": "20706796ffdc7535f2cbfae5d1cadb7e2aab8622186167878a43b4afce3a9f98",
+    "icon-120.png": "6280da875caccb576e4bc8d306d05ce52c9f4737f096f323f89f8b867f6a5477",
+    "icon-128.png": "83ddcd0037eadf82bfdd98dccb78148b1c36753dfb755d847903018b89a406bb",
+    "icon-16.png": "b5b9618ffc60b1c409a065d4364d21a9bba6f319201e37fae5b2889da966aa45",
+    "icon-20.png": "cc1a39bc4e1410466fd1690e3ec79282150aebce4bdde2add05233154752b496",
+    "icon-24.png": "00b1483b939fadf5ecd2828c7b05a81810a9203a933941bd9d1e405a39f82548",
+    "icon-32.png": "107c6c49bed07f2fb8bb01f4ac22084c025efa2cad7c32ddd11d6d07fb84ea8f",
+    "icon-40.png": "1d90be28081ff03b134fbb130a9a6b3863aea6f530ddfa8126792e3d2158f306",
+    "icon-48.png": "7da8ba554a2b5b24a86e90f40b18686930abe7a3100cee2974e7c58158c24d7a",
+    "icon-64.png": "0818ef64cdcdc047b2cd3745c9a0eb3a47ea80487a10e486aa1bbcc6a6cb31f0",
+    "icon-80.png": "7d65e2b8f179c424e6162cee35128b9721e2279941d41c1b93d3aec2081812e5",
+    "icon-96.png": "2fadd7ec9a2a55367eb97fd2015a40b8aba3c08fe607582dcf0c1263f953a848",
+    "index.html": "b8d9c9062155a4ceb6913d86e929794d9b075a9ec4db92b066a77118ba40c10a",
+    "logo.svg": "de3e836d8ec21a9b349f9d6de6c5dafbb062cd2befb22aa219343b131eff89df",
+    "manifest.xml": "3aba715dd88bf260e90aca9ea48a5f8c71b20cf85ee5a8ec56a6d32ac43fa1ec",
     "math-config.js": "92249047669193b787af8b011c90ddb7b3f0a2a7ed4bfa1beb0157bb2f0f4a48",
-    "pane.css": "b13180b9f36b45c8d492d39aa6ce6d7c19633238522afda2c7a137c9099b38bf",
+    "pane.css": "92f3a2abd79160f6a948ffdd5af1ee441aa12dc2027abad7099a94dadb65c872",
     "pane.js": "b360e31c7d22d7c029d91ce756bda6f253f5d160f331f5a5ab513d6bc61bef00",
     "renderer.js": "1162c23d67bf880a50b17507864c707afc3ce9f7ab39f65b804e6bce411d3135",
-    "taskpane.html": "fc6a134dbe801313c7846febddd8d526eacb2de5067f8b29863920aa54370360"
+    "taskpane.html": "ef948aca767d21b25b73555db61a81685bea43c0af5d94e3773e48dd8e5e343f"
   }
 }
