@@ -810,7 +810,7 @@ try{
     "count:cards.length,icons:cards.filter(c=>!!c.querySelector('.project-showcase-lucide')).length,"+
     "back:!!root.querySelector('[data-public-project-glass=back]'),"+
     "glass:cards.every(c=>c.dataset.publicProjectGlass==='card'),"+
-    "allButtons:cards.every(c=>c.tagName==='BUTTON'&&!c.hasAttribute('href')),"+
+    "allButtons:cards.every(c=>c.tagName==='ARTICLE'&&c.querySelector(':scope > button.project-showcase-trigger')?.type==='button'&&c.querySelector('a.project-showcase-action')?.tagName==='A'&&!c.querySelector('a.project-showcase-action').closest('button')),"+
     "firstImageLazy:!first.querySelector('.project-showcase-photo').hasAttribute('src'),"+
     "backTop:root.querySelector('.public-projects-back').getBoundingClientRect().top,"+
     "backBottom:root.querySelector('.public-projects-back').getBoundingClientRect().bottom,"+
