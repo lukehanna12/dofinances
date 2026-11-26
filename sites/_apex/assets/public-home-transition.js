@@ -32,28 +32,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=()=>location.pathname.replace(/\/+$/,"")||"/";
 let current=null,busy=false,fromHome=false,state="home",revision=0,pendingNavigate=false;
 let activeRoute=null,reopenPath=null;
-function positionCompactLogo(){
-  const logo=document.getElementById("dashboard-title");
-  if(!logo)return;
-  const previous=body.dataset.publicRoute;
-  const direct=body.dataset.directLogin==="true";
-  if(previous==="leaving")delete body.dataset.publicRoute;
-  if(direct)delete body.dataset.directLogin;
-  const rect=logo.getBoundingClientRect();
-  const parent=logo.closest(".cta6-center");
-  const parentTransform=parent?getComputedStyle(parent).transform:"none";
-  const introDy=parentTransform==="none"?0:new DOMMatrixReadOnly(parentTransform).m42;
-  const navBottom=document.getElementById("global-menu")?.getBoundingClientRect().bottom??44;
-  // Measure against the intro animation's resting geometry so the compact
-  // target remains exact even if clicked while the 16px entrance is active.
-  logo.style.setProperty("--doof-exit-y",
-    (navBottom+46-(rect.top+rect.height/2-introDy))+"px");
-  if(previous)body.dataset.publicRoute=previous;
-  if(direct)body.dataset.directLogin="true";
-  body.dataset.publicReady="true";
-}
-function activateCompact({immediate=false}={}){
-  positionCompactLogo();
+function dismissHome({immediate=false}={}){
   body.dataset.publicRoute="leaving";
   dispatchEvent(new CustomEvent("dofinances:home-dismiss",{
     detail:{durationMs:immediate||reduced.matches?0:DISMISS_MS}
@@ -114,7 +93,7 @@ async function openRoute(path,{push=false,direct=false}={}){
   if(!registry.has(path)||busy||current)return;
   busy=true;state="entering";
   const token=++revision;
-  activateCompact({immediate:direct});
+  dismissHome({immediate:direct});
   const loaded=loadModule(path);
   const settle=delay(direct||reduced.matches?0:DISMISS_MS+45);
   try{
@@ -158,10 +137,6 @@ function closeRoute({navigate=false}={}){
 function finishClose(){
   if(!current||state!=="exiting")return;
   current.unmount();
-  // After Projects restores the original h1 to its homepage parent, refresh
-  // the compact departure offset for the CURRENT viewport. That lets Home's
-  // returning transition start at the same 90px anchor even after a resize.
-  if(activeRoute==="/projects")positionCompactLogo();
   current=null;activeRoute=null;
   routeMount.replaceChildren();outlet.hidden=true;
   state="home";document.title="DoFinances";
@@ -214,14 +189,6 @@ addEventListener("pageshow",event=>{
   const path=routePath();
   if(event.persisted&&registry.has(path)&&!current&&!busy)
     void openRoute(path,{direct:true});
-});
-addEventListener("resize",()=>{
-  // The Projects logo is CSS-pinned to the 44px navigation bar after mount.
-  // In particular, never measure an interpolating transform and rewrite
-  // --doof-exit-y during either horizontal or vertical Projects resizes.
-  // Sign-in and an unfinished homepage dismissal retain their old behavior.
-  if(body.dataset.publicRoute==="leaving"&&
-     !outlet.querySelector(".public-projects-root"))positionCompactLogo();
 });
 Object.defineProperty(window,"__dofPublicRouter",{
   get:()=>Object.freeze({state,route:routePath(),persistentShell:true,

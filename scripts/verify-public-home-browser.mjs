@@ -487,36 +487,25 @@ try{
  await evaluate('document.querySelector("#global-menu-links [data-public-target=\\\"/projects\\\"]").click()');
  let projectsReady=false;
  for(let i=0;i<90;i++){
-  if(await evaluate('location.pathname==="/projects" && !!document.querySelector(".public-projects-root") && document.getElementById("dashboard-title").parentElement===document.body')){
+  if(await evaluate('location.pathname==="/projects" && !!document.querySelector(".public-projects-root") && !!document.querySelector(".cta6-center > #dashboard-title")')){
    projectsReady=true;break;
   }
   await sleep(50);
  }
- assert.ok(projectsReady,"Public Projects must mount the original DoFinances wordmark in the viewport layer");
+ assert.ok(projectsReady,"Public Projects preserves the original Home wordmark");
  const typography=await evaluate('(()=>{const fields=e=>{const s=getComputedStyle(e),size=parseFloat(s.fontSize);return [s.fontFamily,s.fontWeight,parseFloat(s.lineHeight)/size,parseFloat(s.letterSpacing)/size]};return {logo:fields(document.querySelector("#dashboard-title")),projects:fields(document.querySelector(".public-projects-title"))}})()');
  assert.deepEqual(typography.logo.slice(0,2),typography.projects.slice(0,2));
  for(let i=2;i<4;i++)assert.ok(Math.abs(typography.logo[i]-typography.projects[i])<.001,"Wordmark and Projects typography must match");
- const projectLogo=()=>evaluate('(()=>{const e=document.getElementById("dashboard-title");const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,position:getComputedStyle(e).position,pinned:document.body.dataset.projectsLogoPinned,hidden:document.body.hasAttribute("data-projects-logo-hidden")};})()');
  for(const [width,height] of [[1440,900],[1440,480],[1440,1120],[900,1120],[1600,580],[640,760]]){
-  await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
-  await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
-  const rect=await projectLogo();
-  assert.equal(rect.position,"fixed","Projects wordmark must be viewport-fixed");
-  assert.equal(rect.pinned,"true");
-  near(rect.y,90,"Projects doof fixed 90px from viewport top",width);
-  near(rect.x,width/2,"Projects doof centered across viewport widths",width);
-  assert.equal(rect.hidden,false,"Resizing without scrolling must not hide doof");
- }
- const projectsScroll=await evaluate('(()=>{const s=document.getElementById("public-route-content");s.scrollTop=300;return s.scrollTop;})()');
- assert.ok(projectsScroll>0,"Projects grid must scroll when viewport is short");
- let logoFaded=false;
- for(let i=0;i<40;i++){
-  if(await evaluate('document.body.hasAttribute("data-projects-logo-hidden")')){logoFaded=true;break;}
-  await sleep(25);
- }
- assert.ok(logoFaded,"Native Projects scroll must still fade doof near search");
- await evaluate('document.querySelector(".public-projects-back").click()');
- let returnedHome=false;
+   await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
+   await evaluate("new Promise(ok=>requestAnimationFrame(()=>requestAnimationFrame(ok)))");
+   assert.equal(await evaluate('getComputedStyle(document.getElementById("dashboard-title")).visibility'),"hidden");
+  }
+  const projectsScroll=await evaluate('(()=>{const s=document.getElementById("public-route-content");s.scrollTop=300;return s.scrollTop;})()');
+  assert.ok(projectsScroll>0,"Projects grid must scroll when viewport is short");
+  assert.equal(await evaluate('getComputedStyle(document.getElementById("dashboard-title")).visibility'),"hidden");
+  await evaluate('document.querySelector(".public-projects-back").click()');
+  let returnedHome=false;
  for(let i=0;i<90;i++){
   if(await evaluate('location.pathname==="/" && !document.body.hasAttribute("data-projects-logo-pinned") && document.querySelector(".cta6-center > #dashboard-title")')){
    returnedHome=true;break;

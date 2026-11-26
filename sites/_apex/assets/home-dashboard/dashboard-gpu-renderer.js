@@ -149,9 +149,8 @@ function authPaneElements(){
     if(texts.length||dropdowns.length)return [...texts,...dropdowns].slice(0,AUTH_PANE_CAPACITY);
     const ctas=[...document.querySelectorAll(HOME_CTA_SELECTOR)].slice(0,3);
     const brand=document.querySelector(".cta6-center > #dashboard-title[data-glass-text]");
-    // Only the unscaled Home wordmark owns the glyph field here. The
-    // persistent compact wordmark keeps its DOM fallback on other routes.
-    if(brand&&homeActive()&&routeOutlet?.hidden&&!document.body.dataset.publicRoute)ctas.push(brand);
+    // Preserve the Home glyphs through dismissal and its reverse.
+    if(brand&&homeActive()&&routeOutlet?.hidden&&!document.body.dataset.directLogin)ctas.push(brand);
     return ctas;
   }
   const all=[...new Set([...projects.querySelectorAll("[data-public-project-glass]"),...texts,...dropdowns])];
@@ -1327,6 +1326,13 @@ async function initialize(){
           Number.parseFloat(getComputedStyle(node).opacity)||0)):opacity;
       const homeBrand=homeCtas&&node.id==="dashboard-title";
       tileData[p+18]=paneOpacity*(homeBrand?Math.max(0,Math.min(1,Number.parseFloat(getComputedStyle(node.parentElement).opacity)||0)):1);tileData[p+19]=0;
+      if(homeBrand){
+        const elapsed=audit.track?.dismissElapsed??-1;
+        const progress=elapsed<0?0:tileDismissProgress(elapsed,0,5);
+        const drift=tileDismissDrift(progress,0,5,tileData[p],tileData[p+2],physicalWidth,dpr);
+        tileData[p]+=drift.x*dpr;tileData[p+1]+=drift.y*dpr;
+        tileData[p+19]=progress;
+      }
       const projectRole=node.dataset.publicProjectGlass;
       if(projects&&projectDismissElapsed>=0&&
          PROJECT_HEADER_DISMISS_ROLES.has(projectRole)){
@@ -1429,6 +1435,7 @@ async function initialize(){
         materialTag:-9,face:"shared-per-surface-Clear",count:panes.filter(node=>node.hasAttribute("data-home-cta-glass")).length,roles:roles.slice(0,3),
         brandSlot:panes.findIndex(node=>node.id==="dashboard-title"),
         brandGlyphGlass:glyphMaskOwner?.id==="dashboard-title",
+        brandDismiss:panes.some(node=>node.id==="dashboard-title")?tileData[(tileCount+panes.findIndex(node=>node.id==="dashboard-title"))*TILE_FLOATS+19]:null,
         tintModel:"shared-square-film",tintFilmStrength:0.25,
         pressLightGain:GLASS_INTERACTION.pressLight,
         geometry:"oracle-finite-per-surface-min-dimension",

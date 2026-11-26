@@ -22,9 +22,6 @@ const PROJECT_ENTER_HEADING_DELAY_MS=165;
 const PROJECT_ENTER_FIRST_CARD_DELAY_MS=330;
 const PROJECT_ENTER_STAGGER_MS=65;
 const PROJECT_ENTER_TAIL_MS=60;
-// Keep the logo only until the (possibly unopened) search capsule approaches
-// within 5 CSS pixels below its bottom edge in the scrolled Projects route.
-const PROJECT_LOGO_SEARCH_GAP_PX=5;
 // Keep in sync with the route-owned CSS reverse stagger and final header exit.
 const PROJECT_EXIT_DURATION_MS=420;
 const PROJECT_EXIT_STAGGER_MS=45;
@@ -174,10 +171,6 @@ function mountProjectGallery(host,{onBack,onExitComplete,onProject}){
   root.append(head,grid);
   host.replaceChildren(root);
   mountProjectTitleSizing(root);
-  // The logo remains the original DOM h1, not a duplicated text or image.
-  // Projects pins it to body to escape the home's centered, transformed
-  // mosaic containing block. Unmount puts it back before Home resumes.
-  document.body.dataset.projectsLogoPinned="true";
   // Route-owned changes extend the live WebGPU submission window. The shared
   // renderer reads each pane's actual DOM rect, never a CSS glass substitute.
   let exiting=false,closed=false,timer=null,headerTimer=null,introFinished=false;
@@ -201,34 +194,6 @@ function mountProjectGallery(host,{onBack,onExitComplete,onProject}){
     PROJECT_ENTER_DURATION_MS+15*PROJECT_ENTER_STAGGER_MS+PROJECT_ENTER_TAIL_MS);
   const controls=mountProjectControls({root,headingRow,grid,projects,animateGlass});
   const expansion=mountProjectExpansion({root,grid,animateGlass});
-  const routeScroll=root.closest("#public-route-content");
-  const logo=document.getElementById("dashboard-title");
-  const logoHomeParent=logo?.parentElement??null;
-  if(logoHomeParent)document.body.append(logo);
-  const searchCapsule=headingRow.querySelector(".public-projects-search-field");
-  const logoScrollAbort=new AbortController();
-  let logoHidden=false;
-  const syncLogoWithScroll=()=>{
-    if(closed||exiting||!routeScroll||!logo||!searchCapsule)return;
-    // The search capsule exists even while collapsed, and scaleX does not
-    // change its vertical position. Measure its real rect, not search state
-    // or the input's visibility. Use doof's displayed compact bounds.
-    const searchTop=searchCapsule.getBoundingClientRect().top;
-    const logoBottom=logo.getBoundingClientRect().bottom;
-    const hide=routeScroll.scrollTop>0&&
-      searchTop<=logoBottom+PROJECT_LOGO_SEARCH_GAP_PX;
-    if(hide===logoHidden)return;
-    logoHidden=hide;
-    document.body.toggleAttribute("data-projects-logo-hidden",hide);
-  };
-  // Only native Projects scrolling controls the visibility threshold.
-  // A window-width or window-height resize must not change the doof
-  // opacity, and no viewport-resize handler should reposition the logo.
-  routeScroll?.addEventListener("scroll",syncLogoWithScroll,
-    {passive:true,signal:logoScrollAbort.signal});
-  routeScroll?.addEventListener("project-scroll-presented",syncLogoWithScroll,
-    {signal:logoScrollAbort.signal});
-  syncLogoWithScroll();
   back.addEventListener("click",event=>{
     if(closed||exiting)return;
     if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
@@ -260,11 +225,6 @@ function mountProjectGallery(host,{onBack,onExitComplete,onProject}){
     },
     unmount(){
       if(closed)return;closed=true;
-      logoScrollAbort.abort();
-      if(logoHomeParent&&logo?.parentElement===document.body)
-        logoHomeParent.append(logo);
-      document.body.removeAttribute("data-projects-logo-pinned");
-      document.body.removeAttribute("data-projects-logo-hidden");
       if(timer!==null)clearTimeout(timer);
       if(headerTimer!==null)clearTimeout(headerTimer);
       if(controlTimer!==null)clearTimeout(controlTimer);
@@ -308,8 +268,7 @@ function mountProjectDetail(host,project,{onBack,onExitComplete}){
   root.append(head,hero,details);
   host.replaceChildren(root);
   mountProjectTitleSizing(root);
-  // The detail view starts immediately below global navigation. Unlike the
-  // gallery, it never detaches or displays the compact Doof wordmark.
+  // The detail view starts immediately below global navigation.
   const abort=new AbortController();
   let closed=false,exiting=false,timer=null;
   const settle=setTimeout(()=>root.classList.add("is-settled"),reduced.matches?0:680);

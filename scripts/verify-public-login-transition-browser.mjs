@@ -194,7 +194,7 @@ try{
     "sameBar:document.querySelector('#global-menu')===r.bar,"+
     "themeAbsent:!document.querySelector('#public-theme-toggle'),"+
     "center:(c.left+c.right)/2,viewport:innerWidth/2,"+
-    "logoY:(brand.top+brand.bottom)/2,scale:getComputedStyle(r.logo).transform,"+
+    "logoY:(brand.top+brand.bottom)/2,logoHidden:getComputedStyle(r.logo).visibility==='hidden',"+
     "caption:document.body.textContent.includes('A clearer view of what comes next.'),"+
     "back:document.querySelector('.auth3-back-link')?.getAttribute('href'),"+
     "buttonsTop:document.querySelector('.cta6-bottom-action').getBoundingClientRect().top,"+
@@ -211,10 +211,7 @@ try{
   assert.equal(active.buttonsOpacity,"0");
   assert.ok(Math.abs(active.center-active.viewport)<1,
     "Sign-in card must be horizontally centered; actual "+active.center+" versus "+active.viewport);
-  assert.ok(Math.abs(active.logoY-(home.barBottom+46))<1,
-    "Same doof logo compact Y: "+active.logoY+" expected "+(home.barBottom+46)+
-    "; home Y "+home.homeY+"; computed transform "+active.scale);
-  assert.match(active.scale,/matrix\(0\.6, 0, 0, 0\.6,/);
+  assert.equal(active.logoHidden,true,"No Home wordmark on Sign-in");
   const material=()=> "(()=>{"+
     "const card=document.querySelector('[data-auth-glass-card]');"+
     "const input=card.querySelector('[data-auth-glass-input]');"+
@@ -734,75 +731,18 @@ try{
     "Back → title and three glass controls together → first card → remaining cards");
   assert.ok(entranceOrder.every(x=>x.durationMs===500));
   await sleep(1740);
-  // The Projects logo is fixed to the top bar, not the viewport-height-
-  // centered homepage mosaic. Width changes must never rewrite its animated
-  // transform, and height changes must not move it or change visibility.
-  // No screenshots: compare DOM geometry across live CDP viewport changes.
-  const projectLogoBaseline=await evaluate("(()=>{"+
-    "const b=document.querySelector('#dashboard-title').getBoundingClientRect();"+
-    "return {width:innerWidth,height:innerHeight,x:(b.left+b.right)/2,"+
-    "y:(b.top+b.bottom)/2,navBottom:document.querySelector('#global-menu').getBoundingClientRect().bottom,"+
-    "cssTransform:getComputedStyle(document.querySelector('#dashboard-title')).transform,"+
-    "exitY:document.querySelector('#dashboard-title').style.getPropertyValue('--doof-exit-y'),"+
-    "hidden:document.body.hasAttribute('data-projects-logo-hidden')};})()");
-  assert.ok(Math.abs(projectLogoBaseline.y-(projectLogoBaseline.navBottom+46))<1,
-    "Projects doof must already be anchored 46px beneath the nav at entry");
-  assert.ok(Math.abs(projectLogoBaseline.x-projectLogoBaseline.width/2)<1,
-    "Projects logo must remain horizontally centered");
-  assert.equal(projectLogoBaseline.hidden,false);
-  assert.equal(await evaluate("document.body.dataset.projectsLogoPinned"),"true",
-    "Projects must own an explicit viewport-anchored doof, not its animated home offset");
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).transitionProperty"),
-    "opacity","Projects must never animate logo transforms during viewport resizes");
-  const checkProjectLogoResize=async(width,height,label,expectedHidden=false)=>{
-    await send("Emulation.setDeviceMetricsOverride",
-      {width,height,deviceScaleFactor:1,mobile:false});
+  const projectLogoBaseline=await evaluate("({width:innerWidth,height:innerHeight})");
+  const checkProjectLogoResize=async(width,height)=>{
+    await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
     await until("innerWidth==="+width+"&&innerHeight==="+height,60,25);
-    await sleep(90);
-    const actual=await evaluate("(()=>{"+
-      "const logo=document.querySelector('#dashboard-title');"+
-      "const r=logo.getBoundingClientRect();"+
-      "const scene=document.querySelector('.dashboard-home').getBoundingClientRect();"+
-      "const css=getComputedStyle(logo),body=getComputedStyle(document.body);"+
-      "return {x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,"+
-      "bodyChild:logo.parentElement===document.body,position:css.position,"+
-      "sceneTop:scene.top,sceneHeight:scene.height,"+
-      "sceneVar:body.getPropertyValue('--dashboard-scene-height'),"+
-      "sceneTopVar:body.getPropertyValue('--dashboard-scene-top'),"+
-      "logoTransform:css.transform,logoTranslate:css.translate,"+
-      "logoInlineTransform:logo.style.getPropertyValue('transform'),"+
-      "logoInlinePriority:logo.style.getPropertyPriority('transform'),"+
-      "pinAttr:document.body.dataset.projectsLogoPinned,"+
-      "pinMatches:logo.matches('body.public-home[data-projects-logo-pinned=\"true\"] > #dashboard-title'),"+
-      "matchingTransformRules:[...document.styleSheets].flatMap(sheet=>{"+
-      "try{return [...sheet.cssRules].filter(rule=>rule.style?.transform&&"+
-      "logo.matches(rule.selectorText||':not(*)')).map(rule=>({selector:rule.selectorText,"+
-      "transform:rule.style.transform,priority:rule.style.getPropertyPriority('transform'),"+
-      "href:sheet.href}));}catch{return []}}),"+
-      "hidden:document.body.hasAttribute('data-projects-logo-hidden'),"+
-      "exitY:logo.style.getPropertyValue('--doof-exit-y')};})()");
-    assert.equal(actual.bodyChild,true,
-      label+": original doof must escape the homepage mosaic containing block");
-    assert.equal(actual.position,"fixed",
-      label+": doof must be truly fixed to the viewport");
-    assert.equal(actual.pinMatches,true,
-      label+": Projects-only pinned CSS selector must remain active");
-    assert.ok(Math.abs(actual.x-width/2)<1,
-      label+": width resize must keep doof horizontally centered");
-    assert.ok(Math.abs(actual.y-projectLogoBaseline.y)<1,
-      label+": doof must not react to viewport height or width changes ("+
-      actual.y+" vs "+projectLogoBaseline.y+"; "+JSON.stringify(actual)+")");
-    assert.equal(actual.exitY,projectLogoBaseline.exitY,
-      label+": Projects resize must never rewrite --doof-exit-y");
-    assert.equal(actual.hidden,expectedHidden,
-      label+": resize must not trigger the scroll-only logo fade");
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).visibility"),"hidden");
+    assert.equal(await evaluate("!!document.querySelector('.cta6-center > #dashboard-title')"),true);
   };
-  await checkProjectLogoResize(850,projectLogoBaseline.height,"width shrunk");
-  await checkProjectLogoResize(1400,projectLogoBaseline.height,"width expanded");
-  await checkProjectLogoResize(projectLogoBaseline.width,590,"height shrunk");
-  await checkProjectLogoResize(projectLogoBaseline.width,1060,"height expanded");
-  await checkProjectLogoResize(projectLogoBaseline.width,projectLogoBaseline.height,
-    "restored viewport");
+  await checkProjectLogoResize(850,projectLogoBaseline.height);
+  await checkProjectLogoResize(1400,projectLogoBaseline.height);
+  await checkProjectLogoResize(projectLogoBaseline.width,590);
+  await checkProjectLogoResize(projectLogoBaseline.width,1060);
+  await checkProjectLogoResize(projectLogoBaseline.width,projectLogoBaseline.height);
   const projectState=await evaluate("(()=>{"+
     "const root=document.querySelector('.public-projects-root');"+
     "const cards=[...root.querySelectorAll('.project-showcase-card')];"+
@@ -1108,47 +1048,7 @@ try{
     assert.ok(fast.maxHeldMotion<1&&fast.maxCanvasMotion<1,JSON.stringify(fast));
     assert.ok(fast.maxTopError<1.2&&fast.maxBandError<1.2,JSON.stringify(fast));
   }
-  // The expanded capsule is not required for the visibility trigger: its
-  // inert DOM box remains positioned above the search button when closed.
-  // Position is measured against the compact logo's actual bottom edge,
-  // with precisely a 5px separation, not an arbitrary scrollTop constant.
-  const logoThreshold=await evaluate("(()=>{"+
-    "const route=document.querySelector('#public-route-content');"+
-    "const logo=document.querySelector('#dashboard-title');"+
-    "const field=document.querySelector('.public-projects-search-field');"+
-    "const inactive=!document.querySelector('.public-projects-search-wrap').classList.contains('is-expanded');"+
-    "const oldHeight=route.style.height;route.style.height='300px';"+
-    "route.scrollTop=0;route.dispatchEvent(new Event('scroll'));"+
-    "const startTop=field.getBoundingClientRect().top;"+
-    "const logoBottom=logo.getBoundingClientRect().bottom;"+
-    "return {oldHeight,inactive,startTop,logoBottom,"+
-      "distance:startTop-logoBottom-5,hidden:document.body.hasAttribute('data-projects-logo-hidden')};})()");
-  assert.equal(logoThreshold.inactive,true,
-    "Scroll-triggered doof fade must work before search is ever opened");
-  assert.equal(logoThreshold.hidden,false,
-    "The logo stays visible at the top of the Projects scrollport");
-  const crossingScroll=Math.max(12,Math.ceil(logoThreshold.distance)+9);
-  await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
-    "route.scrollTop="+crossingScroll+";route.dispatchEvent(new Event('scroll'));})()");
-  await until("document.body.hasAttribute('data-projects-logo-hidden')",25,30);
-  const crossed=await evaluate("(()=>{const route=document.querySelector('#public-route-content');"+
-    "return {scrollTop:route.scrollTop,"+
-    "searchTop:document.querySelector('.public-projects-search-field').getBoundingClientRect().top,"+
-    "logoBottom:document.querySelector('#dashboard-title').getBoundingClientRect().bottom}})()");
-  assert.ok(crossed.scrollTop>0);
-  assert.ok(crossed.searchTop<=crossed.logoBottom+5,
-    "Fade starts only when the would-be search bar top crosses 5px below doof");
-  await until("Number(getComputedStyle(document.querySelector('#dashboard-title')).opacity)<.06",20,35);
-  await checkProjectLogoResize(projectLogoBaseline.width,630,
-    "height resized while scrolled and faded",true);
-  await checkProjectLogoResize(projectLogoBaseline.width,projectLogoBaseline.height,
-    "height restored while scrolled and faded",true);
-  await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
-    "r.scrollTop=0;r.dispatchEvent(new Event('scroll'));})()");
-  await until("!document.body.hasAttribute('data-projects-logo-hidden')",25,30);
-  await until("Number(getComputedStyle(document.querySelector('#dashboard-title')).opacity)>.95",20,35);
-  await evaluate("(()=>{const r=document.querySelector('#public-route-content');"+
-    "r.style.height="+JSON.stringify(logoThreshold.oldHeight)+";})()");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).visibility"),"hidden");
   const pathBefore=await evaluate("location.pathname");
   // Record physical ORIGINAL-row rectangles before the grid transaction.
   // This catches CSS absolute grid children accidentally inheriting the
@@ -1819,10 +1719,7 @@ try{
   }
   await until("location.pathname==='/'&&window.__dofPublicRouter.state==='home'",190);
   assert.equal(await evaluate("document.querySelector('.public-projects-root')"),null);
-  assert.equal(await evaluate("document.body.hasAttribute('data-projects-logo-hidden')"),false,
-    "Unmount must clear Projects-only logo fading before the homepage returns");
-  assert.equal(await evaluate("document.body.hasAttribute('data-projects-logo-pinned')"),false,
-    "Unmount must remove the Projects-specific fixed logo anchor");
+  assert.equal(await evaluate("!!document.querySelector('.cta6-center > #dashboard-title')"),true);
   await sleep(560);
   assert.ok(Number(await evaluate("getComputedStyle(document.querySelector('.cta6-bottom-action')).opacity"))>.995,
     "Bottom buttons return visibly fully opaque after the Projects reverse transition");
@@ -1883,7 +1780,7 @@ try{
   assert.ok(detail.title.startsWith("ChatStore | Projects"),detail.title);
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
-  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).visibility"),"visible");
+  assert.equal(await evaluate("getComputedStyle(document.querySelector('#dashboard-title')).visibility"),"hidden");
   await evaluate("history.forward()");
   await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
   await evaluate("history.back()");

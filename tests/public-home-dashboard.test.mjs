@@ -315,8 +315,6 @@ test("Notification-inspired dismissal is explicitly provisional and clears all s
   assert.match(renderer,/tileDismissBlur\(dissolving\)\.toFixed\(3\)/);
   assert.match(renderer,/tileData\[i\*TILE_FLOATS\+19\]=dismissProgress\[i\]/);
   assert.match(style,/data-public-route="leaving"/);
-  assert.match(style,/\.cta6-center h1\{[^}]*view-transition-name:doof-brand;/);
-  assert.match(style,/data-public-route="leaving"\] \.dashboard-home \.cta6-center h1\{[^}]*scale\(\.6\)/);
   assert.doesNotMatch(asset("app/assets/dashboard-gpu-renderer.js"),/tileDismissProgress/);
 });
 test("Public rendering uses explicitly copied shader and AVIF assets, not private /app paths",()=>{
@@ -359,7 +357,7 @@ test("public bottom row belongs to shell: drops below viewport and reverses on r
   assert.match(style,/body\.public-home \.dashboard-home \.cta6-bottom-action\{[^}]*transform:translate3d\(-50%,0,0\);[^}]*transition:transform 440ms[^}]*opacity 390ms/);
   assert.match(style,/body\.public-home\[data-public-route="leaving"\] \.dashboard-home \.cta6-bottom-action\{[^}]*transform:translate3d\(-50%,calc\(100% \+ clamp\(42px,5\.4vh,66px\) \+ env\(safe-area-inset-bottom,0px\) \+ 28px\),0\);[^}]*opacity:0!important;/);
   assert.match(style,/body\.public-home\[data-direct-login="true"\] \.dashboard-home \.cta6-bottom-action\{[^}]*transition:none!important;/);
-  assert.match(route,/function activateCompact\(/);
+  assert.match(route,/function dismissHome\(/);
   assert.match(route,/function restoreHome\(\)\{[\s\S]*?body\.dataset\.publicRoute="returning"/);
   const auth=readFileSync(new URL("../src/components/Auth3.jsx",import.meta.url),"utf8");
   assert.doesNotMatch(auth,/cta6-bottom-action|doofinances:home-dismiss|doofinances:home-restore/);
@@ -404,6 +402,7 @@ test("Home wordmark shares the actual clock-text glass pipeline, not just CSS ty
  const local=asset("assets/home-dashboard/dashboard-glass-local-title.js");
  assert.match(home,/id="dashboard-title" data-glass-text="clock-text" data-glass-material="clock-text"/);
  assert.match(renderer,/ctas\.push\(brand\)/);
+  assert.match(renderer,/if\(homeBrand\)\{[\s\S]*?tileDismissProgress\(elapsed,0,5\)[\s\S]*?tileData\[p\+19\]=progress/);
  assert.match(renderer,/pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
  assert.match(local,/\["Projects","DoFinances"\]\.includes\(text\)/);
  assert.match(style,/\.cta6-center > #dashboard-title\[data-glass-text-ready\]/);
