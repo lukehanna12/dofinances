@@ -117,11 +117,14 @@ fn vsGlass(@builtin(vertex_index) vertex:u32,
   let bloom=dismiss*dismiss*(3.0-2.0*dismiss);
   let diffuseScale=vec2<f32>(1.0+0.085*bloom,1.0+0.065*bloom);
   let center=tile.rect.xy+tile.rect.zw*0.5;
-  let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);
+  // Allow a narrow fringe beyond the glyph bounds during dissolution.
+  let titleGuard=select(vec2<f32>(0.0),vec2<f32>(8.0*state.viewport.w),tile.properties.y==-8.0&&dismiss>0.0);
+  let local=uv*tile.rect.zw+(uv*2.0-vec2<f32>(1.0))*titleGuard;
+  let p=center+(local-tile.rect.zw*.5)*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);
   var out:GlassOut;
   out.position=vec4<f32>(2.0*p.x/state.viewport.x-1.0,
     1.0-2.0*p.y/state.viewport.y,0.0,1.0);
-  out.local=uv*tile.rect.zw;
+  out.local=local;
   out.tileIndex=instance;
   out.introAlpha=a;
   return out;
@@ -471,8 +474,18 @@ fn titleGlyphField(local:vec2<f32>)->vec4<f32>{
  let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
  let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);
  let glyph=textureLoad(titleGlyphAlpha,p,0);
- let signed=nativeHalf1(1.0-glyph.r*(25.0/1023.0));
+ let signed=nativeHalf1(1.0-max(glyph.r,0.0)*(25.0/1023.0));
  return vec4<f32>(signed*max(state.viewport.w,1.0),glyph.gb,glyph.a);
+}
+// The glyph union, including counters and inter-letter gaps, owns the
+// dismissal distance. The baseline reuses its existing distance field.
+fn titleDismissField(local:vec2<f32>,dimensions:vec2<f32>,tileIndex:u32,glyph:vec4<f32>)->vec4<f32>{
+ let limit=vec2<i32>(textureDimensions(titleGlyphAlpha,0))-vec2<i32>(1);
+ let samplePoint=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);
+ let raw=textureLoad(titleGlyphAlpha,samplePoint,0);
+ let distance=select(glyph.x,(1.0-raw.r*(25.0/1023.0))*max(state.viewport.w,0.001),raw.r<0.0);
+ let outside=length(local-clamp(local,vec2<f32>(0.0),dimensions));
+ return vec4<f32>(select(distance,max(distance,0.0)+outside,outside>0.0),glyph.yz,select(glyph.w,0.0,outside>0.0));
 }
 // 25F80 finite clock binding, not the generic Clear blur or face.
 fn clockBlurDistribution(d:f32)->f32{
@@ -665,7 +678,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   var field:vec3<f32>;
   var glyphCoverage:f32=1.0;
   if(glassTitle){
-    let glyph=titleGlyphField(in.local);
+    var glyph=titleGlyphField(in.local);
+    if(tile.motion.w>0.0){glyph=titleDismissField(in.local,dimensions,in.tileIndex,glyph);}
     field=glyph.xyz;
     glyphCoverage=glyph.w;
   }else if(tile.properties.w==6.0){
@@ -691,7 +705,8 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   let dismiss=clamp(tile.motion.w,0.0,1.0);
   // Preserve the original rounded rect discard outside a transition.
   // During dismissal, a thin refractive edge extends into the expanded quad.
-  if((coverage<=0.0&&dismiss<=0.0)||(tile.properties.y == -8.0&&!clockText)){discard;}
+  if((coverage<=0.0&&dismiss<=0.0)||(tile.properties.y == -8.0&&!clockText)||
+     (glassTitle&&dismiss>0.0&&coverage<=0.0&&signed>=8.0*state.viewport.w)){discard;}
   // The inactive Clear region has a straight upper refraction edge but retains
   // the original outer card coverage, hit geometry and dismissal.
   if(split){
@@ -936,14 +951,18 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   // Dissolve the original refracting material instead of painting fake
   // gray clouds. Continuous value noise introduces soft local holes;
   // the model is browser-authored, NOT an extracted 26.5.1 effect.
-  let uv=(in.local/tile.rect.zw-vec2<f32>(0.5))*2.0;
+  // One isotropic noise field spans the entire positioned glyph union.
+  // Ordinary square and pane coordinates remain unchanged.
+  let dissolveExtent=select(tile.rect.zw,vec2<f32>(min(tile.rect.z,tile.rect.w)),glassTitle);
+  let uv=(in.local-tile.rect.zw*0.5)*2.0/dissolveExtent;
   let seed=f32(in.tileIndex)*0.367;
   let noiseField=dissolveField(uv*3.0+vec2<f32>(seed,seed*.49)+
     vec2<f32>(0.02*dismiss,-0.10*dismiss));
   let fine=dissolveNoise(uv*9.0+vec2<f32>(seed*1.7,seed*.53+0.5));
   let edgeExposure=1.0-clamp(-signed/11.0,0.0,1.0);
+  let contourExposure=select(edgeExposure,1.0-clamp(-signed/(5.5*pointScale),0.0,1.0),glassTitle);
   let amount=clamp((dismiss-0.09+
-    (noiseField-0.5)*0.30+(fine-0.5)*0.11+edgeExposure*0.07)/0.82,0.0,1.0);
+    (noiseField-0.5)*0.30+(fine-0.5)*0.11+contourExposure*0.07)/0.82,0.0,1.0);
   let smoothAmount=amount*amount*(3.0-2.0*amount);
   let retained=1.0-smoothAmount;
   // Residual fringe samples the ORIGINAL glass color and vanishes early.
@@ -951,7 +970,11 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
     (1.0-smoothstep(0.54,0.84,dismiss));
   let fringe=(1.0-coverage)*fringeWindow*0.09*
     (0.45+0.55*noiseField)*exp(-abs(signed)*0.18);
-  let alpha=(coverage*retained+fringe)*in.introAlpha*
+  // The fringe must die at the actual disconnected contours, never at
+  // the word's rectangular bounds. Keep the square fringe unchanged.
+  let titleFringe=(1.0-coverage)*fringeWindow*0.09*(0.45+0.55*noiseField)*
+    exp(-abs(signed)*0.36/pointScale)*(1.0-smoothstep(5.0,8.0,max(signed,0.0)/pointScale));
+  let alpha=(coverage*retained+select(fringe,titleFringe,glassTitle))*in.introAlpha*
     clamp(tile.motion.z,0.0,1.0)*routeSpatialAlpha;
   return vec4<f32>(color,clamp(alpha,0.0,1.0));
 }

@@ -21,7 +21,7 @@ test("ten-bit distance codes survive half storage exactly; coverage is independe
  const field=clockTextField(a,5,5,2);
  assert.equal(field.length,100);
  assert.equal(field[12*4+3],0x3c00);assert.equal(field[11*4+3],floatToHalf(128/255));
- assert.equal(field[3],0);assert.ok(field[12*4]>field[0]);
+ assert.equal(field[3],0);assert.ok(field[12*4]>0);assert.ok((field[0]&0x8000)!==0);
  assert.ok(Array.from(field).every(v=>(v&0x7c00)!==0x7c00));
 });
 test("registration is independent of route and text content",()=>{
@@ -38,4 +38,22 @@ test("clock glyphs use the coordinate space of their draw target, not their mate
  assert.match(renderer,/uniform\[7\]=0;/);
  assert.match(renderer,/authUniform\[7\]=physicalHeight;/);
  assert.match(renderer,/pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
+});
+
+test("disconnected glyphs preserve exterior distance and one shared dissolve coordinate system",()=>{
+ const width=31,height=11,a=new Uint8Array(width*height);
+ for(let y=3;y<=7;y++)for(const x of [3,4,5,25,26,27])a[y*width+x]=255;
+ const field=clockTextField(a,width,height,1);
+ const code=(x,y)=>field[(y*width+x)*4];
+ const coverage=(x,y)=>field[(y*width+x)*4+3];
+ assert.equal(coverage(15,5),0);
+ assert.equal(coverage(4,5),0x3c00);
+ assert.ok((code(15,5)&0x8000)!==0);
+ assert.ok((code(15,5)&0x7fff)>(code(8,5)&0x7fff),"Distance increases into the gap between glyphs");
+ const shader=readFileSync(new URL("../sites/_apex/assets/home-dashboard/dashboard-gpu-glass.wgsl",import.meta.url),"utf8");
+ const continuous=readFileSync(new URL("../sites/_apex/assets/home-dashboard/dashboard-glass-continuous.js",import.meta.url),"utf8");
+ assert.match(shader,/glyph=titleDismissField\(in.local,dimensions,in.tileIndex,glyph\)/);
+ assert.match(shader,/let dissolveExtent=select\(tile.rect.zw,vec2<f32>\(min\(tile.rect.z,tile.rect.w\)\),glassTitle\)/);
+ assert.match(shader,/smoothstep\(5.0,8.0,max\(signed,0.0\)\/pointScale\)/);
+ assert.match(continuous,/let d=pathDistance\(q.p,q.root,q.tol\)\*q.px/);
 });

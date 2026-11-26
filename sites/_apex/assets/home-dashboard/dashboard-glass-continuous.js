@@ -126,7 +126,21 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"fn titleGlyphField(local:vec2<f32>)->vec4<f32>{","fn titleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{");
  s=once(s,"let p=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);","let underlay=state.tintMeta.z<0.0;let q=select(local,local*(state.raster.xy/state.viewport.xy),underlay);let p=clamp(vec2<i32>(floor(q)),vec2<i32>(0),limit);");
  s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(underlay){let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);}\n  if(all(abs(local-vec2<f32>(p)-title.coverageRect.xy)<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
- s=once(s,"let glyph=titleGlyphField(in.local);","let glyph=titleGlyphField(in.local,in.tileIndex);");
+ s=once(s,"var glyph=titleGlyphField(in.local);","var glyph=titleGlyphField(in.local,in.tileIndex);");
+ // The cached optical field intentionally skips distant empty pixels.
+ // At dismissal, evaluate the true exterior glyph-union distance from
+ // the same positioned curves, including counters and the fringe guard.
+ s=once(s," let samplePoint=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);",` let title= silhouettes[tileIndex];
+ if(title.coverageMeta.w>0.0){
+  let outside=any(local<vec2<f32>(0.0))||any(local>dimensions);
+  if(!outside&&glyph.x<999.0){return glyph;}
+  let q=titleFieldQuery(title,local);
+  let d=pathDistance(q.p,q.root,q.tol)*q.px;
+  if(d>=8.0*state.viewport.w){return vec4<f32>(d,0.0,0.0,0.0);}
+  let f=evaluateContinuousTitleField(title,local);
+  return vec4<f32>(f,select(glyph.w,0.0,outside));
+ }
+ let samplePoint=clamp(vec2<i32>(floor(local)),vec2<i32>(0),limit);`);
  // Settled route quads have an exact inverse translation. Reconstruct their
  // geometry-local sample from the framebuffer center instead of two
  // independently rounded vertex-interpolation paths. Animated quads retain
@@ -138,8 +152,7 @@ export function specializeContinuousGlass(s,code){
  // covered pixels whose centers lie just outside the logical rectangle.
  // One target-pixel guard is sufficient for the retained fwidth support;
  // no change to the underlying geometry, hit area or dismissal animation.
- s=once(s,"let p=center+(uv-vec2<f32>(0.5))*tile.rect.zw*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);","let guard=select(vec2<f32>(0.0),state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0))/(scale*diffuseScale),tile.properties.y!=-8.0&&dismiss<=0.0);\n  let local=uv*tile.rect.zw+(uv*2.0-vec2<f32>(1.0))*guard;\n  let p=center+(local-tile.rect.zw*.5)*scale*diffuseScale-vec2<f32>(0.0,state.tintMeta.w);");
- s=once(s,"out.local=uv*tile.rect.zw;","out.local=local;");
+ s=once(s,"let local=uv*tile.rect.zw+(uv*2.0-vec2<f32>(1.0))*titleGuard;","let guard=titleGuard+select(vec2<f32>(0.0),state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0))/(scale*diffuseScale),tile.properties.y!=-8.0&&dismiss<=0.0);\n  let local=uv*tile.rect.zw+(uv*2.0-vec2<f32>(1.0))*guard;");
  s=once(s,"var backdropPosition=in.position.xy;","var backdropPosition=geometryPosition(in.position.xy);");
  s=once(s,"in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)","geometryPosition(in.position.xy)-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)");
  s=once(s,"let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);","let px=geometryPosition(in.position.xy).x;let edgeDistance=min(px,state.viewport.x-px);");

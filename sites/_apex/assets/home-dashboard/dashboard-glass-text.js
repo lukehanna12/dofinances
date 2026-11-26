@@ -60,7 +60,10 @@ export function clockTextField(alpha,width,height,dpr=1){
   const k=(y+1)*w+x+1,i=(y*width+x)*4;
   const gx=(field[k+1]-field[k-1])*.5,gy=(field[k+w]-field[k-w])*.5;
   const norm=Math.hypot(gx,gy),inv=norm>1e-6?1/norm:0;
-  pixels[i]=floatToHalf(encodeClockDistance(field[k]/dpr));
+  // Negative codes preserve exterior contour distance for dismissal only.
+  // The normal clock material clamps these to its original zero code.
+  const cssDistance=field[k]/dpr;
+  pixels[i]=floatToHalf(cssDistance>1?(1-cssDistance)*1023/25:encodeClockDistance(cssDistance));
   pixels[i+1]=floatToHalf(gx*inv);pixels[i+2]=floatToHalf(gy*inv);
   pixels[i+3]=floatToHalf(alpha[y*width+x]/255);
  }
