@@ -17,8 +17,14 @@ export async function run(){
  const owners=await Promise.all(names.map(async name=>{const o=document.createElement("div"),img=new Image();o.style.cssText="position:absolute;left:0;top:0;width:92px;height:88px;";img.style.cssText="position:absolute;width:45.5px;height:45.5px;left:23.25px;top:21.25px;";img.src="/original/"+name+".svg";o.append(img);document.body.append(o);await img.decode();return {o,img,name};}));
  const glyph=tex(1,1),detail=tex(1,1),dummy=new Uint16Array(4);device.queue.writeTexture({texture:glyph},dummy,{bytesPerRow:8},[1,1]);device.queue.writeTexture({texture:detail},dummy,{bytesPerRow:8},[1,1]);
  try{
-  for(const mode of ["baseline","continuous"]){
-   const code=(f16?"enable f16;\n":"")+(mode==="baseline"?original:specializeContinuousGlass(original,data.code)).replaceAll("__ORACLE_HALF_BODY__",f16?"return vec3<f32>(vec3<f16>(v));":"return v;");
+  for(const mode of ["baseline","continuous","baseline-field","continuous-field"]){
+   let code=(f16?"enable f16;\n":"")+(mode.startsWith("baseline")?original:specializeContinuousGlass(original,data.code)).replaceAll("__ORACLE_HALF_BODY__",f16?"return vec3<f32>(vec3<f16>(v));":"return v;");
+   if(mode.endsWith("-field")){
+    // Return raw field on covered icon fragments, retaining original coordinate/coverage logic.
+    const a=code.indexOf("  let d=min(icon.rect.z,icon.rect.w);"),b=code.indexOf("\n}",a);
+    if(a<0||b<0)throw Error("Diagnostic optical range missing");
+    code=code.slice(0,a)+"  return vec3<f32>(signed/pointScale,normal);"+code.slice(b);
+   }
    const module=device.createShaderModule({code});
    pipelines.push(await device.createRenderPipelineAsync({layout:"auto",vertex:{module,entryPoint:"vsGlass"},fragment:{module,entryPoint:"fsGlass",targets:[{format:fmt,blend}]},primitive:{topology:"triangle-list"}}));
   }
@@ -59,9 +65,9 @@ export async function run(){
    const sourceView=scene.createView(),entries=[{binding:0,resource:sourceView},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:glyph.createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:sourceView},{binding:9,resource:detail.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:12,resource:atlas.view},{binding:13,resource:atlas.hazeView},{binding:14,resource:atlas.coverageView}];
    const target=tex(W,H,1,fmt,GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC),stride=Math.ceil(W*8/256)*256,read=device.createBuffer({size:stride*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
    const resultsForMode=[];
-   for(let mode=0;mode<3;mode++){
+   for(let mode=0;mode<5;mode++){
     if(mode)device.queue.writeBuffer(buffers[5],0,mode===1?cachedIcons:Float32Array.from(icons));
-    const pipeline=pipelines[Math.min(mode,1)],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
+    const isContinuous=mode===1||mode===2||mode===4,pipeline=pipelines[mode<3?Math.min(mode,1):mode-1],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:isContinuous?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
     await draw();const ms=[];for(let n=0;n<3;n++)ms.push(await draw());
     await draw(true);await read.mapAsync(GPUMapMode.READ);
@@ -75,7 +81,7 @@ export async function run(){
     const j=(y*W+x)*8;
     for(let c=0;c<4;c++){const a=A.getFloat16(j+2*c,true),b=B.getFloat16(j+2*c,true),d=Math.abs(a-b);if(!Number.isFinite(d)){nonfinite++;continue;}if(c===3){alpha.push(d);continue;}diff.push(d);sum+=d;max=Math.max(max,d);}
    }
-   for(let i=0;i<16;i++){let total=0,peak=0,n=0,worst=null;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;if(d>peak){peak=d;worst={x,y,channel:c,baseline:A.getFloat16(j,true),candidate:B.getFloat16(j,true)};}n++;}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
+   for(let i=0;i<16;i++){let total=0,peak=0,n=0,worst=null;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;if(d>peak){peak=d;worst={x,y,channel:c,baseline:A.getFloat16(j,true),candidate:B.getFloat16(j,true)};}n++;}if(worst){const j=(worst.y*W+worst.x)*8,aa=new DataView(resultsForMode[3].raw.buffer),bb=new DataView(resultsForMode[4].raw.buffer);worst.fields=[aa,bb].map(v=>[0,1,2,3].map(c=>v.getFloat16(j+2*c,true)));}perIcon.push({name:names[i],mean:total/n,max:peak,worst});}
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
    results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
