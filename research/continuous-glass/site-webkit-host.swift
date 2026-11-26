@@ -52,6 +52,25 @@ import WebKit
   try await wait("window.__dofPublicRouter?.state==='projects'&&document.querySelectorAll('.project-showcase-card').length>=16&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0","projects")
   try await wait("document.querySelector('.public-projects-root.is-settled')","settle")
   log("projects",try await eval(state))
+  if ProcessInfo.processInfo.environment["LG_WEBKIT_INTERACTION"] != nil {
+   // Dispatch browser-native PointerEvent objects from isolated fixture JS.
+   // This exercises production handlers, not OS pointer hardware.
+   _=try await eval("""
+   (()=>{const c=document.querySelector('.project-showcase-card'),r=c.getBoundingClientRect(),e={bubbles:true,pointerId:1,pointerType:'mouse',isPrimary:true,clientX:r.x+r.width/2,clientY:r.y+r.height/2,button:0};window.__lgTestPointer=e;c.dispatchEvent(new PointerEvent('pointermove',e));return true;})()
+   """)
+   try await wait("window.__dashboardWebGPU?.glassSilhouettes?.icons?.some(x=>x.hover>.95)","project-hover")
+   _=try await eval("document.querySelector('.project-showcase-card').dispatchEvent(new PointerEvent('pointerdown',window.__lgTestPointer))")
+   try await Task.sleep(for:.milliseconds(250))
+   log("project-press",try await eval("({errors:window.__dashboardWebGPU.errors,hover:window.__dashboardWebGPU.glassSilhouettes.icons.map(x=>[x.slug,x.hover])})"))
+   _=try await eval("document.querySelector('.project-showcase-card').dispatchEvent(new PointerEvent('pointerup',window.__lgTestPointer))")
+   _=try await eval("document.querySelector('.project-showcase-card').click()")
+   try await wait("document.querySelector('.project-showcase-card.is-expanded')","project-expanded")
+   try await Task.sleep(for:.milliseconds(450))
+   log("expanded",try await eval(state))
+   _=try await eval("Array.from(document.querySelectorAll('.project-showcase-card')).find(c=>!c.hidden&&!c.classList.contains('is-expanded')&&c.getBoundingClientRect().width>10).click()")
+   try await wait("!document.querySelector('.public-projects-root.is-project-retargeting')&&document.querySelector('.project-showcase-card.is-expanded')","project-retarget")
+   log("retargeted",try await eval(state))
+  }
   _=try await eval("document.querySelector('.public-projects-filter-button').click()")
   try await wait("document.querySelector('.public-projects-filter-button').getAttribute('aria-expanded')==='true'&&window.__dashboardWebGPU?.sourceComposition?.completedLayers?.length>0","filter")
   log("filter",try await eval(state))
@@ -64,10 +83,18 @@ import WebKit
   if login {
    _=try await eval("document.querySelector(\".cta6-bottom-action a[href='/login']\").click()")
    try await wait("location.pathname==='/login'&&document.querySelector('.auth3-root form')&&window.__dashboardWebGPU?.authGlass?.opacity>=.99","login")
-   log("login",try await eval("({status:window.__dashboardWebGPU.status,errors:window.__dashboardWebGPU.errors,mode:document.body.dataset.authGlassMode,scene:document.body.dataset.authGpuScene})"))
+   _=try await eval("""
+   (()=>{const c=document.querySelector('[data-auth-glass-input]'),r=c.getBoundingClientRect(),e={bubbles:true,pointerId:1,pointerType:'mouse',isPrimary:true,clientX:r.x+r.width/2,clientY:r.y+r.height/2,button:0};window.__lgTestPointer=e;c.dispatchEvent(new PointerEvent('pointermove',e));return true;})()
+   """)
+   try await wait("window.__dashboardWebGPU?.authGlass?.cardHovered&&window.__dashboardWebGPU?.authGlass?.controlHovered","login-hover")
+   _=try await eval("document.querySelector('[data-auth-glass-input]').dispatchEvent(new PointerEvent('pointerdown',window.__lgTestPointer))")
+   try await wait("window.__dashboardWebGPU?.authGlass?.controlHover?.press>.9","login-press")
+   log("login",try await eval("({status:window.__dashboardWebGPU.status,errors:window.__dashboardWebGPU.errors,mode:document.body.dataset.authGlassMode,scene:document.body.dataset.authGpuScene,hover:window.__dashboardWebGPU.authGlass.controlHover})"))
+   _=try await eval("document.querySelector('[data-auth-glass-input]').dispatchEvent(new PointerEvent('pointerup',window.__lgTestPointer))")
    _=try await eval("document.querySelector('.auth3-back-link').click()")
    try await wait("window.__dofPublicRouter?.state==='home'&&!document.querySelector('.auth3-root')","login-return")
   }
+  try await wait("window.__dashboardWebGPU?.status===\'ready\'&&window.__dashboardWebGPU.errors.length===0","final-gpu")
   log("complete",try await eval(state))
  }
  func webView(_ webView:WKWebView,didFinish navigation:WKNavigation!){
