@@ -30,7 +30,7 @@ test("public Projects is a curated snapshot, not an authenticated API leak",()=>
   assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS),sortPrivate(PRIVATE_PROJECTS));
   assert.equal(PUBLIC_PROJECTS.length,16);
   assert.equal(publicProjectImage({slug:"terminal-scalars"},6),
-    "/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp",
+    "/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
     "The attached Manfred Mohr artwork is served locally on the public site");
   assert.equal(publicProjectImage({slug:"app-caviar"},12),"/assets/project-art/app-caviar-source.v2.webp");
   assert.equal(publicProjectImage({slug:"hidden-functions"},14),"/assets/project-art/hidden-functions-piranesi.v1.webp");
@@ -503,4 +503,16 @@ test("every project has a unique readable hash URL and legacy alias",async()=>{
  }
  assert.equal(projectFromPublicHash("#unknown"),null);
  assert.equal(projectFromPublicHash("#%"),null);
+});
+
+test("Terminal Scalars uses a centered 3% crop without altering the reveal ratio",async()=>{
+ const publicCSS=await load("../sites/_apex/assets/public-projects.css");
+ const privateCSS=await load("../sites/_apex/app/assets/project-showcase.css");
+ for(const css of [publicCSS,privateCSS]){
+  assert.match(css,/\[data-project-slug="terminal-scalars"\] \.project-showcase-photo\{\s*object-position:center;transform-origin:center center;transform:scale\(1\.133\)/);
+  assert.match(css,/\[data-project-slug="terminal-scalars"\]\.is-photo-ready:is\(:hover,:focus-visible(?:,:focus-within)?\) \.project-showcase-photo\{\s*transform:scale\(1\.03\)/);
+ }
+ assert.match(publicCSS,/\.is-expanded\[data-project-slug="terminal-scalars"\]\.is-photo-ready \.project-showcase-photo\{\s*transform:scale\(1\.03\)/);
+ assert.match(publicCSS,/\[data-project-slug="terminal-scalars"\]\.is-photo-ready:has\(>\.project-showcase-trigger:focus-visible\) \.project-showcase-photo\{transform:scale\(1\.03\)/);
+ assert.ok(Math.abs(1.133/1.03-1.1)<1e-12);
 });

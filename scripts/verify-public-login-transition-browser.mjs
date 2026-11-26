@@ -944,12 +944,12 @@ try{
     "const apple=document.querySelector('[data-project-slug=\"apple-hig-reader\"]');"+
     "return {image:terminal.querySelector('.project-showcase-photo').getAttribute('src'),"+
     "appleIcon:apple.querySelector('.project-showcase-lucide').getAttribute('src')};})()");
-  assert.equal(updatedArt.image,"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp",
-    "Terminal Scalars must reveal the exact attached artwork instead of a wallpaper");
+  assert.equal(updatedArt.image,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
+    "Terminal Scalars must reveal the high-resolution gallery photograph instead of a wallpaper");
   assert.equal(updatedArt.appleIcon,"/assets/project-icons/apple-higs-reader.v4.svg",
     "Apple HIGs Reader must use the new supplied icon");
   const artAssets=await evaluate("(async()=>{const [art,icon]=await Promise.all(["+
-    "fetch('/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp'),"+
+    "fetch('/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp'),"+
     "fetch('/assets/project-icons/apple-higs-reader.v4.svg')]);"+
     "const bytes=new Uint8Array(await art.arrayBuffer());const svg=await icon.text();"+
     "return {artOk:art.ok,mime:art.headers.get('content-type'),size:bytes.length,"+

@@ -107,6 +107,12 @@
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
 /* Warhol's After the Party: center crop with 1.5% downward image offset.
    Keep the 10% entrance-to-rest zoom animation: 1.232 -> 1.12. */
+.view[data-view="projects"] .project-showcase-card[data-project-slug="terminal-scalars"] .project-showcase-photo{
+ object-position:center;transform-origin:center center;transform:scale(1.133)
+}
+.view[data-view="projects"] .project-showcase-card[data-project-slug="terminal-scalars"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
+ transform:scale(1.03)
+}
 /* BootScript: show the full left edge of the original artwork, align the
  * source to the top, and retain the 10% reveal zoom above the new 1.1025 endpoint. */
 .view[data-view="projects"] .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{

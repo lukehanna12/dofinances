@@ -204,7 +204,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  for(const [slug,url] of Object.entries(PROJECT_CARD_IMAGES)){
   assert.ok(slugs.has(slug),"Image references unknown project "+slug);
   if(slug==="terminal-scalars"){
-  assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
+  assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
  }else if(["bootscript","hidden-functions","ozoning-board"].includes(slug)){
@@ -229,13 +229,13 @@ test("Assigned Lucide project icons display large, white, and without number cir
  assert.match(css,/\.project-showcase-number\{[^}]*border-radius:50%/);
 });
 
-test("Terminal Scalars uses the supplied Manfred Mohr artwork as local WebP",()=>{
- const path="sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp";
+test("Terminal Scalars uses the full-resolution Manfred Mohr gallery artwork as local WebP",()=>{
+ const path="sites/_apex/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp";
  const bytes=readFileSync(new URL("../"+path,import.meta.url));
  assert.equal(bytes.toString("ascii",0,4),"RIFF");
  assert.equal(bytes.toString("ascii",8,12),"WEBP");
- assert.ok(bytes.byteLength>5000&&bytes.byteLength<200000);
- assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp");
+ assert.ok(bytes.byteLength>5000&&bytes.byteLength<500000);
+ assert.equal(PROJECT_CARD_IMAGES["terminal-scalars"],"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
 });
 
 test("App Caviar uses the attached local WebP and the requested artworks are assigned by slug",()=>{
@@ -411,7 +411,7 @@ test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon hand
 });
 
 test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>{
- for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",1500,1500,200000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000]]){
+ for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000]]){
   const url=PROJECT_CARD_IMAGES[slug],bytes=readFileSync(new URL("../sites/_apex"+url,import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");assert.equal(bytes.toString("ascii",8,12),"WEBP");
   assert.ok(bytes.length<=maxBytes,slug+" asset budget");

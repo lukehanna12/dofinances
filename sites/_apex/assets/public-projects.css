@@ -120,6 +120,14 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   opacity:1;transform:scale(1)
 }
+/* Terminal Scalars: center the additional 3% zoom on the original
+ * photograph, retaining the existing 10% reveal animation. */
+.public-projects-root .project-showcase-card[data-project-slug="terminal-scalars"] .project-showcase-photo{
+  object-position:center;transform-origin:center center;transform:scale(1.133)
+}
+.public-projects-root .project-showcase-card[data-project-slug="terminal-scalars"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
+  transform:scale(1.03)
+}
 /* BootScript: show the full left edge of the original artwork, align the
  * source to the top, and retain the 10% reveal zoom above the new 1.1025 endpoint. */
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"] .project-showcase-photo{
@@ -545,6 +553,9 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-photo{
   opacity:1;transform:scale(1)
 }
+.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="terminal-scalars"].is-photo-ready .project-showcase-photo{
+  transform:scale(1.03)
+}
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="bootscript"].is-photo-ready .project-showcase-photo{
   transform:scale(1.1025)
 }
@@ -638,6 +649,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 }
 .public-project-detail.is-exiting .project-detail-body{opacity:0;transition:opacity .25s ease}
 .public-projects-root .project-showcase-card.is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{opacity:1;transform:scale(1)}
+.public-projects-root .project-showcase-card[data-project-slug="terminal-scalars"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.03)}
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.1025)}
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(1.5%) scale(1.12)}
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(-.6%) scale(1.04)}

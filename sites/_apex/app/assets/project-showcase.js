@@ -37,7 +37,7 @@ export function sortProjectShowcase(projects){
  return [...projects].sort((a,b)=>STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)]);
 }
 // Stable per-project choices. Unassigned items keep their current marker and wallpaper.
-// Existing published artwork remains linked to original sources; user-supplied Terminal Scalars art is a local optimized asset.
+// Existing published artwork remains linked to original sources; Terminal Scalars uses the full-resolution gallery photograph of P3010_8.
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
@@ -63,7 +63,8 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   "chatgpt-chat-save-chrome-extension":"https://gagosian.com/media/images/exhibitions/2023/takashi-murakami-understanding-the-new-cognitive-domain/c0V9eYeBTMHL_2400x2400.jpg",
   "colosseum":"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg",
   "apple-hig-reader":"https://thisishell-assets.s3.amazonaws.com/uploads/interview/image/784/990RiccardoManzotti.jpg",
-  "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v2.webp",
+  // Source: https://dam-media.fra1.digitaloceanspaces.com/Mohr2020_22_P3010_8_b0152949c4.jpg
+  "terminal-scalars":"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp",
   "app-caviar":"/assets/project-art/app-caviar-source.v2.webp",
   "hidden-functions":"/assets/project-art/hidden-functions-piranesi.v1.webp",
   "latexcel":"https://upload.wikimedia.org/wikipedia/commons/2/21/Night_Windows_Hopper_MOMA_1928.jpg",
