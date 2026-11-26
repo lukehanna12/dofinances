@@ -33,6 +33,8 @@ test("BootScript cover framing keeps the top edge and exposes the entire origina
 test("same-origin remote source only accepts curated project slugs",async()=>{
  assert.equal(publicProjectArtworkSource({slug:"colosseum"},0),"/project-artwork/colosseum");
  assert.equal(publicProjectArtworkSource({slug:"terminal-scalars"},0),"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
+ assert.equal(publicProjectArtworkSource({slug:"liquid-plexiglass-26"},0),"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v1.webp");
+ assert.equal(publicProjectArtworkSource({slug:"3d-liquid-glass-26-swift-package"},0),"/assets/project-art/3d-liquid-glass-cotan-cardo.v1.webp");
  let called=0;
  const mock=async(url,init)=>{called++;assert.match(url,/^https:\/\//);assert.equal(init.redirect,"manual");
    return new Response("image",{headers:{"Content-Type":"image/jpeg"}})};

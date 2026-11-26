@@ -105,8 +105,6 @@
  opacity:1;transform:scale(1)
 }
 .view[data-view="projects"] .project-showcase-card:is(:hover,:focus-visible,:focus-within) .project-showcase-shade{opacity:1}
-/* Warhol's After the Party: center crop with 1.5% downward image offset.
-   Keep the 10% entrance-to-rest zoom animation: 1.232 -> 1.12. */
 .view[data-view="projects"] .project-showcase-card[data-project-slug="terminal-scalars"] .project-showcase-photo{
  object-position:center;transform-origin:center center;transform:scale(1.133)
 }
@@ -122,10 +120,7 @@
  transform:scale(1.1025)
 }
 .view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
- transform:translateY(1.5%) scale(1.232)
-}
-.view[data-view="projects"] .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible,:focus-within) .project-showcase-photo{
- transform:translateY(1.5%) scale(1.12)
+  object-position:50% 66%
 }
 /* Crop the white border/print edges of Piranesi's Arch entirely on all sides.
    Preserve the usual 10% intro zoom and the unmodified source engraving. */

@@ -103,7 +103,7 @@ test("Projects uses native static catalog without exposing private data in Studi
  const ui=read("sites/_apex/app/assets/project-readme-ui.js");
  const store=read("edge/auth-store-projects.mjs");
  const workflow=read(".github/workflows/site.yml");
- assert.match(html,/href="\/app\/assets\/project-showcase\.css\?liquid-plexiglass-crop=112-shift-down-1_5"/);
+ assert.match(html,/href="\/app\/assets\/project-showcase\.css\?artwork=rembrandt-cotan-v1"/);
  assert.match(html,/id="project-list" class="project-showcase-grid"/);
  assert.match(ui,/renderProjectShowcase\(cards,projects,slugRoute\)/);
  assert.match(ui,/location\.hash="#"\+slugRoute\(data\.project\.slug\)/);
@@ -193,7 +193,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "hidden-functions": "hidden-functions",
  "latexcel": "latexcel"
 };
- const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","ozoning-board"];
+ const artworkSlugs=["bootscript","translucence-lab","github-readme-chrome-extension","chatgpt-chat-save-chrome-extension","colosseum","apple-hig-reader","terminal-scalars","app-caviar","hidden-functions","latexcel","unicode-plus","protocol-monitor-pruner","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","ozoning-board"];
  assert.deepEqual(PROJECT_CARD_ICONS,iconNames);
  assert.deepEqual(Object.keys(PROJECT_CARD_IMAGES),artworkSlugs);
  const slugs=new Set(PROJECT_SHOWCASE.map(project=>project.slug));
@@ -207,7 +207,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
   assert.equal(url,"/assets/project-art/terminal-scalars-liquid-symmetry.v3.webp");
  }else if(slug==="app-caviar"){
   assert.equal(url,"/assets/project-art/app-caviar-source.v2.webp");
- }else if(["bootscript","hidden-functions","ozoning-board"].includes(slug)){
+ }else if(["bootscript","hidden-functions","ozoning-board","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"].includes(slug)){
   assert.ok(url.startsWith("/assets/project-art/")&&url.endsWith(".webp"));
  }else assert.ok(url.startsWith("https://"),"External image must use HTTPS");
  }
@@ -362,30 +362,29 @@ test("Colosseum and Terminal Scalars use the exact revised user-supplied SVG geo
 });
 
 test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated artworks",()=>{
- const warhol=PROJECT_CARD_IMAGES["liquid-plexiglass-26"];
+ const storm=PROJECT_CARD_IMAGES["liquid-plexiglass-26"];
+ const cardo=PROJECT_CARD_IMAGES["3d-liquid-glass-26-swift-package"];
  const church=PROJECT_CARD_IMAGES["ozoning-board"];
- assert.equal(warhol,"https://museum.bucknell.edu/files/2020/07/Warhol_Glasses-scaled.jpg");
+ assert.equal(storm,"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v1.webp");
+ assert.equal(cardo,"/assets/project-art/3d-liquid-glass-cotan-cardo.v1.webp");
  assert.equal(church,"/assets/project-art/ozoning-board-el-khasne.v1.webp");
- assert.ok(!warhol.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
+ assert.ok(!storm.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.equal(PROJECT_CARD_ICONS["liquid-plexiglass-26"],"lens","Liquid Plexiglass now uses the requested Lucide lens icon");
  assert.equal(PROJECT_CARD_ICONS["ozoning-board"],"treehouse-ozoning.v4","Use the new user-supplied Ozoning Board icon");
  assert.ok(read("sites/_apex/app/assets/project-showcase.js").includes("PROJECT_CARD_IMAGES[project.slug]"),"Keep per-project hover assignment");
 });
 
-test("Liquid Plexiglass 26 hover artwork is cropped by 12% and shifted down 1.5% without changing other project cards",()=>{
+test("Rembrandt artwork uses its own cover alignment and no Warhol-specific zoom",()=>{
  const css=read("sites/_apex/app/assets/project-showcase.css");
- const html=read("sites/_apex/app/index.html");
- const js=read("sites/_apex/app/assets/project-showcase.js");
- const selector='.project-showcase-card[data-project-slug="liquid-plexiglass-26"]';
- assert.ok(css.includes(selector),'The crop must target only Liquid Plexiglass 26');
- assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\] \.project-showcase-photo\{\s*transform:translateY\(1\.5%\) scale\(1\.232\)/,'Retains the 1.232 entrance scale with a 1.5% downward shift');
- assert.match(css,/\.project-showcase-card\[data-project-slug="liquid-plexiglass-26"\]\.is-photo-ready:is\(:hover,:focus-visible,:focus-within\) \.project-showcase-photo\{\s*transform:translateY\(1\.5%\) scale\(1\.12\)/,'Resting photo is 12% closer and 1.5% lower');
- assert.ok(css.includes('object-fit:cover;object-position:center'),'Center crop and cover remain intact');
- assert.ok(css.includes('transition:opacity .5s ease-out,transform .5s ease-out'),'Hover fade and zoom animation remain');
- assert.ok(css.includes('overflow:hidden'),'Card continues clipping zoomed image');
- assert.ok(js.includes('card.dataset.projectSlug=project.slug'),'Per-project attribute exists');
- assert.ok(html.includes('/app/assets/project-showcase.css?liquid-plexiglass-crop=112-shift-down-1_5'),'Updated stylesheet bypasses old cache');
+ const publicCSS=read("sites/_apex/assets/public-projects.css");
+ for(const source of [css,publicCSS]){
+  assert.ok(source.includes('object-position:50% 66%'));
+  assert.ok(!source.includes('translateY(1.5%) scale(1.12)'));
+  assert.ok(source.includes('object-fit:cover;object-position:center'));
+  assert.ok(source.includes('transition:opacity .5s ease-out,transform .5s ease-out'));
+ }
+ assert.ok(read("sites/_apex/app/index.html").includes('/app/assets/project-showcase.css?artwork=rembrandt-cotan-v1'));
 });
 
 test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
@@ -411,7 +410,7 @@ test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon hand
 });
 
 test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>{
- for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000]]){
+ for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000],["liquid-plexiglass-26",2000,2486,1500000],["3d-liquid-glass-26-swift-package",3200,2417,1500000]]){
   const url=PROJECT_CARD_IMAGES[slug],bytes=readFileSync(new URL("../sites/_apex"+url,import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");assert.equal(bytes.toString("ascii",8,12),"WEBP");
   assert.ok(bytes.length<=maxBytes,slug+" asset budget");

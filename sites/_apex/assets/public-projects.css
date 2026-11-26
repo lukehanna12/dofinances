@@ -137,10 +137,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   transform:scale(1.1025)
 }
 .public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"] .project-showcase-photo{
-  transform:translateY(1.5%) scale(1.232)
-}
-.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
-  transform:translateY(1.5%) scale(1.12)
+  object-position:50% 66%
 }
 /* ReadMe GLP / Monet: crop the hairline edges at the top and bottom
  * without changing the underlying artwork. Shift slightly upward; keep
@@ -559,9 +556,6 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="bootscript"].is-photo-ready .project-showcase-photo{
   transform:scale(1.1025)
 }
-.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="liquid-plexiglass-26"].is-photo-ready .project-showcase-photo{
-  transform:translateY(1.5%) scale(1.12)
-}
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="github-readme-chrome-extension"].is-photo-ready .project-showcase-photo{
   transform:translateY(-.6%) scale(1.04)
 }
@@ -669,6 +663,5 @@ body.public-home > #public-route-content:has(.public-project-detail){background:
 .public-projects-root .project-showcase-card.is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{opacity:1;transform:scale(1)}
 .public-projects-root .project-showcase-card[data-project-slug="terminal-scalars"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.03)}
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.1025)}
-.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(1.5%) scale(1.12)}
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(-.6%) scale(1.04)}
 .public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.11)}
