@@ -1,0 +1,126 @@
+{
+  "schema": "dofinances-site-integration-validation-v1",
+  "scope": "Public renderer candidate only; no production deploy or native proof closure.",
+  "baseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
+  "testedCandidate": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+  "device": {
+    "chip": "Apple M2",
+    "gpu": "Apple Metal 3",
+    "shaderF16": true,
+    "browser": "Chrome 158"
+  },
+  "tests": {
+    "command": "node --test tests/*.test.mjs research/continuous-glass/*.test.mjs",
+    "passed": 686,
+    "failed": 0,
+    "trace": "8ebb5a7a-b8cf-46cf-8893-946bfe35e67e"
+  },
+  "shader": {
+    "bothPipelineFormatsCompiled": true,
+    "reference": "f53a8f877a79959b0fca73e557c735db4fbc88d1"
+  },
+  "vectors": {
+    "assets": 16,
+    "curves": 1816,
+    "rawCurveBytes": 87168,
+    "rawCurveSHA256": "7afef33d70a6793c91b8e9d7e9540ae95026a582eb958b81889af4c9eab46070",
+    "candidateOpticalAtlasSize": 0,
+    "remainingHazeBytes": 2359296,
+    "currentSampleCacheBytes": 8388608,
+    "legacyMaskAndHazeBytes": 11829248
+  },
+  "attachmentComparison": {
+    "commit": "91e3594bedabb83068566ddd9f3ceb4c9aed67e3",
+    "trace": "e3691920-c68e-4073-aafb-8c13191eb920",
+    "source": "Synthetic RGBA16Float source and owned fragment attachment; actual site baseline/candidate shaders; not native or displayed screenshots.",
+    "cases": [
+      {
+        "dpr": 1,
+        "width": 400,
+        "height": 384,
+        "icons": 16,
+        "cached": 16,
+        "cacheDirectByteDifferences": 0,
+        "nonfinite": 0,
+        "meanRGB": 0.01070379211075811,
+        "p99RGB": 0.0736083984375,
+        "maxRGB": 0.34814453125,
+        "maxAlpha": 0.0009765625,
+        "baselineDrawMs": [
+          0.6000003814697266,
+          0.5999994277954102,
+          0.5
+        ],
+        "candidateDrawMs": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "buildMs": 31.40000057220459
+      },
+      {
+        "dpr": 2,
+        "width": 800,
+        "height": 768,
+        "icons": 16,
+        "cached": 16,
+        "cacheDirectByteDifferences": 0,
+        "nonfinite": 0,
+        "meanRGB": 0.001061351731639459,
+        "p99RGB": 0.018798828125,
+        "maxRGB": 0.3319091796875,
+        "maxAlpha": 0.0009765625,
+        "baselineDrawMs": [
+          1,
+          0.9000005722045898,
+          1
+        ],
+        "candidateDrawMs": [
+          0.8999996185302734,
+          0.9000005722045898,
+          1
+        ],
+        "buildMs": 35.80000019073486
+      }
+    ]
+  },
+  "browser": {
+    "baseline": {
+      "commit": "4b564783f199bc7e87ae1dfb6cb418a01a2facf6",
+      "trace": "0b3c821c-aa11-493d-90dd-25410d123e31",
+      "scrollMs": 401.4
+    },
+    "candidate": {
+      "commit": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+      "trace": "c005cd69-c38b-442d-86fc-8e8bb8366f43",
+      "scrollMs": 460,
+      "previousScrollMs": 552.5,
+      "errors": 0,
+      "exceptions": 0,
+      "afterScroll": {
+        "icons": 16,
+        "cacheBuilds": 16,
+        "cacheHits": 260,
+        "cacheMisses": 0
+      },
+      "afterResize": {
+        "icons": 16,
+        "cacheBuilds": 32,
+        "cacheHits": 276,
+        "cacheMisses": 0
+      }
+    },
+    "limits": "Local Home and Projects using fixture for remote artwork, 1400x880 -> 1024x720 at DPR2, reduced motion. Login stub not actual sign-in. Single baseline and two candidate runs; not a robust full-page performance benchmark."
+  },
+  "referenceDensity": {
+    "dpr": 2,
+    "reason": "Preserve the tested Retina baseline's authored physical-pixel optical lengths and scale them relative to the source lattice. Intentionally changes old DPR1 optics. Further cross-density and held-out geometry validation required."
+  },
+  "unresolved": [
+    "Projects heading still uses actual-output-density raster glyph optical field, not vector distance.",
+    "Source mipbox chain and display-only haze preserved. No complete density-independent reconstruction of arbitrary composed source.",
+    "Integrated vector field high-scale comparison harness written; two remote runs returned consumed receipts without results.",
+    "Localized RGB differences, especially normals; independent full appearance approval not established.",
+    "Scroll timings and cache rebuild latency, real sign-in and interactive route/press validation, full production build and deployment checks remain open."
+  ]
+}

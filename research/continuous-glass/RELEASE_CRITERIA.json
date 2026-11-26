@@ -8,32 +8,38 @@
     {
       "id": "site-vector-geometry",
       "status": "open",
-      "reason": "All current optical shapes and project icons, plus glass text, must have continuous optical distance and normals. Final pixel coverage may be rasterized at output density."
+      "reason": "Sixteen optical icon fields integrated, fixed RG8 distance atlas disabled. Projects heading glyph optical field remains raster-derived. Integrated high-scale comparison awaits usable result.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-coordinate-separation",
       "status": "open",
-      "reason": "Verify geometric resize, DPR and magnification independently; eliminate avoidable atlas and normalized UV quantization."
+      "reason": "Real geometry, refraction and normalized UVs, reference DPR2 optical lengths, viewport source LOD adjustment. Cache/direct exact output in two attachments; full independent magnification and density checks not yet passed.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-optical-reconstruction",
       "status": "open",
-      "reason": "Preserve current source and blur appearance while removing avoidable resolution dependence. Verify actual integrated candidate."
+      "reason": "Existing source mipbox chain and haze retained; continuous UV interpolation with reference-density LOD. No completed cross-density comparative source test.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-material-interaction-preservation",
       "status": "open",
-      "reason": "Retain existing material and interaction code; validate Clear, Regular, tint, hover, click, routes and scroll transitions."
+      "reason": "Original face/tint/material/spring stages retained; Home and Projects local browser smoke/scroll/resize pass. Real sign-in and interactive transitions not fully validated.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "site-comparative-fidelity",
       "status": "open",
-      "reason": "Compare candidate and exact baseline at ordinary sizes and demonstrate improved magnification/resizing on held-out shapes. No regressions in ordinary appearance."
+      "reason": "All 16 tested icons, finite output, DPR2 mean RGB abs diff .001061 but max .331909. DPR1 mean .010704 after intentional reference-DPR normalization. Held-out high-scale comparison incomplete; no ordinary-appearance approval.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     },
     {
       "id": "production-performance-and-regressions",
       "status": "open",
-      "reason": "Actual browser frame performance, resource use and full site tests must pass."
+      "reason": "686 tests pass, isolated cached draws comparable to baseline. Full cache build 31.4–35.8ms; local 12-step scroll 460ms candidate vs 401.4ms baseline. Full performance, production build and route checks not passed.",
+      "evidence": "research/continuous-glass/SITE_VALIDATION.json"
     }
   ],
   "deferredNativeProofs": [
@@ -92,5 +98,10 @@
     "commit": "0f9e1c384df5745ec705036a3210a7e3b65798fd",
     "path": "research/continuous-glass/VALIDATION.json",
     "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
+  },
+  "latestSiteValidation": {
+    "commit": "989547c170515b2cbc632aa478fa657d4e72ac6e",
+    "path": "research/continuous-glass/SITE_VALIDATION.json",
+    "scope": "Finite candidate tests and open blockers; all six site gates remain open."
   }
 }
