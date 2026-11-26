@@ -272,7 +272,7 @@ test("ChatStore and Colosseum use verified images of their actual artworks",()=>
  assert.equal(mural,"/assets/project-art/chatstore-hokusai-merchant.v1.webp");
  assert.equal(PROJECT_CARD_IMAGES["apple-adobe-fx"],"/assets/project-art/apple-adobe-fx-bronze-sculpture.v2.jpg");
  assert.equal(pastoral,"https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg/960px-Cole_Thomas_The_Course_of_Empire_The_Arcadian_or_Pastoral_State_1836.jpg");
- for(const slug of ["chatgpt-chat-save-chrome-extension","apple-adobe-fx"]){
+ for(const slug of ["chatgpt-chat-save-chrome-extension"]){
   const asset=PROJECT_CARD_IMAGES[slug];
   const bytes=readFileSync(new URL("../sites/_apex"+asset,import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");
@@ -388,7 +388,7 @@ test("Lightworks painting and requested App Caviar/Liquid Plexiglass 26 icon han
 });
 
 test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>{
- for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000],["liquid-plexiglass-26",1800,2237,300000],["3d-liquid-glass-26-swift-package",2048,1546,300000]]){
+ for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["ozoning-board",1016,1280,180000],["liquid-plexiglass-26",1800,2237,300000],["3d-liquid-glass-26-swift-package",2048,1546,300000]]){
   const url=PROJECT_CARD_IMAGES[slug],bytes=readFileSync(new URL("../sites/_apex"+url,import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");assert.equal(bytes.toString("ascii",8,12),"WEBP");
   assert.ok(bytes.length<=maxBytes,slug+" asset budget");
@@ -423,11 +423,20 @@ test("Lightworks has one canonical slug and an atomic data migration",()=>{
 
 // The two portrait assets retain their original composition within the artwork budget.
 test("Replaced project artwork has valid JPEG signatures and synchronized lightweight files",()=>{
- for(const [slug,name] of [["apple-adobe-fx","apple-adobe-fx-bronze-sculpture.v2.jpg"],["hidden-functions","hidden-functions-rockwell-stairway.v2.jpg"]]){
+ for(const [slug,name,width,height] of [["apple-adobe-fx","apple-adobe-fx-bronze-sculpture.v2.jpg",1087,1440],["hidden-functions","hidden-functions-rockwell-stairway.v2.jpg",842,1024]]){
   const a=readFileSync(new URL("../sites/_apex/assets/project-art/"+name,import.meta.url));
   const b=readFileSync(new URL("../public/assets/project-art/"+name,import.meta.url));
   assert.equal(a[0],0xff);assert.equal(a[1],0xd8);assert.equal(a[a.length-2],0xff);assert.equal(a[a.length-1],0xd9);
   assert.ok(a.length>50000&&a.length<300000);
+  let dimensions=null;
+  for(let i=2;i+9<a.length;){
+   if(a[i++]!==0xff)break;
+   while(a[i]===0xff)i++;
+   const marker=a[i++];
+   if([0xc0,0xc1,0xc2].includes(marker)){dimensions=[a.readUInt16BE(i+5),a.readUInt16BE(i+3)];break;}
+   const n=a.readUInt16BE(i);if(n<2)break;i+=n;
+  }
+  assert.deepEqual(dimensions,[width,height]);
   assert.deepEqual(a,b);assert.equal(PROJECT_CARD_IMAGES[slug],"/assets/project-art/"+name);
  }
 });

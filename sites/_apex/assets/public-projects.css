@@ -165,15 +165,6 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
   transform:translateY(-.6%) scale(1.04)
 }
-/* Piranesi NGA print: enlarge past the complete paper/etched-plate border
- * on every side, including during the fully revealed hover/resting state.
- * Keep the same 10% entrance-to-rest scale ratio as other project cards. */
-.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"] .project-showcase-photo{
-  transform:scale(1.221)
-}
-.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:is(:hover,:focus-visible) .project-showcase-photo{
-  transform:scale(1.11)
-}
 .public-projects-root .project-showcase-content{
   position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
   min-height:100%;box-sizing:border-box;
@@ -615,9 +606,6 @@ body.public-home[data-auth-gpu-scene="ready"] .public-projects-root
 .public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="github-readme-chrome-extension"].is-photo-ready .project-showcase-photo{
   transform:translateY(-.6%) scale(1.04)
 }
-.public-projects-root.has-project-expansion .project-showcase-card.is-expanded[data-project-slug="hidden-functions"].is-photo-ready .project-showcase-photo{
-  transform:scale(1.11)
-}
 .public-projects-root .project-showcase-expanded-slot{min-height:clamp(215px,18vw,250px);pointer-events:none}
 .public-projects-root .project-showcase-expand-close{
   position:absolute;z-index:6;display:grid;place-items:center;
@@ -721,4 +709,3 @@ body.public-home > #public-route-content:has(.public-project-detail){background:
 .public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.1025)}
 .public-projects-root .project-showcase-card[data-project-slug="chatgpt-chat-save-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.04)}
 .public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(-.6%) scale(1.04)}
-.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.11)}

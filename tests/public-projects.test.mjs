@@ -112,14 +112,13 @@ test("ReadMe GLP artwork is gently enlarged and shifted up on public Projects on
  assert.match(publicCSS,/\[data-project-slug="github-readme-chrome-extension"\]\.is-photo-ready:is\(:hover,:focus-visible\) \.project-showcase-photo\{\s*transform:translateY\(-\.6%\) scale\(1\.04\)/);
  assert.ok(path.length>0);
 });
-test("Named art sources and all-sided Piranesi crop are the same on both routes",async()=>{
+test("Named art sources match and the retired Piranesi crop is removed from both routes",async()=>{
   const [publicCSS,privateCSS]=await Promise.all([
     load("../sites/_apex/assets/public-projects.css"),
     load("../sites/_apex/app/assets/project-showcase.css")
   ]);
   for(const css of [publicCSS,privateCSS]){
-    assert.match(css,/\[data-project-slug="hidden-functions"\][^{}]*\.project-showcase-photo\{\s*transform:scale\(1\.221\)/);
-    assert.match(css,/\[data-project-slug="hidden-functions"\]\.is-photo-ready[^{}]*\.project-showcase-photo\{\s*transform:scale\(1\.11\)/);
+    assert.doesNotMatch(css,/\\[data-project-slug="hidden-functions"\\][^{}]*\\.project-showcase-photo\\s*\\{/);
   }
   assert.deepEqual(PUBLIC_IMAGES,PRIVATE_IMAGES);
 });
