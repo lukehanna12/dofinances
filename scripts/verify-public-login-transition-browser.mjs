@@ -1801,11 +1801,11 @@ try{
   await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
   await evaluate("history.back()");
   await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
-  await send("Page.navigate",{url:origin+"/projects#lightwork"});
+  await send("Page.navigate",{url:origin+"/projects#lightworks"});
   await until("document.querySelector('.public-project-detail')?.dataset.projectDetail==='translucence-lab'",190);
   await send("Page.reload",{ignoreCache:true});
   await until("document.body.dataset.directLogin==='true'&&document.querySelector('.public-project-detail')?.dataset.projectDetail==='translucence-lab'",190);
-  assert.equal(await evaluate("document.querySelector('.project-showcase-title').textContent"),"Lightwork");
+  assert.equal(await evaluate("document.querySelector('.project-showcase-title').textContent"),"Lightworks");
   await evaluate("document.querySelector('.public-projects-back').click()");
   await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
   await send("Emulation.setDeviceMetricsOverride",{...descriptionViewport,deviceScaleFactor:1,mobile:false});

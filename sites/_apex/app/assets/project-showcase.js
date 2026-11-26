@@ -5,7 +5,7 @@ import {mountProjectArtworkReveal} from "../../assets/project-artwork-reveal.js"
 
 export const PROJECT_SHOWCASE=Object.freeze([
  {slug:"bootscript",name:"BootScript",kind:"Developer tooling",repository:"lukehanna12/bootscript",status:"review",docs:true},
- {slug:"translucence-lab",name:"Lightwork",kind:"Translucence experiments",repository:"lukehanna12/lightwork",status:"review",docs:true},
+ {slug:"translucence-lab",name:"Lightworks",kind:"Translucence experiments",repository:"lukehanna12/lightworks",status:"review",docs:true},
  {slug:"github-readme-chrome-extension",name:"ReadMe GLP",kind:"Browser extension",repository:"lukehanna12/reademe-glp",status:"review",docs:true},
  {slug:"chatgpt-chat-save-chrome-extension",name:"ChatStore",kind:"Browser extension",repository:"lukehanna12/chatstore",status:"in-progress",docs:true},
  {slug:"colosseum",name:"Colosseum",kind:"Development platform",repository:"lukehanna12/colosseum",status:"coming-soon"},
@@ -43,7 +43,7 @@ export function sortProjectShowcase(projects){
 export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
-  "translucence-lab":"lightwork.v3",
+  "translucence-lab":"lightworks.v3",
   "github-readme-chrome-extension":"readme-glp.v2",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"terminal-scalars.v3",

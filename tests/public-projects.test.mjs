@@ -52,7 +52,7 @@ test("supplied project SVGs are identical across public and authenticated views"
   const assigned=[
     ["terminal-scalars","terminal-scalars.v3",13],
     ["colosseum","colosseum-lucide.v2",14],
-    ["translucence-lab","lightwork.v3",6],
+    ["translucence-lab","lightworks.v3",6],
     ["apple-adobe-fx","apple-adobe-fx.v2",6],
     ["ozoning-board","treehouse-ozoning.v4",6],
     ["github-readme-chrome-extension","readme-glp.v2",5],
@@ -75,13 +75,13 @@ test("supplied project SVGs are identical across public and authenticated views"
   }
   const terminal=await load("../sites/_apex/assets/project-icons/terminal-scalars.v3.svg");
   assert.ok(terminal.includes('M 19 3 A2 2 0 0 1 21 5'));
-  const lightwork=await load("../sites/_apex/assets/project-icons/lightwork.v3.svg");
-  assert.ok(lightwork.includes('M8 8h.5l2-3 2.5 6 1.5-3H16'));
-  assert.ok(lightwork.includes('M18 8h1.5'));
-  assert.ok(lightwork.includes('M4.5 8H6'));
-  assert.ok(!lightwork.includes('M17.7 15h.01'));
-  assert.ok(!lightwork.includes('m19.1 13.1 1.4.9'));
-  assert.ok(!lightwork.includes('M3.08 5.49h1'));
+  const lightworks=await load("../sites/_apex/assets/project-icons/lightworks.v3.svg");
+  assert.ok(lightworks.includes('M8 8h.5l2-3 2.5 6 1.5-3H16'));
+  assert.ok(lightworks.includes('M18 8h1.5'));
+  assert.ok(lightworks.includes('M4.5 8H6'));
+  assert.ok(!lightworks.includes('M17.7 15h.01'));
+  assert.ok(!lightworks.includes('m19.1 13.1 1.4.9'));
+  assert.ok(!lightworks.includes('M3.08 5.49h1'));
   const adobe=await load("../sites/_apex/assets/project-icons/apple-adobe-fx.v2.svg");
   assert.ok(adobe.includes('M15 16a7 7 0 116.841-8.5'));
   const ozoning=await load("../sites/_apex/assets/project-icons/treehouse-ozoning.v4.svg");
@@ -157,7 +157,7 @@ test("Projects search and seven multiselect filters use exact slug memberships",
   const expected={
     "Applications": [
       "Colosseum",
-      "Lightwork",
+      "Lightworks",
       "App Caviar"
     ],
     "Extensions": [
@@ -176,7 +176,7 @@ test("Projects search and seven multiselect filters use exact slug memberships",
     "CLIs": [
       "Colosseum",
       "Unicode Plus",
-      "Lightwork",
+      "Lightworks",
       "Protocol Monitor Pruner"
     ],
     "MCPs": [
@@ -445,7 +445,7 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/57 editor theme choices.*Gemini assistance.*collaborative draft editing/);
   assert.match(PROJECT_DESCRIPTIONS.bootscript,/development build.*not yet published/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/gold standard of modern knowledge about light/);
-  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/^Lightwork is a native macOS application and independent command-line interface/);
+  assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/^Lightworks is a native macOS application and independent command-line interface/);
   assert.match(PROJECT_DESCRIPTIONS["translucence-lab"],/share a Metal rendering engine/);
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/lightweight live documentation editor/);
   assert.match(PROJECT_DESCRIPTIONS["chatgpt-chat-save-chrome-extension"],/near-instant.*seven days/);
@@ -536,7 +536,7 @@ test("every project has a unique readable hash URL and legacy alias",async()=>{
  const {PROJECT_SHOWCASE,publicProjectHref,projectFromPublicHash}=await import("../sites/_apex/assets/public-projects-catalog.js");
  const urls=PROJECT_SHOWCASE.map(publicProjectHref);
  assert.equal(new Set(urls).size,16);
- assert.ok(urls.includes("/projects#bootscript")&&urls.includes("/projects#lightwork")&&urls.includes("/projects#readme-glp"));
+ assert.ok(urls.includes("/projects#bootscript")&&urls.includes("/projects#lightworks")&&urls.includes("/projects#readme-glp"));
  for(const p of PROJECT_SHOWCASE){
   assert.equal(projectFromPublicHash(publicProjectHref(p).split("#")[1]),p);
   assert.equal(projectFromPublicHash("#"+p.slug),p);

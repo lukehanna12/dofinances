@@ -541,7 +541,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
         [
           "Plexiglass 26",
           "Plexiglass 27",
-          "Lightwork"
+          "Lightworks"
         ],
         [
           "Geometry + optical dynamics"

@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 
 test("Projects roster applies requested names and progress states without retired entries",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.map(p=>p.name),[
-  "BootScript","Lightwork","ReadMe GLP","ChatStore",
+  "BootScript","Lightworks","ReadMe GLP","ChatStore",
   "Colosseum","Apple HIGs Reader","Terminal Scalars","Unicode Plus",
   "Liquid Plexiglass 26","3D Liquid Glass","Apple Adobe FX",
   "Protocol Monitor Pruner","App Caviar","Ozoning Board",
@@ -31,7 +31,7 @@ test("Projects roster applies requested names and progress states without retire
 test("Curated projects link their verified GitHub repositories",()=>{
  assert.deepEqual(PROJECT_SHOWCASE.filter(p=>p.repository).map(p=>[p.slug,p.repository]),[
   ["bootscript","lukehanna12/bootscript"],
-  ["translucence-lab","lukehanna12/lightwork"],
+  ["translucence-lab","lukehanna12/lightworks"],
   ["github-readme-chrome-extension","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","lukehanna12/chatstore"],
   ["colosseum","lukehanna12/colosseum"],["apple-hig-reader","lukehanna12/apple-higs-reader"],
@@ -57,7 +57,7 @@ test("Local Docs are created in account storage without overwriting saved README
  const store=read("edge/auth-store-projects.mjs");
  const ui=read("sites/_apex/app/assets/project-readme-ui.js");
  const router=read("edge/router.mjs");
- for(const name of ["BootScript","Lightwork","ReadMe GLP","ChatStore"]){
+ for(const name of ["BootScript","Lightworks","ReadMe GLP","ChatStore"]){
   assert.ok(store.includes('"'+name+'"'),"Seed is missing "+name);
  }
  assert.match(store,/INSERT OR IGNORE INTO project_records/);
@@ -122,7 +122,7 @@ test("Verified repository associations backfill once and respect account overrid
  for(const [slug,name,repository] of [
   ["bootscript","BootScript","lukehanna12/bootscript"],
   ["unicode-plus","Unicode Plus","lukehanna12/unicode-plus"],
-  ["translucence-lab","Lightwork","lukehanna12/lightwork"],
+  ["translucence-lab","Lightworks","lukehanna12/lightworks"],
   ["github-readme-chrome-extension","ReadMe GLP","lukehanna12/reademe-glp"],
   ["chatgpt-chat-save-chrome-extension","ChatStore","lukehanna12/chatstore"]
  ]){
@@ -184,7 +184,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  const iconNames={
  "colosseum": "colosseum-lucide.v2",
  "bootscript": "paint-roller",
- "translucence-lab": "lightwork.v3",
+ "translucence-lab": "lightworks.v3",
  "github-readme-chrome-extension": "readme-glp.v2",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "terminal-scalars.v3",
@@ -411,7 +411,7 @@ test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
 });
 
 
-test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon handoff",()=>{
+test("Lightworks painting and requested App Caviar/Liquid Plexiglass 26 icon handoff",()=>{
  assert.equal(PROJECT_CARD_IMAGES["translucence-lab"],
   "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg/960px-The_Calling_of_Saint_Matthew-Caravaggo_%281599-1600%29.jpg");
  assert.equal(PROJECT_CARD_ICONS["app-caviar"],"opacity");
@@ -437,4 +437,12 @@ test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>
   }
   assert.ok(w>=minW&&h>=minH,slug+" decoded dimensions "+w+"x"+h);
  }
+});
+
+test("Lightworks migrates its old repository link and unedited default README without touching custom links",async()=>{
+ const store=await readFile(new URL("../edge/auth-store-projects.mjs",import.meta.url),"utf8");
+ assert.ok(store.includes('["translucence-lab","Lightwork","Lightworks"]'));
+ assert.ok(store.includes('lower(repository)=?'));
+ assert.ok(store.includes('"lukehanna12/lightworks",NOW(),userId,"translucence-lab","lukehanna12/lightwork"'));
+ assert.ok(store.includes('slug=? AND default_readme=?'));
 });

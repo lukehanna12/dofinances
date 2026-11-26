@@ -14,7 +14,7 @@
 
 ## Artwork references
 
-- Lightwork: Caravaggio, *The Calling of Saint Matthew* (1599–1600), verified Wikimedia Commons 960px reproduction, referenced externally.
+- Lightworks: Caravaggio, *The Calling of Saint Matthew* (1599–1600), verified Wikimedia Commons 960px reproduction, referenced externally.
 - BootScript: Frederic Remington, *Buying Polo Ponies in the West* (1905), WikiArt.
 - ReadMe GLP: Claude Monet, *Gorge of the Petite Creuse* (1889), also catalogued as *Valley of the Petite Creuse* (Wildenstein 1230; Museum of Fine Arts, Boston, accession 23.541), direct Wikimedia Commons artwork image.
 - ChatStore: Katsushika Hokusai, *A merchant making up the account*, public domain. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:A_merchant_making_up_the_account.jpg).
@@ -30,9 +30,9 @@
 
 ## Project icon updates (2026-11-23)
 
-The supplied SVG paths are preserved verbatim in four versioned assets: `terminal-scalars.v2.svg`, `lightwork.v2.svg`, `apple-adobe-fx.v2.svg`, and `treehouse-ozoning.v4.svg`. Public Home and Projects continue to resolve one slug-to-icon map in `sites/_apex/assets/public-projects-catalog.js`; the authenticated Projects catalog mirrors those assignments. Both asset trees contain identical SVG geometry. The Home filter displays black, and the Projects filter displays white. Older icons remain available for compatibility.
+The supplied SVG paths are preserved verbatim in four versioned assets: `terminal-scalars.v2.svg`, `lightworks.v2.svg`, `apple-adobe-fx.v2.svg`, and `treehouse-ozoning.v4.svg`. Public Home and Projects continue to resolve one slug-to-icon map in `sites/_apex/assets/public-projects-catalog.js`; the authenticated Projects catalog mirrors those assignments. Both asset trees contain identical SVG geometry. The Home filter displays black, and the Projects filter displays white. Older icons remain available for compatibility.
 
-- Lightwork's revised simplified icon is `lightwork.v3.svg`, preserving exactly the six user-supplied path elements. `lightwork.v2.svg` remains for backwards compatibility; both public surfaces and the authenticated Projects view select v3.
+- Lightworks's revised simplified icon is `lightworks.v3.svg`, preserving exactly the six user-supplied path elements. `lightworks.v2.svg` remains for backwards compatibility; both public surfaces and the authenticated Projects view select v3.
 
 ## Project icon updates (2026-11-24)
 
