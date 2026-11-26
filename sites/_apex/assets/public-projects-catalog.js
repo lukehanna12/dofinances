@@ -68,7 +68,7 @@ export const PROJECT_CARD_ICONS=Object.freeze({
   "colosseum":"colosseum-lucide.v2",
   "bootscript":"paint-roller",
   "translucence-lab":"lightwork.v3",
-  "github-readme-chrome-extension":"file-pen",
+  "github-readme-chrome-extension":"readme-glp.v2",
   "chatgpt-chat-save-chrome-extension":"folder-bookmark",
   "terminal-scalars":"terminal-scalars.v3",
   "unicode-plus":"unicode-plus.v2",

@@ -3,7 +3,6 @@ export const PROJECT_ICON_REVISIONS=Object.freeze({
   "apple-adobe-fx.v2": "dcd32fc5dc6e50b2dc7e838f707a8cb39043e57427b5102bdd06f2a4cfe3f2fa",
   "apple-higs-reader.v4": "520a704fc4ff26ce349ed0aecaeaf17416d8026457a0ac429f574bdfbb43babd",
   "colosseum-lucide.v2": "0b8f6d2f538ff58de790a97e40a436b8f9b202a6f48851fe3fd847d51489b012",
-  "file-pen": "0d4b38b766853a1c87d3615c5223c6cdf60a9ff499860a0ee50fcbab53d2742e",
   "folder-bookmark": "840807c449a0e656a9933b57ba9c08aaf7d9aa286016161542ec7bf91e860f76",
   "hidden-functions": "15f86eff7c936dc01affdfa63080e387abcd1d29712436421a077310833187a8",
   "latexcel": "af19d6e4edd091ca4a449b97d57fbe14795194f5462c26b44b816209d944fb7e",
@@ -13,6 +12,7 @@ export const PROJECT_ICON_REVISIONS=Object.freeze({
   "opacity": "b7326d085c25b47344bd0ba9f6fb4c7061610c50b54eec16cdd47ace11605526",
   "paint-roller": "22436fbea1b6d8d28fddd08e4b991300430efc6b6ca526049322e41ef94ca03f",
   "protocol-monitor-pruner.v2": "4821e6210c6d8e6107788d6863e91cf4ae08b420a037d721cb2f316b4526910b",
+  "readme-glp.v2": "b13d0cba3276722d121d9ada13aa91c38bfc541e59b0ef985e635e9744b23769",
   "terminal-scalars.v3": "6b854a99e9dc167f4f3cad4e626daf9facadd4b875ee278b623c3947b2ca87d8",
   "treehouse-ozoning.v4": "1857ffbaf0d143d2bc84b918f15d460bf3b4e1af23475eab33d9373c910fb2d7",
   "unicode-plus.v2": "e697f71b2b52680a6b8edd8ab5d7bcfbb349aad7b8834591961f4a24e698701c"

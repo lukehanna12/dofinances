@@ -180,7 +180,7 @@ test("Curated icon and art assignments remain bound to permanent project slugs",
  "colosseum": "colosseum-lucide.v2",
  "bootscript": "paint-roller",
  "translucence-lab": "lightwork.v3",
- "github-readme-chrome-extension": "file-pen",
+ "github-readme-chrome-extension": "readme-glp.v2",
  "chatgpt-chat-save-chrome-extension": "folder-bookmark",
  "terminal-scalars": "terminal-scalars.v3",
  "unicode-plus": "unicode-plus.v2",
@@ -392,7 +392,7 @@ test("ReadMe GLP uses Monet Gorge of the Petite Creuse from MFA Boston",()=>{
  const url=PROJECT_CARD_IMAGES["github-readme-chrome-extension"];
  assert.equal(url,"https://upload.wikimedia.org/wikipedia/commons/f/f0/Monet_-_Valley_of_the_Petite_Creuse%2C_1889.jpg");
  assert.match(url,/^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//);
- assert.equal(PROJECT_CARD_ICONS["github-readme-chrome-extension"],"file-pen","Keep ReadMe GLP's icon");
+ assert.equal(PROJECT_CARD_ICONS["github-readme-chrome-extension"],"readme-glp.v2","Use the supplied ReadMe GLP icon");
  const js=read("sites/_apex/app/assets/project-showcase.js");
  assert.match(js,/PROJECT_CARD_IMAGES\[project\.slug\]/,"ReadMe GLP shares the standard image reveal");
 });
