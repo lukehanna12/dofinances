@@ -23,12 +23,12 @@
     {
       "id": "complete-vector-ingestion",
       "status": "open",
-      "reason": "SVG arcs, strokes, overlapping contours and exact glyph shaping not integrated."
+      "reason": "All 16 current authored round-stroke icon assets ingest and run on GPU; 36,864 browser membership comparisons and 576 GPU controls retained as finite diagnostics. Independent direct stroke union supports 105/106 outline/browser disagreement points in favor of the outline, one in favor of original browser at 1x. Exact general stroke/boolean tolerances, robust singular normals, arbitrary SVG styles/transforms, portability and exact browser glyph shaping remain open."
     },
     {
       "id": "native-parameter-and-blur",
       "status": "open",
-      "reason": "LG-P-SCALARS remains open; exact private blur producer and kernel are not established."
+      "reason": "LG-P-SCALARS remains open; exact private blur producer and kernel are not established. Public Metal mipmap evidence is already retained. Owned offscreen density probe did not fill the 2x target; new LLDB/impulse acquisitions returned no admissible data."
     },
     {
       "id": "native-numerical-semantics",
@@ -53,7 +53,12 @@
     {
       "id": "production-performance-and-regressions",
       "status": "open",
-      "reason": "Need large artwork, 16 moving surfaces, overlapping glass, scrolling, route transitions, and memory/frame budgets; research loops are not production tuned."
+      "reason": "Fixed-source GPU prefix integration passes finite CPU comparisons and accelerates a 128-query large-footprint benchmark; memory overhead, large artwork binding budgets, full-frame performance, 16 moving surfaces, overlap, scroll/route transitions and production regression validation remain open."
     }
-  ]
+  ],
+  "latestResearchValidation": {
+    "commit": "ab0abdec40a6d6d42d9b7d812a47ba1b741f183d",
+    "path": "research/continuous-glass/VALIDATION.json",
+    "scope": "Finite browser/CPU/GPU diagnostics, not Apple Glass equivalence."
+  }
 }

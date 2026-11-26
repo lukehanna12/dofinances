@@ -23,3 +23,7 @@ Run `node --test research/continuous-glass/reference.test.mjs`. Tests compare th
 Oracle: `lukehanna12/liquid-plexiglass-oracle` at `6a10a83ad58de67a513c6f8b27cc2fd092913cf5`. Production baseline: `3908e7f50618bc38ba734178d2ff37fe2bbab50a`. Oracle P/S/R/C/Q evidence is authoritative within its admitted domain. This experiment adds no new native claims.
 
 Next research gates: exact real-arithmetic counterpart of native SDF and normal operator, general Bézier contour nearest-point solver and winding/holes, explicit Jacobian and footprint integration, native blur producer/kernel/half sampling witnesses, dynamic interaction traces, color/EDR lineage, held-out internal GPU resource validation. Compare with unchanged production at ordinary sizes before wider deployment. Production replacement is prohibited until equivalence or superiority is demonstrated.
+
+## Current research validation
+
+See INGESTION.md, GPU.md, VALIDATION.json and RELEASE_CRITERIA.json for the current implemented and tested boundaries. The latest verified numerical code commit is ab0abdec40a6d6d42d9b7d812a47ba1b741f183d. The release gate remains blocked; no production path imports the research implementation.
