@@ -1,5 +1,7 @@
 /* Production-only loader: Home artwork is isolated from authentication and
    other workspace screens. Navigation remains under workspace-nav.js. */
+import {observePublicLogoOval} from "./dashboard-public-icon-fade.js";
+observePublicLogoOval();
 let dashboardLoaded=false;
 function homeVisible(){
   const home=document.querySelector('.view.dashboard-home[data-view="dashboard"]');

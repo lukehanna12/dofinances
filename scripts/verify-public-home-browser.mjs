@@ -149,7 +149,8 @@ try{
  'const occupied=[...grid.querySelectorAll(":scope>.cta6-tile--plain,:scope>.cta6-tile--icon")];',
  'const center=box(logo);const normalized=(tile,rx,ry)=>{const p=box(tile);return Math.hypot((p.center-center.center)/rx,(p.centerY-center.centerY)/ry);};',
  'const inOldOval=occupied.filter(tile=>normalized(tile,65,40)<1).length;',
- 'const visiblyFaded=occupied.filter(tile=>{const r=normalized(tile,140,100);return 0.6+0.4*Math.min(1,r)**2<=.86;}).length;',
+ 'const radius=parseFloat(getComputedStyle(grid).getPropertyValue("--public-logo-oval-x"));',
+ 'const visiblyFaded=occupied.filter(tile=>{const r=normalized(tile,radius,100);return 0.6+0.4*Math.min(1,r)**2<=.86;}).length;',
  'return {viewport:innerWidth,grid:box(grid),logo:box(logo),square:box(tiles[0]),',
  'gap:getComputedStyle(grid).columnGap,font:getComputedStyle(logo).fontSize,logoText:logo.textContent,logoTypography:[getComputedStyle(logo).fontFamily,getComputedStyle(logo).fontWeight,parseFloat(getComputedStyle(logo).lineHeight)/parseFloat(getComputedStyle(logo).fontSize),parseFloat(getComputedStyle(logo).letterSpacing)/parseFloat(getComputedStyle(logo).fontSize)],',
  'inOldOval,visiblyFaded,occupiedCount:occupied.length,',
@@ -199,6 +200,7 @@ try{
   near(g.logo.centerY,g.grid.centerY-2.5*(950/11),
     "Doof and oval raised another 86px (2.5 tiles above lattice center)",width);
   assert.ok(g.inOldOval>=0,"Former small-oval coverage can change after elevating the logo");
+  assert.ok(parseFloat(g.logoOvalX)>280&&parseFloat(g.logoOvalX)<420,"Measured horizontal radius accommodates DoFinances");
   assert.ok(g.visiblyFaded>=2,
     "Expanded oval must significantly attenuate at least two occupied squares");
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
@@ -242,7 +244,7 @@ try{
   assert.equal(g.logoFill,"rgba(0, 0, 0, 0)","Doof text has no backing fill");
   assert.equal(g.logoPaddingX,"0px","Doof text has no new padding");
   assert.equal(g.logoPaddingY,"0px","Doof text has no new padding");
-  assert.equal(g.logoOvalX,"140px","Oval reaches surrounding populated squares");
+  assert.ok(parseFloat(g.logoOvalX)>280&&parseFloat(g.logoOvalX)<420,"Oval scales to the wider wordmark");
   assert.equal(g.logoOvalY,"100px","Oval reaches surrounding populated squares");
   assert.equal(g.logoOffset,"215.90909px","Oval matches raised Doof center");
   assert.match(g.edgeMask,/radial-gradient/,"DOM squares have elliptical opacity dip");

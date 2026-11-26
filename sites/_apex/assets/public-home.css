@@ -193,14 +193,15 @@ body:is(.public-home,.public-login) .public-menu-panel[hidden]{display:none!impo
    squares are 60% opaque at its center, gradually returning to 100%.
    The mosaic has EMPTY cells immediately behind the logo. A 65x40px
    ellipse intersected practically no real glass, so the oval needs to
-   reach its adjacent occupied tiles (140x100px radii).
+   reach its adjacent occupied tiles. The loader measures the horizontal
+   radius from the wordmark; 320px is the no-script fallback.
    Intersect (multiply) the masks so neither fade cancels the other.
    The 1080px lattice is centered; viewport-sized mask layers track the
    actual window edges, not the grid's off-screen edges.
    The photographic backdrop and the foreground title are NEVER masked. */
 body.public-home .dashboard-home .cta6-mosaic{
   --public-edge-fade-width:calc(0.75 * ((1080px - 10 * 13px) / 11));
-  --public-logo-oval-x:140px;
+  --public-logo-oval-x:320px;
   --public-logo-oval-y:100px;
   --public-logo-shift:215.90909px;
   -webkit-mask-image:

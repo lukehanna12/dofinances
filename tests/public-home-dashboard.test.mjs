@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync,existsSync} from "node:fs";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
-import {publicIconSpatialAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
+import {publicIconSpatialAlpha,publicLogoOvalRadius} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
 import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortProjectShowcase,publicProjectIconSource}
   from "../sites/_apex/assets/public-projects-catalog.js";
 import {PROJECT_ICON_REVISIONS} from "../sites/_apex/assets/project-icon-revisions.js";
@@ -146,7 +146,7 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(style,/mask-composite:intersect;/,"Both square alpha fades must combine");
   assert.match(style,/-webkit-mask-composite:source-in;/);
   assert.match(style,/radial-gradient\(ellipse var\(--public-logo-oval-x\) var\(--public-logo-oval-y\)/);
-  assert.match(style,/--public-logo-oval-x:140px;/);
+  assert.match(style,/--public-logo-oval-x:320px;/);
   assert.match(style,/--public-logo-oval-y:100px;/);
   assert.match(style,/--public-logo-shift:215\.90909px;/);
   assert.match(style,/\.cta6-center h1\{\s*translate:0 calc\(-2\.5 \* var\(--cta6-title-tile\)\);/);
@@ -159,7 +159,7 @@ test("Viewport side fades alter square alpha only, while the photo and logo stay
   assert.match(shader,/let edgeOpacity=mix\(0\.25,1\.0,clamp\(edgeDistance\/fadeWidth,0\.0,1\.0\)\);/);
   assert.match(shader,/let logoCenter=vec2<f32>\(/);
   assert.match(shader,/state\.viewport\.y\*0\.5-2\.5\*\(950\.0\/11\.0\)\*state\.viewport\.w/);
-  assert.match(shader,/let ovalRadii=vec2<f32>\(140\.0,100\.0\)\*state\.viewport\.w;/);
+  assert.match(shader,/let ovalRadii=vec2<f32>\(select\(140\.0,-state\.fit\.w,state\.fit\.w<0\.0\),100\.0\)\*state\.viewport\.w;/);
   assert.match(shader,/let logoOpacity=mix\(0\.60,1\.0,ovalDistance\*ovalDistance\);/);
   assert.match(shader,/let baseAlpha=coverage\*in\.introAlpha\*/);
   assert.match(shader,/if\(dismiss<=0\.0\)\{return vec4<f32>\(color,baseAlpha\);\}/,
@@ -225,7 +225,7 @@ test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay b
 });
 test("Icon fade uses the same shader opacity as each square without cropping moving glyphs",()=>{
   const renderer=asset("assets/home-dashboard/dashboard-gpu-renderer.js");
-  assert.match(renderer,/import \{publicIconSpatialAlpha\} from "\.\/dashboard-public-icon-fade\.js";/);
+  assert.match(renderer,/import \{publicIconSpatialAlpha,currentPublicLogoOvalRadius\} from "\.\/dashboard-public-icon-fade\.js";/);
   assert.match(renderer,/trackIcons=all\.map\(cell=>cell\.querySelector\("\.cta6-icon"\)\)/);
   assert.match(renderer,/trackTiles\[i\]\.style\.opacity=\(combinedOpacity\*\s*tileDismissIconOpacity\(dissolving\)\)\.toFixed\(5\);/);
   assert.match(renderer,/const glyphAlpha=publicIconSpatialAlpha\(/);
@@ -406,4 +406,16 @@ test("Home wordmark shares the actual clock-text glass pipeline, not just CSS ty
  assert.match(renderer,/pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
  assert.match(local,/\["Projects","DoFinances"\]\.includes\(text\)/);
  assert.match(style,/\.cta6-center > #dashboard-title\[data-glass-text-ready\]/);
+});
+
+test("Home aperture scales only its horizontal radius with wordmark geometry",()=>{
+  assert.equal(publicLogoOvalRadius(100,100),140);
+  assert.equal(publicLogoOvalRadius(240,100),336);
+  assert.throws(()=>publicLogoOvalRadius(240,0),RangeError);
+  const w=1440,h=900,dpr=2,rx=336,y=h*dpr/2-2.5*(950/11)*dpr;
+  const at=(dx,dy)=>publicIconSpatialAlpha(w*dpr/2+dx*dpr,y+dy*dpr,950/11*dpr,w*dpr,h*dpr,dpr,rx);
+  for(const [x,y,expected] of [[0,0,.6],[168,0,.7],[336,0,1],[0,50,.7],[0,100,1]])
+    assert.ok(Math.abs(at(x,y)-expected)<1e-9);
+  assert.match(asset("assets/home-dashboard/dashboard-gpu-renderer.js"),/uniform\[7\]=-currentPublicLogoOvalRadius\(\)/);
+  assert.match(asset("assets/home-dashboard/dashboard-home-loader.js"),/observePublicLogoOval\(\)/);
 });

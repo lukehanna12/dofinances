@@ -30,7 +30,7 @@ import {MATERIAL_FLOATS,glassMaterialFromElement,resolveRegularMaterial,regularM
  from "./dashboard-glass-material.js";
 import {createTintControls,tintForTile,tintParameters,SHOWCASE_TINTS,SHOWCASE_OPACITIES} from "./dashboard-tint.js";
 import {TRACK_SECONDS,phaseAtSeconds,trackPosition,trackSideOpacity} from "./dashboard-track.js";
-import {publicIconSpatialAlpha} from "./dashboard-public-icon-fade.js";
+import {publicIconSpatialAlpha,currentPublicLogoOvalRadius} from "./dashboard-public-icon-fade.js";
 import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from "./dashboard-glass-dropdown.js";
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
@@ -760,7 +760,10 @@ async function initialize(){
     uniform[2]=reducedMotion.matches?1:introStart===null?0:Math.min(1,(performance.now()-introStart)/1000);
     uniform[3]=dpr;
     const fit=coverUVScale(continuous?sourceWidth:physicalWidth,continuous?sourceHeight:physicalHeight,photoWidth,photoHeight);
-    uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=0;
+    // Negative fit.w encodes the Home aperture radius in CSS pixels.
+    // Positive fit.w remains reserved for the route backdrop height.
+    uniform[4]=fit[0];uniform[5]=fit[1];uniform[6]=.12;uniform[7]=-currentPublicLogoOvalRadius();
+    audit.homeLogoOvalRadius=-uniform[7];
     uniform[8]=pointer.x*dpr;uniform[9]=(pointer.y-sceneTop)*dpr;
     uniform[10]=pointer.enabled;uniform[11]=0;
     const t=tint.state;
@@ -1792,7 +1795,7 @@ async function initialize(){
         const glyphAlpha=publicIconSpatialAlpha(
           tileData[p]+tileData[p+2]*0.5,
           tileData[p+1]+tileData[p+3]*0.5,
-          tileData[p+2],physicalWidth,physicalHeight,dpr);
+          tileData[p+2],physicalWidth,physicalHeight,dpr,-uniform[7]);
         trackTiles[i].style.setProperty("--public-icon-spatial-alpha",
           (glyphAlpha*intro.alpha).toFixed(5));
       }
@@ -2186,6 +2189,7 @@ async function initialize(){
   routeOutlet?.addEventListener("wheel",armElasticRefresh,{passive:true});
   routeOutlet?.addEventListener("touchmove",armElasticRefresh,{passive:true});
   window.addEventListener("dofinances:glass-dropdown-change",requestRender);
+  window.addEventListener("dofinances:logo-oval-change",requestRender);
   document.addEventListener("load",event=>{if(event.target?.localName==="img")requestRender();},true);
   document.fonts?.ready.then(()=>{sourcePainter.invalidate();requestRender();});
   const materialObserver=new MutationObserver(()=>requestRender());
