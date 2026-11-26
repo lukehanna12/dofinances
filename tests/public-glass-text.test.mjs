@@ -35,7 +35,7 @@ test("clock glyphs use the coordinate space of their draw target, not their mate
  const renderer=readFileSync(new URL("../sites/_apex/assets/home-dashboard/dashboard-gpu-renderer.js",import.meta.url),"utf8");
  assert.match(shader,/let routePane=authPane && state\.fit\.w>0\.0;/);
  assert.match(shader,/if\(routePane\)\{\s*backdropExtent\.y=max\(1\.0,state\.fit\.w\);\s*backdropPosition\.y-=state\.pointer\.w;/);
- assert.match(renderer,/uniform\[7\]=0;/);
+ assert.match(renderer,/uniform\[7\]=-currentPublicLogoOvalRadius\(\);/);
  assert.match(renderer,/authUniform\[7\]=physicalHeight;/);
  assert.match(renderer,/pass\.setBindGroup\(0,glassGroup\);\s*pass\.draw\(6,1,0,tileCount\+audit\.homeCtaGlass\.brandSlot\)/);
 });

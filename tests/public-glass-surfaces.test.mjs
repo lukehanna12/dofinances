@@ -89,7 +89,7 @@ test("homepage capsules sample live squares in viewport coordinates, never the 1
  assert.doesNotMatch(shader,/if\(authPane\)\{\s*backdropExtent\.y=/);
  // The Home uniform intentionally has no auth scroll scene height; its
  // viewport dimensions must remain the complete composited GPU source.
- assert.match(renderer,/uniform\[7\]=0;/);
+ assert.match(renderer,/uniform\[7\]=-currentPublicLogoOvalRadius\(\);/);
  assert.match(renderer,/authUniform\[7\]=physicalHeight;/);
  assert.match(renderer,/homeCapsuleGroup=compositeSceneView\?/);
  assert.match(renderer,/pass\.setBindGroup\(0,homeCompositeActive\?homeCapsuleGroup:glassGroup\)/);
