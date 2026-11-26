@@ -181,7 +181,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
   const rectSnapshot=nodes=>new Map(nodes.map(node=>[node,box(node)]));
   function releasePointerFocus(){
     const active=document.activeElement;
-    if(active===closeButton||cards.includes(active))active.blur();
+    if(active===closeButton||cards.includes(active)||active?.classList.contains("project-showcase-trigger"))active.blur();
   }
   const clearInline=()=>{
     for(const card of cards){
@@ -213,6 +213,9 @@ export function mountProjectExpansion({root,grid,animateGlass}){
         foreground.style.removeProperty("filter");
       }
       card.setAttribute("aria-expanded","false");
+      card.querySelector(".project-showcase-trigger")?.setAttribute("aria-expanded","false");
+      const action=card.querySelector(".project-showcase-action");
+      if(action)action.tabIndex=-1;
     }
     root.classList.remove("has-project-expansion","is-project-reflowing","is-project-retargeting");
     closeButton.hidden=true;
@@ -231,7 +234,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     previous.placeholder.remove();
     clearInline();
     if(focus&&!disposed&&root.isConnected&&!previous.card.hidden)
-      previous.card.focus({preventScroll:true});
+      (previous.card.querySelector(".project-showcase-trigger")||previous.card).focus({preventScroll:true});
   }
   function beginCloseDissolve(current,reserve){
     const r=box(closeButton),duration=projectCloseDismissDuration(r.width,r.height);
@@ -314,6 +317,8 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.style.setProperty("--project-regular-reference-width",cssPixels(selectedRect.width));
     card.classList.add("is-expanded");
     card.setAttribute("aria-expanded","true");
+    card.querySelector(".project-showcase-trigger")?.setAttribute("aria-expanded","true");
+    card.querySelector(".project-showcase-action").tabIndex=0;
     card.setAttribute("aria-describedby",description.id+" "+diagrams.id);
     description.setAttribute("aria-hidden","false");
     diagrams.setAttribute("aria-hidden","false");
@@ -606,6 +611,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     if(state.phase!=="open")return;
     if(state.direct){retarget(null,{restoreFocus});return;}
     state.phase="closing";
+    state.card.querySelector(".project-showcase-action").tabIndex=-1;
     root.classList.add("is-project-reflowing");
     const current=state;
     const now=performance.now();
@@ -695,6 +701,7 @@ export function mountProjectExpansion({root,grid,animateGlass}){
     card.addEventListener("click",event=>{
       // A native text drag or click inside the expanded paragraph is not
       // an activation of the surrounding card button.
+      if(event.target.closest?.(".project-showcase-action"))return;
       if(event.target.closest?.(".project-showcase-description")&&
          card.classList.contains("is-expanded")){
         event.preventDefault();return;

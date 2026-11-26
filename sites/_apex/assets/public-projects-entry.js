@@ -3,10 +3,10 @@ import {registerGlassText} from "./home-dashboard/dashboard-glass-text.js";
 /* Public /projects route: owns card markup, artwork reveal, staggered entry
  * and exact reversed exit. The persistent '/' shell alone owns wallpaper,
  * WebGPU material/canvas, doof, the mosaic and bottom-button dissolution.
- * Project controls intentionally do not navigate or call private APIs.
+ * Cards expand locally; the expanded See project link opens a public detail view.
  */
 import {PROJECT_SHOWCASE,PROJECT_DESCRIPTIONS,PROJECT_CARD_IMAGES,publicProjectIconSource,
-  projectShowcaseStatus,sortProjectShowcase,publicProjectImage,publicProjectArtworkSource} from "./public-projects-catalog.js";
+  projectShowcaseStatus,sortProjectShowcase,publicProjectImage,publicProjectArtworkSource,publicProjectHref,projectFromPublicHash} from "./public-projects-catalog.js";
 import {projectTitleLines,mountProjectTitleSizing} from "./public-projects-title.js";
 import {mountProjectControls} from "./public-projects-controls.js";
 import {mountProjectExpansion} from "./public-projects-expand.js";
@@ -38,19 +38,28 @@ const el=(tag,className,text)=>{
   if(text!==undefined)node.textContent=text;
   return node;
 };
-function makeCard(project,index){
+function makeCard(project,index,{detail=false}={}){
   const status=projectShowcaseStatus(project);
   const active=Boolean(project.repository||project.docs===true);
   const badgeClass=status==="In Progress"?"project-showcase-badge--progress":
     status==="Active"?"project-showcase-badge--active":"project-showcase-badge--soon";
-  const card=el("button","project-showcase-card "+(active?"is-active":"is-coming-soon"));
-  card.type="button";
+  // Separate interactive siblings: a native expansion button and a real
+  // navigation link. Never nest a link inside a native button.
+  const card=el("article","project-showcase-card "+(active?"is-active":"is-coming-soon"));
+  let trigger=null;
+  if(!detail){
+    trigger=el("button","project-showcase-trigger");
+    trigger.type="button";
+    trigger.setAttribute("aria-label","Expand "+project.name+" - "+status);
+    trigger.setAttribute("aria-expanded","false");
+    card.tabIndex=-1;
+  }
   card.dataset.publicProjectGlass="card";
   card.dataset.projectSlug=project.slug;
-  card.setAttribute("aria-label",project.name+" - "+status+" - Preview only");
+  card.setAttribute("aria-label",project.name+" - "+status);
   card.style.setProperty("--project-index",String(index));
   card.style.setProperty("--project-reverse-index",String(Math.min(PROJECT_SHOWCASE.length-1-index,15)));
-  // No location changes, hrefs, or private /api/projects calls.
+  // The same artwork and project catalog serve both public presentations.
   const photo=el("img","project-showcase-photo");
   photo.alt="";photo.loading="lazy";photo.decoding="async";
   const src=publicProjectArtworkSource(project,index);
@@ -85,7 +94,7 @@ function makeCard(project,index){
   }
   const badge=el("span","project-showcase-badge "+badgeClass,status);
   top.append(marker,badge);
-  const title=el("span","project-showcase-title");
+  const title=el(detail?"h1":"span","project-showcase-title");
   const lines=projectTitleLines(project.name);
   card.style.setProperty("--project-title-lines",String(lines.length));
   // Preserve original accessible text; all lines inherit one font size.
@@ -94,7 +103,9 @@ function makeCard(project,index){
     title.append(el("span","project-showcase-title-line",line));
   });
   title.style.setProperty("--project-title-max-size",120/lines.length/1.04+"px");
-  const action=el("span","project-showcase-action","View project");
+  const action=el("a","project-showcase-action","See project");
+  action.href=publicProjectHref(project);
+  action.tabIndex=-1;
   {
     const arrow=document.createElementNS("http://www.w3.org/2000/svg","svg");
     for(const [key,value] of Object.entries({
@@ -106,18 +117,22 @@ function makeCard(project,index){
     path.setAttribute("d","M5 12h14m-6-6 6 6-6 6");
     arrow.append(path);action.append(arrow);
   }
-  upper.append(top,action,title);
+  upper.append(top,title);
   const description=el("span","project-showcase-description",PROJECT_DESCRIPTIONS[project.slug]);
   description.id="project-description-"+project.slug;
   description.setAttribute("role","paragraph");
   description.setAttribute("aria-hidden","true");
   const details=el("span","project-showcase-expanded-detail");
   details.append(description,createProjectDiagrams(project.slug));
+  if(!detail)details.append(action);
   content.append(upper,details);
-  card.append(artwork,regularBoundary,content);
+  card.append(artwork,regularBoundary);
+  if(trigger)card.append(trigger);
+  card.append(content);
+  if(detail){photo.loading="eager";reveal();}
   return card;
 }
-export function mountProjects(host,{onBack,onExitComplete}){
+function mountProjectGallery(host,{onBack,onExitComplete,onProject}){
   const projects=sortProjectShowcase(PROJECT_SHOWCASE);
   const root=el("section","public-projects-root");
   root.setAttribute("aria-label","Projects");
@@ -140,7 +155,18 @@ export function mountProjects(host,{onBack,onExitComplete}){
   head.append(back,headingRow);
   const grid=el("div","project-showcase-grid");
   grid.setAttribute("aria-label","Project cards");
-  projects.forEach((project,index)=>grid.append(makeCard(project,index)));
+  projects.forEach((project,index)=>{
+    const card=makeCard(project,index);
+    const action=card.querySelector(".project-showcase-action");
+    action.addEventListener("click",event=>{
+      event.stopPropagation();
+      if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+      if(card.classList.contains("is-expanded")&&!root.classList.contains("is-project-reflowing")&&!root.classList.contains("is-exiting"))
+        onProject(project);
+    });
+    grid.append(card);
+  });
   root.append(head,grid);
   host.replaceChildren(root);
   mountProjectTitleSizing(root);
@@ -244,4 +270,86 @@ export function mountProjects(host,{onBack,onExitComplete}){
       root.remove();
     }
   };
+}
+
+/* One persistent /projects route, with a gallery and hash-addressable details.
+ * Internal catalog slugs never change, so artwork, diagrams and optical
+ * vectors continue to use their original single source of truth. */
+function mountProjectDetail(host,project,{onBack,onExitComplete}){
+  const root=el("section","public-projects-root public-project-detail has-project-expansion");
+  root.setAttribute("aria-label",project.name);
+  root.dataset.projectDetail=project.slug;
+  const head=el("header","public-projects-header");
+  const back=el("button","public-projects-back");
+  back.type="button";
+  back.dataset.publicProjectGlass="back";
+  back.setAttribute("aria-label","Back to Projects");
+  back.title="Back to Projects";
+  back.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  head.append(back);
+  const index=sortProjectShowcase(PROJECT_SHOWCASE).indexOf(project);
+  const hero=makeCard(project,index,{detail:true});
+  hero.classList.add("is-expanded","project-detail-hero");
+  hero.dataset.projectDetailHero="";
+  const details=hero.querySelector(".project-showcase-expanded-detail");
+  details.querySelector(".project-showcase-description").removeAttribute("aria-hidden");
+  details.querySelector(".project-showcase-diagrams").removeAttribute("aria-hidden");
+  details.classList.add("project-detail-body");
+  root.append(head,hero,details);
+  host.replaceChildren(root);
+  mountProjectTitleSizing(root);
+  const logo=document.getElementById("dashboard-title"),logoParent=logo?.parentElement;
+  document.body.dataset.projectsLogoPinned="true";
+  if(logoParent)document.body.append(logo);
+  const scroll=root.closest("#public-route-content"),abort=new AbortController();
+  const syncLogo=()=>document.body.toggleAttribute("data-projects-logo-hidden",(scroll?.scrollTop||0)>40);
+  scroll?.addEventListener("scroll",syncLogo,{passive:true,signal:abort.signal});
+  scroll?.addEventListener("project-scroll-presented",syncLogo,{signal:abort.signal});
+  syncLogo();
+  let closed=false,exiting=false,timer=null;
+  const settle=setTimeout(()=>root.classList.add("is-settled"),reduced.matches?0:680);
+  back.addEventListener("click",event=>{
+    if(!closed&&!exiting&&event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey)onBack();
+  },{signal:abort.signal});
+  return {
+    exit(){
+      if(closed||exiting)return;
+      exiting=true;root.classList.add("is-exiting","is-dissolving-header");
+      root.dataset.projectHeaderDismissAt=String(performance.now());
+      timer=setTimeout(onExitComplete,reduced.matches?0:DISMISS_MS+60);
+    },
+    unmount(){
+      if(closed)return;closed=true;abort.abort();clearTimeout(settle);clearTimeout(timer);
+      if(logoParent&&logo?.parentElement===document.body)logoParent.append(logo);
+      document.body.removeAttribute("data-projects-logo-pinned");
+      document.body.removeAttribute("data-projects-logo-hidden");
+      root.remove();
+    }
+  };
+}
+export function mountProjects(host,{onBack,onExitComplete}){
+  let mounted=null,selected=undefined,closed=false,exiting=false;
+  const scroll=host.closest("#public-route-content");
+  const syncLocation=()=>{
+    if(closed||exiting)return;
+    const project=projectFromPublicHash(location.hash);
+    if(mounted&&selected===project)return;
+    mounted?.unmount();
+    selected=project;
+    if(scroll)scroll.scrollTop=0;
+    const showGallery=()=>{
+      if(history.state?.dofinancesProjectDetail){history.back();return;}
+      history.replaceState(history.state,"",location.pathname+location.search);
+      syncLocation();
+    };
+    mounted=project?mountProjectDetail(host,project,{onBack:showGallery,onExitComplete}):
+      mountProjectGallery(host,{onBack,onExitComplete,onProject:next=>{
+        history.pushState({...history.state,dofinancesProjectDetail:true},"",publicProjectHref(next));
+        syncLocation();
+      }});
+    document.title=(project?project.name+" | Projects":"Projects")+" | DoFinances";
+  };
+  syncLocation();
+  return {syncLocation,exit(){exiting=true;mounted?.exit();},
+    unmount(){closed=true;mounted?.unmount();mounted=null;}};
 }

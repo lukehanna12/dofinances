@@ -875,11 +875,11 @@ try{
     const referenceRatio=referenceGap/tr.height;
     return {referenceRatio,referenceGap,cards:cards.map(c=>{
       const r=c.getBoundingClientRect(),b=c.querySelector(".project-showcase-regular-boundary").getBoundingClientRect();
-      const a=c.querySelector(".project-showcase-action"),ar=a.getBoundingClientRect();
+      const a=c.querySelector(".project-showcase-action");
       const ir=c.querySelector(".project-showcase-lucide").getBoundingClientRect();
       const t=titleStack(c);
       return {slug:c.dataset.projectSlug,height:b.height,expected:t.height*(1+referenceRatio)+(r.bottom-t.bottom),
-       titleHeight:t.height,upperGap:t.top-b.top,actionGap:b.top-ar.bottom,icon:ir.width,iconTop:ir.top-r.top,
+       titleHeight:t.height,upperGap:t.top-b.top,actionHidden:getComputedStyle(a).visibility==="hidden",icon:ir.width,iconTop:ir.top-r.top,
        iconLeft:ir.left-r.left,label:a.textContent,arrow:!!a.querySelector("svg")};
     })};
   })()`);
@@ -890,10 +890,10 @@ try{
     assert.ok(Math.abs(c.height-c.expected)<1.2,JSON.stringify(c));
     assert.ok(Math.abs(c.upperGap-c.titleHeight*regionGeometry.referenceRatio)<1.2,JSON.stringify(c));
     if(c.slug==="terminal-scalars")assert.ok(Math.abs(c.upperGap-regionGeometry.referenceGap)<1.2,JSON.stringify(c));
-    assert.ok(Math.abs(c.actionGap-4)<1.1,JSON.stringify(c));
+    assert.ok(c.actionHidden,JSON.stringify(c));
     assert.ok(Math.abs(c.icon-45.5)<.6,JSON.stringify(c));
     assert.ok(Math.abs(c.iconTop-c.iconLeft)<1.1,JSON.stringify(c));
-    assert.equal(c.label,"View project");assert.equal(c.arrow,true);
+    assert.equal(c.label,"See project");assert.equal(c.arrow,true);
   }
   };
   assertRegionGeometry(await readRegionGeometry());
@@ -1791,8 +1791,41 @@ try{
   })()`);
   assert.ok(narrowDescription.fits&&narrowDescription.opacity===1&&narrowDescription.bandHeight>narrowDescription.descHeight,JSON.stringify(narrowDescription));
   assert.ok(narrowDescription.diagrams.length>=1&&narrowDescription.diagrams.every(Boolean),JSON.stringify(narrowDescription));
-  await evaluate("document.querySelector('.project-showcase-expand-close').click()");
-  await until("!document.querySelector('.public-projects-root').classList.contains('has-project-expansion')",100,30);
+  // The expanded action is a real link, not nested in a button.
+  const action=await evaluate(`(()=>{
+    const c=document.querySelector('.project-showcase-card.is-expanded'),a=c.querySelector('.project-showcase-action'),r=c.getBoundingClientRect(),b=a.getBoundingClientRect(),style=getComputedStyle(a);
+    return {tag:a.tagName,href:a.getAttribute("href"),label:a.textContent,left:b.left-r.left,bottom:r.bottom-b.bottom,
+      visibility:style.visibility,pointer:style.pointerEvents,radius:parseFloat(style.borderRadius),nested:!!a.closest("button")};
+  })()`);
+  assert.equal(action.tag,"A");assert.equal(action.href,"/projects#chatstore");assert.equal(action.label,"See project");
+  assert.ok(action.left>=0&&action.left<25&&action.bottom>=0&&action.bottom<30,JSON.stringify(action));
+  assert.equal(action.visibility,"visible");assert.equal(action.pointer,"auto");assert.ok(action.radius>100&&!action.nested);
+  const shellBefore=await evaluate("window.__projectShellIdentity=document.querySelector('#global-menu');true");
+  await evaluate("document.querySelector('.project-showcase-card.is-expanded .project-showcase-action').click()");
+  await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
+  const detail=await evaluate(`(()=>{
+    const hero=document.querySelector('.project-detail-hero'),body=document.querySelector('.project-detail-body'),r=hero.getBoundingClientRect(),b=body.getBoundingClientRect();
+    return {shell:window.__projectShellIdentity===document.querySelector('#global-menu'),title:document.title,
+      heroWidth:r.width,fade:hero.querySelector('.project-showcase-regular-boundary').getBoundingClientRect().height,
+      bodyColor:getComputedStyle(body).backgroundColor,bodyTop:b.top,heroBottom:r.bottom,
+      hasX:!!document.querySelector('.project-showcase-expand-close'),description:body.querySelector('.project-showcase-description').textContent.length};
+  })()`);
+  assert.ok(shellBefore&&detail.shell&&detail.heroWidth>=389&&detail.fade<=112&&detail.fade>=88,JSON.stringify(detail));
+  assert.equal(detail.bodyColor,"rgb(0, 0, 0)");assert.equal(detail.hasX,false);assert.ok(detail.description>250);
+  assert.ok(detail.title.startsWith("ChatStore | Projects"),detail.title);
+  await evaluate("document.querySelector('.public-projects-back').click()");
+  await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
+  await evaluate("history.forward()");
+  await until("location.hash==='#chatstore'&&!!document.querySelector('.public-project-detail')",100,30);
+  await evaluate("history.back()");
+  await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
+  await send("Page.navigate",{url:origin+"/projects#lightwork"});
+  await until("document.querySelector('.public-project-detail')?.dataset.projectDetail==='translucence-lab'",190);
+  await send("Page.reload",{ignoreCache:true});
+  await until("document.body.dataset.directLogin==='true'&&document.querySelector('.public-project-detail')?.dataset.projectDetail==='translucence-lab'",190);
+  assert.equal(await evaluate("document.querySelector('.project-showcase-title').textContent"),"Lightwork");
+  await evaluate("document.querySelector('.public-projects-back').click()");
+  await until("location.hash===''&&document.querySelectorAll('.project-showcase-card').length===16",100,30);
   await send("Emulation.setDeviceMetricsOverride",{...descriptionViewport,deviceScaleFactor:1,mobile:false});
   await until("innerWidth==="+descriptionViewport.width,60,30);
   await evaluate("document.querySelector('.public-projects-back').click()");

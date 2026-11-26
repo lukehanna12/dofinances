@@ -201,29 +201,44 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   display:block;width:max-content;white-space:nowrap;font:inherit;
   letter-spacing:inherit
 }
+.public-projects-root .project-showcase-trigger{
+  position:absolute;inset:0;width:100%;height:100%;z-index:0;
+  border:0;border-radius:inherit;padding:0;background:transparent;color:inherit;
+  cursor:pointer;appearance:none
+}
+.public-projects-root .project-showcase-card:has(>.project-showcase-trigger:focus-visible){
+  outline:2px solid #fff;outline-offset:3px
+}
+.public-projects-root .project-showcase-trigger:focus-visible{outline:none}
 .public-projects-root .project-showcase-action{
-  position:absolute;
-  left:calc(var(--project-card-inset) + var(--project-regular-progress)*(100% - 2*var(--project-card-inset)));
-  transform:translateX(calc(-100%*var(--project-regular-progress)));
-  width:max-content;
-  bottom:calc(var(--project-regular-height) + 4px);
-  display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.9);
-  font-size:10px;font-weight:500;line-height:1.35;opacity:0;
-  transition:opacity .5s ease-out
+  grid-column:1;grid-row:2;align-self:end;justify-self:start;
+  display:inline-flex;align-items:center;gap:7px;width:max-content;
+  padding:7px 13px;border:1px solid rgba(255,255,255,.56);border-radius:999px;
+  background:transparent;color:#fff;text-decoration:none;
+  font:500 12px/1.35 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .2s ease-out,border-color .2s ease,box-shadow .2s ease,text-shadow .2s ease
 }
 .public-projects-root .project-showcase-action svg{width:12px;height:12px;transition:transform .2s ease}
-.public-projects-root .project-showcase-card:is(:hover,:focus-visible) .project-showcase-action svg{transform:translateX(2px)}
-.public-projects-root .project-showcase-card.is-photo-ready:is(:hover,:focus-visible) .project-showcase-action,
-.public-projects-root.has-project-expansion .project-showcase-card.is-expanded.is-photo-ready .project-showcase-action{opacity:1}
-body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="compositor"])
- .public-projects-root .project-showcase-card:not([data-project-art-gpu-ready]) .project-showcase-action{opacity:0!important}
+.public-projects-root .project-showcase-card.is-expanded .project-showcase-action{
+  opacity:1;visibility:visible
+}
+.public-projects-root:not(.is-project-reflowing):not(.is-exiting) .project-showcase-card.is-expanded .project-showcase-action{pointer-events:auto}
+.public-projects-root .project-showcase-action:is(:hover,:focus-visible){
+  border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.22),inset 0 0 8px rgba(255,255,255,.09);
+  text-shadow:0 0 8px rgba(255,255,255,.48)
+}
+.public-projects-root .project-showcase-action:is(:hover,:focus-visible) svg{transform:translateX(2px)}
+.public-projects-root .project-showcase-action:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.public-projects-root .project-showcase-action:active{box-shadow:0 0 7px rgba(255,255,255,.17)}
 /* A single measured, native foreground block owns both the selectable
  * paragraph at left and the vector schematics at right, at every width. */
 .public-projects-root .project-showcase-expanded-detail{
   position:absolute;left:var(--project-card-inset);right:var(--project-card-inset);
   bottom:calc(var(--project-card-inset) + 8px);
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,min(44%,460px));
-  gap:clamp(10px,3cqw,40px);align-items:start;
+  grid-template-rows:1fr auto;
+  column-gap:clamp(10px,3cqw,40px);row-gap:12px;align-items:start;
   visibility:hidden;opacity:0;pointer-events:none
 }
 .public-projects-root .project-showcase-description{
@@ -250,7 +265,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
 }
 .public-projects-root .project-showcase-diagrams{
   display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0;
-  width:100%;max-width:460px;justify-self:end
+  width:100%;max-width:460px;justify-self:end;grid-column:2;grid-row:1 / span 2
 }
 .public-projects-root .project-showcase-diagram{
   display:grid;gap:5px;min-width:0;
@@ -286,8 +301,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   background:linear-gradient(to bottom,transparent,#000);
   opacity:var(--project-regular-progress)
 }
-/* The action travels from left to right on the same registered expansion
- * progress as the title band, rather than jumping when a class changes. */
+/* The action stays in the measured lower-left detail block. */
 .public-projects-root .project-showcase-card.is-expanded{--project-regular-progress:1}
 /* Only when the same original GPU pipeline has submitted a valid first frame
  * do we reveal the actual glass and remove the ordinary opaque fallback. */
@@ -587,3 +601,43 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   mask-mode:luminance;
   mask-repeat:no-repeat;
 }
+
+/* Hash-addressed full project page: artwork/optical hero stays viewport-sized,
+ * the shorter raw-backdrop shade ends at black, and subsequent content flows
+ * natively on a solid black page. No document-sized GPU texture. */
+.public-projects-root.public-project-detail{
+  display:flex;flex-direction:column;padding:0;min-height:100%;
+  --project-detail-inset:clamp(18px,3vw,44px)
+}
+.public-project-detail .public-projects-header{
+  padding:clamp(19px,2.3vw,36px) var(--project-detail-inset) 12px;margin:0;
+}
+.public-projects-root.public-project-detail .project-detail-hero{
+  width:100%;min-height:0;height:clamp(310px,45vw,570px);flex:none;
+  border-radius:0;cursor:default;pointer-events:none;
+  --project-card-inset:var(--project-detail-inset);
+  --project-expanded-band-height:clamp(88px,10vw,112px);
+  --project-regular-progress:1;
+  animation-delay:0ms
+}
+.public-project-detail .project-detail-hero .project-showcase-top{padding-right:0}
+.public-project-detail .project-detail-hero .project-showcase-title{margin-bottom:8px}
+.public-projects-root.public-project-detail .project-detail-body{
+  position:relative;inset:auto;box-sizing:border-box;flex:1;
+  min-height:240px;width:100%;padding:24px var(--project-detail-inset) 52px;
+  background:#000;visibility:visible;opacity:1;pointer-events:auto;
+  grid-template-rows:auto;align-content:start;
+  column-gap:clamp(16px,3vw,40px);row-gap:12px
+}
+.public-project-detail .project-detail-body .project-showcase-diagrams{grid-row:1}
+.public-project-detail .project-detail-body .project-showcase-description{pointer-events:auto}
+@media(max-width:600px){
+  .public-projects-root.public-project-detail .project-detail-body{grid-template-columns:minmax(0,1fr)}
+  .public-project-detail .project-detail-body .project-showcase-diagrams{grid-column:1;grid-row:2;justify-self:start}
+}
+.public-project-detail.is-exiting .project-detail-body{opacity:0;transition:opacity .25s ease}
+.public-projects-root .project-showcase-card.is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{opacity:1;transform:scale(1)}
+.public-projects-root .project-showcase-card[data-project-slug="bootscript"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.1025)}
+.public-projects-root .project-showcase-card[data-project-slug="liquid-plexiglass-26"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(1.5%) scale(1.12)}
+.public-projects-root .project-showcase-card[data-project-slug="github-readme-chrome-extension"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:translateY(-.6%) scale(1.04)}
+.public-projects-root .project-showcase-card[data-project-slug="hidden-functions"].is-photo-ready:has(>.project-showcase-trigger:focus-visible) .project-showcase-photo{transform:scale(1.11)}

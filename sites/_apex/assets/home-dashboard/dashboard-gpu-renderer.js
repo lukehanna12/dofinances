@@ -895,7 +895,7 @@ async function initialize(){
       const profile=resolveInactiveClearRegion({width:w,height});
       const photo=node.querySelector(".project-showcase-photo");
       const needsDetail=!authUsesCompositor()&&
-        (node.matches(":hover,:focus-visible,.is-expanded")||
+        (node.matches(":hover,:focus-visible,.is-expanded,:has(>.project-showcase-trigger:focus-visible)")||
           Number.parseFloat(getComputedStyle(photo).opacity)>0);
       const artwork=artworkAtlas.sync(node,needsDetail,!authUsesCompositor());
       let opacity=0,layer=0,uv=[1,1,0,0];
@@ -915,6 +915,8 @@ async function initialize(){
       const shadeAlpha=Math.max(0,Math.min(1,Number.parseFloat(getComputedStyle(node).getPropertyValue("--project-regular-progress"))||0));
       regionData.set([height*dpr,profile.blurWord,layer,opacity],b);
       regionData[b+4]=shadeAlpha;
+      // Dedicated hero only: finish the short raw-backdrop fade at exact black.
+      regionData[b+5]=node.hasAttribute("data-project-detail-hero")?1:0;
       regionData.set(uv,b+20);
       regions.push({slug:node.dataset.projectSlug,width:w,height:h,regularHeight:height,
         regularFraction:height/h,artworkLayer:layer,artworkOpacity:opacity,shadeAlpha,

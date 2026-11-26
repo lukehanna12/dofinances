@@ -128,11 +128,11 @@ async function openRoute(path,{push=false,direct=false}={}){
     }
     outlet.hidden=false;
     routeMount.replaceChildren();
+    document.title=(path==="/login"?"Sign in":"Projects")+" | DoFinances";
     current=mount(routeMount,{onBack:()=>closeRoute({navigate:true}),
       onExitComplete:finishClose});
     activeRoute=path;
     state=path.slice(1);
-    document.title=(path==="/login"?"Sign in":"Projects")+" | DoFinances";
   }catch(error){
     await settle;
     if(token!==revision)return;
@@ -197,7 +197,8 @@ addEventListener("popstate",()=>{
   if(registry.has(path)){
     if(current&&activeRoute!==path){
       reopenPath=path;closeRoute();
-    }else if(!current&&!busy)void openRoute(path);
+    }else if(current&&activeRoute===path&&state!=="exiting")current.syncLocation?.();
+    else if(!current&&!busy)void openRoute(path);
   }else if(path==="/"){
     reopenPath=null;
     if(current)closeRoute();
@@ -205,6 +206,9 @@ addEventListener("popstate",()=>{
       routeMount.replaceChildren();outlet.hidden=true;state="home";restoreHome();
     }
   }
+});
+addEventListener("hashchange",()=>{
+  if(activeRoute==="/projects"&&routePath()==="/projects"&&state==="projects")current?.syncLocation?.();
 });
 addEventListener("pageshow",event=>{
   const path=routePath();

@@ -206,7 +206,7 @@ test("all three public Projects triggers use the persistent route registry",asyn
   assert.match(entry,/export function mountProjects\(host,\{onBack,onExitComplete\}\)/);
   assert.match(entry,/root\.classList\.add\("is-exiting"\)/);
   assert.match(entry,/project-showcase-card/);
-  assert.match(entry,/card\.type="button"/);
+  assert.match(entry,/trigger\.type="button"/);
   assert.match(entry,/mountProjectControls\(\{root,headingRow,grid,projects,animateGlass\}\)/);
   assert.match(entry,/const PROJECT_ENTER_DURATION_MS=500;/);
   assert.match(entry,/const PROJECT_ENTER_HEADING_DELAY_MS=165;/);
@@ -408,7 +408,7 @@ test("project switching retargets the live rectangles on one expansion clock",as
 test("project title-band, action, badge clearance and switch geometry share expansion progress",async()=>{
  const [css,exp]=await Promise.all([load("../sites/_apex/assets/public-projects.css"),load("../sites/_apex/assets/public-projects-expand.js")]);
  assert.match(css,/padding-right:calc\(53px\*var\(--project-regular-progress\)\)/);
- assert.match(css,/translateX\(calc\(-100%\*var\(--project-regular-progress\)\)\)/);
+ assert.match(css,/grid-column:1;grid-row:2;align-self:end;justify-self:start/);
  assert.match(exp,/motion\.startTime=sharedStart/);
  assert.match(exp,/rect\.left\+=originDX;rect\.top\+=originDY/);
 });
@@ -490,4 +490,17 @@ test("all 16 projects have readable, explicitly connected native architecture sc
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Model Context Protocol \(MCP\).*Agent2Agent \(A2A\)/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form.*\/mcp endpoint/);
+});
+
+test("every project has a unique readable hash URL and legacy alias",async()=>{
+ const {PROJECT_SHOWCASE,publicProjectHref,projectFromPublicHash}=await import("../sites/_apex/assets/public-projects-catalog.js");
+ const urls=PROJECT_SHOWCASE.map(publicProjectHref);
+ assert.equal(new Set(urls).size,16);
+ assert.ok(urls.includes("/projects#bootscript")&&urls.includes("/projects#lightwork")&&urls.includes("/projects#readme-glp"));
+ for(const p of PROJECT_SHOWCASE){
+  assert.equal(projectFromPublicHash(publicProjectHref(p).split("#")[1]),p);
+  assert.equal(projectFromPublicHash("#"+p.slug),p);
+ }
+ assert.equal(projectFromPublicHash("#unknown"),null);
+ assert.equal(projectFromPublicHash("#%"),null);
 });

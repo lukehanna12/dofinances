@@ -122,3 +122,16 @@ export function publicProjectArtworkSource(project,index){
  const source=publicProjectImage(project,index);
  return source.startsWith("https://")?"/project-artwork/"+project.slug:source;
 }
+
+/* Public URLs use names rather than historical internal asset identifiers. */
+export function publicProjectSlug(project){
+ return project.name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+export function publicProjectHref(project){return "/projects#"+publicProjectSlug(project);}
+export function projectFromPublicHash(hash){
+ let slug;
+ try{slug=decodeURIComponent(String(hash||"").replace(/^#/,"")).toLowerCase();}
+ catch{return null;}
+ if(!slug)return null;
+ return PROJECT_SHOWCASE.find(project=>publicProjectSlug(project)===slug||project.slug===slug)||null;
+}

@@ -887,6 +887,13 @@ fn fsGlass(in:GlassOut)->@location(0) vec4<f32>{
   if(!clockText){  color=composeGlassSilhouette(color,silhouettes[in.tileIndex],in.local,dimensions,region,
     interactiveInnerUV,innerLOD,backdropExtent,darkFace,split,pointScale);}
 
+  // Dedicated full-page hero: the short raw-backdrop gradient still passes
+  // through the original glass material. Fade its residual rim to exact
+  // black at the seam so the following native black page is continuous.
+  if(region.optics.y>0.5){
+    let seam=1.0-smoothstep(0.0,max(1.0,region.params.x*0.24),tile.rect.w-in.local.y);
+    color=mix(color,vec3<f32>(0.0),seam);
+  }
   // Only route panes with the explicit motion.w dismissal lane enter the
   // homepage squares' identical SDF/noise/fringe dissolution below.
   // Sign-in and normal Projects panes preserve their original appearance.
