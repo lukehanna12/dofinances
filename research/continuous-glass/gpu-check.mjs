@@ -9,7 +9,7 @@ const half=word=>{data.setUint16(0,word,true);return data.getFloat16(0,true);};
 const matrix=rowsNativeDark.map(half);
 export async function run(){
  let count=0,maxField=0,maxNormal=0,maxSource=0,maxColor=0,maxDisplacement=0,identical=0,coverage=0;
- let adapter=null,render=null;
+ let adapter=null,render=null,precision=null,edge=null;
  for(const [sw,sh] of [[9,7],[17,13]]){
   const samples=Float32Array.from({length:sw*sh*4},(_,i)=>i%4===3?1:.5+.4*Math.sin(i*.13)*Math.cos(i*.027));
   const scene=new ContinuousScene(sw,sh,samples,{origin:[-120,-90],step:[240/(sw-1),180/(sh-1)]});
@@ -30,7 +30,7 @@ export async function run(){
    must(values.every((x,i)=>Object.is(x,again[i])),"Repeat GPU output mismatch");
    identical+=values.length;
    for(let i=0;i<rows.length;i++){
-    const a=pointReference(Array.from(rows[i]),scene),b=values.subarray(i*OUTPUT,(i+1)*OUTPUT);
+    const a=pointReference(rows[i],scene),b=values.subarray(i*OUTPUT,(i+1)*OUTPUT);
     must(b.every(Number.isFinite),"Nonfinite GPU result");
     maxField=Math.max(maxField,norm(a[0],b[0]));
     maxNormal=Math.max(maxNormal,norm(a[1],b[1]),norm(a[2],b[2]));
@@ -46,6 +46,21 @@ export async function run(){
     const a=await renderTile(ev,cfg),b=await renderTile(ev,{...cfg,density:4,magnification:4});
     must(a.every((x,i)=>Object.is(x,b[i])),"Equivalent logical footprint tile differs");
     render={pixels:a.length/4,identicalWords:a.length,nonzeroAlpha:Array.from(a).filter((x,i)=>i%4===3&&x>0).length};
+    const shifts=[-.00005,-.00001,-.000001,0,.000001,.00001,.00005];
+    const deep=shifts.map(d=>query({x:2048+d,y:123,w:4096,h:3072,r:0,mode:6,amount:-60,depth:20,sceneX:0,sceneY:0}));
+    const pv=await ev.evaluate(deep);
+    const distances=shifts.map((d,i)=>pv[i*OUTPUT]),err=Math.max(...distances.map((d,i)=>Math.abs(d-shifts[i])));
+    must(err<2e-9,"Deep-magnification local coordinate error "+err);
+    must(distances[2]<0&&distances[4]>0,"Sub-f32 global edge offsets collapsed");
+    precision={shifts,distances,maxError:err,rawGlobalCoordinatesDistinct:new Set(shifts.map(d=>Math.fround(2048+d))).size};
+    const edgeConfig={width:12,height:4,origin:[39.68,-1],density:2,magnification:8,samples:16,makeQuery:(x,y)=>query({x,y,w:80,h:64,r:0,mode:6,sceneX:x,sceneY:y,blur:[0,0]})};
+    const e=await renderTile(ev,edgeConfig),f=await renderTile(ev,{...edgeConfig,density:4,magnification:4});
+    must(e.every((v,i)=>Object.is(v,f[i])),"Edge tile density/zoom mismatch");
+    let partial=0,error=0;
+    for(let i=0;i<e.length/4;i++){const alpha=e[i*4+3],x=edgeConfig.origin[0]+(i%edgeConfig.width)/16;
+     if(alpha>0&&alpha<1)partial++;error=Math.max(error,Math.abs(alpha-Math.max(0,Math.min(1,(40-x)*16))));}
+    must(partial>0&&error<=1/16,"Invalid partial coverage");
+    edge={pixels:e.length/4,partial,maxCoverageError:error,identicalWords:e.length};
    }
   }finally{ev.dispose();}
  }
@@ -55,5 +70,5 @@ export async function run(){
  must(maxSource<.0002,"Source error "+maxSource);
  must(maxColor<.0002,"Color error "+maxColor);
  must(coverage===0,"Point coverage mismatches "+coverage);
- return {adapter,count,identical,maxField,maxNormal,maxDisplacement,maxSource,maxColor,coverage,render};
+ return {adapter,count,identical,maxField,maxNormal,maxDisplacement,maxSource,maxColor,coverage,render,precision,edge};
 }

@@ -3,7 +3,7 @@
 struct Query {
  pointSize:vec4<f32>, geometry:vec4<f32>, radii:vec4<f32>, source:vec4<f32>,
  material:vec4<f32>, pointer:vec4<f32>, tint:vec4<f32>,
- face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>
+ face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>,edgeOffsets:vec4<f32>
 }
 struct Result {field:vec4<f32>,source:vec4<f32>,color:vec4<f32>}
 struct Scene {grid:vec4<f32>,step:vec4<f32>}
@@ -16,9 +16,9 @@ fn sat(x:f32)->f32{return clamp(x,0.0,1.0);}
 fn normalizedOrZero(p:vec2<f32>)->vec2<f32>{
  let l=length(p);if(l>0.0){return p/l;}return vec2<f32>(0.0);
 }
-fn quadrant(p:vec2<f32>,h:vec2<f32>,radius:f32,blend:vec2<f32>)->vec3<f32>{
+fn quadrant(q:vec2<f32>,radius:f32,blend:vec2<f32>)->vec3<f32>{
  let r=abs(radius);let k=r*K;
- let q=p-h;let a=mix(k,r,max(blend.x,blend.y));let xy=q+vec2<f32>(a);
+ let a=mix(k,r,max(blend.x,blend.y));let xy=q+vec2<f32>(a);
  let n=max((q+vec2<f32>(k))/k,vec2<f32>(0.0));
  let rad=length(n);let big=max(n.x,n.y);var u=0.0;
  if(big>0.0){u=sat(min(n.x,n.y)/big);}
@@ -35,9 +35,9 @@ fn quadrant(p:vec2<f32>,h:vec2<f32>,radius:f32,blend:vec2<f32>)->vec3<f32>{
 }
 fn factor(r:f32,h:f32)->f32{if(r>=0.0){return 1.0;}return sat((-K-h/r)*-1.891557216644287);}
 fn geometry(q:Query)->vec3<f32>{
- let p=q.pointSize.xy;let h=q.pointSize.zw*.5;let r=q.geometry.x;
+ let p=q.pointSize.xy;let h=q.pointSize.zw*.5;let r=q.geometry.x;let e=q.edgeOffsets;
  if(q.geometry.y==4.0){
-  let a=quadrant(abs(p),h,r,vec2<f32>(0.0));
+  let a=quadrant(vec2<f32>(max(e.x,e.y),max(e.z,e.w)),r,vec2<f32>(0.0));
   return vec3<f32>(a.x,a.yz*select(vec2<f32>(-1.0),vec2<f32>(1.0),p>=vec2<f32>(0.0)));
  }
  if(q.geometry.y==5.0){
@@ -46,13 +46,13 @@ fn geometry(q:Query)->vec3<f32>{
   let c=factor((bl+br)*.5,h.x);let d=factor((tr+br)*.5,h.y);
   let s0=vec2<f32>(1.0,-1.0);let s1=vec2<f32>(-1.0,-1.0);
   let s2=vec2<f32>(1.0,1.0);let s3=vec2<f32>(-1.0,1.0);
-  var v=quadrant(p*s0,h,tr,vec2<f32>(a,d));v=vec3<f32>(v.x,v.yz*s0);
-  let z1=quadrant(p*s1,h,tl,vec2<f32>(a,b));if(z1.x>v.x){v=vec3<f32>(z1.x,z1.yz*s1);}
-  let z2=quadrant(p*s2,h,br,vec2<f32>(c,d));if(z2.x>v.x){v=vec3<f32>(z2.x,z2.yz*s2);}
-  let z3=quadrant(p*s3,h,bl,vec2<f32>(c,b));if(z3.x>v.x){v=vec3<f32>(z3.x,z3.yz*s3);}
+  var v=quadrant(e.xw,tr,vec2<f32>(a,d));v=vec3<f32>(v.x,v.yz*s0);
+  let z1=quadrant(e.yw,tl,vec2<f32>(a,b));if(z1.x>v.x){v=vec3<f32>(z1.x,z1.yz*s1);}
+  let z2=quadrant(e.xz,br,vec2<f32>(c,d));if(z2.x>v.x){v=vec3<f32>(z2.x,z2.yz*s2);}
+  let z3=quadrant(e.yz,bl,vec2<f32>(c,b));if(z3.x>v.x){v=vec3<f32>(z3.x,z3.yz*s3);}
   return v;
  }
- let a=abs(p)-(h-vec2<f32>(r));let b=max(a,vec2<f32>(0.0));let rho=length(b);
+ let a=vec2<f32>(max(e.x,e.y),max(e.z,e.w))+vec2<f32>(r);let b=max(a,vec2<f32>(0.0));let rho=length(b);
  let d=rho+min(max(a.x,a.y),0.0)-r;
  var normal=vec2<f32>(0.0);
  if(rho>0.0){normal=b/rho*sign(p);}
@@ -99,7 +99,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let f=geometry(q);let disp=envelope(f.x,q.geometry.z,q.geometry.w);
  // Existing authored interaction, now in logical point units; not a recovered native law.
  let d=min(q.pointSize.z,q.pointSize.w);let reach=max(24.0,d*.8)*clamp(q.pointSize.zw/max(d,1.0),vec2<f32>(1.0),vec2<f32>(2.4));
- let rel=(q.pointSize.xy-q.pointer.xy)/reach;let prox=exp(-dot(rel,rel));
+ let rel=q.pointer.xy/reach;let prox=exp(-dot(rel,rel));
  let hover=q.interaction.x;let press=q.interaction.y;
  let shift=prox*(rel*(hover*.55+press*1.1)+q.pointer.zw*(hover*.42+press*.65));
  let src=integrateSource(q.source.xy+f.yz*disp+shift,q.source.zw);

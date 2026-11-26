@@ -33,7 +33,7 @@ function checkAxis(n,lo,hi){
 }
 export function axisTerms(n,lo,hi){
  // Sparse, disjoint or overlapping index ranges with constant integrated hat weights.
- // At most seven terms: two clamped tails, two boundary-cell pairs, one full cell interval.
+ // At most nine terms: two clamped tails, two boundary-cell pairs, and three full-cell ranges.
  // Full cells combine to two half endpoints and one unit-weight interior.
  checkAxis(n,lo,hi);
  const result=[],add=(a,b,k)=>{if(a<=b&&k!==0)result.push([a,b,k]);};

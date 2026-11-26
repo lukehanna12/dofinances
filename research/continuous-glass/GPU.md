@@ -7,3 +7,5 @@ Run on macOS with Chrome and Node 24:
 node research/continuous-glass/run-gpu-check.mjs
 ```
 Uses an isolated temporary browser profile and owned internal storage readback, no screenshots. Compares GPU values against the independent JavaScript reference at thousands of query coordinates and repeated equivalent logical footprint tiles. This is CPU/GPU candidate consistency, not Apple Glass validation.
+
+Coordinate transport now computes edge-relative coordinates, pointer deltas and source-origin-relative coordinates in binary64 before conversion to WGSL float32. This reduces cancellation under deep zoom. The test includes offsets as small as ±0.000001 point at a 4096-point rectangle and a partial-coverage tile at its edge; these are finite controls, not arbitrary-precision GPU guarantees.
