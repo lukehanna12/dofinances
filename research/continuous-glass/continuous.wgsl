@@ -3,7 +3,7 @@
 struct Query {
  pointSize:vec4<f32>, geometry:vec4<f32>, radii:vec4<f32>, source:vec4<f32>,
  material:vec4<f32>, pointer:vec4<f32>, tint:vec4<f32>,
- face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>,edgeOffsets:vec4<f32>,pathPoint:vec4<f32>
+ face0:vec4<f32>,face1:vec4<f32>,face2:vec4<f32>,interaction:vec4<f32>,edgeOffsets:vec4<f32>,pathPoint:vec4<f32>,sourceCell:vec4<f32>
 }
 struct Result {field:vec4<f32>,source:vec4<f32>,color:vec4<f32>,bounds:vec4<f32>}
 struct Scene {grid:vec4<f32>,step:vec4<f32>}
@@ -69,31 +69,32 @@ fn branchWeight(lo:f32,hi:f32,a:f32,b:f32,rising:bool)->f32{
  let x=max(lo,a);let y=min(hi,b);if(y<=x){return 0.0;}
  let m=(x-a+(y-a))*.5;return (y-x)*select(1.0-m,m,rising);
 }
-fn axisWeight(n:u32,i:u32,lo:f32,hi:f32)->f32{
+fn axisWeight(n:u32,i:u32,lo:f32,hi:f32,base:i32)->f32{
  if(n==1u){return 1.0;}
- let x=f32(i);let last=f32(n-1u);
- if(hi<=lo){return max(0.0,1.0-abs(clamp(lo,0.0,last)-x));}
+ let x=f32(i32(i)-base);let first=f32(-base);let last=f32(i32(n-1u)-base);
+ if(hi<=lo){return max(0.0,1.0-abs(clamp(lo,first,last)-x));}
  var z=0.0;
  if(i>0u){z+=branchWeight(lo,hi,x-1.0,x,true);}
- else{z+=max(0.0,min(hi,0.0)-lo);}
+ else{z+=max(0.0,min(hi,first)-lo);}
  if(i+1u<n){z+=branchWeight(lo,hi,x,x+1.0,false);}
  else{z+=max(0.0,hi-max(lo,last));}
  return z/(hi-lo);
 }
 struct AxisRange {lo:u32,hi:u32,weight:f32}
 struct AxisRanges {items:array<AxisRange,5>,count:u32}
-fn ranges(n:u32,lo:f32,hi:f32)->AxisRanges{
+fn indexFloor(n:u32,x:f32,base:i32)->u32{return u32(clamp(i32(floor(clamp(x,f32(-base),f32(i32(n-1u)-base))))+base,0,i32(n-1u)));}
+fn indexCeil(n:u32,x:f32,base:i32)->u32{return u32(clamp(i32(ceil(clamp(x,f32(-base),f32(i32(n-1u)-base))))+base,0,i32(n-1u)));}
+fn ranges(n:u32,lo:f32,hi:f32,base:i32)->AxisRanges{
  var r:AxisRanges;
- let start=u32(floor(clamp(lo,0.0,f32(n-1u))));
- let end=u32(ceil(clamp(hi,0.0,f32(n-1u))));
+ let start=indexFloor(n,lo,base);let end=indexCeil(n,hi,base);
  if(end-start<=3u){
-  for(var i=start;i<=end;i++){r.items[r.count]=AxisRange(i,i,axisWeight(n,i,lo,hi));r.count++;}
+  for(var i=start;i<=end;i++){r.items[r.count]=AxisRange(i,i,axisWeight(n,i,lo,hi,base));r.count++;}
  }else{
-  r.items[0]=AxisRange(start,start,axisWeight(n,start,lo,hi));
-  r.items[1]=AxisRange(start+1u,start+1u,axisWeight(n,start+1u,lo,hi));
+  r.items[0]=AxisRange(start,start,axisWeight(n,start,lo,hi,base));
+  r.items[1]=AxisRange(start+1u,start+1u,axisWeight(n,start+1u,lo,hi,base));
   r.items[2]=AxisRange(start+2u,end-2u,1.0/(hi-lo));
-  r.items[3]=AxisRange(end-1u,end-1u,axisWeight(n,end-1u,lo,hi));
-  r.items[4]=AxisRange(end,end,axisWeight(n,end,lo,hi));r.count=5u;
+  r.items[3]=AxisRange(end-1u,end-1u,axisWeight(n,end-1u,lo,hi,base));
+  r.items[4]=AxisRange(end,end,axisWeight(n,end,lo,hi,base));r.count=5u;
  }
  return r;
 }
@@ -112,23 +113,23 @@ fn rectSum(n:vec2<u32>,a:AxisRange,b:AxisRange)->vec4<f32>{
  let low=(prefixes[i+1u]-prefixes[j+1u])-(prefixes[k+1u]-prefixes[l+1u]);
  return high+low;
 }
-fn integrateSource(center:vec2<f32>,radius:vec2<f32>)->vec4<f32>{
- let n=vec2<u32>(scene.grid.xy);let p=(center-scene.grid.zw)/scene.step.xy;let r=radius/scene.step.xy;
+fn integrateSource(center:vec2<f32>,radius:vec2<f32>,sourceCell:vec2<i32>)->vec4<f32>{
+ let n=vec2<u32>(scene.grid.xy);let base=sourceCell+vec2<i32>(floor(center));let p=fract(center);let r=radius/scene.step.xy;
  let lo=p-r;let hi=p+r;var out=vec4<f32>(0.0);
  // Small footprints use direct integration, large ones use bounded range sums.
- let start=vec2<u32>(floor(clamp(lo,vec2<f32>(0.0),vec2<f32>(n-vec2<u32>(1u)))));
- let end=vec2<u32>(ceil(clamp(hi,vec2<f32>(0.0),vec2<f32>(n-vec2<u32>(1u)))));
+ let start=vec2<u32>(indexFloor(n.x,lo.x,base.x),indexFloor(n.y,lo.y,base.y));
+ let end=vec2<u32>(indexCeil(n.x,hi.x,base.x),indexCeil(n.y,hi.y,base.y));
  if(scene.step.z>0.0&&(end.x-start.x+1u)*(end.y-start.y+1u)>64u){
-  let xs=ranges(n.x,lo.x,hi.x);let ys=ranges(n.y,lo.y,hi.y);
+  let xs=ranges(n.x,lo.x,hi.x,base.x);let ys=ranges(n.y,lo.y,hi.y,base.y);
   for(var j=0u;j<ys.count;j++){for(var i=0u;i<xs.count;i++){
    let x=xs.items[i];let y=ys.items[j];out+=rectSum(n,x,y)*(x.weight*y.weight);
   }}
   return out;
  }
  for(var y=start.y;y<=end.y;y++){
-  let wy=axisWeight(n.y,y,lo.y,hi.y);
+  let wy=axisWeight(n.y,y,lo.y,hi.y,base.y);
   for(var x=start.x;x<=end.x;x++){
-   let wx=axisWeight(n.x,x,lo.x,hi.x);out+=texels[y*n.x+x]*(wx*wy);
+   let wx=axisWeight(n.x,x,lo.x,hi.x,base.x);out+=texels[y*n.x+x]*(wx*wy);
   }
  }
  return out;
@@ -147,7 +148,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let rel=q.pointer.xy/reach;let prox=exp(-dot(rel,rel));
  let hover=q.interaction.x;let press=q.interaction.y;
  let shift=prox*(rel*(hover*.55+press*1.1)+q.pointer.zw*(hover*.42+press*.65));
- let src=integrateSource(q.source.xy+f.yz*disp+shift,q.source.zw);
+ let src=integrateSource(q.source.xy+(f.yz*disp+shift)/scene.step.xy,q.source.zw,vec2<i32>(q.sourceCell.xy));
  let rim=exp(-abs(f.x)*1.16);let edge=clamp(rim*.28,0.0,.28);
  let light=prox*(hover*.075+press*.06)+rim*prox*press*.035;
  var color:vec3<f32>;

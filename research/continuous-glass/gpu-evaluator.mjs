@@ -2,7 +2,7 @@
 import {mode4Field,mode5Field} from "./native-field.mjs";
 import {roundedBoxField,refractionEnvelope} from "./reference.mjs";
 import {ContinuousScene} from "./sampling.mjs";
-export const LANES=52,OUTPUT=16;
+export const LANES=56,OUTPUT=16;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),dot=(a,b)=>a.reduce((z,x,i)=>z+x*b[i],0);
 export function pointReference(a,scene){
  const [x,y,w,h,r]=a.logical?.geometry??a;const [, , , , ,mode,amount,depth]=a;
@@ -18,7 +18,7 @@ export function pointReference(a,scene){
  return [d,...n,disp,...src,...color.map((c,i)=>c+(a[24+i]-c)*tint),d<=0?1:0];
 }
 export function query({x,y,w,h,r,mode=4,radii=[-r,-r,-r,-r],amount=-60,depth=20,sceneX=x,sceneY=y,blur=[4,4],regular=false,face=[.05,.8],tint=[0,0,0,0],film=.25,pointer=[0,0,0,0],hover=0,press=0,rows=[1,0,0,0,0,1,0,0,0,0,1,0]}){
- const a=Float32Array.from([x,y,w,h,r,mode,amount,depth,...radii,sceneX,sceneY,...blur,regular?1:0,...face,film,x-pointer[0],y-pointer[1],pointer[2],pointer[3],...tint,...rows,hover,press,0,0,x-w/2,-x-w/2,y-h/2,-y-h/2,0,0,0,0]);
+ const a=Float32Array.from([x,y,w,h,r,mode,amount,depth,...radii,sceneX,sceneY,...blur,regular?1:0,...face,film,x-pointer[0],y-pointer[1],pointer[2],pointer[3],...tint,...rows,hover,press,0,0,x-w/2,-x-w/2,y-h/2,-y-h/2,0,0,0,0,0,0,0,0]);
  Object.defineProperty(a,"logical",{value:{geometry:[x,y,w,h,r],source:[sceneX,sceneY]}});
  if(a.length!==LANES||!a.every(Number.isFinite)||w<=0||h<=0||depth<=0||blur.some(v=>v<0)||![4,5,6,7].includes(mode)||r<0||(mode===4&&r===0)||(mode===5&&radii.some(v=>v===0))||(mode===6&&r>Math.min(w,h)/2))throw new RangeError("Invalid experimental query");
  return a;
@@ -60,7 +60,10 @@ export async function createEvaluator(scene,{path=null,integrator="prefix"}={}){
  return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,device:adapter.info.device,description:adapter.info.description,isFallbackAdapter:adapter.info.isFallbackAdapter},
  async evaluate(rows){
   if(disposed||!rows.length||rows.length>65536||rows.some(x=>x.length!==LANES))throw new RangeError("Invalid query batch");
-  const data=new Float32Array(rows.length*LANES);rows.forEach((a,i)=>{data.set(a,i*LANES);const [x,y]=a.logical?.source??[a[12],a[13]];data[i*LANES+12]=x-scene.origin[0];data[i*LANES+13]=y-scene.origin[1];if(a[5]===7){if(!path)throw new RangeError("Vector query requires prepared path");const [px,py]=a.logical?.geometry??a;data.set([(px-path.origin[0])/path.scale,(py-path.origin[1])/path.scale,path.normalizedTolerance,path.scale],i*LANES+48);}});
+  const data=new Float32Array(rows.length*LANES);rows.forEach((a,i)=>{data.set(a,i*LANES);const [x,y]=a.logical?.source??[a[12],a[13]];const gx=(x-scene.origin[0])/scene.step[0],gy=(y-scene.origin[1])/scene.step[1];
+   const ix=Math.floor(gx),iy=Math.floor(gy);
+   if(![ix,iy].every(v=>Number.isSafeInteger(v)&&Math.abs(v)<=1048576))throw new RangeError("Source cell outside experimental transport range");
+   data[i*LANES+12]=gx-ix;data[i*LANES+13]=gy-iy;data[i*LANES+52]=ix;data[i*LANES+53]=iy;if(a[5]===7){if(!path)throw new RangeError("Vector query requires prepared path");const [px,py]=a.logical?.geometry??a;data.set([(px-path.origin[0])/path.scale,(py-path.origin[1])/path.scale,path.normalizedTolerance,path.scale],i*LANES+48);}});
   const input=make(data,GPUBufferUsage.STORAGE),size=rows.length*OUTPUT*4;
   const out=device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC}),read=device.createBuffer({size,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
   try{
