@@ -1,7 +1,7 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {silhouetteMask,silhouetteHazeMask,silhouetteHazeStrength,registerGlassSilhouette,silhouetteAtlasBytes,MASK_SIZE,MASK_INNER,MASK_RANGE,HAZE_SIZE,HAZE_INNER,HAZE_RANGE} from "../sites/_apex/assets/home-dashboard/dashboard-glass-silhouette.js";
+import {silhouetteMask,silhouetteHazeMask,silhouetteHazeStrength,projectIconHazeProgress,registerGlassSilhouette,silhouetteAtlasBytes,MASK_SIZE,MASK_INNER,MASK_RANGE,HAZE_SIZE,HAZE_INNER,HAZE_RANGE} from "../sites/_apex/assets/home-dashboard/dashboard-glass-silhouette.js";
 import {coverageGeometry} from "../sites/_apex/assets/home-dashboard/dashboard-glass-vector-coverage.js";
 const asset=name=>readFileSync(new URL("../sites/_apex/assets/home-dashboard/"+name,import.meta.url),"utf8");
 test("silhouette preserves authored alpha, signed contour and holes",()=>{
@@ -42,14 +42,15 @@ test("adaptive haze is zero in dark pixels, restrained and very soft",()=>{
  assert.ok(silhouetteHazeStrength(.95,0)<=.16);
  assert.ok(silhouetteHazeStrength(.95,4)<silhouetteHazeStrength(.95,1));
  assert.ok(silhouetteHazeStrength(.95,5.5)>0);
- assert.equal(silhouetteHazeStrength(.95,5/6+6),0);
+ assert.equal(silhouetteHazeStrength(.95,5/6+9),0);
  assert.equal(silhouetteHazeStrength(.95,0),.16);
- // Only margins shrink. The Gaussian sigma and terminal feather stay fixed.
+ // Preserve peak and narrow margin with a longer feather.
  assert.equal(silhouetteHazeStrength(.95,.8/6),.16);
- const probe=5/6+3;
- assert.ok(Math.abs(silhouetteHazeStrength(.95,probe)-.08*Math.exp(-.5*((probe-.8/6)/5.4)**2))<1e-12);
- assert.ok(silhouetteHazeStrength(.95,6.5)<.001);
- assert.equal(silhouetteHazeStrength(.95,7),0);
+ const probe=5/6+4.5;
+ assert.ok(Math.abs(silhouetteHazeStrength(.95,probe)-.08*Math.exp(-.5*((probe-.8/6)/6.5)**2))<1e-12);
+ assert.ok(silhouetteHazeStrength(.95,6.5)>.001);
+  assert.ok(silhouetteHazeStrength(.95,9.5)<.001);
+ assert.equal(silhouetteHazeStrength(.95,10),0);
 });
 test("shared silhouette registration uses Clear tint and same owner fragment",()=>{
  const img={dataset:{}};
@@ -98,9 +99,9 @@ test("native SVG final coverage is independent of 512px optical mask and haze",(
 
 test("haze is display-only and never enters glass optical inputs",()=>{
  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js");
- assert.match(shader,/distanceCSS-0\.8\/6\.0\)\/5\.4/);
- assert.match(shader,/1\.0-smoothstep\(5\.0\/6\.0,5\.0\/6\.0\+6\.0,distanceCSS\)/);
- assert.match(shader,/let haze=select\(0\.0,silhouetteHaze\(luminance,hazeDistance,hover\),state\.tintMeta\.z>=0\.0\)/);
+ assert.match(shader,/distanceCSS-0\.8\/6\.0\)\/6\.5/);
+ assert.match(shader,/1\.0-smoothstep\(5\.0\/6\.0,5\.0\/6\.0\+9\.0,distanceCSS\)/);
+ assert.match(shader,/let haze=select\(0\.0,silhouetteHaze\(luminance,hazeDistance,hazeHover\),state\.tintMeta\.z>=0\.0\)/);
  const optical=shader.slice(shader.indexOf("let signed=(mask.g-0.5)"),shader.indexOf("return mix(shaded,glass"));
  assert.ok(optical.length>1000);
  assert.doesNotMatch(optical,/\bhaze\b(?=[^\n]*[+*\/\-])/);
@@ -122,4 +123,14 @@ test("haze atlas crop preserves all retained distance texels exactly",()=>{
  assert.match(shader,/hazeUV=iconUV\*\(256\.0\/384\.0\)\+vec2<f32>\(64\.0\/384\.0\)/);
  assert.match(shader,/let hazeOutside=length/);
  assert.ok(64*45.5/256>11);
+});
+
+test("project haze follows reversible geometry progress without entering optical hover",()=>{
+  assert.deepEqual([0,.25,.5,.75,1].map(projectIconHazeProgress),[1,.75,.5,.25,0]);
+  assert.deepEqual([1,.75,.5,.25,0].map(projectIconHazeProgress),[0,.25,.5,.75,1]);
+  const shader=asset("dashboard-gpu-glass.wgsl"),r=asset("dashboard-gpu-renderer.js"),atlas=asset("dashboard-glass-silhouette.js");
+  assert.match(r,/projectIconHazeProgress\(Number\(getComputedStyle\(owner\).getPropertyValue\("--project-regular-progress"\)\)\)/);
+  assert.match(atlas,/hazeOnly\?-haze:clamp\(next\[0\]\)/);
+  assert.match(shader,/let hazeHover=clamp\(abs\(icon.params.y\),0.0,1.0\)/);
+  assert.match(shader,/let hover=clamp\(icon.params.y,0.0,1.0\)/);
 });

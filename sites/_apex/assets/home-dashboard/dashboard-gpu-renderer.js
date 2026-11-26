@@ -35,7 +35,7 @@ import {resolveDropdownMaterial,dropdownMaterialLanes,dropdownRowBounds} from ".
 import {createGlassSourcePainter,sourceNodesForPane} from "./dashboard-glass-source-paint.js";
 import {createNativeForegroundOcclusion} from "./dashboard-glass-native-occlusion.js";
 import {createVectorCoverageAtlas} from "./dashboard-glass-vector-coverage.js";
-import {createGlassSilhouetteAtlas,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
+import {createGlassSilhouetteAtlas,projectIconHazeProgress,GLASS_ICON_FLOATS} from "./dashboard-glass-silhouette.js";
 import {continuousRequested,loadContinuousGlass,specializeContinuousGlass} from "./dashboard-glass-continuous.js";
 import {CLOCK_TEXT_PROFILE,clockTextMaterialLanes,rasterClockText} from "./dashboard-glass-text.js";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur} from "./dashboard-public-dismiss.js";
@@ -991,8 +991,11 @@ async function initialize(){
           physicalWidth,physicalAuthHeight,authUniform[11],physicalHeight,tileData[p+19]))continue;
         const suppressed=owner.matches(".is-expanded,.project-showcase-dissolve-ghost")||
           owner.classList.contains("is-contracting")||tileData[p+19]>0;
+        // The moving icon bounds and haze share the live card geometry clock.
+        const hazeTransition=owner.matches(".is-expanded,.is-contracting")&&!owner.matches(".project-showcase-dissolve-ghost")&&tileData[p+19]<=0?
+          projectIconHazeProgress(Number(getComputedStyle(owner).getPropertyValue("--project-regular-progress"))):null;
         const icon=silhouetteAtlas.sync(owner,img,{width:tileData[p+2],height:tileData[p+3],dpr,scheme,
-          hover:owner.matches(":hover"),suppressHover:suppressed,dt,reduced:reducedMotion.matches,
+          hover:owner.matches(":hover"),suppressHover:suppressed,hazeTransition,dt,reduced:reducedMotion.matches,
           opacity:tileDismissIconOpacity(tileData[p+19]),slot:i,
           ownerRect:Array.from(tileData.subarray(p,p+4)),dismiss:tileData[p+19]});
         if(!icon)continue;
@@ -1003,7 +1006,7 @@ async function initialize(){
           if(referenceActive){const b=Array.from(tileData.subarray(p,p+4));b[1]-=authUniform[11];const ref=referenceCoverage.sync(img,i,Array.from(lanes.subarray(0,4)),b,tileData[p+19],[sourceWidth/physicalWidth,sourceHeight/physicalHeight]);if(ref){const q=referenceIconData.subarray(slot*GLASS_ICON_FLOATS,(slot+1)*GLASS_ICON_FLOATS);q.set(lanes);q.set(ref.rect,12);q.set(ref.meta,16);q[19]=lanes[19];}}
         }
         animating ||= icon.animating;
-        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,
+        icons.push({slug:owner.dataset.projectSlug,bounds:icon.bounds,vectorCoverage:icon.vectorCoverage,hover:icon.hover,haze:icon.haze,
           tint:icon.tint,tintOpacity:icon.tintOpacity,suppressHover:suppressed,continuousVector:continuous?Boolean(continuous.indexFor(img)):false});
       }
     }else for(const img of document.querySelectorAll(".public-projects-root [data-glass-icon-owned]"))img.removeAttribute("data-glass-icon-owned");

@@ -555,10 +555,10 @@ fn finalSilhouetteCoverage(icon:GlassSilhouette,local:vec2<f32>,fallback:f32)->f
 // Actual current composited pixel, including live artwork opacity and zoom.
 fn silhouetteHaze(luminance:f32,distanceCSS:f32,hover:f32)->f32{
   let brightness=smoothstep(0.25,0.90,luminance);
-  // Shrink both unfeathered margins to 1/6, preserving the 6px
-  // terminal feather and 5.4px Gaussian sigma.
-  let x=max(0.0,distanceCSS-0.8/6.0)/5.4;
-  let tail=1.0-smoothstep(5.0/6.0,5.0/6.0+6.0,distanceCSS);
+  // Keep the narrow unfeathered margins and peak strength. Spread the
+  // Gaussian and terminal feather for a gentler display-only edge.
+  let x=max(0.0,distanceCSS-0.8/6.0)/6.5;
+  let tail=1.0-smoothstep(5.0/6.0,5.0/6.0+9.0,distanceCSS);
   return 0.16*hover*brightness*exp(-0.5*x*x)*tail;
 }
 fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
@@ -579,12 +579,13 @@ fn composeGlassSilhouette(color:vec3<f32>,icon:GlassSilhouette,local:vec2<f32>,
   let hazeMask=silhouetteHazeMask(hazeSampleUV,layer);
   let hazeScale=min(icon.rect.z,icon.rect.w)/256.0;
   let hover=clamp(icon.params.y,0.0,1.0)*icon.params.w;
+  let hazeHover=clamp(abs(icon.params.y),0.0,1.0)*icon.params.w;
   let luminance=dot(color,vec3<f32>(0.2126,0.7152,0.0722));
   let hazeOutside=length((hazeUV-hazeSampleUV)*384.0);
   let hazeDistance=(hazeMask-0.5)*256.0*hazeScale/pointScale+hazeOutside*hazeScale/pointScale;
   // Display-only exposure adjustment. The offscreen lower-layer
   // attachments that become optical inputs never contain this haze.
-  let haze=select(0.0,silhouetteHaze(luminance,hazeDistance,hover),state.tintMeta.z>=0.0);
+  let haze=select(0.0,silhouetteHaze(luminance,hazeDistance,hazeHover),state.tintMeta.z>=0.0);
   var shaded=color*(1.0-haze);
   let glowDistance=max(hazeDistance,0.0)/1.8;
   shaded=clamp(shaded+vec3<f32>(0.018*hover*exp(-0.5*glowDistance*glowDistance)),
