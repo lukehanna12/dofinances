@@ -89,10 +89,46 @@ static void impulse(void){
   puts("");
  }
 }
+
+static void matrix(void){
+ const int dims[][2]={{8,6},{10,8},{16,16},{32,64},{9,7},{17,11},{63,31}};
+ for(int i=0;i<7;i++){
+  int w=dims[i][0],h=dims[i][1];
+  for(int type=0;type<2;type++){
+   int bpp=type?4:8;MTLPixelFormat format=type?MTLPixelFormatBGRA8Unorm:MTLPixelFormatRGBA16Float;
+   id<MTLTexture> t=texture(w,h,format,YES);
+   NSMutableData *data=[NSMutableData dataWithLength:w*h*bpp];
+   for(int y=0;y<h;y++)for(int x=0;x<w;x++)for(int k=0;k<4;k++){
+    int j=(y*w+x)*4+k;
+    int v=(17*x*x+13*y*y+11*x*y+7*k*x+19*k*y+23*k+3*i)%127;
+    if(type)((uint8_t*)data.mutableBytes)[j]=(uint8_t)((v*2+(x+y+k)%2));
+    else ((uint16_t*)data.mutableBytes)[j]=half((v-61)/32.0f);
+   }
+   writeTexture(t,0,data,bpp);down(t,0,@"variable_blur_downsample_compute_agx2");
+   NSData *out=readTexture(t,1,bpp);
+   printf("MATRIX %d %d %d %d %s %s %s\n",i,w,h,type,hash(data).UTF8String,hash(out).UTF8String,hex(out.bytes,out.length).UTF8String);
+  }
+ }
+}
+static void impulse2D(void){
+ id<MTLTexture> t=texture(64,64,MTLPixelFormatRGBA16Float,YES);
+ for(int y=-5;y<=6;y++){
+  printf("IMPULSE2D %d",y);
+  for(int start=-5;start<=6;start+=4){
+   NSMutableData *d=[NSMutableData dataWithLength:64*64*8];uint16_t *p=d.mutableBytes;
+   for(int k=0;k<4;k++)p[((32+y)*64+(32+start+k))*4+k]=half(1);
+   writeTexture(t,0,d,8);down(t,0,@"variable_blur_downsample_compute_agx2");
+   NSData *r=readTexture(t,1,8);const uint16_t *q=r.bytes;
+   for(int k=0;k<4;k++)printf(" %04x",q[(16*32+16)*4+k]);
+  }
+  puts("");
+ }
+}
+
 int main(int argc,const char **argv){@autoreleasepool{
  dev=MTLCreateSystemDefaultDevice();queue=[dev newCommandQueue];pipelines=[NSMutableDictionary dictionary];NSError *error=nil;
  library=[dev newLibraryWithURL:[NSURL fileURLWithPath:@"/System/Library/Frameworks/QuartzCore.framework/Versions/A/Resources/default.metallib"] error:&error];
  if(!library){NSLog(@"%@",error);return 1;}
  if(argc!=2)return 2;
- if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else return 2;
+ if(strcmp(argv[1],"replay")==0)replay();else if(strcmp(argv[1],"impulse")==0)impulse();else if(strcmp(argv[1],"matrix")==0)matrix();else if(strcmp(argv[1],"impulse2d")==0)impulse2D();else return 2;
 }}
