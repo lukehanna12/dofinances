@@ -349,7 +349,9 @@
       54,
       55,
       56,
-      57
+      57,
+      58,
+      59
     ],
     "oddSamplerPR": 57,
     "liveCases": 4,
@@ -359,9 +361,9 @@
     "retainedOddSampleLanes": 53768,
     "offscreenStripeCases": 23,
     "repeats": 2,
-    "scope": "One installed target build; capture input and compute ABI supplied. Odd dimensions still not supported by software native-compatible mip evaluator. Final shading, public state selection, active display and interaction unresolved.",
+    "scope": "One installed target build. Capture and ABI supplied for private kernel replay. Finite BGRA8 odd dimension and fractional LOD software evaluation now exact; signed-half odd and general sampling, public selection, final output and interaction unresolved.",
     "oddSamplerPRStatus": "merged after full research-tests success",
-    "oracleCommit": "2fc1cbcb183fa4837288d482392890840226ae11"
+    "oracleCommit": "9ba14d6e18442cd2b833a64a2983d9783f38d8aa"
   },
   "release": "blocked (verified release-gate.mjs)",
   "nativeDiamond": {
@@ -410,5 +412,49 @@
       "maxSource": 3.5762786876336605e-7,
       "maxColor": 1.6318939155546275e-7
     }
+  },
+  "latestValidation": {
+    "codeCommit": "0f9e1c384df5745ec705036a3210a7e3b65798fd",
+    "tests": 36,
+    "passes": 36,
+    "failed": 0,
+    "scope": "Fresh target clone; includes prior math suite, exact CPU BGRA8 sampler and trilinear checks, fixed mip field phase and continuity."
+  },
+  "bgra8": {
+    "linear": {
+      "codeCommit": "a4e9530023116f8846e21d2a9fd7e85773fe109a",
+      "nativeHoldoutLanes": 24576,
+      "exactGPU": 24576,
+      "retainedOddPositionsLanes": 3172,
+      "nativeOddMipChannels": 2068,
+      "additionalCPUComparedGPUChannels": 2900,
+      "exactGPUTextureCases": 9,
+      "oraclePR": 58,
+      "oracleWorkflow": 45755545044
+    },
+    "trilinear": {
+      "codeCommit": "5a177668cd5eb8e84662223468a98c9b70c9df2a",
+      "nativeDerivationLanes": 32768,
+      "nativeHoldoutLanes": 65536,
+      "exactCPU": 98304,
+      "exactGPU": 98304,
+      "repeatedGPUHashes": 8,
+      "oraclePR": 59,
+      "oracleWorkflow": 45756835197
+    },
+    "scope": "Finite normalized encoded BGRA8; explicit coordinate/LOD state. No signed-half or native Glass shader closure."
+  },
+  "hoverProbe": {
+    "codeCommit": "268903242a37b7f967b29de3b46994aa54f9cd60",
+    "scope": "Owned offscreen mock key/main window, synthetic window-local events only; no global pointer changes or active WindowServer interaction.",
+    "callbacks": "enter/move/move/exit observed in both interactive and noninteractive Clear cases",
+    "modelAndPresentationRecordsUnchanged": 69,
+    "frameHashes": [
+      "123771673ba85b3cf2fedccaefe4adf20d34e912b1c2da57e05dee09a24c92ef",
+      "123771673ba85b3cf2fedccaefe4adf20d34e912b1c2da57e05dee09a24c92ef",
+      "5cdeae1b9572321dae56930b37d39cc93eb28a6c18a38264b33b5efc6468e149",
+      "5cdeae1b9572321dae56930b37d39cc93eb28a6c18a38264b33b5efc6468e149"
+    ],
+    "result": "Identical sequence for interactive and noninteractive. Negative differential control; does not disprove native dynamic interaction. Click/release not recovered."
   }
 }

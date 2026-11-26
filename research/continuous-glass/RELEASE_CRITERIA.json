@@ -1,7 +1,7 @@
 {
   "schema": "continuous-glass-release-gate-v1",
   "productionBaseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
-  "oracleBaseline": "2fc1cbcb183fa4837288d482392890840226ae11",
+  "oracleBaseline": "9ba14d6e18442cd2b833a64a2983d9783f38d8aa",
   "scope": "DoFinances public renderer replacement. Not a global native equivalence proof.",
   "policy": "All required gates must have independent retained validation. No production import or deployment on incomplete gates.",
   "gates": [
@@ -18,7 +18,7 @@
     {
       "id": "fixed-source-reconstruction",
       "status": "passed",
-      "scope": "Mathematical box integration and native-derived 13-tap continuous reconstruction verified on CPU/GPU; separate exact finite native mip preparation at fixed logical pitch. Not a universal native LOD or renderer claim."
+      "scope": "Finite mathematical box and diamond reconstruction on CPU/GPU; fixed native mip lattice with encoded channel correction and continuous logical LOD consumer on CPU. Exact native encoded BGRA8 sampler independently implemented on CPU/GPU."
     },
     {
       "id": "complete-vector-ingestion",
@@ -33,7 +33,7 @@
     {
       "id": "native-numerical-semantics",
       "status": "open",
-      "reason": "15,992 exact mathematical channel outputs on independent native copy/even-mip cases; 4,136 further exact odd-mip outputs using measured hardware samples plus independent arithmetic. Portable odd-size sampler internals and full native program equivalence still open (LG-SR-NATIVE)."
+      "reason": "15,992 independent copy/even-mip channels and 2,068 native odd BGRA8 mip channels exact in software; 24,576 native linear and 98,304 native trilinear BGRA8 lanes matched by integer WebGPU. Signed-half arbitrary sampling and full native program equivalence remain open (LG-SR-NATIVE)."
     },
     {
       "id": "native-output-semantics",
@@ -43,7 +43,7 @@
     {
       "id": "native-interaction",
       "status": "open",
-      "reason": "Actual dynamic hover, click and release operator not recovered; existing browser-authored response remains a candidate."
+      "reason": "Offscreen local event control delivered hover enter/move/exit, but interactive and noninteractive Clear had identical model/presentation and output-hash sequence. Genuine active native interaction state, hover/click/release operator not recovered."
     },
     {
       "id": "native-heldout-output",
@@ -57,8 +57,8 @@
     }
   ],
   "latestResearchValidation": {
-    "commit": "22fe7d52032bb1dfdcb96a6788bca06e57e2d4cb",
+    "commit": "0f9e1c384df5745ec705036a3210a7e3b65798fd",
     "path": "research/continuous-glass/VALIDATION.json",
-    "scope": "Finite native compute and browser/CPU/GPU diagnostics; not full Apple Glass equivalence."
+    "scope": "Finite native and browser math checks, including exact encoded BGRA8 explicit LOD sampler; no complete native Glass proof."
   }
 }
