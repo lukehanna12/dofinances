@@ -612,7 +612,7 @@ body.public-home .dashboard-home .cta6-center{
   padding:0 var(--public-home-margin) calc(var(--public-home-margin) + env(safe-area-inset-bottom,0px));
   align-items:flex-start;justify-content:flex-end;
 }
-body.public-home .dashboard-home .cta6-center h1{font-size:63px;translate:none;}
+body.public-home .dashboard-home .cta6-center h1{font-size:126px;translate:none;}
 body.public-home .dashboard-home .cta6-bottom-action{
   display:grid;grid-template-columns:minmax(0,1fr);
   width:var(--public-home-cta-width);left:auto;right:var(--public-home-margin);

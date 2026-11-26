@@ -205,7 +205,7 @@ try{
   }else{
     near(g.logo.left,32,"Corner wordmark margin",width);
     near(g.logo.top+g.logo.height,height-32,"Corner wordmark bottom",width);
-    assert.equal(g.font,"63px");
+    assert.equal(g.font,"126px");
   }
   near(g.square.width,(1080-130)/11,"Fixed square size",width);
   assert.equal(g.gap,"13px");

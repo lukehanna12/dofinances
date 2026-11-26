@@ -13,7 +13,10 @@ export function homeAperture({width,height,logoWidth,logoHeight,centered,margin=
   }
   // The clear interior reaches the left and bottom scene edges; only the
   // top and right feather are visible. The feather is inside the margins.
-  return [Math.min(width,logoWidth+2*margin),Math.max(0,height-bottom-logoHeight-margin),-margin,0];
+  // Double the original feather with the wordmark about its existing
+  // bottom-left anchor. The left/bottom portion remains offscreen.
+  const feather=margin*2;
+  return [logoWidth+margin+feather,height-bottom-logoHeight-feather,-feather,0];
 }
 export function apertureAlpha(x,y,a){
   if(a[2]<0){
@@ -60,7 +63,7 @@ export function observePublicLogoOval(){
     probe.style.letterSpacing=(parseFloat(style.letterSpacing)/parseFloat(style.fontSize)*45)+"px";
     const referenceWidth=probe.getBoundingClientRect().width;
     if(!(referenceWidth>0))return;
-    const size=centered?45*(width/2)/referenceWidth:63;
+    const size=centered?45*(width/2)/referenceWidth:126;
     document.body.style.setProperty("--public-home-logo-size",size+"px");
     const logoWidth=title.offsetWidth,logoHeight=title.offsetHeight;
     const margin=32,bottom=parseFloat(getComputedStyle(title.parentElement).paddingBottom)||margin;
