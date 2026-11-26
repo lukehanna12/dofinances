@@ -84,6 +84,11 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"fn titleGlyphField(local:vec2<f32>)->vec4<f32>{","fn titleGlyphField(local:vec2<f32>,tileIndex:u32)->vec4<f32>{");
  s=once(s,"let glyph=textureLoad(titleGlyphAlpha,p,0);","let glyph=textureLoad(titleGlyphAlpha,p,0);\n let title= silhouettes[tileIndex];\n if(title.coverageMeta.w>0.0){\n  if(all(abs(local-vec2<f32>(p)-title.coverageRect.xy)<vec2<f32>(0.001))||glyph.x>=999.0){return glyph;}\n  let f=evaluateContinuousTitleField(title,local);return vec4<f32>(f,glyph.a);\n }");
  s=once(s,"let glyph=titleGlyphField(in.local);","let glyph=titleGlyphField(in.local,in.tileIndex);");
+ // Settled route quads have an exact inverse translation. Reconstruct their
+ // geometry-local sample from the framebuffer center instead of two
+ // independently rounded vertex-interpolation paths. Animated quads retain
+ // their original interpolated local coordinates.
+ s=once(s,"field=mode5SDF(in.local,dimensions,tile.cornerRadii);","let local=select(in.local,in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w),authPane&&tile.motion.w<=0.0&&state.tintMeta.z>=0.0);\n    field=mode5SDF(local,dimensions,tile.cornerRadii);");
  s=once(s,"return textureLoad(backdrop,coord,0);","// Reconstruct the fixed logical source at the current output sample.\n  let dims=vec2<f32>(textureDimensions(backdrop,0));\n  if(all(abs(input.uv*dims-input.position.xy)<vec2<f32>(0.001))){return textureLoad(backdrop,coord,0);}\n  return levelBilinear(input.uv,0);");
  const start=s.indexOf("fn supercircleSDF("),end=s.indexOf("/* AIR glass_background_sdf_no_bleed_lph",start);
  if(start<0||end<start)throw Error("Missing geometry range");
