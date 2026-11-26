@@ -1,0 +1,59 @@
+{
+  "schema": "continuous-glass-release-gate-v1",
+  "productionBaseline": "3908e7f50618bc38ba734178d2ff37fe2bbab50a",
+  "oracleBaseline": "1483361c620d427441ab9485207219348d78f1c9",
+  "scope": "DoFinances public renderer replacement. Not a global native equivalence proof.",
+  "policy": "All required gates must have independent retained validation. No production import or deployment on incomplete gates.",
+  "gates": [
+    {
+      "id": "continuous-procedural-field",
+      "status": "passed",
+      "scope": "Finite CPU/GPU mode 4, mode 5, Euclidean primitives and simple closed vector paths; not general topology or native fidelity."
+    },
+    {
+      "id": "coordinate-separation",
+      "status": "passed",
+      "scope": "Finite density/magnification and rebased edge controls."
+    },
+    {
+      "id": "fixed-source-reconstruction",
+      "status": "passed",
+      "scope": "Mathematical box integration CPU/GPU; not native kernel."
+    },
+    {
+      "id": "complete-vector-ingestion",
+      "status": "open",
+      "reason": "SVG arcs, strokes, overlapping contours and exact glyph shaping not integrated."
+    },
+    {
+      "id": "native-parameter-and-blur",
+      "status": "open",
+      "reason": "LG-P-SCALARS remains open; exact private blur producer and kernel are not established."
+    },
+    {
+      "id": "native-numerical-semantics",
+      "status": "open",
+      "reason": "LG-SR-NATIVE remains open; native precision and hardware semantics cannot be replaced by real arithmetic without validating fidelity."
+    },
+    {
+      "id": "native-output-semantics",
+      "status": "open",
+      "reason": "LG-Q-NUMERICAL remains open; runtime color and EDR chain not established."
+    },
+    {
+      "id": "native-interaction",
+      "status": "open",
+      "reason": "Actual dynamic hover, click and release operator not recovered; existing browser-authored response remains a candidate."
+    },
+    {
+      "id": "native-heldout-output",
+      "status": "open",
+      "reason": "Need equivalent source/state, owned native resource and browser output lineage; no qualifying full comparison yet."
+    },
+    {
+      "id": "production-performance-and-regressions",
+      "status": "open",
+      "reason": "Need large artwork, 16 moving surfaces, overlapping glass, scrolling, route transitions, and memory/frame budgets; research loops are not production tuned."
+    }
+  ]
+}
