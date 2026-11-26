@@ -1,0 +1,98 @@
+// Continuous vector reference: closed line/quadratic/cubic Bézier contours.
+// No raster distance field or fixed tessellation. Bounds are mathematical AABB/control-hull
+// bounds with conservative floating-point padding, not interval-arithmetic certification.
+// Exact filled-boundary semantics require nonintersecting contours; use outline contours,
+// not stroke centerlines. Overlapping/self-intersecting paths are outside this contract.
+const lerp=(a,b,t)=>[(1-t)*a[0]+t*b[0],(1-t)*a[1]+t*b[1]];
+const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function point(p){if(!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite))throw new RangeError("Finite 2D point required");}
+function segment(c){if(!Array.isArray(c)||c.length<2||c.length>4)throw new RangeError("Line, quadratic or cubic controls required");c.forEach(point);}
+function split(c,t=.5){
+ let row=c.slice(),left=[row[0]],right=[row.at(-1)];
+ while(row.length>1){row=row.slice(1).map((b,i)=>lerp(row[i],b,t));left.push(row[0]);right.push(row.at(-1));}
+ return [left,right.reverse()];
+}
+export function evaluate(c,t){segment(c);if(!Number.isFinite(t)||t<0||t>1)throw new RangeError("Parameter outside curve");return split(c,t)[0].at(-1);}
+function bounds(c,p){
+ let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+ for(const [x,y] of c){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+ const pad=64*Number.EPSILON*Math.max(1,Math.abs(x0),Math.abs(x1),Math.abs(y0),Math.abs(y1),Math.abs(p[0]),Math.abs(p[1]));
+ return Math.max(0,Math.hypot(Math.max(x0-p[0],0,p[0]-x1),Math.max(y0-p[1],0,p[1]-y1))-pad);
+}
+function closestLine(c,p){
+ const [a,b]=c,dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
+ const t=len===0?0:Math.max(0,Math.min(1,((p[0]-a[0])*(dx/len)+(p[1]-a[1])*(dy/len))/len));
+ return {t,point:lerp(a,b,t)};
+}
+export function closestCurve(c,p,{tolerance=1e-6,maxNodes=200000}={}){
+ segment(c);point(p);
+ if(!Number.isFinite(tolerance)||tolerance<=0||!Number.isSafeInteger(maxNodes)||maxNodes<1)throw new RangeError("Invalid distance budget");
+ // Translate to query-local coordinates to avoid large world origins in the solver.
+ const local=c.map(a=>[a[0]-p[0],a[1]-p[1]]),origin=[0,0];
+ const shift=a=>[a[0]+p[0],a[1]+p[1]];
+ if(c.length===2){const a=closestLine(local,origin),d=Math.hypot(...a.point);return {...a,point:shift(a.point),distance:d,lower:d,upper:d,converged:true,nodes:1};}
+ let best={distance:Infinity,t:0,point:local[0]},nodes=0,stack=[{c:local,a:0,b:1,lower:bounds(local,origin)}],discarded=Infinity;
+ function candidate(q,t){const d=Math.hypot(...q);if(d<best.distance)best={distance:d,t,point:q};}
+ candidate(local[0],0);candidate(local.at(-1),1);
+ while(stack.length&&nodes<maxNodes){
+  const n=stack.pop();nodes++;
+  if(n.lower>=best.distance-tolerance){discarded=Math.min(discarded,n.lower);continue;}
+  const m=(n.a+n.b)/2;
+  if(m===n.a||m===n.b){discarded=Math.min(discarded,n.lower);continue;}
+  const [l,r]=split(n.c);candidate(l.at(-1),m);
+  const children=[{c:l,a:n.a,b:m,lower:bounds(l,origin)},{c:r,a:m,b:n.b,lower:bounds(r,origin)}].sort((a,b)=>b.lower-a.lower);
+  stack.push(...children);
+ }
+ const lower=Math.min(best.distance,discarded,...stack.map(n=>n.lower));
+ return {...best,point:shift(best.point),lower,upper:best.distance,converged:best.distance-lower<=tolerance,nodes};
+}
+// Split at roots of y'(t). A monotone interval can contain at most one
+// half-open upward/downward crossing. Horizontal extrema cancel by construction.
+function extremaY(c){
+ const ys=c.map(a=>a[1]),d=ys.slice(1).map((y,i)=>y-ys[i]);
+ const magnitude=Math.max(...d.map(Math.abs));if(magnitude===0)return [];
+ const z=d.map(x=>x/magnitude);let roots=[];
+ if(z.length===2){const a=z[1]-z[0];if(a!==0)roots=[-z[0]/a];}
+ if(z.length===3){
+  const a=z[0]-2*z[1]+z[2],b=2*(z[1]-z[0]),cc=z[0];
+  if(a===0){if(b!==0)roots=[-cc/b];}
+  else {const disc=b*b-4*a*cc;if(disc>=0){const q=-.5*(b+(b>=0?1:-1)*Math.sqrt(disc));roots=q===0?[-b/(2*a)]:[q/a,cc/q];}}
+ }
+ return [...new Set(roots.filter(t=>t>0&&t<1))].sort((a,b)=>a-b);
+}
+function crossing(c,p){
+ const local=c.map(a=>[a[0]-p[0],a[1]-p[1]]);
+ const ts=[0,...extremaY(local),1];let winding=0,uncertain=false;
+ const eps=128*Number.EPSILON*Math.max(1,...local.flat().map(Math.abs));
+ for(let i=1;i<ts.length;i++){
+  let lo=ts[i-1],hi=ts[i],a=evaluate(local,lo)[1],b=evaluate(local,hi)[1];
+  const dir=a<=0&&b>0?1:b<=0&&a>0?-1:0;if(!dir)continue;
+  for(let j=0;j<64;j++){const m=(lo+hi)/2;if(m===lo||m===hi)break;
+   const y=evaluate(local,m)[1];if((y<=0)===(dir===1))lo=m;else hi=m;}
+  const x=evaluate(local,(lo+hi)/2)[0];
+  if(Math.abs(x)<=eps)uncertain=true;else if(x>0)winding+=dir;
+ }
+ return {winding,uncertain};
+}
+export function contourField(contours,p,{tolerance=1e-6,fillRule="nonzero",maxNodes=200000}={}){
+ point(p);
+ if(!Array.isArray(contours)||!contours.length||!["nonzero","evenodd"].includes(fillRule))throw new RangeError("Closed outline contours and valid fill rule required");
+ let winding=0,uncertain=false,best=null,lower=Infinity,nodes=0,converged=true;
+ for(const c of contours){
+  if(!Array.isArray(c)||!c.length)throw new RangeError("Empty contour");
+  c.forEach(segment);
+  for(let i=0;i<c.length;i++)if(dist(c[i].at(-1),c[(i+1)%c.length][0])!==0)throw new RangeError("Contour is not closed");
+  for(const s of c){
+   const a=closestCurve(s,p,{tolerance,maxNodes});nodes+=a.nodes;converged=converged&&a.converged;
+   if(!best||a.distance<best.distance)best=a;lower=Math.min(lower,a.lower);
+   const w=crossing(s,p);winding+=w.winding;uncertain=uncertain||w.uncertain;
+  }
+ }
+ const inside=fillRule==="evenodd"?Math.abs(winding)%2===1:winding!==0;
+ const signKnown=!uncertain&&lower>0;
+ const signedInterval=signKnown?(inside?[-best.upper,-lower]:[lower,best.upper]):[-best.upper,best.upper];
+ return {distance:signKnown?(inside?-best.distance:best.distance):null,signedInterval,inside:signKnown?inside:null,
+  winding,converged:converged&&best.upper-lower<=tolerance,nodes,nearest:best.point,lower,upper:best.upper,
+  // Nearest point alone cannot certify uniqueness at medial axes or seams.
+  gradient:null};
+}
