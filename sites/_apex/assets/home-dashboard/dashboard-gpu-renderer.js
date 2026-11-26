@@ -626,16 +626,17 @@ async function initialize(){
     addressModeU:"clamp-to-edge",addressModeV:"clamp-to-edge"
   });
   const globalsBuffer=device.createBuffer({
-    size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+    size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const authGlobalsBuffer=device.createBuffer({
-    size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
+    size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST
   });
   const sourcePainter=createGlassSourcePainter(device,format);
   const nativeOcclusion=createNativeForegroundOcclusion(document);
   const silhouetteAtlas=createGlassSilhouetteAtlas(device,requestRender,continuous?{vectorOnly:true,hasVector:img=>Boolean(continuous.indexFor(img))}:{});
   let iconData=new Float32Array(0),iconBuffer=null;
-  const routeCompositeGlobalsBuffer=device.createBuffer({size:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  const routeCompositeGlobalsBuffer=device.createBuffer({size:continuous?96:80,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  const homeCompositeGlobalsBuffer=continuous?device.createBuffer({size:96,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}):globalsBuffer;
   let routeCompositeBaseGroup=null,routeMenuGroup=null,routeCompositeEntries=null;
   const routeCompositeDetailGroups=new Map();
   let dropdownSlots=[],dropdownCompositeFrames=0;
@@ -676,8 +677,8 @@ async function initialize(){
     baseTileX=new Float32Array(0),baseTileY=new Float32Array(0),
     pitchCSS=0,trackOpacity=new Float32Array(0),
     dismissProgress=new Float32Array(0),cornerInert=new Uint8Array(0);
-  const uniform=new Float32Array(20);
-  const authUniform=new Float32Array(20);
+  const uniform=new Float32Array(continuous?24:20);
+  const authUniform=new Float32Array(continuous?24:20);
   let tileData=new Float32Array(0),mosaicLayoutDirty=false;
   const mosaicCanDefer=()=>Boolean(audit.track?.dismissed)&&dismissStart!==null&&
     restoreStart===null&&!trackResumeRequested&&["login","projects"].includes(window.__dofPublicRouter?.state);
@@ -728,10 +729,12 @@ async function initialize(){
     // Authored tint RGB; scheme-specific native vibrantColorMatrix is NOT a hue transform.\n    uniform[12]=t.rgb[0];uniform[13]=t.rgb[1];uniform[14]=t.rgb[2];uniform[15]=t.opacity;
     uniform[16]=t.active?1:0;uniform[17]=t.scheme==="dark"?1:0;
     uniform[18]=0;uniform[19]=0;
+    if(continuous){uniform[20]=physicalWidth;uniform[21]=physicalHeight;}
     device.queue.writeBuffer(globalsBuffer,0,uniform);
     if(authContext){
       authUniform.set(uniform);
       authUniform[1]=physicalAuthHeight;
+      if(continuous){authUniform[20]=physicalWidth;authUniform[21]=physicalAuthHeight;}
       // The canvas and wallpaper are in different compositor layers.
       // A scrollTop subtraction can be WRONG during elastic rubberbanding:
       // the compositor can translate the canvas without changing scrollTop.
@@ -1024,7 +1027,7 @@ async function initialize(){
     // Offscreen squares read the existing STATIC wallpaper, as always.
     compositeGlassGroup=device.createBindGroup({
       layout:compositeGlassPipeline.getBindGroupLayout(0),
-      entries:entries(globalsBuffer)
+      entries:entries(homeCompositeGlobalsBuffer)
     });
     // Only HOME CAPSULES read this frame's composited moving glass.
     homeCapsuleGroup=compositeSceneView?device.createBindGroup({
@@ -1076,9 +1079,11 @@ async function initialize(){
     drawRouteLayer(pass,0,underlay);
     if(!underlay)for(const layer of routeActiveLayers)drawRouteLayer(pass,layer,false);
   }
-  function ensureCompositeScene(){
-    if(compositeScene)return;
-    compositeScene=rgba16Texture(device,physicalWidth,physicalHeight);
+  function ensureCompositeScene(home=false){
+    const w=home&&continuous?sourceWidth:physicalWidth,h=home&&continuous?sourceHeight:physicalHeight;
+    if(compositeScene&&compositeScene.width===w&&compositeScene.height===h)return;
+    compositeScene?.destroy();
+    compositeScene=rgba16Texture(device,w,h);
     compositeSceneView=compositeScene.createView();
     compositeMips=[];
     for(let level=1;level<compositeScene.mipLevelCount;level++)compositeMips.push(device.createBindGroup({
@@ -1092,8 +1097,8 @@ async function initialize(){
     for(let level=1;level<texture.mipLevelCount;level++){
       const mip=encoder.beginComputePass({label:"Completed authored lower-layer mip "+level});
       mip.setPipeline(mipPipeline);mip.setBindGroup(0,groups[level-1]);
-      mip.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
-        Math.ceil(Math.max(1,physicalHeight>>level)/8),1);mip.end();
+      mip.dispatchWorkgroups(Math.ceil(Math.max(1,texture.width>>level)/8),
+        Math.ceil(Math.max(1,texture.height>>level)/8),1);mip.end();
     }
   }
   function renderRouteDropdownBackdrop(encoder){
@@ -1106,6 +1111,7 @@ async function initialize(){
     // Exclude icon contrast haze from their mip pyramids, even when a
     // higher glass layer (such as a dropdown) samples this lower layer.
     u[1]=physicalHeight;u[7]=physicalHeight;u[19]=authUniform[11];u[11]=0;u[18]=-1;
+    if(continuous){u[20]=compositeScene.width;u[21]=compositeScene.height;}
     device.queue.writeBuffer(routeCompositeGlobalsBuffer,0,u);
     const pass=encoder.beginRenderPass({label:"Completed base route glass + authored foreground",
       colorAttachments:[{view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
@@ -1715,8 +1721,9 @@ async function initialize(){
     // toward/away from transparent green glass, avoiding idle GPU overhead.
     const homeCompositeActive=Boolean(audit.homeCtaGlass?.count)&&
       audit.homeCtaGlass.capsules.some(c=>c.opacity>.002&&c.tint>.002);
-    if(homeCompositeActive)ensureCompositeScene();
+    if(homeCompositeActive)ensureCompositeScene(true);
     if(homeCompositeActive&&compositeScene&&homeCapsuleGroup){
+      if(continuous){const u=new Float32Array(uniform);u[20]=compositeScene.width;u[21]=compositeScene.height;device.queue.writeBuffer(homeCompositeGlobalsBuffer,0,u);audit.homeCompositeLattice=[compositeScene.width,compositeScene.height];}
       const underlay=encoder.beginRenderPass({colorAttachments:[{
         view:compositeScene.createView({baseMipLevel:0,mipLevelCount:1}),
         loadOp:"clear",clearValue:[0,0,0,1],storeOp:"store"
@@ -1734,8 +1741,8 @@ async function initialize(){
         const mip=encoder.beginComputePass({label:"live square underlay mip "+level});
         mip.setPipeline(mipPipeline);
         mip.setBindGroup(0,compositeMips[level-1]);
-        mip.dispatchWorkgroups(Math.ceil(Math.max(1,physicalWidth>>level)/8),
-          Math.ceil(Math.max(1,physicalHeight>>level)/8),1);
+        mip.dispatchWorkgroups(Math.ceil(Math.max(1,compositeScene.width>>level)/8),
+          Math.ceil(Math.max(1,compositeScene.height>>level)/8),1);
         mip.end();
       }
       homeCompositeFrames++;
@@ -1849,7 +1856,7 @@ async function initialize(){
     glyphMaskOwner?.removeAttribute("data-glass-text-ready");glyphMaskTexture.destroy();emptyDetail.destroy();detailGroups.clear();
     scene?.destroy();compositeScene?.destroy();projectRegionScene?.destroy();secondRouteScene?.destroy();sourcePainter.dispose();nativeOcclusion.clear();
     offscreenFrame?.destroy();photo.destroy();
-    globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
+    globalsBuffer.destroy();authGlobalsBuffer.destroy();routeCompositeGlobalsBuffer.destroy();if(continuous)homeCompositeGlobalsBuffer.destroy();routeCompositeDetailGroups.clear();
   }
   await iconsReady;
   await waitForVisibleHome();

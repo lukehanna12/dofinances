@@ -90,6 +90,11 @@ export function specializeContinuousGlass(s,code){
  // their original interpolated local coordinates.
  s=once(s,"field=mode5SDF(in.local,dimensions,tile.cornerRadii);","let local=select(in.local,in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w),authPane&&tile.motion.w<=0.0&&state.tintMeta.z>=0.0);\n    field=mode5SDF(local,dimensions,tile.cornerRadii);");
  s=once(s,"return textureLoad(backdrop,coord,0);","// Reconstruct the fixed logical source at the current output sample.\n  let dims=vec2<f32>(textureDimensions(backdrop,0));\n  if(all(abs(input.uv*dims-input.position.xy)<vec2<f32>(0.001))){return textureLoad(backdrop,coord,0);}\n  return levelBilinear(input.uv,0);");
+ s=once(s,"  tintMeta: vec4<f32>, // tint enabled, dark scheme, +1 diagnostic overlay / -1 optical-only underlay / 0 display, vertical offset","  tintMeta: vec4<f32>, // existing material and vertical offset\n  raster: vec4<f32>, // actual target lattice dimensions, independent of geometry extent");
+ s=once(s,"var backdropPosition=in.position.xy;","var backdropPosition=geometryPosition(in.position.xy);");
+ s=once(s,"in.position.xy-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)","geometryPosition(in.position.xy)-tile.rect.xy+vec2<f32>(0.0,state.tintMeta.w)");
+ s=once(s,"let edgeDistance=min(in.position.x,state.viewport.x-in.position.x);","let px=geometryPosition(in.position.xy).x;let edgeDistance=min(px,state.viewport.x-px);");
+ s=once(s,"let ovalUV=(in.position.xy-logoCenter)/ovalRadii;","let ovalUV=(geometryPosition(in.position.xy)-logoCenter)/ovalRadii;");
  const start=s.indexOf("fn supercircleSDF("),end=s.indexOf("/* AIR glass_background_sdf_no_bleed_lph",start);
  if(start<0||end<start)throw Error("Missing geometry range");
  let geometry=s.slice(start,end);
@@ -165,6 +170,6 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let buv=nativeHalf2(baseUV+nativeHalf2(normal*bleed*pointScale/extent));","let buv=baseUV+normal*bleed*pointScale/extent;");
  s=once(s,"-signed/11.0","-signed/(11.0*referenceDensity())");
  s=once(s,"exp(-abs(signed)*0.18)","exp(-abs(signed)/referenceDensity()*0.18)");
- const density="fn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\nfn nativeCornerCompare(x:f32)->f32{return unpack2x16float(pack2x16float(vec2<f32>(x,0.0))).x;}\n";
+ const density="fn geometryPosition(p:vec2<f32>)->vec2<f32>{return p*state.viewport.xy/max(state.raster.xy,vec2<f32>(1.0));}\nfn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\nfn nativeCornerCompare(x:f32)->f32{return unpack2x16float(pack2x16float(vec2<f32>(x,0.0))).x;}\n";
  return s+"\n"+density+envelope+code;
 }
