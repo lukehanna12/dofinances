@@ -348,7 +348,8 @@
     "oraclePRs": [
       54,
       55,
-      56
+      56,
+      57
     ],
     "oddSamplerPR": 57,
     "liveCases": 4,
@@ -358,9 +359,11 @@
     "retainedOddSampleLanes": 53768,
     "offscreenStripeCases": 23,
     "repeats": 2,
-    "scope": "One installed target build; capture input and compute ABI supplied. Odd dimensions still not supported by software native-compatible mip evaluator. Final shading, public state selection, active display and interaction unresolved."
+    "scope": "One installed target build; capture input and compute ABI supplied. Odd dimensions still not supported by software native-compatible mip evaluator. Final shading, public state selection, active display and interaction unresolved.",
+    "oddSamplerPRStatus": "merged after full research-tests success",
+    "oracleCommit": "2fc1cbcb183fa4837288d482392890840226ae11"
   },
-  "release": "blocked",
+  "release": "blocked (verified release-gate.mjs)",
   "nativeDiamond": {
     "codeCommit": "55a63e9fc2b3744557192046d0a4089a69b82a17",
     "testCommit": "22fe7d52032bb1dfdcb96a6788bca06e57e2d4cb",
@@ -397,6 +400,15 @@
       "architecture": "metal-3",
       "isFallbackAdapter": false
     },
-    "scope": "Independent continuous GPU math, not final native material colors."
+    "scope": "Independent continuous GPU math, not final native material colors.",
+    "regressionCommit": "deac9251aee291413daba85bff247daf883691dd",
+    "previousGPUControlsRerun": {
+      "optical": 1792,
+      "vector": 192,
+      "coverageMismatches": 0,
+      "identicalWords": 28672,
+      "maxSource": 3.5762786876336605e-7,
+      "maxColor": 1.6318939155546275e-7
+    }
   }
 }
