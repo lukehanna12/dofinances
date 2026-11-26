@@ -365,8 +365,8 @@ test("Liquid Plexiglass 26 and Ozoning Board map to the correct authenticated ar
  const storm=PROJECT_CARD_IMAGES["liquid-plexiglass-26"];
  const cardo=PROJECT_CARD_IMAGES["3d-liquid-glass-26-swift-package"];
  const church=PROJECT_CARD_IMAGES["ozoning-board"];
- assert.equal(storm,"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v1.webp");
- assert.equal(cardo,"/assets/project-art/3d-liquid-glass-cotan-cardo.v1.webp");
+ assert.equal(storm,"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp");
+ assert.equal(cardo,"/assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp");
  assert.equal(church,"/assets/project-art/ozoning-board-el-khasne.v1.webp");
  assert.ok(!storm.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
  assert.ok(!church.includes("/all-works"),"Use a direct artwork image, not the WikiArt gallery page");
@@ -410,7 +410,7 @@ test("Lightwork painting and requested App Caviar/Liquid Plexiglass 26 icon hand
 });
 
 test("Upgraded art uses real higher-resolution WebP within bounded budgets",()=>{
- for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000],["liquid-plexiglass-26",2000,2486,1500000],["3d-liquid-glass-26-swift-package",3200,2417,1500000]]){
+ for(const [slug,minW,minH,maxBytes] of [["terminal-scalars",2136,2133,500000],["bootscript",1000,700,180000],["hidden-functions",1600,1190,300000],["ozoning-board",1016,1280,180000],["liquid-plexiglass-26",1800,2237,300000],["3d-liquid-glass-26-swift-package",2048,1546,300000]]){
   const url=PROJECT_CARD_IMAGES[slug],bytes=readFileSync(new URL("../sites/_apex"+url,import.meta.url));
   assert.equal(bytes.toString("ascii",0,4),"RIFF");assert.equal(bytes.toString("ascii",8,12),"WEBP");
   assert.ok(bytes.length<=maxBytes,slug+" asset budget");

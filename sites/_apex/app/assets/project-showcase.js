@@ -72,10 +72,10 @@ export const PROJECT_CARD_IMAGES=Object.freeze({
   "protocol-monitor-pruner":"https://most-famous-paintings.com/media-resize/960/artworks/images-full/76/18/76183ece8e74b1c3404d66a0bc2e70a6.jpg.webp",
   // Rembrandt, 1633; Isabella Stewart Gardner Museum, PD-Art.
   // https://commons.wikimedia.org/wiki/File:Rembrandt_van_Rijn_-_Christ_in_the_Storm_on_the_Sea_of_Galilee_-_P21s24_-_private_collection.jpg
-  "liquid-plexiglass-26":"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v1.webp",
+  "liquid-plexiglass-26":"/assets/project-art/liquid-plexiglass-26-rembrandt-storm.v2.webp",
   // Juan Sánchez Cotán, Museo de Bellas Artes de Granada, PD-Art.
   // https://commons.wikimedia.org/wiki/File:MBAGR-bodegoncardo.jpg
-  "3d-liquid-glass-26-swift-package":"/assets/project-art/3d-liquid-glass-cotan-cardo.v1.webp",
+  "3d-liquid-glass-26-swift-package":"/assets/project-art/3d-liquid-glass-cotan-cardo.v2.webp",
   "ozoning-board":"/assets/project-art/ozoning-board-el-khasne.v1.webp"
 });
 function fallbackImagePath(index){
