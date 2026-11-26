@@ -356,7 +356,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
   ],
   "terminal-scalars": [
     {
-      "title": "Native terminal framework",
+      "title": "Native terminal library",
       "rows": [
         [
           "Apple Terminal"
@@ -531,7 +531,7 @@ export const PROJECT_DIAGRAMS=Object.freeze({
           1
         ]
       ],
-      "planned": true
+      "planned": false
     }
   ],
   "3d-liquid-glass-26-swift-package": [

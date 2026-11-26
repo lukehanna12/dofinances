@@ -469,7 +469,11 @@ test("every public project has a single substantive, source-conscious paragraph"
   assert.match(PROJECT_DESCRIPTIONS.colosseum,/Claude plugins/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/freely hosted reference architecture on Google Apps Script/);
   assert.match(PROJECT_DESCRIPTIONS["unicode-plus"],/terminal counterpart to LaTeXceL/);
-  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/most accurate reconstruction ever developed/);
+  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/is the most faithful reconstruction of macOS 26 Tahoe Liquid Glass on the internet/);
+  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/includes the entire public interface for macOS 26 Tahoe Liquid Glass/);
+  assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/is 100% resolution independent/);
+  assert.doesNotMatch(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/\b(?:aims|ambition|planned|intends)\b/i);
+  assert.equal(PROJECT_DIAGRAMS["liquid-plexiglass-26"][0].planned,false);
   assert.match(PROJECT_DESCRIPTIONS["liquid-plexiglass-26"],/Rust and WebGPU/);
   assert.match(PROJECT_DESCRIPTIONS["3d-liquid-glass-26-swift-package"],/Liquid Plexiglass 27/);
   assert.match(PROJECT_DESCRIPTIONS["apple-adobe-fx"],/most faithful reconstruction/);
@@ -520,7 +524,10 @@ test("all 16 projects have readable, explicitly connected native architecture sc
       }
     }
   }
-  assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/framework.*command-line interfaces.*terminal user interfaces/);
+  assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/^Terminal Scalars is a library.*command-line interfaces.*terminal user interfaces/);
+  assert.match(PROJECT_DESCRIPTIONS["terminal-scalars"],/includes scripts.*Google-hosted Model Context Protocol \(MCP\) server using Google Apps Script/);
+  assert.doesNotMatch(PROJECT_DESCRIPTIONS["terminal-scalars"],/\b(?:framework|planned)\b/i);
+  assert.equal(PROJECT_DIAGRAMS["terminal-scalars"][0].title,"Native terminal library");
   assert.match(PROJECT_DESCRIPTIONS["github-readme-chrome-extension"],/ReadMe GitHub Live/);
   assert.match(PROJECT_DESCRIPTIONS["ozoning-board"],/Model Context Protocol \(MCP\).*Agent2Agent \(A2A\)/);
   assert.match(PROJECT_DESCRIPTIONS["apple-hig-reader"],/final form.*\/mcp endpoint/);
