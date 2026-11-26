@@ -12,7 +12,7 @@ import WebKit
   c.websiteDataStore = .nonPersistent()
   view=WKWebView(frame:NSRect(x:0,y:0,width:1400,height:836),configuration:c)
   window=NSWindow(contentRect:view.frame,styleMask:[.titled,.closable],backing:.buffered,defer:false)
-  window.isReleasedWhenClosed=false;window.contentView=view;window.orderBack(nil)
+  window.isReleasedWhenClosed=false;window.acceptsMouseMovedEvents=true;window.contentView=view;window.orderBack(nil)
   view.navigationDelegate=self;view.load(URLRequest(url:url))
  }
  func eval(_ js:String) async throws -> Any? {
@@ -32,6 +32,13 @@ import WebKit
  let state="""
  (()=>{let a=window.__dashboardWebGPU,c=document.querySelector('#dashboard-webgpu-scene');return {status:a?.status,renderer:a?.glassRenderer,errors:a?.errors,route:window.__dofPublicRouter?.state,dpr:devicePixelRatio,viewport:[innerWidth,innerHeight],canvas:[c?.width,c?.height],resize:a?.resizeSubmissions??0,source:a?.sourceLattice,icons:a?.glassSilhouettes?.icons?.length??0,title:a?.projectTitleMask?.vectorOptics??false,composition:a?.sourceComposition?.completedLayers??[],reference:a?.routeCompositeLattice??null,eventCounts:window.__testResolution??null}})()
  """
+ func moveNative(_ selector:String) async throws {
+  guard let q=try await eval("(()=>{const r=document.querySelector("+String(data:try JSONSerialization.data(withJSONObject:[selector]),encoding:.utf8)!.dropFirst().dropLast()+").getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]})()") as? [Double],q.count==2 else {throw NSError(domain:"Missing pointer rect",code:2)}
+  let x=q[0]*view.pageZoom,y=q[1]*view.pageZoom
+  let p=view.convert(NSPoint(x:x,y:view.isFlipped ? y:view.bounds.height-y),to:nil)
+  let event=NSEvent.mouseEvent(with:.mouseMoved,location:p,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:window.windowNumber,context:nil,eventNumber:1,clickCount:0,pressure:0)!
+  view.mouseMoved(with:event)
+ }
  func run() async throws {
   log("capability",try await eval("(async()=>{let a=navigator.gpu?await navigator.gpu.requestAdapter():null;return {gpu:!!a,f16:a?.features.has('shader-f16'),ua:navigator.userAgent}})()"))
   try await wait("window.__dashboardWebGPU?.status==='ready' || window.__dashboardWebGPU?.status==='fallback'","home-init")
@@ -58,7 +65,8 @@ import WebKit
    _=try await eval("""
    (()=>{const c=document.querySelector('.project-showcase-card'),r=c.getBoundingClientRect(),e={bubbles:true,pointerId:1,pointerType:'mouse',isPrimary:true,clientX:r.x+r.width/2,clientY:r.y+r.height/2,button:0};window.__lgTestPointer=e;c.dispatchEvent(new PointerEvent('pointermove',e));return true;})()
    """)
-   try await wait("window.__dashboardWebGPU?.glassSilhouettes?.icons?.some(x=>x.hover>.95)","project-hover")
+   try await moveNative(".project-showcase-card")
+   try await wait("document.querySelector('.project-showcase-card').matches(':hover')&&window.__dashboardWebGPU?.glassSilhouettes?.icons?.some(x=>x.hover>.95)","project-hover")
    _=try await eval("document.querySelector('.project-showcase-card').dispatchEvent(new PointerEvent('pointerdown',window.__lgTestPointer))")
    try await Task.sleep(for:.milliseconds(250))
    log("project-press",try await eval("({errors:window.__dashboardWebGPU.errors,hover:window.__dashboardWebGPU.glassSilhouettes.icons.map(x=>[x.slug,x.hover])})"))
