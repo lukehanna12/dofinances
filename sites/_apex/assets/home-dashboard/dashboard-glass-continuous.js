@@ -106,7 +106,22 @@ export function specializeContinuousGlass(s,code){
  m5=once(m5,"if(bottomLeft.x>chosen.x)","if(nativeCornerCompare(bottomLeft.x)>nativeCornerCompare(chosen.x))");
  m5=once(m5,"var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3);","var chosen=supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3);let trDistance=chosen.x;");
  m5=once(m5,"return (vec3<f32>(chosen.x,chosen.y,-chosen.z));","return vec3<f32>(max(max(trDistance,topLeft.x),max(bottomRight.x,bottomLeft.x))*scale,chosen.y,-chosen.z);");
+ // The AIR cornerAdj is added to BOTH qx and qy. Compare their
+ // unshifted offsets instead; this is exactly the same real inequality.
+ // Compute face offsets before division so a diagonal tie stays a tie.
+ m5=once(m5,"let scale=referenceDensity();let local=outputLocal/scale;let size=outputSize/scale;let radii=outputRadii/scale;","let scale=referenceDensity();let local=outputLocal/scale;let size=outputSize/scale;let radii=outputRadii/scale;\n  let right=(outputLocal.x-outputSize.x)/scale;let left=-outputLocal.x/scale;\n  let top=-outputLocal.y/scale;let bottom=(outputLocal.y-outputSize.y)/scale;");
+ m5=once(m5,"supercircleSDF( xy.x, xy.y,hw,hh,r1,f0,f3)","supercircleOffsets(right,top,r1,f0,f3)");
+ m5=once(m5,"supercircleSDF(-xy.x, xy.y,hw,hh,r0,f0,f1)","supercircleOffsets(left,top,r0,f0,f1)");
+ m5=once(m5,"supercircleSDF( xy.x,-xy.y,hw,hh,r2,f2,f3)","supercircleOffsets(right,bottom,r2,f2,f3)");
+ m5=once(m5,"supercircleSDF(-xy.x,-xy.y,hw,hh,r3,f2,f1)","supercircleOffsets(left,bottom,r3,f2,f1)");
  geometry=geometry.slice(0,a5)+m5+geometry.slice(b5);
+ geometry=once(geometry,"fn supercircleSDF(ax:f32,ay:f32,hw:f32,hh:f32,\n                  r:f32,bx:f32,by:f32)->vec3<f32>{","fn supercircleOffsets(qx:f32,qy:f32,r:f32,bx:f32,by:f32)->vec3<f32>{");
+ geometry=once(geometry,"let d=max(ax-hw,ay-hh);","let d=max(qx,qy);");
+ geometry=once(geometry,"ax>=hw","qx>=0.0");
+ geometry=once(geometry,"ay>=hh","qy>=0.0");
+ geometry=once(geometry,"  let qx=ax-hw;\n  let qy=ay-hh;\n","");
+ geometry=geometry.replaceAll("hx>hy","qx>qy");
+ geometry=once(geometry,"supercircleSDF(abs(xy.x),abs(xy.y),size.x*.5,size.y*.5,\n                       max(0.0,radius),0.0,0.0)","supercircleOffsets(max(local.x-size.x,-local.x),max(local.y-size.y,-local.y),max(0.0,radius),0.0,0.0)");
  s=s.slice(0,start)+geometry+s.slice(end);
  s=once(s,"let nativeWidth=max(nativeHalf1(fwidth(signed)),nativeHalf1(0.0001));","let nativeWidth=max(fwidth(signed),0.0001);");
  s=once(s,"let signedRatio=nativeHalf1(-signed/nativeWidth);","let signedRatio=-signed/nativeWidth;");
