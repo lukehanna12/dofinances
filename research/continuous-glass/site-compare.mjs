@@ -59,15 +59,16 @@ export async function run(){
    const sourceView=scene.createView(),entries=[{binding:0,resource:sourceView},{binding:1,resource:{buffer:buffers[0]}},{binding:2,resource:{buffer:buffers[1]}},{binding:3,resource:{buffer:buffers[2]}},{binding:4,resource:glyph.createView()},{binding:5,resource:{buffer:buffers[3]}},{binding:6,resource:{buffer:buffers[4]}},{binding:8,resource:sourceView},{binding:9,resource:detail.createView()},{binding:10,resource:sampler},{binding:11,resource:{buffer:buffers[5]}},{binding:12,resource:atlas.view},{binding:13,resource:atlas.hazeView},{binding:14,resource:atlas.coverageView}];
    const target=tex(W,H,1,fmt,GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC),stride=Math.ceil(W*8/256)*256,read=device.createBuffer({size:stride*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
    const resultsForMode=[];
-   for(let mode=0;mode<2;mode++){
-    if(mode)device.queue.writeBuffer(buffers[5],0,cachedIcons);
-    const pipeline=pipelines[mode],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
+   for(let mode=0;mode<3;mode++){
+    if(mode)device.queue.writeBuffer(buffers[5],0,mode===1?cachedIcons:Float32Array.from(icons));
+    const pipeline=pipelines[Math.min(mode,1)],bind=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:mode?[...entries.filter(e=>e.binding!==12),{binding:15,resource:{buffer:data.buffer}},{binding:16,resource:data.fieldView}]:entries});
     const draw=async(copy=false)=>{const cmd=device.createCommandEncoder(),pass=cmd.beginRenderPass({colorAttachments:[{view:target.createView(),loadOp:"clear",clearValue:[0,0,0,0],storeOp:"store"}]});pass.setPipeline(pipeline);pass.setBindGroup(0,bind);pass.draw(6,16);pass.end();if(copy)cmd.copyTextureToBuffer({texture:target},{buffer:read,bytesPerRow:stride,rowsPerImage:H},[W,H]);const t=performance.now();device.queue.submit([cmd.finish()]);await device.queue.onSubmittedWorkDone();return performance.now()-t;};
     await draw();const ms=[];for(let n=0;n<3;n++)ms.push(await draw());
     await draw(true);await read.mapAsync(GPUMapMode.READ);
     const bytes=new Uint8Array(read.getMappedRange()),raw=new Uint8Array(W*H*8);for(let y=0;y<H;y++)raw.set(bytes.subarray(y*stride,y*stride+W*8),y*W*8);read.unmap();
     resultsForMode.push({raw,ms});
    }
+   const direct=resultsForMode[2].raw,cachedRaw=resultsForMode[1].raw;let cacheByteDifferences=0;for(let i=0;i<direct.length;i++)if(direct[i]!==cachedRaw[i])cacheByteDifferences++;
    const A=new DataView(resultsForMode[0].raw.buffer),B=new DataView(resultsForMode[1].raw.buffer),diff=[],perIcon=[],alpha=[];
    let sum=0,max=0,nonfinite=0;
    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
@@ -76,7 +77,7 @@ export async function run(){
    }
    for(let i=0;i<16;i++){let total=0,peak=0,n=0;for(let y=Math.floor((Math.floor(i/4)*96+4+21.25)*scale);y<Math.ceil((Math.floor(i/4)*96+4+66.75)*scale);y++)for(let x=Math.floor((i%4*100+4+23.25)*scale);x<Math.ceil((i%4*100+4+68.75)*scale);x++)for(let c=0;c<3;c++){let j=(y*W+x)*8+2*c,d=Math.abs(A.getFloat16(j,true)-B.getFloat16(j,true));total+=d;peak=Math.max(peak,d);n++;}perIcon.push({name:names[i],mean:total/n,max:peak});}
    diff.sort((a,b)=>a-b);alpha.sort((a,b)=>a-b);
-   results.push({scale,W,H,coverageCount,cached,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
+   results.push({scale,W,H,coverageCount,cached,cacheByteDifferences,cacheBuildMs,cacheStats:data.stats(),nonfinite,meanRGB:sum/diff.length,p99RGB:diff[Math.floor(diff.length*.99)],maxRGB:max,p99Alpha:alpha[Math.floor(alpha.length*.99)],maxAlpha:alpha.at(-1),baselineMs:resultsForMode[0].ms,continuousMs:resultsForMode[1].ms,perIcon,atlas:atlas.stats()});
    buffers.forEach(b=>b.destroy());scene.destroy();target.destroy();read.destroy();
   }
   return {adapter:{vendor:adapter.info.vendor,architecture:adapter.info.architecture,f16},results};

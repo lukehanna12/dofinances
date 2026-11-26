@@ -80,5 +80,27 @@ export function specializeContinuousGlass(s,code){
  s=once(s,"let inner=refractionEnvelope(signed,max(-60.0,-clearD)*pointScale,","let inner=continuousEnvelope(signed,max(-60.0,-clearD)*pointScale,");
  s=once(s,"let inner=refractionEnvelope(signed,innerAmount,innerInvHeight);","let inner=continuousEnvelope(signed,innerAmount,innerInvHeight);");
  s=once(s,"let outer=refractionEnvelope(signed,select(outerAmount,0.0,regular),","let outer=continuousEnvelope(signed,select(outerAmount,0.0,regular),");
- return s+"\n"+envelope+code;
+ // Keep the site's established 2x Retina appearance as the reference.
+ // All authored pixel constants become reference-density lengths; optical
+ // LOD is mapped to the actual source lattice separately from geometry.
+ s=once(s,"let pointScale=max(state.viewport.w,1.0);","let pointScale=max(state.viewport.w,0.001);");
+ s=once(s,"max(-60.0,-0.8*d)","max(-60.0*referenceDensity(),-0.8*d)");
+ s=once(s,"min(20.0,0.25*d)","min(20.0*referenceDensity(),0.25*d)");
+ s=once(s,"let localRadius=max(24.0,d*.8);","let localRadius=max(24.0*referenceDensity(),d*.8);");
+ s=once(s,"let shiftUV=shiftPx/backdropExtent;","let shiftUV=shiftPx*referenceDensity()/backdropExtent;");
+ s=once(s,"exp(-abs(signed)*1.16)","exp(-abs(signed)/referenceDensity()*1.16)");
+ s=once(s,"exp(-abs(silhouetteSigned)*1.16)","exp(-abs(silhouetteSigned)/referenceDensity()*1.16)");
+ s=s.replaceAll("thresholdMix(signed)","thresholdMix(signed/referenceDensity())");
+ s=once(s,"let chosen=clamp(lod,0.0,maxLevel);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maxLevel);");
+ s=once(s,"let chosen=clamp(lod,0.0,maximum);","let chosen=clamp(lod+log2(referenceDensity()),0.0,maximum);");
+ s=once(s,"max(footprint.x,footprint.y)))+max(0.0,lod)","max(footprint.x,footprint.y)*referenceDensity()))+max(0.0,lod)");
+ for(const distance of ["signed+inner","signed+outer"]){
+  s=s.replaceAll("blurDistribution(nativeHalf1("+distance+"),d)","blurDistribution(nativeHalf1(("+distance+")/referenceDensity()),d/referenceDensity())");
+ }
+ s=once(s,"let uv=nativeHalf2(baseUV+nativeHalf2(normal*inner*pointScale/extent));","let uv=baseUV+normal*inner*pointScale/extent;");
+ s=once(s,"let buv=nativeHalf2(baseUV+nativeHalf2(normal*bleed*pointScale/extent));","let buv=baseUV+normal*bleed*pointScale/extent;");
+ s=once(s,"-signed/11.0","-signed/(11.0*referenceDensity())");
+ s=once(s,"exp(-abs(signed)*0.18)","exp(-abs(signed)/referenceDensity()*0.18)");
+ const density="fn referenceDensity()->f32{return max(state.viewport.w,0.001)*0.5;}\n";
+ return s+"\n"+density+envelope+code;
 }
