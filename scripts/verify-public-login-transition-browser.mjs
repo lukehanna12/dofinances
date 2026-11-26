@@ -1291,7 +1291,10 @@ try{
   await until(`(()=>{
     const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description');
     const r=desc.getBoundingClientRect();
-    return getComputedStyle(desc).pointerEvents==="auto"&&getComputedStyle(desc).userSelect==="text"&&r.top>=0&&r.top+25<innerHeight;
+    const range=document.createRange(),node=desc.firstChild;
+    range.setStart(node,0);range.setEnd(node,Math.min(12,node.length));
+    const first=range.getClientRects()[0];
+    return getComputedStyle(desc).pointerEvents==="auto"&&getComputedStyle(desc).userSelect==="text"&&r.top>=44&&r.top+25<innerHeight&&first&&desc.contains(document.elementFromPoint(first.left+.5,first.top+first.height/2));
   })()`,100,30);
   const selectionPoints=await evaluate(`(()=>{
     const desc=document.querySelector('.project-showcase-card.is-expanded .project-showcase-description');

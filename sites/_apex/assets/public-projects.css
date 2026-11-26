@@ -210,6 +210,7 @@ body.public-home[data-auth-gpu-scene="ready"]:not([data-auth-glass-mode="composi
   outline:2px solid #fff;outline-offset:3px
 }
 .public-projects-root .project-showcase-trigger:focus-visible{outline:none}
+.public-projects-root .project-showcase-card.is-expanded>.project-showcase-trigger{pointer-events:none}
 .public-projects-root .project-showcase-action{
   grid-column:1;grid-row:2;align-self:end;justify-self:start;
   display:inline-flex;align-items:center;gap:7px;width:max-content;
