@@ -64,7 +64,7 @@ try{
   }
   if(process.env.LG_ROUTE_UNDERLAY){
    const cases=[];
-   for(const density of [2,1,3]){
+   for(const density of (process.env.LG_ROUTE_DPR?[Number(process.env.LG_ROUTE_DPR)]:[2,1,3])){
     await send("Emulation.setDeviceMetricsOverride",{width:1400,height:880,deviceScaleFactor:density,mobile:false});
     await ev("window.__dashboardGpuControls.reflowTiles()");
     await wait("document.querySelector('#dashboard-webgpu-scene').width==="+Math.floor(1400*density),"Route output not ready");
@@ -73,7 +73,7 @@ try{
      await wait(`window.__dofPublicRouter.state==="projects"&&document.querySelectorAll(".project-showcase-card").length>=16`,"Projects not ready");
     }
     await wait(`window.__dashboardWebGPU?.glassSilhouettes?.icons?.length>0`,"Icons not ready");
-    if(!await ev(`!!document.querySelector("[data-public-project-glass='filter-dropdown']:not([hidden])")`))await ev(`document.querySelector("[data-public-project-glass='filter']").click()`);
+    if(!await ev(`document.querySelector("[data-public-project-glass='filter']").getAttribute("aria-expanded")==="true"`))await ev(`document.querySelector("[data-public-project-glass='filter']").click()`);
     await wait(`window.__dashboardWebGPU?.sourceComposition?.completedLayers?.length>0&&!!window.__dashboardWebGPU?.routeCompositeLattice`,"Route optical layer not composed");
     await sleep(250);
     const result=await ev(`(()=>{const a=window.__dashboardWebGPU;return {status:a.status,errors:a.errors,source:a.sourceLattice,route:a.routeCompositeLattice,composition:a.sourceComposition,cache:a.glassSilhouettes?.continuousSampleCache};})()`);
