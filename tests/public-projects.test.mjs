@@ -129,8 +129,7 @@ test("new In Progress cards and their exact supplied SVGs appear in both Project
     ["latexcel","LaTeXceL","M14 17h2l2 5 2-10h2.5"]
   ];
   const sorted=sortProjectShowcase(PUBLIC_PROJECTS);
-  assert.deepEqual(sorted.filter(project=>publicStatus(project)==="In Progress").slice(-2).map(project=>project.slug),
-    incoming.map(row=>row[0]),"The new In Progress cards end their status group");
+  assert.deepEqual(sorted.filter(project=>incoming.some(row=>row[0]===project.slug)).map(project=>project.slug),incoming.map(row=>row[0]));
   for(const [slug,name,specialPath] of incoming){
     const match=PUBLIC_PROJECTS.find(project=>project.slug===slug);
     assert.ok(match,"Missing project "+slug);
@@ -590,7 +589,10 @@ test("Public and private badge semantics and ordering agree for every project",a
     assert.deepEqual(PUBLIC_PROJECTS.filter(p=>publicStatus(p)===label).map(p=>p.slug),slugs);
     assert.deepEqual(PRIVATE_PROJECTS.filter(p=>privateStatus(p)===label).map(p=>p.slug),slugs);
   }
-  assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS).map(p=>p.slug),Object.values(expected).flat());
+  const requested=["colosseum","bootscript","app-caviar","hidden-functions","terminal-scalars","latexcel","apple-hig-reader","ozoning-board","unicode-plus","github-readme-chrome-extension","protocol-monitor-pruner","chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","apple-adobe-fx","lightworks","3d-liquid-glass-26-swift-package"];
+  assert.deepEqual(sortProjectShowcase(PUBLIC_PROJECTS).map(p=>p.slug),requested);
+  assert.deepEqual(sortPrivate([...PRIVATE_PROJECTS].reverse()).map(p=>p.slug),requested);
+  assert.deepEqual(sortProjectShowcase([...PUBLIC_PROJECTS].reverse()).map(p=>p.slug),requested);
   const css=await load("../sites/_apex/assets/public-projects.css");
   assert.match(css,/\.project-showcase-badge--review\{\s*background:color\(srgb 0\.98 0\.76 0\.07 \/ \.09\);color:rgb\(230,180,51\)/);
   assert.match(css,/\.project-showcase-badge--progress\{\s*background:color\(srgb 0\.98 0\.45 0\.08 \/ 0\.09\);color:rgb\(245, 130, 45\)/);

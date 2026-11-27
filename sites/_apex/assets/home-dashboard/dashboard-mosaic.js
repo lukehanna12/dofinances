@@ -3,16 +3,16 @@
    and .03s row-plus-column entrance staggering follow cta-6.jsx.
    Icon paths are from the canonical Lucide open-source SVGs.
    The Dashboard CTA text is intentionally minimal. */
-import {PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource}
+import {PROJECT_SHOWCASE,sortHomeProjectShowcase,publicProjectIconSource}
   from "../public-projects-catalog.js";
 import {registerGlassSilhouette} from "./dashboard-glass-silhouette.js";
 
 // Preserve all sixteen ORIGINAL 11x6 icon slots. Each slot receives the
-// corresponding project from the same ordered collection used on /projects.
+// corresponding project from the existing Home-specific ordering.
 // Updating an icon in PROJECT_CARD_ICONS (or its SVG file) updates BOTH
 // public screens without touching this module. The /app mosaic is untouched.
 const HOME_ICON_POSITIONS=Object.freeze(["0:1","0:5","0:8","1:0","1:6","1:9","2:1","2:9","3:0","3:10","4:2","4:5","4:8","5:1","5:6","5:9"]);
-const sortedProjects=sortProjectShowcase(PROJECT_SHOWCASE);
+const sortedProjects=sortHomeProjectShowcase(PROJECT_SHOWCASE);
 const positionProjects=new Map(HOME_ICON_POSITIONS.map((position,index)=>
   [position,sortedProjects[index]]).filter(([,project])=>
     Boolean(project&&publicProjectIconSource(project.slug))));

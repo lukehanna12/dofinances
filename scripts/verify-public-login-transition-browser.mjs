@@ -862,11 +862,12 @@ try{
     "Every project card must use the same content-revision URL as its homepage icon");
   assert.ok(iconDeclarations.every(i=>i.registered&&i.tint==="white"&&i.opacity==="0.2"),"Every project icon registers white Clear tint at 20%");
   const badges=await evaluate("[...document.querySelectorAll('.public-projects-root .project-showcase-card')].map(c=>{const b=c.querySelector('.project-showcase-badge');return {slug:c.dataset.projectSlug,label:b.textContent,color:getComputedStyle(b).color};})");
-  assert.deepEqual(badges.map(b=>b.label),[...Array(7).fill("Review"),...Array(5).fill("In Progress"),...Array(4).fill("Coming Soon")]);
-  assert.deepEqual(badges[12],{slug:"colosseum",label:"Coming Soon",color:"rgb(44, 103, 197)"});
+  assert.deepEqual(badges.map(b=>b.slug),["colosseum","bootscript","app-caviar","hidden-functions","terminal-scalars","latexcel","apple-hig-reader","ozoning-board","unicode-plus","github-readme-chrome-extension","protocol-monitor-pruner","chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","apple-adobe-fx","lightworks","3d-liquid-glass-26-swift-package"]);
+  assert.deepEqual(badges.map(b=>b.label),["Coming Soon","Review","Coming Soon","In Progress","Coming Soon","In Progress","Review","Review","Review","Review","Review","In Progress","In Progress","Coming Soon","Review","In Progress"]);
+  assert.deepEqual(badges[0],{slug:"colosseum",label:"Coming Soon",color:"rgb(44, 103, 197)"});
   assert.ok(badges.filter(b=>b.label==="Review").every(b=>b.color==="rgb(230, 180, 51)"));
-  assert.deepEqual(badges[7],{slug:"chatgpt-chat-save-chrome-extension",label:"In Progress",color:"rgb(245, 130, 45)"});
-  assert.deepEqual(badges.filter(b=>b.label==="In Progress").map(b=>b.slug),["chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package","hidden-functions","latexcel"]);
+  assert.deepEqual(badges[11],{slug:"chatgpt-chat-save-chrome-extension",label:"In Progress",color:"rgb(245, 130, 45)"});
+  assert.deepEqual(badges.filter(b=>b.label==="In Progress").map(b=>b.slug),["hidden-functions","latexcel","chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","3d-liquid-glass-26-swift-package"]);
   assert.ok(badges.filter(b=>b.label==="In Progress").every(b=>b.color==="rgb(245, 130, 45)"));
   assert.ok(badges.filter(b=>b.label==="Coming Soon").every(b=>b.color==="rgb(44, 103, 197)"));
   // The badge remains a native label, with a right-anchored circular clip.

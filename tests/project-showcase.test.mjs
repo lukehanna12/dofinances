@@ -140,7 +140,9 @@ test("Verified repository associations backfill once and respect account overrid
  assert.match(store,/UPDATE project_records SET repository=\?,updated_at=\? WHERE user_id=\? AND slug=\? AND repository IS NULL/);
 });
 
-test("Project cards order Ready, Review, In Progress, Coming Soon with stable ties",()=>{
+test("Curated project display order overrides badges; custom projects retain status sorting",()=>{
+ assert.deepEqual(sortProjectShowcase([...PROJECT_SHOWCASE].reverse()).map(p=>p.name),["Colosseum","BootScript","App Caviar","Hidden Functions","Terminal Scalars","LaTeXceL","Apple HIGs Reader","Ozoning Board","Unicode Plus","ReadMe GLP","Protocol Monitor Pruner","ChatStore","Liquid Plexiglass 26","Apple Adobe FX","Lightworks","3D Liquid Glass"]);
+ assert.deepEqual(sortProjectShowcase([{slug:"custom-ready",repository:"owner/repo"},...PROJECT_SHOWCASE]).map(p=>p.slug),[...["colosseum","bootscript","app-caviar","hidden-functions","terminal-scalars","latexcel","apple-hig-reader","ozoning-board","unicode-plus","github-readme-chrome-extension","protocol-monitor-pruner","chatgpt-chat-save-chrome-extension","liquid-plexiglass-26","apple-adobe-fx","lightworks","3d-liquid-glass-26-swift-package"],"custom-ready"]);
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"review"}),"Review");
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"coming-soon"}),"Coming Soon");
  assert.equal(projectShowcaseStatus({repository:"owner/repo",status:"in-progress"}),"In Progress");

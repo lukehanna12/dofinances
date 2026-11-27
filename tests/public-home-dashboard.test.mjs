@@ -4,7 +4,7 @@ import {readFileSync,existsSync} from "node:fs";
 import {DISMISS_MS,tileDismissProgress,tileDismissIconOpacity,tileDismissScale,tileDismissDrift,tileDismissBlur}
   from "../sites/_apex/assets/home-dashboard/dashboard-public-dismiss.js";
 import {publicIconSpatialAlpha,publicLogoOvalRadius,homeAperture,apertureAlpha} from "../sites/_apex/assets/home-dashboard/dashboard-public-icon-fade.js";
-import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortProjectShowcase,publicProjectIconSource}
+import {PROJECT_SHOWCASE,PROJECT_CARD_ICONS,sortHomeProjectShowcase,publicProjectIconSource}
   from "../sites/_apex/assets/public-projects-catalog.js";
 import {PROJECT_ICON_REVISIONS} from "../sites/_apex/assets/project-icon-revisions.js";
 const asset=(path)=>readFileSync(new URL("../sites/_apex/"+path,import.meta.url),"utf8");
@@ -198,13 +198,13 @@ test("sixteen Home mosaic icons share Projects' canonical SVG sources and stay b
  assert.equal(new Set(positions).size,16);
  assert.deepEqual(positions,["0:1","0:5","0:8","1:0","1:6","1:9",
    "2:1","2:9","3:0","3:10","4:2","4:5","4:8","5:1","5:6","5:9"]);
- const ordered=sortProjectShowcase(PROJECT_SHOWCASE);
+ const ordered=sortHomeProjectShowcase(PROJECT_SHOWCASE);
  assert.ok(ordered.every(p=>publicProjectIconSource(p.slug)===
    "/assets/project-icons/"+PROJECT_CARD_ICONS[p.slug]+".svg?v="+PROJECT_ICON_REVISIONS[PROJECT_CARD_ICONS[p.slug]]));
  for(const project of ordered)assert.ok(
    existsSync(new URL("../sites/_apex"+publicProjectIconSource(project.slug),import.meta.url)),
    "Both public views use an existing SVG for "+project.slug);
- assert.match(mosaic,/const sortedProjects=sortProjectShowcase\(PROJECT_SHOWCASE\)/);
+ assert.match(mosaic,/const sortedProjects=sortHomeProjectShowcase\(PROJECT_SHOWCASE\)/);
  assert.match(mosaic,/project\?publicProjectIconSource\(project\.slug\)/);
  assert.match(mosaic,/icon\.src=iconSource;/);
  assert.match(mosaic,/tile\.dataset\.homeProjectIcon=project\.slug;/);
@@ -330,7 +330,7 @@ test("Public rendering uses explicitly copied shader and AVIF assets, not privat
   for(const name of ["dashboard-track.js","dashboard-tint.js","sidebar-glass-oracle.js"])
     assert.equal(asset("assets/home-dashboard/"+name),asset("app/assets/"+name),name+" stays in parity");
   assert.match(asset("assets/home-dashboard/dashboard-mosaic.js"),
-    /import \{PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource\}/);
+    /import \{PROJECT_SHOWCASE,sortHomeProjectShowcase,publicProjectIconSource\}/);
   assert.doesNotMatch(asset("app/assets/dashboard-mosaic.js"),/public-projects-catalog/,
     "The separate authenticated /app mosaic must remain unchanged");
   assert.match(asset("assets/home-dashboard/dashboard-optics.js"),/resolveGlassOpticalGeometry\(/);

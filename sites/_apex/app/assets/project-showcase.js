@@ -35,8 +35,30 @@ export function projectShowcaseStatus(project){
  return project.repository||project.docs===true?"Ready":"Coming Soon";
 }
 const STATUS_ORDER=Object.freeze({"Ready":0,"Review":1,"In Progress":2,"Coming Soon":3});
+const SHOWCASE_RANK=new Map([
+  ["colosseum",0],
+  ["bootscript",1],
+  ["app-caviar",2],
+  ["hidden-functions",3],
+  ["terminal-scalars",4],
+  ["latexcel",5],
+  ["apple-hig-reader",6],
+  ["ozoning-board",7],
+  ["unicode-plus",8],
+  ["github-readme-chrome-extension",9],
+  ["protocol-monitor-pruner",10],
+  ["chatgpt-chat-save-chrome-extension",11],
+  ["liquid-plexiglass-26",12],
+  ["apple-adobe-fx",13],
+  ["lightworks",14],
+  ["3d-liquid-glass-26-swift-package",15]
+]);
 export function sortProjectShowcase(projects){
- return [...projects].sort((a,b)=>STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)]);
+  return [...projects].sort((a,b)=>{
+    const ar=SHOWCASE_RANK.get(a.slug),br=SHOWCASE_RANK.get(b.slug);
+    if(ar!==undefined||br!==undefined)return (ar??Infinity)-(br??Infinity);
+    return STATUS_ORDER[projectShowcaseStatus(a)]-STATUS_ORDER[projectShowcaseStatus(b)];
+  });
 }
 // Stable per-project choices. Unassigned items keep their current marker and wallpaper.
 // Existing published artwork remains linked to original sources; Terminal Scalars uses the full-resolution gallery photograph of P3010_8.

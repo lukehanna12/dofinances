@@ -9,7 +9,7 @@ import {spawn,execFileSync} from "node:child_process";
 import {tmpdir} from "node:os";
 import {join,resolve,extname} from "node:path";
 import {fileURLToPath} from "node:url";
-import {PROJECT_SHOWCASE,sortProjectShowcase,publicProjectIconSource}
+import {PROJECT_SHOWCASE,sortHomeProjectShowcase,publicProjectIconSource}
   from "../sites/_apex/assets/public-projects-catalog.js";
 
 const root=resolve(fileURLToPath(new URL("../sites/_apex/",import.meta.url)));
@@ -268,7 +268,7 @@ try{
   for(let i=1;i<g.items.length;i++)near(g.items[i].rect.height,g.items[0].rect.height,"Equal button heights",width);
   assert.ok(g.items.every(item=>item.glass),"All three CTAs share the WebGPU glass contract");
   assert.deepEqual(g.iconRefs.map(({slug,src})=>[slug,src]),
-    sortProjectShowcase(PROJECT_SHOWCASE).map(p=>[p.slug,publicProjectIconSource(p.slug)]),
+    sortHomeProjectShowcase(PROJECT_SHOWCASE).map(p=>[p.slug,publicProjectIconSource(p.slug)]),
     "Home's 16 icon squares must reference the exact same project assets as Projects");
   assert.ok(g.iconRefs.every(icon=>!icon.collidesWithProjectCards),
     "Home icon attributes must never shadow Projects card slug selectors");
